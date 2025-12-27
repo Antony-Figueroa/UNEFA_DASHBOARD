@@ -58,17 +58,25 @@ En el directorio del proyecto, puedes ejecutar los siguientes comandos:
 
 ## 📂 Estructura del Proyecto
 
-Una visión general de la organización de carpetas sugerida para este proyecto:
+Para garantizar la escalabilidad y mantenibilidad a largo plazo, el proyecto ha sido refactorizado para seguir una **Arquitectura Basada en Características (Feature-based Architecture)**. Este enfoque agrupa el código por dominio de negocio en lugar de por tipo de archivo, lo que reduce el acoplamiento y aumenta la cohesión.
 
 ```text
 src/
-├── components/       # Componentes reutilizables (Botones, Inputs, Modales, Cards)
-├── images/           # Activos estáticos (Logos, Iconos, Vectores)
-├── layout/           # Layouts principales (DefaultLayout, Sidebar, Header)
-├── pages/            # Vistas/Páginas de la aplicación (Dashboard, Profile, Settings)
-├── hooks/            # Custom Hooks de React (useLocalStorage, useColorMode)
-├── App.tsx           # Configuración de rutas y punto de entrada de la lógica
-└── main.tsx          # Renderizado del DOM y estilos globales
+├── components/
+│   ├── ui/               # Componentes UI atómicos y reutilizables (Button, Input, Modal).
+│   └── icons/            # Iconos SVG como componentes.
+├── features/             # Directorio principal para las características de la aplicación.
+│   └── periods/          # Feature: Gestión de Periodos
+│       ├── components/   # Componentes específicos de esta feature (PeriodTable, PeriodModal).
+│       ├── hooks/        # Hooks específicos (usePeriods).
+│       ├── services/     # Lógica de API (periodService).
+│       └── types/        # Tipos y esquemas de validación propios de la feature.
+├── hooks/                # Hooks globales y compartidos (useTheme).
+├── layout/               # Layouts de la aplicación (DefaultLayout).
+├── lib/                  # Utilidades y lógica compartida (ej. funciones de formato).
+├── pages/                # Vistas/Páginas que ahora importan desde `features`.
+├── services/             # Servicios globales (ej. cliente Axios).
+└── types/                # Tipos y interfaces globales.
 ```
 
 ## 🎨 Personalización

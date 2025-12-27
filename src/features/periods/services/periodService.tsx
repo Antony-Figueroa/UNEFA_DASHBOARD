@@ -7,79 +7,74 @@ import { Periodo } from "../types";
 
 const MOCKAPI_URL = "https://694ed7abb5bc648a93c169dc.mockapi.io/periodos";
 
-const parseDate = (val: any): Date => {
-  if (typeof val === "number") return new Date(val * 1000);
-  if (typeof val === "string") {
-    if (val.includes("/")) {
-      const [d, m, y] = val.split("/");
-      return new Date(`${y}-${m}-${d}T00:00:00`);
-    }
-    if (val.includes("-") && val.length === 10) {
-      return new Date(`${val}T00:00:00`);
-    }
-  }
-  const d = new Date(val);
-  return isNaN(d.getTime()) ? new Date(NaN) : d;
-};
+// --- API Data Transformation ---
 
-const formatDate = (d: Date): string => {
-  if (isNaN(d.getTime())) {
-    throw new Error("Fecha inválida proporcionada para formatear.");
-  }
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+// DTO (Data Transfer Object) que representa la estructura de la API
+interface PeriodoApiDTO {
+  periodId: string;
+  startDate: number; // timestamp en segundos
+  endDate: number;   // timestamp en segundos
+  creationDate: number; // timestamp en segundos
+  description: string;
+  periodStatus: number;
+  status: boolean;
+}
+
+// Convierte el DTO de la API al modelo de dominio del Frontend (con objetos Date)
+const fromApi = (dto: PeriodoApiDTO): Periodo => ({
+  periodId: dto.periodId,
+  description: dto.description,
+  startDate: new Date(dto.startDate * 1000),
+  endDate: new Date(dto.endDate * 1000),
+  creationDate: new Date(dto.creationDate * 1000),
+  periodStatus: dto.periodStatus,
+  status: dto.status,
+});
+
+// Convierte el modelo de dominio del Frontend al DTO para enviar a la API
+const toApi = (periodo: Partial<Periodo>): Partial<PeriodoApiDTO> => {
+  const dto: Partial<PeriodoApiDTO> = {};
+  if (periodo.description) dto.description = periodo.description;
+  if (periodo.startDate) dto.startDate = Math.floor(periodo.startDate.getTime() / 1000);
+  if (periodo.endDate) dto.endDate = Math.floor(periodo.endDate.getTime() / 1000);
+  if (periodo.periodStatus) dto.periodStatus = periodo.periodStatus;
+  if (typeof periodo.status === 'boolean') dto.status = periodo.status;
+  return dto;
 };
 
 export const getPeriods = async (): Promise<Periodo[]> => {
   const response = await fetch(MOCKAPI_URL);
   if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-  const data = await response.json();
-  return data.map((item: any) => ({
-    ...item,
-    id: parseInt(item.id, 10),
-    fechaInicio: parseDate(item.fechaInicio),
-    fechaFin: parseDate(item.fechaFin),
-  }));
+  const data: PeriodoApiDTO[] = await response.json();
+  return data.map(fromApi);
 };
 
 export const createPeriod = async (
-  periodoData: Omit<Periodo, "id">
+  periodoData: Omit<Periodo, "periodId" | "creationDate">
 ): Promise<Periodo> => {
   const response = await fetch(MOCKAPI_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      ...periodoData,
-      fechaInicio: formatDate(periodoData.fechaInicio),
-      fechaFin: formatDate(periodoData.fechaFin),
-    }),
+    body: JSON.stringify(toApi(periodoData)),
   });
   if (!response.ok) throw new Error(`Error al crear: ${response.status}`);
-  return response.json();
+  const created: PeriodoApiDTO = await response.json();
+  return fromApi(created);
 };
 
-export const updatePeriod = async (
-  id: number,
-  periodoData: Periodo
-): Promise<Periodo> => {
-  const response = await fetch(`${MOCKAPI_URL}/${id}`, {
+export const updatePeriod = async (periodoData: Periodo): Promise<Periodo> => {
+  const response = await fetch(`${MOCKAPI_URL}/${periodoData.periodId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      ...periodoData,
-      fechaInicio: formatDate(periodoData.fechaInicio),
-      fechaFin: formatDate(periodoData.fechaFin),
-    }),
+    body: JSON.stringify(toApi(periodoData)),
   });
   if (!response.ok) throw new Error(`Error al actualizar: ${response.status}`);
-  return response.json();
+  const updated: PeriodoApiDTO = await response.json();
+  return fromApi(updated);
 };
 
-export const deletePeriod = async (id: number): Promise<void> => {
-  const response = await fetch(`${MOCKAPI_URL}/${id}`, {
-    method: "DELETE",
-  });
-  if (!response.ok) throw new Error(`Error al eliminar: ${response.status}`);
+// Eliminación lógica (soft delete)
+export const deletePeriod = async (periodo: Periodo): Promise<Periodo> => {
+  const updatedPeriod = { ...periodo, status: false }; // Marcar como eliminado
+  return updatePeriod(updatedPeriod);
 };

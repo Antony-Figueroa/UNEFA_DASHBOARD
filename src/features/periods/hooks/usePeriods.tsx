@@ -30,7 +30,7 @@ export const usePeriods = () => {
         setStatus('loading');
         try {
             const data = await periodService.getPeriods();
-            const uniqueData = Array.from(new Map(data.map(item => [item.id, item])).values());
+            const uniqueData = Array.from(new Map(data.map(item => [item.periodId, item])).values());
             setPeriodos(uniqueData);
             setStatus('success');
         } catch (e) {
@@ -44,7 +44,7 @@ export const usePeriods = () => {
         refreshPeriods();
     }, [refreshPeriods]);
 
-    const addPeriod = async (periodoData: Omit<Periodo, 'id'>) => {
+    const addPeriod = async (periodoData: Omit<Periodo, "periodId" | "creationDate">) => {
         try {
             await periodService.createPeriod(periodoData);
             await refreshPeriods();
@@ -58,7 +58,7 @@ export const usePeriods = () => {
 
     const editPeriod = async (periodoData: Periodo) => {
         try {
-            await periodService.updatePeriod(periodoData.id, periodoData);
+            await periodService.updatePeriod(periodoData);
             await refreshPeriods();
             showAlert('success', 'Éxito', 'Periodo actualizado correctamente.');
         } catch (e) {
@@ -68,9 +68,9 @@ export const usePeriods = () => {
         }
     };
 
-    const removePeriod = async (id: number) => {
+    const removePeriod = async (periodo: Periodo) => {
         try {
-            await periodService.deletePeriod(id);
+            await periodService.deletePeriod(periodo);
             await refreshPeriods();
             showAlert('success', 'Éxito', 'Periodo eliminado correctamente.');
         } catch (e) {

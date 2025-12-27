@@ -1,5 +1,3 @@
-import React from "react";
-
 // Define la estructura de un usuario para mejorar la legibilidad y seguridad del tipo.
 interface User {
   avatar: string;
@@ -79,11 +77,10 @@ const UserList = () => {
         {/* Filas de datos */}
         {usersData.map((user, key) => (
           <div
-            className={`grid grid-cols-3 sm:grid-cols-4 ${
-              key === usersData.length - 1
+            className={`grid grid-cols-3 sm:grid-cols-4 ${key === usersData.length - 1
                 ? ""
                 : "border-b border-stroke dark:border-strokedark"
-            }`}
+              }`}
             key={key}
           >
             <div className="flex items-center gap-3 p-2.5 xl:p-5">
@@ -109,13 +106,12 @@ const UserList = () => {
 
             <div className="flex items-center justify-center p-2.5 xl:p-5">
               <p
-                className={`inline-flex rounded-full bg-opacity-10 py-1 px-3 text-sm font-medium ${
-                  user.status === "Active"
+                className={`inline-flex rounded-full bg-opacity-10 py-1 px-3 text-sm font-medium ${user.status === "Active"
                     ? "bg-success text-success"
                     : user.status === "Suspended"
                       ? "bg-danger text-danger"
                       : "bg-warning text-warning"
-                }`}
+                  }`}
               >
                 {user.status}
               </p>

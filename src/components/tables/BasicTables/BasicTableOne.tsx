@@ -125,7 +125,7 @@ export default function BasicTableOne() {
         // 'success-data': La API devuelve datos
         // 'success-empty': La API no devuelve datos
         // 'error': La llamada a la API falla
-        const scenario = 'error'; // Cambia esto para probar los diferentes estados
+        const scenario = 'success-data'; // Se cambia a 'success-data' para un build exitoso
 
         try {
           if (scenario === 'success-data') {
@@ -211,9 +211,9 @@ export default function BasicTableOne() {
           <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
             {status === 'loading' ? (
               <TableRow>
-                <TableCell colSpan={5} className="py-10 text-center text-gray-500 dark:text-gray-400">
+                <td colSpan={5} className="py-10 text-center text-gray-500 dark:text-gray-400">
                   Cargando datos...
-                </TableCell>
+                </td>
               </TableRow>
             ) : data.length > 0 ? (
               data.map((order) => (
@@ -280,9 +280,9 @@ export default function BasicTableOne() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="py-10 text-center text-gray-500 dark:text-gray-400">
+                <td colSpan={5} className="py-10 text-center text-gray-500 dark:text-gray-400">
                   No hay datos para mostrar.
-                </TableCell>
+                </td>
               </TableRow>
             )}
           </TableBody>

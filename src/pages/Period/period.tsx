@@ -223,17 +223,29 @@ export default function Period() {
         .filter(p => p.status === (activeTab === 'active')) // Filtra según la pestaña activa
         .map(p => {
             let progress = null;
+            let daysPassed = 0;
+            let daysRemaining = 0;
+            let weeksRemaining = 0;
+
             if (p.periodStatus === 2) { // "En Curso"
                 const totalDuration = p.endDate.getTime() - p.startDate.getTime();
                 const elapsed = new Date().getTime() - p.startDate.getTime();
                 // Asegurarse de que el progreso esté entre 0 y 100
                 progress = Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
+
+                const oneDay = 1000 * 60 * 60 * 24;
+                daysPassed = Math.floor(elapsed / oneDay);
+                daysRemaining = Math.ceil((p.endDate.getTime() - new Date().getTime()) / oneDay);
+                weeksRemaining = Math.ceil(daysRemaining / 7);
             }
             return {
                 ...p,
                 startDate: p.startDate.toLocaleDateString(),
                 endDate: p.endDate.toLocaleDateString(),
                 progress: progress,
+                daysPassed: Math.max(0, daysPassed),
+                daysRemaining: Math.max(0, daysRemaining),
+                weeksRemaining: Math.max(0, weeksRemaining),
             };
         }), [periodos, activeTab]);
 

@@ -68,39 +68,15 @@ interface PeriodTableProps {
 // HELPER FUNCTIONS
 // ============================================
 
-// Interfaz extendida para cubrir propiedades que existen en tiempo de ejecución
-// pero faltan en la definición base de PeriodoRowData
-interface ExtendedPeriodoRowData extends PeriodoRowData {
-    startDate?: string;
-    endDate?: string;
-    description?: string;
-    progress?: number | string | null;
-    periodStatus?: number | string;
-    periodId?: string;
-}
-
-const getSafeEndDate = (periodo: PeriodoRowData): string => {
-    // Intenta obtener de endDate primero, luego de fechaFin
-    return (periodo as ExtendedPeriodoRowData).endDate || periodo.fechaFin || '-';
-};
-
-const getSafeStartDate = (periodo: PeriodoRowData): string => {
-    return (periodo as ExtendedPeriodoRowData).startDate || periodo.fechaInicio || '-';
-};
-
-const getSafeDescription = (periodo: PeriodoRowData): string => {
-    return (periodo as ExtendedPeriodoRowData).description || periodo.lapso || 'Sin descripción';
-};
-
 const getSafePeriodStatus = (periodo: PeriodoRowData): number => {
     // Convierte a número si es necesario
-    const status = (periodo as ExtendedPeriodoRowData).periodStatus;
+    const status = periodo.periodStatus;
     if (typeof status === 'string') return parseInt(status) || 1;
     return Number(status) || 1;
 };
 
 const getSafeProgress = (periodo: PeriodoRowData): number | null => {
-    const progress = (periodo as ExtendedPeriodoRowData).progress;
+    const progress = periodo.progress;
     if (progress === undefined || progress === null) return null;
     const numProgress = Number(progress);
     return isNaN(numProgress) ? null : Math.min(Math.max(numProgress, 0), 100);
@@ -338,7 +314,7 @@ const PeriodTable = ({
 
     // Filter data safely
     const filteredData = data.filter((periodo) => {
-        const description = getSafeDescription(periodo).toLowerCase();
+        const description = periodo.description.toLowerCase();
         const matchesSearch = description.includes(searchTerm.toLowerCase());
 
         const periodStatus = getSafePeriodStatus(periodo).toString();
@@ -497,8 +473,7 @@ const PeriodTable = ({
                         ) : currentData.length > 0 ? (
                             currentData.map((periodo) => {
                                 const periodStatus = getSafePeriodStatus(periodo);
-                                const progress = getSafeProgress(periodo);
-                                const periodId = (periodo as ExtendedPeriodoRowData).periodId || periodo.id || "";
+                                const periodId = periodo.periodId;
 
                                 return (
                                     <TableRow
@@ -510,13 +485,13 @@ const PeriodTable = ({
                                         }
                                     >
                                         <TableCell className="px-5 py-4 text-start font-medium text-gray-800 dark:text-white/90">
-                                            {getSafeDescription(periodo)}
+                                            {periodo.description}
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                            {getSafeStartDate(periodo)}
+                                            {periodo.startDate || "-"}
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
-                                            {getSafeEndDate(periodo)}
+                                            {periodo.endDate || "-"}
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-start text-theme-sm">
                                             <Badge
@@ -528,7 +503,7 @@ const PeriodTable = ({
                                         </TableCell>
                                         <TableCell className="px-4 py-3 text-start text-theme-sm">
                                             {getSafePeriodStatus(periodo) === 2 && getSafeProgress(periodo) !== null ? (
-                                                <div className="flex items-center gap-2">
+                                                <div className="group relative flex items-center gap-2 cursor-help">
                                                     <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                                                         <div
                                                             className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
@@ -538,6 +513,13 @@ const PeriodTable = ({
                                                     <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
                                                         {Math.round(getSafeProgress(periodo) ?? 0)}%
                                                     </span>
+                                                    {/* Tooltip */}
+                                                    <div className="absolute bottom-full left-1/2 mb-2 w-max -translate-x-1/2 rounded bg-black px-2 py-1 text-xs text-white opacity-0 transition-opacity duration-300 pointer-events-none group-hover:opacity-100 dark:bg-white dark:text-black z-50 shadow-sm">
+                                                        <p>Han pasado: {periodo.daysPassed} días</p>
+                                                        <p>Faltan: {periodo.daysRemaining} días</p>
+                                                        <p>Semanas restantes: {periodo.weeksRemaining}</p>
+                                                        <div className="absolute top-full left-1/2 -mt-1 -ml-1 border-4 border-transparent border-t-black dark:border-t-white"></div>
+                                                    </div>
                                                 </div>
                                             ) : (
                                                 <span className="text-gray-400 dark:text-gray-500">

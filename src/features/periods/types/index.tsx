@@ -4,14 +4,21 @@
  */
 
 export interface Periodo {
-    id: number;
-    lapso: string;
-    fechaInicio: Date;
-    fechaFin: Date;
-    status: "Pendiente" | "En Curso" | "Finalizado";
+    periodId: string;
+    description: string;
+    startDate: Date;
+    endDate: Date;
+    creationDate: Date;
+    periodStatus: 1 | 2 | 3; // 1: Pendiente, 2: En Curso, 3: Culminado
+    status: boolean;      // true: Activo, false: Eliminado
 }
 
-export type PeriodoRowData = Omit<Periodo, "fechaInicio" | "fechaFin"> & {
-    fechaInicio: string;
-    fechaFin: string;
-};
+// Tipo para los datos que se muestran en la tabla, con fechas formateadas y progreso
+export interface PeriodoRowData extends Omit<Periodo, 'startDate' | 'endDate' | 'creationDate'> {
+    startDate: string; // Formatted
+    endDate: string;   // Formatted
+    progress: number | null;
+    daysPassed?: number;
+    daysRemaining?: number;
+    weeksRemaining?: number;
+}

@@ -194,6 +194,8 @@ import NotFound from "./pages/OtherPage/NotFound";
 // ============================================================================
 
 import Period from "./pages/Period/period";
+// {Carreras}
+import CareersPage from "./pages/Careers/careers";
 
 /**
  * Componente raíz de la aplicación React
@@ -280,6 +282,9 @@ export default function App() {
 
             {/* {Periodo} */}
             <Route path="/period" element={<Period />} />
+
+            {/* {Carreras} */}
+            <Route path="/careers" element={<CareersPage />} />
 
 
             {/* ================================================================

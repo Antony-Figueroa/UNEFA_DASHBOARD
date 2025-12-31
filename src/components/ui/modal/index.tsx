@@ -92,3 +92,21 @@ export const Modal: React.FC<ModalProps> = ({
     </div>
   );
 };
+
+// Subcomponentes para estructura consistente del modal
+interface ModalSectionProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const ModalHeader: React.FC<ModalSectionProps> = ({ children, className }) => (
+  <div className={`border-b border-gray-200 p-6 text-lg font-semibold text-gray-800 dark:border-gray-800 dark:text-white/90 ${className ?? ""}`}>{children}</div>
+);
+
+export const ModalBody: React.FC<ModalSectionProps> = ({ children, className }) => (
+  <div className={`p-6 ${className ?? ""}`}>{children}</div>
+);
+
+export const ModalFooter: React.FC<ModalSectionProps> = ({ children, className }) => (
+  <div className={`border-t border-gray-200 p-6 flex items-center justify-end gap-3 dark:border-gray-800 ${className ?? ""}`}>{children}</div>
+);

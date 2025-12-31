@@ -27,22 +27,14 @@ interface PeriodModalProps {
 // Esquema de validación con Zod
 const periodSchema = z.object({
     anio: z.string().min(1, { message: 'El año es obligatorio.' }),
-    periodoTipo: z.enum(['I', 'II'], { errorMap: () => ({ message: 'Seleccione el periodo.' }) }),
-    startDate: z.date({ // Usamos errorMap para mayor compatibilidad
-        errorMap: (issue, ctx) => {
-            if (issue.code === 'invalid_type' && issue.received === 'undefined') {
-                return { message: 'La fecha de inicio es obligatoria.' };
-            }
-            return { message: 'Formato de fecha de inicio no válido.' };
-        },
+    periodoTipo: z.enum(['I', 'II']),
+    startDate: z.date({
+        required_error: 'La fecha de inicio es obligatoria.',
+        invalid_type_error: 'Formato de fecha de inicio no válido.',
     }),
-    endDate: z.date({ // Usamos errorMap para mayor compatibilidad
-        errorMap: (issue, ctx) => {
-            if (issue.code === 'invalid_type' && issue.received === 'undefined') {
-                return { message: 'La fecha de fin es obligatoria.' };
-            }
-            return { message: 'Formato de fecha de fin no válido.' };
-        },
+    endDate: z.date({
+        required_error: 'La fecha de fin es obligatoria.',
+        invalid_type_error: 'Formato de fecha de fin no válido.',
     }),
 }).superRefine((data, ctx) => {
     if (data.endDate <= data.startDate) {

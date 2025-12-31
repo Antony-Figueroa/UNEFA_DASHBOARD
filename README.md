@@ -195,6 +195,26 @@ export default function Users() {
 - Implementar `userService.ts` con llamadas a API (fetch/axios).
 - Usar `react-hook-form` + `zod` para formularios y validación.
 
+### Estándares de Modales y Validación
+
+Para asegurar la consistencia visual y funcional en toda la aplicación, se han definido los siguientes estándares para los modales de creación y edición:
+
+1. **Estructura Visual (Pixel-Perfect):**
+   - Los modales deben utilizar el componente `Modal` con las clases `max-w-xl p-6`.
+   - El encabezado debe incluir un título (`h5` con clases `mb-2 font-semibold text-gray-800 dark:text-white/90`) y una descripción corta (`p` con clases `text-sm text-gray-500 dark:text-gray-400`).
+   - Los campos del formulario se agrupan en un contenedor con borde redondeado (`rounded-2xl border border-gray-200 dark:border-gray-800`).
+   - Las etiquetas (`label`) deben tener el espaciado `mb-2.5` y ser `font-medium`.
+
+2. **Sistema de Validación Contextual:**
+   - Se utiliza `react-hook-form` junto con `zod` para la lógica de validación.
+   - **Mensajes de error:** No se muestran mensajes genéricos como "Este campo es obligatorio" de forma persistente. En su lugar, se muestran mensajes contextuales solo después de que el usuario haya intentado enviar el formulario o haya interactuado con el campo.
+   - **Feedback visual:** Los inputs cambian su estado visual (borde rojo) solo cuando hay un error activo.
+
+3. **Botones de Acción:**
+   - Los botones de acción se ubican en la parte inferior derecha con un `gap-4.5`.
+   - El botón de "Cancelar" debe tener un estilo `outline` consistente.
+   - El botón de acción principal ("Guardar", "Actualizar") utiliza el color `brand-500` y muestra un estado deshabilitado durante la carga.
+
 Configuración del entorno de desarrollo:
 
 - Requisitos: `Node.js >= 18`, `npm` o `yarn`.
@@ -254,3 +274,4 @@ Buenas prácticas:
 ## 8. Licencia
 
 Este proyecto se distribuye bajo la licencia MIT.
+

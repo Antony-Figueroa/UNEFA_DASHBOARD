@@ -18,6 +18,7 @@ import { Modal } from "../../components/ui/modal";
 import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import PeriodViewModal from "../../features/periods/components/PeriodViewModal";
 import { Periodo, PeriodoRowData } from "../../features/periods/types";
+import ErrorBoundary from "../../components/common/ErrorBoundary";
 
 type ConfirmationInfo = {
     isOpen: boolean;
@@ -69,8 +70,7 @@ export default function Period() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPeriodo, setEditingPeriodo] = useState<Periodo | null>(null);
     const [isSaving, setIsSaving] = useState(false);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [periodoToDelete, setPeriodoToDelete] = useState<string | null>(null);
+
     const [confirmation, setConfirmation] = useState<ConfirmationInfo | null>(null);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [viewingPeriod, setViewingPeriod] = useState<Periodo | null>(null);
@@ -123,7 +123,7 @@ export default function Period() {
                         await addPeriod(periodoData);
                     }
                     handleCloseCreateEditModal();
-                } catch (error) {
+                } catch {
                     // El error ya se maneja en el hook
                 } finally {
                     setIsSaving(false);
@@ -250,12 +250,24 @@ export default function Period() {
         }), [periodos, activeTab]);
 
     return (
-        <>
-            <PageMeta
-                title="Gestión de Periodos"
-                description="Gestión de los periodos académicos"
-            />
-            <div className="flex items-center justify-between mb-6">
+        <ErrorBoundary
+            fallback={(
+                <div className="p-6">
+                    <Alert
+                        variant="error"
+                        title="Se produjo un error en la página de Periodos"
+                        message="Intenta recargar la página. Si persiste, contacta al soporte."
+                        showLink={false}
+                    />
+                </div>
+            )}
+        >
+            <>
+                <PageMeta
+                    title="Gestión de Periodos"
+                    description="Gestión de los periodos académicos"
+                />
+                <div className="flex items-center justify-between mb-6">
                 <PageBreadcrumb pageTitle="Gestión de Periodos" />
                 <button
                     onClick={handleOpenCreateModal}
@@ -358,6 +370,7 @@ export default function Period() {
                     </div>
                 </Modal>
             )}
-        </>
+            </>
+        </ErrorBoundary>
     );
 }

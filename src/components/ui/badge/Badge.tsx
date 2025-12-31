@@ -61,9 +61,37 @@ const Badge: React.FC<BadgeProps> = ({
     },
   };
 
+  // Runtime safety: guard against invalid variant/color values
+  const allowedVariants: BadgeVariant[] = ["light", "solid"];
+  const allowedColors: BadgeColor[] = [
+    "primary",
+    "success",
+    "error",
+    "warning",
+    "info",
+    "light",
+    "dark",
+  ];
+
+  const safeVariant = allowedVariants.includes(variant) ? variant : "light";
+  const safeColor = allowedColors.includes(color) ? color : "primary";
+
+  if (import.meta.env.MODE !== "production") {
+    if (!allowedVariants.includes(variant)) {
+      console.warn(
+        `[Badge] Invalid variant "${variant}". Falling back to "light".`,
+      );
+    }
+    if (!allowedColors.includes(color)) {
+      console.warn(
+        `[Badge] Invalid color "${color}". Falling back to "primary".`,
+      );
+    }
+  }
+
   // Get styles based on size and color variant
   const sizeClass = sizeStyles[size];
-  const colorStyles = variants[variant][color];
+  const colorStyles = variants[safeVariant][safeColor];
 
   return (
     <span className={`${baseStyles} ${sizeClass} ${colorStyles}`}>

@@ -140,8 +140,9 @@ export default function BasicTableOne() {
             // Simula un error en la llamada a la API
             throw new Error("Error de conexión: No se pudo conectar a la API o la base de datos.");
           }
-        } catch (e: any) {
-          setError(e);
+        } catch (e: unknown) {
+          const err = e instanceof Error ? e : new Error("Error desconocido");
+          setError(err);
           setStatus('error');
         }
       }, 1500);

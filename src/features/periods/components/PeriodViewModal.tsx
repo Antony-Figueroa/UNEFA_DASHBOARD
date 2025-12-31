@@ -5,7 +5,8 @@
 
 import { useTheme } from '../../../context/ThemeContext';
 import { Periodo } from '../types';
-import { Modal } from '../../../components/ui/modal';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
+import Button from '../../../components/ui/button/Button';
 import Flatpickr from 'react-flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 
@@ -21,7 +22,7 @@ export default function PeriodViewModal({ isOpen, onClose, periodo }: PeriodView
     if (!periodo) return null;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} className={`w-[70vw] max-w-3xl p-6 ${colorMode === 'dark' ? 'dark' : ''}`}>
+        <Modal isOpen={isOpen} onClose={onClose} className={`w-[70vw] max-w-3xl ${colorMode === 'dark' ? 'dark' : ''}`}>
             <style>{`
                 /* Oculta el input de texto que react-flatpickr genera para el modo inline */
                 .period-view-calendar .flatpickr-input {
@@ -79,38 +80,28 @@ export default function PeriodViewModal({ isOpen, onClose, periodo }: PeriodView
                     color: #fff;
                 }
             `}</style>
-            <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
-                <div>
-                    <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-                        Vista del Periodo
-                    </h5>
-                    <p className="text-lg font-medium text-gray-600 dark:text-gray-300">
-                        {periodo.description}
-                    </p>
-                </div>
+            <ModalHeader>Vista del Periodo</ModalHeader>
+            <ModalBody>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                    {periodo.description}
+                </p>
                 <div className="mt-6 flex justify-center period-view-calendar">
                     <Flatpickr
                         options={{
                             mode: 'range',
                             dateFormat: 'Y-m-d',
                             defaultDate: [periodo.startDate, periodo.endDate],
-                            inline: true, // Muestra el calendario directamente
+                            inline: true,
                             onOpen: (_, __, instance) => {
                                 if (colorMode === 'dark') instance.calendarContainer.classList.add('dark');
                             },
                         }}
                     />
                 </div>
-                <div className="flex justify-end gap-4.5 mt-6">
-                    <button
-                        className="flex justify-center rounded border border-stroke py-2 px-6 font-medium text-black hover:shadow-1 dark:border-strokedark dark:text-white"
-                        type="button"
-                        onClick={onClose}
-                    >
-                        Cerrar
-                    </button>
-                </div>
-            </div>
+            </ModalBody>
+            <ModalFooter>
+                <Button size="sm" variant="outline" onClick={onClose}>Cerrar</Button>
+            </ModalFooter>
         </Modal>
     );
 }

@@ -226,7 +226,7 @@ const ActionMenu = ({
                                     onItemClick={() => handleAction(onEdit)}
                                     className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-meta-4"
                                 >
-                                    <EditIcon className="w-4 h-4" />
+                                    <EditIcon className="icon-sm" />
                                     Editar
                                 </DropdownItem>
                             )}
@@ -235,7 +235,7 @@ const ActionMenu = ({
                                     onItemClick={() => handleAction(onStart)}
                                     className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-green-600 hover:bg-green-50 dark:text-green-500 dark:hover:bg-meta-4"
                                 >
-                                    <PlayIcon className="w-4 h-4" />
+                                    <PlayIcon className="icon-sm" />
                                     Iniciar
                                 </DropdownItem>
                             )}
@@ -244,7 +244,7 @@ const ActionMenu = ({
                                     onItemClick={() => handleAction(onCulminate)}
                                     className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 dark:text-blue-500 dark:hover:bg-meta-4"
                                 >
-                                    <CheckCircleIcon className="w-4 h-4" />
+                                    <CheckCircleIcon className="icon-sm" />
                                     Culminar
                                 </DropdownItem>
                             )}
@@ -253,7 +253,7 @@ const ActionMenu = ({
                                     onItemClick={() => handleAction(onView)}
                                     className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-meta-4"
                                 >
-                                    <EyeIcon className="w-4 h-4" />
+                                    <EyeIcon className="icon-sm" />
                                     Ver
                                 </DropdownItem>
                             )}
@@ -262,7 +262,7 @@ const ActionMenu = ({
                                     onItemClick={() => handleAction(onRestore)}
                                     className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 dark:text-blue-500 dark:hover:bg-meta-4"
                                 >
-                                    <RefreshIcon className="w-4 h-4" />
+                                    <RefreshIcon className="icon-sm" />
                                     Restaurar
                                 </DropdownItem>
                             )}
@@ -271,7 +271,7 @@ const ActionMenu = ({
                                     onItemClick={() => handleAction(onDelete)}
                                     className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-red-500 hover:bg-red-50 dark:text-red-500 dark:hover:bg-meta-4"
                                 >
-                                    <TrashIcon className="w-4 h-4" />
+                                    <TrashIcon className="icon-sm" />
                                     Eliminar
                                 </DropdownItem>
                             )}
@@ -303,17 +303,12 @@ const PeriodTable = ({
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
 
-    // Validación inicial
-    if (!data || !Array.isArray(data)) {
-        return (
-            <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-center">
-                <p className="font-medium text-red-600">Error: Datos no válidos</p>
-            </div>
-        );
-    }
+    // Validación inicial (sin retorno temprano para respetar reglas de hooks)
+    const isInvalidData = !Array.isArray(data);
+    const safeData = isInvalidData ? [] : data;
 
     // Filter data safely
-    const filteredData = data.filter((periodo) => {
+    const filteredData = safeData.filter((periodo) => {
         const description = periodo.description.toLowerCase();
         const matchesSearch = description.includes(searchTerm.toLowerCase());
 
@@ -366,8 +361,17 @@ const PeriodTable = ({
         return STATUS_LABELS[status as keyof typeof STATUS_LABELS] || "Desconocido";
     };
 
+    // Si los datos son inválidos, mostrar mensaje de error después de ejecutar hooks
+    if (isInvalidData) {
+        return (
+            <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-center">
+                <p className="font-medium text-red-600">Error: Datos no válidos</p>
+            </div>
+        );
+    }
+
     return (
-        <div className="rounded-xl border border-gray-200 bg-white dark:border-white/5 dark:bg-white/3">
+        <div className="table-container">
             {/* Search and Filter Bar */}
             <div className="p-4 border-b border-gray-100 dark:border-white/5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="relative max-w-xs w-full">
@@ -419,42 +423,42 @@ const PeriodTable = ({
 
             {/* Table */}
             <div className="max-w-full overflow-x-auto">
-                <Table>
-                    <TableHeader className="border-b border-gray-100 dark:border-white/5">
+                <Table className="table-root">
+                    <TableHeader className="table-header-row">
                         <TableRow>
                             <TableCell
                                 isHeader
-                                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                className="table-header-cell"
                             >
                                 Descripción
                             </TableCell>
                             <TableCell
                                 isHeader
-                                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                className="table-header-cell"
                             >
                                 Fecha Inicio
                             </TableCell>
                             <TableCell
                                 isHeader
-                                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                className="table-header-cell"
                             >
                                 Fecha Fin
                             </TableCell>
                             <TableCell
                                 isHeader
-                                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                className="table-header-cell"
                             >
                                 Status
                             </TableCell>
                             <TableCell
                                 isHeader
-                                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                                className="table-header-cell"
                             >
                                 Progreso
                             </TableCell>
                             <TableCell
                                 isHeader
-                                className="px-5 py-3 font-medium text-gray-500 text-end text-theme-xs dark:text-gray-400"
+                                className="table-header-cell text-right"
                             >
                                 Acciones
                             </TableCell>
@@ -465,7 +469,7 @@ const PeriodTable = ({
                             <TableRow>
                                 <td
                                     colSpan={6}
-                                    className="py-10 text-center text-gray-500 dark:text-gray-400"
+                                    className="table-cell py-10 text-center text-gray-500 dark:text-gray-400"
                                 >
                                     Cargando periodos...
                                 </td>
@@ -478,22 +482,18 @@ const PeriodTable = ({
                                 return (
                                     <TableRow
                                         key={periodId}
-                                        className={
-                                            highlightedRow === periodId
-                                                ? "bg-gray-50 dark:bg-gray-800"
-                                                : ""
-                                        }
+                                        className={`${highlightedRow === periodId ? 'bg-gray-50 dark:bg-gray-800' : ''} table-row-hover`}
                                     >
-                                        <TableCell className="px-5 py-4 text-start font-medium text-gray-800 dark:text-white/90">
+                                        <TableCell className="table-cell font-medium text-gray-800 dark:text-white/90">
                                             {periodo.description}
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                                        <TableCell className="table-cell text-gray-500 dark:text-gray-400">
                                             {periodo.startDate || "-"}
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                                        <TableCell className="table-cell text-gray-500 dark:text-gray-400">
                                             {periodo.endDate || "-"}
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 text-start text-theme-sm">
+                                        <TableCell className="table-cell">
                                             <Badge
                                                 size="sm"
                                                 color={getStatusColor(periodStatus)}
@@ -501,7 +501,7 @@ const PeriodTable = ({
                                                 {getStatusLabel(periodStatus)}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="px-4 py-3 text-start text-theme-sm">
+                                        <TableCell className="table-cell">
                                             {getSafePeriodStatus(periodo) === 2 && getSafeProgress(periodo) !== null ? (
                                                 <div className="group relative flex items-center gap-2 cursor-help">
                                                     <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
@@ -527,7 +527,7 @@ const PeriodTable = ({
                                                 </span>
                                             )}
                                         </TableCell>
-                                        <TableCell className="px-5 py-3 text-end">
+                                        <TableCell className="table-cell text-right">
                                             <ActionMenu
                                                 onEdit={onEdit ? () => onEdit(periodo) : undefined}
                                                 onStart={onStart ? () => onStart(periodo) : undefined}

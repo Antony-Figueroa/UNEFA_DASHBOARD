@@ -280,6 +280,49 @@ layer(base);
   background-color: #344054;
 }
 
+/* ================================================================
+   UTILIDADES COMPARTIDAS PARA CONSISTENCIA VISUAL
+   Tablas, iconos y transiciones base
+   ================================================================ */
+
+@utility table-container {
+  /* Contenedor estándar para tablas */
+  @apply overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-theme-xs dark:border-gray-800 dark:bg-gray-900;
+}
+
+@utility table-root {
+  /* Tabla base (aplicar sobre <table>) */
+  @apply min-w-full divide-y divide-gray-200 text-sm dark:divide-white/5;
+}
+
+@utility table-header-row {
+  @apply bg-gray-50 dark:bg-gray-900;
+}
+
+@utility table-header-cell {
+  @apply px-4 py-3 text-left text-theme-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400;
+}
+
+@utility table-cell {
+  @apply px-4 py-3 text-gray-800 dark:text-white/90;
+}
+
+@utility table-row-hover {
+  @apply hover:bg-gray-50 dark:hover:bg-white/5;
+}
+
+@utility icon-sm {
+  @apply size-4;
+}
+
+@utility icon-md {
+  @apply size-5;
+}
+
+@utility transition-base {
+  @apply transition-all duration-200 ease-out;
+}
+
 @layer utilities {
   /* For Remove Date Icon */
   input[type="date"]::-webkit-inner-spin-button,

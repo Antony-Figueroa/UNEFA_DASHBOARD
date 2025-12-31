@@ -14,6 +14,7 @@ import {
   PlugInIcon,
   TableIcon,
   UserCircleIcon,
+  TaskIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 
@@ -62,6 +63,11 @@ const navItems: NavItem[] = [
     icon: <CalenderIcon />,
     name: "Gestión Periodo",
     path: "/period",
+  },
+  {
+    icon: <TaskIcon />,
+    name: "Gestión Carrera",
+    path: "/careers",
   },
 ];
 

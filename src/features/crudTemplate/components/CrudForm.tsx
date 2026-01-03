@@ -4,6 +4,7 @@ import InputField from "../../../components/form/input/InputField";
 import Select from "../../../components/form/Select";
 import MultiSelect from "../../../components/form/MultiSelect";
 import Switch from "../../../components/form/switch/Switch";
+import Label from "../../../components/form/Label";
 
 type CrudFieldType = "text" | "number" | "select" | "multi-select" | "switch";
 
@@ -127,11 +128,11 @@ export function CrudForm({
     onSubmit(values);
   };
 
-  const handleChange = (name: string, value: unknown) => {
+  const handleChange = (name: string, value: string | number | boolean | string[]) => {
     setValues((prev) => ({
       ...prev,
       [name]: value,
-    }));
+    }) as CrudFormValues);
     const field = fields.find((f) => f.name === name);
     if (field) {
       const error = validateField(field, value);
@@ -149,9 +150,9 @@ export function CrudForm({
           if (field.type === "text" || field.type === "number") {
             return (
               <div key={field.name}>
+                <Label htmlFor={field.name}>{field.label}</Label>
                 <InputField
                   type={field.type === "number" ? "number" : "text"}
-                  label={field.label}
                   id={field.name}
                   placeholder={field.placeholder}
                   value={String(value ?? "")}
@@ -175,11 +176,11 @@ export function CrudForm({
           if (field.type === "select") {
             return (
               <div key={field.name}>
+                <Label>{field.label}</Label>
                 <Select
-                  label={field.label}
                   placeholder={field.placeholder}
-                  value={String(value ?? "")}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
+                  defaultValue={String(value ?? "")}
+                  onChange={(val) => handleChange(field.name, val)}
                   options={field.options ?? []}
                 />
                 {error && (
@@ -224,12 +225,10 @@ export function CrudForm({
             return (
               <div key={field.name} className="flex items-center gap-3">
                 <Switch
-                  enabled={Boolean(value)}
-                  setEnabled={(checked) => handleChange(field.name, checked)}
+                  label={field.label}
+                  defaultChecked={Boolean(value)}
+                  onChange={(checked) => handleChange(field.name, checked)}
                 />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {field.label}
-                </span>
               </div>
             );
           }

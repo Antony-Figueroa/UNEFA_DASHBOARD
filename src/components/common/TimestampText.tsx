@@ -1,4 +1,3 @@
-import React from "react";
 import { DateInput, formatDateTime } from "../../utils/date";
 
 interface TimestampTextProps {

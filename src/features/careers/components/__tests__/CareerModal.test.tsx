@@ -37,7 +37,7 @@ describe("CareerModal", () => {
     );
 
     const saveBtn = await screen.findByRole("button", { name: /guardar/i });
-    expect(saveBtn).toBeEnabled();
+    expect((saveBtn as HTMLButtonElement).disabled).toBe(false);
 
     await userEvent.click(saveBtn);
 
@@ -70,6 +70,6 @@ describe("CareerModal", () => {
 
     const saveBtn = await screen.findByRole("button", { name: /guardar/i });
     // Sin datos, minGrade vacío => no válido
-    expect(saveBtn).toBeDisabled();
+    expect((saveBtn as HTMLButtonElement).disabled).toBe(true);
   });
 });

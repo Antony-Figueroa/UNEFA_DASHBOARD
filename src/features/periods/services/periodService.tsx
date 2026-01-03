@@ -27,7 +27,7 @@ const fromApi = (dto: PeriodoApiDTO): Periodo => ({
   startDate: new Date(dto.startDate * 1000),
   endDate: new Date(dto.endDate * 1000),
   creationDate: new Date(dto.creationDate * 1000),
-  periodStatus: dto.periodStatus,
+  periodStatus: dto.periodStatus as 1 | 2 | 3,
   status: dto.status,
 });
 

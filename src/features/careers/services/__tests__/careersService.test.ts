@@ -74,7 +74,7 @@ describe("careersService - update & delete", () => {
   it("deleteCareer envía status=false y usa updateCareer internamente", async () => {
     const c = buildCareer({ status: true });
     let capturedInit: RequestInit | undefined;
-    const fetchMock = vi.fn().mockImplementation((input: RequestInfo, init?: RequestInit) => {
+    const fetchMock = vi.fn().mockImplementation((_input: RequestInfo, init?: RequestInit) => {
       capturedInit = init;
       return Promise.resolve({
         ok: true,

@@ -366,8 +366,9 @@ export default function CareersPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
-        editingCareer={editingCareer ?? undefined}
+        editingCareer={editingCareer}
         internshipOptions={internshipOptions}
+        isLoading={loadingAction}
       />
 
       {/* Modal Ver */}
@@ -400,7 +401,7 @@ export default function CareersPage() {
       {confirmation?.isOpen && (
         <Modal
           isOpen={confirmation.isOpen}
-          onClose={() => setConfirmation(null)}
+          onClose={() => !loadingAction && setConfirmation(null)}
           className={`max-w-sm ${colorMode === "dark" ? "dark" : ""}`}
         >
           <ModalBody className="text-center pt-8">
@@ -411,18 +412,22 @@ export default function CareersPage() {
             <p className="text-sm text-gray-500 dark:text-gray-400">{confirmation.message}</p>
           </ModalBody>
           <ModalFooter className="justify-center border-t-0 pt-0 pb-8">
-            <button
+            <Button
+              variant="outline"
               onClick={() => setConfirmation(null)}
-              className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/3 sm:w-auto"
+              disabled={loadingAction}
+              className="w-full sm:w-auto"
             >
               Cancelar
-            </button>
-            <button
+            </Button>
+            <Button
+              variant={confirmation.variant === "error" ? "error" : "primary"}
               onClick={confirmation.onConfirm}
-              className={`flex w-full justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-white sm:w-auto ${confirmationStyles[confirmation.variant].button}`}
+              loading={loadingAction}
+              className="w-full sm:w-auto"
             >
               {confirmation.confirmText}
-            </button>
+            </Button>
           </ModalFooter>
         </Modal>
       )}

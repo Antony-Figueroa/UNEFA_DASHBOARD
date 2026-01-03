@@ -61,7 +61,7 @@ export default function CrudExample() {
   const [editingItem, setEditingItem] = useState<ExampleEntity | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { items, status, error, alert, setAlert } = useCrudResource<ExampleEntity>({
+  const { items, status, error, alert, loadingAction, setAlert, createItem, updateItem, removeItem } = useCrudResource<ExampleEntity>({
     service: inMemoryService,
   });
 
@@ -187,21 +187,26 @@ export default function CrudExample() {
         : "¿Deseas crear este nuevo registro?",
       confirmText: "Confirmar",
       variant: "info",
-      onConfirm: () => {
-        if (isEditing && editingItem) {
-          void inMemoryService.update(nextEntity);
-        } else {
-          const entityToCreate: Omit<ExampleEntity, "id"> = {
-            name: nextEntity.name,
-            code: nextEntity.code,
-            average: nextEntity.average,
-            status: nextEntity.status,
-            tags: nextEntity.tags,
-          };
-          void inMemoryService.create(entityToCreate);
+      onConfirm: async () => {
+        try {
+          if (isEditing && editingItem) {
+            await updateItem(nextEntity);
+          } else {
+            const entityToCreate: Omit<ExampleEntity, "id"> = {
+              name: nextEntity.name,
+              code: nextEntity.code,
+              average: nextEntity.average,
+              status: nextEntity.status,
+              tags: nextEntity.tags,
+            };
+            await createItem(entityToCreate);
+          }
+          setIsModalOpen(false);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setConfirmState(null);
         }
-        setIsModalOpen(false);
-        setConfirmState(null);
       },
     });
   };
@@ -213,11 +218,16 @@ export default function CrudExample() {
       message: `¿Deseas eliminar ${selected.length} elementos?`,
       confirmText: "Eliminar",
       variant: "error",
-      onConfirm: () => {
-        selected.forEach((item) => {
-          void inMemoryService.remove(item);
-        });
-        setConfirmState(null);
+      onConfirm: async () => {
+        try {
+          for (const item of selected) {
+            await removeItem(item);
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setConfirmState(null);
+        }
       },
     });
   };
@@ -258,9 +268,14 @@ export default function CrudExample() {
           message: `¿Deseas eliminar el registro "${item.name}"?`,
           confirmText: "Eliminar",
           variant: "error",
-          onConfirm: () => {
-            void inMemoryService.remove(item);
-            setConfirmState(null);
+          onConfirm: async () => {
+            try {
+              await removeItem(item);
+            } catch (e) {
+              console.error(e);
+            } finally {
+              setConfirmState(null);
+            }
           },
         });
       },
@@ -271,8 +286,12 @@ export default function CrudExample() {
       label: "Restaurar",
       icon: "restore",
       variant: "brand",
-      onClick: (item) => {
-        void inMemoryService.update({ ...item, status: "activo" });
+      onClick: async (item) => {
+        try {
+          await updateItem({ ...item, status: "activo" });
+        } catch (e) {
+          console.error(e);
+        }
       },
       show: (item) => item.status === "inactivo",
     },
@@ -341,6 +360,7 @@ export default function CrudExample() {
         onCloseAlert={() => setAlert(null)}
         confirmState={confirmState}
         onCloseConfirm={() => setConfirmState(null)}
+        isLoadingConfirm={loadingAction}
         chartsSlot={chartsSlot}
         navigationSlot={navigationSlot}
       >
@@ -419,6 +439,7 @@ export default function CrudExample() {
             fields={formFields}
             initialValues={initialFormValues}
             onSubmit={handleSubmitForm}
+            isLoading={loadingAction}
             secondaryActionLabel="Cancelar"
             onSecondaryAction={() => setIsModalOpen(false)}
           />

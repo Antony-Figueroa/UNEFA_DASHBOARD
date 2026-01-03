@@ -1,10 +1,11 @@
 import type { ReactNode, FormEvent } from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import InputField from "../../../components/form/input/InputField";
 import Select from "../../../components/form/Select";
 import MultiSelect from "../../../components/form/MultiSelect";
 import Switch from "../../../components/form/switch/Switch";
 import Label from "../../../components/form/Label";
+import Button from "../../../components/ui/button/Button";
 
 type CrudFieldType = "text" | "number" | "select" | "multi-select" | "switch";
 
@@ -36,6 +37,7 @@ export interface CrudFormProps {
   onSubmit: (values: CrudFormValues) => void;
   onSecondaryAction?: () => void;
   renderFooterExtra?: ReactNode;
+  isLoading?: boolean;
 }
 
 type CrudFormErrors = Record<string, string | null>;
@@ -57,7 +59,9 @@ export function CrudForm({
   onSubmit,
   onSecondaryAction,
   renderFooterExtra,
+  isLoading = false,
 }: CrudFormProps) {
+  const [isInternalLoading, setIsInternalLoading] = useState(false);
   const [values, setValues] = useState<CrudFormValues>(() => {
     const result: CrudFormValues = {};
     fields.forEach((field) => {
@@ -76,6 +80,25 @@ export function CrudForm({
   });
 
   const [errors, setErrors] = useState<CrudFormErrors>({});
+
+  // Efecto para manejar el timeout de seguridad (30 segundos)
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    if (isInternalLoading) {
+      timeoutId = setTimeout(() => {
+        setIsInternalLoading(false);
+        console.warn("[CrudForm] Timeout de 30s alcanzado. Rehabilitando botones.");
+      }, 30000);
+    }
+    return () => clearTimeout(timeoutId);
+  }, [isInternalLoading]);
+
+  // Sincronizar estado interno con prop isLoading externa
+  useEffect(() => {
+    if (!isLoading && isInternalLoading) {
+      setIsInternalLoading(false);
+    }
+  }, [isLoading, isInternalLoading]);
 
   const validateField = (field: CrudFieldConfig, value: unknown): string | null => {
     if (field.required) {
@@ -115,6 +138,8 @@ export function CrudForm({
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (isInternalLoading || isLoading) return;
+
     const nextErrors: CrudFormErrors = {};
     fields.forEach((field) => {
       const value = values[field.name];
@@ -125,6 +150,7 @@ export function CrudForm({
     const hasErrors = Object.values(nextErrors).some((err) => err);
     if (hasErrors) return;
 
+    setIsInternalLoading(true);
     onSubmit(values);
   };
 
@@ -240,20 +266,20 @@ export function CrudForm({
       <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-white/5">
         {renderFooterExtra}
         {secondaryActionLabel && onSecondaryAction && (
-          <button
-            type="button"
+          <Button
+            variant="outline"
             onClick={onSecondaryAction}
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+            disabled={isInternalLoading || isLoading}
           >
             {secondaryActionLabel}
-          </button>
+          </Button>
         )}
-        <button
+        <Button
           type="submit"
-          className="inline-flex items-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+          loading={isInternalLoading || isLoading}
         >
           {submitLabel}
-        </button>
+        </Button>
       </div>
     </form>
   );

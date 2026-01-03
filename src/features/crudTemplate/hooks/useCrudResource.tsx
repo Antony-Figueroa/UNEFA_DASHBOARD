@@ -20,6 +20,7 @@ export interface UseCrudResourceResult<TItem> {
   status: CrudStatus;
   error: Error | null;
   alert: CrudPageAlert | null;
+  loadingAction: boolean;
   setAlert: (alert: CrudPageAlert | null) => void;
   refresh: () => Promise<void>;
   createItem: (data: Omit<TItem, "id">) => Promise<void>;
@@ -35,6 +36,21 @@ export function useCrudResource<TItem extends { id: string }>({
   const [status, setStatus] = useState<CrudStatus>("idle");
   const [error, setError] = useState<Error | null>(null);
   const [alert, setAlert] = useState<CrudPageAlert | null>(null);
+  const [loadingAction, setLoadingAction] = useState(false);
+
+  // Efecto para manejar el timeout de seguridad (30 segundos) en acciones críticas
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    if (loadingAction) {
+      timeoutId = setTimeout(() => {
+        setLoadingAction(false);
+        console.warn("[useCrudResource] Timeout de 30s alcanzado. Rehabilitando botones.");
+      }, 30000);
+    }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [loadingAction]);
 
   const refresh = useCallback(async () => {
     setStatus("loading");
@@ -64,6 +80,7 @@ export function useCrudResource<TItem extends { id: string }>({
   }, [autoLoad, refresh]);
 
   const createItem = async (data: Omit<TItem, "id">) => {
+    setLoadingAction(true);
     try {
       await service.create(data);
       await refresh();
@@ -83,10 +100,13 @@ export function useCrudResource<TItem extends { id: string }>({
         message: err.message,
       });
       throw err;
+    } finally {
+      setLoadingAction(false);
     }
   };
 
   const updateItem = async (data: TItem) => {
+    setLoadingAction(true);
     try {
       await service.update(data);
       await refresh();
@@ -106,10 +126,13 @@ export function useCrudResource<TItem extends { id: string }>({
         message: err.message,
       });
       throw err;
+    } finally {
+      setLoadingAction(false);
     }
   };
 
   const removeItem = async (data: TItem) => {
+    setLoadingAction(true);
     try {
       await service.remove(data);
       await refresh();
@@ -129,6 +152,8 @@ export function useCrudResource<TItem extends { id: string }>({
         message: err.message,
       });
       throw err;
+    } finally {
+      setLoadingAction(false);
     }
   };
 
@@ -137,6 +162,7 @@ export function useCrudResource<TItem extends { id: string }>({
     status,
     error,
     alert,
+    loadingAction,
     setAlert,
     refresh,
     createItem,

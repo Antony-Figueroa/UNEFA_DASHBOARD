@@ -18,7 +18,7 @@ interface PeriodModalProps {
     onClose: () => void;
     onSave: (periodo: Omit<Periodo, "periodId" | "creationDate"> | Periodo) => void;
     periodo: Periodo | null;
-    isSaving: boolean;
+    isLoading?: boolean;
     existingPeriods: Periodo[];
 }
 
@@ -55,7 +55,7 @@ const periodSchema = z.object({
 // Extrae el tipo del esquema para usarlo en el formulario
 type PeriodFormData = z.infer<typeof periodSchema>;
 
-export default function PeriodModal({ isOpen, onClose, onSave, periodo, isSaving, existingPeriods }: PeriodModalProps) {
+export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoading = false, existingPeriods }: PeriodModalProps) {
     const { register, handleSubmit, formState: { errors }, control, reset, watch, setError, setValue } = useForm<PeriodFormData>({
         resolver: zodResolver(periodSchema),
         defaultValues: {
@@ -354,11 +354,11 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isSaving
 
             <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
                 <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-4xl mx-auto">
-                    <Button variant="outline" onClick={onClose} disabled={isSaving} className="w-full sm:w-auto min-h-12">
+                    <Button variant="outline" onClick={onClose} disabled={isLoading} className="w-full sm:w-auto min-h-12">
                         Cancelar
                     </Button>
-                    <Button type="submit" form="period-form" disabled={isSaving} className="w-full sm:w-auto min-h-12">
-                        {isSaving ? 'Guardando...' : (periodo ? 'Actualizar Registro' : 'Guardar Periodo')}
+                    <Button type="submit" form="period-form" loading={isLoading} className="w-full sm:w-auto min-h-12">
+                        {periodo ? 'Actualizar Registro' : 'Guardar Periodo'}
                     </Button>
                 </div>
             </ModalFooter>

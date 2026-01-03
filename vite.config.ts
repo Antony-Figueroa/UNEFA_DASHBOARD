@@ -20,7 +20,7 @@ export default defineConfig({
       "/api": {
         target: "https://694ed7abb5bc648a93c169dc.mockapi.io",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, "/api"),
+        rewrite: (path) => path.replace(/^\/api/, ""),
       },
     },
   },

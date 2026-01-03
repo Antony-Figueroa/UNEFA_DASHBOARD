@@ -83,7 +83,6 @@ export default function Period() {
     // Estado para controlar la visibilidad y contenido de los modales.
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPeriodo, setEditingPeriodo] = useState<Periodo | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
 
     const [confirmation, setConfirmation] = useState<ConfirmationInfo | null>(null);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -129,7 +128,6 @@ export default function Period() {
             title: isEditing ? 'Confirmar Modificación' : 'Confirmar Creación',
             message: `¿Estás seguro de que deseas ${isEditing ? 'guardar los cambios en' : 'crear'} este periodo?`,
             onConfirm: async () => {
-                setIsSaving(true);
                 try {
                     if (isEditing) {
                         await editPeriod(periodoData);
@@ -137,11 +135,9 @@ export default function Period() {
                         await addPeriod(periodoData);
                     }
                     handleCloseCreateEditModal();
+                    setConfirmation(null);
                 } catch {
                     // El error ya se maneja en el hook
-                } finally {
-                    setIsSaving(false);
-                    setConfirmation(null);
                 }
             },
             confirmText: 'Confirmar',
@@ -361,7 +357,7 @@ export default function Period() {
                     onClose={handleCloseCreateEditModal}
                     onSave={handleSave}
                     periodo={editingPeriodo}
-                    isSaving={isSaving}
+                    isLoading={loadingAction}
                     existingPeriods={periodos}
                 />
                 <PeriodViewModal
@@ -370,7 +366,7 @@ export default function Period() {
                     periodo={viewingPeriod}
                 />
                 {confirmation?.isOpen && (
-                    <Modal isOpen={confirmation.isOpen} onClose={() => setConfirmation(null)} className={`max-w-sm ${colorMode === 'dark' ? 'dark' : ''}`}>
+                    <Modal isOpen={confirmation.isOpen} onClose={() => !loadingAction && setConfirmation(null)} className={`max-w-sm ${colorMode === 'dark' ? 'dark' : ''}`}>
                         <ModalBody className="text-center pt-8">
                             <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${confirmationStyles[confirmation.variant].iconBg}`}>
                                 {confirmationStyles[confirmation.variant].icon}
@@ -379,18 +375,22 @@ export default function Period() {
                             <p className="text-sm text-gray-500 dark:text-gray-400">{confirmation.message}</p>
                         </ModalBody>
                         <ModalFooter className="justify-center border-t-0 pt-0 pb-8">
-                            <button
+                            <Button
+                                variant="outline"
                                 onClick={() => setConfirmation(null)}
-                                className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/3 sm:w-auto"
+                                disabled={loadingAction}
+                                className="w-full sm:w-auto"
                             >
                                 Cancelar
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                                variant={confirmation.variant === 'error' ? 'error' : 'primary'}
                                 onClick={confirmation.onConfirm}
-                                className={`flex w-full justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-white sm:w-auto ${confirmationStyles[confirmation.variant].button}`}
+                                loading={loadingAction}
+                                className="w-full sm:w-auto"
                             >
                                 {confirmation.confirmText}
-                            </button>
+                            </Button>
                         </ModalFooter>
                     </Modal>
                 )}

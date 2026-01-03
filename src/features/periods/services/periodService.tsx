@@ -5,7 +5,7 @@
 
 import { Periodo } from "../types";
 
-const MOCKAPI_URL = "https://694ed7abb5bc648a93c169dc.mockapi.io/periodos";
+const API_URL = "/api/periodos";
 
 // --- API Data Transformation ---
 
@@ -43,34 +43,32 @@ const toApi = (periodo: Partial<Periodo>): Partial<PeriodoApiDTO> => {
 };
 
 export const getPeriods = async (): Promise<Periodo[]> => {
-  const response = await fetch(MOCKAPI_URL);
+  const response = await fetch(API_URL);
   if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
   const data: PeriodoApiDTO[] = await response.json();
   return data.map(fromApi);
 };
 
-export const createPeriod = async (
-  periodoData: Omit<Periodo, "periodId" | "creationDate">
-): Promise<Periodo> => {
-  const response = await fetch(MOCKAPI_URL, {
+export const createPeriod = async (periodo: Omit<Periodo, "periodId" | "creationDate">): Promise<Periodo> => {
+  const response = await fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(toApi(periodoData)),
+    body: JSON.stringify(toApi(periodo)),
   });
-  if (!response.ok) throw new Error(`Error al crear: ${response.status}`);
-  const created: PeriodoApiDTO = await response.json();
-  return fromApi(created);
+  if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+  const data: PeriodoApiDTO = await response.json();
+  return fromApi(data);
 };
 
-export const updatePeriod = async (periodoData: Periodo): Promise<Periodo> => {
-  const response = await fetch(`${MOCKAPI_URL}/${periodoData.periodId}`, {
+export const updatePeriod = async (periodo: Periodo): Promise<Periodo> => {
+  const response = await fetch(`${API_URL}/${periodo.periodId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(toApi(periodoData)),
+    body: JSON.stringify(toApi(periodo)),
   });
-  if (!response.ok) throw new Error(`Error al actualizar: ${response.status}`);
-  const updated: PeriodoApiDTO = await response.json();
-  return fromApi(updated);
+  if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+  const data: PeriodoApiDTO = await response.json();
+  return fromApi(data);
 };
 
 // Eliminación lógica (soft delete)

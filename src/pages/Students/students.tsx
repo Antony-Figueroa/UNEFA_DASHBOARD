@@ -283,6 +283,7 @@ export default function StudentsPage() {
                         onSave={handleSave}
                         editingStudent={editingStudent}
                         careerOptions={careerOptions}
+                        isLoading={loadingAction}
                     />
 
                     <Modal isOpen={!!viewStudent} onClose={() => setViewStudent(null)} isFullscreen={true} showCloseButton>
@@ -397,7 +398,7 @@ export default function StudentsPage() {
                     </Modal>
 
                     {/* Modal de Confirmación Global */}
-                    <Modal isOpen={!!confirmation} onClose={() => setConfirmation(null)} className={`max-w-md ${colorMode === "dark" ? "dark" : ""}`}>
+                    <Modal isOpen={!!confirmation} onClose={() => !loadingAction && setConfirmation(null)} className={`max-w-md ${colorMode === "dark" ? "dark" : ""}`}>
                         {confirmation && (
                             <>
                                 <ModalBody className="text-center pt-8">
@@ -408,8 +409,18 @@ export default function StudentsPage() {
                                     <p className="text-sm text-gray-500 dark:text-gray-400">{confirmation.message}</p>
                                 </ModalBody>
                                 <ModalFooter className="justify-center border-t-0 pt-0 pb-8">
-                                    <Button variant="outline" onClick={() => setConfirmation(null)}>Cancelar</Button>
-                                    <Button className={confirmationStyles[confirmation.variant].button} onClick={confirmation.onConfirm}>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setConfirmation(null)}
+                                        disabled={loadingAction}
+                                    >
+                                        Cancelar
+                                    </Button>
+                                    <Button
+                                        variant={confirmation.variant === "error" ? "error" : "primary"}
+                                        onClick={confirmation.onConfirm}
+                                        loading={loadingAction}
+                                    >
                                         {confirmation.confirmText}
                                     </Button>
                                 </ModalFooter>

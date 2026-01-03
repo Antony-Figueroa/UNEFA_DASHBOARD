@@ -353,6 +353,20 @@ export const useStudents = () => {
   const [loadingAction, setLoadingAction] = useState(false);
   const { addToast } = useToast();
 
+  // Efecto para manejar el timeout de seguridad (30 segundos) en acciones críticas
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    if (loadingAction) {
+      timeoutId = setTimeout(() => {
+        setLoadingAction(false);
+        console.warn("[useStudents] Timeout de 30s alcanzado. Rehabilitando botones.");
+      }, 30000);
+    }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [loadingAction]);
+
   /**
    * Inicialización de datos de demo.
    * En producción, aquí se realizaría el fetch a la API.

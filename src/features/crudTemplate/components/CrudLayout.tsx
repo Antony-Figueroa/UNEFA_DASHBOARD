@@ -19,6 +19,7 @@ export interface CrudLayoutProps {
   onCloseAlert?: () => void;
   confirmState: CrudConfirmState | null;
   onCloseConfirm: () => void;
+  isLoadingConfirm?: boolean;
   chartsSlot?: ReactNode;
   navigationSlot?: ReactNode;
   cardTitle?: string;
@@ -44,6 +45,7 @@ export function CrudLayout({
   onCloseAlert,
   confirmState,
   onCloseConfirm,
+  isLoadingConfirm = false,
   chartsSlot,
   navigationSlot,
   cardTitle,
@@ -97,7 +99,11 @@ export function CrudLayout({
         {children}
       </ComponentCard>
 
-      <CrudConfirmDialog state={confirmState} onClose={onCloseConfirm} />
+      <CrudConfirmDialog 
+        state={confirmState} 
+        onClose={onCloseConfirm} 
+        isLoading={isLoadingConfirm}
+      />
     </>
   );
 }

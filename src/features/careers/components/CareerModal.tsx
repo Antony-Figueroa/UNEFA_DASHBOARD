@@ -14,6 +14,7 @@ interface CareerModalProps {
   onSave: (career: Omit<Career, "careerId" | "creationDate">) => void;
   editingCareer?: Career | null;
   internshipOptions: { value: string; text: string }[];
+  isLoading?: boolean;
 }
 
 const careerSchema = z.object({
@@ -35,6 +36,7 @@ export default function CareerModal({
   onSave,
   editingCareer,
   internshipOptions,
+  isLoading = false,
 }: CareerModalProps) {
   const {
     register,
@@ -165,10 +167,10 @@ export default function CareerModal({
 
       <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
         <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-4xl mx-auto">
-          <Button variant="outline" onClick={onClose} className="w-full sm:w-auto min-h-12">
+          <Button variant="outline" onClick={onClose} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
-          <Button type="submit" form="career-form" className="w-full sm:w-auto min-h-12">
+          <Button type="submit" form="career-form" loading={isLoading} className="w-full sm:w-auto min-h-12">
             {editingCareer ? "Actualizar Registro" : "Guardar Carrera"}
           </Button>
         </div>

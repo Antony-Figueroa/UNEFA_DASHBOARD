@@ -15,6 +15,7 @@ interface StudentModalProps {
   onSave: (student: Omit<Student, "studentId" | "enrollmentDate">) => void;
   editingStudent?: Student | null;
   careerOptions: { value: string; label: string }[];
+  isLoading?: boolean;
 }
 
 const studentSchema = z.object({
@@ -62,6 +63,7 @@ export default function StudentModal({
   onSave,
   editingStudent,
   careerOptions,
+  isLoading = false,
 }: StudentModalProps) {
   const {
     register,
@@ -455,10 +457,10 @@ export default function StudentModal({
 
       <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
         <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-6xl mx-auto">
-          <Button variant="outline" onClick={onClose} className="w-full sm:w-auto min-h-12">
+          <Button variant="outline" onClick={onClose} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
-          <Button type="submit" form="student-form" className="w-full sm:w-auto min-h-12">
+          <Button type="submit" form="student-form" loading={isLoading} className="w-full sm:w-auto min-h-12">
             {editingStudent ? "Actualizar Registro" : "Guardar Estudiante"}
           </Button>
         </div>

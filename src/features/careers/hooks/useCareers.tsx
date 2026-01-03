@@ -25,6 +25,20 @@ export const useCareers = () => {
   const [error, setError] = useState<Error | null>(null);
   const { addToast } = useToast();
 
+  // Efecto para manejar el timeout de seguridad (30 segundos) en acciones críticas
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    if (loadingAction) {
+      timeoutId = setTimeout(() => {
+        setLoadingAction(false);
+        console.warn("[useCareers] Timeout de 30s alcanzado. Rehabilitando botones.");
+      }, 30000);
+    }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [loadingAction]);
+
   const refreshCareers = useCallback(async () => {
     setStatus("loading");
     // Simulamos un tiempo de carga de 1 segundo para mostrar el spinner

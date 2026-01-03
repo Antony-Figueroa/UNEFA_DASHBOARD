@@ -25,6 +25,20 @@ export const usePeriods = () => {
     const [error, setError] = useState<Error | null>(null);
     const { addToast } = useToast();
 
+    // Efecto para manejar el timeout de seguridad (30 segundos) en acciones críticas
+    useEffect(() => {
+        let timeoutId: ReturnType<typeof setTimeout>;
+        if (loadingAction) {
+            timeoutId = setTimeout(() => {
+                setLoadingAction(false);
+                console.warn("[usePeriods] Timeout de 30s alcanzado. Rehabilitando botones.");
+            }, 30000);
+        }
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+        };
+    }, [loadingAction]);
+
     const refreshPeriods = useCallback(async () => {
         setStatus('loading');
         const startTime = Date.now();

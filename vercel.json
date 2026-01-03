@@ -2,7 +2,7 @@
     "rewrites": [
         {
             "source": "/api/(.*)",
-            "destination": "https://694ed7abb5bc648a93c169dc.mockapi.io/api/$1"
+            "destination": "https://694ed7abb5bc648a93c169dc.mockapi.io/$1"
         },
         {
             "source": "/(.*)",

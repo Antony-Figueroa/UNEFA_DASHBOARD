@@ -19,6 +19,7 @@
  * @description Proporciona componentes para manejar la navegación y rutas
  */
 import { BrowserRouter as Router, Routes, Route } from "react-router";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 // ============================================================================
 // IMPORTACIONES DE COMPONENTES DE LAYOUT
@@ -360,6 +361,7 @@ export default function App() {
         {/* FIN DEL CONTENEDOR DE RUTAS */}
       </Router>
       {/* FIN DEL ROUTER PRINCIPAL */}
+      <SpeedInsights />
     </>
   );
 }
@@ -431,7 +433,7 @@ export default function App() {
  */
 
 /**
- * FLUJO DE NAVEGACIÓN TÍPICO:
+ * FLUJO DE NAVEGACIÓN T��PICO:
  *
  * 1. Usuario no autenticado → /signin o /signup
  * 2. Autenticación exitosa → redirección a / (Home dentro de AppLayout)

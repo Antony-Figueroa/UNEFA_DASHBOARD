@@ -21,6 +21,7 @@
     "@react-jvectormap/core": "^1.0.4",
     "@react-jvectormap/world": "^1.1.2",
     "@tailwindcss/cli": "^4.1.18",
+    "@vercel/speed-insights": "^1.0.0",
     "apexcharts": "^4.1.0",
     "clsx": "^2.1.1",
     "flatpickr": "^4.6.13",

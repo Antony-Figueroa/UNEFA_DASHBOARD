@@ -49,8 +49,16 @@ export const useCareers = () => {
           : new Error("Error desconocido al cargar carreras");
       setError(err);
       setStatus("error");
+
+      addToast({
+        variant: "error",
+        title: "Error al cargar carreras",
+        message: err.message.includes("404")
+          ? "No se pudo encontrar el recurso. Verifique la configuración del servidor."
+          : "Hubo un problema de conexión con el servidor.",
+      });
     }
-  }, []);
+  }, [addToast]);
 
   useEffect(() => {
     refreshCareers();

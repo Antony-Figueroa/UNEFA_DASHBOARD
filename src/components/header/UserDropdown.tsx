@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
-import { Link } from "react-router";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
+
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -13,6 +14,16 @@ export default function UserDropdown() {
   function closeDropdown() {
     setIsOpen(false);
   }
+
+  const handleSignOutClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowLogoutConfirm(true);
+    closeDropdown();
+  };
+
+  const confirmSignOut = () => {
+    window.location.href = "/signin";
+  };
   return (
     <div className="relative">
       <button
@@ -126,9 +137,9 @@ export default function UserDropdown() {
             </DropdownItem>
           </li>
         </ul>
-        <Link
-          to="/signin"
-          className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+        <button
+          onClick={handleSignOutClick}
+          className="flex items-center w-full gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
         >
           <svg
             className="fill-gray-500 group-hover:fill-gray-700 dark:group-hover:fill-gray-300 icon-md"
@@ -144,8 +155,32 @@ export default function UserDropdown() {
             />
           </svg>
           Sign out
-        </Link>
+        </button>
       </Dropdown>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-xl animate-fadeIn">
+            <h3 className="text-lg font-bold text-gray-800 dark:text-white/90">Confirmar Cierre de Sesión</h3>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">¿Estás seguro de que deseas cerrar tu sesión?</p>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-white/5 dark:text-gray-400 dark:hover:bg-white/10"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmSignOut}
+                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-error-500 rounded-lg hover:bg-error-600"
+              >
+                Cerrar Sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

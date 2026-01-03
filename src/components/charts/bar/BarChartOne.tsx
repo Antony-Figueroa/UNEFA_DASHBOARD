@@ -89,7 +89,7 @@ export default function BarChartOne() {
   ];
   return (
     <div className="max-w-full overflow-x-auto custom-scrollbar">
-      <div id="chartOne" className="min-w-[1000px]">
+      <div id="chartOne" className="min-w-250">
         <Chart options={options} series={series} type="bar" height={180} />
       </div>
     </div>

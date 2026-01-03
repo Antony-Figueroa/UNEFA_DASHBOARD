@@ -91,6 +91,8 @@ import Calendar from "./pages/Calendar";
  * @description Plantilla vacía para desarrollo o páginas en construcción
  */
 import Blank from "./pages/Blank";
+import Students from "./pages/Students/students";
+import ToastContainer from "./components/ui/toast/ToastContainer";
 
 // ============================================================================
 // IMPORTACIONES DE PÁGINAS - FORMULARIOS
@@ -196,6 +198,7 @@ import NotFound from "./pages/OtherPage/NotFound";
 import Period from "./pages/Period/period";
 // {Carreras}
 import CareersPage from "./pages/Careers/careers";
+import CrudExample from "./pages/Management/CrudExample";
 
 /**
  * Componente raíz de la aplicación React
@@ -214,6 +217,7 @@ import CareersPage from "./pages/Careers/careers";
 export default function App() {
   return (
     <>
+      <ToastContainer />
       {/* 
         Router principal de la aplicación
         Envuelve toda la aplicación para habilitar el enrutamiento
@@ -262,6 +266,8 @@ export default function App() {
             {/* Página en blanco (plantilla) */}
             <Route path="/blank" element={<Blank />} />
 
+            {/* {Estudiantes} */}
+            <Route path="/students" element={<Students />} />
             {/* ================================================================
                SECCIÓN: FORMULARIOS
                ================================================================
@@ -285,6 +291,8 @@ export default function App() {
 
             {/* {Carreras} */}
             <Route path="/careers" element={<CareersPage />} />
+
+            <Route path="/crud-example" element={<CrudExample />} />
 
 
             {/* ================================================================

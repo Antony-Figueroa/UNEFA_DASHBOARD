@@ -126,11 +126,10 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
             tabIndex={disabled ? -1 : 0}
           >
             <div
-              className={`mb-2 flex min-h-11  rounded-lg border border-gray-300 py-1.5 pl-3 pr-3 shadow-theme-xs outline-hidden transition focus:border-brand-300 focus:shadow-focus-ring dark:border-gray-700 dark:bg-gray-900 dark:focus:border-brand-300 ${
-                disabled
+              className={`mb-2 flex min-h-11  rounded-lg border border-gray-300 py-1.5 pl-3 pr-3 shadow-theme-xs outline-hidden transition focus:border-brand-300 focus:shadow-focus-ring dark:border-gray-700 dark:bg-gray-900 dark:focus:border-brand-300 ${disabled
                   ? "opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-800"
                   : "cursor-pointer"
-              }`}
+                }`}
             >
               <div className="flex flex-wrap flex-auto gap-2">
                 {selectedOptions.length > 0 ? (
@@ -187,9 +186,8 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                   className="w-5 h-5 text-gray-700 outline-hidden cursor-pointer focus:outline-hidden dark:text-gray-400 disabled:cursor-not-allowed"
                 >
                   <svg
-                    className={`stroke-current transition-transform ${
-                      isOpen ? "rotate-180" : ""
-                    }`}
+                    className={`stroke-current transition-transform ${isOpen ? "rotate-180" : ""
+                      }`}
                     width="20"
                     height="20"
                     viewBox="0 0 20 20"
@@ -223,9 +221,8 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
                 return (
                   <div
                     key={option.value}
-                    className={`hover:bg-primary/5 w-full cursor-pointer rounded-t border-b border-gray-200 dark:border-gray-800 ${
-                      isFocused ? "bg-primary/5" : ""
-                    } ${isSelected ? "bg-primary/10" : ""}`}
+                    className={`hover:bg-primary/5 w-full cursor-pointer rounded-t border-b border-gray-200 dark:border-gray-800 ${isFocused ? "bg-primary/5" : ""
+                      } ${isSelected ? "bg-primary/10" : ""}`}
                     onClick={() => handleSelect(option.value)}
                     role="option"
                     aria-selected={isSelected}

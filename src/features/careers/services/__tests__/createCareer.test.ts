@@ -17,7 +17,7 @@ describe("careersService - createCareer y fromApi", () => {
       status: true,
     };
 
-    let capturedBody: any = null;
+    let capturedBody: Record<string, unknown> | null = null;
     const fetchMock = vi.fn().mockImplementation((_input: RequestInfo, init?: RequestInit) => {
       capturedBody = init?.body ? JSON.parse(String(init?.body)) : null;
       return Promise.resolve({
@@ -58,4 +58,3 @@ describe("careersService - createCareer y fromApi", () => {
     expect(created.creationDate instanceof Date).toBe(true);
   });
 });
-

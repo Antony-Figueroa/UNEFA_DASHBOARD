@@ -9,6 +9,7 @@ import {
     TableCell,
     TableHeader,
     TableRow,
+    Pagination,
 } from "../../../components/ui/table";
 import Badge from "../../../components/ui/badge/Badge";
 import {
@@ -19,6 +20,8 @@ import {
     CheckCircleIcon,
     RefreshIcon,
     EyeIcon,
+    ChevronDownIcon,
+    ChevronUpIcon,
 } from "../../../icons/actions";
 import { PeriodoRowData } from "../types";
 
@@ -62,6 +65,7 @@ interface PeriodTableProps {
     onDelete?: (id: string) => void;
     onRestore?: (periodo: PeriodoRowData) => void;
     onView?: (periodo: PeriodoRowData) => void;
+    loading?: boolean;
 }
 
 // ============================================
@@ -184,7 +188,7 @@ const ActionMenu = ({
     }, [isOpen, onClose]);
 
     const currentPeriodStatus = getSafePeriodStatus(periodo);
-    const hasStatus = Boolean(periodo.status);
+    const hasStatus = !!periodo.status;
 
     return (
         <div className={`relative flex justify-end ${highlighted ? "z-50" : ""}`}>
@@ -195,7 +199,7 @@ const ActionMenu = ({
                 title="Acciones"
                 aria-label="Menú de acciones"
             >
-                <ThreeDotsIcon className="w-5 h-5" />
+                <ThreeDotsIcon className="icon-sm" />
             </button>
             {isOpen &&
                 triggerRect &&
@@ -218,7 +222,7 @@ const ActionMenu = ({
                                 setHighlighted(false);
                                 onClose();
                             }}
-                            className={`w-40 min-w-[150px] rounded-md border border-stroke bg-white p-2 shadow-lg dark:border-strokedark dark:bg-boxdark animate-fadeIn ${colorMode === "dark" ? "dark" : ""
+                            className={`w-40 min-w-37.5 rounded-md border border-stroke bg-white p-2 shadow-lg dark:border-strokedark dark:bg-boxdark animate-fadeIn ${colorMode === "dark" ? "dark" : ""
                                 }`}
                         >
                             {hasStatus && currentPeriodStatus !== 3 && onEdit && (
@@ -296,8 +300,10 @@ const PeriodTable = ({
     onDelete,
     onRestore,
     onView,
+    // loading = false,
 }: PeriodTableProps) => {
     const [highlightedRow, setHighlightedRow] = useState<string | null>(null);
+    const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("Todos");
     const [currentPage, setCurrentPage] = useState(1);
@@ -340,15 +346,35 @@ const PeriodTable = ({
         setCurrentPage(1);
     }, []);
 
+    const toggleRowExpansion = (id: string) => {
+        const newExpanded = new Set(expandedRows);
+        if (newExpanded.has(id)) {
+            newExpanded.delete(id);
+        } else {
+            newExpanded.add(id);
+        }
+        setExpandedRows(newExpanded);
+    };
+
+    const toggleAllRows = () => {
+        if (expandedRows.size === currentData.length) {
+            setExpandedRows(new Set());
+        } else {
+            const allIds = currentData.map((p, index) => p.periodId ?? `idx-${index}`);
+            setExpandedRows(new Set(allIds));
+        }
+    };
+
+    const clearFilters = () => {
+        setSearchTerm("");
+        setStatusFilter("Todos");
+    };
+
     if (status === "error") {
         return (
-            <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-center dark:border-red-800 dark:bg-red-900/20">
-                <p className="font-medium text-red-600 dark:text-red-400">
-                    ¡Ocurrió un error al cargar los datos!
-                </p>
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                    {error?.message || "Error desconocido"}
-                </p>
+            <div className="flex flex-col items-center justify-center py-12 text-red-500 animate-fadeIn">
+                <p className="font-semibold text-red-600 dark:text-red-400">Error al cargar periodos</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{error?.message || "Por favor, intente de nuevo más tarde."}</p>
             </div>
         );
     }
@@ -374,55 +400,90 @@ const PeriodTable = ({
         <div className="table-container">
             {/* Search and Filter Bar */}
             <div className="p-4 border-b border-gray-100 dark:border-white/5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="relative max-w-xs w-full">
-                    <input
-                        type="text"
-                        placeholder="Buscar por descripción..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full rounded-lg border border-gray-300 bg-transparent py-2 pl-10 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
-                    />
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth={1.5}
-                            stroke="currentColor"
-                            className="w-5 h-5"
+                <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                    <div className="relative max-w-xs w-full">
+                        <input
+                            type="text"
+                            placeholder="Buscar por descripción..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full rounded-lg border border-gray-300 bg-transparent py-2 pl-10 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+                        />
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth={1.5}
+                                stroke="currentColor"
+                                className="icon-md"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                                />
+                            </svg>
+                        </span>
+                    </div>
+                    <div className="relative w-full sm:w-auto">
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="w-full rounded-lg border border-gray-300 bg-transparent py-2 px-4 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                         >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-                            />
-                        </svg>
-                    </span>
+                            <option value="Todos" className="dark:bg-gray-800">
+                                Todos los estados
+                            </option>
+                            <option value="2" className="dark:bg-gray-800">
+                                En Curso
+                            </option>
+                            <option value="1" className="dark:bg-gray-800">
+                                Pendiente
+                            </option>
+                            <option value="3" className="dark:bg-gray-800">
+                                Culminado
+                            </option>
+                        </select>
+                    </div>
                 </div>
-                <div className="relative w-full sm:w-auto">
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="w-full rounded-lg border border-gray-300 bg-transparent py-2 px-4 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                    >
-                        <option value="Todos" className="dark:bg-gray-800">
-                            Todos los estados
-                        </option>
-                        <option value="2" className="dark:bg-gray-800">
-                            En Curso
-                        </option>
-                        <option value="1" className="dark:bg-gray-800">
-                            Pendiente
-                        </option>
-                        <option value="3" className="dark:bg-gray-800">
-                            Culminado
-                        </option>
-                    </select>
+
+                <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
+                    {(searchTerm || statusFilter !== "Todos") && (
+                        <button
+                            onClick={clearFilters}
+                            className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
+                        >
+                            <RefreshIcon className="icon-xs" />
+                            Limpiar filtros
+                        </button>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                        {currentData.length > 0 && (
+                            <button
+                                onClick={toggleAllRows}
+                                className="md:hidden flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:bg-white/5 dark:text-gray-400 transition-colors min-h-12"
+                            >
+                                {expandedRows.size === currentData.length ? (
+                                    <>
+                                        <ChevronUpIcon className="icon-sm" />
+                                        Contraer todo
+                                    </>
+                                ) : (
+                                    <>
+                                        <ChevronDownIcon className="icon-sm" />
+                                        Expandir todo
+                                    </>
+                                )}
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* Table */}
-            <div className="max-w-full overflow-x-auto">
+            <div className="hidden md:block max-w-full overflow-x-auto table-scrollbar">
                 <Table className="table-root">
                     <TableHeader className="table-header-row">
                         <TableRow>
@@ -465,16 +526,7 @@ const PeriodTable = ({
                         </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
-                        {status === "loading" ? (
-                            <TableRow>
-                                <td
-                                    colSpan={6}
-                                    className="table-cell py-10 text-center text-gray-500 dark:text-gray-400"
-                                >
-                                    Cargando periodos...
-                                </td>
-                            </TableRow>
-                        ) : currentData.length > 0 ? (
+                        {currentData.length > 0 ? (
                             currentData.map((periodo) => {
                                 const periodStatus = getSafePeriodStatus(periodo);
                                 const periodId = periodo.periodId;
@@ -553,119 +605,177 @@ const PeriodTable = ({
                             })
                         ) : (
                             <TableRow>
-                                <td
+                                <TableCell
                                     colSpan={6}
-                                    className="py-10 text-center text-gray-500 dark:text-gray-400"
+                                    className="table-cell py-20 text-center text-gray-500 dark:text-gray-400"
                                 >
                                     {searchTerm || statusFilter !== "Todos"
                                         ? "No se encontraron periodos con los filtros aplicados"
                                         : "No hay periodos para mostrar."}
-                                </td>
+                                </TableCell>
                             </TableRow>
                         )}
                     </TableBody>
                 </Table>
             </div>
 
+            {/* Mobile View (Card format) */}
+            <div className="md:hidden divide-y divide-gray-100 dark:divide-white/5">
+                {currentData.length > 0 ? (
+                    currentData.map((periodo, index) => {
+                        const periodStatus = getSafePeriodStatus(periodo);
+                        const periodId = periodo.periodId || `idx-${index}`;
+                        const isExpanded = expandedRows.has(periodId);
+
+                        return (
+                            <div key={periodId} className="relative p-4 bg-white dark:bg-transparent transition-colors overflow-hidden">
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="flex items-center justify-between w-full">
+                                        <div className="flex-1 text-center">
+                                            <div className="flex justify-center mb-2">
+                                                <Badge
+                                                    size="sm"
+                                                    color={getStatusColor(periodStatus)}
+                                                >
+                                                    {getStatusLabel(periodStatus)}
+                                                </Badge>
+                                            </div>
+                                            <h3 className="text-sm font-bold text-gray-800 dark:text-white/90 leading-tight truncate px-12">
+                                                {periodo.description}
+                                            </h3>
+                                            <div className="flex items-center justify-center gap-4 mt-2">
+                                                <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                    <span className="block font-medium uppercase tracking-wider opacity-60">Inicio</span>
+                                                    {periodo.startDate || "-"}
+                                                </div>
+                                                <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                    <span className="block font-medium uppercase tracking-wider opacity-60">Fin</span>
+                                                    {periodo.endDate || "-"}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="absolute right-2 top-2">
+                                            <button
+                                                onClick={() => toggleRowExpansion(periodId)}
+                                                className="p-2 text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
+                                                style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
+                                                aria-label={isExpanded ? "Contraer" : "Expandir"}
+                                            >
+                                                <ChevronDownIcon className="icon-sm" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {isExpanded && (
+                                    <div className="mt-4 pt-4 border-t border-gray-50 dark:border-white/5 animate-fadeIn">
+                                        <div className="space-y-6">
+                                            {periodStatus === 2 && getSafeProgress(periodo) !== null && (
+                                                <div className="text-center">
+                                                    <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-3">Progreso del Periodo</p>
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700 max-w-50">
+                                                            <div
+                                                                className="bg-blue-600 h-2 rounded-full"
+                                                                style={{ width: `${getSafeProgress(periodo)}%` }}
+                                                            ></div>
+                                                        </div>
+                                                        <span className="text-xs font-bold text-gray-700 dark:text-gray-200">
+                                                            {Math.round(getSafeProgress(periodo) ?? 0)}%
+                                                        </span>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4 mt-6">
+                                                        <div className="bg-gray-50 dark:bg-white/5 p-3 rounded-xl">
+                                                            <p className="text-[9px] text-gray-400 uppercase font-bold mb-1">Días Transcurridos</p>
+                                                            <p className="text-xs font-bold dark:text-gray-200">{periodo.daysPassed} días</p>
+                                                        </div>
+                                                        <div className="bg-gray-50 dark:bg-white/5 p-3 rounded-xl">
+                                                            <p className="text-[9px] text-gray-400 uppercase font-bold mb-1">Días Restantes</p>
+                                                            <p className="text-xs font-bold dark:text-gray-200">{periodo.daysRemaining} días</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-4 bg-blue-50/50 dark:bg-blue-500/10 p-4 rounded-xl">
+                                                        <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase mb-1">Semanas Restantes</p>
+                                                        <p className="text-base font-bold text-blue-700 dark:text-blue-300">{periodo.weeksRemaining} semanas</p>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="flex flex-col gap-3 pt-2">
+                                                {!!periodo.status && periodStatus !== 3 && onEdit && (
+                                                    <button
+                                                        onClick={() => onEdit(periodo)}
+                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                                                    >
+                                                        <EditIcon className="icon-sm" /> Editar
+                                                    </button>
+                                                )}
+                                                {!!periodo.status && periodStatus === 1 && onStart && (
+                                                    <button
+                                                        onClick={() => onStart(periodo)}
+                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-green-200 dark:hover:border-green-500/20"
+                                                    >
+                                                        <PlayIcon className="icon-sm" /> Iniciar
+                                                    </button>
+                                                )}
+                                                {!!periodo.status && periodStatus === 2 && onCulminate && (
+                                                    <button
+                                                        onClick={() => onCulminate(periodo)}
+                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-blue-200 dark:hover:border-blue-500/20"
+                                                    >
+                                                        <CheckCircleIcon className="icon-sm" /> Culminar
+                                                    </button>
+                                                )}
+                                                {!!periodo.status && periodStatus === 3 && onView && (
+                                                    <button
+                                                        onClick={() => onView(periodo)}
+                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                                                    >
+                                                        <EyeIcon className="icon-sm" /> Ver
+                                                    </button>
+                                                )}
+                                                {!periodo.status && onRestore && (
+                                                    <button
+                                                        onClick={() => onRestore(periodo)}
+                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-blue-200 dark:hover:border-blue-500/20"
+                                                    >
+                                                        <RefreshIcon className="icon-sm" /> Restaurar
+                                                    </button>
+                                                )}
+                                                {!!periodo.status && periodStatus === 1 && onDelete && (
+                                                    <button
+                                                        onClick={() => onDelete(periodo.periodId!)}
+                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-red-200 dark:hover:border-red-500/20"
+                                                    >
+                                                        <TrashIcon className="icon-sm" /> Eliminar
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })
+                ) : (
+                    <div className="p-8 text-center text-gray-500 text-sm">
+                        {searchTerm || statusFilter !== "Todos"
+                            ? "No se encontraron periodos con los filtros aplicados"
+                            : "No hay periodos para mostrar."}
+                    </div>
+                )}
+            </div>
+
             {/* Pagination Controls */}
-            {filteredData.length > 0 && (
-                <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3 dark:border-white/5 sm:px-6">
-                    <div className="flex flex-1 justify-between sm:hidden">
-                        <button
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                            className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                        >
-                            Anterior
-                        </button>
-                        <button
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                            className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                        >
-                            Siguiente
-                        </button>
-                    </div>
-                    <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-4">
-                            <div>
-                                <p className="text-sm text-gray-700 dark:text-gray-400">
-                                    Mostrando{" "}
-                                    <span className="font-medium">{startIndex + 1}</span> a{" "}
-                                    <span className="font-medium">
-                                        {Math.min(
-                                            startIndex + itemsPerPage,
-                                            filteredData.length
-                                        )}
-                                    </span>{" "}
-                                    de{" "}
-                                    <span className="font-medium">{filteredData.length}</span>{" "}
-                                    resultados
-                                </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <select
-                                    value={itemsPerPage}
-                                    onChange={(e) =>
-                                        handleItemsPerPageChange(Number(e.target.value))
-                                    }
-                                    className="rounded border border-gray-300 bg-transparent py-1 px-2 text-sm focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                                >
-                                    <option value={5}>5</option>
-                                    <option value={10}>10</option>
-                                    <option value={20}>20</option>
-                                    <option value={50}>50</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <nav
-                                className="isolate inline-flex -space-x-px rounded-md shadow-sm"
-                                aria-label="Pagination"
-                            >
-                                <button
-                                    onClick={() => handlePageChange(currentPage - 1)}
-                                    disabled={currentPage === 1}
-                                    className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 dark:ring-gray-700 dark:hover:bg-white/5"
-                                >
-                                    <span className="sr-only">Anterior</span>
-                                    <svg
-                                        className="h-5 w-5"
-                                        viewBox="0 0 20 20"
-                                        fill="currentColor"
-                                        aria-hidden="true"
-                                    >
-                                        <path
-                                            fillRule="evenodd"
-                                            d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z"
-                                            clipRule="evenodd"
-                                        />
-                                    </svg>
-                                </button>
-                                <button
-                                    onClick={() => handlePageChange(currentPage + 1)}
-                                    disabled={currentPage === totalPages}
-                                    className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 dark:ring-gray-700 dark:hover:bg-white/5"
-                                >
-                                    <span className="sr-only">Siguiente</span>
-                                    <svg
-                                        className="h-5 w-5"
-                                        viewBox="0 0 20 20"
-                                        fill="currentColor"
-                                        aria-hidden="true"
-                                    >
-                                        <path
-                                            fillRule="evenodd"
-                                            d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-                                            clipRule="evenodd"
-                                        />
-                                    </svg>
-                                </button>
-                            </nav>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredData.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={handlePageChange}
+                onItemsPerPageChange={handleItemsPerPageChange}
+                itemsPerPageOptions={[5, 10, 25]}
+            />
         </div>
     );
 };

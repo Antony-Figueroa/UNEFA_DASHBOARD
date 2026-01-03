@@ -6,7 +6,7 @@
 import { Career } from "../types";
 
 // TODO: Reemplazar por la URL real del backend si aplica
-const API_URL = "https://694ed7abb5bc648a93c169dc.mockapi.io/api/careers";
+const API_URL = "/api/careers";
 
 // DTO de la API — flexible para adaptarse a números o strings
 interface CareerApiDTO {
@@ -118,11 +118,27 @@ const toApi = (career: Partial<Career>): Partial<CareerApiDTO> => {
   return dto;
 };
 
-export const getCareers = async (): Promise<Career[]> => {
-  const response = await fetch(API_URL);
-  if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-  const data: CareerApiDTO[] = await response.json();
-  return data.map(fromApi);
+export const getCareers = async (retries = 3): Promise<Career[]> => {
+  try {
+    const response = await fetch(API_URL);
+    if (!response.ok) {
+      if (response.status === 503 && retries > 0) {
+        console.warn(`Servicio no disponible (503), reintentando... (${retries} intentos restantes)`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return getCareers(retries - 1);
+      }
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
+    const data: CareerApiDTO[] = await response.json();
+    return data.map(fromApi);
+  } catch (error) {
+    if (retries > 0) {
+      console.warn(`Error de red o servidor, reintentando... (${retries} intentos restantes)`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return getCareers(retries - 1);
+    }
+    throw error;
+  }
 };
 
 export const createCareer = async (

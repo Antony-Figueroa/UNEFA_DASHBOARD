@@ -1,20 +1,50 @@
+import { useState, useEffect } from "react";
 import UserList from "../components/UserList/UserList";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import PeriodStatusChart from "../features/periods/components/PeriodStatusChart";
+import { SkeletonLoader, TitleSkeleton, TablePageSkeleton } from "../components/ui/skeleton";
 
 const UsersPage = () => {
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulamos carga de datos
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000); // 1s de carga inicial para demostrar el skeleton de 0.5s
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <>
-      {/* El componente Breadcrumb es estándar en TailAdmin para la navegación */}
-      <PageBreadcrumb pageTitle="Lista de Usuarios" />
+      <SkeletonLoader
+        isLoading={isLoading}
+        id="users-page-header"
+        skeleton={<TitleSkeleton />}
+      >
+        <PageBreadcrumb pageTitle="Lista de Usuarios" />
+      </SkeletonLoader>
 
       <div className="mb-10 max-w-2xl mx-auto">
-        <PeriodStatusChart />
+        <SkeletonLoader
+          isLoading={isLoading}
+          id="users-page-chart"
+          skeleton={
+            <div className="h-87.5 w-full bg-gray-200 dark:bg-gray-700 animate-pulse rounded-sm" />
+          }
+        >
+          <PeriodStatusChart />
+        </SkeletonLoader>
       </div>
 
       <div className="flex flex-col gap-10">
-        {/* Aquí se renderiza el componente de la lista de usuarios */}
-        <UserList />
+        <SkeletonLoader
+          isLoading={isLoading}
+          id="users-page-list"
+          skeleton={<TablePageSkeleton rows={5} />}
+        >
+          <UserList />
+        </SkeletonLoader>
       </div>
     </>
   );

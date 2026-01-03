@@ -84,7 +84,7 @@ const UserList = () => {
             key={key}
           >
             <div className="flex items-center gap-3 p-2.5 xl:p-5">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <img
                   src={user.avatar}
                   alt="Avatar"

@@ -1,5 +1,5 @@
 import { useModal } from "../../hooks/useModal";
-import { Modal } from "../ui/modal";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
@@ -61,7 +61,7 @@ export default function UserAddressCard() {
 
           <button
             onClick={openModal}
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
+            className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/3 dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
           >
             <svg
               className="fill-current"
@@ -82,48 +82,50 @@ export default function UserAddressCard() {
           </button>
         </div>
       </div>
-      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-[700px] m-4">
-        <div className="relative w-full p-4 overflow-y-auto bg-white no-scrollbar rounded-3xl dark:bg-gray-900 lg:p-11">
-          <div className="px-2 pr-14">
-            <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Edit Address
-            </h4>
-            <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-              Update your details to keep your profile up-to-date.
-            </p>
-          </div>
-          <form className="flex flex-col">
-            <div className="px-2 overflow-y-auto custom-scrollbar">
+      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-3xl" showCloseButton={true}>
+        <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+          <ModalHeader className="shrink-0 pt-6 px-6 sm:pt-10 sm:px-12 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+            <div className="w-full">
+              <h4 className="mb-1 text-2xl font-semibold text-gray-800 dark:text-white/90">
+                Edit Address
+              </h4>
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-normal">
+                Update your details to keep your profile up-to-date.
+              </p>
+            </div>
+          </ModalHeader>
+          <form id="user-address-form" onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="flex flex-col grow h-full">
+            <ModalBody className="overflow-y-auto custom-scrollbar grow px-6 sm:px-12 py-6 sm:py-10 bg-gray-50/30 dark:bg-gray-900/50">
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                 <div>
                   <Label>Country</Label>
-                  <Input type="text" value="United States" />
+                  <Input type="text" defaultValue="United States" />
                 </div>
 
                 <div>
                   <Label>City/State</Label>
-                  <Input type="text" value="Arizona, United States." />
+                  <Input type="text" defaultValue="Arizona, United States." />
                 </div>
 
                 <div>
                   <Label>Postal Code</Label>
-                  <Input type="text" value="ERT 2489" />
+                  <Input type="text" defaultValue="ERT 2489" />
                 </div>
 
                 <div>
                   <Label>TAX ID</Label>
-                  <Input type="text" value="AS4568384" />
+                  <Input type="text" defaultValue="AS4568384" />
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
-              <Button size="sm" variant="outline" onClick={closeModal}>
+            </ModalBody>
+            <ModalFooter className="shrink-0">
+              <Button size="sm" variant="outline" onClick={closeModal} className="flex-1 sm:flex-none">
                 Close
               </Button>
-              <Button size="sm" onClick={handleSave}>
+              <Button size="sm" type="submit" form="user-address-form" className="flex-1 sm:flex-none">
                 Save Changes
               </Button>
-            </div>
+            </ModalFooter>
           </form>
         </div>
       </Modal>

@@ -7,6 +7,7 @@ interface CheckboxProps {
   id?: string;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
+  ariaLabel?: string;
 }
 
 const Checkbox: React.FC<CheckboxProps> = ({
@@ -16,12 +17,12 @@ const Checkbox: React.FC<CheckboxProps> = ({
   onChange,
   className = "",
   disabled = false,
+  ariaLabel,
 }) => {
   return (
     <label
-      className={`flex items-center space-x-3 group cursor-pointer ${
-        disabled ? "cursor-not-allowed opacity-60" : ""
-      }`}
+      className={`flex items-center space-x-3 group cursor-pointer ${disabled ? "cursor-not-allowed opacity-60" : ""
+        }`}
     >
       <div className="relative w-5 h-5">
         <input
@@ -32,6 +33,7 @@ const Checkbox: React.FC<CheckboxProps> = ({
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
           disabled={disabled}
+          aria-label={ariaLabel}
         />
         {checked && (
           <svg

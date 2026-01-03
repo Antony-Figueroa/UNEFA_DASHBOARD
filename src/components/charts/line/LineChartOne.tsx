@@ -112,7 +112,7 @@ export default function LineChartOne() {
   ];
   return (
     <div className="max-w-full overflow-x-auto custom-scrollbar">
-      <div id="chartEight" className="min-w-[1000px]">
+      <div id="chartEight" className="min-w-250">
         <Chart options={options} series={series} type="area" height={310} />
       </div>
     </div>

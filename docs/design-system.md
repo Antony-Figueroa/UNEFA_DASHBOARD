@@ -16,7 +16,7 @@
 - Se elimina la columna de `Estado` en la tabla.
 
 ## Navegación
-- Se añade entrada de menú "Gestión Carrera" con `TaskIcon` en el sidebar.
+- Se añade entrada de menú "Gestión Carrera" con `GroupIcon` en el sidebar.
 
 ## Modal de creación de carrera
 - Estructura visual alineada al `PeriodModal` con bloque de "Detalles de la Carrera".
@@ -29,4 +29,11 @@
 ## Responsividad y Accesibilidad
 - Controles mantienen clases responsivas (`grid`, `md:grid-cols-2`, etc.).
 - Atributos `aria-label` y `aria-expanded` en controles interactivos.
+
+## Tablas Móviles (Cards)
+- Rediseño de la vista móvil de tablas (`StudentTable`, `CareerTable`, `PeriodTable`) para optimizar el espacio y centrado.
+- Los botones de acción se han movido del encabezado de la card al interior de la sección expandida para permitir un diseño 100% centrado.
+- Uso de `flex-col` con `w-full` en botones para garantizar alineación perfecta en móviles.
+- Posicionamiento absoluto del botón de expansión (`ChevronDownIcon`) para evitar desalineación del título centrado.
+- Implementación de `text-center` y `items-center` en todas las secciones de datos expandidos.
 

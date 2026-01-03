@@ -169,11 +169,11 @@ export default function BasicTableOne() {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/5 dark:bg-white/3">
       <div className="max-w-full overflow-x-auto">
         <Table>
           {/* Table Header */}
-          <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+          <TableHeader className="border-b border-gray-100 dark:border-white/5">
             <TableRow>
               <TableCell
                 isHeader
@@ -209,7 +209,7 @@ export default function BasicTableOne() {
           </TableHeader>
 
           {/* Table Body */}
-          <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
+          <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
             {status === 'loading' ? (
               <TableRow>
                 <td colSpan={5} className="py-10 text-center text-gray-500 dark:text-gray-400">

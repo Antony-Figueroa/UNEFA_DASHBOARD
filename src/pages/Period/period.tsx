@@ -5,7 +5,7 @@
  * interacciones con la API se abstraen en el hook `usePeriods`.
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -14,11 +14,15 @@ import PeriodTable from "../../features/periods/components/PeriodTable";
 import { PlusCircleIcon, XIcon, CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon } from "../../icons/actions";
 import PeriodModal from "../../features/periods/components/PeriodModal";
 import Alert from "../../components/ui/alert/Alert";
-import { Modal } from "../../components/ui/modal";
+import { Modal, ModalBody, ModalFooter } from "../../components/ui/modal";
+import Button from "../../components/ui/button/Button";
+import { FullScreenLoader } from "../../components/ui/loader";
+import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import PeriodViewModal from "../../features/periods/components/PeriodViewModal";
 import { Periodo, PeriodoRowData } from "../../features/periods/types";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
+import { useToast } from "../../context/ToastContext";
 
 type ConfirmationInfo = {
     isOpen: boolean;
@@ -54,17 +58,27 @@ const confirmationStyles = {
 
 export default function Period() {
     const { colorMode } = useTheme();
+    const [pageLoading, setPageLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setPageLoading(false);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, []);
+
     // Hook personalizado que encapsula toda la lógica de negocio de los periodos.
     const {
         periodos,
         status,
+        loadingAction,
         error,
-        pageAlert,
-        setPageAlert,
         addPeriod,
         editPeriod,
         removePeriod,
     } = usePeriods();
+
+    const { addToast } = useToast();
 
     // Estado para controlar la visibilidad y contenido de los modales.
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -139,7 +153,11 @@ export default function Period() {
         // Validación 1: Solo puede haber un periodo "En Curso".
         const isAnyInProgress = periodos.some(p => p.periodStatus === 2 && p.periodId !== periodoToStart.periodId);
         if (isAnyInProgress) {
-            setPageAlert({ variant: 'error', title: 'Operación no permitida', message: 'Ya existe otro periodo "En Curso". Finalícelo antes de iniciar uno nuevo.' });
+            addToast({
+                variant: 'error',
+                title: 'Operación no permitida',
+                message: 'Ya existe otro periodo "En Curso". Finalícelo antes de iniciar uno nuevo.'
+            });
             return;
         }
 
@@ -151,7 +169,11 @@ export default function Period() {
         const valueToStart = getLapsoValue(periodoToStart.description);
         const hasUnfinishedPrevious = periodos.some(p => getLapsoValue(p.description) < valueToStart && p.periodStatus !== 3);
         if (hasUnfinishedPrevious) {
-            setPageAlert({ variant: 'error', title: 'Operación no permitida', message: 'Para iniciar este periodo, todos los anteriores deben estar "Culminados".' });
+            addToast({
+                variant: 'error',
+                title: 'Operación no permitida',
+                message: 'Para iniciar este periodo, todos los anteriores deben estar "Culminados".'
+            });
             return;
         }
 
@@ -208,7 +230,7 @@ export default function Period() {
         setConfirmation({
             isOpen: true,
             title: 'Confirmar Eliminación',
-            message: `¿Estás seguro de que deseas enviar el periodo "${periodoObject.description}" a la papelera?`,
+            message: `¿Estás seguro de que deseas enviar el periodo "${periodoObject.description}" a la Inactivo?`,
             onConfirm: async () => {
                 await removePeriod(periodoObject);
                 setConfirmation(null);
@@ -265,98 +287,101 @@ export default function Period() {
             <>
                 <PageMeta
                     title="Gestión de Periodos"
-                    description="Gestión de los periodos académicos"
+                    description="Administración de periodos académicos"
                 />
-                <div className="flex items-center justify-between mb-6">
-                <PageBreadcrumb pageTitle="Gestión de Periodos" />
-                <button
-                    onClick={handleOpenCreateModal}
-                    className="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
-                >
-                    <PlusCircleIcon className="w-5 h-5" /> Crear Periodo
-                </button>
-            </div>
-            {pageAlert && (
-                <div className="relative mb-6">
-                    <Alert
-                        variant={pageAlert.variant}
-                        title={pageAlert.title}
-                        message={pageAlert.message}
-                        showLink={false}
-                    />
-                    <button
-                        onClick={() => setPageAlert(null)}
-                        className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    >
-                        <XIcon className="w-5 h-5" />
-                    </button>
-                </div>
-            )}
-            <div className="space-y-6">
-                <ComponentCard>
-                    <div className="border-b border-gray-200 dark:border-gray-800">
-                        <nav className="-mb-px flex space-x-2" aria-label="Tabs">
-                            <button
-                                onClick={() => setActiveTab('active')}
-                                className={`whitespace-nowrap border-b-2 py-4 px-3 text-sm font-medium transition-colors duration-200 ${activeTab === 'active'
-                                    ? 'border-brand-500 text-brand-600'
-                                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300 transition-colors duration-200'
-                                    }`}
-                            >
-                                Activos
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('inactive')}
-                                className={`whitespace-nowrap border-b-2 py-4 px-3 text-sm font-medium transition-colors duration-200 ${activeTab === 'inactive'
-                                    ? 'border-brand-500 text-brand-600'
-                                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300 transition-colors duration-200'
-                                    }`}
-                            >
-                                Inactivos (Papelera)
-                            </button>
-                        </nav>
-                    </div>
-                    <div className="pt-6 animate-fadeIn">
-                        <PeriodTable
-                            key={activeTab} // Forzar re-render para la animación
-                            data={tableData}
-                            status={status}
-                            error={error}
-                            onEdit={handleOpenEditModal}
-                            onStart={handleStartPeriod}
-                            onCulminate={handleCulminatePeriod}
-                            onView={handleOpenViewModal}
-                            onDelete={handleDelete}
-                            onRestore={handleRestore}
-                        />
-                    </div>
-                </ComponentCard>
-            </div>
-            <PeriodModal
-                isOpen={isModalOpen}
-                onClose={handleCloseCreateEditModal}
-                onSave={handleSave}
-                periodo={editingPeriodo}
-                isSaving={isSaving}
-                existingPeriods={periodos}
-            />
-            <PeriodViewModal
-                isOpen={isViewModalOpen}
-                onClose={handleCloseViewModal}
-                periodo={viewingPeriod}
-            />
-            {confirmation?.isOpen && (
-                <Modal isOpen={confirmation.isOpen} onClose={() => setConfirmation(null)} className={`max-w-sm p-6 ${colorMode === 'dark' ? 'dark' : ''}`}>
-                    <div className="text-center">
-                        <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${confirmationStyles[confirmation.variant].iconBg}`}>
-                            {confirmationStyles[confirmation.variant].icon}
+                <SkeletonLoader isLoading={pageLoading} skeleton={<BreadcrumbSkeleton />} id="periods-breadcrumb">
+                    <PageBreadcrumb pageTitle="Periodos" />
+                </SkeletonLoader>
+
+                {loadingAction && <FullScreenLoader label="Procesando..." />}
+
+                <div className="stagger-delay">
+                    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <SkeletonLoader isLoading={pageLoading} skeleton={<TitleSkeleton />} id="periods-title">
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white/90">Gestión de Periodos</h2>
+                                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                                        MockAPI
+                                    </span>
+                                </div>
+                                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Administra los lapsos académicos y su estado actual.</p>
+                            </SkeletonLoader>
                         </div>
-                        <h3 className="mb-2 text-xl font-bold text-gray-800 dark:text-white">{confirmation.title}</h3>
-                        <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">{confirmation.message}</p>
-                        <div className="flex justify-center gap-3">
+                        {!pageLoading && (
+                            <Button onClick={handleOpenCreateModal} className="sm:w-auto">
+                                <PlusCircleIcon className="w-5 h-5" />
+                                <span className="ml-2">Nuevo Periodo</span>
+                            </Button>
+                        )}
+                    </div>
+
+                    <div className="space-y-6">
+                        <ComponentCard title={activeTab === 'active' ? "Periodos Activos" : "Papelera"}>
+                            {/* Tabs Minimalistas */}
+                            <div className="mb-6 flex border-b border-gray-200 dark:border-white/5">
+                                <button
+                                    onClick={() => setActiveTab('active')}
+                                    className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === 'active' ? "text-brand-500" : "text-gray-500 hover:text-gray-700"}`}
+                                >
+                                    Activos
+                                    {activeTab === 'active' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('inactive')}
+                                    className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === 'inactive' ? "text-brand-500" : "text-gray-500 hover:text-gray-700"}`}
+                                >
+                                    Inactivo
+                                    {activeTab === 'inactive' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
+                                </button>
+                            </div>
+
+                            <div className="animate-fadeIn">
+                                <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="periods-table">
+                                    <PeriodTable
+                                        key={activeTab}
+                                        data={tableData}
+                                        status={status}
+                                        error={error}
+                                        onEdit={handleOpenEditModal}
+                                        onStart={handleStartPeriod}
+                                        onCulminate={handleCulminatePeriod}
+                                        onView={handleOpenViewModal}
+                                        onDelete={handleDelete}
+                                        onRestore={handleRestore}
+                                        loading={loadingAction}
+                                    />
+                                </SkeletonLoader>
+                            </div>
+                        </ComponentCard>
+                    </div>
+                </div>
+                <PeriodModal
+                    isOpen={isModalOpen}
+                    onClose={handleCloseCreateEditModal}
+                    onSave={handleSave}
+                    periodo={editingPeriodo}
+                    isSaving={isSaving}
+                    existingPeriods={periodos}
+                />
+                <PeriodViewModal
+                    isOpen={isViewModalOpen}
+                    onClose={handleCloseViewModal}
+                    periodo={viewingPeriod}
+                />
+                {confirmation?.isOpen && (
+                    <Modal isOpen={confirmation.isOpen} onClose={() => setConfirmation(null)} className={`max-w-sm ${colorMode === 'dark' ? 'dark' : ''}`}>
+                        <ModalBody className="text-center pt-8">
+                            <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${confirmationStyles[confirmation.variant].iconBg}`}>
+                                {confirmationStyles[confirmation.variant].icon}
+                            </div>
+                            <h3 className="mb-2 text-xl font-bold text-gray-800 dark:text-white">{confirmation.title}</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{confirmation.message}</p>
+                        </ModalBody>
+                        <ModalFooter className="justify-center border-t-0 pt-0 pb-8">
                             <button
                                 onClick={() => setConfirmation(null)}
-                                className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
+                                className="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/3 sm:w-auto"
                             >
                                 Cancelar
                             </button>
@@ -366,10 +391,9 @@ export default function Period() {
                             >
                                 {confirmation.confirmText}
                             </button>
-                        </div>
-                    </div>
-                </Modal>
-            )}
+                        </ModalFooter>
+                    </Modal>
+                )}
             </>
         </ErrorBoundary>
     );

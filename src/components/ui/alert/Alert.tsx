@@ -3,10 +3,13 @@ import { Link } from "react-router";
 interface AlertProps {
   variant: "success" | "error" | "warning" | "info"; // Alert type
   title: string; // Title of the alert
-  message: string; // Message of the alert
+  message?: React.ReactNode; // Message of the alert
   showLink?: boolean; // Whether to show the "Learn More" link
   linkHref?: string; // Link URL
   linkText?: string; // Link text
+  timestamp?: Date; // Time of the alert
+  onClose?: () => void; // Close callback
+  actions?: React.ReactNode; // Custom action buttons
 }
 
 const Alert: React.FC<AlertProps> = ({
@@ -16,6 +19,9 @@ const Alert: React.FC<AlertProps> = ({
   showLink = false,
   linkHref = "#",
   linkText = "Learn more",
+  timestamp,
+  onClose,
+  actions,
 }) => {
   // Tailwind classes for each variant
   const variantClasses = {
@@ -113,29 +119,55 @@ const Alert: React.FC<AlertProps> = ({
 
   return (
     <div
-      className={`rounded-xl border p-4 ${variantClasses[variant].container}`}
+      className={`relative rounded-xl border p-4 shadow-lg transition-all duration-300 animate-fadeIn overflow-hidden ${variantClasses[variant].container}`}
     >
       <div className="flex items-start gap-3">
-        <div className={`-mt-0.5 ${variantClasses[variant].icon}`}>
+        <div className={`mt-0.5 shrink-0 ${variantClasses[variant].icon}`}>
           {icons[variant]}
         </div>
 
-        <div>
-          <h4 className="mb-1 text-sm font-semibold text-gray-800 dark:text-white/90">
-            {title}
-          </h4>
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2 mb-1">
+            <h4 className="text-sm font-bold text-gray-800 dark:text-white/90 truncate">
+              {title}
+            </h4>
+            {timestamp && (
+              <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium whitespace-nowrap">
+                {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+          </div>
 
-          <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
+          <div className="text-sm text-gray-500 dark:text-gray-400 wrap-break-word leading-relaxed">
+            {message}
+          </div>
 
-          {showLink && (
-            <Link
-              to={linkHref}
-              className="inline-block mt-3 text-sm font-medium text-gray-500 underline dark:text-gray-400"
-            >
-              {linkText}
-            </Link>
+          {(showLink || actions) && (
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+              {showLink && (
+                <Link
+                  to={linkHref}
+                  className="text-sm font-medium text-gray-600 underline hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  {linkText}
+                </Link>
+              )}
+              {actions}
+            </div>
           )}
         </div>
+
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="shrink-0 -mr-1 -mt-1 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-lg hover:bg-gray-100/50 dark:hover:bg-white/5"
+            aria-label="Cerrar"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
     </div>
   );

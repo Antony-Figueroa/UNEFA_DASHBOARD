@@ -1,4 +1,5 @@
 import { useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface ModalProps {
   isOpen: boolean;
@@ -14,10 +15,22 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   children,
   className,
-  showCloseButton = true, // Default to true for backwards compatibility
+  showCloseButton = true,
   isFullscreen = false,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Manejo de foco para accesibilidad
+  useEffect(() => {
+    if (isOpen && modalRef.current) {
+      const focusableElements = modalRef.current.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusableElements.length > 0) {
+        (focusableElements[0] as HTMLElement).focus();
+      }
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -49,27 +62,40 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen) return null;
 
-  const contentClasses = isFullscreen
-    ? "w-full h-full"
-    : "relative w-full rounded-3xl bg-white  dark:bg-gray-900";
+  // Clases para el contenido: Centrado, con márgenes (máximo 90% de pantalla)
+  // Responsivo: ancho automático basado en contenido pero limitado.
+  const contentClasses = `
+    relative w-full mx-auto
+    bg-white dark:bg-gray-900 
+    rounded-[24px] sm:rounded-[32px] 
+    shadow-2xl 
+    transition-all duration-300 ease-out
+    ${className?.includes('max-w-')
+      ? ''
+      : isFullscreen ? "max-w-[95%] md:max-w-6xl" : "max-w-[95%] sm:max-w-[85%] md:max-w-[70%] lg:max-w-4xl"}
+    max-h-[90vh] flex flex-col overflow-hidden
+  `;
 
-  return (
-    <div className="fixed inset-0 flex items-center justify-center overflow-y-auto modal z-99999">
-      {!isFullscreen && (
-        <div
-          className="fixed inset-0 h-full w-full bg-gray-400/50 backdrop-blur-[32px]"
-          onClick={onClose}
-        ></div>
-      )}
+  const modalContent = (
+    <div
+      className="fixed inset-0 flex items-center justify-center p-4 sm:p-6 md:p-10 z-999999 animate-fade-in overflow-hidden"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="fixed inset-0 h-full w-full bg-gray-900/60 backdrop-blur-xl -z-1 transition-opacity duration-300 ease-in-out"
+        onClick={onClose}
+      ></div>
       <div
         ref={modalRef}
-        className={`${contentClasses}  ${className}`}
+        className={`${contentClasses} ${className ?? ""} scale-95 animate-in zoom-in-95 duration-300`}
         onClick={(e) => e.stopPropagation()}
       >
         {showCloseButton && (
           <button
             onClick={onClose}
-            className="absolute right-3 top-3 z-999 flex h-9.5 w-9.5 items-center justify-center rounded-full bg-gray-100 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white sm:right-6 sm:top-6 sm:h-11 sm:w-11"
+            aria-label="Cerrar modal"
+            className="absolute right-4 top-4 z-999 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100/50 text-gray-500 transition-all hover:bg-gray-200 hover:text-gray-800 dark:bg-gray-800/50 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white sm:right-8 sm:top-8 sm:h-12 sm:w-12"
           >
             <svg
               width="24"
@@ -87,10 +113,12 @@ export const Modal: React.FC<ModalProps> = ({
             </svg>
           </button>
         )}
-        <div>{children}</div>
+        <div className="flex flex-col h-full w-full min-h-0">{children}</div>
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 // Subcomponentes para estructura consistente del modal
@@ -100,13 +128,13 @@ interface ModalSectionProps {
 }
 
 export const ModalHeader: React.FC<ModalSectionProps> = ({ children, className }) => (
-  <div className={`border-b border-gray-200 p-6 text-lg font-semibold text-gray-800 dark:border-gray-800 dark:text-white/90 ${className ?? ""}`}>{children}</div>
+  <div className={`shrink-0 border-b border-gray-200 px-6 py-5 sm:px-8 sm:py-6 text-lg font-semibold text-gray-800 dark:border-gray-800 dark:text-white/90 pr-16 ${className ?? ""}`}>{children}</div>
 );
 
 export const ModalBody: React.FC<ModalSectionProps> = ({ children, className }) => (
-  <div className={`p-6 ${className ?? ""}`}>{children}</div>
+  <div className={`px-6 py-4 sm:px-8 sm:py-6 overflow-y-auto custom-scrollbar grow min-h-0 ${className ?? ""}`}>{children}</div>
 );
 
 export const ModalFooter: React.FC<ModalSectionProps> = ({ children, className }) => (
-  <div className={`border-t border-gray-200 p-6 flex items-center justify-end gap-3 dark:border-gray-800 ${className ?? ""}`}>{children}</div>
+  <div className={`shrink-0 border-t border-gray-200 px-6 py-5 sm:px-8 sm:py-6 flex items-center justify-end gap-3 dark:border-gray-800 ${className ?? ""}`}>{children}</div>
 );

@@ -4,9 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
 import MultiSelect from "../../../components/form/MultiSelect";
-import { Modal } from "../../../components/ui/modal";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Career } from "../types";
-import { useTheme } from "../../../context/ThemeContext";
+import Button from "../../../components/ui/button/Button";
 
 interface CareerModalProps {
   isOpen: boolean;
@@ -24,7 +24,7 @@ const careerSchema = z.object({
     z.number()
   ]),
   careerAbbreviation: z.string().min(1, "La abreviatura es obligatoria"),
-  internshipTypeIds: z.array(z.string()).optional().default([]),
+  internshipTypeIds: z.array(z.string()),
 });
 
 type CareerFormData = z.infer<typeof careerSchema>;
@@ -36,7 +36,6 @@ export default function CareerModal({
   editingCareer,
   internshipOptions,
 }: CareerModalProps) {
-  const { colorMode } = useTheme();
   const {
     register,
     handleSubmit,
@@ -60,7 +59,7 @@ export default function CareerModal({
         reset({
           careerName: editingCareer.careerName,
           careerCode: editingCareer.careerCode,
-          minimumGrade: editingCareer.minimumGrade,
+          minimumGrade: String(editingCareer.minimumGrade),
           careerAbbreviation: editingCareer.careerAbbreviation,
           internshipTypeIds: (editingCareer.internshipTypeIds ?? []).map(String),
         });
@@ -73,115 +72,107 @@ export default function CareerModal({
           internshipTypeIds: [],
         });
       }
+    } else {
+      reset();
     }
-  }, [isOpen, editingCareer, reset]);
+  }, [editingCareer, isOpen, reset]);
 
   const onSubmit = (data: CareerFormData) => {
     onSave({
-      ...data,
+      careerName: data.careerName,
+      careerCode: data.careerCode,
+      careerAbbreviation: data.careerAbbreviation,
+      internshipTypeIds: data.internshipTypeIds,
       minimumGrade: Number(data.minimumGrade),
       status: editingCareer?.status ?? true,
     } as Omit<Career, "careerId" | "creationDate">);
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className={`max-w-xl p-6 ${colorMode === 'dark' ? 'dark' : ''}`} showCloseButton>
-      <div className="flex flex-col px-2 overflow-y-auto custom-scrollbar">
-        <div>
-          <h5 className="mb-2 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+    <Modal isOpen={isOpen} onClose={onClose} showCloseButton>
+      <ModalHeader>
+        <div className="max-w-4xl mx-auto w-full">
+          <h5 className="mb-1 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
             {editingCareer ? "Editar Carrera" : "Registrar Carrera"}
           </h5>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {editingCareer ? "Modifica los detalles de la carrera." : "Ingresa los detalles de la nueva carrera."}
+          <p className="text-sm text-gray-500 dark:text-gray-400 font-normal">
+            {editingCareer ? "Modifica los detalles de la carrera académica." : "Ingresa los detalles de la nueva carrera académica."}
           </p>
         </div>
+      </ModalHeader>
 
-        <form id="career-form" onSubmit={handleSubmit(onSubmit)} className="mt-8">
-          <div className="rounded-2xl border border-gray-200 bg-white shadow-default dark:border-gray-800 dark:bg-white/[0.03]">
-            <div className="border-b border-gray-200 py-4 px-6.5 dark:border-gray-800">
-              <h3 className="font-medium text-black dark:text-white">Detalles de la Carrera</h3>
+      <ModalBody className="bg-gray-50/30 dark:bg-gray-900/50">
+        <form id="career-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+            <div>
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nombre de carrera *</label>
+              <Input
+                {...register("careerName")}
+                type="text"
+                placeholder="Ingrese el nombre"
+                error={!!errors.careerName}
+                hint={isSubmitted ? errors.careerName?.message : undefined}
+              />
             </div>
-            <div className="p-6.5">
-              <div className="space-y-4.5">
-                <div className="grid grid-cols-1 gap-4.5 md:grid-cols-2">
-                  <div>
-                    <label className="mb-2.5 block text-black dark:text-white font-medium">Nombre de carrera</label>
-                    <Input
-                      {...register("careerName")}
-                      type="text"
-                      placeholder="Ingrese el nombre"
-                      error={!!errors.careerName}
-                      hint={isSubmitted ? errors.careerName?.message : undefined}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2.5 block text-black dark:text-white font-medium">Código</label>
-                    <Input
-                      {...register("careerCode")}
-                      type="text"
-                      placeholder="Código"
-                      error={!!errors.careerCode}
-                      hint={isSubmitted ? errors.careerCode?.message : undefined}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2.5 block text-black dark:text-white font-medium">Nota mínima</label>
-                    <Input
-                      {...register("minimumGrade")}
-                      type="text"
-                      placeholder="Nota mínima"
-                      error={!!errors.minimumGrade}
-                      hint={isSubmitted ? errors.minimumGrade?.message : undefined}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2.5 block text-black dark:text-white font-medium">Abreviatura</label>
-                    <Input
-                      {...register("careerAbbreviation")}
-                      type="text"
-                      placeholder="Ej: TSU-ENF"
-                      error={!!errors.careerAbbreviation}
-                      hint={isSubmitted ? errors.careerAbbreviation?.message : undefined}
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Controller
-                      name="internshipTypeIds"
-                      control={control}
-                      render={({ field }) => (
-                        <MultiSelect
-                          label="Tipos de Prácticas"
-                          options={internshipOptions}
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Seleccione los tipos"
-                        />
-                      )}
-                    />
-                  </div>
-                </div>
-              </div>
+            <div>
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Código *</label>
+              <Input
+                {...register("careerCode")}
+                type="text"
+                placeholder="Código"
+                error={!!errors.careerCode}
+                hint={isSubmitted ? errors.careerCode?.message : undefined}
+              />
+            </div>
+            <div>
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nota mínima *</label>
+              <Input
+                {...register("minimumGrade")}
+                type="text"
+                placeholder="Nota mínima"
+                error={!!errors.minimumGrade}
+                hint={isSubmitted ? errors.minimumGrade?.message : undefined}
+              />
+            </div>
+            <div>
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Abreviatura *</label>
+              <Input
+                {...register("careerAbbreviation")}
+                type="text"
+                placeholder="Ej: TSU-ENF"
+                error={!!errors.careerAbbreviation}
+                hint={isSubmitted ? errors.careerAbbreviation?.message : undefined}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Controller
+                name="internshipTypeIds"
+                control={control}
+                render={({ field }) => (
+                  <MultiSelect
+                    label="Tipos de Prácticas"
+                    options={internshipOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Seleccione los tipos"
+                  />
+                )}
+              />
             </div>
           </div>
         </form>
+      </ModalBody>
 
-        <div className="flex justify-end gap-4.5 mt-6">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex justify-center rounded border border-stroke py-2 px-6 font-medium text-black hover:shadow-1 dark:border-strokedark dark:text-white"
-          >
+      <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-4xl mx-auto">
+          <Button variant="outline" onClick={onClose} className="w-full sm:w-auto min-h-12">
             Cancelar
-          </button>
-          <button
-            type="submit"
-            form="career-form"
-            className="flex justify-center items-center rounded-lg bg-brand-500 px-6 py-2.5 font-medium text-white hover:bg-brand-600 disabled:bg-brand-400 disabled:cursor-not-allowed"
-          >
-            {editingCareer ? "Actualizar" : "Guardar"}
-          </button>
+          </Button>
+          <Button type="submit" form="career-form" className="w-full sm:w-auto min-h-12">
+            {editingCareer ? "Actualizar Registro" : "Guardar Carrera"}
+          </Button>
         </div>
-      </div>
+      </ModalFooter>
     </Modal>
   );
 }

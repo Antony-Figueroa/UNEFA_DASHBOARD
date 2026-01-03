@@ -31,7 +31,7 @@ export const DropdownPortal: React.FC<DropdownPortalProps> = ({
       if (
         menuRef.current &&
         !menuRef.current.contains(target) &&
-        anchorRef.current &&
+        anchorRef?.current &&
         !anchorRef.current.contains(target)
       ) {
         onClose();
@@ -51,7 +51,7 @@ export const DropdownPortal: React.FC<DropdownPortalProps> = ({
   // Calcular posición cada vez que abre, y cuando se hace resize/scroll
   useLayoutEffect(() => {
     const updatePosition = () => {
-      const anchor = anchorRef.current;
+      const anchor = anchorRef?.current;
       if (!anchor || !isOpen) return;
       const rect = anchor.getBoundingClientRect();
       // bottom-end respecto al viewport, sumando scroll para posición absoluta en body

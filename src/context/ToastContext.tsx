@@ -1,26 +1,7 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
+import { ToastContext } from "./toast";
 
-export type ToastVariant = "success" | "error" | "warning" | "info";
-
-export interface Toast {
-  id: string;
-  variant: ToastVariant;
-  title: string;
-  message?: React.ReactNode;
-  timestamp: Date;
-  onUndo?: () => void;
-  onViewDetails?: () => void;
-  persistent?: boolean;
-  duration?: number;
-}
-
-interface ToastContextType {
-  toasts: Toast[];
-  addToast: (toast: Omit<Toast, "id" | "timestamp">) => void;
-  removeToast: (id: string) => void;
-}
-
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
+import type { Toast } from "./toast";
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -45,12 +26,4 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       {children}
     </ToastContext.Provider>
   );
-};
-
-export const useToast = () => {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error("useToast must be used within a ToastProvider");
-  }
-  return context;
 };

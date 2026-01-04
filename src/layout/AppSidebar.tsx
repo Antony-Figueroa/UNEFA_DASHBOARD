@@ -14,10 +14,9 @@ import {
   PlugInIcon,
   TableIcon,
   UserCircleIcon,
-  TaskIcon,
-  GroupIcon,
+  DocsIcon,
 } from "../icons";
-import { useSidebar } from "../context/SidebarContext";
+import { useSidebar } from "../context/sidebar";
 
 type NavItem = {
   name: string;
@@ -27,6 +26,64 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
+  {
+    icon: <GridIcon />,
+    name: "Inicio",
+    path: "/",
+  },
+  {
+    name: "Gestión",
+    icon: <TableIcon />,
+    subItems: [
+      { name: "Periodo", path: "/period" },
+      { name: "Carrera", path: "/careers" },
+    ],
+  },
+  {
+    name: "Registro",
+    icon: <UserCircleIcon />,
+    subItems: [
+      { name: "Estudiante", path: "/students" },
+      { name: "Tutor", path: "/tutors" },
+      { name: "Institución", path: "/blank" },
+    ],
+  },
+  {
+    name: "Prácticas Profesionales",
+    icon: <BoxCubeIcon />,
+    subItems: [
+      { name: "Pre-Inscripción", path: "/blank" },
+      { name: "Inscripción", path: "/blank" },
+      { name: "Seguimiento", path: "/blank" },
+      { name: "Culminación Prácticas Profesionales", path: "/blank" },
+    ],
+  },
+  {
+    name: "Reportes",
+    icon: <PieChartIcon />,
+    subItems: [
+      { name: "Reportes Generales", path: "/blank" },
+    ],
+  },
+  {
+    name: "Configuración",
+    icon: <PlugInIcon />,
+    subItems: [
+      { name: "Usuarios", path: "/blank" },
+      { name: "Configuración", path: "/blank" },
+      { name: "Roles y Permisos", path: "/blank" },
+      { name: "Logs de Actividad", path: "/blank" },
+      { name: "Mantenimiento", path: "/blank" },
+    ],
+  },
+  {
+    icon: <DocsIcon />,
+    name: "Manuales",
+    path: "/blank",
+  },
+];
+
+const bibliotecaItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
@@ -62,24 +119,6 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    icon: <CalenderIcon />,
-    name: "Gestión Periodo",
-    path: "/period",
-  },
-  {
-    icon: <TaskIcon />,
-    name: "Gestión Carrera",
-    path: "/careers",
-  },
-  {
-    icon: <GroupIcon />,
-    name: "Gestión Estudiantes",
-    path: "/students",
-  },
-];
-
-const othersItems: NavItem[] = [
-  {
     icon: <PieChartIcon />,
     name: "Charts",
     subItems: [
@@ -114,7 +153,7 @@ const AppSidebar: React.FC = () => {
   const location = useLocation();
 
   const [openSubmenu, setOpenSubmenu] = useState<{
-    type: "main" | "others";
+    type: "main" | "biblioteca";
     index: number;
   } | null>(null);
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
@@ -130,14 +169,14 @@ const AppSidebar: React.FC = () => {
 
   useEffect(() => {
     let submenuMatched = false;
-    ["main", "others"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : othersItems;
+    ["main", "biblioteca"].forEach((menuType) => {
+      const items = menuType === "main" ? navItems : bibliotecaItems;
       items.forEach((nav, index) => {
         if (nav.subItems) {
           nav.subItems.forEach((subItem) => {
             if (isActive(subItem.path)) {
               setOpenSubmenu({
-                type: menuType as "main" | "others",
+                type: menuType as "main" | "biblioteca",
                 index,
               });
               submenuMatched = true;
@@ -164,7 +203,7 @@ const AppSidebar: React.FC = () => {
     }
   }, [openSubmenu]);
 
-  const handleSubmenuToggle = (index: number, menuType: "main" | "others") => {
+  const handleSubmenuToggle = (index: number, menuType: "main" | "biblioteca") => {
     setOpenSubmenu((prevOpenSubmenu) => {
       if (
         prevOpenSubmenu &&
@@ -177,7 +216,7 @@ const AppSidebar: React.FC = () => {
     });
   };
 
-  const renderMenuItems = (items: NavItem[], menuType: "main" | "others") => (
+  const renderMenuItems = (items: NavItem[], menuType: "main" | "biblioteca") => (
     <ul className="flex flex-col gap-4">
       {items.map((nav, index) => (
         <li key={nav.name}>
@@ -363,12 +402,12 @@ const AppSidebar: React.FC = () => {
                   }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "Others"
+                  "Recursos Biblioteca"
                 ) : (
                   <HorizontaLDots className="icon-md" />
                 )}
               </h2>
-              {renderMenuItems(othersItems, "others")}
+              {renderMenuItems(bibliotecaItems, "biblioteca")}
             </div>
           </div>
         </nav>

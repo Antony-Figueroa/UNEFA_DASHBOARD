@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 interface ButtonProps {
   children: ReactNode; // Button text or content
   size?: "sm" | "md"; // Button size
-  variant?: "primary" | "outline" | "error"; // Button variant
+  variant?: "primary" | "outline" | "error" | "success" | "warning"; // Button variant
   startIcon?: ReactNode; // Icon before the text
   endIcon?: ReactNode; // Icon after the text
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void; // Click handler
@@ -41,6 +41,10 @@ const Button: React.FC<ButtonProps> = ({
       "bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/3 dark:hover:text-gray-300 disabled:opacity-50",
     error:
       "bg-error-500 text-white shadow-theme-xs hover:bg-error-600 disabled:bg-error-300 dark:disabled:bg-error-900/30",
+    success:
+      "bg-success-500 text-white shadow-theme-xs hover:bg-success-600 disabled:bg-success-300 dark:disabled:bg-success-900/30",
+    warning:
+      "bg-warning-500 text-white shadow-theme-xs hover:bg-warning-600 disabled:bg-warning-300 dark:disabled:bg-warning-900/30",
   };
 
   const isButtonDisabled = disabled || loading;

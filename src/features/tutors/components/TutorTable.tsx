@@ -3,39 +3,30 @@ import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "
 import { DropdownPortal } from "../../../components/ui/dropdown/DropdownPortal";
 import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ThreeDotsIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
-import { StudentRowData } from "../types";
+import { TutorRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { useDebounce } from "../../../hooks/useDebounce";
-import Badge from "../../../components/ui/badge/Badge";
+// import Badge from "../../../components/ui/badge/Badge";
 
-const getCareerColor = (careerName: string): "primary" | "success" | "error" | "warning" | "info" => {
-    const colors: ("primary" | "success" | "error" | "warning" | "info")[] = ["primary", "success", "error", "warning", "info"];
-    let hash = 0;
-    for (let i = 0; i < careerName.length; i++) {
-        hash = careerName.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-};
-
-interface StudentTableProps {
-    data: StudentRowData[];
+interface TutorTableProps {
+    data: TutorRowData[];
     status: "loading" | "success" | "error";
     error: Error | null;
-    onEdit?: (student: StudentRowData) => void;
-    onToggleStatus?: (studentId: string) => void;
-    onView?: (student: StudentRowData) => void;
+    onEdit?: (tutor: TutorRowData) => void;
+    onToggleStatus?: (tutorId: string) => void;
+    onView?: (tutor: TutorRowData) => void;
     onBulkDelete?: (ids: string[]) => void;
     onBulkRestore?: (ids: string[]) => void;
     inactiveMode?: boolean;
     activeTab?: "Activas" | "Inactivas";
-    careerOptions?: { value: string; label: string }[];
+    professionOptions?: { value: string; label: string }[];
     loading?: boolean;
 }
 
-type SortKey = "identificationNumber" | "fullNames" | "email" | "careerName" | "enrollmentDate";
+type SortKey = "identificationNumber" | "firstName" | "lastName" | "email" | "profession" | "registrationDate";
 type SortOrder = "asc" | "desc";
 
-export default function StudentTable({
+export default function TutorTable({
     data = [],
     status,
     error,
@@ -44,15 +35,15 @@ export default function StudentTable({
     onView,
     onBulkDelete,
     onBulkRestore,
-    inactiveMode = false,
+    // inactiveMode = false,
     activeTab = "Activas",
-    careerOptions = [],
+    professionOptions = [],
     // loading = false,
-}: StudentTableProps) {
+}: TutorTableProps) {
     const [idFilter, setIdFilter] = useState("");
     const [nameFilter, setNameFilter] = useState("");
     const [lastNameFilter, setLastNameFilter] = useState("");
-    const [careerFilter, setCareerFilter] = useState("");
+    const [professionFilter, setProfessionFilter] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -62,7 +53,7 @@ export default function StudentTable({
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; order: SortOrder }>({
-        key: "fullNames",
+        key: "firstName",
         order: "asc",
     });
 
@@ -72,33 +63,30 @@ export default function StudentTable({
 
     useEffect(() => {
         setSelectedIds([]);
-        // Reset filters when changing tabs? User didn't specify, but usually good.
-        // For now let's keep them as requested.
     }, [activeTab]);
 
     const filteredData = useMemo(() => {
         const idSearch = debouncedIdFilter.trim().toLowerCase();
         const nameSearch = debouncedNameFilter.trim().toLowerCase();
         const lastNameSearch = debouncedLastNameFilter.trim().toLowerCase();
-        const careerSearch = careerFilter;
+        const professionSearch = professionFilter.trim().toLowerCase();
 
-        const filtered = data.filter((s) => {
-            const matchesId = !idSearch || s.identificationNumber.toLowerCase().includes(idSearch);
+        const filtered = data.filter((t) => {
+            const matchesId = !idSearch || t.identificationNumber.toLowerCase().includes(idSearch);
             const matchesName = !nameSearch ||
-                s.firstName.toLowerCase().includes(nameSearch) ||
-                (s.middleName || "").toLowerCase().includes(nameSearch);
+                t.firstName.toLowerCase().includes(nameSearch) ||
+                (t.middleName || "").toLowerCase().includes(nameSearch);
             const matchesLastName = !lastNameSearch ||
-                s.lastName.toLowerCase().includes(lastNameSearch) ||
-                (s.secondLastName || "").toLowerCase().includes(lastNameSearch);
-            const matchesCareer = !careerSearch || s.careerId === careerSearch;
+                t.lastName.toLowerCase().includes(lastNameSearch) ||
+                (t.secondLastName || "").toLowerCase().includes(lastNameSearch);
+            const matchesProfession = !professionSearch || t.profession === professionSearch;
 
-            const matchesTab = activeTab === "Activas" ? s.status === true : s.status === false;
+            const matchesTab = activeTab === "Activas" ? t.status === true : t.status === false;
 
-            return matchesId && matchesName && matchesLastName && matchesCareer && matchesTab;
+            return matchesId && matchesName && matchesLastName && matchesProfession && matchesTab;
         });
 
         filtered.sort((a, b) => {
-            // Prioritize relevance if there's an ID search
             if (idSearch) {
                 const idA = a.identificationNumber.toLowerCase();
                 const idB = b.identificationNumber.toLowerCase();
@@ -126,12 +114,11 @@ export default function StudentTable({
         });
 
         return filtered;
-    }, [data, debouncedIdFilter, debouncedNameFilter, debouncedLastNameFilter, careerFilter, activeTab, sortConfig]);
+    }, [data, debouncedIdFilter, debouncedNameFilter, debouncedLastNameFilter, professionFilter, activeTab, sortConfig]);
 
-    // Reset page when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedIdFilter, debouncedNameFilter, debouncedLastNameFilter, careerFilter]);
+    }, [debouncedIdFilter, debouncedNameFilter, debouncedLastNameFilter, professionFilter]);
 
     const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -151,7 +138,7 @@ export default function StudentTable({
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
-            const allIds = paged.map((s) => s.studentId).filter(Boolean) as string[];
+            const allIds = paged.map((t) => t.tutorId).filter(Boolean) as string[];
             setSelectedIds(allIds);
         } else {
             setSelectedIds([]);
@@ -180,7 +167,7 @@ export default function StudentTable({
         if (expandedRows.size === paged.length) {
             setExpandedRows(new Set());
         } else {
-            const allIds = paged.map((s, index) => s.studentId ?? `idx-${index}`);
+            const allIds = paged.map((t, index) => t.tutorId ?? `idx-${index}`);
             setExpandedRows(new Set(allIds));
         }
     };
@@ -189,7 +176,7 @@ export default function StudentTable({
         setIdFilter("");
         setNameFilter("");
         setLastNameFilter("");
-        setCareerFilter("");
+        setProfessionFilter("");
     };
 
     const SortIndicator = ({ column }: { column: SortKey }) => {
@@ -214,7 +201,7 @@ export default function StudentTable({
     if (status === "error") {
         return (
             <div className="flex flex-col items-center justify-center py-12 text-red-500 animate-fadeIn">
-                <p className="font-semibold">Error al cargar estudiantes</p>
+                <p className="font-semibold">Error al cargar tutores</p>
                 <p className="text-sm">{error?.message || "Por favor, intente de nuevo más tarde."}</p>
             </div>
         );
@@ -226,7 +213,6 @@ export default function StudentTable({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Filtro por Cédula */}
                     <div className="relative">
-                        {/* <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1 ml-1">Cédula</label> */}
                         <input
                             type="text"
                             placeholder="Buscar por cédula"
@@ -238,7 +224,6 @@ export default function StudentTable({
 
                     {/* Filtro por Nombres */}
                     <div className="relative">
-                        {/* <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1 ml-1">Nombres</label> */}
                         <input
                             type="text"
                             placeholder="Buscar nombres"
@@ -250,7 +235,6 @@ export default function StudentTable({
 
                     {/* Filtro por Apellidos */}
                     <div className="relative">
-                        {/* <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1 ml-1">Apellidos</label> */}
                         <input
                             type="text"
                             placeholder="Buscar apellidos"
@@ -260,16 +244,15 @@ export default function StudentTable({
                         />
                     </div>
 
-                    {/* Filtro por Carrera */}
+                    {/* Filtro por Profesión */}
                     <div className="relative">
-                        {/* <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1 ml-1">Carrera</label> */}
                         <select
-                            value={careerFilter}
-                            onChange={(e) => setCareerFilter(e.target.value)}
+                            value={professionFilter}
+                            onChange={(e) => setProfessionFilter(e.target.value)}
                             className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-10 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white appearance-none"
                         >
-                            <option value="">Todas las carreras</option>
-                            {careerOptions.map((opt) => (
+                            <option value="">Todas las profesiones</option>
+                            {professionOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value}>
                                     {opt.label}
                                 </option>
@@ -288,7 +271,7 @@ export default function StudentTable({
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                             Mostrando <span className="font-bold text-gray-700 dark:text-white">{filteredData.length}</span> resultados
                         </div>
-                        {(idFilter || nameFilter || lastNameFilter || careerFilter) && (
+                        {(idFilter || nameFilter || lastNameFilter || professionFilter) && (
                             <button
                                 onClick={clearFilters}
                                 className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
@@ -362,47 +345,61 @@ export default function StudentTable({
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("identificationNumber")}>
                                 <div className="flex items-center">Cédula <SortIndicator column="identificationNumber" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("fullNames")}>
-                                <div className="flex items-center">Nombres y Apellidos <SortIndicator column="fullNames" /></div>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("firstName")}>
+                                <div className="flex items-center">Nombres <SortIndicator column="firstName" /></div>
+                            </TableCell>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("lastName")}>
+                                <div className="flex items-center">Apellidos <SortIndicator column="lastName" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell">Sexo</TableCell>
                             <TableCell isHeader className="table-header-cell">Teléfono</TableCell>
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("email")}>
                                 <div className="flex items-center">Correo Electrónico <SortIndicator column="email" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("careerName")}>
-                                <div className="flex items-center">Carrera <SortIndicator column="careerName" /></div>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("profession")}>
+                                <div className="flex items-center">Profesión <SortIndicator column="profession" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell text-right">Acciones</TableCell>
                         </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
                         {paged.length > 0 ? (
-                            paged.map((s, index) => (
+                            paged.map((t, index) => (
                                 <TableRow
-                                    key={s.studentId}
-                                    className={`table-row-hover ${index % 2 === 0 ? "bg-white dark:bg-transparent" : "bg-gray-50/50 dark:bg-white/2"} ${selectedIds.includes(s.studentId) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
+                                    key={t.tutorId}
+                                    className={`table-row-hover ${index % 2 === 0 ? "bg-white dark:bg-transparent" : "bg-gray-50/50 dark:bg-white/2"} ${selectedIds.includes(t.tutorId) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
                                 >
                                     <TableCell className="table-cell">
-                                        <Checkbox checked={selectedIds.includes(s.studentId)} onChange={(checked) => handleSelectRow(s.studentId, checked)} />
+                                        <Checkbox checked={selectedIds.includes(t.tutorId)} onChange={(checked) => handleSelectRow(t.tutorId, checked)} />
                                     </TableCell>
                                     <TableCell className="table-cell font-medium text-gray-800 dark:text-white/90">
-                                        {s.identificationPrefix}-{s.identificationNumber}
+                                        {t.identificationPrefix}-{t.identificationNumber}
                                     </TableCell>
-                                    <TableCell className="table-cell text-gray-600 dark:text-gray-400 font-semibold">{s.fullNames}</TableCell>
-                                    <TableCell className="table-cell text-gray-500 dark:text-gray-400">{s.sex}</TableCell>
-                                    <TableCell className="table-cell text-gray-500 dark:text-gray-400 whitespace-nowrap">{s.phone}</TableCell>
-                                    <TableCell className="table-cell text-gray-500 dark:text-gray-400">{s.email}</TableCell>
                                     <TableCell className="table-cell">
-                                        {s.careerName ? (
-                                            <Badge color={getCareerColor(s.careerName)} variant="light" size="sm" shape="rounded">
-                                                {s.careerName}
-                                            </Badge>
-                                        ) : (
-                                            <span className="text-gray-400">N/A</span>
-                                        )}
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            {t.firstName} {t.middleName || ""}
+                                        </span>
                                     </TableCell>
-                                    <TableCell className="table-cell text-right relative">
+                                    <TableCell className="table-cell">
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            {t.lastName} {t.secondLastName || ""}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="table-cell text-sm text-gray-600 dark:text-gray-400 capitalize">
+                                        {t.sex.toLowerCase()}
+                                    </TableCell>
+                                    <TableCell className="table-cell text-sm text-gray-600 dark:text-gray-400">
+                                        {t.phone}
+                                    </TableCell>
+                                    <TableCell className="table-cell text-sm text-gray-600 dark:text-gray-400">
+                                        {t.email}
+                                    </TableCell>
+                                    <TableCell className="table-cell">
+                                        <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-400/10 dark:text-blue-400">
+                                            {t.profession}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="table-cell text-right">
                                         <div className="flex justify-end">
                                             <button
                                                 type="button"
@@ -411,53 +408,66 @@ export default function StudentTable({
                                                 onClick={(e) => {
                                                     setAnchorEl(e.currentTarget as HTMLElement);
                                                     setOpenRowId((prev) =>
-                                                        prev === (s.studentId ?? index) ? null : (s.studentId ?? index)
+                                                        prev === t.tutorId ? null : t.tutorId
                                                     );
                                                 }}
-                                                aria-expanded={openRowId === (s.studentId ?? index)}
+                                                aria-expanded={openRowId === t.tutorId}
                                             >
                                                 <ThreeDotsIcon className="icon-sm" />
                                             </button>
 
                                             <DropdownPortal
-                                                isOpen={openRowId === (s.studentId ?? index)}
-                                                onClose={() => setOpenRowId(null)}
+                                                isOpen={openRowId === t.tutorId}
+                                                onClose={() => {
+                                                    setOpenRowId(null);
+                                                    setAnchorEl(null);
+                                                }}
                                                 anchorRef={{ current: anchorEl as HTMLElement }}
                                                 className="min-w-44"
                                             >
-                                                {onEdit && activeTab === "Activas" && (
+                                                <div className="p-1">
                                                     <DropdownItem
-                                                        onItemClick={() => onEdit(s)}
+                                                        onItemClick={() => {
+                                                            onView?.(t);
+                                                            setOpenRowId(null);
+                                                        }}
                                                         className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
                                                     >
-                                                        <EditIcon className="icon-sm" /> Editar
+                                                        <EyeIcon className="icon-sm" />
+                                                        Ver detalles
                                                     </DropdownItem>
-                                                )}
-                                                {onToggleStatus && (inactiveMode || s.status === false) && (
                                                     <DropdownItem
-                                                        onItemClick={() => onToggleStatus(s.studentId)}
-                                                        className="flex items-center gap-2 text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-400/10"
-                                                    >
-                                                        <RefreshIcon className="icon-sm" />
-                                                        {inactiveMode ? "Restaurar" : "Activar"}
-                                                    </DropdownItem>
-                                                )}
-                                                {onView && (
-                                                    <DropdownItem
-                                                        onItemClick={() => onView(s)}
+                                                        onItemClick={() => {
+                                                            onEdit?.(t);
+                                                            setOpenRowId(null);
+                                                        }}
                                                         className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
                                                     >
-                                                        <EyeIcon className="icon-sm" /> Ver Detalles
+                                                        <EditIcon className="icon-sm" />
+                                                        Editar
                                                     </DropdownItem>
-                                                )}
-                                                {onToggleStatus && activeTab === "Activas" && (
                                                     <DropdownItem
-                                                        onItemClick={() => onToggleStatus(s.studentId)}
-                                                        className="flex items-center gap-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10"
+                                                        onItemClick={() => {
+                                                            onToggleStatus?.(t.tutorId);
+                                                            setOpenRowId(null);
+                                                        }}
+                                                        className={`flex items-center gap-2 ${activeTab === "Activas"
+                                                            ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10"
+                                                            : "text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-400/10"}`}
                                                     >
-                                                        <TrashIcon className="icon-sm" /> Eliminar
+                                                        {activeTab === "Activas" ? (
+                                                            <>
+                                                                <TrashIcon className="icon-sm" />
+                                                                Eliminar
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <RefreshIcon className="icon-sm" />
+                                                                Restaurar
+                                                            </>
+                                                        )}
                                                     </DropdownItem>
-                                                )}
+                                                </div>
                                             </DropdownPortal>
                                         </div>
                                     </TableCell>
@@ -465,8 +475,8 @@ export default function StudentTable({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell className="table-cell py-20 text-center text-gray-500" colSpan={8}>
-                                    No se encontraron estudiantes.
+                                <TableCell colSpan={8} className="py-12 text-center text-gray-500 dark:text-gray-400">
+                                    No se encontraron tutores.
                                 </TableCell>
                             </TableRow>
                         )}
@@ -475,122 +485,157 @@ export default function StudentTable({
             </div>
 
             {/* Vista Móvil (Cards) */}
-            <div className="md:hidden divide-y divide-gray-100 dark:divide-white/5">
+            <div className="md:hidden p-4 space-y-4">
                 {paged.length > 0 ? (
-                    paged.map((s, index) => {
-                        const rowId = s.studentId ?? `idx-${index}`;
-                        const isExpanded = expandedRows.has(rowId);
-                        return (
-                            <div key={rowId} className="relative p-4 bg-white dark:bg-transparent transition-colors overflow-hidden">
-                                <div className="flex flex-col items-center gap-2">
-                                    <div className="flex items-center justify-between w-full">
-                                        <div className="flex-1 text-center">
-                                            <h3 className="text-sm font-bold text-gray-800 dark:text-white/90 leading-tight truncate px-8">
-                                                {s.fullNames}
-                                            </h3>
-                                            <p className="text-xs text-gray-500 mt-1 truncate">{s.identificationPrefix}-{s.identificationNumber}</p>
-                                        </div>
-                                        <button
-                                            onClick={() => toggleRowExpansion(rowId)}
-                                            className="absolute right-2 top-2 p-2 text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
-                                            style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
-                                        >
-                                            <ChevronDownIcon className="w-5 h-5" />
-                                        </button>
+                    paged.map((t) => (
+                        <div key={t.tutorId} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-white/5 dark:bg-gray-800/40">
+                            <div className="flex items-start justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <Checkbox checked={selectedIds.includes(t.tutorId)} onChange={(checked) => handleSelectRow(t.tutorId, checked)} />
+                                    <div>
+                                        <h4 className="text-sm font-bold text-gray-800 dark:text-white">{t.firstName} {t.lastName}</h4>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">{t.identificationPrefix}-{t.identificationNumber}</p>
                                     </div>
                                 </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => toggleRowExpansion(t.tutorId)}
+                                        className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"
+                                    >
+                                        {expandedRows.has(t.tutorId) ? <ChevronUpIcon className="icon-sm" /> : <ChevronDownIcon className="icon-sm" />}
+                                    </button>
+                                </div>
+                            </div>
 
-                                {isExpanded && (
-                                    <div className="mt-4 space-y-6 animate-fadeIn border-t border-gray-50 dark:border-white/5 pt-6">
-                                        <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
-                                            <div className="flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Carrera</p>
-                                                <div className="flex justify-center w-full">
-                                                    {s.careerName ? (
-                                                        <Badge color={getCareerColor(s.careerName)} variant="light" size="sm">
-                                                            {s.careerName}
-                                                        </Badge>
-                                                    ) : (
-                                                        <span className="text-xs text-gray-400 font-medium">N/A</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Sexo</p>
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{s.sex}</p>
-                                            </div>
-                                            <div className="col-span-2 flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Correo</p>
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium truncate w-full max-w-62.5">{s.email}</p>
-                                            </div>
-                                            <div className="col-span-2 flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Teléfono</p>
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{s.phone}</p>
-                                            </div>
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-[10px] font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-400/10 dark:text-blue-400">
+                                    {t.profession}
+                                </span>
+                            </div>
+
+                            {expandedRows.has(t.tutorId) && (
+                                <div className="space-y-3 pt-3 border-t border-gray-50 dark:border-white/5 animate-fadeIn">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Correo</p>
+                                            <p className="text-xs text-gray-600 dark:text-gray-300 break-all">{t.email}</p>
                                         </div>
-
-                                        <div className="flex flex-col gap-3 pt-2">
-                                            {onView && (
-                                                <button
-                                                    onClick={() => onView(s)}
-                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
-                                                >
-                                                    <EyeIcon className="w-4 h-4" /> Ver
-                                                </button>
-                                            )}
-                                            {onEdit && activeTab === "Activas" && (
-                                                <button
-                                                    onClick={() => onEdit(s)}
-                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
-                                                >
-                                                    <EditIcon className="w-4 h-4" /> Editar
-                                                </button>
-                                            )}
-                                            {onToggleStatus && (
-                                                <button
-                                                    onClick={() => onToggleStatus(s.studentId)}
-                                                    className={`w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold rounded-xl min-h-12 active:scale-95 transition-all border border-transparent ${inactiveMode
-                                                        ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-500/20"
-                                                        : "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:border-red-200 dark:hover:border-red-500/20"
-                                                        }`}
-                                                >
-                                                    {inactiveMode ? (
-                                                        <>
-                                                            <RefreshIcon className="w-4 h-4" /> Restaurar
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <TrashIcon className="w-4 h-4" /> Eliminar
-                                                        </>
-                                                    )}
-                                                </button>
-                                            )}
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Teléfono</p>
+                                            <p className="text-xs text-gray-600 dark:text-gray-300">{t.phone}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Sexo</p>
+                                            <p className="text-xs text-gray-600 dark:text-gray-300 capitalize">{t.sex.toLowerCase()}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Registro</p>
+                                            <p className="text-xs text-gray-600 dark:text-gray-300">{t.registrationDate}</p>
                                         </div>
                                     </div>
-                                )}
+                                </div>
+                            )}
+
+                            <div className="flex items-center justify-between">
+                                <div className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                    Acciones
+                                </div>
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        className="dropdown-toggle inline-flex items-center rounded-lg bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:bg-white/5 dark:text-gray-400 transition-colors"
+                                        onClick={(e) => {
+                                            setAnchorEl(e.currentTarget as HTMLElement);
+                                            setOpenRowId((prev) =>
+                                                prev === t.tutorId ? null : t.tutorId
+                                            );
+                                        }}
+                                        aria-expanded={openRowId === t.tutorId}
+                                    >
+                                        <ThreeDotsIcon className="icon-sm" />
+                                        Opciones
+                                    </button>
+
+                                    <DropdownPortal
+                                        isOpen={openRowId === t.tutorId}
+                                        onClose={() => {
+                                            setOpenRowId(null);
+                                            setAnchorEl(null);
+                                        }}
+                                        anchorRef={{ current: anchorEl as HTMLElement }}
+                                        className="min-w-44"
+                                    >
+                                        <div className="p-1">
+                                            <DropdownItem
+                                                onItemClick={() => {
+                                                    onView?.(t);
+                                                    setOpenRowId(null);
+                                                }}
+                                                className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
+                                            >
+                                                <EyeIcon className="icon-sm" />
+                                                Ver detalles
+                                            </DropdownItem>
+                                            <DropdownItem
+                                                onItemClick={() => {
+                                                    onEdit?.(t);
+                                                    setOpenRowId(null);
+                                                }}
+                                                className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
+                                            >
+                                                <EditIcon className="icon-sm" />
+                                                Editar
+                                            </DropdownItem>
+                                            <DropdownItem
+                                                onItemClick={() => {
+                                                    onToggleStatus?.(t.tutorId);
+                                                    setOpenRowId(null);
+                                                }}
+                                                className={`flex items-center gap-2 ${activeTab === "Activas"
+                                                    ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10"
+                                                    : "text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-400/10"}`}
+                                            >
+                                                {activeTab === "Activas" ? (
+                                                    <>
+                                                        <TrashIcon className="icon-sm" />
+                                                        Eliminar
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <RefreshIcon className="icon-sm" />
+                                                        Restaurar
+                                                    </>
+                                                )}
+                                            </DropdownItem>
+                                        </div>
+                                    </DropdownPortal>
+                                </div>
                             </div>
-                        );
-                    })
+                        </div>
+                    ))
                 ) : (
-                    <div className="p-8 text-center text-gray-500 text-sm">
-                        No se encontraron estudiantes.
+                    <div className="py-12 text-center text-gray-500 dark:text-gray-400">
+                        No se encontraron tutores.
                     </div>
                 )}
             </div>
 
             {/* Paginación */}
-            <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={filteredData.length}
-                itemsPerPage={itemsPerPage}
-                onPageChange={handlePageChange}
-                onItemsPerPageChange={(newItemsPerPage) => {
-                    setItemsPerPage(newItemsPerPage);
-                    setCurrentPage(1);
-                }}
-                itemsPerPageOptions={[5, 10, 25]}
-            />
+            {totalPages > 1 && (
+                <div className="p-4 border-t border-gray-100 dark:border-white/5">
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={filteredData.length}
+                        itemsPerPage={itemsPerPage}
+                        onPageChange={handlePageChange}
+                        onItemsPerPageChange={(newItemsPerPage) => {
+                            setItemsPerPage(newItemsPerPage);
+                            setCurrentPage(1);
+                        }}
+                    />
+                </div>
+            )}
         </div>
     );
 }

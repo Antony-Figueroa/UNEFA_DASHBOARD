@@ -1,6 +1,6 @@
 /**
- * @file students.tsx
- * @description Página principal para la gestión del módulo de Estudiantes.
+ * @file tutors.tsx
+ * @description Página principal para la gestión del módulo de Tutores.
  * Orquesta la visualización de datos en tablas, la gestión de estados (activos/inactivos),
  * y las operaciones CRUD (Crear, Leer, Actualizar, Eliminar) mediante modales y hooks especializados.
  */
@@ -17,24 +17,22 @@ import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } 
 import { PlusCircleIcon, XIcon, CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon } from "../../icons/actions";
 import { InfoIcon } from "../../icons";
 
-import StudentTable from "../../features/students/components/StudentTable";
-import StudentModal from "../../features/students/components/StudentModal";
-import { useStudents } from "../../features/students/hooks/useStudents";
-import { Student, StudentRowData } from "../../features/students/types";
-import { useCareers } from "../../features/careers/hooks/useCareers";
+import TutorTable from "../../features/tutors/components/TutorTable";
+import TutorModal from "../../features/tutors/components/TutorModal";
+import { useTutors } from "../../features/tutors/hooks/useTutors";
+import { Tutor, TutorRowData } from "../../features/tutors/types";
 import { formatDateTime } from "../../utils/date";
 
 /**
- * Transforma un objeto de tipo Student (dominio) a StudentRowData (vista).
+ * Transforma un objeto de tipo Tutor (dominio) a TutorRowData (vista).
  * Realiza el formateo de fechas y concatenación de nombres.
  */
-const formatStudentToRow = (s: Student): StudentRowData => ({
-    ...s,
-    enrollmentDate: formatDateTime(s.enrollmentDate),
-    fullNames: `${s.firstName} ${s.middleName ? s.middleName + " " : ""}${s.lastName} ${s.secondLastName ? s.secondLastName : ""}`.trim(),
+const formatTutorToRow = (t: Tutor): TutorRowData => ({
+    ...t,
+    registrationDate: formatDateTime(t.registrationDate),
 });
 
-export default function StudentsPage() {
+export default function TutorsPage() {
     const { colorMode } = useTheme();
     const [pageLoading, setPageLoading] = useState(true);
 
@@ -46,27 +44,29 @@ export default function StudentsPage() {
     }, []);
 
     const {
-        students,
+        tutors,
         status,
         loadingAction,
         error,
-        addStudent,
-        editStudent,
+        addTutor,
+        editTutor,
         toggleStatus,
-        bulkRemoveStudents,
-        bulkRestoreStudents,
-    } = useStudents();
+        bulkRemoveTutors,
+        bulkRestoreTutors,
+    } = useTutors();
 
-    const { careers } = useCareers();
-
-    const careerOptions = useMemo(() =>
-        careers.map(c => ({ value: c.careerId, label: c.careerName })),
-        [careers]);
+    // Profesiones predefinidas (pueden venir de un hook en el futuro)
+    const professionOptions = [
+        { value: "INGENIERO EN SISTEMAS", label: "INGENIERO EN SISTEMAS" },
+        { value: "INGENIERO INDUSTRIAL", label: "INGENIERO INDUSTRIAL" },
+        { value: "LICENCIADO EN ADMINISTRACIÓN", label: "LICENCIADO EN ADMINISTRACIÓN" },
+        { value: "ABOGADO", label: "ABOGADO" },
+    ];
 
     const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-    const [viewStudent, setViewStudent] = useState<StudentRowData | null>(null);
+    const [editingTutor, setEditingTutor] = useState<Tutor | null>(null);
+    const [viewTutor, setViewTutor] = useState<TutorRowData | null>(null);
 
     type ConfirmationInfo = {
         isOpen: boolean;
@@ -103,33 +103,33 @@ export default function StudentsPage() {
     const [confirmation, setConfirmation] = useState<ConfirmationInfo | null>(null);
 
     const filtered = useMemo(() => {
-        const byStatus = students.filter((s) => (activeTab === "Activas" ? s.status : !s.status));
-        return byStatus.map(formatStudentToRow);
-    }, [students, activeTab]);
+        const byStatus = tutors.filter((t) => (activeTab === "Activas" ? t.status : !t.status));
+        return byStatus.map(formatTutorToRow);
+    }, [tutors, activeTab]);
 
     const handleCreate = () => {
-        setEditingStudent(null);
+        setEditingTutor(null);
         setIsModalOpen(true);
     };
 
-    const handleEdit = (row: StudentRowData) => {
-        const original = students.find((s) => s.studentId === row.studentId) || null;
-        setEditingStudent(original);
+    const handleEdit = (row: TutorRowData) => {
+        const original = tutors.find((t) => t.tutorId === row.tutorId) || null;
+        setEditingTutor(original);
         setIsModalOpen(true);
     };
 
-    const handleSave = (payload: Omit<Student, "studentId" | "enrollmentDate">) => {
-        const isEditing = !!editingStudent;
+    const handleSave = (payload: Omit<Tutor, "tutorId" | "registrationDate">) => {
+        const isEditing = !!editingTutor;
         setConfirmation({
             isOpen: true,
             title: isEditing ? "Confirmar Modificación" : "Confirmar Registro",
-            message: `¿Deseas ${isEditing ? "guardar los cambios de" : "registrar a"} este estudiante?`,
+            message: `¿Deseas ${isEditing ? "guardar los cambios de" : "registrar a"} este tutor?`,
             onConfirm: async () => {
                 try {
-                    if (isEditing && editingStudent) {
-                        await editStudent({ ...editingStudent, ...payload });
+                    if (isEditing && editingTutor) {
+                        await editTutor({ ...editingTutor, ...payload });
                     } else {
-                        await addStudent(payload);
+                        await addTutor(payload);
                     }
                     setIsModalOpen(false);
                 } catch (e) {
@@ -143,16 +143,16 @@ export default function StudentsPage() {
         });
     };
 
-    const handleToggleStatus = (studentId: string) => {
-        const original = students.find((s) => s.studentId === studentId);
+    const handleToggleStatus = (tutorId: string) => {
+        const original = tutors.find((t) => t.tutorId === tutorId);
         if (!original) return;
         const goingInactive = original.status === true;
         setConfirmation({
             isOpen: true,
-            title: goingInactive ? "Enviar a Inactivo" : "Restaurar Estudiante",
+            title: goingInactive ? "Enviar a Inactivo" : "Restaurar Tutor",
             message: goingInactive
                 ? `¿Deseas enviar a "${original.firstName} ${original.lastName}" a la Inactivo?`
-                : `¿Deseas restaurar al estudiante "${original.firstName} ${original.lastName}"?`,
+                : `¿Deseas restaurar al tutor "${original.firstName} ${original.lastName}"?`,
             onConfirm: async () => {
                 try {
                     await toggleStatus(original);
@@ -168,10 +168,10 @@ export default function StudentsPage() {
         setConfirmation({
             isOpen: true,
             title: "Eliminación Masiva",
-            message: `¿Estás seguro de enviar ${ids.length} estudiantes a la Inactivo?`,
+            message: `¿Estás seguro de enviar ${ids.length} tutores a la Inactivo?`,
             onConfirm: async () => {
                 try {
-                    await bulkRemoveStudents(ids);
+                    await bulkRemoveTutors(ids);
                 } catch (e) { console.error(e); }
                 finally { setConfirmation(null); }
             },
@@ -184,10 +184,10 @@ export default function StudentsPage() {
         setConfirmation({
             isOpen: true,
             title: "Restauración Masiva",
-            message: `¿Deseas restaurar ${ids.length} estudiantes seleccionados?`,
+            message: `¿Deseas restaurar ${ids.length} tutores seleccionados?`,
             onConfirm: async () => {
                 try {
-                    await bulkRestoreStudents(ids);
+                    await bulkRestoreTutors(ids);
                 } catch (e) { console.error(e); }
                 finally { setConfirmation(null); }
             },
@@ -198,36 +198,35 @@ export default function StudentsPage() {
 
     return (
         <>
-            <PageMeta title="Gestión de Estudiantes" description="Administración de estudiantes" />
+            <PageMeta title="Gestión de Tutores" description="Administración de tutores" />
 
-            <SkeletonLoader isLoading={pageLoading} skeleton={<BreadcrumbSkeleton />} id="students-breadcrumb">
-                <PageBreadcrumb pageTitle="Estudiantes" />
+            <SkeletonLoader isLoading={pageLoading} skeleton={<BreadcrumbSkeleton />} id="tutors-breadcrumb">
+                <PageBreadcrumb pageTitle="Tutores" />
             </SkeletonLoader>
 
             {loadingAction && <FullScreenLoader label="Procesando..." />}
 
             <div className="stagger-delay">
-                {/* Banner de Modo Demostración */}
-
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <SkeletonLoader isLoading={pageLoading} skeleton={<TitleSkeleton />} id="students-title">
+                        <SkeletonLoader isLoading={pageLoading} skeleton={<TitleSkeleton />} id="tutors-title">
                             <div className="flex items-center gap-2">
-                                <h2 className="text-2xl font-bold text-gray-800 dark:text-white/90">Listado de Estudiantes</h2>
+                                <h2 className="text-2xl font-bold text-gray-800 dark:text-white/90">Listado de Tutores</h2>
                                 <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
                                     Demo
                                 </span>
                             </div>
-                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Gestiona la información y estado académico de los estudiantes.</p>
+                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Gestiona la información y estado académico de los tutores.</p>
                         </SkeletonLoader>
                     </div>
 
                     {!pageLoading && (
                         <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
-                            Nuevo Estudiante
+                            Nuevo Tutor
                         </Button>
                     )}
                 </div>
+
                 {!pageLoading && (
                     <div className="mb-6 flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-700 dark:border-blue-900/30 dark:bg-blue-500/10 dark:text-blue-400">
                         <InfoIcon className="h-5 w-5 shrink-0" />
@@ -236,62 +235,57 @@ export default function StudentsPage() {
                         </div>
                     </div>
                 )}
-                {/* Contenido principal */}
+
                 <div className="space-y-6">
-                    {/* Tabla de Estudiantes */}
-                    <ComponentCard title={activeTab === "Activas" ? "Estudiantes Activos" : "Estudiantes Inactivos"}>
+                    <ComponentCard title={activeTab === "Activas" ? "Tutores Activos" : "Tutores Inactivos"}>
                         <div className="mb-6 flex border-b border-gray-200 dark:border-white/5">
                             <button
                                 onClick={() => setActiveTab("Activas")}
-                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Activas" ? "text-brand-500" : "text-gray-500 hover:text-gray-700"
-                                    }`}
+                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Activas" ? "text-brand-500" : "text-gray-500 hover:text-gray-700"}`}
                             >
                                 Activos
                                 {activeTab === "Activas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
                             </button>
                             <button
                                 onClick={() => setActiveTab("Inactivas")}
-                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Inactivas" ? "text-brand-500" : "text-gray-500 hover:text-gray-700"
-                                    }`}
+                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Inactivas" ? "text-brand-500" : "text-gray-500 hover:text-gray-700"}`}
                             >
                                 Inactivos
                                 {activeTab === "Inactivas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
                             </button>
                         </div>
 
-                        <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="students-table">
-                            <StudentTable
+                        <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="tutors-table">
+                            <TutorTable
                                 data={filtered}
                                 status={status}
                                 error={error}
                                 activeTab={activeTab}
                                 onEdit={handleEdit}
                                 onToggleStatus={handleToggleStatus}
-                                onView={setViewStudent}
+                                onView={setViewTutor}
                                 onBulkDelete={handleBulkDelete}
                                 onBulkRestore={handleBulkRestore}
                                 inactiveMode={activeTab === "Inactivas"}
-                                careerOptions={careerOptions}
+                                professionOptions={professionOptions}
                                 loading={loadingAction}
                             />
                         </SkeletonLoader>
                     </ComponentCard>
 
-                    <StudentModal
+                    <TutorModal
                         isOpen={isModalOpen}
                         onClose={() => setIsModalOpen(false)}
                         onSave={handleSave}
-                        editingStudent={editingStudent}
-                        careerOptions={careerOptions}
+                        editingTutor={editingTutor}
                         isLoading={loadingAction}
                     />
 
-                    <Modal isOpen={!!viewStudent} onClose={() => setViewStudent(null)} isFullscreen={true} showCloseButton>
-                        <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">Detalles Completos del Estudiante</ModalHeader>
+                    <Modal isOpen={!!viewTutor} onClose={() => setViewTutor(null)} isFullscreen={true} showCloseButton>
+                        <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">Detalles Completos del Tutor</ModalHeader>
                         <ModalBody className="overflow-y-auto custom-scrollbar grow px-6 sm:px-12 py-8">
-                            {viewStudent && (
+                            {viewTutor && (
                                 <div className="space-y-12 max-w-5xl mx-auto py-2">
-                                    {/* Sección Personal */}
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-2 border-b border-gray-100 pb-2 dark:border-white/5">
                                             <div className="h-2 w-2 rounded-full bg-blue-500"></div>
@@ -300,98 +294,71 @@ export default function StudentsPage() {
                                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
                                             <div>
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Primer Nombre</label>
-                                                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">{viewStudent.firstName}</p>
+                                                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">{viewTutor.firstName}</p>
                                             </div>
                                             <div>
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Segundo Nombre</label>
-                                                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">{viewStudent.middleName || "-"}</p>
+                                                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">{viewTutor.middleName || "-"}</p>
                                             </div>
                                             <div>
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Primer Apellido</label>
-                                                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">{viewStudent.lastName}</p>
+                                                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">{viewTutor.lastName}</p>
                                             </div>
                                             <div>
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Segundo Apellido</label>
-                                                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">{viewStudent.secondLastName || "-"}</p>
+                                                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">{viewTutor.secondLastName || "-"}</p>
                                             </div>
                                             <div>
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Cédula / ID</label>
-                                                <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{viewStudent.identificationPrefix}-{viewStudent.identificationNumber}</p>
+                                                <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{viewTutor.identificationPrefix}-{viewTutor.identificationNumber}</p>
                                             </div>
                                             <div>
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Sexo</label>
-                                                <p className="text-sm text-gray-800 dark:text-white/90">{viewStudent.sex}</p>
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Estado Civil</label>
-                                                <p className="text-sm text-gray-800 dark:text-white/90">{viewStudent.civilStatus}</p>
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Fecha de Nacimiento</label>
-                                                <p className="text-sm text-gray-800 dark:text-white/90">{viewStudent.birthDate}</p>
+                                                <p className="text-sm text-gray-800 dark:text-white/90">{viewTutor.sex}</p>
                                             </div>
                                             <div>
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Teléfono</label>
-                                                <p className="text-sm text-gray-800 dark:text-white/90">{viewStudent.phone}</p>
+                                                <p className="text-sm text-gray-800 dark:text-white/90">{viewTutor.phone}</p>
                                             </div>
                                             <div className="sm:col-span-2 md:col-span-1">
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Email</label>
-                                                <p className="text-sm text-gray-800 dark:text-white/90 break-all">{viewStudent.email}</p>
+                                                <p className="text-sm text-gray-800 dark:text-white/90 break-all">{viewTutor.email}</p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Sección Académica */}
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-2 border-b border-gray-100 pb-2 dark:border-white/5">
                                             <div className="h-2 w-2 rounded-full bg-brand-500"></div>
-                                            <h4 className="font-bold text-gray-800 dark:text-white/90 uppercase text-xs tracking-wider">Datos Académicos</h4>
+                                            <h4 className="font-bold text-gray-800 dark:text-white/90 uppercase text-xs tracking-wider">Datos Profesionales</h4>
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                                            <div className="sm:col-span-2">
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Carrera</label>
-                                                <p className="text-sm font-bold text-gray-800 dark:text-white/90 uppercase">{viewStudent.careerName || "No asignada"}</p>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Profesión</label>
+                                                <p className="text-sm font-bold text-gray-800 dark:text-white/90 uppercase">{viewTutor.profession}</p>
                                             </div>
                                             <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Semestre / Sección</label>
-                                                <p className="text-sm font-bold text-gray-800 dark:text-white/90">{viewStudent.semester} - {viewStudent.section}</p>
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Condición</label>
+                                                <p className="text-sm font-bold text-gray-800 dark:text-white/90">{viewTutor.condition}</p>
                                             </div>
                                             <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Régimen</label>
-                                                <p className="text-sm font-bold text-gray-800 dark:text-white/90">{viewStudent.regime}</p>
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Dedicación</label>
+                                                <p className="text-sm font-bold text-gray-800 dark:text-white/90">{viewTutor.dedication}</p>
                                             </div>
                                             <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Tipo / Rango</label>
-                                                <p className="text-sm font-bold text-gray-800 dark:text-white/90">{viewStudent.studentType} - {viewStudent.militaryRank}</p>
+                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Categoría</label>
+                                                <p className="text-sm font-bold text-gray-800 dark:text-white/90">{viewTutor.category}</p>
                                             </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">¿Trabaja?</label>
-                                                <p className="text-sm font-bold text-gray-800 dark:text-white/90">{viewStudent.works}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Estado y Fechas */}
-                                    <div className="rounded-xl bg-gray-50 dark:bg-white/3 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Estado en Sistema</label>
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${viewStudent.status ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}`}>
-                                                {viewStudent.status ? "Activo" : "En Papelera"}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Fecha Registro</label>
-                                            <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{viewStudent.enrollmentDate}</p>
                                         </div>
                                     </div>
                                 </div>
                             )}
                         </ModalBody>
                         <ModalFooter className="shrink-0">
-                            <Button variant="outline" onClick={() => setViewStudent(null)} className="flex-1 sm:flex-none">
+                            <Button variant="outline" onClick={() => setViewTutor(null)} className="flex-1 sm:flex-none">
                                 Cerrar
                             </Button>
-                            <Button onClick={() => { handleEdit(viewStudent!); setViewStudent(null); }} className="flex-1 sm:flex-none">
+                            <Button onClick={() => { handleEdit(viewTutor!); setViewTutor(null); }} className="flex-1 sm:flex-none">
                                 Editar Información
                             </Button>
                         </ModalFooter>

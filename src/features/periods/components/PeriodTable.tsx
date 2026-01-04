@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useTheme } from "../../../context/ThemeContext";
+import { useTheme } from "../../../context/theme";
 import { Dropdown } from "../../../components/ui/dropdown/Dropdown";
 import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
 import {
@@ -16,7 +16,6 @@ import {
     EditIcon,
     TrashIcon,
     ThreeDotsIcon,
-    PlayIcon,
     CheckCircleIcon,
     RefreshIcon,
     EyeIcon,
@@ -46,7 +45,6 @@ const STATUS_LABELS = {
 interface ActionMenuProps {
     onEdit?: () => void;
     onDelete?: () => void;
-    onStart?: () => void;
     onCulminate?: () => void;
     onRestore?: () => void;
     onView?: () => void;
@@ -60,7 +58,6 @@ interface PeriodTableProps {
     status: "loading" | "success" | "error";
     error: Error | null;
     onEdit?: (periodo: PeriodoRowData) => void;
-    onStart?: (periodo: PeriodoRowData) => void;
     onCulminate?: (periodo: PeriodoRowData) => void;
     onDelete?: (id: string) => void;
     onRestore?: (periodo: PeriodoRowData) => void;
@@ -92,7 +89,6 @@ const getSafeProgress = (periodo: PeriodoRowData): number | null => {
 const ActionMenu = ({
     onEdit,
     onDelete,
-    onStart,
     onCulminate,
     onRestore,
     onView,
@@ -234,15 +230,6 @@ const ActionMenu = ({
                                     Editar
                                 </DropdownItem>
                             )}
-                            {hasStatus && currentPeriodStatus === 1 && onStart && (
-                                <DropdownItem
-                                    onItemClick={() => handleAction(onStart)}
-                                    className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-green-600 hover:bg-green-50 dark:text-green-500 dark:hover:bg-meta-4"
-                                >
-                                    <PlayIcon className="icon-sm" />
-                                    Iniciar
-                                </DropdownItem>
-                            )}
                             {hasStatus && currentPeriodStatus === 2 && onCulminate && (
                                 <DropdownItem
                                     onItemClick={() => handleAction(onCulminate)}
@@ -295,7 +282,6 @@ const PeriodTable = ({
     status,
     error,
     onEdit,
-    onStart,
     onCulminate,
     onDelete,
     onRestore,
@@ -549,6 +535,9 @@ const PeriodTable = ({
                                             <Badge
                                                 size="sm"
                                                 color={getStatusColor(periodStatus)}
+                                                variant="light"
+                                                shape="rounded"
+                                                className="font-semibold"
                                             >
                                                 {getStatusLabel(periodStatus)}
                                             </Badge>
@@ -582,7 +571,6 @@ const PeriodTable = ({
                                         <TableCell className="table-cell text-right">
                                             <ActionMenu
                                                 onEdit={onEdit ? () => onEdit(periodo) : undefined}
-                                                onStart={onStart ? () => onStart(periodo) : undefined}
                                                 onCulminate={
                                                     onCulminate ? () => onCulminate(periodo) : undefined
                                                 }
@@ -708,14 +696,6 @@ const PeriodTable = ({
                                                         className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
                                                     >
                                                         <EditIcon className="icon-sm" /> Editar
-                                                    </button>
-                                                )}
-                                                {!!periodo.status && periodStatus === 1 && onStart && (
-                                                    <button
-                                                        onClick={() => onStart(periodo)}
-                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-green-200 dark:hover:border-green-500/20"
-                                                    >
-                                                        <PlayIcon className="icon-sm" /> Iniciar
                                                     </button>
                                                 )}
                                                 {!!periodo.status && periodStatus === 2 && onCulminate && (

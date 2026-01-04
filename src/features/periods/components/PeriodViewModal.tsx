@@ -3,7 +3,7 @@
  * @description Muestra un calendario de solo lectura con el rango de fechas resaltado.
  */
 
-import { useTheme } from '../../../context/ThemeContext';
+import { useTheme } from '../../../context/theme';
 import { Periodo } from '../types';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
 import Button from '../../../components/ui/button/Button';

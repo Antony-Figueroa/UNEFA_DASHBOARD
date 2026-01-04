@@ -1,7 +1,7 @@
 import React from 'react';
 import Flatpickr from 'react-flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../context/theme';
 import { CalendarIcon } from '../../icons/actions';
 
 interface FlatpickrDatePickerProps {

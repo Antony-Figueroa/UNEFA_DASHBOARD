@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useToast, Toast } from "../../../context/ToastContext";
+import { useToast, type Toast } from "../../../context/toast";
 import Alert from "../alert/Alert";
 
 const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({ toast, onRemove }) => {

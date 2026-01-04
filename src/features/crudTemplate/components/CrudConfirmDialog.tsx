@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Modal, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { XIcon, CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon } from "../../../icons/actions";
-import { useTheme } from "../../../context/ThemeContext";
+import { useTheme } from "../../../context/theme";
 import Button from "../../../components/ui/button/Button";
 
 type CrudConfirmVariant = "success" | "error" | "warning" | "info";

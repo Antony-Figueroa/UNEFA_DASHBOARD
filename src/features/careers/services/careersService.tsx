@@ -120,20 +120,29 @@ const toApi = (career: Partial<Career>): Partial<CareerApiDTO> => {
 
 export const getCareers = async (retries = 3): Promise<Career[]> => {
   try {
+    console.log(`[careersService] Fetching: ${API_URL}`);
     const response = await fetch(API_URL);
+
     if (!response.ok) {
+      console.error(`[careersService] HTTP Error ${response.status} for ${API_URL}`);
+
+      // Solo reintentar si es un error de servidor temporal (503)
       if (response.status === 503 && retries > 0) {
         console.warn(`Servicio no disponible (503), reintentando... (${retries} intentos restantes)`);
         await new Promise(resolve => setTimeout(resolve, 2000));
         return getCareers(retries - 1);
       }
+
+      // Para 404 u otros errores permanentes, no reintentar
       throw new Error(`Error HTTP: ${response.status}`);
     }
+
     const data: CareerApiDTO[] = await response.json();
     return data.map(fromApi);
   } catch (error) {
-    if (retries > 0) {
-      console.warn(`Error de red o servidor, reintentando... (${retries} intentos restantes)`);
+    // Si es un error de red (no HTTP), reintentar
+    if (error instanceof TypeError && retries > 0) {
+      console.warn(`Error de red, reintentando... (${retries} intentos restantes)`);
       await new Promise(resolve => setTimeout(resolve, 2000));
       return getCareers(retries - 1);
     }

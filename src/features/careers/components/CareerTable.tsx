@@ -356,7 +356,7 @@ export default function CareerTable({
                   </TableCell>
                   <TableCell className="table-cell font-medium text-gray-800 dark:text-white/90">{c.careerCode}</TableCell>
                   <TableCell className="table-cell">
-                    <Badge color={getCareerColor(c.careerName)} variant="light" size="sm">
+                    <Badge color={getCareerColor(c.careerName)} variant="light" size="sm" shape="rounded">
                       {c.careerName}
                     </Badge>
                   </TableCell>

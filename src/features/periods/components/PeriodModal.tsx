@@ -24,7 +24,7 @@ interface PeriodModalProps {
 
 // Esquema de validación con Zod
 const periodSchema = z.object({
-    anio: z.string().min(1, { message: 'El año es obligatorio.' }),
+    year: z.string().min(1, { message: 'El año es obligatorio.' }),
     periodoTipo: z.enum(['I', 'II']),
     startDate: z.date({
         message: 'La fecha de inicio es obligatoria.',
@@ -43,11 +43,22 @@ const periodSchema = z.object({
     }
     // Validación de 16 semanas (16 semanas * 7 días * 24 horas * 60 min * 60 seg * 1000 ms)
     const minDuration = 16 * 7 * 24 * 60 * 60 * 1000;
-    if (data.endDate.getTime() - data.startDate.getTime() < minDuration) {
+    const maxDuration = minDuration + (24 * 60 * 60 * 1000 - 1); // Permitir hasta el final del último día
+    const duration = data.endDate.getTime() - data.startDate.getTime();
+
+    if (duration < minDuration || duration > maxDuration) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "El periodo debe tener una duración mínima de 16 semanas.",
+            message: "El periodo debe tener una duración exacta de 16 semanas.",
             path: ["endDate"]
+        });
+    }
+    const yearNum = parseInt(data.year);
+    if (!isNaN(yearNum) && data.startDate.getFullYear() !== yearNum) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "La fecha de inicio debe corresponder al año seleccionado.",
+            path: ["startDate"]
         });
     }
 });
@@ -59,7 +70,7 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
     const { register, handleSubmit, formState: { errors }, control, reset, watch, setError, setValue } = useForm<PeriodFormData>({
         resolver: zodResolver(periodSchema),
         defaultValues: {
-            anio: '',
+            Year: '',
             periodoTipo: 'I',
         },
     });
@@ -121,11 +132,11 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
         if (isOpen) {
             if (periodo) {
                 // Dividir el lapso existente (ej: "2025-I") en año y tipo
-                const [anio, tipo] = periodo.description.split('-');
+                const [year, tipo] = periodo.description.split('-');
                 const inicio = periodo.startDate; // Ya es un objeto Date gracias al servicio
                 const fin = periodo.endDate;     // Ya es un objeto Date gracias al servicio
                 reset({
-                    anio: anio,
+                    year: year,
                     periodoTipo: tipo as 'I' | 'II',
                     startDate: !isNaN(inicio.getTime()) ? inicio : undefined,
                     endDate: !isNaN(fin.getTime()) ? fin : undefined,
@@ -134,19 +145,19 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                 // --- Autocompletado para un nuevo periodo ---
                 const getLapsoValue = (l: string) => parseInt(l.split('-')[0]) + (l.endsWith('I') ? 0 : 0.5);
 
-                let nextAnio = new Date().getFullYear().toString();
+                let nextYear = new Date().getFullYear().toString();
                 let nextPeriodoTipo: 'I' | 'II' = 'I';
                 let autoStartDate: Date | undefined = undefined;
 
                 if (existingPeriods.length > 0) {
                     const lastPeriod = [...existingPeriods].sort((a, b) => getLapsoValue(b.description) - getLapsoValue(a.description))[0];
-                    const [lastAnio, lastTipo] = lastPeriod.description.split('-');
+                    const [lastYear, lastTipo] = lastPeriod.description.split('-');
 
                     if (lastTipo === 'I') {
-                        nextAnio = lastAnio;
+                        nextYear = lastYear;
                         nextPeriodoTipo = 'II';
                     } else {
-                        nextAnio = (parseInt(lastAnio) + 1).toString();
+                        nextYear = (parseInt(lastYear) + 1).toString();
                         nextPeriodoTipo = 'I';
                     }
 
@@ -156,7 +167,7 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                 }
 
                 reset({
-                    anio: nextAnio,
+                    year: nextYear,
                     periodoTipo: nextPeriodoTipo,
                     startDate: autoStartDate,
                     endDate: autoStartDate ? new Date(autoStartDate.getTime() + (16 * 7 * 24 * 60 * 60 * 1000)) : undefined,
@@ -169,7 +180,8 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
      * Maneja el envío del formulario, valida las fechas y llama a la función onSave.
      */
     const onSubmit = (data: PeriodFormData) => {
-        const newDescription = `${data.anio}-${data.periodoTipo}`;
+        let newDescription = `${data.year}-${data.periodoTipo}`;
+        let startDateToUse = data.startDate;
 
         // --- Validación de Solapamiento de Fechas ---
         const { startDate: newStart, endDate: newEnd } = data;
@@ -225,9 +237,14 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
             }
         }
 
+        if (periodo && isInCurso) {
+            newDescription = periodo.description;
+            startDateToUse = periodo.startDate;
+        }
+
         const periodoData = {
             description: newDescription,
-            startDate: data.startDate,
+            startDate: startDateToUse,
             endDate: data.endDate,
             periodStatus: periodo?.periodStatus || 1, // 1 = Pendiente por defecto
             status: true // Activo por defecto
@@ -258,11 +275,11 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                     <div className="grid grid-cols-1 gap-y-5">
                         <div>
                             <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Lapso Académico *</label>
-                            <div className={`flex items-center rounded-lg border ${errors.anio || errors.periodoTipo ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} bg-white dark:bg-gray-800`}>
+                            <div className={`flex items-center rounded-lg border ${errors.year || errors.periodoTipo ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} bg-white dark:bg-gray-800`}>
                                 <div className="relative w-full border-r border-gray-300 dark:border-gray-700">
                                     <select
                                         disabled={isCulminado || isInCurso}
-                                        {...register('anio')}
+                                        {...register('year')}
                                         className="w-full appearance-none bg-transparent py-2.5 pl-4 pr-10 text-sm text-gray-800 outline-none dark:text-white"
                                     >
                                         <option value="" disabled className="bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Año</option>
@@ -293,7 +310,7 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                                     </span>
                                 </div>
                             </div>
-                            {(errors.anio || errors.periodoTipo) && <p className="mt-1 text-xs text-red-500">{errors.anio?.message || errors.periodoTipo?.message}</p>}
+                            {(errors.year || errors.periodoTipo) && <p className="mt-1 text-xs text-red-500">{errors.year?.message || errors.periodoTipo?.message}</p>}
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -333,7 +350,7 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                                     name="endDate"
                                     render={({ field }) => (
                                         <FlatpickrDatePicker
-                                            disabled={isCulminado || isInCurso}
+                                            disabled={isCulminado}
                                             value={field.value ?? ''}
                                             onChange={(dates) => field.onChange(dates[0])}
                                             options={{

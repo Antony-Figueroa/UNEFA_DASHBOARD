@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Student } from "../types";
-import { useToast } from "../../../context/ToastContext";
+import { useToast } from "../../../context/toast";
 import { ChangeComparison, RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
 
 type Status = "loading" | "success" | "error";

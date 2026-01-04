@@ -6,7 +6,7 @@
  */
 
 import { useState, useMemo, useEffect } from "react";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../context/theme";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
@@ -22,7 +22,6 @@ import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import PeriodViewModal from "../../features/periods/components/PeriodViewModal";
 import { Periodo, PeriodoRowData } from "../../features/periods/types";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
-import { useToast } from "../../context/ToastContext";
 
 type ConfirmationInfo = {
     isOpen: boolean;
@@ -78,7 +77,6 @@ export default function Period() {
         removePeriod,
     } = usePeriods();
 
-    const { addToast } = useToast();
 
     // Estado para controlar la visibilidad y contenido de los modales.
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -145,47 +143,6 @@ export default function Period() {
         });
     };
 
-    const handleStartPeriod = async (periodoToStart: PeriodoRowData) => {
-        // Validación 1: Solo puede haber un periodo "En Curso".
-        const isAnyInProgress = periodos.some(p => p.periodStatus === 2 && p.periodId !== periodoToStart.periodId);
-        if (isAnyInProgress) {
-            addToast({
-                variant: 'error',
-                title: 'Operación no permitida',
-                message: 'Ya existe otro periodo "En Curso". Finalícelo antes de iniciar uno nuevo.'
-            });
-            return;
-        }
-
-        // Validación 2: Todos los periodos anteriores deben estar culminados.
-        const getLapsoValue = (l: string) => {
-            const [y, t] = l.split('-');
-            return parseInt(y) + (t === 'I' ? 0 : 0.5);
-        };
-        const valueToStart = getLapsoValue(periodoToStart.description);
-        const hasUnfinishedPrevious = periodos.some(p => getLapsoValue(p.description) < valueToStart && p.periodStatus !== 3);
-        if (hasUnfinishedPrevious) {
-            addToast({
-                variant: 'error',
-                title: 'Operación no permitida',
-                message: 'Para iniciar este periodo, todos los anteriores deben estar "Culminados".'
-            });
-            return;
-        }
-
-        setConfirmation({
-            isOpen: true,
-            title: 'Confirmar Inicio',
-            message: `¿Estás seguro de que deseas iniciar el periodo "${periodoToStart.description}"? Esta acción no se puede deshacer.`,
-            onConfirm: async () => {
-                const originalPeriodo = periodos.find(p => p.periodId === periodoToStart.periodId);
-                if (originalPeriodo) await editPeriod({ ...originalPeriodo, periodStatus: 2 });
-                setConfirmation(null);
-            },
-            confirmText: 'Iniciar',
-            variant: 'success'
-        });
-    };
 
     const handleCulminatePeriod = async (periodoToCulminate: PeriodoRowData) => {
         setConfirmation({
@@ -340,7 +297,6 @@ export default function Period() {
                                         status={status}
                                         error={error}
                                         onEdit={handleOpenEditModal}
-                                        onStart={handleStartPeriod}
                                         onCulminate={handleCulminatePeriod}
                                         onView={handleOpenViewModal}
                                         onDelete={handleDelete}

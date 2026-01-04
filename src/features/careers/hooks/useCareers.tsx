@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Career } from "../types";
 import * as careersService from "../services/careersService";
-import { useToast } from "../../../context/ToastContext";
+import { useToast } from "../../../context/toast";
 import { ChangeComparison, RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
 
 type Status = "loading" | "success" | "error";
@@ -247,4 +247,3 @@ export const useCareers = () => {
     bulkRestoreCareers,
   };
 };
-

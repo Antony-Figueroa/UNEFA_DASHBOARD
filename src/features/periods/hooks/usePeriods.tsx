@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Periodo } from "../types";
 import * as periodService from "../services/periodService";
-import { useToast } from "../../../context/ToastContext";
+import { useToast } from "../../../context/toast";
 import { ChangeComparison, RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
 
 type Status = 'loading' | 'success' | 'error';

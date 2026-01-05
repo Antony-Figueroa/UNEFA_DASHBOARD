@@ -1,0 +1,39 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: unefa-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/backend # Evitar que el backend local interfiera si se mapea la raíz
+    environment:
+      - VITE_API_URL=http://localhost:3000/api
+      - VITE_PROXY_TARGET=http://backend:3000
+    depends_on:
+      - backend
+    networks:
+      - unefa-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: unefa-backend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - PORT=3000
+      - NODE_ENV=development
+    networks:
+      - unefa-network
+
+networks:
+  unefa-network:
+    driver: bridge

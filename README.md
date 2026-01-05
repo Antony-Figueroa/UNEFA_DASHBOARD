@@ -1,6 +1,6 @@
-# TailAdmin — Plantilla React Admin Dashboard
+# Proyecto-Unefa — Plantilla React Admin Dashboard
 
-TailAdmin es una plantilla moderna y gratuita para construir paneles de administración y aplicaciones SaaS con **React**, **Tailwind CSS v4** y **Vite**. Este README ofrece una documentación completa para comprender la arquitectura del proyecto, el flujo del sistema, las tecnologías utilizadas y los pasos para extender y mantener el código.
+Proyecto-Unefa es una plantilla moderna y gratuita para construir paneles de administración y aplicaciones SaaS con **React**, **Tailwind CSS v4** y **Vite**. Este README ofrece una documentación completa para comprender la arquitectura del proyecto, el flujo del sistema, las tecnologías utilizadas y los pasos para extender y mantener el código.
 
 ## Índice
 

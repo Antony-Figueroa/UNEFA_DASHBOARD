@@ -83,6 +83,7 @@ export const usePeriods = () => {
                 onViewDetails: () => console.log("Ver detalles de periodo:", newPeriod.periodId),
             });
         } catch (e) {
+            setLoadingAction(false);
             const err = e instanceof Error ? e : new Error('Error desconocido al crear');
             addToast({ variant: "error", title: "Error al Crear", message: err.message });
             throw err;
@@ -112,6 +113,7 @@ export const usePeriods = () => {
                 } : undefined
             });
         } catch (e) {
+            setLoadingAction(false);
             const err = e instanceof Error ? e : new Error('Error desconocido al actualizar');
             addToast({ variant: "error", title: "Error al Actualizar", message: err.message });
             throw err;

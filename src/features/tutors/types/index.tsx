@@ -31,6 +31,7 @@ export interface Tutor {
   // Metadatos
   registrationDate: Date; // fecha de registro
   status: boolean; // true: activo, false: inactivo/papelera
+  carreras: string[];
 }
 
 /**

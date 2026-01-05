@@ -496,7 +496,13 @@ export default function CareerTable({
                       )}
                       {onToggleStatus && (
                         <button
-                          onClick={() => onToggleStatus(c.careerId)}
+                          onClick={() => {
+                            if (!inactiveMode && onDelete) {
+                              onDelete(c.careerId);
+                            } else {
+                              onToggleStatus(c.careerId);
+                            }
+                          }}
                           className={`w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold rounded-xl min-h-12 active:scale-95 transition-all border border-transparent ${inactiveMode
                             ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-500/20"
                             : "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:border-red-200 dark:hover:border-red-500/20"
@@ -511,6 +517,14 @@ export default function CareerTable({
                               <TrashIcon className="icon-sm" /> Eliminar
                             </>
                           )}
+                        </button>
+                      )}
+                      {onDelete && activeTab === "Activas" && !onToggleStatus && (
+                        <button
+                          onClick={() => onDelete(c.careerId)}
+                          className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-red-200 dark:hover:border-red-500/20"
+                        >
+                          <TrashIcon className="icon-sm" /> Eliminar
                         </button>
                       )}
                     </div>

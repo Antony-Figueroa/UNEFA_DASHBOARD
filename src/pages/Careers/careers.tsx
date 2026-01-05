@@ -81,6 +81,7 @@ export default function CareersPage() {
     error,
     addCareer,
     editCareer,
+    removeCareer,
     toggleStatus,
     bulkRemoveCareers,
     bulkRestoreCareers,
@@ -225,6 +226,32 @@ export default function CareersPage() {
   };
 
   /**
+   * Maneja la eliminación (inactivación) de una carrera.
+   * @param {string} careerId - ID único de la carrera.
+   */
+  const handleDelete = (careerId: string) => {
+    const original = careers.find((c) => c.careerId === careerId);
+    if (!original) return;
+
+    setConfirmation({
+      isOpen: true,
+      title: "Confirmar Envío a Inactivos",
+      message: `¿Deseas enviar la carrera "${original.careerName}" a Inactivos?`,
+      onConfirm: async () => {
+        try {
+          await removeCareer(original);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setConfirmation(null);
+        }
+      },
+      confirmText: "Enviar a Inactivo",
+      variant: "warning",
+    });
+  };
+
+  /**
    * Ejecuta la eliminación masiva de múltiples carreras seleccionadas.
    * @param {string[]} ids - Lista de IDs de carreras a eliminar.
    */
@@ -349,6 +376,7 @@ export default function CareersPage() {
                 error={error}
                 activeTab={activeTab}
                 onEdit={handleEdit}
+                onDelete={handleDelete}
                 onToggleStatus={handleToggleStatus}
                 onView={setViewCareer}
                 onBulkDelete={handleBulkDelete}

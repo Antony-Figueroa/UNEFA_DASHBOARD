@@ -10,53 +10,68 @@ const API_URL = "/api/careers";
 
 // DTO de la API — flexible para adaptarse a números o strings
 interface CareerApiDTO {
-  // id por defecto de MockAPI
-  id?: string;
-  // variantes minúsculas
   careerId?: string;
-  careerCode?: string;
-  careerName?: string;
-  minimumGrade?: number | string;
-  careerAbbreviation?: string;
-  internshipTypeIds?: string[];
-  creationDate?: number | string;
-  status?: boolean | number;
-  // variantes mayúsculas
   CAREER_ID?: string;
-  CAREER_CODE?: string;
-  CAREER_NAME?: string;
-  MINIMUM_GRADE?: number | string;
-  CAREER_ABBREVIATION?: string;
-  INTERNSHIP_TYPE_IDS?: string[];
-  CREATION_DATE?: number | string;
-  STATUS?: boolean | number;
-  // variantes adicionales que podrían aparecer
+  id?: string;
   ID?: string;
+  _id?: string;
+  careerCode?: string;
+  CAREER_CODE?: string;
+  code?: string;
+  codigo?: string;
+  careerName?: string;
+  CAREER_NAME?: string;
+  name?: string;
+  nombre?: string;
+  title?: string;
+  minimumGrade?: string | number;
+  MINIMUM_GRADE?: string | number;
+  minGrade?: string | number;
+  notaMinima?: string | number;
+  careerAbbreviation?: string;
+  CAREER_ABBREVIATION?: string;
+  abbreviation?: string;
+  siglas?: string;
+  internshipTypeIds?: string[];
+  INTERNSHIP_TYPE_IDS?: string[];
+  internships?: string[];
+  creationDate?: string | number;
+  CREATION_DATE?: string | number;
+  createdAt?: string | number;
+  fechaCreacion?: string | number;
+  status?: boolean | number;
+  STATUS?: boolean | number;
+  activo?: boolean | number;
+  enabled?: boolean | number;
+  [key: string]: unknown; // Index signature to allow dynamic access
 }
 
-const parseDate = (value: number | string): Date => {
+const parseDate = (value: number | string | undefined): Date => {
+  if (!value) return new Date();
   if (typeof value === "number") {
-    // si viene en segundos
-    const ms = value < 1e12 ? value * 1000 : value; // heurística simple
+    // Si viene en segundos (típico de MockAPI)
+    const ms = value < 1e12 ? value * 1000 : value;
     return new Date(ms);
   }
-  // ISO string
   return new Date(value);
 };
 
 const fromApi = (dto: CareerApiDTO): Career => {
-  const careerIdRaw = dto.careerId ?? dto.CAREER_ID ?? dto.id ?? dto.ID ?? "";
-  const careerCodeRaw = dto.careerCode ?? dto.CAREER_CODE ?? "";
-  const careerNameRaw = dto.careerName ?? dto.CAREER_NAME ?? "";
-  const rawMinimum = dto.minimumGrade ?? dto.MINIMUM_GRADE ?? 0;
-  const careerAbbreviationRaw = dto.careerAbbreviation ?? dto.CAREER_ABBREVIATION ?? "";
-  const internshipTypeIdsRaw = dto.internshipTypeIds ?? dto.INTERNSHIP_TYPE_IDS ?? [];
-  const rawCreation = dto.creationDate ?? dto.CREATION_DATE ?? Date.now();
-  const rawStatus = dto.status ?? dto.STATUS ?? true;
+  // Flexibilidad total para nombres de campos comunes
+  const careerIdRaw = (dto.careerId ?? dto.CAREER_ID ?? dto.id ?? dto.ID ?? dto._id ?? "") as string;
+  const careerCodeRaw = (dto.careerCode ?? dto.CAREER_CODE ?? dto.code ?? dto.codigo ?? "") as string;
+  const careerNameRaw = (dto.careerName ?? dto.CAREER_NAME ?? dto.name ?? dto.nombre ?? dto.title ?? "") as string;
+  const rawMinimum = dto.minimumGrade ?? dto.MINIMUM_GRADE ?? dto.minGrade ?? dto.notaMinima ?? 0;
+  const careerAbbreviationRaw = (dto.careerAbbreviation ?? dto.CAREER_ABBREVIATION ?? dto.abbreviation ?? dto.siglas ?? "") as string;
+  const internshipTypeIdsRaw = (dto.internshipTypeIds ?? dto.INTERNSHIP_TYPE_IDS ?? dto.internships ?? []) as string[];
+  const rawCreation = dto.creationDate ?? dto.CREATION_DATE ?? dto.createdAt ?? dto.fechaCreacion ?? Date.now();
+  const rawStatus = dto.status ?? dto.STATUS ?? dto.activo ?? dto.enabled;
 
   const minimumGrade = typeof rawMinimum === "string" ? parseFloat(rawMinimum) : rawMinimum;
-  const creationDate = parseDate(rawCreation);
-  const status = typeof rawStatus === "number" ? rawStatus === 1 : !!rawStatus;
+  const creationDate = parseDate(rawCreation as number | string);
+  
+  // Si status es undefined, asumimos true (activo)
+  const status = rawStatus === undefined ? true : (typeof rawStatus === "number" ? rawStatus === 1 : !!rawStatus);
 
   // Normalización: garantizar strings para campos textuales y ids
   const careerId = String(careerIdRaw);
@@ -80,41 +95,22 @@ const fromApi = (dto: CareerApiDTO): Career => {
 };
 
 const toApi = (career: Partial<Career>): Partial<CareerApiDTO> => {
-  const dto: Partial<CareerApiDTO> = {};
-  if (career.careerCode !== undefined) {
-    dto.careerCode = career.careerCode;
-    dto.CAREER_CODE = career.careerCode as unknown as string;
-  }
-  if (career.careerName !== undefined) {
-    dto.careerName = career.careerName;
-    dto.CAREER_NAME = career.careerName as unknown as string;
-  }
-  if (career.minimumGrade !== undefined) {
-    dto.minimumGrade = career.minimumGrade as number;
-    dto.MINIMUM_GRADE = career.minimumGrade as number;
-  }
-  if (career.careerAbbreviation !== undefined) {
-    dto.careerAbbreviation = career.careerAbbreviation;
-    dto.CAREER_ABBREVIATION = career.careerAbbreviation as unknown as string;
-  }
-  if (career.internshipTypeIds !== undefined) {
-    dto.internshipTypeIds = career.internshipTypeIds;
-    dto.INTERNSHIP_TYPE_IDS = (career.internshipTypeIds as string[]);
-  }
-  if (career.status !== undefined) {
-    dto.status = career.status;
-    dto.STATUS = career.status ? 1 : 0;
-  }
+  const dto: any = {};
+  
+  // Enviar solo los campos necesarios y en el formato que espera MockAPI
+  if (career.careerCode !== undefined) dto.careerCode = career.careerCode;
+  if (career.careerName !== undefined) dto.careerName = career.careerName;
+  if (career.minimumGrade !== undefined) dto.minimumGrade = career.minimumGrade;
+  if (career.careerAbbreviation !== undefined) dto.careerAbbreviation = career.careerAbbreviation;
+  if (career.status !== undefined) dto.status = career.status;
+  if (career.internshipTypeIds !== undefined) dto.internshipTypeIds = career.internshipTypeIds;
+  
+  // El ID se maneja en la URL, pero algunos mocks lo requieren en el body
   if (career.careerId !== undefined) {
-    // incluir id por compatibilidad con MockAPI
     dto.id = career.careerId;
     dto.careerId = career.careerId;
-    dto.CAREER_ID = career.careerId;
   }
-  if (career.creationDate !== undefined) {
-    dto.creationDate = (career.creationDate as Date).toISOString();
-    dto.CREATION_DATE = (career.creationDate as Date).toISOString();
-  }
+
   return dto;
 };
 

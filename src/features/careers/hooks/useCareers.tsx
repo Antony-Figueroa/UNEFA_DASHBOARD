@@ -85,7 +85,6 @@ export const useCareers = () => {
     try {
       const newCareer = await careersService.createCareer(careerData);
       await refreshCareers();
-      setLoadingAction(false);
 
       addToast({
         variant: "success",
@@ -102,6 +101,8 @@ export const useCareers = () => {
       const err = e instanceof Error ? e : new Error("Error desconocido al crear");
       addToast({ variant: "error", title: "Error al Crear", message: err.message });
       throw err;
+    } finally {
+      setLoadingAction(false);
     }
   };
 
@@ -111,7 +112,6 @@ export const useCareers = () => {
       const oldCareer = careers.find(c => c.careerId === careerData.careerId);
       await careersService.updateCareer(careerData);
       await refreshCareers();
-      setLoadingAction(false);
 
       addToast({
         variant: "success",
@@ -131,6 +131,8 @@ export const useCareers = () => {
       const err = e instanceof Error ? e : new Error("Error desconocido al actualizar");
       addToast({ variant: "error", title: "Error al Actualizar", message: err.message });
       throw err;
+    } finally {
+      setLoadingAction(false);
     }
   };
 
@@ -139,7 +141,6 @@ export const useCareers = () => {
     try {
       await careersService.deleteCareer(career);
       await refreshCareers();
-      setLoadingAction(false);
       addToast({
         variant: "warning",
         title: "Carrera Inactivada",
@@ -158,6 +159,8 @@ export const useCareers = () => {
       const err = e instanceof Error ? e : new Error("Error desconocido al eliminar");
       addToast({ variant: "error", title: "Error al Eliminar", message: err.message });
       throw err;
+    } finally {
+      setLoadingAction(false);
     }
   };
 
@@ -167,7 +170,6 @@ export const useCareers = () => {
       const newStatus = !career.status;
       await careersService.toggleCareerStatus(career);
       await refreshCareers();
-      setLoadingAction(false);
       addToast({
         variant: newStatus ? "success" : "warning",
         title: newStatus ? "Carrera Restaurada" : "Carrera Inactivada",
@@ -186,6 +188,8 @@ export const useCareers = () => {
       const err = e instanceof Error ? e : new Error("Error desconocido al cambiar estado");
       addToast({ variant: "error", title: "Error al Cambiar Estado", message: err.message });
       throw err;
+    } finally {
+      setLoadingAction(false);
     }
   };
 
@@ -195,7 +199,6 @@ export const useCareers = () => {
       const selectedCareers = careers.filter((c) => careerIds.includes(c.careerId));
       await Promise.all(selectedCareers.map((c) => careersService.deleteCareer(c)));
       await refreshCareers();
-      setLoadingAction(false);
       addToast({
         variant: "warning",
         title: "Inactivación Masiva",
@@ -205,6 +208,8 @@ export const useCareers = () => {
       const err = e instanceof Error ? e : new Error("Error desconocido al eliminar en lote");
       addToast({ variant: "error", title: "Error al Eliminar", message: err.message });
       throw err;
+    } finally {
+      setLoadingAction(false);
     }
   };
 
@@ -214,7 +219,6 @@ export const useCareers = () => {
       const selectedCareers = careers.filter((c) => careerIds.includes(c.careerId));
       await Promise.all(selectedCareers.map((c) => careersService.toggleCareerStatus(c)));
       await refreshCareers();
-      setLoadingAction(false);
       addToast({
         variant: "success",
         title: "Restauración Masiva",
@@ -230,6 +234,8 @@ export const useCareers = () => {
       const err = e instanceof Error ? e : new Error("Error desconocido al restaurar masivamente");
       addToast({ variant: "error", title: "Error al Restaurar", message: err.message });
       throw err;
+    } finally {
+      setLoadingAction(false);
     }
   };
 

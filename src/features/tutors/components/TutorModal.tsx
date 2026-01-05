@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useEffect, useMemo } from "react";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
@@ -7,6 +7,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/
 import { Tutor } from "../types";
 import Button from "../../../components/ui/button/Button";
 import Select from "../../../components/form/Select";
+import MultiSelect from "../../../components/form/MultiSelect";
 
 interface TutorModalProps {
   isOpen: boolean;
@@ -43,9 +44,26 @@ const tutorSchema = z.object({
   dedication: z.string().min(1, "La dedicación es obligatoria"),
   category: z.string().min(1, "La categoría es obligatoria"),
   profession: z.string().min(1, "La profesión es obligatoria"),
+  carreras: z.array(z.string()).min(1, "Debe seleccionar al menos una carrera"),
+}).refine((data) => {
+  const selectedOptions = CARRERA_OPTIONS.filter(opt => data.carreras.includes(opt.value));
+  const types = new Set(selectedOptions.map(opt => opt.type));
+  return types.size <= 1;
+}, {
+  message: "No se pueden mezclar carreras de Ingeniería y Enfermería",
+  path: ["carreras"],
 });
 
 type TutorFormData = z.infer<typeof tutorSchema>;
+
+const CARRERA_OPTIONS = [
+  { value: "ING_SISTEMAS", label: "Ingeniería en Sistemas", type: "ingenieria" },
+  { value: "ING_CIVIL", label: "Ingeniería Civil", type: "ingenieria" },
+  { value: "ING_ELECTRICA", label: "Ingeniería Eléctrica", type: "ingenieria" },
+  { value: "ENF_GENERAL", label: "Enfermería General", type: "enfermeria" },
+  { value: "ENF_OBSTETRICA", label: "Enfermería Obstétrica", type: "enfermeria" },
+  { value: "ENF_PEDIATRICA", label: "Enfermería Pediátrica", type: "enfermeria" },
+];
 
 const PROFESSION_OPTIONS = [
   { value: "INGENIERO EN SISTEMAS", label: "INGENIERO EN SISTEMAS" },
@@ -116,8 +134,36 @@ export default function TutorModal({
       dedication: "TIEMPO COMPLETO",
       category: "INSTRUCTOR",
       profession: "INGENIERO EN SISTEMAS",
+      carreras: [],
     },
   });
+
+  const watchedCarreras = useWatch({ control, name: "carreras" });
+
+  const filteredCarreraOptions = useMemo(() => {
+    const selectedCarreras = watchedCarreras || [];
+    // Si no hay nada seleccionado, mostramos todas
+    if (selectedCarreras.length === 0) {
+      return CARRERA_OPTIONS.map((opt) => ({
+        value: opt.value,
+        text: opt.label,
+      }));
+    }
+
+    // Identificar el tipo del primer elemento seleccionado
+    const firstSelected = CARRERA_OPTIONS.find(
+      (opt) => opt.value === selectedCarreras[0]
+    );
+    const selectedType = firstSelected?.type;
+
+    // Filtrar opciones que coincidan con el tipo seleccionado
+    return CARRERA_OPTIONS.filter((opt) => opt.type === selectedType).map(
+      (opt) => ({
+        value: opt.value,
+        text: opt.label,
+      })
+    );
+  }, [watchedCarreras]);
 
   useEffect(() => {
     if (isOpen) {
@@ -139,6 +185,7 @@ export default function TutorModal({
           dedication: editingTutor.dedication,
           category: editingTutor.category,
           profession: editingTutor.profession,
+          carreras: editingTutor.carreras || [],
         });
       } else {
         reset({
@@ -156,6 +203,7 @@ export default function TutorModal({
           dedication: "TIEMPO COMPLETO",
           category: "INSTRUCTOR",
           profession: "INGENIERO EN SISTEMAS",
+          carreras: [],
         });
       }
     }
@@ -166,7 +214,9 @@ export default function TutorModal({
       ...data,
       phone: `${data.phoneAreaCode}${data.phoneNumber}`,
       status: editingTutor?.status ?? true,
+      carreras: data.carreras,
     });
+    onClose();
   };
 
   return (
@@ -372,6 +422,29 @@ export default function TutorModal({
                 )}
               />
             </div>
+          </div>
+
+          {/* Fila 5 - Carreras (MultiSelect) */}
+          <div className="mt-6">
+            <Controller
+              name="carreras"
+              control={control}
+              render={({ field }) => (
+                <MultiSelect
+                  label="Carreras Asignadas *"
+                  options={filteredCarreraOptions}
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Seleccione las carreras (Ingeniería o Enfermería)"
+                />
+              )}
+            />
+            {isSubmitted && errors.carreras && (
+              <p className="mt-1 text-xs text-red-500">{errors.carreras.message}</p>
+            )}
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              * Nota: Solo puede seleccionar carreras de un mismo tipo (Ingeniería o Enfermería).
+            </p>
           </div>
         </form>
       </ModalBody>

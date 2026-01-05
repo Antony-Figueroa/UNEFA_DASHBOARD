@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Tutor } from "../types";
+import * as tutorsService from "../services/tutorsService";
 import { useToast } from "../../../context/toast";
 import { ChangeComparison, RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
 
@@ -23,48 +24,6 @@ const TUTOR_LABELS: Record<string, string> = {
   dedication: "Dedicación",
   category: "Categoría",
 };
-
-/**
- * DATOS DE DEMOSTRACIÓN
- */
-const DEMO_TUTORS: Tutor[] = [
-  {
-    tutorId: "1",
-    identificationPrefix: "V",
-    identificationNumber: "12345678",
-    firstName: "JUAN",
-    middleName: "CARLOS",
-    lastName: "RODRIGUEZ",
-    secondLastName: "PEREZ",
-    sex: "MASCULINO",
-    phone: "04141234567",
-    email: "JUAN.RODRIGUEZ@EMAIL.COM",
-    profession: "INGENIERO EN SISTEMAS",
-    condition: "CONTRATADO",
-    dedication: "TIEMPO COMPLETO",
-    category: "INSTRUCTOR",
-    registrationDate: new Date("2023-01-10"),
-    status: true,
-  },
-  {
-    tutorId: "2",
-    identificationPrefix: "V",
-    identificationNumber: "87654321",
-    firstName: "MARIA",
-    middleName: "ELENA",
-    lastName: "GARCIA",
-    secondLastName: "LOPEZ",
-    sex: "FEMENINO",
-    phone: "04127654321",
-    email: "MARIA.GARCIA@EMAIL.COM",
-    profession: "LICENCIADA EN EDUCACIÓN",
-    condition: "ORDINARIO",
-    dedication: "MEDIO TIEMPO",
-    category: "ASISTENTE",
-    registrationDate: new Date("2023-05-20"),
-    status: true,
-  },
-];
 
 export const useTutors = () => {
   const [tutors, setTutors] = useState<Tutor[]>([]);
@@ -87,10 +46,14 @@ export const useTutors = () => {
 
   const refreshTutors = useCallback(async () => {
     setStatus("loading");
-    setTimeout(() => {
-      setTutors(DEMO_TUTORS);
+    try {
+      const data = await tutorsService.getTutors();
+      setTutors(data);
       setStatus("success");
-    }, 1000);
+    } catch (e) {
+      console.error("Error loading tutors:", e);
+      setStatus("error");
+    }
   }, []);
 
   useEffect(() => {

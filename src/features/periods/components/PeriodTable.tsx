@@ -291,7 +291,7 @@ const PeriodTable = ({
     const [highlightedRow, setHighlightedRow] = useState<string | null>(null);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState<string>("Todos");
+    const [statusFilter, setStatusFilter] = useState<string>("");
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
 
@@ -306,7 +306,7 @@ const PeriodTable = ({
 
         const periodStatus = getSafePeriodStatus(periodo).toString();
         const matchesStatus =
-            statusFilter === "Todos" ||
+            statusFilter === "" ||
             periodStatus === statusFilter;
 
         return matchesSearch && matchesStatus;
@@ -353,7 +353,7 @@ const PeriodTable = ({
 
     const clearFilters = () => {
         setSearchTerm("");
-        setStatusFilter("Todos");
+        setStatusFilter("");
     };
 
     if (status === "error") {
@@ -416,10 +416,10 @@ const PeriodTable = ({
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="w-full rounded-lg border border-gray-300 bg-transparent py-2 px-4 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                            className="w-full rounded-lg border border-gray-300 bg-transparent py-2 px-4 pr-10 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white appearance-none"
                         >
-                            <option value="Todos" className="dark:bg-gray-800">
-                                Todos los estados
+                            <option value="" className="dark:bg-gray-800">
+                                Seleccione Estado
                             </option>
                             <option value="2" className="dark:bg-gray-800">
                                 En Curso
@@ -431,6 +431,11 @@ const PeriodTable = ({
                                 Culminado
                             </option>
                         </select>
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
                     </div>
                 </div>
 

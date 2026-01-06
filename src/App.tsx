@@ -93,6 +93,7 @@ import Calendar from "./pages/Calendar";
 import Blank from "./pages/Blank";
 import Students from "./pages/Students/students";
 import Tutors from "./pages/Tutors/tutors";
+import InstitutionsPage from "./pages/Institutions/institutions";
 import ToastContainer from "./components/ui/toast/ToastContainer";
 
 // ============================================================================
@@ -272,6 +273,9 @@ export default function App() {
 
             {/* {Tutores} */}
             <Route path="/tutors" element={<Tutors />} />
+
+            {/* {Instituciones} */}
+            <Route path="/institutions" element={<InstitutionsPage />} />
             {/* ================================================================
                SECCIÓN: FORMULARIOS
                ================================================================

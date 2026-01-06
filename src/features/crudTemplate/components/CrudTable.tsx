@@ -273,20 +273,26 @@ export function CrudTable<TItem extends { id: string }>({
             if (filter.type === "select") {
               const value = (effectiveFilterState[filter.id] as string) ?? "";
               return (
-                <select
-                  key={filter.id}
-                  aria-label={filter.label}
-                  value={value}
-                  onChange={(e) => handleFilterChange(filter.id, e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-transparent py-2 px-4 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white sm:max-w-xs"
-                >
-                  <option value="">{filter.placeholder ?? "Todos"}</option>
-                  {filter.options?.map((opt) => (
-                    <option key={opt.value} value={opt.value} className="dark:bg-gray-800">
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+                <div key={filter.id} className="relative w-full sm:max-w-xs">
+                  <select
+                    aria-label={filter.label}
+                    value={value}
+                    onChange={(e) => handleFilterChange(filter.id, e.target.value)}
+                    className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-10 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white appearance-none"
+                  >
+                    <option value="">{filter.placeholder ?? "Seleccione..."}</option>
+                    {filter.options?.map((opt) => (
+                      <option key={opt.value} value={opt.value} className="dark:bg-gray-800">
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               );
             }
 

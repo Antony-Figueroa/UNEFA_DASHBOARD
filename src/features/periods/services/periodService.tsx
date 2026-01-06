@@ -4,8 +4,9 @@
  */
 
 import { Periodo } from "../types";
+import apiClient from "../../../api/apiClient";
 
-const API_URL = "/api/periodos";
+const API_URL = "/periodos";
 
 // --- API Data Transformation ---
 
@@ -85,36 +86,41 @@ const toApi = (periodo: Partial<Periodo>): Partial<PeriodoApiDTO> => {
 };
 
 export const getPeriods = async (): Promise<Periodo[]> => {
-  const response = await fetch(API_URL);
-  if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-  const data: PeriodoApiDTO[] = await response.json();
-  return data.map(fromApi);
+  try {
+    const response = await apiClient.get<PeriodoApiDTO[]>(API_URL);
+    return response.data.map(fromApi);
+  } catch (error) {
+    console.error(`[periodService] Error fetching periods:`, error);
+    throw error;
+  }
 };
 
 export const createPeriod = async (periodo: Omit<Periodo, "periodId" | "creationDate">): Promise<Periodo> => {
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(toApi(periodo)),
-  });
-  if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-  const data: PeriodoApiDTO = await response.json();
-  return fromApi(data);
+  try {
+    const response = await apiClient.post<PeriodoApiDTO>(API_URL, toApi(periodo));
+    return fromApi(response.data);
+  } catch (error) {
+    console.error(`[periodService] Error creating period:`, error);
+    throw error;
+  }
 };
 
 export const updatePeriod = async (periodo: Periodo): Promise<Periodo> => {
-  const response = await fetch(`${API_URL}/${periodo.periodId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(toApi(periodo)),
-  });
-  if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-  const data: PeriodoApiDTO = await response.json();
-  return fromApi(data);
+  if (!periodo.periodId) throw new Error("ID de periodo requerido para actualizar");
+  try {
+    const response = await apiClient.put<PeriodoApiDTO>(`${API_URL}/${periodo.periodId}`, toApi(periodo));
+    return fromApi(response.data);
+  } catch (error) {
+    console.error(`[periodService] Error updating period:`, error);
+    throw error;
+  }
 };
 
-// Eliminación lógica (soft delete)
-export const deletePeriod = async (periodo: Periodo): Promise<Periodo> => {
-  const updatedPeriod = { ...periodo, status: false }; // Marcar como eliminado
-  return updatePeriod(updatedPeriod);
+export const deletePeriod = async (id: string): Promise<void> => {
+  try {
+    await apiClient.delete(`${API_URL}/${id}`);
+  } catch (error) {
+    console.error(`[periodService] Error deleting period:`, error);
+    throw error;
+  }
 };

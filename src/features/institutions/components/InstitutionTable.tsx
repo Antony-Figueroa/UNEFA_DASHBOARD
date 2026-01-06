@@ -1,0 +1,556 @@
+/**
+ * @file InstitutionTable.tsx
+ * @description Tabla para visualizar instituciones con soporte para filtros, ordenamiento y paginación.
+ */
+
+import { useMemo, useState, useEffect } from "react";
+import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
+import { DropdownPortal } from "../../../components/ui/dropdown/DropdownPortal";
+import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
+import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ThreeDotsIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
+import { InstitutionRowData } from "../types";
+import Checkbox from "../../../components/form/input/Checkbox";
+import Badge from "../../../components/ui/badge/Badge";
+import { useDebounce } from "../../../hooks/useDebounce";
+
+interface InstitutionTableProps {
+  data: InstitutionRowData[];
+  status: "loading" | "success" | "error";
+  onEdit?: (inst: InstitutionRowData) => void;
+  onToggleStatus?: (inst: InstitutionRowData) => void;
+  onView?: (inst: InstitutionRowData) => void;
+  onBulkDelete?: (ids: string[]) => void;
+  onBulkRestore?: (ids: string[]) => void;
+  activeTab?: "Activas" | "Inactivas";
+  careerOptions?: { value: string; label: string }[];
+}
+
+type SortKey = "rif" | "name" | "practiceType" | "careerName";
+type SortOrder = "asc" | "desc";
+
+export default function InstitutionTable({
+  data = [],
+  status,
+  onEdit,
+  onToggleStatus,
+  onView,
+  onBulkDelete,
+  onBulkRestore,
+  activeTab = "Activas",
+  careerOptions = [],
+}: InstitutionTableProps) {
+  const [rifFilter, setRifFilter] = useState("");
+  const [nameFilter, setNameFilter] = useState("");
+  const [practiceTypeFilter, setPracticeTypeFilter] = useState("");
+  const [careerFilter, setCareerFilter] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [openRowId, setOpenRowId] = useState<string | number | null>(null);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; order: SortOrder }>({
+    key: "name",
+    order: "asc",
+  });
+
+  const debouncedRifFilter = useDebounce(rifFilter, 300);
+  const debouncedNameFilter = useDebounce(nameFilter, 300);
+
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [activeTab]);
+
+  const filteredData = useMemo(() => {
+    const rifSearch = debouncedRifFilter.trim().toLowerCase();
+    const nameSearch = debouncedNameFilter.trim().toLowerCase();
+    const typeSearch = practiceTypeFilter;
+    const careerSearch = careerFilter;
+
+    const filtered = data.filter((i) => {
+      const matchesRif = !rifSearch || i.rif.toLowerCase().includes(rifSearch);
+      const matchesName = !nameSearch || i.name.toLowerCase().includes(nameSearch);
+      const matchesType = !typeSearch || i.practiceType === typeSearch;
+      const matchesCareer = !careerSearch || i.careerId === careerSearch;
+      const matchesTab = activeTab === "Activas" ? i.status === true : i.status === false;
+      return matchesRif && matchesName && matchesType && matchesCareer && matchesTab;
+    });
+
+    filtered.sort((a, b) => {
+      const valA = String(a[sortConfig.key] || "").toLowerCase();
+      const valB = String(b[sortConfig.key] || "").toLowerCase();
+      
+      if (valA < valB) return sortConfig.order === "asc" ? -1 : 1;
+      if (valA > valB) return sortConfig.order === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return filtered;
+  }, [data, debouncedRifFilter, debouncedNameFilter, practiceTypeFilter, careerFilter, activeTab, sortConfig]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedRifFilter, debouncedNameFilter, practiceTypeFilter, careerFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paged = filteredData.slice(startIndex, startIndex + itemsPerPage);
+
+  const handleSort = (key: SortKey) => {
+    setSortConfig(prev => ({
+      key,
+      order: prev.key === key && prev.order === "asc" ? "desc" : "asc"
+    }));
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(paged.map(i => i.institutionId));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectRow = (id: string, checked: boolean) => {
+      if (checked) {
+          setSelectedIds((prev) => [...prev, id]);
+      } else {
+          setSelectedIds((prev) => prev.filter((item) => item !== id));
+      }
+  };
+
+  const toggleRowExpansion = (id: string) => {
+      const newExpanded = new Set(expandedRows);
+      if (newExpanded.has(id)) {
+          newExpanded.delete(id);
+      } else {
+          newExpanded.add(id);
+      }
+      setExpandedRows(newExpanded);
+  };
+
+  const toggleAllRows = () => {
+      if (expandedRows.size === paged.length) {
+          setExpandedRows(new Set());
+      } else {
+          const allIds = paged.map((s, index) => s.institutionId ?? `idx-${index}`);
+          setExpandedRows(new Set(allIds));
+      }
+  };
+
+  const clearFilters = () => {
+    setRifFilter("");
+    setNameFilter("");
+    setPracticeTypeFilter("");
+    setCareerFilter("");
+  };
+
+  const SortIndicator = ({ column }: { column: SortKey }) => {
+      if (sortConfig.key !== column) {
+          return (
+              <svg className="ml-1 h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+              </svg>
+          );
+      }
+      return sortConfig.order === "asc" ? (
+          <svg className="ml-1 icon-xs text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+          </svg>
+      ) : (
+          <svg className="ml-1 icon-xs text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+      );
+  };
+
+  if (status === "loading") {
+      return <div className="p-8 text-center text-gray-500">Cargando instituciones...</div>;
+  }
+
+  return (
+    <div className="table-container">
+      <div className="p-4 border-b border-gray-100 dark:border-white/5 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Filtro por RIF */}
+            <div className="relative">
+                <input
+                    type="text"
+                    placeholder="Buscar por RIF"
+                    value={rifFilter}
+                    onChange={(e) => setRifFilter(e.target.value)}
+                    className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+                />
+            </div>
+
+            {/* Filtro por Nombre */}
+            <div className="relative">
+                <input
+                    type="text"
+                    placeholder="Buscar por nombre"
+                    value={nameFilter}
+                    onChange={(e) => setNameFilter(e.target.value)}
+                    className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+                />
+            </div>
+
+            {/* Filtro por Tipo de Práctica */}
+            <div className="relative">
+                <select
+                    value={practiceTypeFilter}
+                    onChange={(e) => setPracticeTypeFilter(e.target.value)}
+                    className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-10 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white appearance-none"
+                >
+                    <option value="">Todos los tipos</option>
+                    <option value="HOSPITALARIA">Hospitalaria</option>
+                    <option value="COMUNITARIA">Comunitaria</option>
+                    <option value="ORDINARIA">Ordinaria</option>
+                </select>
+                <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+
+            {/* Filtro por Carrera */}
+            <div className="relative">
+                <select
+                    value={careerFilter}
+                    onChange={(e) => setCareerFilter(e.target.value)}
+                    className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-10 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white appearance-none"
+                >
+                    <option value="">Todas las Carreras</option>
+                    {careerOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                        </option>
+                    ))}
+                </select>
+                <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-2 border-t border-gray-50 dark:border-white/5">
+            <div className="flex items-center gap-4">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                    Mostrando <span className="font-bold text-gray-700 dark:text-white">{filteredData.length}</span> resultados
+                </div>
+                {(rifFilter || nameFilter || practiceTypeFilter || careerFilter) && (
+                    <button
+                        onClick={clearFilters}
+                        className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
+                    >
+                        <RefreshIcon className="icon-xs" />
+                        Limpiar filtros
+                    </button>
+                )}
+            </div>
+
+            <div className="flex items-center gap-2">
+                {paged.length > 0 && (
+                    <button
+                        onClick={toggleAllRows}
+                        className="md:hidden flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:bg-white/5 dark:text-gray-400 transition-colors min-h-12"
+                    >
+                        {expandedRows.size === paged.length ? (
+                            <>
+                                <ChevronUpIcon className="icon-sm" />
+                                Contraer todo
+                            </>
+                        ) : (
+                            <>
+                                <ChevronDownIcon className="icon-sm" />
+                                Expandir todo
+                            </>
+                        )}
+                    </button>
+                )}
+
+                {selectedIds.length > 0 && (
+                    <div className="flex items-center gap-2 animate-fadeIn">
+                        <span className="hidden sm:inline text-xs font-medium text-gray-600 dark:text-gray-400 mr-2">
+                            {selectedIds.length} seleccionados
+                        </span>
+                        {activeTab === "Activas" ? (
+                            <button
+                                onClick={() => onBulkDelete?.(selectedIds)}
+                                className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12"
+                            >
+                                <TrashIcon className="icon-sm" />
+                                Inactivar
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => onBulkRestore?.(selectedIds)}
+                                className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-600 hover:bg-brand-100 dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400/20 transition-colors min-h-12"
+                            >
+                                <RefreshIcon className="icon-sm" />
+                                Restaurar
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+      </div>
+
+      {/* Vista de Escritorio (Tabla) */}
+      <div className="hidden md:block max-w-full overflow-x-auto table-scrollbar">
+        <Table className="table-root">
+          <TableHeader className="table-header-row bg-gray-50 dark:bg-gray-800/50">
+            <TableRow>
+              <TableCell isHeader className="table-header-cell w-10">
+                <Checkbox
+                  checked={paged.length > 0 && selectedIds.length === paged.length}
+                  onChange={handleSelectAll}
+                  ariaLabel="Seleccionar todos"
+                />
+              </TableCell>
+              <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("rif")}>
+                  <div className="flex items-center">RIF <SortIndicator column="rif" /></div>
+              </TableCell>
+              <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("name")}>
+                  <div className="flex items-center">Nombre <SortIndicator column="name" /></div>
+              </TableCell>
+              <TableCell isHeader className="table-header-cell">Teléfono</TableCell>
+              <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("practiceType")}>
+                  <div className="flex items-center">Tipo Práctica <SortIndicator column="practiceType" /></div>
+              </TableCell>
+              <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("careerName")}>
+                  <div className="flex items-center">Carrera <SortIndicator column="careerName" /></div>
+              </TableCell>
+              <TableCell isHeader className="table-header-cell text-right">Acciones</TableCell>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
+            {paged.length > 0 ? (
+                paged.map((i, index) => (
+                    <TableRow
+                        key={i.institutionId}
+                        className={`table-row-hover ${index % 2 === 0 ? "bg-white dark:bg-transparent" : "bg-gray-50/50 dark:bg-white/2"} ${selectedIds.includes(i.institutionId) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
+                    >
+                        <TableCell className="table-cell">
+                            <Checkbox checked={selectedIds.includes(i.institutionId)} onChange={(checked) => handleSelectRow(i.institutionId, checked)} />
+                        </TableCell>
+                        <TableCell className="table-cell font-medium text-gray-800 dark:text-white/90">
+                            {i.rif}
+                        </TableCell>
+                        <TableCell className="table-cell text-gray-600 dark:text-gray-400 font-semibold">{i.name}</TableCell>
+                        <TableCell className="table-cell text-gray-500 dark:text-gray-400 whitespace-nowrap">{i.phone}</TableCell>
+                        <TableCell className="table-cell">
+                            <Badge color={i.practiceType === "HOSPITALARIA" ? "error" : i.practiceType === "COMUNITARIA" ? "warning" : "success"} variant="light" size="sm" shape="rounded">
+                                {i.practiceType}
+                            </Badge>
+                        </TableCell>
+                        <TableCell className="table-cell text-gray-500 dark:text-gray-400">{i.careerName}</TableCell>
+                        <TableCell className="table-cell text-right relative">
+                            <div className="flex justify-end">
+                                <button
+                                    type="button"
+                                    className="dropdown-toggle inline-flex items-center rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 min-h-12 min-w-12 justify-center"
+                                    aria-label="Acciones"
+                                    onClick={(e) => {
+                                        setAnchorEl(e.currentTarget as HTMLElement);
+                                        setOpenRowId((prev) =>
+                                            prev === (i.institutionId ?? index) ? null : (i.institutionId ?? index)
+                                        );
+                                    }}
+                                    aria-expanded={openRowId === (i.institutionId ?? index)}
+                                >
+                                    <ThreeDotsIcon className="icon-sm" />
+                                </button>
+
+                                <DropdownPortal
+                                    isOpen={openRowId === (i.institutionId ?? index)}
+                                    onClose={() => setOpenRowId(null)}
+                                    anchorRef={{ current: anchorEl as HTMLElement }}
+                                    className="min-w-44"
+                                >
+                                    {onView && (
+                                        <DropdownItem
+                                            onItemClick={() => onView(i)}
+                                            className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
+                                        >
+                                            <EyeIcon className="icon-sm" /> Ver Detalles
+                                        </DropdownItem>
+                                    )}
+                                    {onEdit && activeTab === "Activas" && (
+                                        <DropdownItem
+                                            onItemClick={() => onEdit(i)}
+                                            className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
+                                        >
+                                            <EditIcon className="icon-sm" /> Editar
+                                        </DropdownItem>
+                                    )}
+                                    {onToggleStatus && (
+                                        <DropdownItem
+                                            onItemClick={() => onToggleStatus(i)}
+                                            className={`flex items-center gap-2 ${activeTab === "Inactivas" ? "text-brand-600 hover:bg-brand-50 dark:text-brand-400" : "text-red-600 hover:bg-red-50 dark:text-red-400"}`}
+                                        >
+                                            {activeTab === "Inactivas" ? <RefreshIcon className="icon-sm" /> : <TrashIcon className="icon-sm" />}
+                                            {activeTab === "Inactivas" ? "Restaurar" : "Inactivar"}
+                                        </DropdownItem>
+                                    )}
+                                </DropdownPortal>
+                            </div>
+                        </TableCell>
+                    </TableRow>
+                ))
+            ) : (
+                <TableRow>
+                    <TableCell className="table-cell py-24 text-center" colSpan={7}>
+                        <div className="flex flex-col items-center justify-center animate-fadeIn">
+                            <div className="mb-4 rounded-full bg-gray-50 p-4 dark:bg-white/5">
+                                <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-sm font-bold text-gray-800 dark:text-white">No se encontraron instituciones</h3>
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Intenta ajustar los filtros para encontrar lo que buscas.</p>
+                            {(rifFilter || nameFilter || practiceTypeFilter || careerFilter) && (
+                                <button
+                                    onClick={clearFilters}
+                                    className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                                >
+                                    Ver todas las instituciones
+                                </button>
+                            )}
+                        </div>
+                    </TableCell>
+                </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Vista Móvil (Cards) */}
+      <div className="md:hidden divide-y divide-gray-100 dark:divide-white/5">
+        {paged.length > 0 ? (
+            paged.map((i, index) => {
+                const rowId = i.institutionId ?? `idx-${index}`;
+                const isExpanded = expandedRows.has(rowId);
+                return (
+                    <div key={rowId} className="relative p-4 bg-white dark:bg-transparent transition-colors overflow-hidden">
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="flex items-center justify-between w-full">
+                                <div className="flex-1 text-center">
+                                    <h3 className="text-sm font-bold text-gray-800 dark:text-white/90 leading-tight truncate px-8">
+                                        {i.name}
+                                    </h3>
+                                    <p className="text-xs text-gray-500 mt-1 truncate">{i.rif}</p>
+                                </div>
+                                <button
+                                    onClick={() => toggleRowExpansion(rowId)}
+                                    className="absolute right-2 top-2 p-2 text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
+                                    style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
+                                >
+                                    <ChevronDownIcon className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {isExpanded && (
+                            <div className="mt-4 space-y-6 animate-fadeIn border-t border-gray-50 dark:border-white/5 pt-6">
+                                <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
+                                    <div className="flex flex-col items-center">
+                                        <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Tipo Práctica</p>
+                                        <div className="flex justify-center w-full">
+                                            <Badge color={i.practiceType === "HOSPITALARIA" ? "error" : i.practiceType === "COMUNITARIA" ? "warning" : "success"} variant="light" size="sm">
+                                                {i.practiceType}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Teléfono</p>
+                                        <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{i.phone}</p>
+                                    </div>
+                                    <div className="col-span-2 flex flex-col items-center">
+                                        <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Carrera</p>
+                                        <p className="text-sm text-gray-700 dark:text-gray-300 font-medium truncate w-full max-w-62.5">{i.careerName}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-3 pt-2">
+                                    {onView && (
+                                        <button
+                                            onClick={() => onView(i)}
+                                            className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                                        >
+                                            <EyeIcon className="w-4 h-4" /> Ver
+                                        </button>
+                                    )}
+                                    {onEdit && activeTab === "Activas" && (
+                                        <button
+                                            onClick={() => onEdit(i)}
+                                            className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                                        >
+                                            <EditIcon className="w-4 h-4" /> Editar
+                                        </button>
+                                    )}
+                                    {onToggleStatus && (
+                                        <button
+                                            onClick={() => onToggleStatus(i)}
+                                            className={`w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold rounded-xl min-h-12 active:scale-95 transition-all border border-transparent ${activeTab === "Inactivas"
+                                                ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-500/20"
+                                                : "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:border-red-200 dark:hover:border-red-500/20"
+                                                }`}
+                                        >
+                                            {activeTab === "Inactivas" ? (
+                                                <>
+                                                    <RefreshIcon className="w-4 h-4" /> Restaurar
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <TrashIcon className="w-4 h-4" /> Inactivar
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            })
+        ) : (
+            <div className="py-20 text-center animate-fadeIn">
+                <div className="inline-flex mb-4 rounded-full bg-gray-50 p-4 dark:bg-white/5">
+                    <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                </div>
+                <h3 className="text-sm font-bold text-gray-800 dark:text-white">No se encontraron instituciones</h3>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
+                {(rifFilter || nameFilter || practiceTypeFilter || careerFilter) && (
+                    <button
+                        onClick={clearFilters}
+                        className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                    >
+                        Ver todas las instituciones
+                    </button>
+                )}
+            </div>
+        )}
+      </div>
+
+      <div className="p-4 border-t border-gray-100 dark:border-white/5">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          itemsPerPage={itemsPerPage}
+          onItemsPerPageChange={setItemsPerPage}
+          totalItems={filteredData.length}
+        />
+      </div>
+    </div>
+  );
+}

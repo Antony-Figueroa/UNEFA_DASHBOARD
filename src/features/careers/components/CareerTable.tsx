@@ -36,6 +36,16 @@ type SortOrder = "asc" | "desc";
 
 const formatDecimal = (n: number) => n.toFixed(2);
 
+/**
+ * Opciones para el filtro de tipo de práctica.
+ * Deben coincidir con las opciones permitidas en el backend/modelo.
+ */
+const PRACTICE_TYPE_OPTIONS = [
+  { value: "HOSPITALARIA", label: "Hospitalaria" },
+  { value: "COMUNITARIA", label: "Comunitaria" },
+  { value: "ORDINARIA", label: "Ordinaria" },
+];
+
 export default function CareerTable({
   data = [],
   status,
@@ -51,7 +61,7 @@ export default function CareerTable({
   // loading = false,
 }: CareerTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [practiceTypeFilter, setPracticeTypeFilter] = useState<string>("Todos");
+  const [practiceTypeFilter, setPracticeTypeFilter] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [openRowId, setOpenRowId] = useState<string | number | null>(null);
@@ -77,7 +87,7 @@ export default function CareerTable({
       const code = String(c.careerCode ?? "").toLowerCase();
       const matchesSearch = name.includes(search) || code.includes(search);
       const matchesType =
-        practiceTypeFilter === "Todos" ||
+        practiceTypeFilter === "" ||
         (Array.isArray(c.internshipTypeIds) &&
           c.internshipTypeIds
             .map((t) => String(t).toUpperCase())
@@ -160,7 +170,7 @@ export default function CareerTable({
 
   const clearFilters = () => {
     setSearchTerm("");
-    setPracticeTypeFilter("Todos");
+    setPracticeTypeFilter("");
   };
 
   const SortIndicator = ({ column }: { column: SortKey }) => {
@@ -210,23 +220,30 @@ export default function CareerTable({
               </svg>
             </span>
           </div>
-          <div className="flex gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-auto">
             <select
               aria-label="Filtrar por tipo de práctica"
               value={practiceTypeFilter}
               onChange={(e) => setPracticeTypeFilter(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-transparent py-2 px-4 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-10 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white appearance-none"
             >
-              <option value="Todos" className="dark:bg-gray-800">Todos los tipos</option>
-              <option value="HOSPITALARIA" className="dark:bg-gray-800">Hospitalaria</option>
-              <option value="COMUNITARIA" className="dark:bg-gray-800">Comunitaria</option>
-              <option value="ORDINARIA" className="dark:bg-gray-800">Ordinaria</option>
+              <option value="" className="dark:bg-gray-800">Seleccione Tipo</option>
+              {PRACTICE_TYPE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value} className="dark:bg-gray-800">
+                  {opt.label}
+                </option>
+              ))}
             </select>
+            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
         </div>
 
         <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
-          {(searchTerm || practiceTypeFilter !== "Todos") && (
+          {(searchTerm || practiceTypeFilter !== "") && (
             <button
               onClick={clearFilters}
               className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
@@ -426,10 +443,27 @@ export default function CareerTable({
               ))
             ) : (
               <TableRow>
-                <TableCell className="table-cell py-20 text-center text-gray-500" colSpan={7}>
-                  {searchTerm || practiceTypeFilter !== "Todos"
-                    ? "No se encontraron carreras con los filtros aplicados"
-                    : "No hay carreras para mostrar."}
+                <TableCell className="table-cell py-24 text-center" colSpan={7}>
+                  <div className="flex flex-col items-center justify-center animate-fadeIn">
+                    <div className="mb-4 rounded-full bg-gray-50 p-4 dark:bg-white/5">
+                      <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    <h3 className="text-sm font-bold text-gray-800 dark:text-white">No se encontraron carreras</h3>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Intenta ajustar los filtros para encontrar lo que buscas.</p>
+                    {(searchTerm || practiceTypeFilter !== "Todos") && (
+                      <button
+                        onClick={() => {
+                          setSearchTerm("");
+                          setPracticeTypeFilter("Todos");
+                        }}
+                        className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                      >
+                        Ver todas las carreras
+                      </button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             )}
@@ -534,8 +568,25 @@ export default function CareerTable({
             );
           })
         ) : (
-          <div className="p-8 text-center text-gray-500 text-sm">
-            No se encontraron carreras.
+          <div className="py-20 text-center animate-fadeIn">
+            <div className="inline-flex mb-4 rounded-full bg-gray-50 p-4 dark:bg-white/5">
+              <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+            <h3 className="text-sm font-bold text-gray-800 dark:text-white">No se encontraron carreras</h3>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
+            {(searchTerm || practiceTypeFilter !== "Todos") && (
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setPracticeTypeFilter("Todos");
+                }}
+                className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
+              >
+                Ver todas las carreras
+              </button>
+            )}
           </div>
         )}
 

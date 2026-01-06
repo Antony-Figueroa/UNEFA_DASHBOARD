@@ -4,9 +4,9 @@
  */
 
 import { Career } from "../types";
+import apiClient from "../../../api/apiClient";
 
-// TODO: Reemplazar por la URL real del backend si aplica
-const API_URL = "/api/careers";
+const API_URL = "/careers";
 
 // DTO de la API — flexible para adaptarse a números o strings
 interface CareerApiDTO {
@@ -95,7 +95,7 @@ const fromApi = (dto: CareerApiDTO): Career => {
 };
 
 const toApi = (career: Partial<Career>): Partial<CareerApiDTO> => {
-  const dto: any = {};
+  const dto: Partial<CareerApiDTO> = {};
   
   // Enviar solo los campos necesarios y en el formato que espera MockAPI
   if (career.careerCode !== undefined) dto.careerCode = career.careerCode;
@@ -114,34 +114,12 @@ const toApi = (career: Partial<Career>): Partial<CareerApiDTO> => {
   return dto;
 };
 
-export const getCareers = async (retries = 3): Promise<Career[]> => {
+export const getCareers = async (): Promise<Career[]> => {
   try {
-    console.log(`[careersService] Fetching: ${API_URL}`);
-    const response = await fetch(API_URL);
-
-    if (!response.ok) {
-      console.error(`[careersService] HTTP Error ${response.status} for ${API_URL}`);
-
-      // Solo reintentar si es un error de servidor temporal (503)
-      if (response.status === 503 && retries > 0) {
-        console.warn(`Servicio no disponible (503), reintentando... (${retries} intentos restantes)`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        return getCareers(retries - 1);
-      }
-
-      // Para 404 u otros errores permanentes, no reintentar
-      throw new Error(`Error HTTP: ${response.status}`);
-    }
-
-    const data: CareerApiDTO[] = await response.json();
-    return data.map(fromApi);
+    const response = await apiClient.get<CareerApiDTO[]>(API_URL);
+    return response.data.map(fromApi);
   } catch (error) {
-    // Si es un error de red (no HTTP), reintentar
-    if (error instanceof TypeError && retries > 0) {
-      console.warn(`Error de red, reintentando... (${retries} intentos restantes)`);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      return getCareers(retries - 1);
-    }
+    console.error(`[careersService] Error fetching careers:`, error);
     throw error;
   }
 };
@@ -149,38 +127,29 @@ export const getCareers = async (retries = 3): Promise<Career[]> => {
 export const createCareer = async (
   careerData: Omit<Career, "careerId" | "creationDate">
 ): Promise<Career> => {
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(toApi(careerData)),
-  });
-  if (!response.ok) throw new Error(`Error al crear: ${response.status}`);
-  const created: CareerApiDTO = await response.json();
-  return fromApi(created);
+  try {
+    const response = await apiClient.post<CareerApiDTO>(API_URL, toApi(careerData));
+    return fromApi(response.data);
+  } catch (error) {
+    console.error(`[careersService] Error creating career:`, error);
+    throw error;
+  }
 };
 
 export const updateCareer = async (careerData: Career): Promise<Career> => {
   if (!careerData.careerId || String(careerData.careerId).trim().length === 0) {
     throw new Error("careerId es requerido para actualizar la carrera");
   }
-  const response = await fetch(`${API_URL}/${careerData.careerId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify(toApi(careerData)),
-  });
-  if (!response.ok) {
-    let detail = "";
-    try {
-      const errBody = await response.text();
-      detail = errBody?.slice(0, 200) || "";
-    } catch {
-      // si falla leer el cuerpo, mantenemos el detalle vacío
-      detail = "";
-    }
-    throw new Error(`Error al actualizar: ${response.status}${detail ? ` — ${detail}` : ""}`);
+  try {
+    const response = await apiClient.put<CareerApiDTO>(
+      `${API_URL}/${careerData.careerId}`,
+      toApi(careerData)
+    );
+    return fromApi(response.data);
+  } catch (error) {
+    console.error(`[careersService] Error updating career:`, error);
+    throw error;
   }
-  const updated: CareerApiDTO = await response.json();
-  return fromApi(updated);
 };
 
 // Soft delete: marcar como inactivo

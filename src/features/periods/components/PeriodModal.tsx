@@ -282,7 +282,7 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                                         {...register('year')}
                                         className="w-full appearance-none bg-transparent py-2.5 pl-4 pr-10 text-sm text-gray-800 outline-none dark:text-white"
                                     >
-                                        <option value="" disabled className="bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Año</option>
+                                        <option value="" disabled className="bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Seleccione Año</option>
                                         {yearOptions.map(option => (
                                             <option key={option} value={option} className="bg-white dark:bg-gray-800 text-black dark:text-white">{option}</option>
                                         ))}

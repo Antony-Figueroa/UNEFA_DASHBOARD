@@ -19,7 +19,7 @@ interface StudentModalProps {
 }
 
 const studentSchema = z.object({
-  identificationPrefix: z.enum(["V", "E", "J", "P"]),
+  identificationPrefix: z.string().min(1, "Seleccione un prefijo"),
   identificationNumber: z.string()
     .min(1, "La identificación es obligatoria")
     .regex(/^\d+$/, "Solo se admiten números"),
@@ -35,9 +35,9 @@ const studentSchema = z.object({
   secondLastName: z.string()
     .optional()
     .refine(val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val), "Solo se admiten letras"),
-  sex: z.enum(["FEMENINO", "MASCULINO", "OTRO"]),
+  sex: z.string().min(1, "Seleccione el sexo"),
   birthDate: z.string().min(1, "La fecha de nacimiento es obligatoria"),
-  civilStatus: z.enum(["SOLTERO", "CASADO", "DIVORCIADO", "VIUDO"]),
+  civilStatus: z.string().min(1, "Seleccione el estado civil"),
   phone: z.string()
     .min(1, "El teléfono es obligatorio")
     .regex(/^\d+$/, "Solo se admiten números"),
@@ -49,10 +49,10 @@ const studentSchema = z.object({
   section: z.string()
     .min(1, "La sección es obligatoria")
     .regex(/^\d+$/, "Solo se admiten números"),
-  regime: z.enum(["DIURNO", "NOCTURNO", "MIXTO"]),
-  studentType: z.enum(["CIVIL", "MILITAR"]),
+  regime: z.string().min(1, "Seleccione el régimen"),
+  studentType: z.string().min(1, "Seleccione el tipo de estudiante"),
   militaryRank: z.string().min(1, "El rango militar es obligatorio"),
-  works: z.enum(["SI", "NO"]),
+  works: z.string().min(1, "Seleccione si trabaja"),
 });
 
 type StudentFormData = z.infer<typeof studentSchema>;
@@ -76,24 +76,24 @@ export default function StudentModal({
   } = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
     defaultValues: {
-      identificationPrefix: "V",
+      identificationPrefix: "",
       identificationNumber: "",
       firstName: "",
       middleName: "",
       lastName: "",
       secondLastName: "",
-      sex: "FEMENINO",
+      sex: "",
       birthDate: "",
-      civilStatus: "SOLTERO",
+      civilStatus: "",
       phone: "",
       email: "",
       careerId: "",
       semester: "",
       section: "",
-      regime: "DIURNO",
-      studentType: "CIVIL",
+      regime: "",
+      studentType: "",
       militaryRank: "NO APLICA",
-      works: "NO",
+      works: "",
     },
   });
 
@@ -102,8 +102,13 @@ export default function StudentModal({
   useEffect(() => {
     if (studentType === "CIVIL") {
       setValue("militaryRank", "NO APLICA");
+    } else if (studentType === "MILITAR") {
+      // Si es militar y el rango es "NO APLICA", limpiamos para que el usuario elija
+      if (watch("militaryRank") === "NO APLICA") {
+        setValue("militaryRank", "");
+      }
     }
-  }, [studentType, setValue]);
+  }, [studentType, setValue, watch]);
 
   useEffect(() => {
     if (isOpen) {
@@ -130,24 +135,24 @@ export default function StudentModal({
         });
       } else {
         reset({
-          identificationPrefix: "V",
+          identificationPrefix: "",
           identificationNumber: "",
           firstName: "",
           middleName: "",
           lastName: "",
           secondLastName: "",
-          sex: "FEMENINO",
+          sex: "",
           birthDate: "",
-          civilStatus: "SOLTERO",
+          civilStatus: "",
           phone: "",
           email: "",
           careerId: "",
           semester: "",
           section: "",
-          regime: "DIURNO",
-          studentType: "CIVIL",
+          regime: "",
+          studentType: "",
           militaryRank: "NO APLICA",
-          works: "NO",
+          works: "",
         });
       }
     }
@@ -156,6 +161,12 @@ export default function StudentModal({
   const onSubmit = (data: StudentFormData) => {
     onSave({
       ...data,
+      identificationPrefix: data.identificationPrefix as "V" | "E" | "J" | "P",
+      sex: data.sex as "FEMENINO" | "MASCULINO" | "OTRO",
+      civilStatus: data.civilStatus as "SOLTERO" | "CASADO" | "DIVORCIADO" | "VIUDO",
+      regime: data.regime as "DIURNO" | "NOCTURNO" | "MIXTO",
+      studentType: data.studentType as "CIVIL" | "MILITAR",
+      works: data.works as "SI" | "NO",
       status: editingStudent?.status ?? true,
     });
   };
@@ -194,6 +205,7 @@ export default function StudentModal({
                         ]}
                         onChange={field.onChange}
                         defaultValue={field.value}
+                        placeholder="Seleccione Prefijo"
                       />
                     )}
                   />
@@ -256,12 +268,15 @@ export default function StudentModal({
                       { value: "MASCULINO", label: "MASCULINO" },
                       { value: "OTRO", label: "OTRO" },
                     ]}
-                    placeholder="Seleccione el sexo"
+                    placeholder="Seleccione Sexo"
                     onChange={field.onChange}
                     defaultValue={field.value}
                   />
                 )}
               />
+              {isSubmitted && errors.sex && (
+                <p className="mt-1 text-xs text-red-500">{errors.sex.message}</p>
+              )}
             </div>
 
             {/* Fila 3 */}
@@ -286,7 +301,7 @@ export default function StudentModal({
                       }
                     }}
                     error={!!errors.birthDate}
-                    placeholder="Seleccione fecha de nacimiento (DD/MM/AAAA)"
+                    placeholder="Seleccione fecha de nacimiento"
                   />
                 )}
               />
@@ -307,12 +322,15 @@ export default function StudentModal({
                       { value: "DIVORCIADO", label: "DIVORCIADO" },
                       { value: "VIUDO", label: "VIUDO" },
                     ]}
-                    placeholder="Seleccione el estado civil actual"
+                    placeholder="Seleccione Estado Civil"
                     onChange={field.onChange}
                     defaultValue={field.value}
                   />
                 )}
               />
+              {isSubmitted && errors.civilStatus && (
+                <p className="mt-1 text-xs text-red-500">{errors.civilStatus.message}</p>
+              )}
             </div>
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Teléfono *</label>
@@ -343,7 +361,7 @@ export default function StudentModal({
                 render={({ field }) => (
                   <Select
                     options={careerOptions}
-                    placeholder="Seleccione la carrera académica que cursa"
+                    placeholder="Seleccione Carrera"
                     onChange={field.onChange}
                     defaultValue={field.value}
                   />
@@ -385,12 +403,15 @@ export default function StudentModal({
                       { value: "NOCTURNO", label: "NOCTURNO" },
                       { value: "MIXTO", label: "MIXTO" },
                     ]}
-                    placeholder="Seleccione el régimen de estudio"
+                    placeholder="Seleccione Régimen"
                     onChange={field.onChange}
                     defaultValue={field.value}
                   />
                 )}
               />
+              {isSubmitted && errors.regime && (
+                <p className="mt-1 text-xs text-red-500">{errors.regime.message}</p>
+              )}
             </div>
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Tipo Estudiante *</label>
@@ -403,12 +424,15 @@ export default function StudentModal({
                       { value: "CIVIL", label: "CIVIL" },
                       { value: "MILITAR", label: "MILITAR" },
                     ]}
-                    placeholder="Seleccione si es Civil o Militar"
+                    placeholder="Seleccione Tipo de Estudiante"
                     onChange={field.onChange}
                     defaultValue={field.value}
                   />
                 )}
               />
+              {isSubmitted && errors.studentType && (
+                <p className="mt-1 text-xs text-red-500">{errors.studentType.message}</p>
+              )}
             </div>
 
             {/* Fila 6 */}
@@ -425,13 +449,16 @@ export default function StudentModal({
                       { value: "CABO", label: "CABO" },
                       { value: "SARGENTO", label: "SARGENTO" },
                     ]}
-                    placeholder="Seleccione el rango militar correspondiente"
+                    placeholder="Seleccione Rango Militar"
                     onChange={field.onChange}
                     defaultValue={field.value}
                     disabled={studentType === "CIVIL"}
                   />
                 )}
               />
+              {isSubmitted && errors.militaryRank && (
+                <p className="mt-1 text-xs text-red-500">{errors.militaryRank.message}</p>
+              )}
             </div>
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Trabaja *</label>
@@ -444,12 +471,15 @@ export default function StudentModal({
                       { value: "SI", label: "SI" },
                       { value: "NO", label: "NO" },
                     ]}
-                    placeholder="Indique si el estudiante labora actualmente"
+                    placeholder="Seleccione si trabaja"
                     onChange={field.onChange}
                     defaultValue={field.value}
                   />
                 )}
               />
+              {isSubmitted && errors.works && (
+                <p className="mt-1 text-xs text-red-500">{errors.works.message}</p>
+              )}
             </div>
           </div>
         </form>

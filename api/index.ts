@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 
 dotenv.config();
 
@@ -28,19 +28,36 @@ app.use(cors());
 app.use(express.json());
 
 // Helper para manejar reintentos en caso de errores temporales (503, 429)
-async function axiosWithRetry(config: any, retries = 3, backoff = 1000) {
+async function axiosWithRetry(config: AxiosRequestConfig, retries = 3, backoff = 1000) {
+  const axiosConfig = {
+    ...config,
+    timeout: config.timeout || 10000, // Timeout por defecto de 10s
+  };
+
   try {
-    return await axios(config);
-  } catch (error) {
-    if (retries > 0 && axios.isAxiosError(error)) {
-      const status = error.response?.status;
-      // Reintentar en errores de servidor (5xx) o rate limit (429)
-      if (status === 429 || (status && status >= 500)) {
-        console.log(`[Retry] Error ${status} en MockAPI. Reintentando en ${backoff}ms... (${retries} intentos restantes)`);
-        await new Promise(resolve => setTimeout(resolve, backoff));
-        return axiosWithRetry(config, retries - 1, backoff * 1.5);
+    return await axios(axiosConfig);
+  } catch (error: unknown) {
+    let status: number | undefined;
+    
+    if (axios.isAxiosError(error)) {
+      status = error.response?.status;
+    }
+
+    const isRetryable = status === 429 || (status && status >= 500);
+
+    if (retries > 0 && isRetryable) {
+      console.warn(`[Retry] Error ${status} en MockAPI. Reintentando en ${backoff}ms... (${retries} intentos restantes)`);
+      await new Promise(resolve => setTimeout(resolve, backoff));
+      return axiosWithRetry(config, retries - 1, backoff * 1.5);
+    }
+
+    if (axios.isAxiosError(error)) {
+      console.error(`[AxiosError] ${error.config?.method?.toUpperCase()} ${error.config?.url} - Status: ${status} - Message: ${error.message}`);
+      if (error.code === 'ECONNABORTED') {
+        console.error(`[Timeout] La petición excedió el tiempo límite de ${axiosConfig.timeout}ms`);
       }
     }
+    
     throw error;
   }
 }
@@ -103,7 +120,10 @@ app.put('/api/periodos/:id', async (req: Request, res: Response) => {
   try {
     const url = `${MOCK_API_URL}/periodos/${req.params.id}`;
     // Limpiar el body para evitar conflictos con el ID en la URL
-    const { id, periodId, ...updateData } = req.body;
+    const updateData = { ...req.body };
+    delete updateData.id;
+    delete updateData.periodId;
+
     console.log(`[Proxy PUT] ${url}`, updateData);
     const response = await axiosWithRetry({
       method: 'put',
@@ -166,7 +186,14 @@ app.put('/api/careers/:id', async (req: Request, res: Response) => {
   try {
     const url = `${MOCK_API_URL}/careers/${req.params.id}`;
     // Limpiar el body: MockAPI puede fallar si se envían identificadores o campos de sistema en el body
-    const { id, careerId, CAREER_ID, creationDate, CREATION_DATE, STATUS, ...updateData } = req.body;
+    const updateData = { ...req.body };
+    delete updateData.id;
+    delete updateData.careerId;
+    delete updateData.CAREER_ID;
+    delete updateData.creationDate;
+    delete updateData.CREATION_DATE;
+    delete updateData.STATUS;
+
     console.log(`[Proxy PUT] ${url}`, updateData);
     const response = await axiosWithRetry({
       method: 'put',
@@ -194,136 +221,14 @@ app.delete('/api/careers/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Students
-app.get('/api/students', async (_req: Request, res: Response) => {
-  try {
-    const url = `${MOCK_API_URL}/students`;
-    console.log(`[Proxy GET] ${url}`);
-    const response = await axiosWithRetry({ method: 'get', url });
-    handleApiResponse(res, response.data);
-  } catch (error: unknown) {
-    const errorMessage = getErrorMessage(error);
-    console.error('[Proxy GET] Error students:', errorMessage);
-    res.status(500).json({ message: 'Error al conectar con MockAPI (students)', error: errorMessage });
-  }
-});
-
-app.post('/api/students', async (req: Request, res: Response) => {
-  try {
-    const url = `${MOCK_API_URL}/students`;
-    console.log(`[Proxy POST] ${url}`, req.body);
-    const response = await axiosWithRetry({
-      method: 'post',
-      url,
-      data: req.body
-    });
-    res.status(201).json(response.data);
-  } catch (error: unknown) {
-    const errorMessage = getErrorMessage(error);
-    console.error('[Proxy POST] Error students:', errorMessage);
-    res.status(500).json({ message: 'Error al crear en MockAPI (students)', error: errorMessage });
-  }
-});
-
-app.put('/api/students/:id', async (req: Request, res: Response) => {
-  try {
-    const url = `${MOCK_API_URL}/students/${req.params.id}`;
-    const { id, ...updateData } = req.body;
-    console.log(`[Proxy PUT] ${url}`, updateData);
-    const response = await axiosWithRetry({
-      method: 'put',
-      url,
-      data: updateData
-    });
-    res.json(response.data);
-  } catch (error: unknown) {
-    const errorMessage = getErrorMessage(error);
-    console.error('[Proxy PUT] Error students:', errorMessage);
-    res.status(500).json({ message: 'Error al actualizar en MockAPI (students)', error: errorMessage });
-  }
-});
-
-app.delete('/api/students/:id', async (req: Request, res: Response) => {
-  try {
-    const url = `${MOCK_API_URL}/students/${req.params.id}`;
-    console.log(`[Proxy DELETE] ${url}`);
-    const response = await axiosWithRetry({ method: 'delete', url });
-    res.json(response.data);
-  } catch (error: unknown) {
-    const errorMessage = getErrorMessage(error);
-    console.error('[Proxy DELETE] Error students:', errorMessage);
-    res.status(500).json({ message: 'Error al eliminar en MockAPI (students)', error: errorMessage });
-  }
-});
-
-// Tutors
-app.get('/api/tutors', async (_req: Request, res: Response) => {
-  try {
-    const url = `${MOCK_API_URL}/tutors`;
-    console.log(`[Proxy GET] ${url}`);
-    const response = await axiosWithRetry({ method: 'get', url });
-    handleApiResponse(res, response.data);
-  } catch (error: unknown) {
-    const errorMessage = getErrorMessage(error);
-    console.error('[Proxy GET] Error tutors:', errorMessage);
-    res.status(500).json({ message: 'Error al conectar con MockAPI (tutors)', error: errorMessage });
-  }
-});
-
-app.post('/api/tutors', async (req: Request, res: Response) => {
-  try {
-    const url = `${MOCK_API_URL}/tutors`;
-    console.log(`[Proxy POST] ${url}`, req.body);
-    const response = await axiosWithRetry({
-      method: 'post',
-      url,
-      data: req.body
-    });
-    res.status(201).json(response.data);
-  } catch (error: unknown) {
-    const errorMessage = getErrorMessage(error);
-    console.error('[Proxy POST] Error tutors:', errorMessage);
-    res.status(500).json({ message: 'Error al crear en MockAPI (tutors)', error: errorMessage });
-  }
-});
-
-app.put('/api/tutors/:id', async (req: Request, res: Response) => {
-  try {
-    const url = `${MOCK_API_URL}/tutors/${req.params.id}`;
-    const { id, ...updateData } = req.body;
-    console.log(`[Proxy PUT] ${url}`, updateData);
-    const response = await axiosWithRetry({
-      method: 'put',
-      url,
-      data: updateData
-    });
-    res.json(response.data);
-  } catch (error: unknown) {
-    const errorMessage = getErrorMessage(error);
-    console.error('[Proxy PUT] Error tutors:', errorMessage);
-    res.status(500).json({ message: 'Error al actualizar en MockAPI (tutors)', error: errorMessage });
-  }
-});
-
-app.delete('/api/tutors/:id', async (req: Request, res: Response) => {
-  try {
-    const url = `${MOCK_API_URL}/tutors/${req.params.id}`;
-    console.log(`[Proxy DELETE] ${url}`);
-    const response = await axiosWithRetry({ method: 'delete', url });
-    res.json(response.data);
-  } catch (error: unknown) {
-    const errorMessage = getErrorMessage(error);
-    console.error('[Proxy DELETE] Error tutors:', errorMessage);
-    res.status(500).json({ message: 'Error al eliminar en MockAPI (tutors)', error: errorMessage });
-  }
-});
+// Note: Students and Tutors endpoints have been removed as these modules now operate in Static Demo Mode.
 
 // Root path for Vercel health check or simple landing
 app.get('/api', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     message: 'UNEFA Vercel API is running',
-    endpoints: ['/api/periodos', '/api/careers', '/api/students', '/api/tutors']
+    endpoints: ['/api/periodos', '/api/careers']
   });
 });
 

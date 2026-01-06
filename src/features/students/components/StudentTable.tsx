@@ -268,7 +268,7 @@ export default function StudentTable({
                             onChange={(e) => setCareerFilter(e.target.value)}
                             className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-10 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white appearance-none"
                         >
-                            <option value="">Todas las carreras</option>
+                            <option value="">Todas las Carreras</option>
                             {careerOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value}>
                                     {opt.label}
@@ -465,8 +465,24 @@ export default function StudentTable({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell className="table-cell py-20 text-center text-gray-500" colSpan={8}>
-                                    No se encontraron estudiantes.
+                                <TableCell className="table-cell py-24 text-center" colSpan={8}>
+                                    <div className="flex flex-col items-center justify-center animate-fadeIn">
+                                        <div className="mb-4 rounded-full bg-gray-50 p-4 dark:bg-white/5">
+                                            <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="text-sm font-bold text-gray-800 dark:text-white">No se encontraron estudiantes</h3>
+                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Intenta ajustar los filtros para encontrar lo que buscas.</p>
+                                        {(idFilter || nameFilter || lastNameFilter || careerFilter) && (
+                                            <button
+                                                onClick={clearFilters}
+                                                className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                                            >
+                                                Ver todos los estudiantes
+                                            </button>
+                                        )}
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         )}
@@ -572,8 +588,22 @@ export default function StudentTable({
                         );
                     })
                 ) : (
-                    <div className="p-8 text-center text-gray-500 text-sm">
-                        No se encontraron estudiantes.
+                    <div className="py-20 text-center animate-fadeIn">
+                        <div className="inline-flex mb-4 rounded-full bg-gray-50 p-4 dark:bg-white/5">
+                            <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-sm font-bold text-gray-800 dark:text-white">No se encontraron estudiantes</h3>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
+                        {(idFilter || nameFilter || lastNameFilter || careerFilter) && (
+                            <button
+                                onClick={clearFilters}
+                                className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                            >
+                                Ver todos los estudiantes
+                            </button>
+                        )}
                     </div>
                 )}
             </div>

@@ -18,7 +18,7 @@ interface TutorModalProps {
 }
 
 const tutorSchema = z.object({
-  identificationPrefix: z.enum(["V", "E"]),
+  identificationPrefix: z.string().min(1, "Seleccione un prefijo"),
   identificationNumber: z.string()
     .min(1, "La cédula es obligatoria")
     .regex(/^\d+$/, "Solo se admiten números"),
@@ -34,7 +34,7 @@ const tutorSchema = z.object({
   secondLastName: z.string()
     .optional()
     .refine(val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val), "Solo se admiten letras"),
-  sex: z.enum(["FEMENINO", "MASCULINO", "OTRO"]),
+  sex: z.string().min(1, "Seleccione el sexo"),
   phoneAreaCode: z.string().min(1, "El código de área es obligatorio"),
   phoneNumber: z.string()
     .min(1, "El teléfono es obligatorio")
@@ -120,20 +120,20 @@ export default function TutorModal({
     resolver: zodResolver(tutorSchema),
     mode: "onChange",
     defaultValues: {
-      identificationPrefix: "V",
+      identificationPrefix: "",
       identificationNumber: "",
       firstName: "",
       middleName: "",
       lastName: "",
       secondLastName: "",
-      sex: "FEMENINO",
-      phoneAreaCode: "0412",
+      sex: "",
+      phoneAreaCode: "",
       phoneNumber: "",
       email: "",
-      condition: "CONTRATADO",
-      dedication: "TIEMPO COMPLETO",
-      category: "INSTRUCTOR",
-      profession: "INGENIERO EN SISTEMAS",
+      condition: "",
+      dedication: "",
+      category: "",
+      profession: "",
       carreras: [],
     },
   });
@@ -189,20 +189,20 @@ export default function TutorModal({
         });
       } else {
         reset({
-          identificationPrefix: "V",
+          identificationPrefix: "",
           identificationNumber: "",
           firstName: "",
           middleName: "",
           lastName: "",
           secondLastName: "",
-          sex: "FEMENINO",
-          phoneAreaCode: "0412",
+          sex: "",
+          phoneAreaCode: "",
           phoneNumber: "",
           email: "",
-          condition: "CONTRATADO",
-          dedication: "TIEMPO COMPLETO",
-          category: "INSTRUCTOR",
-          profession: "INGENIERO EN SISTEMAS",
+          condition: "",
+          dedication: "",
+          category: "",
+          profession: "",
           carreras: [],
         });
       }
@@ -212,6 +212,8 @@ export default function TutorModal({
   const onSubmit = (data: TutorFormData) => {
     onSave({
       ...data,
+      identificationPrefix: data.identificationPrefix as "V" | "E",
+      sex: data.sex as "FEMENINO" | "MASCULINO" | "OTRO",
       phone: `${data.phoneAreaCode}${data.phoneNumber}`,
       status: editingTutor?.status ?? true,
       carreras: data.carreras,
@@ -251,6 +253,7 @@ export default function TutorModal({
                         ]}
                         onChange={field.onChange}
                         defaultValue={field.value}
+                        placeholder="Seleccione Prefijo"
                       />
                     )}
                   />
@@ -313,19 +316,22 @@ export default function TutorModal({
                       { value: "MASCULINO", label: "MASCULINO" },
                       { value: "OTRO", label: "OTRO" },
                     ]}
-                    placeholder="Seleccione el sexo"
                     onChange={field.onChange}
                     defaultValue={field.value}
+                    placeholder="Seleccione Sexo"
                   />
                 )}
               />
+              {isSubmitted && errors.sex && (
+                <p className="mt-1 text-xs text-red-500">{errors.sex.message}</p>
+              )}
             </div>
 
             {/* Fila 3 */}
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Teléfono *</label>
               <div className="flex gap-2">
-                <div className="w-24">
+                <div className="w-28">
                   <Controller
                     name="phoneAreaCode"
                     control={control}
@@ -334,6 +340,7 @@ export default function TutorModal({
                         options={PHONE_AREA_CODES}
                         onChange={field.onChange}
                         defaultValue={field.value}
+                        placeholder="Seleccione Código"
                       />
                     )}
                   />
@@ -341,25 +348,28 @@ export default function TutorModal({
                 <div className="flex-1">
                   <Input
                     {...register("phoneNumber")}
-                    placeholder="Ingrese el número telefónico (ej: 1234567)"
+                    placeholder="Ingrese el número"
                     error={!!errors.phoneNumber}
                   />
                 </div>
               </div>
-              {isSubmitted && errors.phoneNumber && (
-                <p className="mt-1 text-xs text-red-500">{errors.phoneNumber.message}</p>
+              {isSubmitted && (errors.phoneAreaCode || errors.phoneNumber) && (
+                <p className="mt-1 text-xs text-red-500">
+                  {errors.phoneAreaCode?.message || errors.phoneNumber?.message}
+                </p>
               )}
             </div>
-            <div>
+            <div className="lg:col-span-2">
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Correo Electrónico *</label>
               <Input
                 {...register("email")}
-                type="email"
-                placeholder="Ingrese el correo institucional o personal (ej: usuario@correo.com)"
+                placeholder="Ingrese el correo institucional o personal"
                 error={!!errors.email}
                 hint={isSubmitted ? errors.email?.message : undefined}
               />
             </div>
+
+            {/* Fila 4 */}
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Condición *</label>
               <Controller
@@ -368,15 +378,16 @@ export default function TutorModal({
                 render={({ field }) => (
                   <Select
                     options={CONDITION_OPTIONS}
-                    placeholder="Seleccione la condición"
                     onChange={field.onChange}
                     defaultValue={field.value}
+                    placeholder="Seleccione Condición"
                   />
                 )}
               />
+              {isSubmitted && errors.condition && (
+                <p className="mt-1 text-xs text-red-500">{errors.condition.message}</p>
+              )}
             </div>
-
-            {/* Fila 4 */}
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Dedicación *</label>
               <Controller
@@ -385,12 +396,15 @@ export default function TutorModal({
                 render={({ field }) => (
                   <Select
                     options={DEDICATION_OPTIONS}
-                    placeholder="Seleccione la dedicación"
                     onChange={field.onChange}
                     defaultValue={field.value}
+                    placeholder="Seleccione Dedicación"
                   />
                 )}
               />
+              {isSubmitted && errors.dedication && (
+                <p className="mt-1 text-xs text-red-500">{errors.dedication.message}</p>
+              )}
             </div>
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Categoría *</label>
@@ -400,14 +414,19 @@ export default function TutorModal({
                 render={({ field }) => (
                   <Select
                     options={CATEGORY_OPTIONS}
-                    placeholder="Seleccione la categoría"
                     onChange={field.onChange}
                     defaultValue={field.value}
+                    placeholder="Seleccione Categoría"
                   />
                 )}
               />
+              {isSubmitted && errors.category && (
+                <p className="mt-1 text-xs text-red-500">{errors.category.message}</p>
+              )}
             </div>
-            <div>
+
+            {/* Fila 5 */}
+            <div className="lg:col-span-1">
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Profesión *</label>
               <Controller
                 name="profession"
@@ -415,36 +434,35 @@ export default function TutorModal({
                 render={({ field }) => (
                   <Select
                     options={PROFESSION_OPTIONS}
-                    placeholder="Seleccione la profesión"
                     onChange={field.onChange}
                     defaultValue={field.value}
+                    placeholder="Seleccione Profesión"
                   />
                 )}
               />
-            </div>
-          </div>
-
-          {/* Fila 5 - Carreras (MultiSelect) */}
-          <div className="mt-6">
-            <Controller
-              name="carreras"
-              control={control}
-              render={({ field }) => (
-                <MultiSelect
-                  label="Carreras Asignadas *"
-                  options={filteredCarreraOptions}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Seleccione las carreras (Ingeniería o Enfermería)"
-                />
+              {isSubmitted && errors.profession && (
+                <p className="mt-1 text-xs text-red-500">{errors.profession.message}</p>
               )}
-            />
-            {isSubmitted && errors.carreras && (
-              <p className="mt-1 text-xs text-red-500">{errors.carreras.message}</p>
-            )}
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              * Nota: Solo puede seleccionar carreras de un mismo tipo (Ingeniería o Enfermería).
-            </p>
+            </div>
+            <div className="lg:col-span-2">
+              {/* <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Carreras que Atiende *</label> */}
+              <Controller
+                name="carreras"
+                control={control}
+                render={({ field }) => (
+                  <MultiSelect
+                    label="Carreras que Atiende *"
+                    options={filteredCarreraOptions}
+                    onChange={field.onChange}
+                    value={field.value}
+                    placeholder="Seleccione las carreras..."
+                  />
+                )}
+              />
+              {isSubmitted && errors.carreras && (
+                <p className="mt-1 text-xs text-red-500">{errors.carreras.message}</p>
+              )}
+            </div>
           </div>
         </form>
       </ModalBody>

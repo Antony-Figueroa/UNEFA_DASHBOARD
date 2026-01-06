@@ -88,7 +88,7 @@ export const useCareers = () => {
 
       addToast({
         variant: "success",
-        title: "Carrera Creado",
+        title: "Carrera Creada",
         message: (
           <>
             <p>La carrera <strong>{careerData.careerName}</strong> ha sido registrada exitosamente.</p>

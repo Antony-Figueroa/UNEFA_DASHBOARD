@@ -6,7 +6,16 @@ import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ThreeDotsIcon, ChevronDownIc
 import { TutorRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { useDebounce } from "../../../hooks/useDebounce";
-// import Badge from "../../../components/ui/badge/Badge";
+import Badge from "../../../components/ui/badge/Badge";
+
+const getProfessionColor = (profession: string): "primary" | "success" | "error" | "warning" | "info" => {
+    const colors: ("primary" | "success" | "error" | "warning" | "info")[] = ["primary", "success", "error", "warning", "info"];
+    let hash = 0;
+    for (let i = 0; i < (profession || "").length; i++) {
+        hash = profession.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+};
 
 interface TutorTableProps {
     data: TutorRowData[];
@@ -251,7 +260,7 @@ export default function TutorTable({
                             onChange={(e) => setProfessionFilter(e.target.value)}
                             className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-10 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white appearance-none"
                         >
-                            <option value="">Todas las profesiones</option>
+                            <option value="">Seleccione Profesión</option>
                             {professionOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value}>
                                     {opt.label}
@@ -386,7 +395,7 @@ export default function TutorTable({
                                         </span>
                                     </TableCell>
                                     <TableCell className="table-cell text-sm text-gray-600 dark:text-gray-400 capitalize">
-                                        {t.sex.toLowerCase()}
+                                        {(t.sex || "N/A").toLowerCase()}
                                     </TableCell>
                                     <TableCell className="table-cell text-sm text-gray-600 dark:text-gray-400">
                                         {t.phone}
@@ -395,9 +404,13 @@ export default function TutorTable({
                                         {t.email}
                                     </TableCell>
                                     <TableCell className="table-cell">
-                                        <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-400/10 dark:text-blue-400">
-                                            {t.profession}
-                                        </span>
+                                        {t.profession ? (
+                                            <Badge color={getProfessionColor(t.profession)} variant="light" size="sm" shape="rounded">
+                                                {t.profession}
+                                            </Badge>
+                                        ) : (
+                                            <span className="text-gray-400">N/A</span>
+                                        )}
                                     </TableCell>
                                     <TableCell className="table-cell text-right">
                                         <div className="flex justify-end">
@@ -475,8 +488,24 @@ export default function TutorTable({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={8} className="py-12 text-center text-gray-500 dark:text-gray-400">
-                                    No se encontraron tutores.
+                                <TableCell className="table-cell py-24 text-center" colSpan={8}>
+                                    <div className="flex flex-col items-center justify-center animate-fadeIn">
+                                        <div className="mb-4 rounded-full bg-gray-50 p-4 dark:bg-white/5">
+                                            <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="text-sm font-bold text-gray-800 dark:text-white">No se encontraron tutores</h3>
+                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Intenta ajustar los filtros para encontrar lo que buscas.</p>
+                                        {(idFilter || nameFilter || lastNameFilter || professionFilter) && (
+                                            <button
+                                                onClick={clearFilters}
+                                                className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                                            >
+                                                Ver todos los tutores
+                                            </button>
+                                        )}
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         )}
@@ -508,9 +537,13 @@ export default function TutorTable({
                             </div>
 
                             <div className="flex flex-wrap gap-2 mb-4">
-                                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-[10px] font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-400/10 dark:text-blue-400">
-                                    {t.profession}
-                                </span>
+                                {t.profession ? (
+                                    <Badge color={getProfessionColor(t.profession)} variant="light" size="sm" shape="rounded">
+                                        {t.profession}
+                                    </Badge>
+                                ) : (
+                                    <span className="text-gray-400 text-[10px]">N/A</span>
+                                )}
                             </div>
 
                             {expandedRows.has(t.tutorId) && (
@@ -518,19 +551,19 @@ export default function TutorTable({
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Correo</p>
-                                            <p className="text-xs text-gray-600 dark:text-gray-300 break-all">{t.email}</p>
+                                            <p className="text-xs text-gray-600 dark:text-gray-300 break-all">{t.email || "N/A"}</p>
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Teléfono</p>
-                                            <p className="text-xs text-gray-600 dark:text-gray-300">{t.phone}</p>
+                                            <p className="text-xs text-gray-600 dark:text-gray-300">{t.phone || "N/A"}</p>
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Sexo</p>
-                                            <p className="text-xs text-gray-600 dark:text-gray-300 capitalize">{t.sex.toLowerCase()}</p>
+                                            <p className="text-xs text-gray-600 dark:text-gray-300 capitalize">{(t.sex || "N/A").toLowerCase()}</p>
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Registro</p>
-                                            <p className="text-xs text-gray-600 dark:text-gray-300">{t.registrationDate}</p>
+                                            <p className="text-xs text-gray-600 dark:text-gray-300">{t.registrationDate || "N/A"}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -614,8 +647,22 @@ export default function TutorTable({
                         </div>
                     ))
                 ) : (
-                    <div className="py-12 text-center text-gray-500 dark:text-gray-400">
-                        No se encontraron tutores.
+                    <div className="py-20 text-center animate-fadeIn">
+                        <div className="inline-flex mb-4 rounded-full bg-gray-50 p-4 dark:bg-white/5">
+                            <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-sm font-bold text-gray-800 dark:text-white">No se encontraron tutores</h3>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
+                        {(idFilter || nameFilter || lastNameFilter || professionFilter) && (
+                            <button
+                                onClick={clearFilters}
+                                className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                            >
+                                Ver todos los tutores
+                            </button>
+                        )}
                     </div>
                 )}
             </div>

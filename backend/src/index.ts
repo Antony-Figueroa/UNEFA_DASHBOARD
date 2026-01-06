@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 
 dotenv.config();
 
@@ -36,7 +36,7 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // Ruta raíz para evitar 404
-app.get('/', (req: Request, res: Response) => {
+app.get('/', (_req: Request, res: Response) => {
   res.send(`
     <html>
       <head><title>Proyecto-Unefa API</title></head>
@@ -78,19 +78,39 @@ app.get('/api/health', async (_req: Request, res: Response) => {
 });
 
 // Helper para manejar reintentos en caso de errores temporales (503, 429)
-async function axiosWithRetry(config: any, retries = 3, backoff = 1000) {
+async function axiosWithRetry(config: AxiosRequestConfig, retries = 3, backoff = 1000) {
+  const axiosConfig = {
+    ...config,
+    timeout: config.timeout || 10000, // Timeout por defecto de 10s
+  };
+
   try {
-    return await axios(config);
-  } catch (error) {
-    if (retries > 0 && axios.isAxiosError(error)) {
-      const status = error.response?.status;
-      // Reintentar en errores de servidor (5xx) o rate limit (429)
-      if (status === 429 || (status && status >= 500)) {
-        console.log(`[Retry] Error ${status} en MockAPI. Reintentando en ${backoff}ms... (${retries} intentos restantes)`);
-        await new Promise(resolve => setTimeout(resolve, backoff));
-        return axiosWithRetry(config, retries - 1, backoff * 1.5);
-      }
+    return await axios(axiosConfig);
+  } catch (error: unknown) {
+    let status: number | undefined;
+    
+    if (axios.isAxiosError(error)) {
+      status = error.response?.status;
     }
+
+    const isRetryable = status === 429 || (status && status >= 500);
+
+    if (retries > 0 && isRetryable) {
+      console.warn(`[Retry] Error ${status} en MockAPI. Reintentando en ${backoff}ms... (${retries} intentos restantes)`);
+      await new Promise(resolve => setTimeout(resolve, backoff));
+      return axiosWithRetry(config, retries - 1, backoff * 1.5);
+    }
+
+    // Log detallado del error antes de lanzar
+    if (axios.isAxiosError(error)) {
+      console.error(`[AxiosError] ${error.config?.method?.toUpperCase()} ${error.config?.url} - Status: ${status} - Message: ${error.message}`);
+      if (error.code === 'ECONNABORTED') {
+        console.error(`[Timeout] La petición excedió el tiempo límite de ${axiosConfig.timeout}ms`);
+      }
+    } else {
+      console.error(`[UnknownError]`, error);
+    }
+    
     throw error;
   }
 }
@@ -145,7 +165,9 @@ app.put('/api/periodos/:id', async (req: Request, res: Response) => {
   try {
     const url = `${MOCK_API_URL}/periodos/${req.params.id}`;
     // Limpiar el body para evitar conflictos con el ID en la URL
-    const { id, periodId, ...updateData } = req.body;
+    const updateData = { ...req.body };
+    delete updateData.id;
+    delete updateData.periodId;
     console.log(`[Proxy PUT] ${url}`, updateData);
     const response = await axiosWithRetry({
       method: 'put',
@@ -208,7 +230,8 @@ app.post('/api/careers', async (req: Request, res: Response) => {
 app.put('/api/careers/:id', async (req: Request, res: Response) => {
   try {
     const url = `${MOCK_API_URL}/careers/${req.params.id}`;
-    const { id, ...updateData } = req.body;
+    const updateData = { ...req.body };
+    delete updateData.id;
     console.log(`[Proxy PUT] ${url}`, updateData);
     const response = await axiosWithRetry({
       method: 'put',

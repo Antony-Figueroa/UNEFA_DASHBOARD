@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useMemo } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Periodo } from '../types';
@@ -70,7 +70,7 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
     const { register, handleSubmit, formState: { errors }, control, reset, watch, setError, setValue } = useForm<PeriodFormData>({
         resolver: zodResolver(periodSchema),
         defaultValues: {
-            Year: '',
+            year: '',
             periodoTipo: 'I',
         },
     });
@@ -179,7 +179,7 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
     /**
      * Maneja el envío del formulario, valida las fechas y llama a la función onSave.
      */
-    const onSubmit = (data: PeriodFormData) => {
+    const onSubmit: SubmitHandler<PeriodFormData> = (data) => {
         let newDescription = `${data.year}-${data.periodoTipo}`;
         let startDateToUse = data.startDate;
 

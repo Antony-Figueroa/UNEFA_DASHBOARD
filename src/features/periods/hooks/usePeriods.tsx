@@ -123,7 +123,7 @@ export const usePeriods = () => {
     const removePeriod = async (periodo: Periodo) => {
         setLoadingAction(true);
         try {
-            await periodService.deletePeriod(periodo);
+            await periodService.deletePeriod(periodo.periodId);
             await refreshPeriods();
             setLoadingAction(false);
             addToast({

@@ -14,10 +14,6 @@ describe('PeriodModal reglas de negocio', () => {
       creationDate: new Date(),
       periodStatus: 2,
       status: true,
-      progress: 50,
-      daysPassed: 10,
-      daysRemaining: 20,
-      weeksRemaining: 3,
     };
 
     render(

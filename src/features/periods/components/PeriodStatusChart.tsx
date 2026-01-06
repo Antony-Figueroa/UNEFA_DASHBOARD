@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import ReactApexChart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
-import { useTheme } from '../../../context/ThemeContext';
+import { useTheme } from '../../../context/theme';
 import { usePeriods } from '../hooks/usePeriods';
 
 const PeriodStatusChart = () => {

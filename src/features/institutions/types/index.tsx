@@ -26,3 +26,24 @@ export interface Institution {
 export interface InstitutionRowData extends Omit<Institution, "registrationDate"> {
   registrationDate: string;
 }
+
+export interface InstitutionalResponsible {
+  responsibleId: string;
+  identificationPrefix: string;
+  identificationNumber: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  secondLastName?: string;
+  phone: string;
+  email: string;
+  institutionId: string;
+  institutionName?: string;
+  status: boolean;
+  registrationDate: Date;
+}
+
+export interface InstitutionalResponsibleRowData extends Omit<InstitutionalResponsible, "registrationDate"> {
+  registrationDate: string;
+}
+

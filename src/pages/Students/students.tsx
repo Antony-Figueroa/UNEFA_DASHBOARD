@@ -81,22 +81,22 @@ export default function StudentsPage() {
         error: {
             iconBg: "bg-red-100 dark:bg-red-900/30",
             icon: <XIcon className="h-6 w-6 text-red-600 dark:text-red-500" />,
-            button: "bg-red-600 hover:bg-red-700",
+            button: "bg-red-600 hover:bg-red-700 dark:hover:bg-red-500",
         },
         success: {
             iconBg: "bg-green-100 dark:bg-green-900/30",
             icon: <CheckCircleIcon className="h-6 w-6 text-green-600 dark:text-green-500" />,
-            button: "bg-green-500 hover:bg-green-600",
+            button: "bg-green-500 hover:bg-green-600 dark:hover:bg-green-400",
         },
         warning: {
             iconBg: "bg-yellow-100 dark:bg-yellow-900/30",
             icon: <ExclamationTriangleIcon className="h-6 w-6 text-yellow-500 dark:text-yellow-400" />,
-            button: "bg-yellow-500 hover:bg-yellow-600",
+            button: "bg-yellow-500 hover:bg-yellow-600 dark:hover:bg-yellow-400",
         },
         info: {
             iconBg: "bg-blue-100 dark:bg-blue-900/30",
             icon: <InformationCircleIcon className="h-6 w-6 text-blue-600 dark:text-blue-500" />,
-            button: "bg-blue-500 hover:bg-blue-600",
+            button: "bg-blue-500 hover:bg-blue-600 dark:hover:bg-blue-400",
         },
     };
 

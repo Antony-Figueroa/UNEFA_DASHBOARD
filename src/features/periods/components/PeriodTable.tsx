@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { useTheme } from "../../../context/theme";
 import { Dropdown } from "../../../components/ui/dropdown/Dropdown";
 import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
 import {
@@ -12,6 +11,9 @@ import {
     Pagination,
 } from "../../../components/ui/table";
 import Badge from "../../../components/ui/badge/Badge";
+import Button from "../../../components/ui/button/Button";
+import { EmptyState } from "../../../components/ui/table/EmptyState";
+import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
 import {
     EditIcon,
     TrashIcon,
@@ -96,7 +98,6 @@ const ActionMenu = ({
     onClose,
     periodo,
 }: ActionMenuProps) => {
-    const { colorMode } = useTheme();
     const [isOpen, setIsOpen] = useState(false);
     const [highlighted, setHighlighted] = useState(false);
     const trigger = useRef<HTMLButtonElement>(null);
@@ -191,7 +192,7 @@ const ActionMenu = ({
             <button
                 ref={trigger}
                 onClick={toggleMenu}
-                className="p-1 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                className="dropdown-toggle inline-flex items-center rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 min-h-12 min-w-12 justify-center"
                 title="Acciones"
                 aria-label="Menú de acciones"
             >
@@ -218,13 +219,21 @@ const ActionMenu = ({
                                 setHighlighted(false);
                                 onClose();
                             }}
-                            className={`w-40 min-w-37.5 rounded-md border border-stroke bg-white p-2 shadow-lg dark:border-strokedark dark:bg-boxdark animate-fadeIn ${colorMode === "dark" ? "dark" : ""
-                                }`}
+                            className="w-40 min-w-37.5 animate-fadeIn"
                         >
+                            {onView && (
+                                <DropdownItem
+                                    onItemClick={() => handleAction(onView)}
+                                    className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
+                                >
+                                    <EyeIcon className="icon-sm" />
+                                    Ver Detalles
+                                </DropdownItem>
+                            )}
                             {hasStatus && currentPeriodStatus !== 3 && onEdit && (
                                 <DropdownItem
                                     onItemClick={() => handleAction(onEdit)}
-                                    className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-meta-4"
+                                    className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
                                 >
                                     <EditIcon className="icon-sm" />
                                     Editar
@@ -233,25 +242,16 @@ const ActionMenu = ({
                             {hasStatus && currentPeriodStatus === 2 && onCulminate && (
                                 <DropdownItem
                                     onItemClick={() => handleAction(onCulminate)}
-                                    className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 dark:text-blue-500 dark:hover:bg-meta-4"
+                                    className="flex items-center gap-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-400/10 font-medium"
                                 >
                                     <CheckCircleIcon className="icon-sm" />
                                     Culminar
                                 </DropdownItem>
                             )}
-                            {hasStatus && currentPeriodStatus === 3 && onView && (
-                                <DropdownItem
-                                    onItemClick={() => handleAction(onView)}
-                                    className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-meta-4"
-                                >
-                                    <EyeIcon className="icon-sm" />
-                                    Ver
-                                </DropdownItem>
-                            )}
                             {!hasStatus && onRestore && (
                                 <DropdownItem
                                     onItemClick={() => handleAction(onRestore)}
-                                    className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 dark:text-blue-500 dark:hover:bg-meta-4"
+                                    className="flex items-center gap-2 text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-400/10"
                                 >
                                     <RefreshIcon className="icon-sm" />
                                     Restaurar
@@ -260,7 +260,7 @@ const ActionMenu = ({
                             {hasStatus && currentPeriodStatus === 1 && onDelete && (
                                 <DropdownItem
                                     onItemClick={() => handleAction(onDelete)}
-                                    className="flex w-full items-center gap-2 rounded px-3 py-2 text-left text-sm text-red-500 hover:bg-red-50 dark:text-red-500 dark:hover:bg-meta-4"
+                                    className="flex items-center gap-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10"
                                 >
                                     <TrashIcon className="icon-sm" />
                                     Eliminar
@@ -286,7 +286,7 @@ const PeriodTable = ({
     onDelete,
     onRestore,
     onView,
-    // loading = false,
+    loading: externalLoading,
 }: PeriodTableProps) => {
     const [highlightedRow, setHighlightedRow] = useState<string | null>(null);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -355,6 +355,14 @@ const PeriodTable = ({
         setSearchTerm("");
         setStatusFilter("");
     };
+
+    if (status === "loading" || externalLoading) {
+        return (
+            <div className="table-container">
+                <TableSkeleton columns={5} rows={itemsPerPage} />
+            </div>
+        );
+    }
 
     if (status === "error") {
         return (
@@ -598,13 +606,28 @@ const PeriodTable = ({
                             })
                         ) : (
                             <TableRow>
-                                <TableCell
-                                    colSpan={6}
-                                    className="table-cell py-20 text-center text-gray-500 dark:text-gray-400"
-                                >
-                                    {searchTerm || statusFilter !== "Todos"
-                                        ? "No se encontraron periodos con los filtros aplicados"
-                                        : "No hay periodos para mostrar."}
+                                <TableCell colSpan={6} className="p-0">
+                                    <EmptyState
+                                        title="No se encontraron periodos"
+                                        description={
+                                            searchTerm || (statusFilter && statusFilter !== "")
+                                                ? "No se encontraron periodos con los filtros aplicados. Intenta con otros términos."
+                                                : "No hay periodos registrados en el sistema actualmente."
+                                        }
+                                        action={
+                                            searchTerm || (statusFilter && statusFilter !== "") ? (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={clearFilters}
+                                                    className="flex items-center gap-2"
+                                                >
+                                                    <RefreshIcon className="icon-xs" />
+                                                    Limpiar filtros
+                                                </Button>
+                                            ) : undefined
+                                        }
+                                    />
                                 </TableCell>
                             </TableRow>
                         )}
@@ -695,28 +718,20 @@ const PeriodTable = ({
                                             )}
 
                                             <div className="flex flex-col gap-3 pt-2">
-                                                {!!periodo.status && periodStatus !== 3 && onEdit && (
-                                                    <button
-                                                        onClick={() => onEdit(periodo)}
-                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
-                                                    >
-                                                        <EditIcon className="icon-sm" /> Editar
-                                                    </button>
-                                                )}
-                                                {!!periodo.status && periodStatus === 2 && onCulminate && (
-                                                    <button
-                                                        onClick={() => onCulminate(periodo)}
-                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-blue-200 dark:hover:border-blue-500/20"
-                                                    >
-                                                        <CheckCircleIcon className="icon-sm" /> Culminar
-                                                    </button>
-                                                )}
                                                 {!!periodo.status && periodStatus === 3 && onView && (
                                                     <button
                                                         onClick={() => onView(periodo)}
                                                         className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
                                                     >
                                                         <EyeIcon className="icon-sm" /> Ver
+                                                    </button>
+                                                )}
+                                                {!!periodo.status && periodStatus !== 3 && onEdit && (
+                                                    <button
+                                                        onClick={() => onEdit(periodo)}
+                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                                                    >
+                                                        <EditIcon className="icon-sm" /> Editar
                                                     </button>
                                                 )}
                                                 {!periodo.status && onRestore && (
@@ -743,11 +758,27 @@ const PeriodTable = ({
                         );
                     })
                 ) : (
-                    <div className="p-8 text-center text-gray-500 text-sm">
-                        {searchTerm || statusFilter !== "Todos"
-                            ? "No se encontraron periodos con los filtros aplicados"
-                            : "No hay periodos para mostrar."}
-                    </div>
+                    <EmptyState
+                         title="No se encontraron periodos"
+                         description={
+                             searchTerm || (statusFilter && statusFilter !== "")
+                                 ? "No se encontraron periodos con los filtros aplicados."
+                                 : "No hay periodos para mostrar."
+                         }
+                         action={
+                             searchTerm || (statusFilter && statusFilter !== "") ? (
+                                 <Button
+                                     variant="outline"
+                                     size="sm"
+                                     onClick={clearFilters}
+                                     className="flex items-center gap-2"
+                                 >
+                                     <RefreshIcon className="icon-xs" />
+                                     Limpiar filtros
+                                 </Button>
+                             ) : undefined
+                         }
+                     />
                 )}
             </div>
 

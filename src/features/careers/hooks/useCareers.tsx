@@ -201,7 +201,7 @@ export const useCareers = () => {
       await refreshCareers();
       addToast({
         variant: "warning",
-        title: "Inactivación Masiva",
+        title: "Eliminación Masiva",
         message: `${careerIds.length} carreras inactivadas.`
       });
     } catch (e) {

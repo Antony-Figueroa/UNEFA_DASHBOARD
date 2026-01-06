@@ -154,7 +154,7 @@ export const useTutors = () => {
 
     addToast({
       variant: "warning",
-      title: "Inactivación Masiva",
+      title: "Eliminación Masiva",
       message: (
         <p>Se han inactivado <strong>{ids.length}</strong> tutores correctamente.</p>
       ),

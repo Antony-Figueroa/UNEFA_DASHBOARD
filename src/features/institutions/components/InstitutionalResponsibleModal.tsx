@@ -1,0 +1,327 @@
+/**
+ * @file InstitutionalResponsibleModal.tsx
+ * @description Modal para crear y editar responsables institucionales.
+ */
+
+import { useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Modal, ModalBody, ModalFooter, ModalHeader } from "../../../components/ui/modal";
+import Input from "../../../components/form/input/InputField";
+import Select from "../../../components/form/Select";
+import Button from "../../../components/ui/button/Button";
+import { InstitutionalResponsible } from "../types";
+
+const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+
+const respSchema = z.object({
+  identificationPrefix: z.string().min(1, "Seleccione un prefijo"),
+  identificationNumber: z.string()
+    .min(1, "La cédula es obligatoria")
+    .regex(/^\d+$/, "Solo se admiten números")
+    .min(7, "La cédula debe tener al menos 7 dígitos"),
+  firstName: z.string()
+    .min(1, "El primer nombre es obligatorio")
+    .regex(nameRegex, "Solo se admiten letras"),
+  middleName: z.string()
+    .regex(nameRegex, "Solo se admiten letras")
+    .optional()
+    .or(z.literal("")),
+  lastName: z.string()
+    .min(1, "El primer apellido es obligatorio")
+    .regex(nameRegex, "Solo se admiten letras"),
+  secondLastName: z.string()
+    .regex(nameRegex, "Solo se admiten letras")
+    .optional()
+    .or(z.literal("")),
+  phonePrefix: z.string().min(1, "Seleccione un prefijo"),
+  phoneNumber: z.string()
+    .min(1, "El número de teléfono es obligatorio")
+    .regex(/^\d+$/, "Solo se admiten números")
+    .min(7, "El número debe tener al menos 7 dígitos"),
+  email: z.string()
+    .min(1, "El correo es obligatorio")
+    .email("Correo electrónico inválido"),
+  institutionId: z.string().min(1, "Seleccione una institución"),
+});
+
+type RespFormData = z.infer<typeof respSchema>;
+
+interface InstitutionalResponsibleModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: Omit<InstitutionalResponsible, "responsibleId" | "registrationDate"> & { responsibleId?: string }) => void;
+  editingResp?: InstitutionalResponsible | null;
+  institutionOptions: { value: string; label: string }[];
+  isLoading?: boolean;
+}
+
+export default function InstitutionalResponsibleModal({
+  isOpen,
+  onClose,
+  onSave,
+  editingResp,
+  institutionOptions,
+  isLoading = false,
+}: InstitutionalResponsibleModalProps) {
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors, isSubmitted },
+  } = useForm<RespFormData>({
+    resolver: zodResolver(respSchema),
+    defaultValues: {
+      identificationPrefix: "V-",
+      identificationNumber: "",
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      secondLastName: "",
+      phonePrefix: "0412",
+      phoneNumber: "",
+      email: "",
+      institutionId: "",
+    },
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      if (editingResp) {
+        let pPrefix = "0412";
+        let pNumber = "";
+        
+        if (editingResp.phone) {
+          if (editingResp.phone.startsWith("0")) {
+            pPrefix = editingResp.phone.substring(0, 4);
+            pNumber = editingResp.phone.substring(4);
+          } else {
+            pNumber = editingResp.phone;
+          }
+        }
+
+        reset({
+          identificationPrefix: editingResp.identificationPrefix,
+          identificationNumber: editingResp.identificationNumber,
+          firstName: editingResp.firstName,
+          middleName: editingResp.middleName || "",
+          lastName: editingResp.lastName,
+          secondLastName: editingResp.secondLastName || "",
+          phonePrefix: pPrefix,
+          phoneNumber: pNumber,
+          email: editingResp.email,
+          institutionId: editingResp.institutionId,
+        });
+      } else {
+        reset({
+          identificationPrefix: "V-",
+          identificationNumber: "",
+          firstName: "",
+          middleName: "",
+          lastName: "",
+          secondLastName: "",
+          phonePrefix: "0412",
+          phoneNumber: "",
+          email: "",
+          institutionId: "",
+        });
+      }
+    }
+  }, [editingResp, isOpen, reset]);
+
+  const onSubmit = (data: RespFormData) => {
+    const { phonePrefix, phoneNumber, ...rest } = data;
+    onSave({
+      ...rest,
+      phone: `${phonePrefix}${phoneNumber}`,
+      status: editingResp?.status ?? true,
+      institutionName: institutionOptions.find(i => i.value === data.institutionId)?.label,
+      responsibleId: editingResp?.responsibleId,
+    });
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
+        <ModalHeader>
+          {editingResp ? "Editar Responsable" : "Nuevo Responsable"}
+        </ModalHeader>
+
+        <ModalBody>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
+            {/* Cédula */}
+            <div>
+              <label className="mb-2 block text-gray-700 dark:text-white/90 font-bold text-xs uppercase tracking-wider">Cédula *</label>
+              <div className="flex gap-2">
+                <div className="w-24 shrink-0">
+                  <Controller
+                    name="identificationPrefix"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        options={[
+                          { value: "V-", label: "V-" },
+                          { value: "E-", label: "E-" },
+                          { value: "J-", label: "J-" },
+                          { value: "G-", label: "G-" },
+                        ]}
+                        onChange={field.onChange}
+                        defaultValue={field.value}
+                      />
+                    )}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Input 
+                    placeholder="Ej: 12345678" 
+                    {...register("identificationNumber")} 
+                    error={!!errors.identificationNumber} 
+                  />
+                </div>
+              </div>
+              {isSubmitted && errors.identificationNumber && (
+                <p className="mt-1 text-[11px] font-medium text-red-500">{errors.identificationNumber.message}</p>
+              )}
+            </div>
+
+            {/* Institución */}
+            <div className="lg:col-span-1">
+              <label className="mb-2 block text-gray-700 dark:text-white/90 font-bold text-xs uppercase tracking-wider">Institución *</label>
+              <Controller
+                name="institutionId"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    options={institutionOptions}
+                    onChange={field.onChange}
+                    defaultValue={field.value}
+                    placeholder="Seleccione una institución"
+                  />
+                )}
+              />
+              {isSubmitted && errors.institutionId && (
+                <p className="mt-1 text-[11px] font-medium text-red-500">{errors.institutionId.message}</p>
+              )}
+            </div>
+
+            {/* Primer Nombre */}
+            <div>
+              <label className="mb-2 block text-gray-700 dark:text-white/90 font-bold text-xs uppercase tracking-wider">Primer Nombre *</label>
+              <Input 
+                placeholder="Ingrese el primer nombre" 
+                {...register("firstName")} 
+                error={!!errors.firstName} 
+                hint={isSubmitted ? errors.firstName?.message : undefined} 
+              />
+            </div>
+
+            {/* Segundo Nombre */}
+            <div>
+              <label className="mb-2 block text-gray-700 dark:text-white/90 font-bold text-xs uppercase tracking-wider">Segundo Nombre</label>
+              <Input 
+                placeholder="Ingrese el segundo nombre" 
+                {...register("middleName")} 
+                error={!!errors.middleName} 
+                hint={isSubmitted ? errors.middleName?.message : undefined} 
+              />
+            </div>
+
+            {/* Primer Apellido */}
+            <div>
+              <label className="mb-2 block text-gray-700 dark:text-white/90 font-bold text-xs uppercase tracking-wider">Primer Apellido *</label>
+              <Input 
+                placeholder="Ingrese el primer apellido" 
+                {...register("lastName")} 
+                error={!!errors.lastName} 
+                hint={isSubmitted ? errors.lastName?.message : undefined} 
+              />
+            </div>
+
+            {/* Segundo Apellido */}
+            <div>
+              <label className="mb-2 block text-gray-700 dark:text-white/90 font-bold text-xs uppercase tracking-wider">Segundo Apellido</label>
+              <Input 
+                placeholder="Ingrese el segundo apellido" 
+                {...register("secondLastName")} 
+                error={!!errors.secondLastName} 
+                hint={isSubmitted ? errors.secondLastName?.message : undefined} 
+              />
+            </div>
+
+            {/* Teléfono */}
+            <div>
+              <label className="mb-2 block text-gray-700 dark:text-white/90 font-bold text-xs uppercase tracking-wider">Teléfono *</label>
+              <div className="flex gap-2">
+                <div className="w-28 shrink-0">
+                  <Controller
+                    name="phonePrefix"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        options={[
+                          { value: "0412", label: "0412" },
+                          { value: "0414", label: "0414" },
+                          { value: "0424", label: "0424" },
+                          { value: "0416", label: "0416" },
+                          { value: "0426", label: "0426" },
+                          { value: "0243", label: "0243" },
+                        ]}
+                        onChange={field.onChange}
+                        defaultValue={field.value}
+                      />
+                    )}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Input 
+                    placeholder="Ej: 1234567" 
+                    {...register("phoneNumber")} 
+                    error={!!errors.phoneNumber} 
+                  />
+                </div>
+              </div>
+              {isSubmitted && (errors.phonePrefix || errors.phoneNumber) && (
+                <p className="mt-1 text-[11px] font-medium text-red-500">
+                  {errors.phonePrefix?.message || errors.phoneNumber?.message}
+                </p>
+              )}
+            </div>
+
+            {/* Correo Electrónico */}
+            <div className="md:col-span-2 lg:col-span-2">
+              <label className="mb-2 block text-gray-700 dark:text-white/90 font-bold text-xs uppercase tracking-wider">Correo Electrónico *</label>
+              <Input 
+                placeholder="Ingrese el correo electrónico" 
+                {...register("email")} 
+                error={!!errors.email} 
+                hint={isSubmitted ? errors.email?.message : undefined} 
+              />
+            </div>
+          </div>
+        </ModalBody>
+
+        <ModalFooter>
+          <Button 
+            variant="outline" 
+            onClick={onClose} 
+            type="button" 
+            className="min-h-12 px-8 rounded-xl font-bold"
+            disabled={isLoading}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            variant="primary" 
+            type="submit" 
+            className="min-h-12 px-8 rounded-xl font-bold"
+            loading={isLoading}
+          >
+            {editingResp ? "Actualizar" : "Guardar"}
+          </Button>
+        </ModalFooter>
+      </form>
+    </Modal>
+  );
+}

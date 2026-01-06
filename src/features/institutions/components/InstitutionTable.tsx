@@ -7,6 +7,7 @@ import { useMemo, useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { DropdownPortal } from "../../../components/ui/dropdown/DropdownPortal";
 import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
+import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ThreeDotsIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { InstitutionRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
@@ -175,18 +176,21 @@ export default function InstitutionTable({
     <div className="table-container">
       <div className="p-4 border-b border-gray-100 dark:border-white/5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Filtro por RIF */}
             <div className="relative">
                 <input
                     type="text"
                     placeholder="Buscar por RIF"
                     value={rifFilter}
                     onChange={(e) => setRifFilter(e.target.value)}
-                    className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+                    className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-10 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
                 />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    </svg>
+                </span>
             </div>
 
-            {/* Filtro por Nombre */}
             <div className="relative">
                 <input
                     type="text"
@@ -285,7 +289,7 @@ export default function InstitutionTable({
                                 className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12"
                             >
                                 <TrashIcon className="icon-sm" />
-                                Inactivar
+                                Eliminar
                             </button>
                         ) : (
                             <button
@@ -304,54 +308,54 @@ export default function InstitutionTable({
 
       {/* Vista de Escritorio (Tabla) */}
       <div className="hidden md:block max-w-full overflow-x-auto table-scrollbar">
-        <Table className="table-root">
-          <TableHeader className="table-header-row bg-gray-50 dark:bg-gray-800/50">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell isHeader className="table-header-cell w-10">
+              <TableCell isHeader className="w-10">
                 <Checkbox
                   checked={paged.length > 0 && selectedIds.length === paged.length}
                   onChange={handleSelectAll}
                   ariaLabel="Seleccionar todos"
                 />
               </TableCell>
-              <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("rif")}>
+              <TableCell isHeader className="cursor-pointer group" onClick={() => handleSort("rif")}>
                   <div className="flex items-center">RIF <SortIndicator column="rif" /></div>
               </TableCell>
-              <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("name")}>
+              <TableCell isHeader className="cursor-pointer group" onClick={() => handleSort("name")}>
                   <div className="flex items-center">Nombre <SortIndicator column="name" /></div>
               </TableCell>
-              <TableCell isHeader className="table-header-cell">Teléfono</TableCell>
-              <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("practiceType")}>
+              <TableCell isHeader>Teléfono</TableCell>
+              <TableCell isHeader className="cursor-pointer group" onClick={() => handleSort("practiceType")}>
                   <div className="flex items-center">Tipo Práctica <SortIndicator column="practiceType" /></div>
               </TableCell>
-              <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("careerName")}>
+              <TableCell isHeader className="cursor-pointer group" onClick={() => handleSort("careerName")}>
                   <div className="flex items-center">Carrera <SortIndicator column="careerName" /></div>
               </TableCell>
-              <TableCell isHeader className="table-header-cell text-right">Acciones</TableCell>
+              <TableCell isHeader className="text-right">Acciones</TableCell>
             </TableRow>
           </TableHeader>
-          <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
+          <TableBody>
             {paged.length > 0 ? (
                 paged.map((i, index) => (
                     <TableRow
                         key={i.institutionId}
-                        className={`table-row-hover ${index % 2 === 0 ? "bg-white dark:bg-transparent" : "bg-gray-50/50 dark:bg-white/2"} ${selectedIds.includes(i.institutionId) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
+                        className={`${index % 2 === 0 ? "bg-white dark:bg-transparent" : "bg-gray-50/50 dark:bg-white/2"} ${selectedIds.includes(i.institutionId) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
                     >
-                        <TableCell className="table-cell">
+                        <TableCell>
                             <Checkbox checked={selectedIds.includes(i.institutionId)} onChange={(checked) => handleSelectRow(i.institutionId, checked)} />
                         </TableCell>
-                        <TableCell className="table-cell font-medium text-gray-800 dark:text-white/90">
+                        <TableCell className="font-medium text-gray-800 dark:text-white/90">
                             {i.rif}
                         </TableCell>
-                        <TableCell className="table-cell text-gray-600 dark:text-gray-400 font-semibold">{i.name}</TableCell>
-                        <TableCell className="table-cell text-gray-500 dark:text-gray-400 whitespace-nowrap">{i.phone}</TableCell>
-                        <TableCell className="table-cell">
+                        <TableCell className="text-gray-600 dark:text-gray-400 font-semibold">{i.name}</TableCell>
+                        <TableCell className="text-gray-500 dark:text-gray-400 whitespace-nowrap">{i.phone}</TableCell>
+                        <TableCell>
                             <Badge color={i.practiceType === "HOSPITALARIA" ? "error" : i.practiceType === "COMUNITARIA" ? "warning" : "success"} variant="light" size="sm" shape="rounded">
                                 {i.practiceType}
                             </Badge>
                         </TableCell>
-                        <TableCell className="table-cell text-gray-500 dark:text-gray-400">{i.careerName}</TableCell>
-                        <TableCell className="table-cell text-right relative">
+                        <TableCell className="text-gray-500 dark:text-gray-400">{i.careerName}</TableCell>
+                        <TableCell className="text-right relative">
                             <div className="flex justify-end">
                                 <button
                                     type="button"
@@ -396,7 +400,7 @@ export default function InstitutionTable({
                                             className={`flex items-center gap-2 ${activeTab === "Inactivas" ? "text-brand-600 hover:bg-brand-50 dark:text-brand-400" : "text-red-600 hover:bg-red-50 dark:text-red-400"}`}
                                         >
                                             {activeTab === "Inactivas" ? <RefreshIcon className="icon-sm" /> : <TrashIcon className="icon-sm" />}
-                                            {activeTab === "Inactivas" ? "Restaurar" : "Inactivar"}
+                                            {activeTab === "Inactivas" ? "Restaurar" : "Eliminar"}
                                         </DropdownItem>
                                     )}
                                 </DropdownPortal>
@@ -406,24 +410,13 @@ export default function InstitutionTable({
                 ))
             ) : (
                 <TableRow>
-                    <TableCell className="table-cell py-24 text-center" colSpan={7}>
-                        <div className="flex flex-col items-center justify-center animate-fadeIn">
-                            <div className="mb-4 rounded-full bg-gray-50 p-4 dark:bg-white/5">
-                                <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                            </div>
-                            <h3 className="text-sm font-bold text-gray-800 dark:text-white">No se encontraron instituciones</h3>
-                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                            {(rifFilter || nameFilter || practiceTypeFilter || careerFilter) && (
-                                <button
-                                    onClick={clearFilters}
-                                    className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
-                                >
-                                    Ver todas las instituciones
-                                </button>
-                            )}
-                        </div>
+                    <TableCell colSpan={7} className="p-0">
+                        <EmptyState
+                            title="No se encontraron instituciones"
+                            description={rifFilter || nameFilter || practiceTypeFilter || careerFilter
+                                ? "Intenta ajustar los filtros para encontrar lo que buscas."
+                                : "Aún no hay instituciones registradas en esta categoría."}
+                        />
                     </TableCell>
                 </TableRow>
             )}
@@ -509,7 +502,7 @@ export default function InstitutionTable({
                                                 </>
                                             ) : (
                                                 <>
-                                                    <TrashIcon className="w-4 h-4" /> Inactivar
+                                                    <TrashIcon className="w-4 h-4" /> Eliminar
                                                 </>
                                             )}
                                         </button>
@@ -521,23 +514,12 @@ export default function InstitutionTable({
                 );
             })
         ) : (
-            <div className="py-20 text-center animate-fadeIn">
-                <div className="inline-flex mb-4 rounded-full bg-gray-50 p-4 dark:bg-white/5">
-                    <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                </div>
-                <h3 className="text-sm font-bold text-gray-800 dark:text-white">No se encontraron instituciones</h3>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                {(rifFilter || nameFilter || practiceTypeFilter || careerFilter) && (
-                    <button
-                        onClick={clearFilters}
-                        className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
-                    >
-                        Ver todas las instituciones
-                    </button>
-                )}
-            </div>
+            <EmptyState
+                title="No se encontraron instituciones"
+                description={rifFilter || nameFilter || practiceTypeFilter || careerFilter
+                    ? "Intenta ajustar los filtros para encontrar lo que buscas."
+                    : "Aún no hay instituciones registradas en esta categoría."}
+            />
         )}
       </div>
 

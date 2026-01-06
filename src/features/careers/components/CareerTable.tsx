@@ -204,15 +204,15 @@ export default function CareerTable({
   return (
     <div className="table-container">
       {/* Cabecera reorganizada: filtros y búsqueda */}
-      <div className="p-4 border-b border-gray-100 dark:border-white/5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col gap-4 w-full sm:flex-row sm:items-center">
-          <div className="relative max-w-xs w-full">
+      <div className="p-4 border-b border-gray-100 dark:border-white/5 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="relative">
             <input
               type="text"
               placeholder="Buscar por nombre o código"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-transparent py-2 pl-10 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+              className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-10 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
             />
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -220,7 +220,7 @@ export default function CareerTable({
               </svg>
             </span>
           </div>
-          <div className="relative w-full sm:w-auto">
+          <div className="relative">
             <select
               aria-label="Filtrar por tipo de práctica"
               value={practiceTypeFilter}
@@ -242,16 +242,21 @@ export default function CareerTable({
           </div>
         </div>
 
-        <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
-          {(searchTerm || practiceTypeFilter !== "") && (
-            <button
-              onClick={clearFilters}
-              className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
-            >
-              <RefreshIcon className="icon-xs" />
-              Limpiar filtros
-            </button>
-          )}
+        <div className="flex items-center justify-between pt-2 border-t border-gray-50 dark:border-white/5">
+          <div className="flex items-center gap-4">
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              Mostrando <span className="font-bold text-gray-700 dark:text-white">{filteredData.length}</span> resultados
+            </div>
+            {(searchTerm || practiceTypeFilter !== "") && (
+              <button
+                onClick={clearFilters}
+                className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
+              >
+                <RefreshIcon className="icon-xs" />
+                Limpiar filtros
+              </button>
+            )}
+          </div>
 
           <div className="flex items-center gap-2">
             {paged.length > 0 && (
@@ -276,13 +281,13 @@ export default function CareerTable({
             {/* Acciones Masivas */}
             {selectedIds.length > 0 && (
               <div className="flex items-center gap-2 animate-fadeIn">
-                <span className="hidden sm:inline text-sm font-medium text-gray-600 dark:text-gray-400 mr-2">
+                <span className="hidden sm:inline text-xs font-medium text-gray-600 dark:text-gray-400 mr-2">
                   {selectedIds.length} seleccionados
                 </span>
                 {activeTab === "Activas" ? (
                   <button
                     onClick={() => onBulkDelete?.(selectedIds)}
-                    className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12"
+                    className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12"
                   >
                     <TrashIcon className="icon-sm" />
                     Eliminar
@@ -290,7 +295,7 @@ export default function CareerTable({
                 ) : (
                   <button
                     onClick={() => onBulkRestore?.(selectedIds)}
-                    className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-sm font-medium text-brand-600 hover:bg-brand-100 dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400/20 transition-colors min-h-12"
+                    className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-600 hover:bg-brand-100 dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400/20 transition-colors min-h-12"
                   >
                     <RefreshIcon className="icon-sm" />
                     Restaurar
@@ -403,6 +408,14 @@ export default function CareerTable({
                         anchorRef={{ current: anchorEl as HTMLElement }}
                         className="min-w-44"
                       >
+                        {onView && (
+                          <DropdownItem
+                            onItemClick={() => onView(c)}
+                            className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
+                          >
+                            <EyeIcon className="icon-sm" /> Ver Detalles
+                          </DropdownItem>
+                        )}
                         {onEdit && activeTab === "Activas" && (
                           <DropdownItem
                             onItemClick={() => onEdit(c)}
@@ -418,14 +431,6 @@ export default function CareerTable({
                           >
                             <RefreshIcon className="icon-sm" />
                             {inactiveMode ? "Restaurar" : "Activar"}
-                          </DropdownItem>
-                        )}
-                        {onView && (
-                          <DropdownItem
-                            onItemClick={() => onView(c)}
-                            className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
-                          >
-                            <EyeIcon className="icon-sm" /> Ver
                           </DropdownItem>
                         )}
                         {onDelete && activeTab === "Activas" && (

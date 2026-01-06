@@ -185,7 +185,7 @@ export const useStudents = () => {
 
     addToast({
       variant: "warning",
-      title: "Inactivación Masiva",
+      title: "Eliminación Masiva",
       message: (
         <p>Se han inactivado <strong>{ids.length}</strong> estudiantes correctamente.</p>
       ),

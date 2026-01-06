@@ -234,16 +234,6 @@ export default function CrudExample() {
 
   const rowActions: import("../../features/crudTemplate/types").CrudRowAction<ExampleEntity>[] = [
     {
-      id: "edit",
-      label: "Editar",
-      icon: "edit",
-      onClick: (item) => {
-        setEditingItem(item);
-        setIsModalOpen(true);
-      },
-      show: (item) => item.status === "activo",
-    },
-    {
       id: "view",
       label: "Ver",
       icon: "view",
@@ -255,6 +245,30 @@ export default function CrudExample() {
           message: `Viendo: ${item.name} (${item.code})`,
         });
       },
+    },
+    {
+      id: "edit",
+      label: "Editar",
+      icon: "edit",
+      onClick: (item) => {
+        setEditingItem(item);
+        setIsModalOpen(true);
+      },
+      show: (item) => item.status === "activo",
+    },
+    {
+      id: "restore",
+      label: "Restaurar",
+      icon: "restore",
+      variant: "brand",
+      onClick: async (item) => {
+        try {
+          await updateItem({ ...item, status: "activo" });
+        } catch (e) {
+          console.error(e);
+        }
+      },
+      show: (item) => item.status === "inactivo",
     },
     {
       id: "delete",
@@ -280,20 +294,6 @@ export default function CrudExample() {
         });
       },
       show: (item) => item.status === "activo",
-    },
-    {
-      id: "restore",
-      label: "Restaurar",
-      icon: "restore",
-      variant: "brand",
-      onClick: async (item) => {
-        try {
-          await updateItem({ ...item, status: "activo" });
-        } catch (e) {
-          console.error(e);
-        }
-      },
-      show: (item) => item.status === "inactivo",
     },
   ];
 

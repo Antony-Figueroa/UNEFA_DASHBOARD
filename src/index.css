@@ -335,19 +335,23 @@
   &::-webkit-scrollbar-track {
     background: #f1f1f1 !important;
     border-radius: 10px;
+    @apply dark:bg-gray-800!;
   }
   &::-webkit-scrollbar-thumb {
     background: #ccc !important;
     border-radius: 10px;
     border: 1px solid #f1f1f1;
+    @apply dark:bg-gray-600! dark:border-gray-800!;
   }
   &::-webkit-scrollbar-thumb:hover {
     background: #bbb !important;
+    @apply dark:bg-gray-500!;
   }
 
   /* Firefox */
   scrollbar-width: thin;
   scrollbar-color: #ccc #f1f1f1;
+  @apply dark:[scrollbar-color:#4b5563_#1f2937]!;
 }
 
 @utility table-scrollbar {
@@ -359,19 +363,23 @@
     background: #f9fafb !important;
     border-radius: 0px;
     border-top: 1px solid #f3f4f6;
+    @apply dark:bg-gray-900! dark:border-gray-800!;
   }
   &::-webkit-scrollbar-thumb {
     background: #d1d5db !important;
     border-radius: 100px;
     border: 2px solid #f9fafb;
+    @apply dark:bg-gray-700! dark:border-gray-900!;
   }
   &::-webkit-scrollbar-thumb:hover {
     background: #9ca3af !important;
+    @apply dark:bg-gray-600!;
   }
 
   /* Firefox */
   scrollbar-width: auto;
   scrollbar-color: #d1d5db #f9fafb;
+  @apply dark:[scrollbar-color:#374151_#111827]!;
 }
 
 @utility stagger-delay {

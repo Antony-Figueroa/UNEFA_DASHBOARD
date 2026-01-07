@@ -263,9 +263,9 @@ export default function TutorTable({
                         <select
                             value={professionFilter}
                             onChange={(e) => setProfessionFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-10 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white appearance-none"
+                            className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-4 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white appearance-none"
                         >
-                            <option value="">Seleccione Profesión</option>
+                            <option value="">Todas las Profesiones</option>
                             {professionOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value}>
                                     {opt.label}
@@ -518,139 +518,103 @@ export default function TutorTable({
                 </Table>
             </div>
 
-            {/* Vista Móvil (Cards) */}
-            <div className="md:hidden p-4 space-y-4">
+            {/* Vista Móvil */}
+            <div className="md:hidden divide-y divide-gray-100 dark:divide-white/5">
                 {paged.length > 0 ? (
-                    paged.map((t) => (
-                        <div key={t.tutorId} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm dark:border-white/5 dark:bg-gray-800/40">
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                    <Checkbox checked={selectedIds.includes(t.tutorId)} onChange={(checked) => handleSelectRow(t.tutorId, checked)} />
-                                    <div>
-                                        <h4 className="text-sm font-bold text-gray-800 dark:text-white">{t.firstName} {t.lastName}</h4>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">{t.identificationPrefix}-{t.identificationNumber}</p>
+                    paged.map((t, index) => {
+                        const rowId = t.tutorId ?? `idx-${index}`;
+                        const isExpanded = expandedRows.has(rowId);
+                        return (
+                            <div key={rowId} className="relative p-4 bg-white dark:bg-transparent transition-colors overflow-hidden">
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="flex items-center justify-between w-full">
+                                        <div className="flex-1 text-center">
+                                            <h3 className="text-sm font-bold text-gray-800 dark:text-white/90 leading-tight truncate px-8">
+                                                {t.firstName} {t.lastName}
+                                            </h3>
+                                            <p className="text-xs text-gray-500 mt-1 truncate">{t.identificationPrefix}-{t.identificationNumber}</p>
+                                        </div>
+                                        <button
+                                            onClick={() => toggleRowExpansion(rowId)}
+                                            className="absolute right-2 top-2 p-2 text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
+                                            style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
+                                        >
+                                            <ChevronDownIcon className="w-5 h-5" />
+                                        </button>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => toggleRowExpansion(t.tutorId)}
-                                        className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors"
-                                    >
-                                        {expandedRows.has(t.tutorId) ? <ChevronUpIcon className="icon-sm" /> : <ChevronDownIcon className="icon-sm" />}
-                                    </button>
-                                </div>
-                            </div>
 
-                            <div className="flex flex-wrap gap-2 mb-4">
-                                {t.profession ? (
-                                    <Badge color={getProfessionColor(t.profession)} variant="light" size="sm" shape="rounded">
-                                        {t.profession}
-                                    </Badge>
-                                ) : (
-                                    <span className="text-gray-400 text-[10px]">N/A</span>
+                                {isExpanded && (
+                                    <div className="mt-4 space-y-6 animate-fadeIn border-t border-gray-50 dark:border-white/5 pt-6">
+                                        <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
+                                            <div className="flex flex-col items-center">
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Profesión</p>
+                                                <div className="flex justify-center w-full">
+                                                    {t.profession ? (
+                                                        <Badge color={getProfessionColor(t.profession)} variant="light" size="sm">
+                                                            {t.profession}
+                                                        </Badge>
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400 font-medium">N/A</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col items-center">
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Sexo</p>
+                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium capitalize">{(t.sex || "N/A").toLowerCase()}</p>
+                                            </div>
+                                            <div className="col-span-2 flex flex-col items-center">
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Correo</p>
+                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium truncate w-full max-w-62.5">{t.email}</p>
+                                            </div>
+                                            <div className="col-span-2 flex flex-col items-center">
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Teléfono</p>
+                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{t.phone}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col gap-3 pt-2">
+                                            {onView && (
+                                                <button
+                                                    onClick={() => onView(t)}
+                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                                                >
+                                                    <EyeIcon className="w-4 h-4" /> Ver
+                                                </button>
+                                            )}
+                                            {onEdit && activeTab === "Activas" && (
+                                                <button
+                                                    onClick={() => onEdit(t)}
+                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                                                >
+                                                    <EditIcon className="w-4 h-4" /> Editar
+                                                </button>
+                                            )}
+                                            {onToggleStatus && (
+                                                <button
+                                                    onClick={() => onToggleStatus(t.tutorId)}
+                                                    className={`w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold rounded-xl min-h-12 active:scale-95 transition-all border border-transparent ${activeTab !== "Activas"
+                                                        ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-500/20"
+                                                        : "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:border-red-200 dark:hover:border-red-500/20"
+                                                        }`}
+                                                >
+                                                    {activeTab !== "Activas" ? (
+                                                        <>
+                                                            <RefreshIcon className="w-4 h-4" /> Restaurar
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <TrashIcon className="w-4 h-4" /> Eliminar
+                                                        </>
+                                                    )}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
                                 )}
                             </div>
-
-                            {expandedRows.has(t.tutorId) && (
-                                <div className="space-y-3 pt-3 border-t border-gray-50 dark:border-white/5 animate-fadeIn">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Correo</p>
-                                            <p className="text-xs text-gray-600 dark:text-gray-300 break-all">{t.email || "N/A"}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Teléfono</p>
-                                            <p className="text-xs text-gray-600 dark:text-gray-300">{t.phone || "N/A"}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Sexo</p>
-                                            <p className="text-xs text-gray-600 dark:text-gray-300 capitalize">{(t.sex || "N/A").toLowerCase()}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Registro</p>
-                                            <p className="text-xs text-gray-600 dark:text-gray-300">{t.registrationDate || "N/A"}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="flex items-center justify-between">
-                                <div className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                                    Acciones
-                                </div>
-                                <div className="relative">
-                                    <button
-                                        type="button"
-                                        className="dropdown-toggle inline-flex items-center rounded-lg bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:bg-white/5 dark:text-gray-400 transition-colors"
-                                        onClick={(e) => {
-                                            setAnchorEl(e.currentTarget as HTMLElement);
-                                            setOpenRowId((prev) =>
-                                                prev === t.tutorId ? null : t.tutorId
-                                            );
-                                        }}
-                                        aria-expanded={openRowId === t.tutorId}
-                                    >
-                                        <ThreeDotsIcon className="icon-sm" />
-                                        Opciones
-                                    </button>
-
-                                    <DropdownPortal
-                                        isOpen={openRowId === t.tutorId}
-                                        onClose={() => {
-                                            setOpenRowId(null);
-                                            setAnchorEl(null);
-                                        }}
-                                        anchorRef={{ current: anchorEl as HTMLElement }}
-                                        className="min-w-44"
-                                    >
-                                        <div className="p-1">
-                                            <DropdownItem
-                                                onItemClick={() => {
-                                                    onView?.(t);
-                                                    setOpenRowId(null);
-                                                }}
-                                                className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
-                                            >
-                                                <EyeIcon className="icon-sm" />
-                                                Ver detalles
-                                            </DropdownItem>
-                                            <DropdownItem
-                                                onItemClick={() => {
-                                                    onEdit?.(t);
-                                                    setOpenRowId(null);
-                                                }}
-                                                className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
-                                            >
-                                                <EditIcon className="icon-sm" />
-                                                Editar
-                                            </DropdownItem>
-                                            <DropdownItem
-                                                onItemClick={() => {
-                                                    onToggleStatus?.(t.tutorId);
-                                                    setOpenRowId(null);
-                                                }}
-                                                className={`flex items-center gap-2 ${activeTab === "Activas"
-                                                    ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10"
-                                                    : "text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-400/10"}`}
-                                            >
-                                                {activeTab === "Activas" ? (
-                                                    <>
-                                                        <TrashIcon className="icon-sm" />
-                                                        Eliminar
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <RefreshIcon className="icon-sm" />
-                                                        Restaurar
-                                                    </>
-                                                )}
-                                            </DropdownItem>
-                                        </div>
-                                    </DropdownPortal>
-                                </div>
-                            </div>
-                        </div>
-                    ))
+                        );
+                    })
                 ) : (
                     <div className="py-20 text-center animate-fadeIn">
                         <div className="inline-flex mb-4 rounded-full bg-gray-50 p-4 dark:bg-white/5">

@@ -41,10 +41,13 @@ export const useCareers = () => {
 
   const refreshCareers = useCallback(async () => {
     setStatus("loading");
-    // Simulamos un tiempo de carga de 1 segundo para mostrar el spinner
     const startTime = Date.now();
     try {
       const data = await careersService.getCareers();
+      
+      // Verificamos si los datos vienen del fallback estático (IDs empiezan con 'static-')
+      const isFallback = data.some(c => c.careerId.startsWith('static-'));
+
       const uniqueData = Array.from(
         new Map(data.map((item) => [item.careerId, item])).values()
       );
@@ -55,6 +58,14 @@ export const useCareers = () => {
       setTimeout(() => {
         setCareers(uniqueData);
         setStatus("success");
+        
+        if (isFallback) {
+          addToast({
+            variant: "warning",
+            title: "Modo Offline / Backup",
+            message: "No se pudo conectar con el servidor. Mostrando datos de respaldo locales.",
+          });
+        }
       }, remainingTime);
     } catch (e) {
       const err =

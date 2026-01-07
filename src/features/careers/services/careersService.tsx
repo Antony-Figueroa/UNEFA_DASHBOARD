@@ -8,6 +8,40 @@ import apiClient from "../../../api/apiClient";
 
 const API_URL = "/careers";
 
+// Datos de respaldo (Static Mock) para evitar bloqueos por fallos de red en MockAPI
+const STATIC_CAREERS: Career[] = [
+  {
+    careerId: "static-1",
+    careerCode: "SIS-01",
+    careerName: "Ingeniería de Sistemas",
+    minimumGrade: 14,
+    careerAbbreviation: "SIS",
+    internshipTypeIds: ["1", "2"],
+    creationDate: new Date(),
+    status: true,
+  },
+  {
+    careerId: "static-2",
+    careerCode: "IND-01",
+    careerName: "Ingeniería Industrial",
+    minimumGrade: 13,
+    careerAbbreviation: "IND",
+    internshipTypeIds: ["1"],
+    creationDate: new Date(),
+    status: true,
+  },
+  {
+    careerId: "static-3",
+    careerCode: "DER-01",
+    careerName: "Derecho",
+    minimumGrade: 15,
+    careerAbbreviation: "DER",
+    internshipTypeIds: ["3"],
+    creationDate: new Date(),
+    status: true,
+  },
+];
+
 // DTO de la API — flexible para adaptarse a números o strings
 interface CareerApiDTO {
   careerId?: string;
@@ -119,8 +153,10 @@ export const getCareers = async (): Promise<Career[]> => {
     const response = await apiClient.get<CareerApiDTO[]>(API_URL);
     return response.data.map(fromApi);
   } catch (error) {
-    console.error(`[careersService] Error fetching careers:`, error);
-    throw error;
+    console.error(`[careersService] Error fetching careers from API, using static fallback:`, error);
+    // En lugar de propagar el error y romper la UI, devolvemos datos estáticos
+    // pero marcamos que son de respaldo (opcionalmente)
+    return STATIC_CAREERS;
   }
 };
 

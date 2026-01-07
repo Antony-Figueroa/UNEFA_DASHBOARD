@@ -52,7 +52,7 @@ const navItems: NavItem[] = [
     name: "Prácticas Profesionales",
     icon: <BoxCubeIcon />,
     subItems: [
-      { name: "Pre-Inscripción", path: "/blank" },
+      { name: "Pre-Inscripción", path: "/pre-enrollment" },
       { name: "Inscripción", path: "/blank" },
       { name: "Seguimiento", path: "/blank" },
       { name: "Culminación Prácticas Profesionales", path: "/blank" },

@@ -94,6 +94,7 @@ import Blank from "./pages/Blank";
 import Students from "./pages/Students/students";
 import Tutors from "./pages/Tutors/tutors";
 import InstitutionsPage from "./pages/Institutions/institutions";
+import PreEnrollmentPage from "./pages/PreEnrollment/PreEnrollment";
 import ToastContainer from "./components/ui/toast/ToastContainer";
 
 // ============================================================================
@@ -276,6 +277,10 @@ export default function App() {
 
             {/* {Instituciones} */}
             <Route path="/institutions" element={<InstitutionsPage />} />
+
+            {/* {Pre-Inscripción} */}
+            <Route path="/pre-enrollment" element={<PreEnrollmentPage />} />
+
             {/* ================================================================
                SECCIÓN: FORMULARIOS
                ================================================================

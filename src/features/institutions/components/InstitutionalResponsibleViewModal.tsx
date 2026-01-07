@@ -3,17 +3,15 @@
  * @description Modal para visualizar los detalles de un responsable institucional.
  */
 
-import React from "react";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
 import Badge from "../../../components/ui/badge/Badge";
 import { InstitutionalResponsibleRowData } from "../types";
 import { 
-  UserIcon, 
-  EnvelopeIcon, 
-  PhoneIcon, 
-  BuildingOfficeIcon, 
-  IdentificationIcon 
+  PhoneIcon,
+  EyeIcon,
+  InformationCircleIcon,
+  EditIcon
 } from "../../../icons/actions";
 
 interface InstitutionalResponsibleViewModalProps {
@@ -31,10 +29,10 @@ export default function InstitutionalResponsibleViewModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} showCloseButton className="max-w-2xl">
-      <ModalHeader onClose={onClose}>
+      <ModalHeader>
         <div className="flex items-center gap-3">
           <div className="p-2 bg-brand-50 dark:bg-brand-500/10 rounded-lg">
-            <UserIcon className="w-5 h-5 text-brand-600 dark:text-brand-400" />
+            <EditIcon className="w-5 h-5 text-brand-600 dark:text-brand-400" />
           </div>
           <div>
             <h3 className="text-lg font-bold text-gray-800 dark:text-white">
@@ -56,7 +54,7 @@ export default function InstitutionalResponsibleViewModal({
             </h4>
             
             <div className="flex items-start gap-3">
-              <IdentificationIcon className="w-4 h-4 text-gray-400 mt-0.5" />
+              <InformationCircleIcon className="w-4 h-4 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Identificación</p>
                 <p className="text-sm font-semibold text-gray-800 dark:text-white/90">
@@ -66,7 +64,7 @@ export default function InstitutionalResponsibleViewModal({
             </div>
 
             <div className="flex items-start gap-3">
-              <UserIcon className="w-4 h-4 text-gray-400 mt-0.5" />
+              <EditIcon className="w-4 h-4 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Nombres Completos</p>
                 <p className="text-sm font-semibold text-gray-800 dark:text-white/90">
@@ -86,7 +84,7 @@ export default function InstitutionalResponsibleViewModal({
             </h4>
 
             <div className="flex items-start gap-3">
-              <EnvelopeIcon className="w-4 h-4 text-gray-400 mt-0.5" />
+              <EyeIcon className="w-4 h-4 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Correo Electrónico</p>
                 <p className="text-sm font-semibold text-gray-800 dark:text-white/90 break-all">
@@ -106,7 +104,7 @@ export default function InstitutionalResponsibleViewModal({
             </div>
 
             <div className="flex items-start gap-3">
-              <BuildingOfficeIcon className="w-4 h-4 text-gray-400 mt-0.5" />
+              <InformationCircleIcon className="w-4 h-4 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Institución</p>
                 <div className="mt-1">

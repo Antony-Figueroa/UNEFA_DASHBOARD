@@ -29,7 +29,7 @@ El archivo [docker-compose.yml](file:///c:/xampp/htdocs/workspace/TailAdmin/dock
 2. **Levanta los servicios**:
    ```bash
    # Iniciar en segundo plano (recomendado)
-   docker-compose up -d
+   docker-compose up -d #Para iniciar el sistema en docker de manera local
    ```
    *Nota: Si es la primera vez o has cambiado dependencias, usa `docker-compose up -d --build`.*
 

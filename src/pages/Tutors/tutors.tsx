@@ -10,7 +10,7 @@ import { useTheme } from "../../context/theme";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
-import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/modal";
+import { Modal, ModalBody, ModalFooter } from "../../components/ui/modal";
 import Button from "../../components/ui/button/Button";
 import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
@@ -19,6 +19,7 @@ import { InfoIcon } from "../../icons";
 
 import TutorTable from "../../features/tutors/components/TutorTable";
 import TutorModal from "../../features/tutors/components/TutorModal";
+import TutorViewModal from "../../features/tutors/components/TutorViewModal";
 import { useTutors } from "../../features/tutors/hooks/useTutors";
 import { Tutor, TutorRowData } from "../../features/tutors/types";
 import { formatDateTime } from "../../utils/date";
@@ -281,88 +282,12 @@ export default function TutorsPage() {
                         isLoading={loadingAction}
                     />
 
-                    <Modal isOpen={!!viewTutor} onClose={() => setViewTutor(null)} isFullscreen={true} showCloseButton>
-                        <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">Detalles Completos del Tutor</ModalHeader>
-                        <ModalBody className="overflow-y-auto custom-scrollbar grow px-6 sm:px-12 py-8">
-                            {viewTutor && (
-                                <div className="space-y-12 max-w-5xl mx-auto py-2">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 border-b border-gray-100 pb-2 dark:border-white/5">
-                                            <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                                            <h4 className="font-bold text-gray-800 dark:text-white/90 uppercase text-xs tracking-wider">Información Personal</h4>
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Primer Nombre</label>
-                                                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">{viewTutor.firstName}</p>
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Segundo Nombre</label>
-                                                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">{viewTutor.middleName || "-"}</p>
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Primer Apellido</label>
-                                                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">{viewTutor.lastName}</p>
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Segundo Apellido</label>
-                                                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">{viewTutor.secondLastName || "-"}</p>
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Cédula / ID</label>
-                                                <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{viewTutor.identificationPrefix}-{viewTutor.identificationNumber}</p>
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Sexo</label>
-                                                <p className="text-sm text-gray-800 dark:text-white/90">{viewTutor.sex}</p>
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Teléfono</label>
-                                                <p className="text-sm text-gray-800 dark:text-white/90">{viewTutor.phone}</p>
-                                            </div>
-                                            <div className="sm:col-span-2 md:col-span-1">
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Email</label>
-                                                <p className="text-sm text-gray-800 dark:text-white/90 break-all">{viewTutor.email}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 border-b border-gray-100 pb-2 dark:border-white/5">
-                                            <div className="h-2 w-2 rounded-full bg-brand-500"></div>
-                                            <h4 className="font-bold text-gray-800 dark:text-white/90 uppercase text-xs tracking-wider">Datos Profesionales</h4>
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Profesión</label>
-                                                <p className="text-sm font-bold text-gray-800 dark:text-white/90 uppercase">{viewTutor.profession}</p>
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Condición</label>
-                                                <p className="text-sm font-bold text-gray-800 dark:text-white/90">{viewTutor.condition}</p>
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Dedicación</label>
-                                                <p className="text-sm font-bold text-gray-800 dark:text-white/90">{viewTutor.dedication}</p>
-                                            </div>
-                                            <div>
-                                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Categoría</label>
-                                                <p className="text-sm font-bold text-gray-800 dark:text-white/90">{viewTutor.category}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </ModalBody>
-                        <ModalFooter className="shrink-0">
-                            <Button variant="outline" onClick={() => setViewTutor(null)} className="flex-1 sm:flex-none">
-                                Cerrar
-                            </Button>
-                            <Button onClick={() => { handleEdit(viewTutor!); setViewTutor(null); }} className="flex-1 sm:flex-none">
-                                Editar Información
-                            </Button>
-                        </ModalFooter>
-                    </Modal>
+                    <TutorViewModal
+                        isOpen={!!viewTutor}
+                        onClose={() => setViewTutor(null)}
+                        onEdit={handleEdit}
+                        tutor={viewTutor}
+                    />
 
                     {/* Modal de Confirmación Global */}
                     <Modal isOpen={!!confirmation} onClose={() => !loadingAction && setConfirmation(null)} className={`max-w-md ${colorMode === "dark" ? "dark" : ""}`}>

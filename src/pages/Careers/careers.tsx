@@ -12,7 +12,7 @@ import { useTheme } from "../../context/theme";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
-import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/modal";
+import { Modal, ModalBody, ModalFooter } from "../../components/ui/modal";
 import Button from "../../components/ui/button/Button";
 import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
@@ -20,6 +20,7 @@ import { PlusCircleIcon, XIcon, CheckCircleIcon, ExclamationTriangleIcon, Inform
 
 import CareerTable from "../../features/careers/components/CareerTable";
 import CareerModal from "../../features/careers/components/CareerModal";
+import CareerViewModal from "../../features/careers/components/CareerViewModal";
 import { useCareers } from "../../features/careers/hooks/useCareers";
 import { Career, CareerRowData } from "../../features/careers/types";
 import { formatDateTime } from "../../utils/date";
@@ -400,31 +401,12 @@ export default function CareersPage() {
       />
 
       {/* Modal Ver */}
-      <Modal isOpen={!!viewCareer} onClose={() => setViewCareer(null)} className={`max-w-xl w-11.5/12 ${colorMode === "dark" ? "dark" : ""}`} showCloseButton>
-        <div className="flex flex-col max-h-9/10">
-          <ModalHeader className="shrink-0">Detalles de la Carrera</ModalHeader>
-          <ModalBody className="overflow-y-auto custom-scrollbar grow">
-            {viewCareer && (
-              <div className="space-y-4 py-2 text-sm text-gray-700 dark:text-gray-300">
-                <p><span className="font-medium">Código:</span> {viewCareer.careerCode}</p>
-                <p><span className="font-medium">Nombre:</span> {viewCareer.careerName}</p>
-                <p><span className="font-medium">Nota mínima:</span> {viewCareer.minimumGrade.toFixed(2)}</p>
-                <p><span className="font-medium">Abreviatura:</span> {viewCareer.careerAbbreviation}</p>
-                <p><span className="font-medium">Estado:</span> {viewCareer.status ? "Activo" : "Inactivo"}</p>
-                <p><span className="font-medium">Creación:</span> {viewCareer.creationDate}</p>
-              </div>
-            )}
-          </ModalBody>
-          <ModalFooter className="shrink-0">
-            <Button variant="outline" onClick={() => setViewCareer(null)} className="flex-1 sm:flex-none">
-              Cerrar
-            </Button>
-            <Button onClick={() => { handleEdit(viewCareer!); setViewCareer(null); }} className="flex-1 sm:flex-none">
-              Editar Carrera
-            </Button>
-          </ModalFooter>
-        </div>
-      </Modal>
+      <CareerViewModal
+        isOpen={!!viewCareer}
+        onClose={() => setViewCareer(null)}
+        onEdit={handleEdit}
+        career={viewCareer}
+      />
 
       {confirmation?.isOpen && (
         <Modal

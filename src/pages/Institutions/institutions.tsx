@@ -20,6 +20,7 @@ import InstitutionTable from "../../features/institutions/components/Institution
 import InstitutionModal from "../../features/institutions/components/InstitutionModal";
 import InstitutionalResponsibleTable from "../../features/institutions/components/InstitutionalResponsibleTable";
 import InstitutionalResponsibleModal from "../../features/institutions/components/InstitutionalResponsibleModal";
+import InstitutionalResponsibleViewModal from "../../features/institutions/components/InstitutionalResponsibleViewModal";
 import { useInstitutions } from "../../features/institutions/hooks/useInstitutions";
 import { useInstitutionalResponsibles } from "../../features/institutions/hooks/useInstitutionalResponsibles";
 import { Institution, InstitutionRowData, InstitutionalResponsible, InstitutionalResponsibleRowData } from "../../features/institutions/types";
@@ -82,6 +83,7 @@ export default function InstitutionsPage() {
   // Estados para Responsables
   const [isRespModalOpen, setIsRespModalOpen] = useState(false);
   const [editingResp, setEditingResp] = useState<InstitutionalResponsible | null>(null);
+  const [viewResp, setViewResp] = useState<InstitutionalResponsibleRowData | null>(null);
 
   const institutionOptions = useMemo(() => 
     institutions.filter(i => i.status).map(i => ({ value: i.institutionId, label: i.name })),
@@ -298,6 +300,7 @@ export default function InstitutionsPage() {
                   data={respTableData}
                   activeTab={activeTab}
                   onEdit={handleOpenEditRespModal}
+                  onView={setViewResp}
                   onToggleStatus={handleToggleRespStatus}
                   onBulkAction={handleBulkRespAction}
                   isLoading={respStatus === "loading"}
@@ -419,6 +422,12 @@ export default function InstitutionsPage() {
           </Button>
         </ModalFooter>
       </Modal>
+
+      <InstitutionalResponsibleViewModal
+        isOpen={!!viewResp}
+        onClose={() => setViewResp(null)}
+        responsible={viewResp}
+      />
 
       {/* Modal de Confirmación Genérico */}
       <Modal isOpen={confirmation.isOpen} onClose={() => setConfirmation(prev => ({ ...prev, isOpen: false }))} className={`max-w-md ${colorMode === "dark" ? "dark" : ""}`}>

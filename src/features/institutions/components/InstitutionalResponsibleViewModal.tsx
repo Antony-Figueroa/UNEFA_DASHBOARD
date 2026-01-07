@@ -1,139 +1,111 @@
 /**
  * @file InstitutionalResponsibleViewModal.tsx
- * @description Modal para visualizar los detalles de un responsable institucional.
+ * @description Modal para visualizar los detalles de un responsable institucional, 
+ * con diseño consistente al de la vista de institución.
  */
 
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
-import Badge from "../../../components/ui/badge/Badge";
 import { InstitutionalResponsibleRowData } from "../types";
-import { 
-  PhoneIcon,
-  EyeIcon,
-  InformationCircleIcon,
-  EditIcon
-} from "../../../icons/actions";
 
 interface InstitutionalResponsibleViewModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onEdit?: (resp: InstitutionalResponsibleRowData) => void;
   responsible: InstitutionalResponsibleRowData | null;
 }
 
 export default function InstitutionalResponsibleViewModal({
   isOpen,
   onClose,
+  onEdit,
   responsible,
 }: InstitutionalResponsibleViewModalProps) {
   if (!responsible) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} showCloseButton className="max-w-2xl">
-      <ModalHeader>
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-brand-50 dark:bg-brand-500/10 rounded-lg">
-            <EditIcon className="w-5 h-5 text-brand-600 dark:text-brand-400" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white">
-              Detalles del Responsable
-            </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Información detallada del contacto institucional
-            </p>
-          </div>
-        </div>
-      </ModalHeader>
-
-      <ModalBody>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
-          {/* Información Personal */}
+    <Modal isOpen={isOpen} onClose={onClose} isFullscreen={true} showCloseButton>
+      <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">Detalles del Responsable</ModalHeader>
+      
+      <ModalBody className="overflow-y-auto custom-scrollbar grow px-6 sm:px-12 py-8">
+        <div className="space-y-12 max-w-5xl mx-auto py-2">
+          {/* Sección Información Personal */}
           <div className="space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-white/5 pb-2">
-              Información Personal
-            </h4>
+            <div className="flex items-center gap-2 border-b border-gray-100 pb-2 dark:border-white/5">
+              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+              <h4 className="font-bold text-gray-800 dark:text-white/90 uppercase text-xs tracking-wider">Información Personal</h4>
+            </div>
             
-            <div className="flex items-start gap-3">
-              <InformationCircleIcon className="w-4 h-4 text-gray-400 mt-0.5" />
-              <div>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Identificación</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
+              <div className="sm:col-span-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Nombres Completos</label>
                 <p className="text-sm font-semibold text-gray-800 dark:text-white/90">
+                  {responsible.firstName} {responsible.middleName} {responsible.lastName} {responsible.secondLastName}
+                </p>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Identificación</label>
+                <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
                   {responsible.identificationPrefix}{responsible.identificationNumber}
                 </p>
               </div>
             </div>
-
-            <div className="flex items-start gap-3">
-              <EditIcon className="w-4 h-4 text-gray-400 mt-0.5" />
-              <div>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Nombres Completos</p>
-                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">
-                  {responsible.firstName} {responsible.middleName}
-                </p>
-                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">
-                  {responsible.lastName} {responsible.secondLastName}
-                </p>
-              </div>
-            </div>
           </div>
 
-          {/* Información de Contacto e Institución */}
+          {/* Sección Contacto e Institución */}
           <div className="space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-white/5 pb-2">
-              Contacto e Institución
-            </h4>
+            <div className="flex items-center gap-2 border-b border-gray-100 pb-2 dark:border-white/5">
+              <div className="h-2 w-2 rounded-full bg-brand-500"></div>
+              <h4 className="font-bold text-gray-800 dark:text-white/90 uppercase text-xs tracking-wider">Contacto e Institución</h4>
+            </div>
 
-            <div className="flex items-start gap-3">
-              <EyeIcon className="w-4 h-4 text-gray-400 mt-0.5" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
               <div>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Correo Electrónico</p>
-                <p className="text-sm font-semibold text-gray-800 dark:text-white/90 break-all">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Correo Electrónico</label>
+                <p className="text-sm font-bold text-gray-800 dark:text-white/90 break-all">
                   {responsible.email}
                 </p>
               </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <PhoneIcon className="w-4 h-4 text-gray-400 mt-0.5" />
               <div>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Teléfono</p>
-                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Teléfono</label>
+                <p className="text-sm font-bold text-gray-800 dark:text-white/90">
                   {responsible.phone}
                 </p>
               </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <InformationCircleIcon className="w-4 h-4 text-gray-400 mt-0.5" />
-              <div>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-bold">Institución</p>
-                <div className="mt-1">
-                  <Badge color="primary" variant="light" size="sm">
-                    {responsible.institutionName}
-                  </Badge>
-                </div>
+              <div className="sm:col-span-2">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Institución</label>
+                <p className="text-sm font-bold text-gray-800 dark:text-white/90 uppercase">
+                  {responsible.institutionName}
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Estado */}
-          <div className="col-span-1 md:col-span-2 mt-2">
-            <div className={`p-3 rounded-xl border ${responsible.status ? 'bg-emerald-50 border-emerald-100 dark:bg-emerald-500/5 dark:border-emerald-500/10' : 'bg-red-50 border-red-100 dark:bg-red-500/5 dark:border-red-500/10'}`}>
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${responsible.status ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                <p className={`text-xs font-bold ${responsible.status ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`}>
-                  Responsable {responsible.status ? 'Activo' : 'Inactivo'}
-                </p>
-              </div>
+          {/* Estado y Fechas */}
+          <div className="rounded-xl bg-gray-50 dark:bg-white/3 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Estado</label>
+              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${responsible.status ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-700"}`}>
+                {responsible.status ? "Activo" : "Inactivo"}
+              </span>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Fecha Registro</label>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{responsible.registrationDate}</p>
             </div>
           </div>
         </div>
       </ModalBody>
 
-      <ModalFooter>
-        <Button variant="outline" onClick={onClose} className="min-w-24">
+      <ModalFooter className="shrink-0">
+        <Button variant="outline" onClick={onClose} className="flex-1 sm:flex-none">
           Cerrar
         </Button>
+        {onEdit && (
+          <Button onClick={() => { onEdit(responsible); onClose(); }} className="flex-1 sm:flex-none">
+            Editar Información
+          </Button>
+        )}
       </ModalFooter>
     </Modal>
   );

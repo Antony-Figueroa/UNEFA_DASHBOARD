@@ -426,6 +426,7 @@ export default function InstitutionsPage() {
       <InstitutionalResponsibleViewModal
         isOpen={!!viewResp}
         onClose={() => setViewResp(null)}
+        onEdit={handleOpenEditRespModal}
         responsible={viewResp}
       />
 

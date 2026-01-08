@@ -67,6 +67,8 @@ interface PeriodTableProps {
     loading?: boolean;
 }
 
+type SortKey = keyof PeriodoRowData;
+
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
@@ -294,23 +296,70 @@ const PeriodTable = ({
     const [statusFilter, setStatusFilter] = useState<string>("");
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
-
-    // Validación inicial (sin retorno temprano para respetar reglas de hooks)
-    const isInvalidData = !Array.isArray(data);
-    const safeData = isInvalidData ? [] : data;
-
-    // Filter data safely
-    const filteredData = safeData.filter((periodo) => {
-        const description = periodo.description.toLowerCase();
-        const matchesSearch = description.includes(searchTerm.toLowerCase());
-
-        const periodStatus = getSafePeriodStatus(periodo).toString();
-        const matchesStatus =
-            statusFilter === "" ||
-            periodStatus === statusFilter;
-
-        return matchesSearch && matchesStatus;
+    const [sortConfig, setSortConfig] = useState<{ key: SortKey; order: "asc" | "desc" }>({
+        key: "startDate",
+        order: "desc",
     });
+
+    // Check if data is valid for rendering
+    const isInvalidData = !Array.isArray(data);
+
+    // Filter and Sort data
+    const filteredData = React.useMemo(() => {
+        const safeData = isInvalidData ? [] : data;
+
+        const filtered = safeData.filter((periodo) => {
+            const description = periodo.description.toLowerCase();
+            const matchesSearch = description.includes(searchTerm.toLowerCase());
+
+            const periodStatus = getSafePeriodStatus(periodo).toString();
+            const matchesStatus =
+                statusFilter === "" ||
+                periodStatus === statusFilter;
+
+            return matchesSearch && matchesStatus;
+        });
+
+        filtered.sort((a, b) => {
+            const valA = a[sortConfig.key];
+            const valB = b[sortConfig.key];
+
+            if (valA === undefined || valB === undefined || valA === null || valB === null) return 0;
+
+            // Manejo de fechas para ordenamiento correcto
+            if (sortConfig.key === "startDate" || sortConfig.key === "endDate") {
+                // En PeriodoRowData, estas son strings formateados. 
+                // Intentamos parsear para un ordenamiento cronológico.
+                // Si fallan, caemos al ordenamiento alfabético.
+                const dateA = new Date(valA as string);
+                const dateB = new Date(valB as string);
+                
+                if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
+                    return sortConfig.order === "asc" 
+                        ? dateA.getTime() - dateB.getTime() 
+                        : dateB.getTime() - dateA.getTime();
+                }
+            }
+
+            // Fallback para otros tipos u objetos Date reales si llegaran a existir
+            if ((valA as unknown) instanceof Date && (valB as unknown) instanceof Date) {
+                const dA = valA as unknown as Date;
+                const dB = valB as unknown as Date;
+                return sortConfig.order === "asc" 
+                    ? dA.getTime() - dB.getTime() 
+                    : dB.getTime() - dA.getTime();
+            }
+
+            const strA = String(valA).toLowerCase();
+            const strB = String(valB).toLowerCase();
+
+            if (strA < strB) return sortConfig.order === "asc" ? -1 : 1;
+            if (strA > strB) return sortConfig.order === "asc" ? 1 : -1;
+            return 0;
+        });
+
+        return filtered;
+    }, [data, searchTerm, statusFilter, sortConfig, isInvalidData]);
 
     // Calculate pagination
     const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
@@ -375,6 +424,33 @@ const PeriodTable = ({
 
     const getStatusColor = (status: number) => {
         return STATUS_COLORS[status as keyof typeof STATUS_COLORS] || "warning";
+    };
+
+    // Handlers
+    const handleSort = (key: SortKey) => {
+        setSortConfig((prev) => ({
+            key,
+            order: prev.key === key && prev.order === "asc" ? "desc" : "asc",
+        }));
+    };
+
+    const SortIndicator = ({ column }: { column: SortKey }) => {
+        if (sortConfig.key !== column) {
+            return (
+                <svg className="ml-1 icon-xs text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                </svg>
+            );
+        }
+        return sortConfig.order === "asc" ? (
+            <svg className="ml-1 icon-xs text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            </svg>
+        ) : (
+            <svg className="ml-1 icon-xs text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+        );
     };
 
     const getStatusLabel = (status: number) => {
@@ -488,37 +564,57 @@ const PeriodTable = ({
                         <TableRow>
                             <TableCell
                                 isHeader
-                                className="table-header-cell"
+                                className="table-header-cell cursor-pointer"
+                                onClick={() => handleSort("description")}
                             >
-                                Descripción
+                                <div className="flex items-center">
+                                    Descripción
+                                    <SortIndicator column="description" />
+                                </div>
+                            </TableCell>
+                            <TableCell
+                                isHeader
+                                className="table-header-cell cursor-pointer"
+                                onClick={() => handleSort("startDate")}
+                            >
+                                <div className="flex items-center">
+                                    Fecha Inicio
+                                    <SortIndicator column="startDate" />
+                                </div>
+                            </TableCell>
+                            <TableCell
+                                isHeader
+                                className="table-header-cell cursor-pointer"
+                                onClick={() => handleSort("endDate")}
+                            >
+                                <div className="flex items-center">
+                                    Fecha Fin
+                                    <SortIndicator column="endDate" />
+                                </div>
+                            </TableCell>
+                            <TableCell
+                                isHeader
+                                className="table-header-cell cursor-pointer"
+                                onClick={() => handleSort("periodStatus")}
+                            >
+                                <div className="flex items-center">
+                                    Status
+                                    <SortIndicator column="periodStatus" />
+                                </div>
+                            </TableCell>
+                            <TableCell
+                                isHeader
+                                className="table-header-cell cursor-pointer"
+                                onClick={() => handleSort("progress")}
+                            >
+                                <div className="flex items-center">
+                                    Progreso
+                                    <SortIndicator column="progress" />
+                                </div>
                             </TableCell>
                             <TableCell
                                 isHeader
                                 className="table-header-cell"
-                            >
-                                Fecha Inicio
-                            </TableCell>
-                            <TableCell
-                                isHeader
-                                className="table-header-cell"
-                            >
-                                Fecha Fin
-                            </TableCell>
-                            <TableCell
-                                isHeader
-                                className="table-header-cell"
-                            >
-                                Status
-                            </TableCell>
-                            <TableCell
-                                isHeader
-                                className="table-header-cell"
-                            >
-                                Progreso
-                            </TableCell>
-                            <TableCell
-                                isHeader
-                                className="table-header-cell text-right"
                             >
                                 Acciones
                             </TableCell>
@@ -608,11 +704,11 @@ const PeriodTable = ({
                             <TableRow>
                                 <TableCell colSpan={6} className="p-0">
                                     <EmptyState
-                                        title="No se encontraron periodos"
+                                        title="No se encontraron períodos"
                                         description={
                                             searchTerm || (statusFilter && statusFilter !== "")
-                                                ? "No se encontraron periodos con los filtros aplicados. Intenta con otros términos."
-                                                : "No hay periodos registrados en el sistema actualmente."
+                                                ? "No se encontraron períodos con los filtros aplicados. Intenta con otros términos."
+                                                : "No hay períodos registrados en el sistema actualmente."
                                         }
                                         action={
                                             searchTerm || (statusFilter && statusFilter !== "") ? (
@@ -759,11 +855,11 @@ const PeriodTable = ({
                     })
                 ) : (
                     <EmptyState
-                         title="No se encontraron periodos"
+                         title="No se encontraron períodos"
                          description={
                              searchTerm || (statusFilter && statusFilter !== "")
-                                 ? "No se encontraron periodos con los filtros aplicados."
-                                 : "No hay periodos para mostrar."
+                                 ? "No se encontraron períodos con los filtros aplicados."
+                                 : "No hay períodos para mostrar."
                          }
                          action={
                              searchTerm || (statusFilter && statusFilter !== "") ? (

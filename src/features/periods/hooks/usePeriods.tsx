@@ -12,7 +12,7 @@ import { ChangeComparison, RecordDetails } from "../../../components/ui/alert/Al
 type Status = 'loading' | 'success' | 'error';
 
 const PERIOD_LABELS: Record<string, string> = {
-    description: "Descripción del Periodo",
+    description: "Descripción del Período",
     startDate: "Fecha de Inicio",
     endDate: "Fecha de Cierre",
     status: "Estado",
@@ -54,7 +54,7 @@ export const usePeriods = () => {
                 setStatus('success');
             }, remainingTime);
         } catch (e) {
-            const err = e instanceof Error ? e : new Error('Error desconocido al cargar periodos');
+            const err = e instanceof Error ? e : new Error('Error desconocido al cargar períodos');
             setError(err);
             setStatus('error');
         }
@@ -73,14 +73,14 @@ export const usePeriods = () => {
 
             addToast({
                 variant: "success",
-                title: "Periodo Creado",
+                title: "Período Creado",
                 message: (
                     <>
-                        <p>El periodo <strong>{periodoData.description}</strong> ha sido creado exitosamente.</p>
+                        <p>El período <strong>{periodoData.description}</strong> ha sido creado exitosamente.</p>
                         <RecordDetails data={periodoData} labels={PERIOD_LABELS} />
                     </>
                 ),
-                onViewDetails: () => console.log("Ver detalles de periodo:", newPeriod.periodId),
+                onViewDetails: () => console.log("Ver detalles de período:", newPeriod.periodId),
             });
         } catch (e) {
             setLoadingAction(false);
@@ -100,10 +100,10 @@ export const usePeriods = () => {
 
             addToast({
                 variant: "success",
-                title: "Periodo Actualizado",
+                title: "Período Actualizado",
                 message: (
                     <>
-                        <p>Se han actualizado los datos del periodo <strong>{periodoData.description}</strong>.</p>
+                        <p>Se han actualizado los datos del período <strong>{periodoData.description}</strong>.</p>
                         {oldPeriod && <ChangeComparison oldData={oldPeriod as unknown as Record<string, unknown>} newData={periodoData as unknown as Record<string, unknown>} labels={PERIOD_LABELS} />}
                     </>
                 ),
@@ -128,10 +128,10 @@ export const usePeriods = () => {
             setLoadingAction(false);
             addToast({
                 variant: "warning",
-                title: "Periodo Eliminado",
+                title: "Período Eliminado",
                 message: (
                     <>
-                        <p>El periodo <strong>{periodo.description}</strong> ha sido eliminado permanentemente.</p>
+                        <p>El período <strong>{periodo.description}</strong> ha sido eliminado permanentemente.</p>
                         <p className="mt-1 text-xs text-gray-500 italic">* Esta acción no se puede deshacer desde la interfaz, pero el registro permanece en auditoría.</p>
                     </>
                 )

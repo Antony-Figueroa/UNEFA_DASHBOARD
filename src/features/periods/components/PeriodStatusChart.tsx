@@ -14,7 +14,7 @@ const PeriodStatusChart = () => {
         }
 
         const counts = periodos.reduce((acc, periodo) => {
-            if (periodo.status) { // Solo contar periodos activos
+            if (periodo.status) { // Solo contar períodos activos
                 switch (periodo.periodStatus) {
                     case 1: // Pendiente
                         acc.pendiente++;
@@ -65,7 +65,7 @@ const PeriodStatusChart = () => {
     return (
         <div className="rounded-sm border border-stroke bg-white px-5 pt-7.5 pb-5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5">
             <h5 className="text-xl font-semibold text-black dark:text-white mb-4">
-                Distribución de Periodos Activos
+                Distribución de Períodos Activos
             </h5>
 
             <div className="mb-2">

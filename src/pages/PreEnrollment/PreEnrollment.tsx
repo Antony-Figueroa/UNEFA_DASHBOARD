@@ -108,16 +108,18 @@ export default function PreEnrollmentPage() {
         const goingInactive = original.status === true;
         setConfirmation({
             isOpen: true,
-            title: goingInactive ? "Confirmar Desactivación" : "Confirmar Restauración",
-            message: `¿Estás seguro de que deseas ${goingInactive ? "desactivar" : "restaurar"} la pre-inscripción de "${original.studentName}"?`,
+            title: goingInactive ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
+            message: goingInactive 
+                ? `¿Estás seguro de que deseas enviar la pre-inscripción de "${original.studentName}" a Inactivos?`
+                : `¿Estás seguro de que deseas restaurar la pre-inscripción de "${original.studentName}"?`,
             onConfirm: async () => {
                 try {
                     await toggleStatus(original);
                 } catch (e) { console.error(e); }
                 finally { setConfirmation(null); }
             },
-            confirmText: goingInactive ? "Desactivar" : "Restaurar",
-            variant: goingInactive ? "warning" : "success",
+            confirmText: goingInactive ? "Confirmar" : "Restaurar",
+            variant: goingInactive ? "error" : "success",
         });
     };
 

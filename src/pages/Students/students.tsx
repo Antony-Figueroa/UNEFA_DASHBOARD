@@ -126,15 +126,17 @@ export default function StudentsPage() {
         const goingInactive = original.status === true;
         setConfirmation({
             isOpen: true,
-            title: goingInactive ? "Confirmar Eliminación" : "Confirmar Restauración",
-            message: `¿Estás seguro de que deseas ${goingInactive ? "eliminar" : "restaurar"} al estudiante "${original.firstName} ${original.lastName}"?`,
+            title: goingInactive ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
+            message: goingInactive 
+                ? `¿Estás seguro de que deseas enviar al estudiante "${original.firstName} ${original.lastName}" a Inactivos?`
+                : `¿Estás seguro de que deseas restaurar al estudiante "${original.firstName} ${original.lastName}"?`,
             onConfirm: async () => {
                 try {
                     await toggleStatus(original);
                 } catch (e) { console.error(e); }
                 finally { setConfirmation(null); }
             },
-            confirmText: goingInactive ? "Eliminar" : "Restaurar",
+            confirmText: goingInactive ? "Confirmar" : "Restaurar",
             variant: goingInactive ? "error" : "success",
         });
     };
@@ -142,15 +144,15 @@ export default function StudentsPage() {
     const handleBulkDelete = (ids: string[]) => {
         setConfirmation({
             isOpen: true,
-            title: "Confirmar Eliminación Masiva",
-            message: `¿Estás seguro de que deseas eliminar los ${ids.length} estudiantes seleccionados?`,
+            title: "Confirmar Envío a Inactivos (Masivo)",
+            message: `¿Estás seguro de que deseas enviar los ${ids.length} estudiantes seleccionados a Inactivos?`,
             onConfirm: async () => {
                 try {
                     await bulkRemoveStudents(ids);
                 } catch (e) { console.error(e); }
                 finally { setConfirmation(null); }
             },
-            confirmText: "Eliminar",
+            confirmText: "Confirmar",
             variant: "error",
         });
     };

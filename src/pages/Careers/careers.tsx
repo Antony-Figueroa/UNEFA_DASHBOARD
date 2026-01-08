@@ -186,15 +186,17 @@ export default function CareersPage() {
     const goingInactive = original.status === true;
     setConfirmation({
       isOpen: true,
-      title: goingInactive ? "Confirmar Eliminación" : "Confirmar Restauración",
-      message: `¿Estás seguro de que deseas ${goingInactive ? "eliminar" : "restaurar"} la carrera "${original.careerName}"?`,
+      title: goingInactive ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
+      message: goingInactive 
+        ? `¿Estás seguro de que deseas enviar la carrera "${original.careerName}" a Inactivos?`
+        : `¿Estás seguro de que deseas restaurar la carrera "${original.careerName}"?`,
       onConfirm: async () => {
         try {
           await toggleStatus(original);
         } catch (e) { console.error(e); }
         finally { setConfirmation(null); }
       },
-      confirmText: goingInactive ? "Eliminar" : "Restaurar",
+      confirmText: goingInactive ? "Confirmar" : "Restaurar",
       variant: goingInactive ? "error" : "success",
     });
   };
@@ -209,8 +211,8 @@ export default function CareersPage() {
 
     setConfirmation({
       isOpen: true,
-      title: "Confirmar Eliminación",
-      message: `¿Estás seguro de que deseas eliminar la carrera "${original.careerName}"?`,
+      title: "Confirmar Envío a Inactivos",
+      message: `¿Estás seguro de que deseas enviar la carrera "${original.careerName}" a Inactivos?`,
       onConfirm: async () => {
         try {
           await removeCareer(original);
@@ -220,7 +222,7 @@ export default function CareersPage() {
           setConfirmation(null);
         }
       },
-      confirmText: "Eliminar",
+      confirmText: "Confirmar",
       variant: "error",
     });
   };
@@ -232,8 +234,8 @@ export default function CareersPage() {
   const handleBulkDelete = (ids: string[]) => {
     setConfirmation({
       isOpen: true,
-      title: "Confirmar Eliminación Masiva",
-      message: `¿Estás seguro de que deseas eliminar las ${ids.length} carreras seleccionadas?`,
+      title: "Confirmar Envío a Inactivos (Masivo)",
+      message: `¿Estás seguro de que deseas enviar las ${ids.length} carreras seleccionadas a Inactivos?`,
       onConfirm: async () => {
         try {
           await bulkRemoveCareers(ids);
@@ -243,7 +245,7 @@ export default function CareersPage() {
           setConfirmation(null);
         }
       },
-      confirmText: "Eliminar",
+      confirmText: "Confirmar",
       variant: "error",
     });
   };
@@ -323,25 +325,25 @@ export default function CareersPage() {
 
         {/* Contenido principal */}
         <div className="space-y-6">
-          <ComponentCard title={activeTab === "Activas" ? "Carreras Activas" : "Carreras Inactivas"}>
-            <div className="mb-6 flex border-b border-gray-200 dark:border-white/5">
-              <button
-                onClick={() => setActiveTab("Activas")}
-                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Activas" ? "text-brand-500" : "text-gray-500 hover:text-gray-700"
-                  }`}
-              >
-                Activas
-                {activeTab === "Activas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-              </button>
-              <button
-                onClick={() => setActiveTab("Inactivas")}
-                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Inactivas" ? "text-brand-500" : "text-gray-500 hover:text-gray-700"
-                  }`}
-              >
-                Inactivas
-                {activeTab === "Inactivas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-              </button>
-            </div>
+            <ComponentCard title={activeTab === "Activas" ? "Carreras Activas" : "Carreras Inactivas"}>
+              <div className="mb-6 flex border-b border-gray-200 dark:border-white/5">
+                <button
+                  onClick={() => setActiveTab("Activas")}
+                  className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Activas" ? "text-brand-500" : "text-gray-500 hover:text-gray-700"
+                    }`}
+                >
+                  Activas
+                  {activeTab === "Activas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
+                </button>
+                <button
+                  onClick={() => setActiveTab("Inactivas")}
+                  className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Inactivas" ? "text-brand-500" : "text-gray-500 hover:text-gray-700"
+                    }`}
+                >
+                  Inactivas
+                  {activeTab === "Inactivas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
+                </button>
+              </div>
 
             <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="careers-table">
               <CareerTable

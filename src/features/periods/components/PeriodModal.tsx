@@ -1,5 +1,5 @@
 /**
- * @file Modal para la creación y edición de periodos académicos.
+ * @file Modal para la creación y edición de períodos académicos.
  * @description Este componente presenta un formulario dentro de un modal, utilizando
  * `react-flatpickr` para una selección de fechas estilizada y consistente.
  */
@@ -49,7 +49,7 @@ const periodSchema = z.object({
     if (duration < minDuration || duration > maxDuration) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "El periodo debe tener una duración exacta de 16 semanas.",
+            message: "El período debe tener una duración exacta de 16 semanas.",
             path: ["endDate"]
         });
     }
@@ -262,10 +262,10 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
             <ModalHeader>
                 <div className="max-w-3xl mx-auto w-full">
                     <h5 className="mb-1 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-                        {periodo ? 'Editar Periodo' : 'Registrar Periodo'}
+                        {periodo ? 'Editar Período' : 'Registrar Período'}
                     </h5>
                     <p className="text-sm text-gray-500 dark:text-gray-400 font-normal">
-                        {periodo ? 'Modifica los detalles del periodo académico.' : 'Ingresa los detalles del nuevo periodo académico.'}
+                        {periodo ? 'Modifica los detalles del período académico.' : 'Ingresa los detalles del nuevo período académico.'}
                     </p>
                 </div>
             </ModalHeader>
@@ -375,7 +375,7 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                         Cancelar
                     </Button>
                     <Button type="submit" form="period-form" loading={isLoading} className="w-full sm:w-auto min-h-12">
-                        {periodo ? 'Actualizar Registro' : 'Guardar Periodo'}
+                        {periodo ? 'Actualizar Registro' : 'Guardar Período'}
                     </Button>
                 </div>
             </ModalFooter>

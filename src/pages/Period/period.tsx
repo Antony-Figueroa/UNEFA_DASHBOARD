@@ -158,13 +158,13 @@ export default function Period() {
 
         setConfirmation({
             isOpen: true,
-            title: 'Confirmar Eliminación',
-            message: `¿Estás seguro de que deseas eliminar el periodo "${periodoObject.description}"?`,
+            title: 'Confirmar Envío a Inactivos',
+            message: `¿Estás seguro de que deseas enviar el período "${periodoObject.description}" a Inactivos?`,
             onConfirm: async () => {
                 await removePeriod(periodoObject);
                 setConfirmation(null);
             },
-            confirmText: 'Eliminar',
+            confirmText: 'Confirmar',
             variant: 'error'
         });
     };
@@ -219,7 +219,7 @@ export default function Period() {
                     description="Administración de periodos académicos"
                 />
                 <SkeletonLoader isLoading={pageLoading} skeleton={<BreadcrumbSkeleton />} id="periods-breadcrumb">
-                    <PageBreadcrumb pageTitle="Periodos" />
+                    <PageBreadcrumb pageTitle="Gestión de Períodos" />
                 </SkeletonLoader>
 
                 {loadingAction && <FullScreenLoader label="Procesando..." />}
@@ -246,7 +246,7 @@ export default function Period() {
                     </div>
 
                     <div className="space-y-6">
-                        <ComponentCard title={activeTab === 'active' ? "Periodos Activos" : "Papelera"}>
+                        <ComponentCard title={activeTab === 'active' ? "Períodos Activos" : "Períodos Inactivos"}>
                             {/* Tabs Minimalistas */}
                             <div className="mb-6 flex border-b border-gray-200 dark:border-white/5">
                                 <button
@@ -260,7 +260,7 @@ export default function Period() {
                                     onClick={() => setActiveTab('inactive')}
                                     className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === 'inactive' ? "text-brand-500" : "text-gray-500 hover:text-gray-700"}`}
                                 >
-                                    Inactivo
+                                    Inactivos
                                     {activeTab === 'inactive' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
                                 </button>
                             </div>

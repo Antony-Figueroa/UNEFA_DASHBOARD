@@ -147,10 +147,12 @@ export default function InstitutionsPage() {
 
     setConfirmation({
       isOpen: true,
-      title: original.status ? "Confirmar Eliminación" : "Confirmar Restauración",
-      message: `¿Estás seguro de que deseas ${original.status ? 'eliminar' : 'restaurar'} la institución "${original.name}"?`,
+      title: original.status ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
+      message: original.status 
+        ? `¿Estás seguro de que deseas enviar la institución "${original.name}" a Inactivos?`
+        : `¿Estás seguro de que deseas restaurar la institución "${original.name}"?`,
       variant: original.status ? "error" : "success",
-      confirmText: original.status ? "Eliminar" : "Restaurar",
+      confirmText: original.status ? "Confirmar" : "Restaurar",
       onConfirm: () => toggleInstStatus(original),
     });
   };
@@ -161,10 +163,12 @@ export default function InstitutionsPage() {
 
     setConfirmation({
       isOpen: true,
-      title: original.status ? "Confirmar Eliminación" : "Confirmar Restauración",
-      message: `¿Estás seguro de que deseas ${original.status ? 'eliminar' : 'restaurar'} al responsable "${original.firstName} ${original.lastName}"?`,
+      title: original.status ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
+      message: original.status 
+        ? `¿Estás seguro de que deseas enviar al responsable "${original.firstName} ${original.lastName}" a Inactivos?`
+        : `¿Estás seguro de que deseas restaurar al responsable "${original.firstName} ${original.lastName}"?`,
       variant: original.status ? "error" : "success",
-      confirmText: original.status ? "Eliminar" : "Restaurar",
+      confirmText: original.status ? "Confirmar" : "Restaurar",
       onConfirm: () => toggleRespStatus(original),
     });
   };
@@ -172,10 +176,12 @@ export default function InstitutionsPage() {
   const handleBulkInstAction = (ids: string[], action: "inactivate" | "restore") => {
     setConfirmation({
       isOpen: true,
-      title: action === "inactivate" ? "Confirmar Eliminación Masiva" : "Confirmar Restauración Masiva",
-      message: `¿Estás seguro de que deseas ${action === "inactivate" ? 'eliminar' : 'restaurar'} ${ids.length} instituciones seleccionadas?`,
+      title: action === "inactivate" ? "Confirmar Envío a Inactivos (Masivo)" : "Confirmar Restauración Masiva",
+      message: action === "inactivate" 
+        ? `¿Estás seguro de que deseas enviar las ${ids.length} instituciones seleccionadas a Inactivos?`
+        : `¿Estás seguro de que deseas restaurar ${ids.length} instituciones seleccionadas?`,
       variant: action === "inactivate" ? "error" : "success",
-      confirmText: action === "inactivate" ? "Eliminar" : "Restaurar",
+      confirmText: action === "inactivate" ? "Confirmar" : "Restaurar",
       onConfirm: () => action === "inactivate" ? bulkRemoveInstitutions(ids) : bulkRestoreInstitutions(ids),
     });
   };
@@ -183,10 +189,12 @@ export default function InstitutionsPage() {
   const handleBulkRespAction = (ids: string[], action: "inactivate" | "restore") => {
     setConfirmation({
       isOpen: true,
-      title: action === "inactivate" ? "Confirmar Eliminación Masiva" : "Confirmar Restauración Masiva",
-      message: `¿Estás seguro de que deseas ${action === "inactivate" ? 'eliminar' : 'restaurar'} ${ids.length} responsables seleccionados?`,
+      title: action === "inactivate" ? "Confirmar Envío a Inactivos (Masivo)" : "Confirmar Restauración Masiva",
+      message: action === "inactivate" 
+        ? `¿Estás seguro de que deseas enviar los ${ids.length} responsables seleccionados a Inactivos?`
+        : `¿Estás seguro de que deseas restaurar ${ids.length} responsables seleccionados?`,
       variant: action === "inactivate" ? "error" : "success",
-      confirmText: action === "inactivate" ? "Eliminar" : "Restaurar",
+      confirmText: action === "inactivate" ? "Confirmar" : "Restaurar",
       onConfirm: () => action === "inactivate" ? bulkRemoveResponsibles(ids) : bulkRestoreResponsibles(ids),
     });
   };

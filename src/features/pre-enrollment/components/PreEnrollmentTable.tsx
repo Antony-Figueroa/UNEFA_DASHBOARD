@@ -9,7 +9,6 @@ import { useDebounce } from "../../../hooks/useDebounce";
 import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import Button from "../../../components/ui/button/Button";
-import Badge from "../../../components/ui/badge/Badge";
 
 interface ActionMenuProps {
     onEdit?: () => void;
@@ -309,7 +308,7 @@ export default function PreEnrollmentTable({
     const SortIndicator = ({ column }: { column: SortKey }) => {
         if (sortConfig.key !== column) {
             return (
-                <svg className="ml-1 h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="ml-1 icon-xs text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
                 </svg>
             );
@@ -534,95 +533,75 @@ export default function PreEnrollmentTable({
                                 <div className="flex flex-col items-center gap-2">
                                     <div className="flex items-center justify-between w-full">
                                         <div className="flex-1 text-center">
-                                            <div className="flex justify-center mb-2">
-                                                <Badge
-                                                    size="sm"
-                                                    color={s.status ? "success" : "error"}
-                                                    variant="light"
-                                                    shape="rounded"
-                                                    className="font-semibold"
-                                                >
-                                                    {s.status ? "Activa" : "Inactiva"}
-                                                </Badge>
-                                            </div>
-                                            <h3 className="text-sm font-bold text-gray-800 dark:text-white/90 leading-tight truncate px-12">
+                                            <h3 className="text-sm font-bold text-gray-800 dark:text-white/90 leading-tight truncate px-8 uppercase">
                                                 {s.studentName}
                                             </h3>
-                                            <div className="flex flex-col items-center gap-1 mt-2">
-                                                <div className="text-[11px] text-gray-500 dark:text-gray-400">
-                                                    <span className="font-medium uppercase tracking-wider opacity-60">Cédula:</span> {s.identificationPrefix}-{s.identificationNumber}
-                                                </div>
-                                                <div className="flex items-center justify-center gap-4">
-                                                    <div className="text-[11px] text-gray-500 dark:text-gray-400">
-                                                        <span className="block font-medium uppercase tracking-wider opacity-60">Período</span>
-                                                        {s.period}
-                                                    </div>
-                                                    <div className="text-[11px] text-gray-500 dark:text-gray-400">
-                                                        <span className="block font-medium uppercase tracking-wider opacity-60">Fecha</span>
-                                                        {s.preEnrollmentDate}
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            <p className="text-xs text-gray-500 mt-1 truncate uppercase">{s.identificationPrefix}-{s.identificationNumber}</p>
                                         </div>
-                                        <div className="absolute right-2 top-2">
-                                            <button
-                                                onClick={() => toggleRowExpansion(preEnrollmentId)}
-                                                className="p-2 text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
-                                                style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
-                                                aria-label={isExpanded ? "Contraer" : "Expandir"}
-                                            >
-                                                <ChevronDownIcon className="icon-sm" />
-                                            </button>
-                                        </div>
+                                        <button
+                                            onClick={() => toggleRowExpansion(preEnrollmentId)}
+                                            className="absolute right-2 top-2 p-2 text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
+                                            style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
+                                            aria-label={isExpanded ? "Contraer" : "Expandir"}
+                                        >
+                                            <ChevronDownIcon className="icon-sm" />
+                                        </button>
                                     </div>
                                 </div>
 
                                 {isExpanded && (
-                                    <div className="mt-4 pt-4 border-t border-gray-50 dark:border-white/5 animate-fadeIn">
-                                        <div className="space-y-6">
-                                            <div className="bg-gray-50 dark:bg-white/5 p-3 rounded-xl">
-                                                <p className="text-[9px] text-gray-400 uppercase font-bold mb-1 text-center">Código de Matrícula</p>
-                                                <p className="text-xs font-bold dark:text-gray-200 text-center">{s.enrollmentCode}</p>
+                                    <div className="mt-4 space-y-6 animate-fadeIn border-t border-gray-50 dark:border-white/5 pt-6">
+                                        <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
+                                            <div className="flex flex-col items-center">
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Período</p>
+                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{s.period}</p>
                                             </div>
+                                            <div className="flex flex-col items-center">
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Fecha</p>
+                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{s.preEnrollmentDate}</p>
+                                            </div>
+                                            <div className="flex flex-col items-center col-span-2">
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Código de Matrícula</p>
+                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{s.enrollmentCode}</p>
+                                            </div>
+                                        </div>
 
-                                            <div className="flex flex-col gap-3 pt-2">
-                                                {onView && (
-                                                    <button
-                                                        onClick={() => onView(s)}
-                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
-                                                    >
-                                                        <EyeIcon className="icon-sm" /> Ver
-                                                    </button>
-                                                )}
-                                                {onEdit && (
-                                                    <button
-                                                        onClick={() => onEdit(s)}
-                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
-                                                    >
-                                                        <EditIcon className="icon-sm" /> Editar
-                                                    </button>
-                                                )}
-                                                {onToggleStatus && (
-                                                    <button
-                                                        onClick={() => onToggleStatus(s.preEnrollmentId)}
-                                                        className={`w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold rounded-xl min-h-12 active:scale-95 transition-all border border-transparent ${
-                                                            s.status 
-                                                                ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:border-red-200 dark:hover:border-red-500/20" 
-                                                                : "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:border-blue-200 dark:hover:border-blue-500/20"
+                                        <div className="flex flex-col gap-3 pt-2">
+                                            {onView && (
+                                                <button
+                                                    onClick={() => onView(s)}
+                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                                                >
+                                                    <EyeIcon className="icon-sm" /> Ver Detalles
+                                                </button>
+                                            )}
+                                            {onEdit && s.status && (
+                                                <button
+                                                    onClick={() => onEdit(s)}
+                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                                                >
+                                                    <EditIcon className="icon-sm" /> Editar
+                                                </button>
+                                            )}
+                                            {onToggleStatus && (
+                                                <button
+                                                    onClick={() => onToggleStatus(s.preEnrollmentId)}
+                                                    className={`w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold rounded-xl min-h-12 active:scale-95 transition-all border border-transparent ${!s.status
+                                                        ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-500/20"
+                                                        : "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:border-red-200 dark:hover:border-red-500/20"
                                                         }`}
-                                                    >
-                                                        {s.status ? (
-                                                            <>
-                                                                <TrashIcon className="icon-sm" /> Desactivar
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <RefreshIcon className="icon-sm" /> Activar
-                                                            </>
-                                                        )}
-                                                    </button>
-                                                )}
-                                            </div>
+                                                >
+                                                    {!s.status ? (
+                                                        <>
+                                                            <RefreshIcon className="icon-sm" /> Activar
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <TrashIcon className="icon-sm" /> Desactivar
+                                                        </>
+                                                    )}
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -630,27 +609,29 @@ export default function PreEnrollmentTable({
                         );
                     })
                 ) : (
-                    <EmptyState
-                         title="No se encontraron pre-inscripciones"
-                         description={
-                             searchTerm || periodFilter
-                                 ? "No se encontraron pre-inscripciones con los filtros aplicados."
-                                 : "No hay pre-inscripciones para mostrar."
-                         }
-                         action={
-                             searchTerm || periodFilter ? (
-                                 <Button
-                                     variant="outline"
-                                     size="sm"
-                                     onClick={clearFilters}
-                                     className="flex items-center gap-2"
-                                 >
-                                     <RefreshIcon className="icon-xs" />
-                                     Limpiar filtros
-                                 </Button>
-                             ) : undefined
-                         }
-                    />
+                    <div className="py-20 text-center animate-fadeIn">
+                        <EmptyState
+                            title="No se encontraron pre-inscripciones"
+                            description={
+                                searchTerm || periodFilter
+                                    ? "No se encontraron pre-inscripciones con los filtros aplicados. Intenta ajustar los términos."
+                                    : "No hay pre-inscripciones registradas en el sistema actualmente."
+                            }
+                            action={
+                                (searchTerm || periodFilter) ? (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={clearFilters}
+                                        className="flex items-center gap-2 mx-auto"
+                                    >
+                                        <RefreshIcon className="icon-xs" />
+                                        Limpiar filtros
+                                    </Button>
+                                ) : undefined
+                            }
+                        />
+                    </div>
                 )}
             </div>
 

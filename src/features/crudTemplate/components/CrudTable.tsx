@@ -200,7 +200,7 @@ export function CrudTable<TItem extends { id: string }>({
     if (sortKey !== columnId) {
       return (
         <svg
-          className="ml-1 h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100"
+          className="ml-1 icon-xs text-brand-500"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -215,11 +215,11 @@ export function CrudTable<TItem extends { id: string }>({
       );
     }
     return sortOrder === "asc" ? (
-      <svg className="ml-1 h-3 w-3 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="ml-1 icon-xs text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
       </svg>
     ) : (
-      <svg className="ml-1 h-3 w-3 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="ml-1 icon-xs text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
       </svg>
     );

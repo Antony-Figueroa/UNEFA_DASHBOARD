@@ -1,5 +1,5 @@
 /**
- * @file Modal para la visualización de un periodo académico.
+ * @file Modal para la visualización de un período académico.
  * @description Muestra un calendario de solo lectura con el rango de fechas resaltado.
  */
 
@@ -122,10 +122,10 @@ export default function PeriodViewModal({ isOpen, onClose, periodo }: PeriodView
                 <ModalHeader className="shrink-0 pt-6 px-6 sm:pt-10 sm:px-12 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
                     <div className="max-w-5xl mx-auto w-full">
                         <h5 className="mb-1 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-                            Vista del Periodo
+                            Detalles del Período
                         </h5>
                         <p className="text-sm text-gray-500 dark:text-gray-400 font-normal">
-                            Detalles del periodo académico {periodo.description}.
+                            Visualización del rango de fechas y calendario académico del período {periodo.description}.
                         </p>
                     </div>
                 </ModalHeader>

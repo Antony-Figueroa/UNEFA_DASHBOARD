@@ -40,6 +40,8 @@ interface InstitutionalResponsibleTableProps {
   isLoading?: boolean;
 }
 
+type SortKey = keyof InstitutionalResponsibleRowData;
+
 export default function InstitutionalResponsibleTable({
   data,
   activeTab,
@@ -55,6 +57,10 @@ export default function InstitutionalResponsibleTable({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; order: "asc" | "desc" }>({
+    key: "lastName",
+    order: "asc",
+  });
 
   // Limpiar selección al cambiar de pestaña
   useEffect(() => {
@@ -70,7 +76,7 @@ export default function InstitutionalResponsibleTable({
   const debouncedSearch = useDebounce(filters.search, 300);
 
   const filteredData = useMemo(() => {
-    return data.filter((item) => {
+    const filtered = data.filter((item) => {
       const matchesTab = activeTab === "Activas" ? item.status : !item.status;
       const matchesSearch =
         debouncedSearch === "" ||
@@ -81,7 +87,23 @@ export default function InstitutionalResponsibleTable({
 
       return matchesTab && matchesSearch && matchesInstitution;
     });
-  }, [data, activeTab, debouncedSearch, filters.institution]);
+
+    filtered.sort((a, b) => {
+      const valA = a[sortConfig.key];
+      const valB = b[sortConfig.key];
+
+      if (valA === undefined || valB === undefined) return 0;
+
+      const strA = String(valA).toLowerCase();
+      const strB = String(valB).toLowerCase();
+
+      if (strA < strB) return sortConfig.order === "asc" ? -1 : 1;
+      if (strA > strB) return sortConfig.order === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return filtered;
+  }, [data, activeTab, debouncedSearch, filters.institution, sortConfig]);
 
   const institutionOptions = useMemo(() => {
     const uniqueInstitutions = Array.from(new Set(data.map(i => i.institutionId)))
@@ -101,6 +123,32 @@ export default function InstitutionalResponsibleTable({
     if (newExpanded.has(id)) newExpanded.delete(id);
     else newExpanded.add(id);
     setExpandedRows(newExpanded);
+  };
+
+  const handleSort = (key: SortKey) => {
+    setSortConfig((prev) => ({
+      key,
+      order: prev.key === key && prev.order === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const SortIndicator = ({ column }: { column: SortKey }) => {
+    if (sortConfig.key !== column) {
+      return (
+        <svg className="ml-1 icon-xs text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+      );
+    }
+    return sortConfig.order === "asc" ? (
+      <svg className="ml-1 icon-xs text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+      </svg>
+    ) : (
+      <svg className="ml-1 icon-xs text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    );
   };
 
   const toggleSelectAll = (checked: boolean) => {
@@ -220,22 +268,54 @@ export default function InstitutionalResponsibleTable({
       {/* Desktop View */}
       <div className="hidden md:block max-w-full overflow-x-auto table-scrollbar">
         <Table>
-          <TableHeader>
+          <TableHeader className="table-header-row">
             <TableRow>
-              <TableCell isHeader className="w-10">
+              <TableCell isHeader className="table-header-cell w-12">
                 <Checkbox
                   checked={selectedIds.size === currentData.length && currentData.length > 0}
                   onChange={toggleSelectAll}
                   ariaLabel="Seleccionar todos"
                 />
               </TableCell>
-              <TableCell isHeader>CÉDULA</TableCell>
-              <TableCell isHeader>NOMBRES</TableCell>
-              <TableCell isHeader>APELLIDOS</TableCell>
-              <TableCell isHeader>TELÉFONO</TableCell>
-              <TableCell isHeader>CORREO</TableCell>
-              <TableCell isHeader className="text-center">INSTITUCIÓN</TableCell>
-              <TableCell isHeader className="text-right">ACCIONES</TableCell>
+              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={() => handleSort("identificationNumber")}>
+                <div className="flex items-center">
+                  CÉDULA
+                  <SortIndicator column="identificationNumber" />
+                </div>
+              </TableCell>
+              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={() => handleSort("firstName")}>
+                <div className="flex items-center">
+                  NOMBRES
+                  <SortIndicator column="firstName" />
+                </div>
+              </TableCell>
+              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={() => handleSort("lastName")}>
+                <div className="flex items-center">
+                  APELLIDOS
+                  <SortIndicator column="lastName" />
+                </div>
+              </TableCell>
+              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={() => handleSort("phone")}>
+                <div className="flex items-center">
+                  TELÉFONO
+                  <SortIndicator column="phone" />
+                </div>
+              </TableCell>
+              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={() => handleSort("email")}>
+                <div className="flex items-center">
+                  CORREO
+                  <SortIndicator column="email" />
+                </div>
+              </TableCell>
+              <TableCell isHeader className="table-header-cell cursor-pointer text-center" onClick={() => handleSort("institutionName")}>
+                <div className="flex items-center justify-center">
+                  INSTITUCIÓN
+                  <SortIndicator column="institutionName" />
+                </div>
+              </TableCell>
+              <TableCell isHeader className="table-header-cell text-right">
+                ACCIONES
+              </TableCell>
             </TableRow>
           </TableHeader>
           <TableBody>

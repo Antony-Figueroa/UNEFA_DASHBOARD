@@ -214,9 +214,9 @@ export default function CrudExample() {
   const handleBulkDelete = (selected: ExampleEntity[]) => {
     setConfirmState({
       isOpen: true,
-      title: "Eliminar seleccionados",
-      message: `¿Deseas eliminar ${selected.length} elementos?`,
-      confirmText: "Eliminar",
+      title: "Confirmar Envío a Inactivos (Masivo)",
+      message: `¿Estás seguro de que deseas enviar los ${selected.length} elementos seleccionados a Inactivos?`,
+      confirmText: "Confirmar",
       variant: "error",
       onConfirm: async () => {
         try {
@@ -272,15 +272,15 @@ export default function CrudExample() {
     },
     {
       id: "delete",
-      label: "Eliminar",
+      label: "Inactivar",
       icon: "delete",
       variant: "danger",
       onClick: (item) => {
         setConfirmState({
           isOpen: true,
-          title: "Confirmar eliminación",
-          message: `¿Deseas eliminar el registro "${item.name}"?`,
-          confirmText: "Eliminar",
+          title: "Confirmar Envío a Inactivos",
+          message: `¿Estás seguro de que deseas enviar el elemento "${item.name}" a Inactivos?`,
+          confirmText: "Confirmar",
           variant: "error",
           onConfirm: async () => {
             try {
@@ -343,7 +343,7 @@ export default function CrudExample() {
       </a>
       <span className="text-gray-400">|</span>
       <a href="/period" className="text-brand-600 hover:underline">
-        Gestión de periodos
+        Gestión de períodos
       </a>
     </div>
   );

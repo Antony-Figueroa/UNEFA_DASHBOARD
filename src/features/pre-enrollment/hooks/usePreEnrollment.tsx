@@ -112,29 +112,6 @@ export const usePreEnrollment = () => {
     });
   };
 
-  const bulkRemove = async (ids: string[]) => {
-    setLoadingAction(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setPreEnrollments(prev => prev.map(p => ids.includes(p.preEnrollmentId) ? { ...p, status: false } : p));
-    setLoadingAction(false);
-    addToast({
-      variant: "error",
-      title: "Eliminación Masiva",
-      message: <p>Se han desactivado {ids.length} pre-inscripciones.</p>,
-    });
-  };
-
-  const bulkRestore = async (ids: string[]) => {
-    setLoadingAction(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setPreEnrollments(prev => prev.map(p => ids.includes(p.preEnrollmentId) ? { ...p, status: true } : p));
-    setLoadingAction(false);
-    addToast({
-      variant: "success",
-      title: "Restauración Masiva",
-      message: <p>Se han restaurado {ids.length} pre-inscripciones.</p>,
-    });
-  };
 
   return {
     preEnrollments,
@@ -143,8 +120,6 @@ export const usePreEnrollment = () => {
     addPreEnrollment,
     editPreEnrollment,
     toggleStatus,
-    bulkRemove,
-    bulkRestore,
     refreshPreEnrollments,
   };
 };

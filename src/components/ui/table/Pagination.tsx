@@ -53,7 +53,7 @@ export const Pagination: React.FC<PaginationProps> = ({
                 <button
                     onClick={() => onPageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg disabled:opacity-30 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg disabled:opacity-30 transition-colors min-h-11 min-w-11 flex items-center justify-center"
                     aria-label="Página anterior"
                 >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -66,7 +66,7 @@ export const Pagination: React.FC<PaginationProps> = ({
                 <button
                     onClick={() => onPageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg disabled:opacity-30 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg disabled:opacity-30 transition-colors min-h-11 min-w-11 flex items-center justify-center"
                     aria-label="Página siguiente"
                 >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -8,15 +8,15 @@
  */
 
 import { useMemo, useState, useEffect } from "react";
-import { useTheme } from "../../context/theme";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
-import { Modal, ModalBody, ModalFooter } from "../../components/ui/modal";
+import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
+import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
-import { PlusCircleIcon, XIcon, CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon } from "../../icons/actions";
+import { PlusCircleIcon, InformationCircleIcon } from "../../icons/actions";
 
 import CareerTable from "../../features/careers/components/CareerTable";
 import CareerModal from "../../features/careers/components/CareerModal";
@@ -61,7 +61,6 @@ const formatCareerToRow = (c: Career): CareerRowData => ({
  * @returns {JSX.Element} El layout completo de la página de gestión de carreras.
  */
 export default function CareersPage() {
-  const { colorMode } = useTheme();
   const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
@@ -104,39 +103,15 @@ export default function CareersPage() {
    * Definición de tipos para el estado de confirmación.
    */
   type ConfirmationInfo = {
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-    confirmText: string;
-    variant: "success" | "error" | "warning" | "info";
-  };
+  isOpen: boolean;
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  confirmText: string;
+  variant: DialogVariant;
+};
 
-  /**
-   * Configuración visual (estilos e iconos) para los diferentes tipos de diálogos de confirmación.
-   */
-  const confirmationStyles = {
-    error: {
-      iconBg: "bg-red-100 dark:bg-red-900/30",
-      icon: <XIcon className="h-6 w-6 text-red-600 dark:text-red-500" />,
-      button: "bg-red-600 hover:bg-red-700 dark:hover:bg-red-500",
-    },
-    success: {
-      iconBg: "bg-green-100 dark:bg-green-900/30",
-      icon: <CheckCircleIcon className="h-6 w-6 text-green-600 dark:text-green-500" />,
-      button: "bg-green-500 hover:bg-green-600 dark:hover:bg-green-400",
-    },
-    warning: {
-      iconBg: "bg-yellow-100 dark:bg-yellow-900/30",
-      icon: <ExclamationTriangleIcon className="h-6 w-6 text-yellow-500 dark:text-yellow-400" />,
-      button: "bg-yellow-500 hover:bg-yellow-600 dark:hover:bg-yellow-400",
-    },
-    info: {
-      iconBg: "bg-blue-100 dark:bg-blue-900/30",
-      icon: <InformationCircleIcon className="h-6 w-6 text-blue-600 dark:text-blue-500" />,
-      button: "bg-blue-500 hover:bg-blue-600 dark:hover:bg-blue-400",
-    },
-  };
+
 
   /** @state {ConfirmationInfo|null} confirmation - Estado que orquesta el diálogo de confirmación global. */
   const [confirmation, setConfirmation] = useState<ConfirmationInfo | null>(null);
@@ -180,8 +155,8 @@ export default function CareersPage() {
     const isEditing = !!editingCareer;
     setConfirmation({
       isOpen: true,
-      title: isEditing ? "Confirmar Modificación" : "Confirmar Creación",
-      message: `¿Estás seguro de que deseas ${isEditing ? "guardar los cambios en" : "crear"} esta carrera?`,
+      title: isEditing ? "Confirmar Modificación" : "Confirmar Registro",
+      message: `¿Estás seguro de que deseas ${isEditing ? "guardar los cambios en" : "registrar"} esta carrera?`,
       onConfirm: async () => {
         try {
           if (isEditing && editingCareer) {
@@ -196,7 +171,7 @@ export default function CareersPage() {
           setConfirmation(null);
         }
       },
-      confirmText: "Confirmar",
+      confirmText: isEditing ? "Guardar" : "Registrar",
       variant: "info",
     });
   };
@@ -211,23 +186,21 @@ export default function CareersPage() {
     const goingInactive = original.status === true;
     setConfirmation({
       isOpen: true,
-      title: goingInactive ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
-      message: goingInactive
-        ? `¿Deseas enviar la carrera "${original.careerName}" a Inactivos?`
-        : `¿Deseas restaurar la carrera "${original.careerName}"?`,
+      title: goingInactive ? "Confirmar Eliminación" : "Confirmar Restauración",
+      message: `¿Estás seguro de que deseas ${goingInactive ? "eliminar" : "restaurar"} la carrera "${original.careerName}"?`,
       onConfirm: async () => {
         try {
           await toggleStatus(original);
         } catch (e) { console.error(e); }
         finally { setConfirmation(null); }
       },
-      confirmText: goingInactive ? "Enviar a Inactivo" : "Restaurar",
-      variant: goingInactive ? "warning" : "info",
+      confirmText: goingInactive ? "Eliminar" : "Restaurar",
+      variant: goingInactive ? "error" : "success",
     });
   };
 
   /**
-   * Maneja la eliminación (Eliminación) de una carrera.
+   * Maneja la eliminación de una carrera.
    * @param {string} careerId - ID único de la carrera.
    */
   const handleDelete = (careerId: string) => {
@@ -236,8 +209,8 @@ export default function CareersPage() {
 
     setConfirmation({
       isOpen: true,
-      title: "Confirmar Envío a Inactivos",
-      message: `¿Deseas enviar la carrera "${original.careerName}" a Inactivos?`,
+      title: "Confirmar Eliminación",
+      message: `¿Estás seguro de que deseas eliminar la carrera "${original.careerName}"?`,
       onConfirm: async () => {
         try {
           await removeCareer(original);
@@ -247,8 +220,8 @@ export default function CareersPage() {
           setConfirmation(null);
         }
       },
-      confirmText: "Enviar a Inactivo",
-      variant: "warning",
+      confirmText: "Eliminar",
+      variant: "error",
     });
   };
 
@@ -260,7 +233,7 @@ export default function CareersPage() {
     setConfirmation({
       isOpen: true,
       title: "Confirmar Eliminación Masiva",
-      message: `¿Estás seguro de que deseas enviar las ${ids.length} carreras seleccionadas a la Inactivo?`,
+      message: `¿Estás seguro de que deseas eliminar las ${ids.length} carreras seleccionadas?`,
       onConfirm: async () => {
         try {
           await bulkRemoveCareers(ids);
@@ -270,13 +243,13 @@ export default function CareersPage() {
           setConfirmation(null);
         }
       },
-      confirmText: "Eliminar seleccionadas",
+      confirmText: "Eliminar",
       variant: "error",
     });
   };
 
   /**
-   * Ejecuta la restauración masiva de múltiples carreras seleccionadas de la Inactivo.
+   * Ejecuta la restauración masiva de múltiples carreras seleccionadas.
    * @param {string[]} ids - Lista de IDs de carreras a restaurar.
    */
   const handleBulkRestore = (ids: string[]) => {
@@ -293,8 +266,8 @@ export default function CareersPage() {
           setConfirmation(null);
         }
       },
-      confirmText: "Restaurar seleccionadas",
-      variant: "info",
+      confirmText: "Restaurar",
+      variant: "success",
     });
   };
 
@@ -408,39 +381,16 @@ export default function CareersPage() {
         career={viewCareer}
       />
 
-      {confirmation?.isOpen && (
-        <Modal
-          isOpen={confirmation.isOpen}
-          onClose={() => !loadingAction && setConfirmation(null)}
-          className={`max-w-sm ${colorMode === "dark" ? "dark" : ""}`}
-        >
-          <ModalBody className="text-center pt-8">
-            <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${confirmationStyles[confirmation.variant].iconBg}`}>
-              {confirmationStyles[confirmation.variant].icon}
-            </div>
-            <h3 className="mb-2 text-xl font-bold text-gray-800 dark:text-white">{confirmation.title}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{confirmation.message}</p>
-          </ModalBody>
-          <ModalFooter className="justify-center border-t-0 pt-0 pb-8">
-            <Button
-              variant="outline"
-              onClick={() => setConfirmation(null)}
-              disabled={loadingAction}
-              className="w-full sm:w-auto"
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant={confirmation.variant === "error" ? "error" : "primary"}
-              onClick={confirmation.onConfirm}
-              loading={loadingAction}
-              className="w-full sm:w-auto"
-            >
-              {confirmation.confirmText}
-            </Button>
-          </ModalFooter>
-        </Modal>
-      )}
+      <UnifiedDialog
+        isOpen={confirmation?.isOpen || false}
+        onClose={() => !loadingAction && setConfirmation(null)}
+        title={confirmation?.title || ""}
+        message={confirmation?.message || ""}
+        variant={confirmation?.variant || "info"}
+        confirmLabel={confirmation?.confirmText || "Confirmar"}
+        onConfirm={() => confirmation?.onConfirm()}
+        isLoading={loadingAction}
+      />
     </>
   );
 }

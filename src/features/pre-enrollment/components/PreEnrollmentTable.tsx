@@ -1,11 +1,200 @@
-import { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { Dropdown } from "../../../components/ui/dropdown/Dropdown";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
-import { DropdownPortal } from "../../../components/ui/dropdown/DropdownPortal";
 import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ThreeDotsIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { PreEnrollmentRowData } from "../types";
-import Checkbox from "../../../components/form/input/Checkbox";
 import { useDebounce } from "../../../hooks/useDebounce";
+import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
+import { EmptyState } from "../../../components/ui/table/EmptyState";
+import Button from "../../../components/ui/button/Button";
+import Badge from "../../../components/ui/badge/Badge";
+
+interface ActionMenuProps {
+    onEdit?: () => void;
+    onToggleStatus?: () => void;
+    onView?: () => void;
+    onOpen: () => void;
+    onClose: () => void;
+    item: PreEnrollmentRowData;
+}
+
+const ActionMenu = ({
+    onEdit,
+    onToggleStatus,
+    onView,
+    onOpen,
+    onClose,
+    item,
+}: ActionMenuProps) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [highlighted, setHighlighted] = useState(false);
+    const trigger = useRef<HTMLButtonElement>(null);
+    const dropdown = useRef<HTMLDivElement>(null);
+    const [isTop, setIsTop] = useState(false);
+    const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
+
+    const toggleMenu = useCallback(
+        (e: React.MouseEvent<HTMLButtonElement>) => {
+            e.stopPropagation();
+            if (isOpen) {
+                setIsOpen(false);
+                setHighlighted(false);
+                onClose();
+            } else {
+                if (trigger.current) {
+                    const rect = trigger.current.getBoundingClientRect();
+                    setTriggerRect(rect);
+                    const spaceBelow = window.innerHeight - rect.bottom;
+                    const menuHeight = 120;
+                    const showTop = spaceBelow < menuHeight;
+                    setIsTop(showTop);
+                    setIsOpen(true);
+                    setHighlighted(true);
+                    onOpen();
+                }
+            }
+        },
+        [isOpen, onOpen, onClose]
+    );
+
+    const handleAction = useCallback(
+        (action?: () => void) => {
+            setIsOpen(false);
+            setHighlighted(false);
+            onClose();
+            action?.();
+        },
+        [onClose]
+    );
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                dropdown.current &&
+                !dropdown.current.contains(event.target as Node) &&
+                trigger.current &&
+                !trigger.current.contains(event.target as Node)
+            ) {
+                setIsOpen(false);
+                setHighlighted(false);
+                onClose();
+            }
+        };
+
+        const handleScroll = () => {
+            if (isOpen) {
+                setIsOpen(false);
+                setHighlighted(false);
+                onClose();
+            }
+        };
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                setIsOpen(false);
+                setHighlighted(false);
+                onClose();
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        window.addEventListener("scroll", handleScroll, true);
+        window.addEventListener("resize", handleScroll);
+        document.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            window.removeEventListener("scroll", handleScroll, true);
+            window.removeEventListener("resize", handleScroll);
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [isOpen, onClose]);
+
+    return (
+        <div className={`relative flex justify-end ${highlighted ? "z-50" : ""}`}>
+            <button
+                ref={trigger}
+                onClick={toggleMenu}
+                className="dropdown-toggle inline-flex items-center rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 min-h-12 min-w-12 justify-center"
+                title="Acciones"
+                aria-label="Menú de acciones"
+            >
+                <ThreeDotsIcon className="icon-sm" />
+            </button>
+            {isOpen &&
+                triggerRect &&
+                createPortal(
+                    <div
+                        ref={dropdown}
+                        style={{
+                            position: "fixed",
+                            top: isTop ? "auto" : triggerRect.bottom + 5,
+                            bottom: isTop ? window.innerHeight - triggerRect.top + 5 : "auto",
+                            left: triggerRect.right,
+                            transform: "translateX(-100%)",
+                            zIndex: 9999,
+                        }}
+                    >
+                        <Dropdown
+                            isOpen={isOpen}
+                            onClose={() => {
+                                setIsOpen(false);
+                                setHighlighted(false);
+                                onClose();
+                            }}
+                            className="w-40 min-w-37.5 animate-fadeIn"
+                        >
+                            {onView && (
+                                <DropdownItem
+                                    onItemClick={() => handleAction(onView)}
+                                    className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
+                                >
+                                    <EyeIcon className="icon-sm" />
+                                    Ver Detalles
+                                </DropdownItem>
+                            )}
+                            {onEdit && (
+                                <DropdownItem
+                                    onItemClick={() => handleAction(onEdit)}
+                                    className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
+                                >
+                                    <EditIcon className="icon-sm" />
+                                    Editar
+                                </DropdownItem>
+                            )}
+                            {onToggleStatus && (
+                                <DropdownItem
+                                    onItemClick={() => handleAction(onToggleStatus)}
+                                    className={`flex items-center gap-2 font-medium ${
+                                        item.status 
+                                            ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10" 
+                                            : "text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-400/10"
+                                    }`}
+                                >
+                                    {item.status ? (
+                                        <>
+                                            <TrashIcon className="icon-sm" />
+                                            Desactivar
+                                        </>
+                                    ) : (
+                                        <>
+                                            <RefreshIcon className="icon-sm" />
+                                            Activar
+                                        </>
+                                    )}
+                                </DropdownItem>
+                            )}
+                        </Dropdown>
+                    </div>,
+                    document.body
+                )}
+        </div>
+    );
+};
 
 interface PreEnrollmentTableProps {
     data: PreEnrollmentRowData[];
@@ -14,9 +203,6 @@ interface PreEnrollmentTableProps {
     onEdit?: (item: PreEnrollmentRowData) => void;
     onToggleStatus?: (id: string) => void;
     onView?: (item: PreEnrollmentRowData) => void;
-    onBulkDelete?: (ids: string[]) => void;
-    onBulkRestore?: (ids: string[]) => void;
-    inactiveMode?: boolean;
     activeTab?: "Activas" | "Inactivas";
     loading?: boolean;
 }
@@ -31,62 +217,39 @@ export default function PreEnrollmentTable({
     onEdit,
     onToggleStatus,
     onView,
-    onBulkDelete,
-    onBulkRestore,
-    // inactiveMode = false,
     activeTab = "Activas",
+    loading: externalLoading,
 }: PreEnrollmentTableProps) {
-    const [idFilter, setIdFilter] = useState("");
-    const [nameFilter, setNameFilter] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
     const [periodFilter, setPeriodFilter] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
-    const [openRowId, setOpenRowId] = useState<string | number | null>(null);
-    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+    const [highlightedRow, setHighlightedRow] = useState<string | null>(null);
 
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; order: SortOrder }>({
         key: "studentName",
         order: "asc",
     });
 
-    const debouncedIdFilter = useDebounce(idFilter, 300);
-    const debouncedNameFilter = useDebounce(nameFilter, 300);
-
-    useEffect(() => {
-        setSelectedIds([]);
-    }, [activeTab]);
+    const debouncedSearch = useDebounce(searchTerm, 300);
 
     const filteredData = useMemo(() => {
-        const idSearch = debouncedIdFilter.trim().toLowerCase();
-        const nameSearch = debouncedNameFilter.trim().toLowerCase();
+        const search = debouncedSearch.trim().toLowerCase();
         const periodSearch = periodFilter.trim().toLowerCase();
 
         const filtered = data.filter((s) => {
-            const matchesId = !idSearch || s.identificationNumber.toLowerCase().includes(idSearch);
-            const matchesName = !nameSearch || s.studentName.toLowerCase().includes(nameSearch);
+            const matchesSearch = !search || 
+                s.identificationNumber.toLowerCase().includes(search) || 
+                s.studentName.toLowerCase().includes(search);
             const matchesPeriod = !periodSearch || s.period.toLowerCase().includes(periodSearch);
             const matchesTab = activeTab === "Activas" ? s.status === true : s.status === false;
 
-            return matchesId && matchesName && matchesPeriod && matchesTab;
+            return matchesSearch && matchesPeriod && matchesTab;
         });
 
         filtered.sort((a, b) => {
-            if (idSearch) {
-                const idA = a.identificationNumber.toLowerCase();
-                const idB = b.identificationNumber.toLowerCase();
-                const getRelevance = (id: string) => {
-                    if (id === idSearch) return 2;
-                    if (id.startsWith(idSearch)) return 1;
-                    return 0;
-                };
-                const relA = getRelevance(idA);
-                const relB = getRelevance(idB);
-                if (relA !== relB) return relB - relA;
-            }
-
             const valA = a[sortConfig.key];
             const valB = b[sortConfig.key];
             const strA = String(valA ?? "").toLowerCase();
@@ -98,19 +261,18 @@ export default function PreEnrollmentTable({
         });
 
         return filtered;
-    }, [data, debouncedIdFilter, debouncedNameFilter, periodFilter, activeTab, sortConfig]);
+    }, [data, debouncedSearch, periodFilter, activeTab, sortConfig]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedIdFilter, debouncedNameFilter, periodFilter]);
+    }, [debouncedSearch, periodFilter]);
 
     const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
     const startIndex = (currentPage - 1) * itemsPerPage;
     const paged = filteredData.slice(startIndex, startIndex + itemsPerPage);
 
     const handlePageChange = (page: number) => {
-        if (page < 1 || page > totalPages) return;
-        setCurrentPage(page);
+        setCurrentPage(Math.max(1, Math.min(page, totalPages)));
     };
 
     const handleSort = (key: SortKey) => {
@@ -118,23 +280,6 @@ export default function PreEnrollmentTable({
             key,
             order: prev.key === key && prev.order === "asc" ? "desc" : "asc",
         }));
-    };
-
-    const handleSelectAll = (checked: boolean) => {
-        if (checked) {
-            const allIds = paged.map((s) => s.preEnrollmentId).filter(Boolean) as string[];
-            setSelectedIds(allIds);
-        } else {
-            setSelectedIds([]);
-        }
-    };
-
-    const handleSelectRow = (id: string, checked: boolean) => {
-        if (checked) {
-            setSelectedIds((prev) => [...prev, id]);
-        } else {
-            setSelectedIds((prev) => prev.filter((item) => item !== id));
-        }
     };
 
     const toggleRowExpansion = (id: string) => {
@@ -157,14 +302,8 @@ export default function PreEnrollmentTable({
     };
 
     const clearFilters = () => {
-        setIdFilter("");
-        setNameFilter("");
+        setSearchTerm("");
         setPeriodFilter("");
-    };
-
-    const handleActionClick = (e: React.MouseEvent<HTMLElement>, id: string) => {
-        setAnchorEl(e.currentTarget);
-        setOpenRowId(id);
     };
 
     const SortIndicator = ({ column }: { column: SortKey }) => {
@@ -186,73 +325,89 @@ export default function PreEnrollmentTable({
         );
     };
 
-    if (status === "error") {
+    if (status === "loading" || externalLoading) {
         return (
-            <div className="flex flex-col items-center justify-center py-12 text-red-500 animate-fadeIn">
-                <p className="font-semibold">Error al cargar pre-inscripciones</p>
-                <p className="text-sm">{error?.message || "Por favor, intente de nuevo más tarde."}</p>
+            <div className="table-container">
+                <TableSkeleton columns={6} rows={itemsPerPage} />
             </div>
         );
     }
 
+    if (status === "error") {
+        return (
+            <div className="flex flex-col items-center justify-center py-12 text-red-500 animate-fadeIn">
+                <p className="font-semibold text-red-600 dark:text-red-400">Error al cargar pre-inscripciones</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{error?.message || "Por favor, intente de nuevo más tarde."}</p>
+            </div>
+        );
+    }
+
+    // Get unique periods for the filter dropdown
+    const uniquePeriods = Array.from(new Set(data.map(item => item.period))).sort();
+
     return (
         <div className="table-container">
-            <div className="p-4 border-b border-gray-100 dark:border-white/5 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* Filtro por Cédula */}
-                    <div className="relative">
+            {/* Search and Filter Bar */}
+            <div className="p-4 border-b border-gray-100 dark:border-white/5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                    <div className="relative max-w-xs w-full">
                         <input
                             type="text"
-                            placeholder="Buscar por cédula"
-                            value={idFilter}
-                            onChange={(e) => setIdFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-10 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+                            placeholder="Buscar por cédula o estudiante..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full rounded-lg border border-gray-300 bg-transparent py-2 pl-10 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
                         />
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                strokeWidth={1.5}
+                                stroke="currentColor"
+                                className="icon-md"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                                />
                             </svg>
                         </span>
                     </div>
-
-                    {/* Filtro por Estudiante */}
-                    <div className="relative">
-                        <input
-                            type="text"
-                            placeholder="Buscar por estudiante"
-                            value={nameFilter}
-                            onChange={(e) => setNameFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
-                        />
-                    </div>
-
-                    {/* Filtro por Período */}
-                    <div className="relative">
-                        <input
-                            type="text"
-                            placeholder="Buscar por período"
+                    <div className="relative w-full sm:w-auto">
+                        <select
                             value={periodFilter}
                             onChange={(e) => setPeriodFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
-                        />
+                            className="w-full rounded-lg border border-gray-300 bg-transparent py-2 px-4 pr-10 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white appearance-none"
+                        >
+                            <option value="" className="dark:bg-gray-800">
+                                Seleccione Período
+                            </option>
+                            {uniquePeriods.map(period => (
+                                <option key={period} value={period} className="dark:bg-gray-800">
+                                    {period}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-gray-50 dark:border-white/5">
-                    <div className="flex items-center gap-4">
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                            Mostrando <span className="font-bold text-gray-700 dark:text-white">{filteredData.length}</span> resultados
-                        </div>
-                        {(idFilter || nameFilter || periodFilter) && (
-                            <button
-                                onClick={clearFilters}
-                                className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
-                            >
-                                <RefreshIcon className="icon-xs" />
-                                Limpiar filtros
-                            </button>
-                        )}
-                    </div>
+                <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
+                    {(searchTerm || periodFilter) && (
+                        <button
+                            onClick={clearFilters}
+                            className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
+                        >
+                            <RefreshIcon className="icon-xs" />
+                            Limpiar filtros
+                        </button>
+                    )}
 
                     <div className="flex items-center gap-2">
                         {paged.length > 0 && (
@@ -273,47 +428,15 @@ export default function PreEnrollmentTable({
                                 )}
                             </button>
                         )}
-
-                        {selectedIds.length > 0 && (
-                            <div className="flex items-center gap-2 animate-fadeIn">
-                                <span className="hidden sm:inline text-xs font-medium text-gray-600 dark:text-gray-400 mr-2">
-                                    {selectedIds.length} seleccionados
-                                </span>
-                                {activeTab === "Activas" ? (
-                                    <button
-                                        onClick={() => onBulkDelete?.(selectedIds)}
-                                        className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12"
-                                    >
-                                        <TrashIcon className="icon-sm" />
-                                        Eliminar
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={() => onBulkRestore?.(selectedIds)}
-                                        className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-600 hover:bg-brand-100 dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400/20 transition-colors min-h-12"
-                                    >
-                                        <RefreshIcon className="icon-sm" />
-                                        Restaurar
-                                    </button>
-                                )}
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Vista de Escritorio (Tabla) */}
+            {/* Desktop View (Table) */}
             <div className="hidden md:block max-w-full overflow-x-auto table-scrollbar">
                 <Table className="table-root">
-                    <TableHeader className="table-header-row bg-gray-50 dark:bg-gray-800/50">
+                    <TableHeader className="table-header-row">
                         <TableRow>
-                            <TableCell isHeader className="table-header-cell w-10">
-                                <Checkbox
-                                    checked={paged.length > 0 && selectedIds.length === paged.length}
-                                    onChange={handleSelectAll}
-                                    ariaLabel="Seleccionar todos"
-                                />
-                            </TableCell>
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("identificationNumber")}>
                                 <div className="flex items-center">Cédula <SortIndicator column="identificationNumber" /></div>
                             </TableCell>
@@ -327,54 +450,71 @@ export default function PreEnrollmentTable({
                                 <div className="flex items-center">Matrícula <SortIndicator column="enrollmentCode" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("preEnrollmentDate")}>
-                                <div className="flex items-center">Fecha Preinscripción <SortIndicator column="preEnrollmentDate" /></div>
+                                <div className="flex items-center">Fecha <SortIndicator column="preEnrollmentDate" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell text-right">Acciones</TableCell>
+                            <TableCell isHeader className="table-header-cell text-right">
+                                Acciones
+                            </TableCell>
                         </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
-                        {status === "loading" ? (
-                            Array.from({ length: 5 }).map((_, i) => (
-                                <TableRow key={i}>
-                                    {Array.from({ length: 7 }).map((_, j) => (
-                                        <TableCell key={j}><div className="h-4 bg-gray-100 dark:bg-gray-800 animate-pulse rounded" /></TableCell>
-                                    ))}
-                                </TableRow>
-                            ))
-                        ) : paged.length > 0 ? (
-                            paged.map((s, index) => (
-                                <TableRow
+                        {paged.length > 0 ? (
+                            paged.map((s) => (
+                                <TableRow 
                                     key={s.preEnrollmentId}
-                                    className={`table-row-hover ${index % 2 === 0 ? "bg-white dark:bg-transparent" : "bg-gray-50/50 dark:bg-white/2"} ${selectedIds.includes(s.preEnrollmentId) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
+                                    className={`${highlightedRow === s.preEnrollmentId ? 'bg-gray-50 dark:bg-gray-800' : ''} table-row-hover`}
                                 >
-                                    <TableCell className="table-cell">
-                                        <Checkbox
-                                            checked={selectedIds.includes(s.preEnrollmentId)}
-                                            onChange={(checked) => handleSelectRow(s.preEnrollmentId, checked)}
-                                            ariaLabel={`Seleccionar pre-inscripción de ${s.studentName}`}
-                                        />
-                                    </TableCell>
                                     <TableCell className="table-cell font-medium text-gray-800 dark:text-white/90">
                                         {s.identificationPrefix}-{s.identificationNumber}
                                     </TableCell>
-                                    <TableCell className="table-cell">{s.studentName}</TableCell>
-                                    <TableCell className="table-cell">{s.period}</TableCell>
-                                    <TableCell className="table-cell">{s.enrollmentCode}</TableCell>
-                                    <TableCell className="table-cell">{s.preEnrollmentDate}</TableCell>
+                                    <TableCell className="table-cell text-gray-500 dark:text-gray-400">
+                                        {s.studentName}
+                                    </TableCell>
+                                    <TableCell className="table-cell text-gray-500 dark:text-gray-400">
+                                        {s.period}
+                                    </TableCell>
+                                    <TableCell className="table-cell text-gray-500 dark:text-gray-400">
+                                        {s.enrollmentCode}
+                                    </TableCell>
+                                    <TableCell className="table-cell text-gray-500 dark:text-gray-400">
+                                        {s.preEnrollmentDate}
+                                    </TableCell>
                                     <TableCell className="table-cell text-right">
-                                        <button
-                                            onClick={(e) => handleActionClick(e, s.preEnrollmentId)}
-                                            className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full transition-colors text-gray-500"
-                                        >
-                                            <ThreeDotsIcon className="icon-sm" />
-                                        </button>
+                                        <ActionMenu
+                                            item={s}
+                                            onView={onView ? () => onView(s) : undefined}
+                                            onEdit={onEdit ? () => onEdit(s) : undefined}
+                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s.preEnrollmentId) : undefined}
+                                            onOpen={() => setHighlightedRow(s.preEnrollmentId)}
+                                            onClose={() => setHighlightedRow(null)}
+                                        />
                                     </TableCell>
                                 </TableRow>
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={7} className="py-12 text-center text-gray-500 dark:text-gray-400">
-                                    No se encontraron pre-inscripciones.
+                                <TableCell colSpan={6} className="p-0">
+                                    <EmptyState
+                                        title="No se encontraron pre-inscripciones"
+                                        description={
+                                            searchTerm || periodFilter
+                                                ? "No se encontraron pre-inscripciones con los filtros aplicados. Intenta con otros términos."
+                                                : "No hay pre-inscripciones registradas en el sistema actualmente."
+                                        }
+                                        action={
+                                            searchTerm || periodFilter ? (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={clearFilters}
+                                                    className="flex items-center gap-2"
+                                                >
+                                                    <RefreshIcon className="icon-xs" />
+                                                    Limpiar filtros
+                                                </Button>
+                                            ) : undefined
+                                        }
+                                    />
                                 </TableCell>
                             </TableRow>
                         )}
@@ -382,85 +522,107 @@ export default function PreEnrollmentTable({
                 </Table>
             </div>
 
-            {/* Vista Móvil (Cards) */}
+            {/* Mobile View (Card format) */}
             <div className="md:hidden divide-y divide-gray-100 dark:divide-white/5">
                 {paged.length > 0 ? (
                     paged.map((s, index) => {
-                        const rowId = s.preEnrollmentId ?? `idx-${index}`;
-                        const isExpanded = expandedRows.has(rowId);
+                        const preEnrollmentId = s.preEnrollmentId || `idx-${index}`;
+                        const isExpanded = expandedRows.has(preEnrollmentId);
+
                         return (
-                            <div key={rowId} className="relative p-4 bg-white dark:bg-transparent transition-colors overflow-hidden">
+                            <div key={preEnrollmentId} className="relative p-4 bg-white dark:bg-transparent transition-colors overflow-hidden">
                                 <div className="flex flex-col items-center gap-2">
                                     <div className="flex items-center justify-between w-full">
                                         <div className="flex-1 text-center">
-                                            <h3 className="text-sm font-bold text-gray-800 dark:text-white/90 leading-tight truncate px-8">
+                                            <div className="flex justify-center mb-2">
+                                                <Badge
+                                                    size="sm"
+                                                    color={s.status ? "success" : "error"}
+                                                    variant="light"
+                                                    shape="rounded"
+                                                    className="font-semibold"
+                                                >
+                                                    {s.status ? "Activa" : "Inactiva"}
+                                                </Badge>
+                                            </div>
+                                            <h3 className="text-sm font-bold text-gray-800 dark:text-white/90 leading-tight truncate px-12">
                                                 {s.studentName}
                                             </h3>
-                                            <p className="text-xs text-gray-500 mt-1 truncate">{s.identificationPrefix}-{s.identificationNumber}</p>
+                                            <div className="flex flex-col items-center gap-1 mt-2">
+                                                <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                    <span className="font-medium uppercase tracking-wider opacity-60">Cédula:</span> {s.identificationPrefix}-{s.identificationNumber}
+                                                </div>
+                                                <div className="flex items-center justify-center gap-4">
+                                                    <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                        <span className="block font-medium uppercase tracking-wider opacity-60">Período</span>
+                                                        {s.period}
+                                                    </div>
+                                                    <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                        <span className="block font-medium uppercase tracking-wider opacity-60">Fecha</span>
+                                                        {s.preEnrollmentDate}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <button
-                                            onClick={() => toggleRowExpansion(rowId)}
-                                            className="absolute right-2 top-2 p-2 text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
-                                            style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
-                                        >
-                                            <ChevronDownIcon className="w-5 h-5" />
-                                        </button>
+                                        <div className="absolute right-2 top-2">
+                                            <button
+                                                onClick={() => toggleRowExpansion(preEnrollmentId)}
+                                                className="p-2 text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
+                                                style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
+                                                aria-label={isExpanded ? "Contraer" : "Expandir"}
+                                            >
+                                                <ChevronDownIcon className="icon-sm" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
                                 {isExpanded && (
-                                    <div className="mt-4 space-y-6 animate-fadeIn border-t border-gray-50 dark:border-white/5 pt-6">
-                                        <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
-                                            <div className="flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Período</p>
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{s.period}</p>
+                                    <div className="mt-4 pt-4 border-t border-gray-50 dark:border-white/5 animate-fadeIn">
+                                        <div className="space-y-6">
+                                            <div className="bg-gray-50 dark:bg-white/5 p-3 rounded-xl">
+                                                <p className="text-[9px] text-gray-400 uppercase font-bold mb-1 text-center">Código de Matrícula</p>
+                                                <p className="text-xs font-bold dark:text-gray-200 text-center">{s.enrollmentCode}</p>
                                             </div>
-                                            <div className="flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Matrícula</p>
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{s.enrollmentCode}</p>
-                                            </div>
-                                            <div className="col-span-2 flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Fecha</p>
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{s.preEnrollmentDate}</p>
-                                            </div>
-                                        </div>
 
-                                        <div className="flex flex-col gap-3 pt-2">
-                                            {onView && (
-                                                <button
-                                                    onClick={() => onView(s)}
-                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
-                                                >
-                                                    <EyeIcon className="w-4 h-4" /> Ver
-                                                </button>
-                                            )}
-                                            {onEdit && activeTab === "Activas" && (
-                                                <button
-                                                    onClick={() => onEdit(s)}
-                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
-                                                >
-                                                    <EditIcon className="w-4 h-4" /> Editar
-                                                </button>
-                                            )}
-                                            {onToggleStatus && (
-                                                <button
-                                                    onClick={() => onToggleStatus(s.preEnrollmentId)}
-                                                    className={`w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold rounded-xl min-h-12 active:scale-95 transition-all border border-transparent ${activeTab === "Inactivas"
-                                                        ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-500/20"
-                                                        : "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:border-red-200 dark:hover:border-red-500/20"
+                                            <div className="flex flex-col gap-3 pt-2">
+                                                {onView && (
+                                                    <button
+                                                        onClick={() => onView(s)}
+                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                                                    >
+                                                        <EyeIcon className="icon-sm" /> Ver
+                                                    </button>
+                                                )}
+                                                {onEdit && (
+                                                    <button
+                                                        onClick={() => onEdit(s)}
+                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                                                    >
+                                                        <EditIcon className="icon-sm" /> Editar
+                                                    </button>
+                                                )}
+                                                {onToggleStatus && (
+                                                    <button
+                                                        onClick={() => onToggleStatus(s.preEnrollmentId)}
+                                                        className={`w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold rounded-xl min-h-12 active:scale-95 transition-all border border-transparent ${
+                                                            s.status 
+                                                                ? "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:border-red-200 dark:hover:border-red-500/20" 
+                                                                : "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:border-blue-200 dark:hover:border-blue-500/20"
                                                         }`}
-                                                >
-                                                    {activeTab === "Inactivas" ? (
-                                                        <>
-                                                            <RefreshIcon className="w-4 h-4" /> Restaurar
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <TrashIcon className="w-4 h-4" /> Eliminar
-                                                        </>
-                                                    )}
-                                                </button>
-                                            )}
+                                                    >
+                                                        {s.status ? (
+                                                            <>
+                                                                <TrashIcon className="icon-sm" /> Desactivar
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <RefreshIcon className="icon-sm" /> Activar
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -468,91 +630,43 @@ export default function PreEnrollmentTable({
                         );
                     })
                 ) : (
-                    <div className="py-20 text-center animate-fadeIn">
-                        <div className="inline-flex mb-4 rounded-full bg-gray-50 p-4 dark:bg-white/5">
-                            <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                        </div>
-                        <h3 className="text-sm font-bold text-gray-800 dark:text-white">No se encontraron pre-inscripciones</h3>
-                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                        {(idFilter || nameFilter || periodFilter) && (
-                            <button
-                                onClick={clearFilters}
-                                className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
-                            >
-                                Ver todas las pre-inscripciones
-                            </button>
-                        )}
-                    </div>
+                    <EmptyState
+                         title="No se encontraron pre-inscripciones"
+                         description={
+                             searchTerm || periodFilter
+                                 ? "No se encontraron pre-inscripciones con los filtros aplicados."
+                                 : "No hay pre-inscripciones para mostrar."
+                         }
+                         action={
+                             searchTerm || periodFilter ? (
+                                 <Button
+                                     variant="outline"
+                                     size="sm"
+                                     onClick={clearFilters}
+                                     className="flex items-center gap-2"
+                                 >
+                                     <RefreshIcon className="icon-xs" />
+                                     Limpiar filtros
+                                 </Button>
+                             ) : undefined
+                         }
+                    />
                 )}
             </div>
 
-            {/* Paginación */}
-            <div className="p-4 border-t border-gray-100 dark:border-white/5">
-                <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    totalItems={filteredData.length}
-                    itemsPerPage={itemsPerPage}
-                    onPageChange={handlePageChange}
-                    onItemsPerPageChange={(newItemsPerPage) => {
-                        setItemsPerPage(newItemsPerPage);
-                        setCurrentPage(1);
-                    }}
-                    itemsPerPageOptions={[5, 10, 25]}
-                />
-            </div>
-
-            {/* Dropdown de Acciones */}
-            <DropdownPortal
-                isOpen={!!openRowId}
-                onClose={() => setOpenRowId(null)}
-                anchorRef={{ current: anchorEl as HTMLElement }}
-            >
-                <div className="w-56 py-1 bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-100 dark:border-white/5">
-                    <DropdownItem
-                        onClick={() => {
-                            const item = data.find(i => i.preEnrollmentId === openRowId);
-                            if (item) onView?.(item);
-                            setOpenRowId(null);
-                        }}
-                    >
-                        <EyeIcon className="icon-sm mr-3 text-gray-400" />
-                        <span className="font-medium">Ver detalles</span>
-                    </DropdownItem>
-                    <DropdownItem
-                        onClick={() => {
-                            const item = data.find(i => i.preEnrollmentId === openRowId);
-                            if (item) onEdit?.(item);
-                            setOpenRowId(null);
-                        }}
-                    >
-                        <EditIcon className="icon-sm mr-3 text-gray-400" />
-                        <span className="font-medium">Editar registro</span>
-                    </DropdownItem>
-                    <div className="my-1 border-t border-gray-50 dark:border-white/5" />
-                    <DropdownItem
-                        onClick={() => {
-                            if (openRowId) onToggleStatus?.(openRowId.toString());
-                            setOpenRowId(null);
-                        }}
-                        className={activeTab === "Inactivas" ? "text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-400/10" : "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10"}
-                    >
-                        {activeTab === "Inactivas" ? (
-                            <>
-                                <RefreshIcon className="icon-sm mr-3" />
-                                <span className="font-medium">Restaurar registro</span>
-                            </>
-                        ) : (
-                            <>
-                                <TrashIcon className="icon-sm mr-3" />
-                                <span className="font-medium">Desactivar registro</span>
-                            </>
-                        )}
-                    </DropdownItem>
-                </div>
-            </DropdownPortal>
+            {/* Pagination Controls */}
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredData.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={handlePageChange}
+                onItemsPerPageChange={(val) => {
+                    setItemsPerPage(val);
+                    setCurrentPage(1);
+                }}
+                itemsPerPageOptions={[5, 10, 25]}
+            />
         </div>
     );
 }

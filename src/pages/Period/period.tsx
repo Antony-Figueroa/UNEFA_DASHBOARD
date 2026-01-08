@@ -6,15 +6,15 @@
  */
 
 import { useState, useMemo, useEffect } from "react";
-import { useTheme } from "../../context/theme";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
 import PeriodTable from "../../features/periods/components/PeriodTable";
-import { PlusCircleIcon, XIcon, CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon } from "../../icons/actions";
+import { PlusCircleIcon } from "../../icons/actions";
 import PeriodModal from "../../features/periods/components/PeriodModal";
 import Alert from "../../components/ui/alert/Alert";
-import { Modal, ModalBody, ModalFooter } from "../../components/ui/modal";
+import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
+import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
@@ -29,11 +29,10 @@ type ConfirmationInfo = {
     message: string;
     onConfirm: () => void;
     confirmText: string;
-    variant: 'success' | 'error' | 'warning' | 'info';
+    variant: DialogVariant;
 };
 
 export default function Period() {
-    const { colorMode } = useTheme();
     const [pageLoading, setPageLoading] = useState(true);
 
     useEffect(() => {
@@ -95,40 +94,17 @@ export default function Period() {
         setIsViewModalOpen(false);
     };
 
-    const confirmationStyles = {
-        error: {
-            iconBg: "bg-red-100 dark:bg-red-900/30",
-            icon: <XIcon className="h-6 w-6 text-red-600 dark:text-red-500" />,
-            button: "bg-red-600 hover:bg-red-700 dark:hover:bg-red-500",
-        },
-        success: {
-            iconBg: "bg-green-100 dark:bg-green-900/30",
-            icon: <CheckCircleIcon className="h-6 w-6 text-green-600 dark:text-green-500" />,
-            button: "bg-green-500 hover:bg-green-600 dark:hover:bg-green-400",
-        },
-        warning: {
-            iconBg: "bg-yellow-100 dark:bg-yellow-900/30",
-            icon: <ExclamationTriangleIcon className="h-6 w-6 text-yellow-500 dark:text-yellow-400" />,
-            button: "bg-yellow-500 hover:bg-yellow-600 dark:hover:bg-yellow-400",
-        },
-        info: {
-            iconBg: "bg-blue-100 dark:bg-blue-900/30",
-            icon: <InformationCircleIcon className="h-6 w-6 text-blue-600 dark:text-blue-500" />,
-            button: "bg-blue-500 hover:bg-blue-600 dark:hover:bg-blue-400",
-        },
-    };
-
     // --- Lógica de Negocio ---
     const handleSave = (periodoData: Omit<Periodo, "periodId" | "creationDate"> | Periodo) => {
         const isEditing = 'periodId' in periodoData;
         setConfirmation({
             isOpen: true,
-            title: isEditing ? 'Confirmar Modificación' : 'Confirmar Creación',
-            message: `¿Estás seguro de que deseas ${isEditing ? 'guardar los cambios en' : 'crear'} este periodo?`,
+            title: isEditing ? 'Confirmar Modificación' : 'Confirmar Registro',
+            message: `¿Estás seguro de que deseas ${isEditing ? 'guardar los cambios en' : 'registrar'} este periodo?`,
             onConfirm: async () => {
                 try {
                     if (isEditing) {
-                        await editPeriod(periodoData);
+                        await editPeriod(periodoData as Periodo);
                     } else {
                         await addPeriod(periodoData);
                     }
@@ -138,7 +114,7 @@ export default function Period() {
                     // El error ya se maneja en el hook
                 }
             },
-            confirmText: 'Confirmar',
+            confirmText: isEditing ? 'Guardar' : 'Registrar',
             variant: 'info'
         });
     };
@@ -172,7 +148,7 @@ export default function Period() {
                 setConfirmation(null);
             },
             confirmText: 'Restaurar',
-            variant: 'info'
+            variant: 'success'
         });
     };
 
@@ -183,7 +159,7 @@ export default function Period() {
         setConfirmation({
             isOpen: true,
             title: 'Confirmar Eliminación',
-            message: `¿Estás seguro de que deseas enviar el periodo "${periodoObject.description}" a la Inactivo?`,
+            message: `¿Estás seguro de que deseas eliminar el periodo "${periodoObject.description}"?`,
             onConfirm: async () => {
                 await removePeriod(periodoObject);
                 setConfirmation(null);
@@ -321,35 +297,17 @@ export default function Period() {
                     onClose={handleCloseViewModal}
                     periodo={viewingPeriod}
                 />
-                {confirmation?.isOpen && (
-                    <Modal isOpen={confirmation.isOpen} onClose={() => !loadingAction && setConfirmation(null)} className={`max-w-sm ${colorMode === 'dark' ? 'dark' : ''}`}>
-                        <ModalBody className="text-center pt-8">
-                            <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${confirmationStyles[confirmation.variant].iconBg}`}>
-                                {confirmationStyles[confirmation.variant].icon}
-                            </div>
-                            <h3 className="mb-2 text-xl font-bold text-gray-800 dark:text-white">{confirmation.title}</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{confirmation.message}</p>
-                        </ModalBody>
-                        <ModalFooter className="justify-center border-t-0 pt-0 pb-8">
-                            <Button
-                                variant="outline"
-                                onClick={() => setConfirmation(null)}
-                                disabled={loadingAction}
-                                className="w-full sm:w-auto"
-                            >
-                                Cancelar
-                            </Button>
-                            <Button
-                                variant={confirmation.variant === 'error' ? 'error' : 'primary'}
-                                onClick={confirmation.onConfirm}
-                                loading={loadingAction}
-                                className="w-full sm:w-auto"
-                            >
-                                {confirmation.confirmText}
-                            </Button>
-                        </ModalFooter>
-                    </Modal>
-                )}
+                <UnifiedDialog
+                     isOpen={confirmation?.isOpen || false}
+                     onClose={() => !loadingAction && setConfirmation(null)}
+                     title={confirmation?.title || ""}
+                     message={confirmation?.message || ""}
+                     variant={confirmation?.variant || "info"}
+                     confirmLabel={confirmation?.confirmText || "Confirmar"}
+                     cancelLabel="Cancelar"
+                     onConfirm={confirmation?.onConfirm}
+                     isLoading={loadingAction}
+                 />
             </>
         </ErrorBoundary>
     );

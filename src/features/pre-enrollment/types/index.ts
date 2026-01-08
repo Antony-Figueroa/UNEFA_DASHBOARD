@@ -12,6 +12,7 @@ export interface PreEnrollment {
   
   // Datos del Estudiante
   studentName: string;
+  phone: string;
   
   // Datos de la Pre-Inscripción
   period: string; // ej: 2026 - II

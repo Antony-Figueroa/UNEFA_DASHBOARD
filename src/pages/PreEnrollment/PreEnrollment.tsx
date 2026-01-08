@@ -4,15 +4,15 @@
  */
 
 import { useMemo, useState, useEffect } from "react";
-import { useTheme } from "../../context/theme";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
-import { Modal, ModalBody, ModalFooter } from "../../components/ui/modal";
+import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
+import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
-import { PlusCircleIcon, XIcon, CheckCircleIcon, ExclamationTriangleIcon, InformationCircleIcon } from "../../icons/actions";
+import { PlusCircleIcon } from "../../icons/actions";
 import { InfoIcon } from "../../icons";
 
 import PreEnrollmentTable from "../../features/pre-enrollment/components/PreEnrollmentTable";
@@ -28,7 +28,6 @@ const formatPreEnrollmentToRow = (p: PreEnrollment): PreEnrollmentRowData => ({
 });
 
 export default function PreEnrollmentPage() {
-    const { colorMode } = useTheme();
     const [pageLoading, setPageLoading] = useState(true);
 
     useEffect(() => {
@@ -45,8 +44,6 @@ export default function PreEnrollmentPage() {
         addPreEnrollment,
         editPreEnrollment,
         toggleStatus,
-        bulkRemove,
-        bulkRestore,
     } = usePreEnrollment();
 
     const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
@@ -60,30 +57,7 @@ export default function PreEnrollmentPage() {
         message: string;
         onConfirm: () => void;
         confirmText: string;
-        variant: "success" | "error" | "warning" | "info";
-    };
-
-    const confirmationStyles = {
-        error: {
-            iconBg: "bg-red-100 dark:bg-red-900/30",
-            icon: <XIcon className="h-6 w-6 text-red-600 dark:text-red-500" />,
-            button: "bg-red-600 hover:bg-red-700 dark:hover:bg-red-500",
-        },
-        success: {
-            iconBg: "bg-green-100 dark:bg-green-900/30",
-            icon: <CheckCircleIcon className="h-6 w-6 text-green-600 dark:text-green-500" />,
-            button: "bg-green-500 hover:bg-green-600 dark:hover:bg-green-400",
-        },
-        warning: {
-            iconBg: "bg-yellow-100 dark:bg-yellow-900/30",
-            icon: <ExclamationTriangleIcon className="h-6 w-6 text-yellow-500 dark:text-yellow-400" />,
-            button: "bg-yellow-500 hover:bg-yellow-600 dark:hover:bg-yellow-400",
-        },
-        info: {
-            iconBg: "bg-blue-100 dark:bg-blue-900/30",
-            icon: <InformationCircleIcon className="h-6 w-6 text-blue-600 dark:text-blue-500" />,
-            button: "bg-blue-500 hover:bg-blue-600 dark:hover:bg-blue-400",
-        },
+        variant: DialogVariant;
     };
 
     const [confirmation, setConfirmation] = useState<ConfirmationInfo | null>(null);
@@ -108,7 +82,7 @@ export default function PreEnrollmentPage() {
         setConfirmation({
             isOpen: true,
             title: isEditing ? "Confirmar Modificación" : "Confirmar Registro",
-            message: `¿Deseas ${isEditing ? "guardar los cambios de" : "registrar"} esta pre-inscripción?`,
+            message: `¿Estás seguro de que deseas ${isEditing ? "guardar los cambios de" : "registrar"} esta pre-inscripción?`,
             onConfirm: async () => {
                 try {
                     if (isEditing && editingEntry) {
@@ -123,7 +97,7 @@ export default function PreEnrollmentPage() {
                     setConfirmation(null);
                 }
             },
-            confirmText: "Confirmar",
+            confirmText: isEditing ? "Guardar" : "Registrar",
             variant: "info",
         });
     };
@@ -134,10 +108,8 @@ export default function PreEnrollmentPage() {
         const goingInactive = original.status === true;
         setConfirmation({
             isOpen: true,
-            title: goingInactive ? "Desactivar Pre-Inscripción" : "Restaurar Pre-Inscripción",
-            message: goingInactive
-                ? `¿Deseas enviar la pre-inscripción de "${original.studentName}" a Inactivos?`
-                : `¿Deseas restaurar la pre-inscripción de "${original.studentName}"?`,
+            title: goingInactive ? "Confirmar Desactivación" : "Confirmar Restauración",
+            message: `¿Estás seguro de que deseas ${goingInactive ? "desactivar" : "restaurar"} la pre-inscripción de "${original.studentName}"?`,
             onConfirm: async () => {
                 try {
                     await toggleStatus(original);
@@ -145,41 +117,10 @@ export default function PreEnrollmentPage() {
                 finally { setConfirmation(null); }
             },
             confirmText: goingInactive ? "Desactivar" : "Restaurar",
-            variant: goingInactive ? "warning" : "info",
+            variant: goingInactive ? "warning" : "success",
         });
     };
 
-    const handleBulkDelete = (ids: string[]) => {
-        setConfirmation({
-            isOpen: true,
-            title: "Desactivación Masiva",
-            message: `¿Estás seguro de desactivar ${ids.length} pre-inscripciones seleccionadas?`,
-            onConfirm: async () => {
-                try {
-                    await bulkRemove(ids);
-                } catch (e) { console.error(e); }
-                finally { setConfirmation(null); }
-            },
-            confirmText: "Desactivar seleccionadas",
-            variant: "error",
-        });
-    };
-
-    const handleBulkRestore = (ids: string[]) => {
-        setConfirmation({
-            isOpen: true,
-            title: "Restauración Masiva",
-            message: `¿Deseas restaurar ${ids.length} pre-inscripciones seleccionadas?`,
-            onConfirm: async () => {
-                try {
-                    await bulkRestore(ids);
-                } catch (e) { console.error(e); }
-                finally { setConfirmation(null); }
-            },
-            confirmText: "Restaurar seleccionadas",
-            variant: "info",
-        });
-    };
 
     return (
         <>
@@ -249,9 +190,6 @@ export default function PreEnrollmentPage() {
                                 onEdit={handleEdit}
                                 onToggleStatus={handleToggleStatus}
                                 onView={setViewItem}
-                                onBulkDelete={handleBulkDelete}
-                                onBulkRestore={handleBulkRestore}
-                                inactiveMode={activeTab === "Inactivas"}
                                 loading={loadingAction}
                             />
                         </SkeletonLoader>
@@ -272,35 +210,16 @@ export default function PreEnrollmentPage() {
                         item={viewItem}
                     />
 
-                    <Modal isOpen={!!confirmation} onClose={() => !loadingAction && setConfirmation(null)} className={`max-w-md ${colorMode === "dark" ? "dark" : ""}`}>
-                        {confirmation && (
-                            <>
-                                <ModalBody className="text-center pt-8">
-                                    <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${confirmationStyles[confirmation.variant].iconBg}`}>
-                                        {confirmationStyles[confirmation.variant].icon}
-                                    </div>
-                                    <h3 className="mb-2 text-lg font-bold text-gray-800 dark:text-white/90">{confirmation.title}</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">{confirmation.message}</p>
-                                </ModalBody>
-                                <ModalFooter className="justify-center border-t-0 pt-0 pb-8">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setConfirmation(null)}
-                                        disabled={loadingAction}
-                                    >
-                                        Cancelar
-                                    </Button>
-                                    <Button
-                                        variant={confirmation.variant === "error" ? "error" : "primary"}
-                                        onClick={confirmation.onConfirm}
-                                        loading={loadingAction}
-                                    >
-                                        {confirmation.confirmText}
-                                    </Button>
-                                </ModalFooter>
-                            </>
-                        )}
-                    </Modal>
+                    <UnifiedDialog
+                        isOpen={!!confirmation}
+                        onClose={() => !loadingAction && setConfirmation(null)}
+                        onConfirm={confirmation?.onConfirm || (() => { })}
+                        title={confirmation?.title || ""}
+                        message={confirmation?.message || ""}
+                        confirmLabel={confirmation?.confirmText || "Confirmar"}
+                        variant={confirmation?.variant || "info"}
+                        isLoading={loadingAction}
+                    />
                 </div>
             </div>
         </>

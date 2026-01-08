@@ -12,6 +12,8 @@ describe('PeriodTable acciones', () => {
         description: '2025-I',
         startDate: '01/01/2025',
         endDate: '04/23/2025',
+        rawStartDate: new Date('2025-01-01'),
+        rawEndDate: new Date('2025-04-23'),
         periodStatus: 1,
         status: true,
         progress: null,

@@ -8,6 +8,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
+import TextArea from "../../../components/form/input/TextArea";
 import Select from "../../../components/form/Select";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Institution } from "../types";
@@ -160,11 +161,12 @@ export default function InstitutionModal({
           </div>
           <div className="md:col-span-2">
             <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Dirección Fiscal *</label>
-            <Input 
+            <TextArea 
               placeholder="Dirección completa" 
               {...register("fiscalAddress")} 
               error={!!errors.fiscalAddress} 
               hint={isSubmitted ? errors.fiscalAddress?.message : undefined} 
+              rows={2}
             />
           </div>
           <div>

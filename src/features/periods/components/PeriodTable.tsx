@@ -298,7 +298,7 @@ const PeriodTable = ({
     const [itemsPerPage, setItemsPerPage] = useState(5);
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; order: "asc" | "desc" }>({
         key: "startDate",
-        order: "desc",
+        order: "asc",
     });
 
     // Check if data is valid for rendering
@@ -321,40 +321,23 @@ const PeriodTable = ({
         });
 
         filtered.sort((a, b) => {
-            const valA = a[sortConfig.key];
-            const valB = b[sortConfig.key];
+            let valA = a[sortConfig.key];
+            let valB = b[sortConfig.key];
+
+            // Usar fechas originales para ordenamiento cronológico preciso
+            if (sortConfig.key === "startDate") {
+                valA = a.rawStartDate.getTime();
+                valB = b.rawStartDate.getTime();
+            } else if (sortConfig.key === "endDate") {
+                valA = a.rawEndDate.getTime();
+                valB = b.rawEndDate.getTime();
+            }
 
             if (valA === undefined || valB === undefined || valA === null || valB === null) return 0;
 
-            // Manejo de fechas para ordenamiento correcto
-            if (sortConfig.key === "startDate" || sortConfig.key === "endDate") {
-                // En PeriodoRowData, estas son strings formateados. 
-                // Intentamos parsear para un ordenamiento cronológico.
-                // Si fallan, caemos al ordenamiento alfabético.
-                const dateA = new Date(valA as string);
-                const dateB = new Date(valB as string);
-                
-                if (!isNaN(dateA.getTime()) && !isNaN(dateB.getTime())) {
-                    return sortConfig.order === "asc" 
-                        ? dateA.getTime() - dateB.getTime() 
-                        : dateB.getTime() - dateA.getTime();
-                }
-            }
-
-            // Fallback para otros tipos u objetos Date reales si llegaran a existir
-            if ((valA as unknown) instanceof Date && (valB as unknown) instanceof Date) {
-                const dA = valA as unknown as Date;
-                const dB = valB as unknown as Date;
-                return sortConfig.order === "asc" 
-                    ? dA.getTime() - dB.getTime() 
-                    : dB.getTime() - dA.getTime();
-            }
-
-            const strA = String(valA).toLowerCase();
-            const strB = String(valB).toLowerCase();
-
-            if (strA < strB) return sortConfig.order === "asc" ? -1 : 1;
-            if (strA > strB) return sortConfig.order === "asc" ? 1 : -1;
+            // Comparación genérica (funciona para números y strings)
+            if (valA < valB) return sortConfig.order === "asc" ? -1 : 1;
+            if (valA > valB) return sortConfig.order === "asc" ? 1 : -1;
             return 0;
         });
 

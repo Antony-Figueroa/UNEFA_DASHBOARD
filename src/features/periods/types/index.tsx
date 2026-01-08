@@ -17,6 +17,8 @@ export interface Periodo {
 export interface PeriodoRowData extends Omit<Periodo, 'startDate' | 'endDate' | 'creationDate'> {
     startDate: string; // Formatted
     endDate: string;   // Formatted
+    rawStartDate: Date; // For sorting
+    rawEndDate: Date;   // For sorting
     progress: number | null;
     daysPassed?: number;
     daysRemaining?: number;

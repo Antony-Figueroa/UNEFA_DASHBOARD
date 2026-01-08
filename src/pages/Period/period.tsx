@@ -193,6 +193,8 @@ export default function Period() {
                 ...p,
                 startDate: p.startDate.toLocaleDateString(),
                 endDate: p.endDate.toLocaleDateString(),
+                rawStartDate: p.startDate,
+                rawEndDate: p.endDate,
                 progress: progress,
                 daysPassed: Math.max(0, daysPassed),
                 daysRemaining: Math.max(0, daysRemaining),
@@ -215,11 +217,11 @@ export default function Period() {
         >
             <>
                 <PageMeta
-                    title="Gestión de Periodos"
+                    title="Periodos"
                     description="Administración de periodos académicos"
                 />
                 <SkeletonLoader isLoading={pageLoading} skeleton={<BreadcrumbSkeleton />} id="periods-breadcrumb">
-                    <PageBreadcrumb pageTitle="Gestión de Períodos" />
+                    <PageBreadcrumb pageTitle="Períodos" />
                 </SkeletonLoader>
 
                 {loadingAction && <FullScreenLoader label="Procesando..." />}

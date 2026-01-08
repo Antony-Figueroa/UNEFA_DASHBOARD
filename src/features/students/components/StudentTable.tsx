@@ -32,7 +32,7 @@ interface StudentTableProps {
     loading?: boolean;
 }
 
-type SortKey = "identificationNumber" | "fullNames" | "email" | "careerName" | "enrollmentDate";
+type SortKey = "identificationNumber" | "firstName" | "lastName" | "email" | "careerName" | "enrollmentDate";
 type SortOrder = "asc" | "desc";
 
 export default function StudentTable({
@@ -62,7 +62,7 @@ export default function StudentTable({
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; order: SortOrder }>({
-        key: "fullNames",
+        key: "lastName",
         order: "asc",
     });
 
@@ -195,17 +195,17 @@ export default function StudentTable({
     const SortIndicator = ({ column }: { column: SortKey }) => {
         if (sortConfig.key !== column) {
             return (
-                <svg className="ml-1 icon-xs text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="ml-1 icon-sm text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
                 </svg>
             );
         }
         return sortConfig.order === "asc" ? (
-            <svg className="ml-1 icon-xs text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="ml-1 icon-sm text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
             </svg>
         ) : (
-            <svg className="ml-1 icon-xs text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="ml-1 icon-sm text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
         );
@@ -367,8 +367,11 @@ export default function StudentTable({
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("identificationNumber")}>
                                 <div className="flex items-center">Cédula <SortIndicator column="identificationNumber" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("fullNames")}>
-                                <div className="flex items-center">Nombres y Apellidos <SortIndicator column="fullNames" /></div>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("firstName")}>
+                                <div className="flex items-center">Nombres <SortIndicator column="firstName" /></div>
+                            </TableCell>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("lastName")}>
+                                <div className="flex items-center">Apellidos <SortIndicator column="lastName" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell">Sexo</TableCell>
                             <TableCell isHeader className="table-header-cell">Teléfono</TableCell>
@@ -394,7 +397,12 @@ export default function StudentTable({
                                     <TableCell className="table-cell font-medium text-gray-800 dark:text-white/90">
                                         {s.identificationPrefix}-{s.identificationNumber}
                                     </TableCell>
-                                    <TableCell className="table-cell text-gray-600 dark:text-gray-400 font-semibold">{s.fullNames}</TableCell>
+                                    <TableCell className="table-cell text-gray-600 dark:text-gray-400 font-semibold uppercase">
+                                        {s.firstName} {s.middleName}
+                                    </TableCell>
+                                    <TableCell className="table-cell text-gray-600 dark:text-gray-400 font-semibold uppercase">
+                                        {s.lastName} {s.secondLastName}
+                                    </TableCell>
                                     <TableCell className="table-cell text-gray-500 dark:text-gray-400">{s.sex}</TableCell>
                                     <TableCell className="table-cell text-gray-500 dark:text-gray-400 whitespace-nowrap">{s.phone}</TableCell>
                                     <TableCell className="table-cell text-gray-500 dark:text-gray-400">{s.email}</TableCell>
@@ -470,7 +478,7 @@ export default function StudentTable({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell className="table-cell py-24 text-center" colSpan={8}>
+                                <TableCell className="table-cell py-24 text-center" colSpan={9}>
                                     <div className="flex flex-col items-center justify-center animate-fadeIn">
                                         <div className="mb-4 rounded-full bg-gray-50 p-4 dark:bg-white/5">
                                             <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -106,9 +106,16 @@ export const usePreEnrollment = () => {
     setLoadingAction(false);
 
     addToast({
-      variant: "info",
+      variant: updated.status ? "success" : "warning",
       title: updated.status ? "Pre-Inscripción Restaurada" : "Pre-Inscripción Desactivada",
-      message: <p>La pre-inscripción de <strong>{item.studentName}</strong> ha sido {updated.status ? 'restaurada' : 'enviada a inactivos'}.</p>,
+      message: (
+        <p>
+          La pre-inscripción de <strong>{item.studentName}</strong> ahora está{" "}
+          <span className={`font-bold ${updated.status ? "text-success-600" : "text-warning-600"}`}>
+            {updated.status ? "ACTIVA" : "INACTIVA"}
+          </span>.
+        </p>
+      ),
     });
   };
 

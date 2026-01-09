@@ -312,7 +312,7 @@ export default function PreEnrollmentModal({
                 </div>
               </div>
               {isSubmitted && errors.identificationNumber && (
-                <p className="mt-1 text-xs text-red-500">{errors.identificationNumber.message}</p>
+                <p className="mt-1 text-xs text-error-500">{errors.identificationNumber.message}</p>
               )}
             </div>
 
@@ -369,15 +369,15 @@ export default function PreEnrollmentModal({
               />
               {periods.length > 0 && (
                 <p className="mt-1.5 text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                  <InfoIcon className="w-3 h-3 text-blue-500" />
+                  <InfoIcon className="w-3 h-3 text-blue-light-500" />
                   Vigentes o próximos.
                 </p>
               )}
               {isSubmitted && errors.period && (
-                <p className="mt-1 text-xs text-red-500">{errors.period.message}</p>
+                <p className="mt-1 text-xs text-error-500">{errors.period.message}</p>
               )}
               {periods.length === 0 && !isLoadingPeriods && (
-                <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                <p className="mt-1 text-xs text-warning-600 dark:text-warning-400">
                   No hay períodos disponibles.
                 </p>
               )}

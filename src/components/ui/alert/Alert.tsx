@@ -28,22 +28,22 @@ const Alert: React.FC<AlertProps> = ({
     success: {
       container:
         "border-success-500 bg-success-50 dark:border-success-500/30 dark:bg-success-500/15",
-      icon: "text-success-500",
+      icon: "text-success-600 dark:text-success-400",
     },
     error: {
       container:
         "border-error-500 bg-error-50 dark:border-error-500/30 dark:bg-error-500/15",
-      icon: "text-error-500",
+      icon: "text-error-600 dark:text-error-400",
     },
     warning: {
       container:
         "border-warning-500 bg-warning-50 dark:border-warning-500/30 dark:bg-warning-500/15",
-      icon: "text-warning-500",
+      icon: "text-warning-600 dark:text-warning-400",
     },
     info: {
       container:
         "border-blue-light-500 bg-blue-light-50 dark:border-blue-light-500/30 dark:bg-blue-light-500/15",
-      icon: "text-blue-light-500",
+      icon: "text-blue-light-600 dark:text-blue-light-400",
     },
   };
 
@@ -77,7 +77,6 @@ const Alert: React.FC<AlertProps> = ({
           fillRule="evenodd"
           clipRule="evenodd"
           d="M20.3499 12.0004C20.3499 16.612 16.6115 20.3504 11.9999 20.3504C7.38832 20.3504 3.6499 16.612 3.6499 12.0004C3.6499 7.38881 7.38833 3.65039 11.9999 3.65039C16.6115 3.65039 20.3499 7.38881 20.3499 12.0004ZM11.9999 22.1504C17.6056 22.1504 22.1499 17.6061 22.1499 12.0004C22.1499 6.3947 17.6056 1.85039 11.9999 1.85039C6.39421 1.85039 1.8499 6.3947 1.8499 12.0004C1.8499 17.6061 6.39421 22.1504 11.9999 22.1504ZM13.0008 16.4753C13.0008 15.923 12.5531 15.4753 12.0008 15.4753L11.9998 15.4753C11.4475 15.4753 10.9998 15.923 10.9998 16.4753C10.9998 17.0276 11.4475 17.4753 11.9998 17.4753L12.0008 17.4753C12.5531 17.4753 13.0008 17.0276 13.0008 16.4753ZM11.9998 6.62898C12.414 6.62898 12.7498 6.96476 12.7498 7.37898L12.7498 13.0555C12.7498 13.4697 12.414 13.8055 11.9998 13.8055C11.5856 13.8055 11.2498 13.4697 11.2498 13.0555L11.2498 7.37898C11.2498 6.96476 11.5856 6.62898 11.9998 6.62898Z"
-          fill="#F04438"
         />
       </svg>
     ),

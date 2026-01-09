@@ -177,12 +177,12 @@ const ActionMenu = ({
                                     {item.status ? (
                                         <>
                                             <TrashIcon className="icon-sm" />
-                                            Desactivar
+                                            Eliminar
                                         </>
                                     ) : (
                                         <>
                                             <RefreshIcon className="icon-sm" />
-                                            Activar
+                                            Reactivar
                                         </>
                                     )}
                                 </DropdownItem>
@@ -587,17 +587,17 @@ export default function PreEnrollmentTable({
                                                 <button
                                                     onClick={() => onToggleStatus(s.preEnrollmentId)}
                                                     className={`w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold rounded-xl min-h-12 active:scale-95 transition-all border border-transparent ${!s.status
-                                                        ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-500/20"
-                                                        : "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:border-red-200 dark:hover:border-red-500/20"
+                                                        ? "bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400 hover:border-success-200 dark:hover:border-success-500/20"
+                                                        : "bg-error-50 dark:bg-error-500/10 text-error-600 dark:text-error-400 hover:border-error-200 dark:hover:border-error-500/20"
                                                         }`}
                                                 >
                                                     {!s.status ? (
                                                         <>
-                                                            <RefreshIcon className="icon-sm" /> Activar
+                                                            <RefreshIcon className="icon-sm" /> Restaurar
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <TrashIcon className="icon-sm" /> Desactivar
+                                                            <TrashIcon className="icon-sm" /> Eliminar
                                                         </>
                                                     )}
                                                 </button>

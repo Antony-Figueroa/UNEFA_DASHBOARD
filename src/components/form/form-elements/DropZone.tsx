@@ -19,13 +19,13 @@ const DropzoneComponent: React.FC = () => {
   });
   return (
     <ComponentCard title="Dropzone">
-      <div className="transition border border-gray-300 border-dashed cursor-pointer dark:hover:border-brand-500 dark:border-gray-700 rounded-xl hover:border-brand-500">
+      <div className="transition border border-border-medium border-dashed cursor-pointer dark:hover:border-brand-500 dark:border-border-dark rounded-xl hover:border-brand-500">
         <form
           {...getRootProps()}
-          className={`dropzone rounded-xl   border-dashed border-gray-300 p-7 lg:p-10
+          className={`dropzone rounded-xl   border-dashed border-border-medium p-7 lg:p-10
         ${isDragActive
-              ? "border-brand-500 bg-gray-100 dark:bg-gray-800"
-              : "border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-900"
+              ? "border-brand-500 bg-bg-secondary dark:bg-white/5"
+              : "border-border-medium bg-bg-secondary dark:border-border-dark dark:bg-bg-dark"
             }
       `}
           id="demo-upload"
@@ -36,7 +36,7 @@ const DropzoneComponent: React.FC = () => {
           <div className="dz-message flex flex-col items-center m-0!">
             {/* Icon Container */}
             <div className="mb-5.5 flex justify-center">
-              <div className="flex h-17 w-17  items-center justify-center rounded-full bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-400">
+              <div className="flex h-17 w-17  items-center justify-center rounded-full bg-bg-secondary text-text-secondary dark:bg-white/5 dark:text-text-tertiary">
                 <svg
                   className="fill-current"
                   width="29"
@@ -54,11 +54,11 @@ const DropzoneComponent: React.FC = () => {
             </div>
 
             {/* Text Content */}
-            <h4 className="mb-3 font-semibold text-gray-800 text-theme-xl dark:text-white/90">
+            <h4 className="mb-3 font-semibold text-text-primary text-theme-xl dark:text-white/90">
               {isDragActive ? "Drop Files Here" : "Drag & Drop Files Here"}
             </h4>
 
-            <span className=" text-center mb-5 block w-full max-w-72.5 text-sm text-gray-700 dark:text-gray-400">
+            <span className=" text-center mb-5 block w-full max-w-72.5 text-sm text-text-secondary dark:text-text-tertiary">
               Drag and drop your PNG, JPG, WebP, SVG images here or browse
             </span>
 

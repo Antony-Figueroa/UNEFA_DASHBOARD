@@ -32,8 +32,8 @@ export default function UserProfiles() {
         <PageBreadcrumb pageTitle="Profile" />
       </SkeletonLoader>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/3 lg:p-6 stagger-delay">
-        <h3 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-7">
+      <div className="rounded-2xl border border-border-light bg-bg-main p-5 dark:border-border-dark dark:bg-white/3 lg:p-6 stagger-delay">
+        <h3 className="mb-5 text-lg font-semibold text-text-primary dark:text-white/90 lg:mb-7">
           Profile
         </h3>
 

@@ -132,7 +132,7 @@ export const usePeriods = () => {
                 message: (
                     <>
                         <p>El período <strong>{periodo.description}</strong> ha sido eliminado permanentemente.</p>
-                        <p className="mt-1 text-xs text-gray-500 italic">* Esta acción no se puede deshacer desde la interfaz, pero el registro permanece en auditoría.</p>
+                        <p className="mt-1 text-xs text-text-secondary italic">* Esta acción no se puede deshacer desde la interfaz, pero el registro permanece en auditoría.</p>
                     </>
                 )
             });

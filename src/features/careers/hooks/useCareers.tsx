@@ -158,7 +158,7 @@ export const useCareers = () => {
         message: (
           <>
             <p>La carrera <strong>{career.careerName}</strong> ha sido marcada como inactiva.</p>
-            <p className="mt-1 text-xs text-gray-500 italic">* Esta acción puede afectar a los estudiantes inscritos.</p>
+            <p className="mt-1 text-xs text-text-secondary italic">* Esta acción puede afectar a los estudiantes inscritos.</p>
           </>
         ),
         onUndo: async () => {
@@ -187,7 +187,7 @@ export const useCareers = () => {
         message: (
           <>
             <p>La carrera <strong>{career.careerName}</strong> ahora está <strong>{newStatus ? 'activa' : 'inactiva'}</strong>.</p>
-            {!newStatus && <p className="mt-1 text-xs text-gray-500 italic">* Los registros asociados seguirán existiendo pero no estarán visibles en búsquedas activas.</p>}
+            {!newStatus && <p className="mt-1 text-xs text-text-secondary italic">* Los registros asociados seguirán existiendo pero no estarán visibles en búsquedas activas.</p>}
           </>
         ),
         onUndo: async () => {

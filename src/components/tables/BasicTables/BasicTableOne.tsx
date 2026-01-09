@@ -153,55 +153,55 @@ export default function BasicTableOne() {
 
   if (status === 'error') {
     return (
-      <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-center dark:border-red-800 dark:bg-red-900/20">
-        <p className="font-medium text-red-600 dark:text-red-400">¡Ocurrió un error al cargar los datos!</p>
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">La API o la base de datos no está disponible.</p>
+      <div className="rounded-xl border border-alert-error-border bg-alert-error-bg p-4 text-center dark:border-error-800 dark:bg-error-950">
+        <p className="font-medium text-alert-error-text dark:text-error-400">¡Ocurrió un error al cargar los datos!</p>
+        <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">La API o la base de datos no está disponible.</p>
         <button
           onClick={() => setIsErrorDetailsOpen(!isErrorDetailsOpen)}
-          className="mt-3 inline-flex items-center gap-2 text-sm text-blue-600 hover:underline dark:text-blue-400"
+          className="mt-3 inline-flex items-center gap-2 text-sm text-brand-500 hover:underline dark:text-brand-400"
         >
           {isErrorDetailsOpen ? 'Ocultar detalles' : 'Mostrar detalles'}
           <ChevronDownIcon className={`w-4 h-4 transition-transform ${isErrorDetailsOpen ? 'rotate-180' : ''}`} />
         </button>
-        {isErrorDetailsOpen && error && <pre className="mt-4 rounded-lg bg-red-100 p-3 text-left text-xs text-red-700 dark:bg-red-900/30 dark:text-red-300">{error.message}</pre>}
+        {isErrorDetailsOpen && error && <pre className="mt-4 rounded-lg bg-alert-error-bg p-3 text-left text-xs text-alert-error-text dark:bg-error-900/30 dark:text-red-300">{error.message}</pre>}
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/5 dark:bg-white/3">
+    <div className="overflow-hidden rounded-xl border border-border-light bg-bg-main dark:border-border-dark dark:bg-bg-dark">
       <div className="max-w-full overflow-x-auto">
         <Table>
           {/* Table Header */}
-          <TableHeader className="border-b border-gray-100 dark:border-white/5">
+          <TableHeader className="border-b border-border-light dark:border-border-dark">
             <TableRow>
               <TableCell
                 isHeader
-                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                className="px-5 py-3 font-medium text-text-tertiary text-start text-theme-xs dark:text-text-tertiary"
               >
                 User
               </TableCell>
               <TableCell
                 isHeader
-                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                className="px-5 py-3 font-medium text-text-tertiary text-start text-theme-xs dark:text-text-tertiary"
               >
                 Project Name
               </TableCell>
               <TableCell
                 isHeader
-                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                className="px-5 py-3 font-medium text-text-tertiary text-start text-theme-xs dark:text-text-tertiary"
               >
                 Team
               </TableCell>
               <TableCell
                 isHeader
-                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                className="px-5 py-3 font-medium text-text-tertiary text-start text-theme-xs dark:text-text-tertiary"
               >
                 Status
               </TableCell>
               <TableCell
                 isHeader
-                className="px-5 py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
+                className="px-5 py-3 font-medium text-text-tertiary text-start text-theme-xs dark:text-text-tertiary"
               >
                 Budget
               </TableCell>
@@ -209,10 +209,10 @@ export default function BasicTableOne() {
           </TableHeader>
 
           {/* Table Body */}
-          <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
+          <TableBody className="divide-y divide-border-light dark:divide-border-dark">
             {status === 'loading' ? (
               <TableRow>
-                <td colSpan={5} className="py-10 text-center text-gray-500 dark:text-gray-400">
+                <td colSpan={5} className="py-10 text-center text-text-secondary dark:text-text-tertiary">
                   Cargando datos...
                 </td>
               </TableRow>
@@ -230,24 +230,24 @@ export default function BasicTableOne() {
                         />
                       </div>
                       <div>
-                        <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                        <span className="block font-medium text-text-primary text-theme-sm dark:text-text-emphasis">
                           {order.user.name}
                         </span>
-                        <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
+                        <span className="block text-text-secondary text-theme-xs dark:text-text-tertiary">
                           {order.user.role}
                         </span>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                  <TableCell className="px-4 py-3 text-text-secondary text-start text-theme-sm dark:text-text-tertiary">
                     {order.projectName}
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                  <TableCell className="px-4 py-3 text-text-secondary text-start text-theme-sm dark:text-text-tertiary">
                     <div className="flex -space-x-2">
                       {order.team.images.map((teamImage, index) => (
                         <div
                           key={index}
-                          className="w-6 h-6 overflow-hidden border-2 border-white rounded-full dark:border-gray-900"
+                          className="w-6 h-6 overflow-hidden border-2 border-white rounded-full dark:border-bg-dark"
                         >
                           <img
                             width={24}
@@ -260,7 +260,7 @@ export default function BasicTableOne() {
                       ))}
                     </div>
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm dark:text-gray-400">
+                  <TableCell className="px-4 py-3 text-text-secondary text-start text-theme-sm dark:text-text-tertiary">
                     <Badge
                       size="sm"
                       color={
@@ -274,14 +274,14 @@ export default function BasicTableOne() {
                       {order.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="px-4 py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                  <TableCell className="px-4 py-3 text-text-secondary text-theme-sm dark:text-text-tertiary">
                     {order.budget}
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <td colSpan={5} className="py-10 text-center text-gray-500 dark:text-gray-400">
+                <td colSpan={5} className="py-10 text-center text-text-secondary dark:text-text-tertiary">
                   No hay datos para mostrar.
                 </td>
               </TableRow>

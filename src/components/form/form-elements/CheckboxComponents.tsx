@@ -11,7 +11,7 @@ export default function CheckboxComponents() {
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-3">
           <Checkbox checked={isChecked} onChange={setIsChecked} />
-          <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">
+          <span className="block text-sm font-medium text-text-secondary dark:text-text-tertiary">
             Default
           </span>
         </div>

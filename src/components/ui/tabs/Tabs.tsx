@@ -31,13 +31,13 @@ export const Tabs: React.FC<TabsProps> = ({
             className={`px-6 py-2 rounded-lg font-medium transition-all ${
               activeTab === tab.id
                 ? "bg-brand-500 text-white shadow-md"
-                : "bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 border border-gray-100 dark:border-white/5"
+                : "bg-bg-main text-text-secondary hover:bg-bg-secondary dark:bg-bg-dark dark:text-text-tertiary dark:hover:bg-white/10 border border-border-light dark:border-border-dark"
             }`}
           >
             {tab.label}
             {tab.count !== undefined && (
               <span className={`ml-2 px-1.5 py-0.5 text-[10px] rounded-full ${
-                activeTab === tab.id ? "bg-white/20" : "bg-gray-100 dark:bg-white/10"
+                activeTab === tab.id ? "bg-white/20" : "bg-bg-secondary dark:bg-white/10"
               }`}>
                 {tab.count}
               </span>
@@ -49,7 +49,7 @@ export const Tabs: React.FC<TabsProps> = ({
   }
 
   return (
-    <div className={`flex border-b border-gray-200 dark:border-white/5 ${className}`}>
+    <div className={`flex border-b border-border-light dark:border-border-dark ${className}`}>
       {options.map((tab) => (
         <button
           key={tab.id}
@@ -57,12 +57,12 @@ export const Tabs: React.FC<TabsProps> = ({
           className={`pb-3 px-4 text-sm font-medium transition-colors relative ${
             activeTab === tab.id 
               ? "text-brand-500" 
-              : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              : "text-text-tertiary hover:text-text-primary dark:hover:text-text-emphasis"
           }`}
         >
           {tab.label}
           {tab.count !== undefined && (
-            <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-gray-100 dark:bg-white/10 rounded-full">
+            <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-bg-secondary dark:bg-white/10 rounded-full">
               {tab.count}
             </span>
           )}

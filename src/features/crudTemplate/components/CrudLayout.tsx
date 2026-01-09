@@ -75,7 +75,7 @@ export function CrudLayout({
           {onCloseAlert && (
             <button
               onClick={onCloseAlert}
-              className="absolute right-4 top-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              className="absolute right-4 top-4 text-text-secondary hover:text-text-primary dark:text-text-tertiary dark:hover:text-white/90"
               aria-label="Cerrar alerta"
             >
               <XIcon className="w-5 h-5" />

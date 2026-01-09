@@ -243,14 +243,14 @@ export default function PreEnrollmentModal({
               transform: 'translate(-50%, -100%)',
               zIndex: 9999,
             }}
-            className="w-56 rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-2xl animate-fadeIn pointer-events-none border border-white/10"
+            className="w-56 rounded-lg bg-bg-dark px-3 py-2 text-xs text-white shadow-2xl animate-fadeIn pointer-events-none border border-white/10"
           >
             <div className="flex items-start gap-2">
               <InfoIcon className="w-4 h-4 shrink-0 mt-0.5 text-blue-400" />
               <p className="leading-relaxed">{tooltip}</p>
             </div>
             {/* Triangulito */}
-            <div className="absolute top-full left-1/2 -mt-1 -ml-1.5 border-6 border-transparent border-t-gray-900"></div>
+            <div className="absolute top-full left-1/2 -mt-1 -ml-1.5 border-6 border-transparent border-t-bg-dark"></div>
           </div>,
           document.body
         )}
@@ -262,16 +262,16 @@ export default function PreEnrollmentModal({
     <Modal isOpen={isOpen} onClose={onClose} showCloseButton>
       <ModalHeader>
         <div className="max-w-4xl mx-auto w-full">
-          <h5 className="mb-1 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+          <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
             {editingEntry ? "Editar Preinscripción" : "Nueva Preinscripción"}
           </h5>
-          <p className="text-sm text-gray-500 dark:text-gray-400 font-normal">
+          <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
             {editingEntry ? "Modifica los detalles de la pre-inscripción." : "Ingresa los detalles para la nueva pre-inscripción."}
           </p>
         </div>
       </ModalHeader>
 
-      <ModalBody className="bg-gray-50/30 dark:bg-gray-900/50">
+      <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
         <form id="pre-enrollment-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8 max-w-4xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 sm:gap-x-8 gap-y-5 sm:gap-y-6">
             {/* Cédula */}
@@ -328,7 +328,7 @@ export default function PreEnrollmentModal({
                 error={!!errors.studentName}
                 hint={isSubmitted ? errors.studentName?.message : undefined}
                 readOnly={!editingEntry}
-                className={!editingEntry ? "bg-gray-50 dark:bg-white/5 cursor-not-allowed" : ""}
+                className={!editingEntry ? "bg-bg-secondary dark:bg-white/5 cursor-not-allowed" : ""}
               />
             </div>
 
@@ -344,7 +344,7 @@ export default function PreEnrollmentModal({
                 error={!!errors.phone}
                 hint={isSubmitted ? errors.phone?.message : undefined}
                 readOnly={!editingEntry}
-                className={!editingEntry ? "bg-gray-50 dark:bg-white/5 cursor-not-allowed" : ""}
+                className={!editingEntry ? "bg-bg-secondary dark:bg-white/5 cursor-not-allowed" : ""}
               />
             </div>
 
@@ -368,7 +368,7 @@ export default function PreEnrollmentModal({
                 )}
               />
               {periods.length > 0 && (
-                <p className="mt-1.5 text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                <p className="mt-1.5 text-[11px] text-text-tertiary dark:text-text-tertiary flex items-center gap-1">
                   <InfoIcon className="w-3 h-3 text-blue-light-500" />
                   Vigentes o próximos.
                 </p>
@@ -424,14 +424,14 @@ export default function PreEnrollmentModal({
                 error={!!errors.enrollmentCode}
                 hint={isSubmitted ? errors.enrollmentCode?.message : undefined}
                 readOnly={!editingEntry}
-                className={!editingEntry ? "bg-gray-50 dark:bg-white/5 cursor-not-allowed" : ""}
+                className={!editingEntry ? "bg-bg-secondary dark:bg-white/5 cursor-not-allowed" : ""}
               />
             </div>
           </div>
         </form>
       </ModalBody>
 
-      <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+      <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
         <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-6xl mx-auto">
           <Button variant="outline" onClick={onClose} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar

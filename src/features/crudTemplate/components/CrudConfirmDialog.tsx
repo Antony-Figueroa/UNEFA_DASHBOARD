@@ -23,23 +23,23 @@ interface VariantStyle {
 
 const variantStyles: Record<CrudConfirmVariant, VariantStyle> = {
   error: {
-    iconBg: "bg-red-100 dark:bg-red-900/30",
-    icon: <XIcon className="h-6 w-6 text-red-600 dark:text-red-500" />,
+    iconBg: "bg-error-100 dark:bg-error-950",
+    icon: <XIcon className="h-6 w-6 text-error-600 dark:text-error-400" />,
     variant: "error",
   },
   success: {
-    iconBg: "bg-green-100 dark:bg-green-900/30",
-    icon: <CheckCircleIcon className="h-6 w-6 text-green-600 dark:text-green-500" />,
+    iconBg: "bg-success-100 dark:bg-success-950",
+    icon: <CheckCircleIcon className="h-6 w-6 text-success-600 dark:text-success-400" />,
     variant: "success",
   },
   warning: {
-    iconBg: "bg-yellow-100 dark:bg-yellow-900/30",
-    icon: <ExclamationTriangleIcon className="h-6 w-6 text-yellow-500 dark:text-yellow-400" />,
+    iconBg: "bg-warning-100 dark:bg-warning-950",
+    icon: <ExclamationTriangleIcon className="h-6 w-6 text-warning-500 dark:text-warning-400" />,
     variant: "warning",
   },
   info: {
-    iconBg: "bg-blue-100 dark:bg-blue-900/30",
-    icon: <InformationCircleIcon className="h-6 w-6 text-blue-600 dark:text-blue-500" />,
+    iconBg: "bg-blue-light-100 dark:bg-blue-light-950",
+    icon: <InformationCircleIcon className="h-6 w-6 text-blue-light-600 dark:text-blue-light-400" />,
     variant: "primary",
   },
 };
@@ -67,10 +67,10 @@ export function CrudConfirmDialog({ state, onClose, isLoading = false }: CrudCon
         <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${styles.iconBg}`}>
           {styles.icon}
         </div>
-        <h3 className="mb-2 text-xl font-bold text-gray-800 dark:text-white">
+        <h3 className="mb-2 text-xl font-bold text-text-primary dark:text-text-emphasis">
           {state.title}
         </h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-text-secondary dark:text-text-tertiary">
           {state.message}
         </p>
       </ModalBody>

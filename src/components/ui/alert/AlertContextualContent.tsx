@@ -28,13 +28,13 @@ export const ChangeComparison: React.FC<{
     <div className="mt-2 space-y-1.5 border-l-2 border-brand-200 pl-3 py-0.5 max-w-full">
       {changes.map((key) => (
         <div key={key} className="text-xs leading-relaxed wrap-break-word">
-          <span className="font-semibold text-gray-700 dark:text-gray-300">
+          <span className="font-semibold text-text-secondary dark:text-text-tertiary">
             {labels[key] || key}:
           </span>{" "}
-          <span className="text-error-500 line-through opacity-70">
+          <span className="text-error-500 line-through">
             {String((oldData as Record<string, unknown>)[key] ?? "N/A")}
           </span>{" "}
-          <span className="text-gray-400">→</span>{" "}
+          <span className="text-text-tertiary">→</span>{" "}
           <span className="text-success-600 font-medium">
             {String((newData as Record<string, unknown>)[key] ?? "N/A")}
           </span>
@@ -58,10 +58,10 @@ export const RecordDetails: React.FC<{
     <div className="mt-2 space-y-1 border-l-2 border-success-200 pl-3 py-0.5 max-w-full">
       {displayFields.map((key) => (
         <div key={key} className="text-xs wrap-break-word">
-          <span className="font-medium text-gray-600 dark:text-gray-400">
+          <span className="font-medium text-text-secondary dark:text-text-tertiary">
             {labels[key] || key}:
           </span>{" "}
-          <span className="text-gray-800 dark:text-white/90 font-medium">
+          <span className="text-text-primary dark:text-white/90 font-medium">
             {String((data as Record<string, unknown>)[key] ?? "N/A")}
           </span>
         </div>

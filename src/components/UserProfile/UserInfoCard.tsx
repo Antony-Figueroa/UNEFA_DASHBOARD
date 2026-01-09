@@ -12,55 +12,55 @@ export default function UserInfoCard() {
     closeModal();
   };
   return (
-    <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
+    <div className="p-5 border border-border-light rounded-2xl dark:border-white/10 lg:p-6">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-6">
+          <h4 className="text-lg font-semibold text-text-emphasis dark:text-white lg:mb-6">
             Personal Information
           </h4>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
             <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+              <p className="mb-2 text-xs leading-normal text-text-secondary dark:text-text-tertiary">
                 First Name
               </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+              <p className="text-sm font-medium text-text-emphasis dark:text-white">
                 Antony F.
               </p>
             </div>
 
             <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+              <p className="mb-2 text-xs leading-normal text-text-secondary dark:text-text-tertiary">
                 Last Name
               </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+              <p className="text-sm font-medium text-text-emphasis dark:text-white">
                 Chowdhury
               </p>
             </div>
 
             <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+              <p className="mb-2 text-xs leading-normal text-text-secondary dark:text-text-tertiary">
                 Email address
               </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+              <p className="text-sm font-medium text-text-emphasis dark:text-white">
                 randomuser@pimjo.com
               </p>
             </div>
 
             <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+              <p className="mb-2 text-xs leading-normal text-text-secondary dark:text-text-tertiary">
                 Phone
               </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+              <p className="text-sm font-medium text-text-emphasis dark:text-white">
                 +09 363 398 46
               </p>
             </div>
 
             <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+              <p className="mb-2 text-xs leading-normal text-text-secondary dark:text-text-tertiary">
                 Bio
               </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+              <p className="text-sm font-medium text-text-emphasis dark:text-white">
                 Team Manager
               </p>
             </div>
@@ -69,7 +69,7 @@ export default function UserInfoCard() {
 
         <button
           onClick={openModal}
-          className="flex w-full items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/3 dark:hover:text-gray-200 lg:inline-flex lg:w-auto"
+          className="flex w-full items-center justify-center gap-2 rounded-full border border-border-medium bg-bg-main px-4 py-3 text-sm font-medium text-text-primary shadow-theme-xs hover:bg-bg-secondary hover:text-text-emphasis dark:border-border-dark dark:bg-white/3 dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-white lg:inline-flex lg:w-auto"
         >
           <svg
             className="fill-current"
@@ -91,22 +91,22 @@ export default function UserInfoCard() {
       </div>
 
       <Modal isOpen={isOpen} onClose={closeModal} className="max-w-3xl" showCloseButton>
-        <div className="flex flex-col h-full bg-white dark:bg-gray-900">
-          <ModalHeader className="shrink-0 pt-6 px-6 sm:pt-10 sm:px-12 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+        <div className="flex flex-col h-full bg-bg-main dark:bg-bg-dark">
+          <ModalHeader className="shrink-0 pt-6 px-6 sm:pt-10 sm:px-12 bg-bg-main dark:bg-bg-dark border-b border-border-light dark:border-white/10">
             <div className="w-full">
-              <h4 className="mb-1 text-2xl font-semibold text-gray-800 dark:text-white/90">
+              <h4 className="mb-1 text-2xl font-semibold text-text-emphasis dark:text-white">
                 Edit Personal Information
               </h4>
-              <p className="text-sm text-gray-500 dark:text-gray-400 font-normal">
+              <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
                 Update your details to keep your profile up-to-date.
               </p>
             </div>
           </ModalHeader>
 
-          <ModalBody className="overflow-y-auto custom-scrollbar grow px-6 sm:px-12 py-6 sm:py-10 bg-gray-50/30 dark:bg-gray-900/50">
+          <ModalBody className="overflow-y-auto custom-scrollbar grow px-6 sm:px-12 py-6 sm:py-10 bg-bg-secondary/30 dark:bg-white/2">
             <form id="user-info-form" onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-7">
               <div>
-                <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
+                <h5 className="mb-5 text-lg font-medium text-text-emphasis dark:text-white lg:mb-6">
                   Social Links
                 </h5>
 
@@ -139,7 +139,7 @@ export default function UserInfoCard() {
                 </div>
               </div>
               <div>
-                <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
+                <h5 className="mb-5 text-lg font-medium text-text-emphasis dark:text-white lg:mb-6">
                   Personal Information
                 </h5>
 

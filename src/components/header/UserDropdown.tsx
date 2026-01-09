@@ -28,7 +28,7 @@ export default function UserDropdown() {
     <div className="relative">
       <button
         onClick={toggleDropdown}
-        className="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400"
+        className="flex items-center text-text-primary dropdown-toggle dark:text-text-tertiary"
       >
         <span className="mr-3 overflow-hidden rounded-full h-9 w-9">
           <img src="/images/user/owner.jpg" alt="User" />
@@ -36,7 +36,7 @@ export default function UserDropdown() {
 
         <span className="block mr-1 font-medium text-theme-sm">Antony F.</span>
         <svg
-          className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 icon-xs ${isOpen ? "rotate-180" : ""
+          className={`stroke-text-secondary dark:stroke-text-tertiary transition-transform duration-200 icon-xs ${isOpen ? "rotate-180" : ""
             }`}
           viewBox="0 0 18 20"
           fill="none"
@@ -55,27 +55,27 @@ export default function UserDropdown() {
       <Dropdown
         isOpen={isOpen}
         onClose={closeDropdown}
-        className="absolute right-0 mt-4.25 flex w-65 flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
+        className="absolute right-0 mt-4.25 flex w-65 flex-col rounded-2xl border border-border-light bg-bg-main p-3 shadow-theme-lg dark:border-white/10 dark:bg-bg-dark"
       >
         <div>
-          <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
+          <span className="block font-medium text-text-primary text-theme-sm dark:text-text-tertiary">
             Antony F.
           </span>
-          <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
+          <span className="mt-0.5 block text-theme-xs text-text-secondary dark:text-text-tertiary">
             correo.ramdom@gmail.com
           </span>
         </div>
 
-        <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
+        <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-border-light dark:border-white/10">
           <li>
             <DropdownItem
               onItemClick={closeDropdown}
               tag="a"
               to="/profile"
-              className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+              className="flex items-center gap-3 px-3 py-2 font-medium text-text-primary rounded-lg group text-theme-sm hover:bg-bg-secondary hover:text-text-emphasis dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-text-emphasis"
             >
               <svg
-                className="fill-gray-500 group-hover:fill-gray-700 dark:fill-gray-400 dark:group-hover:fill-gray-300 icon-md"
+                className="fill-text-secondary group-hover:fill-text-emphasis dark:fill-text-tertiary dark:group-hover:fill-text-emphasis icon-md"
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -95,10 +95,10 @@ export default function UserDropdown() {
               onItemClick={closeDropdown}
               tag="a"
               to="/profile"
-              className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+              className="flex items-center gap-3 px-3 py-2 font-medium rounded-lg text-text-primary group text-theme-sm hover:bg-bg-secondary hover:text-text-emphasis dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-text-emphasis"
             >
               <svg
-                className="fill-gray-500 group-hover:fill-gray-700 dark:fill-gray-400 dark:group-hover:fill-gray-300 icon-md"
+                className="fill-text-secondary group-hover:fill-text-emphasis dark:fill-text-tertiary dark:group-hover:fill-text-emphasis icon-md"
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -118,10 +118,10 @@ export default function UserDropdown() {
               onItemClick={closeDropdown}
               tag="a"
               to="/profile"
-              className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+              className="flex items-center gap-3 px-3 py-2 font-medium rounded-lg text-text-primary group text-theme-sm hover:bg-bg-secondary hover:text-text-emphasis dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-text-emphasis"
             >
               <svg
-                className="fill-gray-500 group-hover:fill-gray-700 dark:fill-gray-400 dark:group-hover:fill-gray-300 icon-md"
+                className="fill-text-secondary group-hover:fill-text-emphasis dark:fill-text-tertiary dark:group-hover:fill-text-emphasis icon-md"
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -139,10 +139,10 @@ export default function UserDropdown() {
         </ul>
         <button
           onClick={handleSignOutClick}
-          className="flex items-center w-full gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+          className="flex items-center w-full gap-3 px-3 py-2 mt-3 font-medium rounded-lg text-text-primary group text-theme-sm hover:bg-bg-secondary hover:text-text-emphasis dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-text-emphasis"
         >
           <svg
-            className="fill-gray-500 group-hover:fill-gray-700 dark:group-hover:fill-gray-300 icon-md"
+            className="fill-text-secondary group-hover:fill-text-emphasis dark:group-hover:fill-text-emphasis icon-md"
             viewBox="0 0 24 24"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -161,19 +161,19 @@ export default function UserDropdown() {
       {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
         <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-xl animate-fadeIn">
-            <h3 className="text-lg font-bold text-gray-800 dark:text-white/90">Confirmar Cierre de Sesión</h3>
-            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">¿Estás seguro de que deseas cerrar tu sesión?</p>
+          <div className="w-full max-w-sm p-6 shadow-xl bg-bg-main dark:bg-bg-dark rounded-2xl animate-fadeIn">
+            <h3 className="text-lg font-bold text-text-emphasis dark:text-text-emphasis">Confirmar Cierre de Sesión</h3>
+            <p className="mt-2 text-sm text-text-secondary dark:text-text-tertiary">¿Estás seguro de que deseas cerrar tu sesión?</p>
             <div className="mt-6 flex gap-3">
               <button
                 onClick={() => setShowLogoutConfirm(false)}
-                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-white/5 dark:text-gray-400 dark:hover:bg-white/10"
+                className="flex-1 px-4 py-2 text-sm font-medium rounded-lg text-text-primary bg-bg-secondary hover:bg-bg-secondary-hover dark:bg-white/5 dark:text-text-tertiary dark:hover:bg-white/10"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmSignOut}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-error-500 rounded-lg hover:bg-error-600"
+                className="flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg bg-error-500 hover:bg-error-600"
               >
                 Cerrar Sesión
               </button>

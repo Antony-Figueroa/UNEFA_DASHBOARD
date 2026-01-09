@@ -215,14 +215,14 @@ export default function InstitutionsPage() {
             <div>
                 <SkeletonLoader isLoading={pageLoading} skeleton={<TitleSkeleton />} id="institutions-title">
                     <div className="flex items-center gap-2">
-                        <h2 className="text-2xl font-bold text-gray-800 dark:text-white/90">
+                        <h2 className="text-2xl font-bold text-text-primary dark:text-white/90">
                           {mainTab === "Instituciones" ? "Listado de Instituciones" : "Responsables Institucionales"}
                         </h2>
-                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                        <span className="inline-flex items-center rounded-full bg-bg-secondary px-2.5 py-0.5 text-xs font-medium text-text-primary dark:bg-bg-dark dark:text-text-tertiary border border-border-light dark:border-border-dark">
                             Demo
                         </span>
                     </div>
-                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">
                       {mainTab === "Instituciones" 
                         ? "Gestiona la información y estado de las instituciones aliadas." 
                         : "Gestiona los representantes y responsables de cada institución."}

@@ -1,0 +1,43 @@
+// Semantic Color Variables
+// Structure: --color-[function]-[state]
+
+// Brand / Primary
+$color-brand-normal: #465fff;
+$color-brand-hover: #3548e6;
+$color-brand-active: #2a39cc;
+$color-brand-disabled: rgba(70, 95, 255, 0.5);
+
+// Success
+$color-success-normal: #12b76a;
+$color-success-hover: #039855;
+$color-success-active: #027a48;
+$color-success-bg: #ecfdf3;
+
+// Error
+$color-error-normal: #f04438;
+$color-error-hover: #d92d20;
+$color-error-active: #b42318;
+$color-error-bg: #fef3f2;
+
+// Warning
+$color-warning-normal: #f79009;
+$color-warning-hover: #dc6803;
+$color-warning-active: #b54708;
+$color-warning-bg: #fffaeb;
+
+// Text Tonalities
+$color-text-primary: #1d2939; // AA/AAA Contrast
+$color-text-secondary: rgba(29, 41, 57, 0.7); // 30% less opacity
+$color-text-tertiary: rgba(29, 41, 57, 0.5); // 50% opacity
+$color-text-emphasis: #101828; // >= 4.5:1 contrast
+$color-text-disabled: rgba(29, 41, 57, 0.5); // Disabled gray
+
+// Backgrounds
+$color-bg-main: #ffffff;
+$color-bg-secondary: #f9fafb;
+$color-bg-dark: #101828;
+
+// Borders
+$color-border-light: #eaecf0;
+$color-border-medium: #d0d5dd;
+$color-border-dark: #344054;

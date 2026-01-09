@@ -159,7 +159,7 @@ export const TableSkeleton: React.FC<{ rows?: number }> = ({ rows = 3 }) => {
         <Skeleton height={20} className="w-1/4" />
         <Skeleton height={20} className="w-1/4" />
       </div>
-      <div className="h-px bg-gray-100 dark:bg-gray-800" />
+      <div className="h-px bg-border-light dark:bg-border-dark" />
       {[...Array(rows)].map((_, i) => (
         <div key={i} className="flex gap-4">
           <Skeleton height={40} className="flex-1" />
@@ -178,7 +178,7 @@ export const TablePageSkeleton: React.FC<{ rows?: number }> = ({ rows = 5 }) => 
   return (
     <div className="table-container animate-pulse">
       {/* Área de Filtros/Botones simplificada */}
-      <div className="p-4 border-b border-gray-100 dark:border-white/5 space-y-4">
+      <div className="p-4 border-b border-border-light dark:border-border-dark space-y-4">
         <div className="flex justify-between items-center">
           <Skeleton height={40} className="w-1/3" />
           <Skeleton height={40} className="w-32" />
@@ -202,7 +202,7 @@ export const MetricsSkeleton: React.FC = () => {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6">
       {[...Array(2)].map((_, i) => (
-        <div key={i} className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/3 md:p-6">
+        <div key={i} className="rounded-2xl border border-border-light bg-bg-main p-5 dark:border-border-dark dark:bg-white/5 md:p-6">
           <Skeleton height={48} width={48} className="rounded-xl mb-5" />
           <div className="flex items-end justify-between">
             <div className="space-y-2">
@@ -222,7 +222,7 @@ export const MetricsSkeleton: React.FC = () => {
  */
 export const ChartSkeleton: React.FC<{ height?: number }> = ({ height = 350 }) => {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/3 md:p-6">
+    <div className="rounded-2xl border border-border-light bg-bg-main p-5 dark:border-border-dark dark:bg-white/5 md:p-6">
       <Skeleton height={24} width={150} className="mb-6" />
       <Skeleton height={height} className="w-full" />
     </div>
@@ -235,7 +235,7 @@ export const ChartSkeleton: React.FC<{ height?: number }> = ({ height = 350 }) =
 export const ProfileSkeleton: React.FC = () => {
   return (
     <div className="space-y-6">
-      <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
+      <div className="p-5 border border-border-light rounded-2xl dark:border-border-dark lg:p-6">
         <div className="flex flex-col items-center gap-6 xl:flex-row">
           <Skeleton circle height={80} width={80} />
           <div className="flex-1 space-y-2 text-center xl:text-left">
@@ -250,7 +250,7 @@ export const ProfileSkeleton: React.FC = () => {
         </div>
       </div>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
+        <div className="p-5 border border-border-light rounded-2xl dark:border-border-dark lg:p-6">
           <Skeleton height={20} width={120} className="mb-4" />
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
@@ -261,7 +261,7 @@ export const ProfileSkeleton: React.FC = () => {
             ))}
           </div>
         </div>
-        <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
+        <div className="p-5 border border-border-light rounded-2xl dark:border-border-dark lg:p-6">
           <Skeleton height={20} width={120} className="mb-4" />
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (

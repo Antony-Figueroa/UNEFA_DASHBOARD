@@ -235,7 +235,7 @@ export function CrudTable<TItem extends { id: string }>({
 
   return (
     <div className="table-container">
-      <div className="flex flex-col gap-4 border-b border-gray-100 p-4 dark:border-white/5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 border-b border-border-light p-4 dark:border-border-dark sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
           {filters?.map((filter) => {
             if (filter.type === "search") {
@@ -247,10 +247,10 @@ export function CrudTable<TItem extends { id: string }>({
                     value={value}
                     onChange={(e) => handleFilterChange(filter.id, e.target.value)}
                     placeholder={filter.placeholder ?? "Buscar..."}
-                    className="w-full rounded-lg border border-gray-300 bg-transparent py-2 pl-10 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+                    className="w-full rounded-lg border border-border-medium bg-transparent py-2 pl-10 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary"
                     aria-label={filter.label}
                   />
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
@@ -278,16 +278,16 @@ export function CrudTable<TItem extends { id: string }>({
                     aria-label={filter.label}
                     value={value}
                     onChange={(e) => handleFilterChange(filter.id, e.target.value)}
-                    className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-10 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white appearance-none"
+                    className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                   >
                     <option value="">{filter.placeholder ?? "Seleccione..."}</option>
                     {filter.options?.map((opt) => (
-                      <option key={opt.value} value={opt.value} className="dark:bg-gray-800">
+                      <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                         {opt.label}
                       </option>
                     ))}
                   </select>
-                  <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
@@ -311,10 +311,10 @@ export function CrudTable<TItem extends { id: string }>({
                     );
                     handleFilterChange(filter.id, selectedValues);
                   }}
-                  className="w-full rounded-lg border border-gray-300 bg-transparent py-2 px-4 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white sm:max-w-xs"
+                  className="w-full rounded-lg border border-border-medium bg-transparent py-2 px-4 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis sm:max-w-xs"
                 >
                   {filter.options?.map((opt) => (
-                    <option key={opt.value} value={opt.value} className="dark:bg-gray-800">
+                    <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                       {opt.label}
                     </option>
                   ))}
@@ -329,7 +329,7 @@ export function CrudTable<TItem extends { id: string }>({
         {anySelected && actions.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <span className="flex flex-wrap
-             mr-2 text-sm font-medium text-gray-600 dark:text-gray-400">
+             mr-2 text-sm font-medium text-text-secondary dark:text-text-tertiary">
               {selectedIds.length}  seleccionados
             </span>
             {actions.map((action) => {
@@ -350,10 +350,10 @@ export function CrudTable<TItem extends { id: string }>({
                   type="button"
                   onClick={() => action.onAction(items.filter((i) => selectedIds.includes(i.id)))}
                   className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isDanger
-                    ? "bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20"
+                    ? "bg-error-50 text-error-600 hover:bg-error-100 dark:bg-error-400/10 dark:text-error-400 dark:hover:bg-error-400/20"
                     : isPrimary
                       ? "bg-brand-50 text-brand-600 hover:bg-brand-100 dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400/20"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200"
+                      : "bg-bg-secondary text-text-secondary hover:bg-bg-secondary/80 dark:bg-white/5 dark:text-text-secondary dark:hover:bg-white/10"
                     }`}
                 >
                   {icon}
@@ -406,7 +406,7 @@ export function CrudTable<TItem extends { id: string }>({
                   >
                     <button
                       type="button"
-                      className={`flex h-full w-full items-center px-4 py-3 text-left font-semibold group focus:outline-none focus:bg-gray-50 dark:focus:bg-white/5 ${column.alignRight ? "justify-end" : ""
+                      className={`flex h-full w-full items-center px-4 py-3 text-left font-semibold group focus:outline-none focus:bg-bg-secondary dark:focus:bg-white/5 ${column.alignRight ? "justify-end" : ""
                         }`}
                       onClick={() => handleSort(column.id)}
                       aria-sort={ariaSort as "none" | "ascending" | "descending"}
@@ -424,11 +424,11 @@ export function CrudTable<TItem extends { id: string }>({
               )}
             </TableRow>
           </TableHeader>
-          <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
+          <TableBody className="divide-y divide-border-light dark:divide-border-dark">
             {loading ? (
               <TableRow>
                 <TableCell
-                  className="table-cell py-6 text-center text-gray-500 dark:text-gray-400"
+                  className="table-cell py-6 text-center text-text-secondary dark:text-text-tertiary"
                   colSpan={columns.length + 1}
                 >
                   Cargando...
@@ -437,7 +437,7 @@ export function CrudTable<TItem extends { id: string }>({
             ) : pageItems.length === 0 ? (
               <TableRow>
                 <TableCell
-                  className="table-cell py-6 text-center text-gray-500 dark:text-gray-400"
+                  className="table-cell py-6 text-center text-text-secondary dark:text-text-tertiary"
                   colSpan={columns.length + 1}
                 >
                   No hay datos para mostrar.
@@ -475,7 +475,7 @@ export function CrudTable<TItem extends { id: string }>({
                       <div className="flex justify-end">
                         <button
                           type="button"
-                          className="dropdown-toggle inline-flex items-center rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5"
+                          className="dropdown-toggle inline-flex items-center rounded-full p-1 text-text-tertiary hover:bg-bg-secondary hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/5"
                           aria-label="Acciones"
                           onClick={(e) => {
                             setAnchorEl(e.currentTarget as HTMLElement);
@@ -513,7 +513,7 @@ export function CrudTable<TItem extends { id: string }>({
                                 ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10"
                                 : action.variant === "brand"
                                   ? "text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-400/10"
-                                  : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/5";
+                                  : "text-text-secondary hover:bg-bg-secondary dark:text-text-tertiary dark:hover:bg-white/5";
 
                             return (
                               <DropdownItem
@@ -541,13 +541,13 @@ export function CrudTable<TItem extends { id: string }>({
       </div>
 
       {sortedItems.length > 0 && (
-        <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3 text-sm text-gray-700 dark:border-white/5 dark:text-gray-300 sm:px-6">
+        <div className="flex items-center justify-between border-t border-border-light px-4 py-3 text-sm text-text-secondary dark:border-border-dark dark:text-text-tertiary sm:px-6">
           <div className="flex flex-1 justify-between sm:hidden">
             <button
               type="button"
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+              className="relative inline-flex items-center rounded-md border border-border-medium bg-bg-main px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-50 dark:border-border-dark dark:bg-bg-dark dark:text-text-tertiary"
             >
               Anterior
             </button>
@@ -555,7 +555,7 @@ export function CrudTable<TItem extends { id: string }>({
               type="button"
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+              className="relative ml-3 inline-flex items-center rounded-md border border-border-medium bg-bg-main px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-50 dark:border-border-dark dark:bg-bg-dark dark:text-text-tertiary"
             >
               Siguiente
             </button>
@@ -565,15 +565,15 @@ export function CrudTable<TItem extends { id: string }>({
             <div className="flex items-center gap-3">
               <p>
                 Mostrando{" "}
-                <span className="font-medium">
+                <span className="font-medium text-text-primary dark:text-text-emphasis">
                   {startIndex + 1}
                 </span>{" "}
                 a{" "}
-                <span className="font-medium">
+                <span className="font-medium text-text-primary dark:text-text-emphasis">
                   {Math.min(startIndex + itemsPerPage, sortedItems.length)}
                 </span>{" "}
                 de{" "}
-                <span className="font-medium">
+                <span className="font-medium text-text-primary dark:text-text-emphasis">
                   {sortedItems.length}
                 </span>{" "}
                 resultados
@@ -587,7 +587,7 @@ export function CrudTable<TItem extends { id: string }>({
                     setItemsPerPage(next);
                     setCurrentPage(1);
                   }}
-                  className="rounded border border-gray-300 bg-transparent py-1 px-2 text-sm focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                  className="rounded border border-border-medium bg-transparent py-1 px-2 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis"
                 >
                   {pageSizeOptions.map((option) => (
                     <option key={option} value={option}>
@@ -606,7 +606,7 @@ export function CrudTable<TItem extends { id: string }>({
                 type="button"
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 dark:ring-gray-700 dark:hover:bg-white/5"
+                className="relative inline-flex items-center rounded-l-md px-2 py-2 text-text-tertiary ring-1 ring-inset ring-border-medium hover:bg-bg-secondary focus:z-20 focus:outline-offset-0 disabled:opacity-50 dark:ring-border-dark dark:hover:bg-white/5"
               >
                 <span className="sr-only">Anterior</span>
                 <svg
@@ -622,14 +622,14 @@ export function CrudTable<TItem extends { id: string }>({
                   />
                 </svg>
               </button>
-              <span className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 ring-1 ring-inset ring-gray-300 dark:text-gray-300 dark:ring-gray-700">
+              <span className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-text-secondary ring-1 ring-inset ring-border-medium dark:text-text-tertiary dark:ring-border-dark">
                 Página {currentPage} de {totalPages}
               </span>
               <button
                 type="button"
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 dark:ring-gray-700 dark:hover:bg-white/5"
+                className="relative inline-flex items-center rounded-r-md px-2 py-2 text-text-tertiary ring-1 ring-inset ring-border-medium hover:bg-bg-secondary focus:z-20 focus:outline-offset-0 disabled:opacity-50 dark:ring-border-dark dark:hover:bg-white/5"
               >
                 <span className="sr-only">Siguiente</span>
                 <svg

@@ -31,15 +31,15 @@ const Switch: React.FC<SwitchProps> = ({
       ? {
           background: isChecked
             ? "bg-brand-500 "
-            : "bg-gray-200 dark:bg-white/10", // Blue version
+            : "bg-border-light dark:bg-white/10", // Blue version
           knob: isChecked
             ? "translate-x-full bg-white"
             : "translate-x-0 bg-white",
         }
       : {
           background: isChecked
-            ? "bg-gray-800 dark:bg-white/10"
-            : "bg-gray-200 dark:bg-white/10", // Gray version
+            ? "bg-text-primary dark:bg-white/10"
+            : "bg-border-light dark:bg-white/10", // Gray version
           knob: isChecked
             ? "translate-x-full bg-white"
             : "translate-x-0 bg-white",
@@ -48,7 +48,7 @@ const Switch: React.FC<SwitchProps> = ({
   return (
     <label
       className={`flex cursor-pointer select-none items-center gap-3 text-sm font-medium ${
-        disabled ? "text-gray-400" : "text-gray-700 dark:text-gray-400"
+        disabled ? "text-text-tertiary" : "text-text-secondary dark:text-text-tertiary"
       }`}
       onClick={handleToggle} // Toggle when the label itself is clicked
     >
@@ -56,7 +56,7 @@ const Switch: React.FC<SwitchProps> = ({
         <div
           className={`block transition duration-150 ease-linear h-6 w-11 rounded-full ${
             disabled
-              ? "bg-gray-100 pointer-events-none dark:bg-gray-800"
+              ? "bg-bg-secondary pointer-events-none dark:bg-white/5"
               : switchColors.background
           }`}
         ></div>

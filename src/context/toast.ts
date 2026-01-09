@@ -1,11 +1,13 @@
 import { createContext, useContext } from "react";
 import type React from "react";
+import { type Category } from "../constants/designSystem";
 
 export type ToastVariant = "success" | "error" | "warning" | "info";
 
 export interface Toast {
   id: string;
   variant: ToastVariant;
+  category?: Category;
   title: string;
   message?: React.ReactNode;
   timestamp: Date;

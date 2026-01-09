@@ -31,20 +31,20 @@ export default function InstitutionalResponsibleViewModal({
         <div className="space-y-12 max-w-5xl mx-auto py-2">
           {/* Sección Información Personal */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-gray-100 pb-2 dark:border-white/5">
+            <div className="flex items-center gap-2 border-b border-border-light pb-2 dark:border-white/5">
               <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-              <h4 className="font-bold text-gray-800 dark:text-white/90 uppercase text-xs tracking-wider">Información Personal</h4>
+              <h4 className="font-bold text-text-primary dark:text-white/90 uppercase text-xs tracking-wider">Información Personal</h4>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
               <div className="sm:col-span-2">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Nombres Completos</label>
-                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">
+                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Nombres Completos</label>
+                <p className="text-sm font-semibold text-text-primary dark:text-white/90">
                   {responsible.firstName} {responsible.middleName} {responsible.lastName} {responsible.secondLastName}
                 </p>
               </div>
               <div>
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Identificación</label>
+                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Identificación</label>
                 <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
                   {responsible.identificationPrefix}{responsible.identificationNumber}
                 </p>
@@ -54,27 +54,27 @@ export default function InstitutionalResponsibleViewModal({
 
           {/* Sección Contacto e Institución */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2 border-b border-gray-100 pb-2 dark:border-white/5">
+            <div className="flex items-center gap-2 border-b border-border-light pb-2 dark:border-white/5">
               <div className="h-2 w-2 rounded-full bg-brand-500"></div>
-              <h4 className="font-bold text-gray-800 dark:text-white/90 uppercase text-xs tracking-wider">Contacto e Institución</h4>
+              <h4 className="font-bold text-text-primary dark:text-white/90 uppercase text-xs tracking-wider">Contacto e Institución</h4>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
               <div>
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Correo Electrónico</label>
-                <p className="text-sm font-bold text-gray-800 dark:text-white/90 break-all">
+                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Correo Electrónico</label>
+                <p className="text-sm font-bold text-text-primary dark:text-white/90 break-all">
                   {responsible.email}
                 </p>
               </div>
               <div>
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Teléfono</label>
-                <p className="text-sm font-bold text-gray-800 dark:text-white/90">
+                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Teléfono</label>
+                <p className="text-sm font-bold text-text-primary dark:text-white/90">
                   {responsible.phone}
                 </p>
               </div>
               <div className="sm:col-span-2">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Institución</label>
-                <p className="text-sm font-bold text-gray-800 dark:text-white/90 uppercase">
+                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Institución</label>
+                <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">
                   {responsible.institutionName}
                 </p>
               </div>
@@ -82,16 +82,16 @@ export default function InstitutionalResponsibleViewModal({
           </div>
 
           {/* Estado y Fechas */}
-          <div className="rounded-xl bg-gray-50 dark:bg-white/3 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="rounded-xl bg-bg-secondary dark:bg-white/3 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Estado</label>
-              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${responsible.status ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-700"}`}>
+              <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Estado</label>
+              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${responsible.status ? "bg-emerald-100 text-emerald-700" : "bg-bg-secondary text-text-secondary"}`}>
                 {responsible.status ? "Activo" : "Inactivo"}
               </span>
             </div>
             <div>
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Fecha Registro</label>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{responsible.registrationDate}</p>
+              <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Fecha Registro</label>
+              <p className="text-[11px] text-text-secondary dark:text-text-tertiary font-medium">{responsible.registrationDate}</p>
             </div>
           </div>
         </div>

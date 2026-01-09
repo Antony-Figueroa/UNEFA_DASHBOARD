@@ -53,7 +53,7 @@ const navItems: NavItem[] = [
     icon: <BoxCubeIcon />,
     subItems: [
       { name: "Pre-Inscripción", path: "/pre-enrollment" },
-      { name: "Inscripción", path: "/blank" },
+      { name: "Inscripción", path: "/enrollment" },
       { name: "Seguimiento", path: "/blank" },
       { name: "Culminación Prácticas Profesionales", path: "/blank" },
     ],
@@ -332,7 +332,7 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
-      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
+      className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-bg-main dark:bg-bg-dark dark:border-white/10 text-text-primary h-screen transition-all duration-300 ease-in-out z-50 border-r border-border-light 
         ${isExpanded || isMobileOpen
           ? "w-72.5"
           : isHovered
@@ -381,7 +381,7 @@ const AppSidebar: React.FC = () => {
           <div className="flex flex-col gap-4">
             <div>
               <h2
-                className={`mb-4 text-xs uppercase flex leading-5 text-gray-400 ${!isExpanded && !isHovered
+                className={`mb-4 text-xs uppercase flex leading-5 text-text-tertiary ${!isExpanded && !isHovered
                   ? "lg:justify-center"
                   : "justify-start"
                   }`}
@@ -396,7 +396,7 @@ const AppSidebar: React.FC = () => {
             </div>
             <div className="">
               <h2
-                className={`mb-4 text-xs uppercase flex leading-5 text-gray-400 ${!isExpanded && !isHovered
+                className={`mb-4 text-xs uppercase flex leading-5 text-text-tertiary ${!isExpanded && !isHovered
                   ? "lg:justify-center"
                   : "justify-start"
                   }`}

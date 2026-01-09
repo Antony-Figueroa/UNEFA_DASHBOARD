@@ -13,22 +13,22 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ErrorBoundary
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-gray-50">
-          <div className="max-w-md rounded-md border border-red-200 bg-white p-6 shadow">
-            <h1 className="mb-2 text-xl font-semibold text-red-600">Ha ocurrido un error inesperado.</h1>
-            <p className="mb-4 text-sm text-gray-600">
+        <div className="flex min-h-screen items-center justify-center bg-bg-secondary dark:bg-bg-dark">
+          <div className="max-w-md rounded-md border border-error-200 bg-bg-main p-6 shadow-theme-md dark:border-border-dark dark:bg-bg-dark">
+            <h1 className="mb-2 text-xl font-semibold text-error-600">Ha ocurrido un error inesperado.</h1>
+            <p className="mb-4 text-sm text-text-secondary dark:text-text-tertiary">
               Intenta recargar la página o volver al inicio.
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => location.reload()}
-                className="rounded bg-red-600 px-3 py-2 text-white hover:bg-red-700"
+                className="rounded bg-error-600 px-3 py-2 text-white hover:bg-error-700 transition-colors"
               >
                 Recargar
               </button>
               <a
                 href="/"
-                className="rounded border px-3 py-2 text-gray-700 hover:bg-gray-100"
+                className="rounded border border-border-light px-3 py-2 text-text-primary hover:bg-bg-secondary dark:border-border-dark dark:text-text-tertiary dark:hover:bg-white/5 transition-colors"
               >
                 Inicio
               </a>

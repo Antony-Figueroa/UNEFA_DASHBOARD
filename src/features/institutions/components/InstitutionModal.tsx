@@ -134,12 +134,12 @@ export default function InstitutionModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} showCloseButton className="max-w-[95%] sm:max-w-[85%] md:max-w-[70%] lg:max-w-4xl">
       <ModalHeader>
-        <h5 className="text-xl font-semibold text-gray-800 dark:text-white/90">
+        <h5 className="text-xl font-semibold text-text-primary dark:text-white/90">
           {editingInst ? "Editar Institución" : "Registrar Institución"}
         </h5>
-        <p className="text-sm text-gray-500">Complete la información de la institución.</p>
+        <p className="text-sm text-text-secondary">Complete la información de la institución.</p>
       </ModalHeader>
-      <ModalBody className="bg-gray-50/30 dark:bg-gray-900/50 max-h-[70vh] overflow-y-auto">
+      <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50 max-h-[70vh] overflow-y-auto">
         <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">RIF *</label>

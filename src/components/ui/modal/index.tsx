@@ -66,7 +66,7 @@ export const Modal: React.FC<ModalProps> = ({
   // Responsivo: ancho automático basado en contenido pero limitado.
   const contentClasses = `
     relative w-full mx-auto
-    bg-white dark:bg-gray-900 
+    bg-white dark:bg-bg-dark 
     rounded-[24px] sm:rounded-[32px] 
     shadow-2xl 
     transition-all duration-300 ease-out
@@ -83,7 +83,7 @@ export const Modal: React.FC<ModalProps> = ({
       aria-modal="true"
     >
       <div
-        className="fixed inset-0 h-full w-full bg-gray-900/60 backdrop-blur-sm -z-1 transition-opacity duration-300 ease-in-out"
+        className="fixed inset-0 h-full w-full bg-bg-dark/60 backdrop-blur-sm -z-1 transition-opacity duration-300 ease-in-out"
         onClick={onClose}
       ></div>
       <div
@@ -95,7 +95,7 @@ export const Modal: React.FC<ModalProps> = ({
           <button
             onClick={onClose}
             aria-label="Cerrar modal"
-            className="absolute right-4 top-4 z-999 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100/80 text-gray-500 transition-all hover:bg-gray-200 hover:text-gray-800 dark:bg-gray-800/80 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white sm:right-8 sm:top-8 sm:h-12 sm:w-12"
+            className="absolute right-4 top-4 z-999 flex h-10 w-10 items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-all hover:bg-border-light hover:text-text-primary dark:bg-white/5 dark:text-text-tertiary dark:hover:bg-white/10 dark:hover:text-text-emphasis sm:right-8 sm:top-8 sm:h-12 sm:w-12"
           >
             <svg
               width="24"
@@ -128,7 +128,7 @@ interface ModalSectionProps {
 }
 
 export const ModalHeader: React.FC<ModalSectionProps> = ({ children, className }) => (
-  <div className={`shrink-0 border-b border-gray-100 px-5 py-4 sm:px-8 sm:py-6 text-lg font-bold text-gray-800 dark:border-white/5 dark:text-white/90 pr-16 ${className ?? ""}`}>{children}</div>
+  <div className={`shrink-0 border-b border-border-light px-5 py-4 sm:px-8 sm:py-6 text-lg font-bold text-text-emphasis dark:border-border-dark dark:text-text-emphasis pr-16 ${className ?? ""}`}>{children}</div>
 );
 
 export const ModalBody: React.FC<ModalSectionProps> = ({ children, className }) => (
@@ -136,5 +136,5 @@ export const ModalBody: React.FC<ModalSectionProps> = ({ children, className }) 
 );
 
 export const ModalFooter: React.FC<ModalSectionProps> = ({ children, className }) => (
-  <div className={`shrink-0 border-t border-gray-100 px-5 py-4 sm:px-8 sm:py-6 flex items-center justify-end gap-3 dark:border-white/5 ${className ?? ""}`}>{children}</div>
+  <div className={`shrink-0 border-t border-border-light px-5 py-4 sm:px-8 sm:py-6 flex items-center justify-end gap-3 dark:border-border-dark ${className ?? ""}`}>{children}</div>
 );

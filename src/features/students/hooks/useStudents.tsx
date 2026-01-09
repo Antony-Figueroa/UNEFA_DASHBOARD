@@ -158,12 +158,12 @@ export const useStudents = () => {
             </span>.
           </p>
           {isInactivating && (
-            <p className="mt-1 text-xs text-gray-500 italic">
+            <p className="mt-1 text-xs text-text-secondary italic">
               * El estudiante no aparecerá en las listas de asistencia actuales.
             </p>
           )}
           {!isInactivating && (
-            <p className="mt-1 text-xs text-gray-500 italic">
+            <p className="mt-1 text-xs text-text-secondary italic">
               * El registro ha sido recuperado con todos sus datos previos.
             </p>
           )}

@@ -43,11 +43,11 @@ const FlatpickrDatePicker: React.FC<FlatpickrDatePickerProps> = ({
     ...options,
   };
 
-  const inputClasses = `h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 transition-all ${disabled
-      ? "text-gray-500 border-gray-300 opacity-40 bg-gray-100 cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"
+  const inputClasses = `h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-text-tertiary focus:outline-hidden focus:ring-3 transition-all ${disabled
+      ? "text-text-tertiary border-border-medium opacity-40 bg-bg-secondary cursor-not-allowed dark:bg-white/5 dark:text-text-tertiary dark:border-border-dark"
       : error
         ? "border-error-500 focus:border-error-300 focus:ring-error-500/20 dark:text-error-400 dark:border-error-500 dark:focus:border-error-800"
-        : "bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90 dark:focus:border-brand-800"
+        : "bg-transparent text-text-primary border-border-medium focus:border-brand-300 focus:ring-brand-500/20 dark:border-border-dark dark:text-text-emphasis dark:focus:border-brand-800"
     } ${className}`;
 
   return (
@@ -61,7 +61,7 @@ const FlatpickrDatePicker: React.FC<FlatpickrDatePickerProps> = ({
         className={inputClasses}
       />
       <span className="absolute top-1/2 right-4 -translate-y-1/2 pointer-events-none">
-        <CalendarIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+        <CalendarIcon className="w-5 h-5 text-text-tertiary dark:text-text-tertiary" />
       </span>
     </div>
   );

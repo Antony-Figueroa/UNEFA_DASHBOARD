@@ -36,15 +36,15 @@ const Button: React.FC<ButtonProps> = ({
   // Variant Classes
   const variantClasses = {
     primary:
-      "bg-brand-500 text-white shadow-theme-xs hover:bg-brand-600 dark:hover:bg-brand-400 disabled:bg-brand-300 dark:disabled:bg-brand-900/30",
+      "bg-btn-primary-bg text-btn-primary-text shadow-theme-xs hover:bg-btn-primary-hover active:bg-btn-primary-active disabled:bg-bg-secondary dark:disabled:bg-white/3",
     outline:
-      "bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/3 dark:hover:text-gray-300 disabled:opacity-50",
+      "bg-bg-main text-text-primary ring-1 ring-inset ring-border-medium hover:bg-bg-secondary dark:bg-white/3 dark:text-text-tertiary dark:ring-border-dark dark:hover:bg-white/5 disabled:opacity-50",
     error:
-      "bg-error-500 text-white shadow-theme-xs hover:bg-error-600 dark:hover:bg-error-400 disabled:bg-error-300 dark:disabled:bg-error-900/30",
+      "bg-error-500 text-white shadow-theme-xs hover:bg-error-600 active:bg-error-700 disabled:bg-error-300 dark:disabled:bg-error-900",
     success:
-      "bg-success-500 text-white shadow-theme-xs hover:bg-success-600 dark:hover:bg-success-400 disabled:bg-success-300 dark:disabled:bg-success-900/30",
+      "bg-success-500 text-white shadow-theme-xs hover:bg-success-600 active:bg-success-700 disabled:bg-success-300 dark:disabled:bg-success-900",
     warning:
-      "bg-warning-500 text-white shadow-theme-xs hover:bg-warning-600 dark:hover:bg-warning-400 disabled:bg-warning-300 dark:disabled:bg-warning-900/30",
+      "bg-warning-500 text-white shadow-theme-xs hover:bg-warning-600 active:bg-warning-700 disabled:bg-warning-300 dark:disabled:bg-warning-900",
   };
 
   const isButtonDisabled = disabled || loading;

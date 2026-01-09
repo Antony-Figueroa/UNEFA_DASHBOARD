@@ -118,7 +118,7 @@ const ActionMenu = ({
             <button
                 ref={trigger}
                 onClick={toggleMenu}
-                className="dropdown-toggle inline-flex items-center rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 min-h-12 min-w-12 justify-center"
+                className="dropdown-toggle inline-flex items-center rounded-full p-1 text-text-secondary hover:bg-bg-secondary hover:text-text-emphasis dark:text-text-tertiary dark:hover:bg-white/10 min-h-12 min-w-12 justify-center"
                 title="Acciones"
                 aria-label="Menú de acciones"
             >
@@ -150,7 +150,7 @@ const ActionMenu = ({
                             {onView && (
                                 <DropdownItem
                                     onItemClick={() => handleAction(onView)}
-                                    className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
+                                    className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-secondary"
                                 >
                                     <EyeIcon className="icon-sm" />
                                     Ver Detalles
@@ -159,7 +159,7 @@ const ActionMenu = ({
                             {onEdit && (
                                 <DropdownItem
                                     onItemClick={() => handleAction(onEdit)}
-                                    className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
+                                    className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-secondary"
                                 >
                                     <EditIcon className="icon-sm" />
                                     Editar
@@ -170,8 +170,8 @@ const ActionMenu = ({
                                     onItemClick={() => handleAction(onToggleStatus)}
                                     className={`flex items-center gap-2 font-medium ${
                                         item.status 
-                                            ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10" 
-                                            : "text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-400/10"
+                                            ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-error-950" 
+                                            : "text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-950"
                                     }`}
                                 >
                                     {item.status ? (
@@ -182,7 +182,7 @@ const ActionMenu = ({
                                     ) : (
                                         <>
                                             <RefreshIcon className="icon-sm" />
-                                            Reactivar
+                                            Restaurar
                                         </>
                                     )}
                                 </DropdownItem>
@@ -334,9 +334,9 @@ export default function PreEnrollmentTable({
 
     if (status === "error") {
         return (
-            <div className="flex flex-col items-center justify-center py-12 text-red-500 animate-fadeIn">
-                <p className="font-semibold text-red-600 dark:text-red-400">Error al cargar pre-inscripciones</p>
-                <p className="text-sm text-gray-600 dark:text-gray-300">{error?.message || "Por favor, intente de nuevo más tarde."}</p>
+            <div className="flex flex-col items-center justify-center py-12 text-error-500 animate-fadeIn">
+                <p className="font-semibold text-error-600 dark:text-error-400">Error al cargar pre-inscripciones</p>
+                <p className="text-sm text-text-secondary dark:text-text-tertiary">{error?.message || "Por favor, intente de nuevo más tarde."}</p>
             </div>
         );
     }
@@ -347,7 +347,7 @@ export default function PreEnrollmentTable({
     return (
         <div className="table-container">
             {/* Search and Filter Bar */}
-            <div className="p-4 border-b border-gray-100 dark:border-white/5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="p-4 border-b border-border-light dark:border-border-dark flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                     <div className="relative max-w-xs w-full">
                         <input
@@ -355,9 +355,9 @@ export default function PreEnrollmentTable({
                             placeholder="Buscar por cédula o estudiante..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full rounded-lg border border-gray-300 bg-transparent py-2 pl-10 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+                            className="w-full rounded-lg border border-border-medium bg-transparent py-2 pl-10 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary"
                         />
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary">
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 fill="none"
@@ -378,18 +378,18 @@ export default function PreEnrollmentTable({
                         <select
                             value={periodFilter}
                             onChange={(e) => setPeriodFilter(e.target.value)}
-                            className="w-full rounded-lg border border-gray-300 bg-transparent py-2 px-4 pr-10 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white appearance-none"
+                            className="w-full rounded-lg border border-border-medium bg-transparent py-2 px-4 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                         >
-                            <option value="" className="dark:bg-gray-800">
+                            <option value="" className="dark:bg-bg-dark">
                                 Seleccione Período
                             </option>
                             {uniquePeriods.map(period => (
-                                <option key={period} value={period} className="dark:bg-gray-800">
+                                <option key={period} value={period} className="dark:bg-bg-dark">
                                     {period}
                                 </option>
                             ))}
                         </select>
-                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
@@ -412,7 +412,7 @@ export default function PreEnrollmentTable({
                         {paged.length > 0 && (
                             <button
                                 onClick={toggleAllRows}
-                                className="md:hidden flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:bg-white/5 dark:text-gray-400 transition-colors min-h-12"
+                                className="md:hidden flex items-center gap-2 rounded-lg bg-bg-secondary px-3 py-2 text-xs font-medium text-text-secondary hover:bg-bg-secondary hover:text-text-emphasis dark:bg-white/5 dark:text-text-tertiary transition-colors min-h-12"
                             >
                                 {expandedRows.size === paged.length ? (
                                     <>
@@ -456,26 +456,26 @@ export default function PreEnrollmentTable({
                             </TableCell>
                         </TableRow>
                     </TableHeader>
-                    <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
+                    <TableBody className="divide-y divide-border-light dark:divide-border-dark">
                         {paged.length > 0 ? (
                             paged.map((s) => (
                                 <TableRow 
                                     key={s.preEnrollmentId}
-                                    className={`${highlightedRow === s.preEnrollmentId ? 'bg-gray-50 dark:bg-gray-800' : ''} table-row-hover`}
+                                    className={`${highlightedRow === s.preEnrollmentId ? 'bg-bg-secondary dark:bg-white/5' : ''} table-row-hover`}
                                 >
-                                    <TableCell className="table-cell font-medium text-gray-800 dark:text-white/90">
+                                    <TableCell className="table-cell font-medium text-text-primary dark:text-text-emphasis">
                                         {s.identificationPrefix}-{s.identificationNumber}
                                     </TableCell>
-                                    <TableCell className="table-cell text-gray-500 dark:text-gray-400">
+                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                         {s.studentName}
                                     </TableCell>
-                                    <TableCell className="table-cell text-gray-500 dark:text-gray-400">
+                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                         {s.period}
                                     </TableCell>
-                                    <TableCell className="table-cell text-gray-500 dark:text-gray-400">
+                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                         {s.enrollmentCode}
                                     </TableCell>
-                                    <TableCell className="table-cell text-gray-500 dark:text-gray-400">
+                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                         {s.preEnrollmentDate}
                                     </TableCell>
                                     <TableCell className="table-cell text-right">
@@ -522,7 +522,7 @@ export default function PreEnrollmentTable({
             </div>
 
             {/* Mobile View (Card format) */}
-            <div className="md:hidden divide-y divide-gray-100 dark:divide-white/5">
+            <div className="md:hidden divide-y divide-border-light dark:divide-border-dark">
                 {paged.length > 0 ? (
                     paged.map((s, index) => {
                         const preEnrollmentId = s.preEnrollmentId || `idx-${index}`;
@@ -533,14 +533,14 @@ export default function PreEnrollmentTable({
                                 <div className="flex flex-col items-center gap-2">
                                     <div className="flex items-center justify-between w-full">
                                         <div className="flex-1 text-center">
-                                            <h3 className="text-sm font-bold text-gray-800 dark:text-white/90 leading-tight truncate px-8 uppercase">
+                                            <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8 uppercase">
                                                 {s.studentName}
                                             </h3>
-                                            <p className="text-xs text-gray-500 mt-1 truncate uppercase">{s.identificationPrefix}-{s.identificationNumber}</p>
+                                            <p className="text-xs text-text-secondary mt-1 truncate uppercase">{s.identificationPrefix}-{s.identificationNumber}</p>
                                         </div>
                                         <button
                                             onClick={() => toggleRowExpansion(preEnrollmentId)}
-                                            className="absolute right-2 top-2 p-2 text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
+                                            className="absolute right-2 top-2 p-2 text-text-tertiary hover:bg-bg-secondary dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
                                             style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
                                             aria-label={isExpanded ? "Contraer" : "Expandir"}
                                         >
@@ -550,19 +550,19 @@ export default function PreEnrollmentTable({
                                 </div>
 
                                 {isExpanded && (
-                                    <div className="mt-4 space-y-6 animate-fadeIn border-t border-gray-50 dark:border-white/5 pt-6">
+                                    <div className="mt-4 space-y-6 animate-fadeIn border-t border-border-light dark:border-border-dark pt-6">
                                         <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
                                             <div className="flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Período</p>
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{s.period}</p>
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Período</p>
+                                                <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{s.period}</p>
                                             </div>
                                             <div className="flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Fecha</p>
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{s.preEnrollmentDate}</p>
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Fecha</p>
+                                                <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{s.preEnrollmentDate}</p>
                                             </div>
                                             <div className="flex flex-col items-center col-span-2">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Código de Matrícula</p>
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{s.enrollmentCode}</p>
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Código de Matrícula</p>
+                                                <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{s.enrollmentCode}</p>
                                             </div>
                                         </div>
 
@@ -570,7 +570,7 @@ export default function PreEnrollmentTable({
                                             {onView && (
                                                 <button
                                                     onClick={() => onView(s)}
-                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-primary dark:text-text-secondary rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-medium dark:hover:border-border-dark"
                                                 >
                                                     <EyeIcon className="icon-sm" /> Ver Detalles
                                                 </button>
@@ -578,7 +578,7 @@ export default function PreEnrollmentTable({
                                             {onEdit && s.status && (
                                                 <button
                                                     onClick={() => onEdit(s)}
-                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-primary dark:text-text-secondary rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-medium dark:hover:border-border-dark"
                                                 >
                                                     <EditIcon className="icon-sm" /> Editar
                                                 </button>
@@ -587,8 +587,8 @@ export default function PreEnrollmentTable({
                                                 <button
                                                     onClick={() => onToggleStatus(s.preEnrollmentId)}
                                                     className={`w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold rounded-xl min-h-12 active:scale-95 transition-all border border-transparent ${!s.status
-                                                        ? "bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400 hover:border-success-200 dark:hover:border-success-500/20"
-                                                        : "bg-error-50 dark:bg-error-500/10 text-error-600 dark:text-error-400 hover:border-error-200 dark:hover:border-error-500/20"
+                                                        ? "bg-success-50 dark:bg-success-950 text-success-600 dark:text-success-400 hover:border-success-200 dark:hover:border-success-700"
+                                                        : "bg-error-50 dark:bg-error-950 text-error-600 dark:text-error-400 hover:border-error-200 dark:hover:border-error-700"
                                                         }`}
                                                 >
                                                     {!s.status ? (

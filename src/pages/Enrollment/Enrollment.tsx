@@ -1,0 +1,228 @@
+/**
+ * @file Enrollment.tsx
+ * @description Página principal para la gestión del módulo de Inscripción.
+ */
+
+import { useMemo, useState, useEffect } from "react";
+import PageBreadcrumb from "../../components/common/PageBreadCrumb";
+import PageMeta from "../../components/common/PageMeta";
+import ComponentCard from "../../components/common/ComponentCard";
+import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
+import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
+import Button from "../../components/ui/button/Button";
+import { FullScreenLoader } from "../../components/ui/loader";
+import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
+import { PlusCircleIcon } from "../../icons/actions";
+import { InfoIcon } from "../../icons";
+
+import EnrollmentTable from "../../features/enrollment/components/EnrollmentTable";
+import EnrollmentModal from "../../features/enrollment/components/EnrollmentModal";
+import EnrollmentViewModal from "../../features/enrollment/components/EnrollmentViewModal";
+import { useEnrollment } from "../../features/enrollment/hooks/useEnrollment";
+import { Enrollment, EnrollmentRowData } from "../../features/enrollment/types";
+import { formatDateTime } from "../../utils/date";
+
+const formatEnrollmentToRow = (e: Enrollment): EnrollmentRowData => ({
+    ...e,
+    enrollmentDate: formatDateTime(e.enrollmentDate),
+});
+
+export default function EnrollmentPage() {
+    const [pageLoading, setPageLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setPageLoading(false);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, []);
+
+    const {
+        enrollments,
+        status,
+        loadingAction,
+        addEnrollment,
+        editEnrollment,
+        toggleStatus,
+    } = useEnrollment();
+
+    const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingEntry, setEditingEntry] = useState<Enrollment | null>(null);
+    const [viewItem, setViewItem] = useState<EnrollmentRowData | null>(null);
+
+    type ConfirmationInfo = {
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        confirmText: string;
+        variant: DialogVariant;
+    };
+
+    const [confirmation, setConfirmation] = useState<ConfirmationInfo | null>(null);
+
+    const filtered = useMemo(() => {
+        return enrollments.map(formatEnrollmentToRow);
+    }, [enrollments]);
+
+    const handleCreate = () => {
+        setEditingEntry(null);
+        setIsModalOpen(true);
+    };
+
+    const handleEdit = (row: EnrollmentRowData) => {
+        const original = enrollments.find((e) => e.enrollmentId === row.enrollmentId) || null;
+        setEditingEntry(original);
+        setIsModalOpen(true);
+    };
+
+    const handleSave = (payload: Omit<Enrollment, "enrollmentId" | "enrollmentDate">) => {
+        const isEditing = !!editingEntry;
+        setConfirmation({
+            isOpen: true,
+            title: isEditing ? "Confirmar Modificación" : "Confirmar Registro",
+            message: `¿Estás seguro de que deseas ${isEditing ? "guardar los cambios de" : "registrar"} esta inscripción?`,
+            onConfirm: async () => {
+                try {
+                    if (isEditing && editingEntry) {
+                        await editEnrollment({ ...editingEntry, ...payload });
+                    } else {
+                        await addEnrollment(payload);
+                    }
+                    setIsModalOpen(false);
+                } catch (e) {
+                    console.error(e);
+                } finally {
+                    setConfirmation(null);
+                }
+            },
+            confirmText: isEditing ? "Guardar" : "Registrar",
+            variant: "info",
+        });
+    };
+
+    const handleToggleStatus = (id: string) => {
+        const original = enrollments.find((e) => e.enrollmentId === id);
+        if (!original) return;
+        const goingInactive = original.status === true;
+        setConfirmation({
+            isOpen: true,
+            title: goingInactive ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
+            message: goingInactive 
+                ? `¿Estás seguro de que deseas enviar la inscripción de "${original.studentName}" a Inactivos?`
+                : `¿Estás seguro de que deseas restaurar la inscripción de "${original.studentName}"?`,
+            onConfirm: async () => {
+                try {
+                    await toggleStatus(original);
+                } catch (e) { console.error(e); }
+                finally { setConfirmation(null); }
+            },
+            confirmText: goingInactive ? "Confirmar" : "Restaurar",
+            variant: goingInactive ? "error" : "success",
+        });
+    };
+
+    return (
+        <>
+            <PageMeta title="Gestión de Inscripciones" description="Administración de inscripciones" />
+
+            <SkeletonLoader isLoading={pageLoading} skeleton={<BreadcrumbSkeleton />} id="enrollment-breadcrumb">
+                <PageBreadcrumb pageTitle="Inscripción" />
+            </SkeletonLoader>
+
+            {loadingAction && <FullScreenLoader label="Procesando..." />}
+
+            <div className="stagger-delay">
+                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <SkeletonLoader isLoading={pageLoading} skeleton={<TitleSkeleton />} id="enrollment-title">
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-2xl font-bold text-text-primary dark:text-white/90">Listado de Inscripciones</h2>
+                                <span className="inline-flex items-center rounded-full bg-bg-secondary px-2.5 py-0.5 text-xs font-medium text-text-primary dark:bg-bg-dark dark:text-text-tertiary border border-border-light dark:border-border-dark">
+                                    Demo
+                                </span>
+                            </div>
+                            <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">Gestiona las inscripciones de los estudiantes para el período actual.</p>
+                        </SkeletonLoader>
+                    </div>
+
+                    {!pageLoading && (
+                        <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
+                            Nueva Inscripción
+                        </Button>
+                    )}
+                </div>
+
+                {!pageLoading && (
+                    <div className="mb-6 flex items-center gap-3 rounded-xl border border-blue-light-200 bg-blue-light-50 p-4 text-blue-light-700 dark:border-blue-light-800 dark:bg-blue-light-950 dark:text-blue-light-400">
+                        <InfoIcon className="h-5 w-5 shrink-0" />
+                        <div className="text-sm">
+                            <span className="font-bold">Modo Demostración Activo:</span> Esta vista utiliza datos estáticos locales.
+                        </div>
+                    </div>
+                )}
+
+                <div className="space-y-6">
+                    <ComponentCard title={activeTab === "Activas" ? "Inscripciones Activas" : "Inscripciones Inactivas"}>
+                        <div className="mb-6 flex border-b border-border-light dark:border-border-dark">
+                            <button
+                                onClick={() => setActiveTab("Activas")}
+                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Activas" ? "text-brand-500" : "text-text-secondary hover:text-text-primary dark:hover:text-white"}`}
+                            >
+                                Activas
+                                {activeTab === "Activas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
+                            </button>
+                            <button
+                                onClick={() => setActiveTab("Inactivas")}
+                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Inactivas" ? "text-brand-500" : "text-text-secondary hover:text-text-primary dark:hover:text-white"}`}
+                            >
+                                Inactivas
+                                {activeTab === "Inactivas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
+                            </button>
+                        </div>
+
+                        <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="enrollment-table">
+                            <EnrollmentTable
+                                data={filtered}
+                                status={status}
+                                error={null}
+                                activeTab={activeTab}
+                                onEdit={handleEdit}
+                                onToggleStatus={handleToggleStatus}
+                                onView={setViewItem}
+                                loading={loadingAction}
+                            />
+                        </SkeletonLoader>
+                    </ComponentCard>
+
+                    <EnrollmentModal
+                        isOpen={isModalOpen}
+                        onClose={() => setIsModalOpen(false)}
+                        onSave={handleSave}
+                        editingEntry={editingEntry}
+                        isLoading={loadingAction}
+                    />
+
+                    <EnrollmentViewModal
+                        isOpen={!!viewItem}
+                        onClose={() => setViewItem(null)}
+                        onEdit={handleEdit}
+                        item={viewItem}
+                    />
+
+                    <UnifiedDialog
+                        isOpen={!!confirmation}
+                        onClose={() => !loadingAction && setConfirmation(null)}
+                        onConfirm={confirmation?.onConfirm || (() => { })}
+                        title={confirmation?.title || ""}
+                        message={confirmation?.message || ""}
+                        confirmLabel={confirmation?.confirmText || "Confirmar"}
+                        variant={confirmation?.variant || "info"}
+                        isLoading={loadingAction}
+                    />
+                </div>
+            </div>
+        </>
+    );
+}

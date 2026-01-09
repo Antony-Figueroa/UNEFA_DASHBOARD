@@ -25,6 +25,7 @@ const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({
     <div className={`${isExiting ? "animate-slide-out-right" : "animate-slide-in-right"} pointer-events-auto`}>
       <Alert
         variant={toast.variant}
+        category={toast.category}
         title={toast.title}
         message={toast.message}
         timestamp={toast.timestamp}
@@ -48,7 +49,7 @@ const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({
                   toast.onViewDetails?.();
                   handleClose();
                 }}
-                className="text-xs font-bold text-gray-600 hover:text-gray-800 dark:text-gray-300 uppercase tracking-wider transition-colors"
+                className="text-xs font-bold text-text-secondary hover:text-text-primary dark:text-text-tertiary uppercase tracking-wider transition-colors"
               >
                 Ver Detalles
               </button>

@@ -127,7 +127,7 @@ const Calendar: React.FC = () => {
         title="React.js Calendar Dashboard | TailAdmin - Next.js Admin Dashboard Template"
         description="This is React.js Calendar Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
       />
-      <div className="rounded-2xl border  border-gray-200 bg-white dark:border-gray-800 dark:bg-white/3">
+      <div className="rounded-2xl border border-border-light bg-bg-main dark:border-border-dark dark:bg-white/3">
         <SkeletonLoader
           isLoading={isLoading}
           id="calendar-main"
@@ -165,10 +165,10 @@ const Calendar: React.FC = () => {
         >
           <ModalHeader>
             <div>
-              <h5 className="mb-1 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+              <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
                 {selectedEvent ? "Edit Event" : "Add Event"}
               </h5>
-              <p className="text-sm text-gray-500 dark:text-gray-400 font-normal">
+              <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
                 Plan your next big moment: schedule or edit an event to stay on track
               </p>
             </div>
@@ -177,7 +177,7 @@ const Calendar: React.FC = () => {
           <ModalBody>
             <div className="space-y-6">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                <label className="mb-1.5 block text-sm font-medium text-text-secondary dark:text-text-tertiary">
                   Event Title
                 </label>
                 <input
@@ -185,12 +185,12 @@ const Calendar: React.FC = () => {
                   type="text"
                   value={eventTitle}
                   onChange={(e) => setEventTitle(e.target.value)}
-                  className="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                  className="dark:bg-dark-900 h-11 w-full rounded-lg border border-border-medium bg-transparent px-4 py-2.5 text-sm text-text-primary shadow-theme-xs placeholder:text-text-tertiary focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-border-dark dark:bg-bg-dark dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                 />
               </div>
 
               <div>
-                <label className="block mb-4 text-sm font-medium text-gray-700 dark:text-gray-400">
+                <label className="block mb-4 text-sm font-medium text-text-secondary dark:text-text-tertiary">
                   Event Color
                 </label>
                 <div className="flex flex-wrap items-center gap-4 sm:gap-5">
@@ -200,7 +200,7 @@ const Calendar: React.FC = () => {
                         className={`form-check form-check-${value} form-check-inline`}
                       >
                         <label
-                          className="flex items-center text-sm text-gray-700 form-check-label dark:text-gray-400"
+                          className="flex items-center text-sm text-text-secondary form-check-label dark:text-text-tertiary"
                           htmlFor={`modal${key}`}
                         >
                           <span className="relative">
@@ -213,7 +213,7 @@ const Calendar: React.FC = () => {
                               checked={eventLevel === key}
                               onChange={() => setEventLevel(key)}
                             />
-                            <span className="flex items-center justify-center w-5 h-5 mr-2 border border-gray-300 rounded-full box dark:border-gray-700">
+                            <span className="flex items-center justify-center w-5 h-5 mr-2 border border-border-medium rounded-full box dark:border-border-dark">
                               <span
                                 className={`h-2 w-2 rounded-full bg-white ${eventLevel === key ? "block" : "hidden"
                                   }`}
@@ -229,7 +229,7 @@ const Calendar: React.FC = () => {
               </div>
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                <label className="mb-1.5 block text-sm font-medium text-text-secondary dark:text-text-tertiary">
                   Enter Start Date
                 </label>
                 <div className="relative">
@@ -238,13 +238,13 @@ const Calendar: React.FC = () => {
                     type="date"
                     value={eventStartDate}
                     onChange={(e) => setEventStartDate(e.target.value)}
-                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-border-medium bg-transparent bg-none px-4 py-2.5 text-sm text-text-primary shadow-theme-xs placeholder:text-text-tertiary focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-border-dark dark:bg-bg-dark dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+                <label className="mb-1.5 block text-sm font-medium text-text-secondary dark:text-text-tertiary">
                   Enter End Date
                 </label>
                 <div className="relative">
@@ -253,7 +253,7 @@ const Calendar: React.FC = () => {
                     type="date"
                     value={eventEndDate}
                     onChange={(e) => setEventEndDate(e.target.value)}
-                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-border-medium bg-transparent bg-none px-4 py-2.5 text-sm text-text-primary shadow-theme-xs placeholder:text-text-tertiary focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-border-dark dark:bg-bg-dark dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                   />
                 </div>
               </div>
@@ -263,7 +263,7 @@ const Calendar: React.FC = () => {
           <ModalFooter className="shrink-0">
             <button
               onClick={closeModal}
-              className="flex justify-center flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/3 sm:w-auto sm:flex-none"
+              className="flex justify-center flex-1 px-4 py-2 text-sm font-medium text-text-secondary bg-bg-main border border-border-medium rounded-lg hover:bg-bg-secondary dark:border-border-dark dark:bg-bg-dark dark:text-text-tertiary dark:hover:bg-white/3 sm:w-auto sm:flex-none"
             >
               Close
             </button>

@@ -22,7 +22,7 @@ export const Loader: React.FC<LoaderProps> = ({
   const variantClasses = {
     primary: "border-brand-500 border-t-transparent",
     white: "border-white border-t-transparent",
-    gray: "border-gray-200 border-t-transparent dark:border-gray-700",
+    gray: "border-border-light border-t-transparent dark:border-border-dark",
   };
 
   return (
@@ -41,7 +41,7 @@ export const Loader: React.FC<LoaderProps> = ({
 
 export const FullScreenLoader: React.FC<LoaderProps> = (props) => {
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/60 backdrop-blur-sm dark:bg-gray-950/60 animate-fade-in">
+    <div className="fixed inset-0 z-9999 flex items-center justify-center bg-bg-main/60 backdrop-blur-sm dark:bg-bg-dark/60 animate-fade-in">
       <Loader size="lg" {...props} />
     </div>
   );
@@ -55,7 +55,7 @@ export const InlineLoader: React.FC<LoaderProps & { text?: string }> = ({
     <div className="flex items-center gap-3">
       <Loader size="sm" {...props} />
       {text && (
-        <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+        <span className="text-sm font-medium text-text-secondary dark:text-text-tertiary">
           {text}
         </span>
       )}

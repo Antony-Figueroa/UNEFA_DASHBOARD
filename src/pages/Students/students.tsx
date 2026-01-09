@@ -190,12 +190,12 @@ export default function StudentsPage() {
                     <div>
                         <SkeletonLoader isLoading={pageLoading} skeleton={<TitleSkeleton />} id="students-title">
                             <div className="flex items-center gap-2">
-                                <h2 className="text-2xl font-bold text-gray-800 dark:text-white/90">Listado de Estudiantes</h2>
-                                <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                                <h2 className="text-2xl font-bold text-text-primary dark:text-text-emphasis">Listado de Estudiantes</h2>
+                                <span className="inline-flex items-center rounded-full bg-bg-secondary px-2.5 py-0.5 text-xs font-medium text-text-primary dark:bg-white/5 dark:text-text-tertiary border border-border-light dark:border-border-dark">
                                     Demo
                                 </span>
                             </div>
-                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Gestiona la información y estado académico de los estudiantes.</p>
+                            <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">Gestiona la información y estado académico de los estudiantes.</p>
                         </SkeletonLoader>
                     </div>
 
@@ -206,7 +206,7 @@ export default function StudentsPage() {
                     )}
                 </div>
                 {!pageLoading && (
-                    <div className="mb-6 flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-700 dark:border-blue-900/30 dark:bg-blue-500/10 dark:text-blue-400">
+                    <div className="mb-6 flex items-center gap-3 rounded-xl border border-alert-info-border bg-alert-info-bg p-4 text-alert-info-text dark:border-blue-light-700 dark:bg-blue-light-950 dark:text-blue-light-400">
                         <InfoIcon className="h-5 w-5 shrink-0" />
                         <div className="text-sm">
                             <span className="font-bold">Modo Demostración Activo:</span> Esta vista utiliza datos estáticos locales. No se realizan conexiones a servicios externos.
@@ -217,10 +217,10 @@ export default function StudentsPage() {
                 <div className="space-y-6">
                     {/* Tabla de Estudiantes */}
                     <ComponentCard title={activeTab === "Activas" ? "Estudiantes Activos" : "Estudiantes Inactivos"}>
-                        <div className="mb-6 flex border-b border-gray-200 dark:border-white/5">
+                        <div className="mb-6 flex border-b border-border-light dark:border-border-dark">
                             <button
                                 onClick={() => setActiveTab("Activas")}
-                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Activas" ? "text-brand-500" : "text-gray-500 hover:text-gray-700"
+                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Activas" ? "text-brand-500" : "text-text-secondary hover:text-text-emphasis"
                                     }`}
                             >
                                 Activos
@@ -228,7 +228,7 @@ export default function StudentsPage() {
                             </button>
                             <button
                                 onClick={() => setActiveTab("Inactivas")}
-                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Inactivas" ? "text-brand-500" : "text-gray-500 hover:text-gray-700"
+                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Inactivas" ? "text-brand-500" : "text-text-secondary hover:text-text-emphasis"
                                     }`}
                             >
                                 Inactivos

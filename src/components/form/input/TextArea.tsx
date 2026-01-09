@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useRef } from "react";
+import React, { forwardRef, useEffect, useRef, useCallback } from "react";
 
 interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   error?: boolean;
@@ -32,19 +32,19 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       }
     };
 
-    const adjustHeight = () => {
+    const adjustHeight = useCallback(() => {
       const textarea = internalRef.current;
       if (textarea && autoResize) {
         textarea.style.height = "auto";
         textarea.style.height = `${textarea.scrollHeight}px`;
       }
-    };
+    }, [autoResize]);
 
     useEffect(() => {
       if (autoResize) {
         adjustHeight();
       }
-    }, [props.value, autoResize]);
+    }, [props.value, autoResize, adjustHeight]);
 
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       if (autoResize) {
@@ -58,11 +58,11 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     let textareaClasses = `w-full rounded-lg border px-4 py-2.5 text-sm shadow-theme-xs focus:outline-hidden transition-all duration-200 ease-in-out resize-none ${className} `;
 
     if (disabled) {
-      textareaClasses += ` bg-gray-100 opacity-50 text-gray-500 border-gray-300 cursor-not-allowed dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700`;
+      textareaClasses += ` bg-bg-secondary opacity-50 text-text-tertiary border-border-medium cursor-not-allowed dark:bg-white/5 dark:text-text-tertiary dark:border-border-dark`;
     } else if (error) {
-      textareaClasses += ` bg-transparent border-error-500 focus:border-error-300 focus:ring-3 focus:ring-error-500/10 dark:border-error-500 dark:bg-gray-900 dark:text-white/90 dark:focus:border-error-800`;
+      textareaClasses += ` bg-transparent border-error-500 focus:border-error-300 focus:ring-3 focus:ring-error-500/10 dark:border-error-500 dark:bg-bg-dark dark:text-text-emphasis dark:focus:border-error-800`;
     } else {
-      textareaClasses += ` bg-transparent text-gray-900 dark:text-gray-300 border-gray-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800`;
+      textareaClasses += ` bg-transparent text-text-primary dark:text-text-secondary border-border-medium focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:focus:border-brand-800`;
     }
 
     return (
@@ -78,7 +78,7 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         {hint && (
           <p
             className={`mt-1.5 text-xs ${
-              error ? "text-error-500" : "text-gray-500 dark:text-gray-400"
+              error ? "text-error-500" : "text-text-tertiary dark:text-text-tertiary"
             }`}
           >
             {hint}

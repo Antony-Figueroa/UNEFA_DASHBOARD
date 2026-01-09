@@ -326,7 +326,7 @@ export default function CrudExample() {
           <LineChartOne />
         </SkeletonLoader>
       </div>
-      <div className="col-span-1 flex items-center justify-center rounded-lg border border-dashed border-gray-200 p-4 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+      <div className="col-span-1 flex items-center justify-center rounded-lg border border-dashed border-border-light p-4 text-sm text-text-secondary dark:border-border-dark dark:text-text-tertiary">
         Slot para gráficos adicionales
       </div>
     </>
@@ -337,11 +337,11 @@ export default function CrudExample() {
       <a href="/dashboard" className="text-brand-600 hover:underline">
         Ir al dashboard
       </a>
-      <span className="text-gray-400">|</span>
+      <span className="text-text-tertiary">|</span>
       <a href="/careers" className="text-brand-600 hover:underline">
         Gestión de carreras
       </a>
-      <span className="text-gray-400">|</span>
+      <span className="text-text-tertiary">|</span>
       <a href="/period" className="text-brand-600 hover:underline">
         Gestión de períodos
       </a>
@@ -371,7 +371,7 @@ export default function CrudExample() {
               onClick={() => setActiveStatusFilter("todos")}
               className={`rounded-full px-3 py-1 text-xs font-medium ${activeStatusFilter === "todos"
                 ? "bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-200"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
+                : "bg-bg-secondary text-text-secondary hover:bg-bg-secondary/80 dark:bg-white/5 dark:text-text-tertiary"
                 }`}
             >
               Todos
@@ -381,7 +381,7 @@ export default function CrudExample() {
               onClick={() => setActiveStatusFilter("activo")}
               className={`rounded-full px-3 py-1 text-xs font-medium ${activeStatusFilter === "activo"
                 ? "bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-200"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
+                : "bg-bg-secondary text-text-secondary hover:bg-bg-secondary/80 dark:bg-white/5 dark:text-text-tertiary"
                 }`}
             >
               Activos
@@ -391,7 +391,7 @@ export default function CrudExample() {
               onClick={() => setActiveStatusFilter("inactivo")}
               className={`rounded-full px-3 py-1 text-xs font-medium ${activeStatusFilter === "inactivo"
                 ? "bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-200"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
+                : "bg-bg-secondary text-text-secondary hover:bg-bg-secondary/80 dark:bg-white/5 dark:text-text-tertiary"
                 }`}
             >
               Inactivos
@@ -426,15 +426,15 @@ export default function CrudExample() {
       >
         <ModalHeader>
           <div className="w-full">
-            <h4 className="mb-1 text-2xl font-semibold text-gray-800 dark:text-white/90">
+            <h4 className="mb-1 text-2xl font-semibold text-text-primary dark:text-white/90">
               {editingItem ? "Editar registro" : "Nuevo registro"}
             </h4>
-            <p className="text-sm text-gray-500 dark:text-gray-400 font-normal">
+            <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
               Completa la información del registro.
             </p>
           </div>
         </ModalHeader>
-        <ModalBody className="bg-gray-50/30 dark:bg-gray-900/50">
+        <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
           <CrudForm
             fields={formFields}
             initialValues={initialFormValues}

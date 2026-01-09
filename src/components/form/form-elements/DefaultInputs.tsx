@@ -49,9 +49,9 @@ export default function DefaultInputs() {
               className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
             >
               {showPassword ? (
-                <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                <EyeIcon className="fill-text-tertiary dark:fill-text-tertiary size-5" />
               ) : (
-                <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                <EyeCloseIcon className="fill-text-tertiary dark:fill-text-tertiary size-5" />
               )}
             </button>
           </div>
@@ -78,7 +78,7 @@ export default function DefaultInputs() {
               name="tm"
               onChange={(e) => console.log(e.target.value)}
             />
-            <span className="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-gray-400">
+            <span className="absolute text-text-tertiary -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-text-tertiary">
               <TimeIcon className="size-6" />
             </span>
           </div>
@@ -91,7 +91,7 @@ export default function DefaultInputs() {
               placeholder="Card number"
               className="pl-15.5"
             />
-            <span className="absolute left-0 top-1/2 flex h-11 w-11.5 -translate-y-1/2 items-center justify-center border-r border-gray-200 dark:border-gray-800">
+            <span className="absolute left-0 top-1/2 flex h-11 w-11.5 -translate-y-1/2 items-center justify-center border-r border-border-light dark:border-border-dark">
               <svg
                 width="20"
                 height="20"

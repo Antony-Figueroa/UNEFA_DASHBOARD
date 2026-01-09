@@ -58,11 +58,11 @@ const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
           {getIcon()}
         </div>
         
-        <h3 className={`${layout.titleSize} text-[#1A2B3B] dark:text-white/90 mb-4`}>
+        <h3 className={`${layout.titleSize} text-text-emphasis dark:text-text-emphasis mb-4`}>
           {title || "Notificación"}
         </h3>
         
-        <p className={`${layout.messageSize} text-gray-500 dark:text-gray-400 max-w-70`}>
+        <p className={`${layout.messageSize} text-text-secondary dark:text-text-tertiary max-w-70`}>
           {message}
         </p>
       </ModalBody>
@@ -73,7 +73,7 @@ const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
             <Button
               variant="outline"
               onClick={onClose}
-              className="flex-1 h-12 rounded-2xl border-gray-200 text-gray-600 font-semibold"
+              className="flex-1 h-12 rounded-2xl border-border-light text-text-primary font-semibold"
               disabled={isLoading}
             >
               {cancelLabel}

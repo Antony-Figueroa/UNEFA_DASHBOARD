@@ -50,16 +50,16 @@ const Badge: React.FC<BadgeProps> = ({
   const variants = {
     light: {
       primary:
-        "bg-brand-50 text-brand-500 border-brand-200 dark:bg-brand-500/15 dark:text-brand-400 dark:border-brand-500/20",
+        "bg-brand-50 text-brand-500 border-brand-200 dark:bg-brand-950 dark:text-brand-400 dark:border-brand-700",
       success:
-        "bg-success-50 text-success-600 border-success-200 dark:bg-success-500/15 dark:text-success-500 dark:border-success-500/20",
+        "bg-success-50 text-success-600 border-success-200 dark:bg-success-950 dark:text-success-500 dark:border-success-700",
       error:
-        "bg-error-50 text-error-600 border-error-200 dark:bg-error-500/15 dark:text-error-500 dark:border-error-500/20",
+        "bg-error-50 text-error-600 border-error-200 dark:bg-error-950 dark:text-error-500 dark:border-error-700",
       warning:
-        "bg-warning-50 text-warning-600 border-warning-200 dark:bg-warning-500/15 dark:text-orange-400 dark:border-warning-500/20",
-      info: "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20",
-      light: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-white/5 dark:text-white/80 dark:border-white/10",
-      dark: "bg-gray-500 text-white border-gray-600 dark:bg-white/5 dark:text-white dark:border-white/20",
+        "bg-warning-50 text-warning-600 border-warning-200 dark:bg-warning-950 dark:text-orange-400 dark:border-warning-700",
+      info: "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-700",
+      light: "bg-bg-secondary text-text-primary border-border-light dark:bg-white/3 dark:text-text-tertiary dark:border-border-dark",
+      dark: "bg-text-secondary text-white border-border-medium dark:bg-bg-dark dark:text-white dark:border-white/10",
     },
     solid: {
       primary: "bg-brand-500 text-white border-transparent dark:text-white",
@@ -67,8 +67,8 @@ const Badge: React.FC<BadgeProps> = ({
       error: "bg-error-500 text-white border-transparent dark:text-white",
       warning: "bg-warning-500 text-white border-transparent dark:text-white",
       info: "bg-blue-600 text-white border-transparent dark:text-white",
-      light: "bg-gray-400 border-transparent dark:bg-white/5 text-white dark:text-white/80",
-      dark: "bg-gray-700 text-white border-transparent dark:text-white",
+      light: "bg-bg-secondary border-transparent text-text-primary dark:bg-white/3 dark:text-text-tertiary",
+      dark: "bg-bg-dark text-white border-transparent dark:text-white",
     },
     outline: {
       primary: "bg-transparent text-brand-500 border-brand-500 dark:text-brand-400 dark:border-brand-400",
@@ -76,8 +76,8 @@ const Badge: React.FC<BadgeProps> = ({
       error: "bg-transparent text-error-600 border-error-600 dark:text-error-500 dark:border-error-500",
       warning: "bg-transparent text-warning-600 border-warning-600 dark:text-orange-400 dark:border-orange-400",
       info: "bg-transparent text-blue-600 border-blue-600 dark:text-blue-400 dark:border-blue-400",
-      light: "bg-transparent text-gray-700 border-gray-400 dark:text-white/80 dark:border-white/40",
-      dark: "bg-transparent text-gray-700 border-gray-700 dark:text-white dark:border-white/80",
+      light: "bg-transparent text-text-primary border-border-medium dark:text-text-tertiary dark:border-border-dark",
+      dark: "bg-transparent text-text-primary border-border-dark dark:text-text-emphasis dark:border-border-dark",
     },
   };
 

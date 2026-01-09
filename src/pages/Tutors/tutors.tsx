@@ -188,12 +188,12 @@ export default function TutorsPage() {
                     <div>
                         <SkeletonLoader isLoading={pageLoading} skeleton={<TitleSkeleton />} id="tutors-title">
                             <div className="flex items-center gap-2">
-                                <h2 className="text-2xl font-bold text-gray-800 dark:text-white/90">Listado de Tutores</h2>
-                                <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-800 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
-                                    Demo
-                                </span>
-                            </div>
-                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Gestiona la información y estado académico de los tutores.</p>
+                                    <h2 className="text-2xl font-bold text-text-primary dark:text-white/90">Listado de Tutores</h2>
+                                    <span className="inline-flex items-center rounded-full bg-bg-secondary px-2.5 py-0.5 text-xs font-medium text-text-primary dark:bg-bg-dark dark:text-text-tertiary border border-border-light dark:border-border-dark">
+                                        Demo
+                                    </span>
+                                </div>
+                                <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">Gestiona la información y estado académico de los tutores.</p>
                         </SkeletonLoader>
                     </div>
 
@@ -215,17 +215,17 @@ export default function TutorsPage() {
 
                 <div className="space-y-6">
                     <ComponentCard title={activeTab === "Activas" ? "Tutores Activos" : "Tutores Inactivos"}>
-                        <div className="mb-6 flex border-b border-gray-200 dark:border-white/5">
+                        <div className="mb-6 flex border-b border-border-light dark:border-white/5">
                             <button
                                 onClick={() => setActiveTab("Activas")}
-                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Activas" ? "text-brand-500" : "text-gray-500 hover:text-gray-700"}`}
+                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Activas" ? "text-brand-500" : "text-text-secondary hover:text-text-primary"}`}
                             >
                                 Activos
                                 {activeTab === "Activas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
                             </button>
                             <button
                                 onClick={() => setActiveTab("Inactivas")}
-                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Inactivas" ? "text-brand-500" : "text-gray-500 hover:text-gray-700"}`}
+                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Inactivas" ? "text-brand-500" : "text-text-secondary hover:text-text-primary"}`}
                             >
                                 Inactivos
                                 {activeTab === "Inactivas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}

@@ -263,7 +263,7 @@ export function CrudForm({
         })}
       </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-white/5">
+      <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-border-light dark:border-white/5">
         {renderFooterExtra}
         {secondaryActionLabel && onSecondaryAction && (
           <Button

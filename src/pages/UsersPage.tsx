@@ -30,7 +30,7 @@ const UsersPage = () => {
           isLoading={isLoading}
           id="users-page-chart"
           skeleton={
-            <div className="h-87.5 w-full bg-gray-200 dark:bg-gray-700 animate-pulse rounded-sm" />
+            <div className="h-87.5 w-full bg-bg-secondary dark:bg-white/5 animate-pulse rounded-sm" />
           }
         >
           <PeriodStatusChart />

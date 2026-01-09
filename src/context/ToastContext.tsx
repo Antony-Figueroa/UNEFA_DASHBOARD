@@ -14,7 +14,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setToasts((prev) => [...prev, newToast]);
 
     // Logging integration
-    console.log(`[Toast] [${timestamp.toISOString()}] [${toast.variant.toUpperCase()}] ${toast.title}`, toast.message);
+    const categoryInfo = toast.category ? ` [${toast.category}]` : "";
+    console.log(`[Toast] [${timestamp.toISOString()}] [${toast.variant.toUpperCase()}]${categoryInfo} ${toast.title}`, toast.message);
   }, []);
 
   const removeToast = useCallback((id: string) => {

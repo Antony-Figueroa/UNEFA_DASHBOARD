@@ -153,7 +153,7 @@ export default function InstitutionalResponsibleModal({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
             {/* Cédula */}
             <div>
-              <label className="mb-2 block text-gray-700 dark:text-white/90 font-bold text-xs uppercase tracking-wider">Cédula *</label>
+              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Cédula *</label>
               <div className="flex gap-2">
                 <div className="w-24 shrink-0">
                   <Controller
@@ -188,7 +188,7 @@ export default function InstitutionalResponsibleModal({
 
             {/* Institución */}
             <div className="lg:col-span-1">
-              <label className="mb-2 block text-gray-700 dark:text-white/90 font-bold text-xs uppercase tracking-wider">Institución *</label>
+              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Institución *</label>
               <Controller
                 name="institutionId"
                 control={control}
@@ -208,7 +208,7 @@ export default function InstitutionalResponsibleModal({
 
             {/* Primer Nombre */}
             <div>
-              <label className="mb-2 block text-gray-700 dark:text-white/90 font-bold text-xs uppercase tracking-wider">Primer Nombre *</label>
+              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Primer Nombre *</label>
               <Input 
                 placeholder="Ingrese el primer nombre" 
                 {...register("firstName")} 
@@ -219,7 +219,7 @@ export default function InstitutionalResponsibleModal({
 
             {/* Segundo Nombre */}
             <div>
-              <label className="mb-2 block text-gray-700 dark:text-white/90 font-bold text-xs uppercase tracking-wider">Segundo Nombre</label>
+              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Segundo Nombre</label>
               <Input 
                 placeholder="Ingrese el segundo nombre" 
                 {...register("middleName")} 
@@ -230,7 +230,7 @@ export default function InstitutionalResponsibleModal({
 
             {/* Primer Apellido */}
             <div>
-              <label className="mb-2 block text-gray-700 dark:text-white/90 font-bold text-xs uppercase tracking-wider">Primer Apellido *</label>
+              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Primer Apellido *</label>
               <Input 
                 placeholder="Ingrese el primer apellido" 
                 {...register("lastName")} 
@@ -241,7 +241,7 @@ export default function InstitutionalResponsibleModal({
 
             {/* Segundo Apellido */}
             <div>
-              <label className="mb-2 block text-gray-700 dark:text-white/90 font-bold text-xs uppercase tracking-wider">Segundo Apellido</label>
+              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Segundo Apellido</label>
               <Input 
                 placeholder="Ingrese el segundo apellido" 
                 {...register("secondLastName")} 
@@ -252,7 +252,7 @@ export default function InstitutionalResponsibleModal({
 
             {/* Teléfono */}
             <div>
-              <label className="mb-2 block text-gray-700 dark:text-white/90 font-bold text-xs uppercase tracking-wider">Teléfono *</label>
+              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Teléfono *</label>
               <div className="flex gap-2">
                 <div className="w-28 shrink-0">
                   <Controller
@@ -291,7 +291,7 @@ export default function InstitutionalResponsibleModal({
 
             {/* Correo Electrónico */}
             <div className="md:col-span-2 lg:col-span-2">
-              <label className="mb-2 block text-gray-700 dark:text-white/90 font-bold text-xs uppercase tracking-wider">Correo Electrónico *</label>
+              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Correo Electrónico *</label>
               <Input 
                 placeholder="Ingrese el correo electrónico" 
                 {...register("email")} 

@@ -1,0 +1,66 @@
+@import 'colors';
+
+// Button Standard Implementation
+.btn-primary {
+  background-color: $color-brand-normal;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: $color-brand-hover;
+  }
+
+  &:active {
+    background-color: $color-brand-active;
+  }
+
+  &:disabled {
+    background-color: $color-brand-disabled;
+    cursor: not-allowed;
+  }
+}
+
+// Input Field Standard Implementation
+.input-field {
+  border: 1px solid $color-border-medium;
+  background-color: $color-bg-main;
+  color: $color-text-primary;
+  padding: 8px 12px;
+  border-radius: 6px;
+  width: 100%;
+
+  &:focus {
+    outline: none;
+    border-color: $color-brand-normal;
+    box-shadow: 0 0 0 4px rgba(70, 95, 255, 0.12);
+  }
+
+  &::placeholder {
+    color: $color-text-tertiary;
+  }
+}
+
+// Alert Standard Implementation
+.alert {
+  padding: 16px;
+  border-radius: 8px;
+  border-width: 1px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+
+  &.alert-success {
+    background-color: $color-success-bg;
+    border-color: $color-success-normal;
+    color: $color-success-active;
+  }
+
+  &.alert-error {
+    background-color: $color-error-bg;
+    border-color: $color-error-normal;
+    color: $color-error-active;
+  }
+}

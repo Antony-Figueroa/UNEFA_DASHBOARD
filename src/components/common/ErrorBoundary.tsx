@@ -28,8 +28,8 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     if (this.state.hasError) {
       return this.props.fallback ?? (
         <div className="p-4">
-          <h2 className="text-lg font-semibold text-red-600">Ha ocurrido un error.</h2>
-          <p className="text-sm text-gray-600">Intenta recargar la página.</p>
+          <h2 className="text-lg font-semibold text-error-600">Ha ocurrido un error.</h2>
+          <p className="text-sm text-text-secondary">Intenta recargar la página.</p>
         </div>
       );
     }

@@ -41,34 +41,34 @@ const usersData: User[] = [
 
 const UserList = () => {
   return (
-    <div className="rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1">
+    <div className="rounded-sm border border-border-light bg-bg-main px-5 pt-6 pb-2.5 shadow-default dark:border-border-dark dark:bg-bg-dark sm:px-7.5 xl:pb-1">
       <div className="flex justify-between items-center mb-6">
-        <h4 className="text-xl font-semibold text-black dark:text-white">
+        <h4 className="text-xl font-semibold text-text-primary dark:text-white/90">
           Top Usuarios
         </h4>
-        <button className="flex justify-center rounded bg-primary py-2 px-6 font-medium text-gray hover:bg-opacity-90">
+        <button className="flex justify-center rounded bg-primary py-2 px-6 font-medium text-white hover:bg-opacity-90">
           Añadir Usuario
         </button>
       </div>
 
       <div className="flex flex-col">
         {/* Cabecera de la tabla */}
-        <div className="grid grid-cols-3 rounded-sm bg-gray-2 dark:bg-meta-4 sm:grid-cols-4">
+        <div className="grid grid-cols-3 rounded-sm bg-bg-secondary dark:bg-white/5 sm:grid-cols-4">
           <div className="p-2.5 xl:p-5">
-            <h5 className="text-sm font-medium uppercase xsm:text-base">
+            <h5 className="text-sm font-medium uppercase xsm:text-base text-text-primary dark:text-white/90">
               Nombre
             </h5>
           </div>
           <div className="p-2.5 text-center xl:p-5">
-            <h5 className="text-sm font-medium uppercase xsm:text-base">Rol</h5>
+            <h5 className="text-sm font-medium uppercase xsm:text-base text-text-primary dark:text-white/90">Rol</h5>
           </div>
           <div className="hidden p-2.5 text-center sm:block xl:p-5">
-            <h5 className="text-sm font-medium uppercase xsm:text-base">
+            <h5 className="text-sm font-medium uppercase xsm:text-base text-text-primary dark:text-white/90">
               Email
             </h5>
           </div>
           <div className="p-2.5 text-center xl:p-5">
-            <h5 className="text-sm font-medium uppercase xsm:text-base">
+            <h5 className="text-sm font-medium uppercase xsm:text-base text-text-primary dark:text-white/90">
               Estado
             </h5>
           </div>
@@ -79,7 +79,7 @@ const UserList = () => {
           <div
             className={`grid grid-cols-3 sm:grid-cols-4 ${key === usersData.length - 1
                 ? ""
-                : "border-b border-stroke dark:border-strokedark"
+                : "border-b border-border-light dark:border-border-dark"
               }`}
             key={key}
           >
@@ -91,17 +91,17 @@ const UserList = () => {
                   className="w-10 h-10 rounded-full"
                 />
               </div>
-              <p className="hidden text-black dark:text-white sm:block">
+              <p className="hidden text-text-primary dark:text-white/90 sm:block">
                 {user.name}
               </p>
             </div>
 
             <div className="flex items-center justify-center p-2.5 xl:p-5">
-              <p className="text-black dark:text-white">{user.role}</p>
+              <p className="text-text-primary dark:text-white/90">{user.role}</p>
             </div>
 
             <div className="hidden items-center justify-center p-2.5 sm:flex xl:p-5">
-              <p className="text-black dark:text-white">{user.email}</p>
+              <p className="text-text-primary dark:text-white/90">{user.email}</p>
             </div>
 
             <div className="flex items-center justify-center p-2.5 xl:p-5">

@@ -43,13 +43,12 @@ const periodSchema = z.object({
     }
     // Validación de 16 semanas (16 semanas * 7 días * 24 horas * 60 min * 60 seg * 1000 ms)
     const minDuration = 16 * 7 * 24 * 60 * 60 * 1000;
-    const maxDuration = minDuration + (24 * 60 * 60 * 1000 - 1); // Permitir hasta el final del último día
     const duration = data.endDate.getTime() - data.startDate.getTime();
 
-    if (duration < minDuration || duration > maxDuration) {
+    if (duration < minDuration) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "El período debe tener una duración exacta de 16 semanas.",
+            message: "El período debe tener una duración mínima de 16 semanas.",
             path: ["endDate"]
         });
     }
@@ -261,33 +260,33 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
         <Modal isOpen={isOpen} onClose={onClose} showCloseButton>
             <ModalHeader>
                 <div className="max-w-3xl mx-auto w-full">
-                    <h5 className="mb-1 font-semibold text-gray-800 modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+                    <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
                         {periodo ? 'Editar Período' : 'Registrar Período'}
                     </h5>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 font-normal">
+                    <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
                         {periodo ? 'Modifica los detalles del período académico.' : 'Ingresa los detalles del nuevo período académico.'}
                     </p>
                 </div>
             </ModalHeader>
 
-            <ModalBody className="bg-gray-50/30 dark:bg-gray-900/50">
+            <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
                 <form id="period-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-3xl mx-auto">
                     <div className="grid grid-cols-1 gap-y-5">
                         <div>
                             <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Lapso Académico *</label>
-                            <div className={`flex items-center rounded-lg border ${errors.year || errors.periodoTipo ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'} bg-white dark:bg-gray-800`}>
-                                <div className="relative w-full border-r border-gray-300 dark:border-gray-700">
+                            <div className={`flex items-center rounded-lg border ${errors.year || errors.periodoTipo ? 'border-red-500' : 'border-border-light dark:border-border-dark'} bg-white dark:bg-bg-dark`}>
+                                <div className="relative w-full border-r border-border-light dark:border-border-dark">
                                     <select
                                         disabled={isCulminado || isInCurso}
                                         {...register('year')}
-                                        className="w-full appearance-none bg-transparent py-2.5 pl-4 pr-10 text-sm text-gray-800 outline-none dark:text-white"
+                                        className="w-full appearance-none bg-transparent py-2.5 pl-4 pr-10 text-sm text-text-primary outline-none dark:text-white"
                                     >
-                                        <option value="" disabled className="bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Seleccione Año</option>
+                                        <option value="" disabled className="bg-white dark:bg-bg-dark text-text-secondary dark:text-text-tertiary">Seleccione Año</option>
                                         {yearOptions.map(option => (
-                                            <option key={option} value={option} className="bg-white dark:bg-gray-800 text-black dark:text-white">{option}</option>
+                                            <option key={option} value={option} className="bg-white dark:bg-bg-dark text-black dark:text-white">{option}</option>
                                         ))}
                                     </select>
-                                    <span className="absolute top-1/2 right-3 -translate-y-1/2 pointer-events-none text-gray-500 dark:text-gray-400">
+                                    <span className="absolute top-1/2 right-3 -translate-y-1/2 pointer-events-none text-text-secondary dark:text-text-tertiary">
                                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                         </svg>
@@ -298,12 +297,12 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                                     <select
                                         disabled={isCulminado || isInCurso}
                                         {...register('periodoTipo')}
-                                        className="w-full appearance-none bg-transparent py-2.5 pl-4 pr-10 text-sm text-gray-800 outline-none dark:text-white text-center font-medium"
+                                        className="w-full appearance-none bg-transparent py-2.5 pl-4 pr-10 text-sm text-text-primary outline-none dark:text-white text-center font-medium"
                                     >
-                                        <option value="I" className="bg-white dark:bg-gray-800 text-black dark:text-white font-medium">I</option>
-                                        <option value="II" className="bg-white dark:bg-gray-800 text-black dark:text-white font-medium">II</option>
+                                        <option value="I" className="bg-white dark:bg-bg-dark text-black dark:text-white font-medium">I</option>
+                                        <option value="II" className="bg-white dark:bg-bg-dark text-black dark:text-white font-medium">II</option>
                                     </select>
-                                    <span className="absolute top-1/2 right-3 -translate-y-1/2 pointer-events-none text-gray-500 dark:text-gray-400">
+                                    <span className="absolute top-1/2 right-3 -translate-y-1/2 pointer-events-none text-text-secondary dark:text-text-tertiary">
                                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                         </svg>
@@ -369,7 +368,7 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                 </form>
             </ModalBody>
 
-            <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+            <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
                 <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-4xl mx-auto">
                     <Button variant="outline" onClick={onClose} disabled={isLoading} className="w-full sm:w-auto min-h-12">
                         Cancelar

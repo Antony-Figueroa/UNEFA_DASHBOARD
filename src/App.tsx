@@ -95,6 +95,7 @@ import Students from "./pages/Students/students";
 import Tutors from "./pages/Tutors/tutors";
 import InstitutionsPage from "./pages/Institutions/institutions";
 import PreEnrollmentPage from "./pages/PreEnrollment/PreEnrollment";
+import EnrollmentPage from "./pages/Enrollment/Enrollment";
 import ToastContainer from "./components/ui/toast/ToastContainer";
 
 // ============================================================================
@@ -203,6 +204,9 @@ import Period from "./pages/Period/period";
 import CareersPage from "./pages/Careers/careers";
 import CrudExample from "./pages/Management/CrudExample";
 
+// Vercel Analytics
+import { Analytics } from "@vercel/analytics/react"
+
 /**
  * Componente raíz de la aplicación React
  * @function App
@@ -220,6 +224,7 @@ import CrudExample from "./pages/Management/CrudExample";
 export default function App() {
   return (
     <>
+      <Analytics />
       <ToastContainer />
       {/* 
         Router principal de la aplicación
@@ -280,6 +285,9 @@ export default function App() {
 
             {/* {Pre-Inscripción} */}
             <Route path="/pre-enrollment" element={<PreEnrollmentPage />} />
+
+            {/* {Inscripción} */}
+            <Route path="/enrollment" element={<EnrollmentPage />} />
 
             {/* ================================================================
                SECCIÓN: FORMULARIOS

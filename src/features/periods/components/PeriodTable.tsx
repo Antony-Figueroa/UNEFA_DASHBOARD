@@ -194,7 +194,7 @@ const ActionMenu = ({
             <button
                 ref={trigger}
                 onClick={toggleMenu}
-                className="dropdown-toggle inline-flex items-center rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 min-h-12 min-w-12 justify-center"
+                className="dropdown-toggle inline-flex items-center rounded-full p-1 text-text-secondary hover:bg-bg-secondary hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/5 min-h-12 min-w-12 justify-center"
                 title="Acciones"
                 aria-label="Menú de acciones"
             >
@@ -226,7 +226,7 @@ const ActionMenu = ({
                             {onView && (
                                 <DropdownItem
                                     onItemClick={() => handleAction(onView)}
-                                    className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
+                                    className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-tertiary"
                                 >
                                     <EyeIcon className="icon-sm" />
                                     Ver Detalles
@@ -235,7 +235,7 @@ const ActionMenu = ({
                             {hasStatus && currentPeriodStatus !== 3 && onEdit && (
                                 <DropdownItem
                                     onItemClick={() => handleAction(onEdit)}
-                                    className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
+                                    className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-tertiary"
                                 >
                                     <EditIcon className="icon-sm" />
                                     Editar
@@ -400,7 +400,7 @@ const PeriodTable = ({
         return (
             <div className="flex flex-col items-center justify-center py-12 text-red-500 animate-fadeIn">
                 <p className="font-semibold text-red-600 dark:text-red-400">Error al cargar periodos</p>
-                <p className="text-sm text-gray-600 dark:text-gray-300">{error?.message || "Por favor, intente de nuevo más tarde."}</p>
+                <p className="text-sm text-text-secondary dark:text-text-tertiary">{error?.message || "Por favor, intente de nuevo más tarde."}</p>
             </div>
         );
     }
@@ -452,7 +452,7 @@ const PeriodTable = ({
     return (
         <div className="table-container">
             {/* Search and Filter Bar */}
-            <div className="p-4 border-b border-gray-100 dark:border-white/5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="p-4 border-b border-border-light dark:border-white/5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                     <div className="relative max-w-xs w-full">
                         <input
@@ -460,9 +460,9 @@ const PeriodTable = ({
                             placeholder="Buscar por descripción..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full rounded-lg border border-gray-300 bg-transparent py-2 pl-10 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+                            className="w-full rounded-lg border border-border-medium bg-transparent py-2 pl-10 pr-4 text-sm text-text-primary placeholder-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 dark:placeholder-text-tertiary"
                         />
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary">
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 fill="none"
@@ -483,22 +483,22 @@ const PeriodTable = ({
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="w-full rounded-lg border border-gray-300 bg-transparent py-2 px-4 pr-10 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white appearance-none"
+                            className="w-full rounded-lg border border-border-medium bg-transparent py-2 px-4 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 appearance-none"
                         >
-                            <option value="" className="dark:bg-gray-800">
+                            <option value="" className="dark:bg-bg-dark">
                                 Seleccione Estado
                             </option>
-                            <option value="2" className="dark:bg-gray-800">
+                            <option value="2" className="dark:bg-bg-dark">
                                 En Curso
                             </option>
-                            <option value="1" className="dark:bg-gray-800">
+                            <option value="1" className="dark:bg-bg-dark">
                                 Pendiente
                             </option>
-                            <option value="3" className="dark:bg-gray-800">
+                            <option value="3" className="dark:bg-bg-dark">
                                 Culminado
                             </option>
                         </select>
-                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
@@ -507,7 +507,7 @@ const PeriodTable = ({
                 </div>
 
                 <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
-                    {(searchTerm || statusFilter !== "Todos") && (
+                    {(searchTerm || statusFilter !== "") && (
                         <button
                             onClick={clearFilters}
                             className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
@@ -521,7 +521,7 @@ const PeriodTable = ({
                         {currentData.length > 0 && (
                             <button
                                 onClick={toggleAllRows}
-                                className="md:hidden flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:bg-white/5 dark:text-gray-400 transition-colors min-h-12"
+                                className="md:hidden flex items-center gap-2 rounded-lg bg-bg-secondary px-3 py-2 text-xs font-medium text-text-secondary hover:bg-bg-secondary/80 dark:bg-white/5 dark:text-text-tertiary transition-colors min-h-12"
                             >
                                 {expandedRows.size === currentData.length ? (
                                     <>
@@ -603,7 +603,7 @@ const PeriodTable = ({
                             </TableCell>
                         </TableRow>
                     </TableHeader>
-                    <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
+                    <TableBody className="divide-y divide-border-light dark:divide-white/5">
                         {currentData.length > 0 ? (
                             currentData.map((periodo) => {
                                 const periodStatus = getSafePeriodStatus(periodo);
@@ -612,15 +612,15 @@ const PeriodTable = ({
                                 return (
                                     <TableRow
                                         key={periodId}
-                                        className={`${highlightedRow === periodId ? 'bg-gray-50 dark:bg-gray-800' : ''} table-row-hover`}
+                                        className={`${highlightedRow === periodId ? 'bg-bg-secondary dark:bg-bg-dark' : ''} table-row-hover`}
                                     >
-                                        <TableCell className="table-cell font-medium text-gray-800 dark:text-white/90">
+                                        <TableCell className="table-cell font-medium text-text-primary dark:text-white/90">
                                             {periodo.description}
                                         </TableCell>
-                                        <TableCell className="table-cell text-gray-500 dark:text-gray-400">
+                                        <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                             {periodo.startDate || "-"}
                                         </TableCell>
-                                        <TableCell className="table-cell text-gray-500 dark:text-gray-400">
+                                        <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                             {periodo.endDate || "-"}
                                         </TableCell>
                                         <TableCell className="table-cell">
@@ -637,13 +637,13 @@ const PeriodTable = ({
                                         <TableCell className="table-cell">
                                             {getSafePeriodStatus(periodo) === 2 && getSafeProgress(periodo) !== null ? (
                                                 <div className="group relative flex items-center gap-2 cursor-help">
-                                                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                                                    <div className="w-full bg-border-light rounded-full h-2.5 dark:bg-border-dark">
                                                         <div
                                                             className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
                                                             style={{ width: `${getSafeProgress(periodo)}%` }}
                                                         ></div>
                                                     </div>
-                                                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                                                    <span className="text-xs font-medium text-text-secondary dark:text-text-tertiary">
                                                         {Math.round(getSafeProgress(periodo) ?? 0)}%
                                                     </span>
                                                     {/* Tooltip */}
@@ -655,7 +655,7 @@ const PeriodTable = ({
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <span className="text-gray-400 dark:text-gray-500">
+                                                <span className="text-text-tertiary dark:text-text-secondary">
                                                     -
                                                 </span>
                                             )}
@@ -715,7 +715,7 @@ const PeriodTable = ({
             </div>
 
             {/* Mobile View (Card format) */}
-            <div className="md:hidden divide-y divide-gray-100 dark:divide-white/5">
+            <div className="md:hidden divide-y divide-border-light dark:divide-white/5">
                 {currentData.length > 0 ? (
                     currentData.map((periodo, index) => {
                         const periodStatus = getSafePeriodStatus(periodo);
@@ -735,15 +735,15 @@ const PeriodTable = ({
                                                     {getStatusLabel(periodStatus)}
                                                 </Badge>
                                             </div>
-                                            <h3 className="text-sm font-bold text-gray-800 dark:text-white/90 leading-tight truncate px-12">
+                                            <h3 className="text-sm font-bold text-text-primary dark:text-white/90 leading-tight truncate px-12">
                                                 {periodo.description}
                                             </h3>
                                             <div className="flex items-center justify-center gap-4 mt-2">
-                                                <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                <div className="text-[11px] text-text-secondary dark:text-text-tertiary">
                                                     <span className="block font-medium uppercase tracking-wider opacity-60">Inicio</span>
                                                     {periodo.startDate || "-"}
                                                 </div>
-                                                <div className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                <div className="text-[11px] text-text-secondary dark:text-text-tertiary">
                                                     <span className="block font-medium uppercase tracking-wider opacity-60">Fin</span>
                                                     {periodo.endDate || "-"}
                                                 </div>
@@ -752,7 +752,7 @@ const PeriodTable = ({
                                         <div className="absolute right-2 top-2">
                                             <button
                                                 onClick={() => toggleRowExpansion(periodId)}
-                                                className="p-2 text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
+                                                className="p-2 text-text-tertiary hover:bg-bg-secondary dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
                                                 style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
                                                 aria-label={isExpanded ? "Contraer" : "Expandir"}
                                             >
@@ -763,30 +763,30 @@ const PeriodTable = ({
                                 </div>
 
                                 {isExpanded && (
-                                    <div className="mt-4 pt-4 border-t border-gray-50 dark:border-white/5 animate-fadeIn">
+                                    <div className="mt-4 pt-4 border-t border-border-light dark:border-white/5 animate-fadeIn">
                                         <div className="space-y-6">
                                             {periodStatus === 2 && getSafeProgress(periodo) !== null && (
                                                 <div className="text-center">
-                                                    <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-3">Progreso del Periodo</p>
+                                                    <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-3">Progreso del Periodo</p>
                                                     <div className="flex flex-col items-center gap-2">
-                                                        <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700 max-w-50">
+                                                        <div className="w-full bg-border-light rounded-full h-2 dark:bg-border-dark max-w-50">
                                                             <div
                                                                 className="bg-blue-600 h-2 rounded-full"
                                                                 style={{ width: `${getSafeProgress(periodo)}%` }}
                                                             ></div>
                                                         </div>
-                                                        <span className="text-xs font-bold text-gray-700 dark:text-gray-200">
+                                                        <span className="text-xs font-bold text-text-primary dark:text-text-tertiary">
                                                             {Math.round(getSafeProgress(periodo) ?? 0)}%
                                                         </span>
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-4 mt-6">
-                                                        <div className="bg-gray-50 dark:bg-white/5 p-3 rounded-xl">
-                                                            <p className="text-[9px] text-gray-400 uppercase font-bold mb-1">Días Transcurridos</p>
-                                                            <p className="text-xs font-bold dark:text-gray-200">{periodo.daysPassed} días</p>
+                                                        <div className="bg-bg-secondary dark:bg-white/5 p-3 rounded-xl">
+                                                            <p className="text-[9px] text-text-tertiary uppercase font-bold mb-1">Días Transcurridos</p>
+                                                            <p className="text-xs font-bold dark:text-text-tertiary">{periodo.daysPassed} días</p>
                                                         </div>
-                                                        <div className="bg-gray-50 dark:bg-white/5 p-3 rounded-xl">
-                                                            <p className="text-[9px] text-gray-400 uppercase font-bold mb-1">Días Restantes</p>
-                                                            <p className="text-xs font-bold dark:text-gray-200">{periodo.daysRemaining} días</p>
+                                                        <div className="bg-bg-secondary dark:bg-white/5 p-3 rounded-xl">
+                                                            <p className="text-[9px] text-text-tertiary uppercase font-bold mb-1">Días Restantes</p>
+                                                            <p className="text-xs font-bold dark:text-text-tertiary">{periodo.daysRemaining} días</p>
                                                         </div>
                                                     </div>
                                                     <div className="mt-4 bg-blue-50/50 dark:bg-blue-500/10 p-4 rounded-xl">
@@ -800,7 +800,7 @@ const PeriodTable = ({
                                                 {!!periodo.status && periodStatus === 3 && onView && (
                                                     <button
                                                         onClick={() => onView(periodo)}
-                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-primary dark:text-text-tertiary rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-light dark:hover:border-white/10"
                                                     >
                                                         <EyeIcon className="icon-sm" /> Ver
                                                     </button>
@@ -808,7 +808,7 @@ const PeriodTable = ({
                                                 {!!periodo.status && periodStatus !== 3 && onEdit && (
                                                     <button
                                                         onClick={() => onEdit(periodo)}
-                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-primary dark:text-text-tertiary rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-light dark:hover:border-white/10"
                                                     >
                                                         <EditIcon className="icon-sm" /> Editar
                                                     </button>

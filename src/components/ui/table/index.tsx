@@ -41,7 +41,7 @@ const Table: React.FC<TableProps> = ({ children, className }) => {
 // TableHeader Component
 const TableHeader: React.FC<TableHeaderProps> = ({ children, className }) => {
   return (
-    <thead className={`bg-gray-50/50 dark:bg-white/5 border-b border-gray-100 dark:border-white/5 ${className ?? ""}`}>
+    <thead className={`bg-bg-secondary/50 dark:bg-white/5 border-b border-border-light dark:border-border-dark/50 ${className ?? ""}`}>
       {children}
     </thead>
   );
@@ -49,7 +49,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({ children, className }) => {
 
 // TableBody Component
 const TableBody: React.FC<TableBodyProps> = ({ children, className }) => {
-  return <tbody className={`divide-y divide-gray-100 dark:divide-white/5 ${className ?? ""}`}>{children}</tbody>;
+  return <tbody className={`divide-y divide-border-light dark:divide-border-dark/50 ${className ?? ""}`}>{children}</tbody>;
 };
 
 // TableRow Component
@@ -67,8 +67,8 @@ const TableCell: React.FC<TableCellProps> = ({
 }) => {
   const CellTag = isHeader ? "th" : "td";
   const baseClasses = isHeader
-    ? "px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400"
-    : "px-6 py-4 text-sm text-gray-600 dark:text-gray-400";
+    ? "px-6 py-4 text-left text-xs font-bold text-text-tertiary uppercase tracking-wider dark:text-text-tertiary"
+    : "px-6 py-4 text-sm text-text-secondary dark:text-text-tertiary";
     
   return (
     <CellTag className={`${baseClasses} ${className ?? ""}`} colSpan={colSpan} onClick={onClick}>

@@ -222,19 +222,18 @@ export default function StudentTable({
 
     return (
         <div className="table-container">
-            <div className="p-4 border-b border-gray-100 dark:border-white/5 space-y-4">
+            <div className="p-4 border-b border-border-light dark:border-border-dark space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Filtro por Cédula */}
                     <div className="relative">
-                        {/* <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1 ml-1">Cédula</label> */}
                         <input
                             type="text"
                             placeholder="Buscar por cédula"
                             value={idFilter}
                             onChange={(e) => setIdFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-10 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-10 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary"
                         />
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                             </svg>
@@ -243,44 +242,41 @@ export default function StudentTable({
 
                     {/* Filtro por Nombres */}
                     <div className="relative">
-                        {/* <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1 ml-1">Nombres</label> */}
                         <input
                             type="text"
                             placeholder="Buscar nombres"
                             value={nameFilter}
                             onChange={(e) => setNameFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary"
                         />
                     </div>
 
                     {/* Filtro por Apellidos */}
                     <div className="relative">
-                        {/* <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1 ml-1">Apellidos</label> */}
                         <input
                             type="text"
                             placeholder="Buscar apellidos"
                             value={lastNameFilter}
                             onChange={(e) => setLastNameFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary"
                         />
                     </div>
 
                     {/* Filtro por Carrera */}
                     <div className="relative">
-                        {/* <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1 ml-1">Carrera</label> */}
                         <select
                             value={careerFilter}
                             onChange={(e) => setCareerFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-10 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white appearance-none"
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                         >
-                            <option value="">Todas las Carreras</option>
+                            <option value="" className="dark:bg-bg-dark">Todas las Carreras</option>
                             {careerOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
+                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                                     {opt.label}
                                 </option>
                             ))}
                         </select>
-                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
@@ -288,10 +284,10 @@ export default function StudentTable({
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-gray-50 dark:border-white/5">
+                <div className="flex items-center justify-between pt-2 border-t border-border-light dark:border-border-dark">
                     <div className="flex items-center gap-4">
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                            Mostrando <span className="font-bold text-gray-700 dark:text-white">{filteredData.length}</span> resultados
+                        <div className="text-xs text-text-secondary dark:text-text-tertiary">
+                            Mostrando <span className="font-bold text-text-primary dark:text-text-emphasis">{filteredData.length}</span> resultados
                         </div>
                         {(idFilter || nameFilter || lastNameFilter || careerFilter) && (
                             <button
@@ -308,7 +304,7 @@ export default function StudentTable({
                         {paged.length > 0 && (
                             <button
                                 onClick={toggleAllRows}
-                                className="md:hidden flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:bg-white/5 dark:text-gray-400 transition-colors min-h-12"
+                                className="md:hidden flex items-center gap-2 rounded-lg bg-bg-secondary px-3 py-2 text-xs font-medium text-text-secondary hover:bg-bg-tertiary dark:bg-white/5 dark:text-text-tertiary transition-colors min-h-12"
                             >
                                 {expandedRows.size === paged.length ? (
                                     <>
@@ -326,7 +322,7 @@ export default function StudentTable({
 
                         {selectedIds.length > 0 && (
                             <div className="flex items-center gap-2 animate-fadeIn">
-                                <span className="hidden sm:inline text-xs font-medium text-gray-600 dark:text-gray-400 mr-2">
+                                <span className="hidden sm:inline text-xs font-medium text-text-secondary dark:text-text-tertiary mr-2">
                                     {selectedIds.length} seleccionados
                                 </span>
                                 {activeTab === "Activas" ? (
@@ -355,7 +351,7 @@ export default function StudentTable({
             {/* Vista de Escritorio (Tabla) */}
             <div className="hidden md:block max-w-full overflow-x-auto table-scrollbar">
                 <Table className="table-root">
-                    <TableHeader className="table-header-row bg-gray-50 dark:bg-gray-800/50">
+                    <TableHeader className="table-header-row">
                         <TableRow>
                             <TableCell isHeader className="table-header-cell w-10">
                                 <Checkbox
@@ -384,42 +380,42 @@ export default function StudentTable({
                             <TableCell isHeader className="table-header-cell text-right">Acciones</TableCell>
                         </TableRow>
                     </TableHeader>
-                    <TableBody className="divide-y divide-gray-100 dark:divide-white/5">
+                    <TableBody className="divide-y divide-border-light dark:divide-border-dark">
                         {paged.length > 0 ? (
                             paged.map((s, index) => (
                                 <TableRow
                                     key={s.studentId}
-                                    className={`table-row-hover ${index % 2 === 0 ? "bg-white dark:bg-transparent" : "bg-gray-50/50 dark:bg-white/2"} ${selectedIds.includes(s.studentId) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
+                                    className={`table-row-hover ${index % 2 === 0 ? "bg-white dark:bg-transparent" : "bg-bg-secondary/50 dark:bg-white/2"} ${selectedIds.includes(s.studentId) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
                                 >
                                     <TableCell className="table-cell">
                                         <Checkbox checked={selectedIds.includes(s.studentId)} onChange={(checked) => handleSelectRow(s.studentId, checked)} />
                                     </TableCell>
-                                    <TableCell className="table-cell font-medium text-gray-800 dark:text-white/90">
+                                    <TableCell className="table-cell font-medium text-text-primary dark:text-text-emphasis">
                                         {s.identificationPrefix}-{s.identificationNumber}
                                     </TableCell>
-                                    <TableCell className="table-cell text-gray-600 dark:text-gray-400 font-semibold uppercase">
+                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary font-semibold uppercase">
                                         {s.firstName} {s.middleName}
                                     </TableCell>
-                                    <TableCell className="table-cell text-gray-600 dark:text-gray-400 font-semibold uppercase">
+                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary font-semibold uppercase">
                                         {s.lastName} {s.secondLastName}
                                     </TableCell>
-                                    <TableCell className="table-cell text-gray-500 dark:text-gray-400">{s.sex}</TableCell>
-                                    <TableCell className="table-cell text-gray-500 dark:text-gray-400 whitespace-nowrap">{s.phone}</TableCell>
-                                    <TableCell className="table-cell text-gray-500 dark:text-gray-400">{s.email}</TableCell>
+                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">{s.sex}</TableCell>
+                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary whitespace-nowrap">{s.phone}</TableCell>
+                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">{s.email}</TableCell>
                                     <TableCell className="table-cell">
                                         {s.careerName ? (
                                             <Badge color={getCareerColor(s.careerName)} variant="light" size="sm" shape="rounded">
                                                 {s.careerName}
                                             </Badge>
                                         ) : (
-                                            <span className="text-gray-400">N/A</span>
+                                            <span className="text-text-tertiary">N/A</span>
                                         )}
                                     </TableCell>
                                     <TableCell className="table-cell text-right relative">
                                         <div className="flex justify-end">
                                             <button
                                                 type="button"
-                                                className="dropdown-toggle inline-flex items-center rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 min-h-12 min-w-12 justify-center"
+                                                className="dropdown-toggle inline-flex items-center rounded-full p-1 text-text-secondary hover:bg-bg-secondary hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/5 min-h-12 min-w-12 justify-center"
                                                 aria-label="Acciones"
                                                 onClick={(e) => {
                                                     setAnchorEl(e.currentTarget as HTMLElement);
@@ -441,7 +437,7 @@ export default function StudentTable({
                                                 {onView && (
                                                     <DropdownItem
                                                         onItemClick={() => onView(s)}
-                                                        className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
+                                                        className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-emphasis"
                                                     >
                                                         <EyeIcon className="icon-sm" /> Ver Detalles
                                                     </DropdownItem>
@@ -449,7 +445,7 @@ export default function StudentTable({
                                                 {onEdit && activeTab === "Activas" && (
                                                     <DropdownItem
                                                         onItemClick={() => onEdit(s)}
-                                                        className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
+                                                        className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-emphasis"
                                                     >
                                                         <EditIcon className="icon-sm" /> Editar
                                                     </DropdownItem>
@@ -480,13 +476,13 @@ export default function StudentTable({
                             <TableRow>
                                 <TableCell className="table-cell py-24 text-center" colSpan={9}>
                                     <div className="flex flex-col items-center justify-center animate-fadeIn">
-                                        <div className="mb-4 rounded-full bg-gray-50 p-4 dark:bg-white/5">
-                                            <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <div className="mb-4 rounded-full bg-bg-secondary p-4 dark:bg-white/5">
+                                            <svg className="h-8 w-8 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                             </svg>
                                         </div>
-                                        <h3 className="text-sm font-bold text-gray-800 dark:text-white">No se encontraron estudiantes</h3>
-                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Intenta ajustar los filtros para encontrar lo que buscas.</p>
+                                        <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron estudiantes</h3>
+                                        <p className="mt-1 text-xs text-text-secondary dark:text-text-tertiary">Intenta ajustar los filtros para encontrar lo que buscas.</p>
                                         {(idFilter || nameFilter || lastNameFilter || careerFilter) && (
                                             <button
                                                 onClick={clearFilters}
@@ -504,7 +500,7 @@ export default function StudentTable({
             </div>
 
             {/* Vista Móvil (Cards) */}
-            <div className="md:hidden divide-y divide-gray-100 dark:divide-white/5">
+            <div className="md:hidden divide-y divide-border-light dark:divide-border-dark">
                 {paged.length > 0 ? (
                     paged.map((s, index) => {
                         const rowId = s.studentId ?? `idx-${index}`;
@@ -514,14 +510,14 @@ export default function StudentTable({
                                 <div className="flex flex-col items-center gap-2">
                                     <div className="flex items-center justify-between w-full">
                                         <div className="flex-1 text-center">
-                                            <h3 className="text-sm font-bold text-gray-800 dark:text-white/90 leading-tight truncate px-8">
+                                            <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8">
                                                 {s.fullNames}
                                             </h3>
-                                            <p className="text-xs text-gray-500 mt-1 truncate">{s.identificationPrefix}-{s.identificationNumber}</p>
+                                            <p className="text-xs text-text-secondary dark:text-text-tertiary mt-1 truncate">{s.identificationPrefix}-{s.identificationNumber}</p>
                                         </div>
                                         <button
                                             onClick={() => toggleRowExpansion(rowId)}
-                                            className="absolute right-2 top-2 p-2 text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
+                                            className="absolute right-2 top-2 p-2 text-text-tertiary hover:bg-bg-secondary dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
                                             style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
                                         >
                                             <ChevronDownIcon className="w-5 h-5" />
@@ -530,31 +526,31 @@ export default function StudentTable({
                                 </div>
 
                                 {isExpanded && (
-                                    <div className="mt-4 space-y-6 animate-fadeIn border-t border-gray-50 dark:border-white/5 pt-6">
+                                    <div className="mt-4 space-y-6 animate-fadeIn border-t border-border-light dark:border-border-dark pt-6">
                                         <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
                                             <div className="flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Carrera</p>
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Carrera</p>
                                                 <div className="flex justify-center w-full">
                                                     {s.careerName ? (
                                                         <Badge color={getCareerColor(s.careerName)} variant="light" size="sm">
                                                             {s.careerName}
                                                         </Badge>
                                                     ) : (
-                                                        <span className="text-xs text-gray-400 font-medium">N/A</span>
+                                                        <span className="text-xs text-text-tertiary font-medium">N/A</span>
                                                     )}
                                                 </div>
                                             </div>
                                             <div className="flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Sexo</p>
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{s.sex}</p>
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Sexo</p>
+                                                <p className="text-sm text-text-secondary dark:text-text-tertiary font-medium">{s.sex}</p>
                                             </div>
                                             <div className="col-span-2 flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Correo</p>
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium truncate w-full max-w-62.5">{s.email}</p>
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Correo</p>
+                                                <p className="text-sm text-text-secondary dark:text-text-tertiary font-medium truncate w-full max-w-62.5">{s.email}</p>
                                             </div>
                                             <div className="col-span-2 flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">Teléfono</p>
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{s.phone}</p>
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Teléfono</p>
+                                                <p className="text-sm text-text-secondary dark:text-text-tertiary font-medium">{s.phone}</p>
                                             </div>
                                         </div>
 
@@ -562,7 +558,7 @@ export default function StudentTable({
                                             {onView && (
                                                 <button
                                                     onClick={() => onView(s)}
-                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-secondary dark:text-text-tertiary rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-medium dark:hover:border-white/10"
                                                 >
                                                     <EyeIcon className="w-4 h-4" /> Ver
                                                 </button>
@@ -570,7 +566,7 @@ export default function StudentTable({
                                             {onEdit && activeTab === "Activas" && (
                                                 <button
                                                     onClick={() => onEdit(s)}
-                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-secondary dark:text-text-tertiary rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-medium dark:hover:border-white/10"
                                                 >
                                                     <EditIcon className="w-4 h-4" /> Editar
                                                 </button>
@@ -602,13 +598,13 @@ export default function StudentTable({
                     })
                 ) : (
                     <div className="py-20 text-center animate-fadeIn">
-                        <div className="inline-flex mb-4 rounded-full bg-gray-50 p-4 dark:bg-white/5">
-                            <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="inline-flex mb-4 rounded-full bg-bg-secondary p-4 dark:bg-white/5">
+                            <svg className="h-8 w-8 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
                         </div>
-                        <h3 className="text-sm font-bold text-gray-800 dark:text-white">No se encontraron estudiantes</h3>
-                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
+                        <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron estudiantes</h3>
+                        <p className="mt-1 text-xs text-text-secondary dark:text-text-tertiary max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
                         {(idFilter || nameFilter || lastNameFilter || careerFilter) && (
                             <button
                                 onClick={clearFilters}

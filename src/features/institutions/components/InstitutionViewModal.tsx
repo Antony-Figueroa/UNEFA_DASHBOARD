@@ -30,63 +30,63 @@ export default function InstitutionViewModal({
                 <div className="space-y-12 max-w-5xl mx-auto py-2">
                     {/* Sección Información Principal */}
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2 border-b border-gray-100 pb-2 dark:border-white/5">
+                        <div className="flex items-center gap-2 border-b border-border-light pb-2 dark:border-white/5">
                             <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                            <h4 className="font-bold text-gray-800 dark:text-white/90 uppercase text-xs tracking-wider">Información Principal</h4>
+                            <h4 className="font-bold text-text-primary dark:text-white/90 uppercase text-xs tracking-wider">Información Principal</h4>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
                             <div className="sm:col-span-2">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Nombre</label>
-                                <p className="text-sm font-semibold text-gray-800 dark:text-white/90">{institution.name}</p>
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Nombre</label>
+                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{institution.name}</p>
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">RIF</label>
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">RIF</label>
                                 <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{institution.rif}</p>
                             </div>
                             <div className="sm:col-span-3">
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Dirección Fiscal</label>
-                                <p className="text-sm text-gray-800 dark:text-white/90">{institution.fiscalAddress}</p>
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Dirección Fiscal</label>
+                                <p className="text-sm text-text-primary dark:text-white/90">{institution.fiscalAddress}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Sección Detalles Operativos */}
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2 border-b border-gray-100 pb-2 dark:border-white/5">
+                        <div className="flex items-center gap-2 border-b border-border-light pb-2 dark:border-white/5">
                             <div className="h-2 w-2 rounded-full bg-brand-500"></div>
-                            <h4 className="font-bold text-gray-800 dark:text-white/90 uppercase text-xs tracking-wider">Detalles Operativos</h4>
+                            <h4 className="font-bold text-text-primary dark:text-white/90 uppercase text-xs tracking-wider">Detalles Operativos</h4>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                             <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Teléfono</label>
-                                <p className="text-sm font-bold text-gray-800 dark:text-white/90">{institution.phone}</p>
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Teléfono</label>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{institution.phone}</p>
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Carrera</label>
-                                <p className="text-sm font-bold text-gray-800 dark:text-white/90 uppercase">{institution.careerName}</p>
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Carrera</label>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">{institution.careerName}</p>
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Tipo de Práctica</label>
-                                <p className="text-sm font-bold text-gray-800 dark:text-white/90">{institution.practiceType}</p>
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipo de Práctica</label>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{institution.practiceType}</p>
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Tipo de Institución</label>
-                                <p className="text-sm font-bold text-gray-800 dark:text-white/90">{institution.institutionType}</p>
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipo de Institución</label>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{institution.institutionType}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Estado y Fechas */}
-                    <div className="rounded-xl bg-gray-50 dark:bg-white/3 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="rounded-xl bg-bg-secondary dark:bg-white/3 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Estado</label>
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${institution.status ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}`}>
+                            <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Estado</label>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${institution.status ? "bg-blue-100 text-blue-700" : "bg-bg-secondary text-text-secondary"}`}>
                                 {institution.status ? "Activa" : "Inactiva"}
                             </span>
                         </div>
                         <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Fecha Registro</label>
-                            <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{institution.registrationDate}</p>
+                            <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Fecha Registro</label>
+                            <p className="text-[11px] text-text-secondary dark:text-text-tertiary font-medium">{institution.registrationDate}</p>
                         </div>
                     </div>
                 </div>

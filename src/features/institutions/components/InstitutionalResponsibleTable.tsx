@@ -178,7 +178,7 @@ export default function InstitutionalResponsibleTable({
 
   return (
     <div className="table-container">
-      <div className="p-4 border-b border-gray-100 dark:border-white/5 space-y-4">
+      <div className="p-4 border-b border-border-light dark:border-white/5 space-y-4">
         {/* Filtros */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="relative">
@@ -187,9 +187,9 @@ export default function InstitutionalResponsibleTable({
               placeholder="Cédula, nombre o correo..."
               defaultValue={filters.search}
               onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-              className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-10 pr-4 text-sm text-gray-800 placeholder-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+              className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-10 pr-4 text-sm text-text-primary placeholder-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 dark:placeholder-text-tertiary"
             />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
               </svg>
@@ -199,15 +199,15 @@ export default function InstitutionalResponsibleTable({
             <select
               value={filters.institution}
               onChange={(e) => setFilters((prev) => ({ ...prev, institution: e.target.value }))}
-              className="w-full h-11 rounded-lg border border-gray-300 bg-transparent pl-3 pr-10 text-sm text-gray-800 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white appearance-none"
+              className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 appearance-none"
             >
               {institutionOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
+                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                   {opt.label}
                 </option>
               ))}
             </select>
-            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
@@ -231,7 +231,7 @@ export default function InstitutionalResponsibleTable({
           <div className="flex items-center justify-end">
             {selectedIds.size > 0 && onBulkAction && (
               <div className="flex items-center gap-2 animate-fadeIn">
-                <span className="hidden sm:inline text-xs font-medium text-gray-600 dark:text-gray-400 mr-2">
+                <span className="hidden sm:inline text-xs font-medium text-text-secondary dark:text-text-tertiary mr-2">
                   {selectedIds.size} seleccionados
                 </span>
                 <Button
@@ -258,9 +258,9 @@ export default function InstitutionalResponsibleTable({
           </div>
         </div>
         
-        <div className="flex items-center justify-between pt-2 border-t border-gray-50 dark:border-white/5">
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            Mostrando <span className="font-bold text-gray-700 dark:text-white">{filteredData.length}</span> resultados
+        <div className="flex items-center justify-between pt-2 border-t border-border-light dark:border-white/5">
+          <div className="text-xs text-text-secondary dark:text-text-tertiary">
+            Mostrando <span className="font-bold text-text-primary dark:text-white">{filteredData.length}</span> resultados
           </div>
         </div>
       </div>
@@ -323,7 +323,7 @@ export default function InstitutionalResponsibleTable({
               currentData.map((item, index) => (
                 <TableRow
                   key={item.responsibleId}
-                  className={`${index % 2 === 0 ? "bg-white dark:bg-transparent" : "bg-gray-50/50 dark:bg-white/2"} ${selectedIds.has(item.responsibleId) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
+                  className={`${index % 2 === 0 ? "bg-white dark:bg-transparent" : "bg-bg-secondary/50 dark:bg-white/2"} ${selectedIds.has(item.responsibleId) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
                 >
                   <TableCell>
                     <Checkbox
@@ -331,19 +331,19 @@ export default function InstitutionalResponsibleTable({
                       onChange={(checked) => toggleSelectOne(item.responsibleId, checked)}
                     />
                   </TableCell>
-                  <TableCell className="font-medium text-gray-800 dark:text-white/90">
+                  <TableCell className="font-medium text-text-primary dark:text-white/90">
                     {item.identificationPrefix}{item.identificationNumber}
                   </TableCell>
-                  <TableCell className="text-gray-600 dark:text-gray-400 font-semibold">
+                  <TableCell className="text-text-secondary dark:text-text-tertiary font-semibold">
                     {item.firstName} {item.middleName}
                   </TableCell>
-                  <TableCell className="text-gray-600 dark:text-gray-400 font-semibold">
+                  <TableCell className="text-text-secondary dark:text-text-tertiary font-semibold">
                     {item.lastName} {item.secondLastName}
                   </TableCell>
-                  <TableCell className="text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                  <TableCell className="text-text-secondary dark:text-text-tertiary whitespace-nowrap">
                     {item.phone}
                   </TableCell>
-                  <TableCell className="text-gray-500 dark:text-gray-400">
+                  <TableCell className="text-text-secondary dark:text-text-tertiary">
                     {item.email}
                   </TableCell>
                   <TableCell className="text-center">
@@ -355,7 +355,7 @@ export default function InstitutionalResponsibleTable({
                     <div className="flex justify-end">
                       <button
                         type="button"
-                        className="dropdown-toggle inline-flex items-center rounded-full p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 min-h-12 min-w-12 justify-center"
+                        className="dropdown-toggle inline-flex items-center rounded-full p-1 text-text-secondary hover:bg-bg-secondary hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/5 min-h-12 min-w-12 justify-center"
                         aria-label="Acciones"
                         onClick={(e) => handleActionClick(e, item.responsibleId)}
                       >
@@ -382,7 +382,7 @@ export default function InstitutionalResponsibleTable({
       </div>
 
       {/* Mobile View */}
-      <div className="md:hidden divide-y divide-gray-100 dark:divide-white/5">
+      <div className="md:hidden divide-y divide-border-light dark:divide-white/5">
         {currentData.length > 0 ? (
           currentData.map((item) => {
             const rowId = item.responsibleId;
@@ -396,16 +396,16 @@ export default function InstitutionalResponsibleTable({
                 <div className="flex flex-col items-center gap-2">
                   <div className="flex items-center justify-between w-full">
                     <div className="flex-1 text-center">
-                      <h3 className="text-sm font-bold text-gray-800 dark:text-white/90 leading-tight truncate px-8">
+                      <h3 className="text-sm font-bold text-text-primary dark:text-white/90 leading-tight truncate px-8">
                         {item.firstName} {item.lastName}
                       </h3>
-                      <p className="text-xs text-gray-500 mt-1 truncate">
+                      <p className="text-xs text-text-secondary mt-1 truncate">
                         {item.identificationPrefix}{item.identificationNumber}
                       </p>
                     </div>
                     <button
                       onClick={() => toggleRow(rowId)}
-                      className="absolute right-2 top-2 p-2 text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
+                      className="absolute right-2 top-2 p-2 text-text-tertiary hover:bg-bg-secondary dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
                       style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
                     >
                       <ChevronDownIcon className="w-5 h-5" />
@@ -414,10 +414,10 @@ export default function InstitutionalResponsibleTable({
                 </div>
 
                 {isExpanded && (
-                  <div className="mt-4 space-y-6 animate-fadeIn border-t border-gray-50 dark:border-white/5 pt-6">
+                  <div className="mt-4 space-y-6 animate-fadeIn border-t border-border-light dark:border-white/5 pt-6">
                     <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
                       <div className="col-span-2 flex flex-col items-center">
-                        <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">
                           Institución
                         </p>
                         <div className="flex justify-center w-full">
@@ -427,18 +427,18 @@ export default function InstitutionalResponsibleTable({
                         </div>
                       </div>
                       <div className="col-span-2 flex flex-col items-center">
-                        <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">
                           Correo
                         </p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 font-medium truncate w-full max-w-62.5">
+                        <p className="text-sm text-text-primary dark:text-text-tertiary font-medium truncate w-full max-w-62.5">
                           {item.email}
                         </p>
                       </div>
                       <div className="col-span-2 flex flex-col items-center">
-                        <p className="text-[10px] uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">
                           Teléfono
                         </p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                        <p className="text-sm text-text-primary dark:text-text-tertiary font-medium">
                           {item.phone}
                         </p>
                       </div>
@@ -448,7 +448,7 @@ export default function InstitutionalResponsibleTable({
                       {onView && (
                         <button
                           onClick={() => onView(item)}
-                          className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                          className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-primary dark:text-text-tertiary rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-light dark:hover:border-white/10"
                         >
                           <EyeIcon className="w-4 h-4" /> Ver Detalles
                         </button>
@@ -456,7 +456,7 @@ export default function InstitutionalResponsibleTable({
                       {onEdit && activeTab === "Activas" && (
                         <button
                           onClick={() => onEdit(item)}
-                          className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-gray-200 dark:hover:border-white/10"
+                          className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-primary dark:text-text-tertiary rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-light dark:hover:border-white/10"
                         >
                           <EditIcon className="w-4 h-4" /> Editar
                         </button>
@@ -524,7 +524,7 @@ export default function InstitutionalResponsibleTable({
               if (item) onView(item);
               setOpenRowId(null);
             }}
-            className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
+            className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-tertiary"
           >
             <EyeIcon className="icon-sm" /> Ver Detalles
           </DropdownItem>
@@ -536,7 +536,7 @@ export default function InstitutionalResponsibleTable({
               if (item) onEdit(item);
               setOpenRowId(null);
             }}
-            className="flex items-center gap-2 text-gray-700 hover:bg-gray-50 dark:text-gray-300"
+            className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-tertiary"
           >
             <EditIcon className="icon-sm" /> Editar
           </DropdownItem>

@@ -11,7 +11,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
     return (
       <div className="relative w-full">
         <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-          <SearchIcon className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+          <SearchIcon className="h-4 w-4 text-text-tertiary" />
         </div>
         <Input
           ref={ref}

@@ -5,7 +5,7 @@ export default function ResponsiveImage() {
         <img
           src="/images/grid-image/image-01.png"
           alt="Cover"
-          className="w-full border border-gray-200 rounded-xl dark:border-gray-800"
+          className="w-full border border-border-light rounded-xl dark:border-border-dark"
         />
       </div>
     </div>

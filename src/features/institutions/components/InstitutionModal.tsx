@@ -19,7 +19,7 @@ interface InstitutionModalProps {
   onClose: () => void;
   onSave: (inst: Omit<Institution, "institutionId" | "registrationDate">) => void;
   editingInst?: Institution | null;
-  careerOptions: { value: string; label: string }[];
+  careerOptions: { value: string | number; label: string }[];
   isLoading?: boolean;
 }
 
@@ -33,8 +33,8 @@ const instSchema = z.object({
     .regex(/^\d+$/, "Solo se admiten números")
     .min(7, "El número debe tener al menos 7 dígitos"),
   practiceType: z.string().min(1, "Seleccione un tipo de práctica"),
-  careerId: z.string().min(1, "Seleccione una carrera"),
-  region: z.string().min(1, "Seleccione una región"),
+  careerId: z.union([z.string(), z.number()]).refine(val => String(val).length > 0, "Seleccione una carrera"),
+  region: z.string().min(1, "Seleccione un región"),
   nucleus: z.string().min(1, "Seleccione un núcleo"),
   extension: z.string().min(1, "Seleccione una extensión"),
   institutionType: z.string().min(1, "Seleccione un tipo de institución"),
@@ -127,8 +127,10 @@ export default function InstitutionModal({
       ...rest,
       phone: `${phonePrefix}${phoneNumber}`,
       status: editingInst?.status ?? true,
-      careerName: careerOptions.find(c => c.value === data.careerId)?.label,
+      careerId: String(data.careerId),
+      careerName: careerOptions.find(c => String(c.value) === String(data.careerId))?.label,
     });
+    onClose();
   };
 
   return (
@@ -239,9 +241,10 @@ export default function InstitutionModal({
               control={control}
               render={({ field }) => (
                 <Select
-                  options={careerOptions}
+                  options={careerOptions.map(opt => ({ ...opt, value: String(opt.value) }))}
                   onChange={field.onChange}
-                  defaultValue={field.value}
+                  defaultValue={String(field.value)}
+                  disabled={isLoading}
                 />
               )}
             />

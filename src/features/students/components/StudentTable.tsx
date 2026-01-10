@@ -28,7 +28,7 @@ interface StudentTableProps {
     onBulkRestore?: (ids: string[]) => void;
     inactiveMode?: boolean;
     activeTab?: "Activas" | "Inactivas";
-    careerOptions?: { value: string; label: string }[];
+    careerOptions?: { value: string | number; label: string }[];
     loading?: boolean;
 }
 

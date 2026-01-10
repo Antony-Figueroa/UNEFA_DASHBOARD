@@ -44,33 +44,39 @@ const STATIC_CAREERS: Career[] = [
 
 // DTO de la API — flexible para adaptarse a números o strings
 interface CareerApiDTO {
-  careerId?: string;
-  CAREER_ID?: string;
-  id?: string;
-  ID?: string;
-  _id?: string;
-  careerCode?: string;
-  CAREER_CODE?: string;
-  code?: string;
-  codigo?: string;
+  careerId?: string | number;
+  CAREER_ID?: string | number;
+  id?: string | number;
+  ID?: string | number;
+  _id?: string | number;
+  careerCode?: string | number;
+  CAREER_CODE?: string | number;
+  career_code?: string | number;
+  code?: string | number;
+  codigo?: string | number;
   careerName?: string;
   CAREER_NAME?: string;
+  career_name?: string;
   name?: string;
   nombre?: string;
   title?: string;
   minimumGrade?: string | number;
   MINIMUM_GRADE?: string | number;
+  minimum_grade?: string | number;
   minGrade?: string | number;
   notaMinima?: string | number;
   careerAbbreviation?: string;
   CAREER_ABBREVIATION?: string;
+  career_abbreviation?: string;
   abbreviation?: string;
   siglas?: string;
   internshipTypeIds?: string[];
   INTERNSHIP_TYPE_IDS?: string[];
+  internship_type_ids?: string[];
   internships?: string[];
   creationDate?: string | number;
   CREATION_DATE?: string | number;
+  created_at?: string | number;
   createdAt?: string | number;
   fechaCreacion?: string | number;
   status?: boolean | number;
@@ -93,12 +99,12 @@ const parseDate = (value: number | string | undefined): Date => {
 const fromApi = (dto: CareerApiDTO): Career => {
   // Flexibilidad total para nombres de campos comunes
   const careerIdRaw = (dto.careerId ?? dto.CAREER_ID ?? dto.id ?? dto.ID ?? dto._id ?? "") as string;
-  const careerCodeRaw = (dto.careerCode ?? dto.CAREER_CODE ?? dto.code ?? dto.codigo ?? "") as string;
-  const careerNameRaw = (dto.careerName ?? dto.CAREER_NAME ?? dto.name ?? dto.nombre ?? dto.title ?? "") as string;
-  const rawMinimum = dto.minimumGrade ?? dto.MINIMUM_GRADE ?? dto.minGrade ?? dto.notaMinima ?? 0;
-  const careerAbbreviationRaw = (dto.careerAbbreviation ?? dto.CAREER_ABBREVIATION ?? dto.abbreviation ?? dto.siglas ?? "") as string;
-  const internshipTypeIdsRaw = (dto.internshipTypeIds ?? dto.INTERNSHIP_TYPE_IDS ?? dto.internships ?? []) as string[];
-  const rawCreation = dto.creationDate ?? dto.CREATION_DATE ?? dto.createdAt ?? dto.fechaCreacion ?? Date.now();
+  const careerCodeRaw = (dto.careerCode ?? dto.CAREER_CODE ?? dto.career_code ?? dto.code ?? dto.codigo ?? "") as string;
+  const careerNameRaw = (dto.careerName ?? dto.CAREER_NAME ?? dto.career_name ?? dto.name ?? dto.nombre ?? dto.title ?? "") as string;
+  const rawMinimum = dto.minimumGrade ?? dto.MINIMUM_GRADE ?? dto.minimum_grade ?? dto.minGrade ?? dto.notaMinima ?? 0;
+  const careerAbbreviationRaw = (dto.careerAbbreviation ?? dto.CAREER_ABBREVIATION ?? dto.career_abbreviation ?? dto.abbreviation ?? dto.siglas ?? "") as string;
+  const internshipTypeIdsRaw = (dto.internshipTypeIds ?? dto.INTERNSHIP_TYPE_IDS ?? dto.internship_type_ids ?? dto.internships ?? []) as string[];
+  const rawCreation = dto.creationDate ?? dto.CREATION_DATE ?? dto.created_at ?? dto.createdAt ?? dto.fechaCreacion ?? Date.now();
   const rawStatus = dto.status ?? dto.STATUS ?? dto.activo ?? dto.enabled;
 
   const minimumGrade = typeof rawMinimum === "string" ? parseFloat(rawMinimum) : rawMinimum;
@@ -131,18 +137,16 @@ const fromApi = (dto: CareerApiDTO): Career => {
 const toApi = (career: Partial<Career>): Partial<CareerApiDTO> => {
   const dto: Partial<CareerApiDTO> = {};
   
-  // Enviar solo los campos necesarios y en el formato que espera MockAPI
-  if (career.careerCode !== undefined) dto.careerCode = career.careerCode;
-  if (career.careerName !== undefined) dto.careerName = career.careerName;
-  if (career.minimumGrade !== undefined) dto.minimumGrade = career.minimumGrade;
-  if (career.careerAbbreviation !== undefined) dto.careerAbbreviation = career.careerAbbreviation;
-  if (career.status !== undefined) dto.status = career.status;
-  if (career.internshipTypeIds !== undefined) dto.internshipTypeIds = career.internshipTypeIds;
+  // Enviar campos en MAYÚSCULAS para tu tabla específica
+  if (career.careerCode !== undefined) dto.CAREER_CODE = career.careerCode;
+  if (career.careerName !== undefined) dto.CAREER_NAME = career.careerName;
+  if (career.minimumGrade !== undefined) dto.MINIMUM_GRADE = career.minimumGrade;
+  if (career.careerAbbreviation !== undefined) dto.CAREER_ABBREVIATION = career.careerAbbreviation;
+  if (career.status !== undefined) dto.STATUS = career.status === true ? 1 : (career.status === false ? 0 : career.status);
   
-  // El ID se maneja en la URL, pero algunos mocks lo requieren en el body
+  // El ID se maneja en la URL en PUT/DELETE
   if (career.careerId !== undefined) {
-    dto.id = career.careerId;
-    dto.careerId = career.careerId;
+    dto.CAREER_ID = typeof career.careerId === 'string' ? parseInt(career.careerId, 10) : career.careerId;
   }
 
   return dto;
@@ -189,12 +193,8 @@ export const updateCareer = async (careerData: Career): Promise<Career> => {
 };
 
 // Soft delete: marcar como inactivo
-export const deleteCareer = async (career: Career): Promise<Career> => {
-  if (!career.careerId || String(career.careerId).trim().length === 0) {
-    throw new Error("careerId es requerido para eliminar la carrera");
-  }
-  const updatedCareer = { ...career, status: false };
-  return updateCareer(updatedCareer);
+export const deleteCareer = async (careerId: string | number): Promise<void> => {
+  await apiClient.delete(`${API_URL}/${careerId}`);
 };
 
 // Cambio de estado explícito

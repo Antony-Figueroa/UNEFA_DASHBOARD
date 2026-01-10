@@ -14,7 +14,7 @@ interface StudentModalProps {
   onClose: () => void;
   onSave: (student: Omit<Student, "studentId" | "enrollmentDate">) => void;
   editingStudent?: Student | null;
-  careerOptions: { value: string; label: string }[];
+  careerOptions: { value: string | number; label: string }[];
   isLoading?: boolean;
 }
 
@@ -42,7 +42,7 @@ const studentSchema = z.object({
     .min(1, "El teléfono es obligatorio")
     .regex(/^\d+$/, "Solo se admiten números"),
   email: z.string().email("Email inválido").min(1, "El email es obligatorio"),
-  careerId: z.string().min(1, "La carrera es obligatoria"),
+  careerId: z.union([z.string(), z.number()]).refine(val => String(val).length > 0, "La carrera es obligatoria"),
   semester: z.string()
     .min(1, "El semestre es obligatorio")
     .regex(/^\d+$/, "Solo se admiten números"),
@@ -167,6 +167,7 @@ export default function StudentModal({
       regime: data.regime as "DIURNO" | "NOCTURNO" | "MIXTO",
       studentType: data.studentType as "CIVIL" | "MILITAR",
       works: data.works as "SI" | "NO",
+      careerId: String(data.careerId),
       status: editingStudent?.status ?? true,
     });
   };
@@ -360,10 +361,11 @@ export default function StudentModal({
                 control={control}
                 render={({ field }) => (
                   <Select
-                    options={careerOptions}
+                    options={careerOptions.map((opt) => ({ ...opt, value: String(opt.value) }))}
                     placeholder="Seleccione Carrera"
                     onChange={field.onChange}
-                    defaultValue={field.value}
+                    defaultValue={String(field.value)}
+                    disabled={isLoading}
                   />
                 )}
               />

@@ -19,13 +19,16 @@ interface CareerModalProps {
 
 const careerSchema = z.object({
   careerName: z.string().min(1, "El nombre de la carrera es obligatorio"),
-  careerCode: z.string().min(1, "El código es obligatorio"),
+  careerCode: z.union([
+    z.string().min(1, "El código es obligatorio").refine((val) => !isNaN(Number(val)), "El código debe ser un número"),
+    z.number()
+  ]),
   minimumGrade: z.union([
     z.string().min(1, "La nota mínima es obligatoria").refine((val) => !isNaN(Number(val)), "Debe ser un número válido"),
     z.number()
   ]),
   careerAbbreviation: z.string().min(1, "La abreviatura es obligatoria"),
-  internshipTypeIds: z.array(z.string()),
+  internshipTypeIds: z.array(z.string()).optional(),
 });
 
 type CareerFormData = z.infer<typeof careerSchema>;
@@ -82,11 +85,11 @@ export default function CareerModal({
   const onSubmit = (data: CareerFormData) => {
     onSave({
       careerName: data.careerName,
-      careerCode: data.careerCode,
+      careerCode: Number(data.careerCode),
       careerAbbreviation: data.careerAbbreviation,
-      internshipTypeIds: data.internshipTypeIds,
+      internshipTypeIds: data.internshipTypeIds || [],
       minimumGrade: Number(data.minimumGrade),
-      status: editingCareer?.status ?? true,
+      status: editingCareer?.status ?? 1,
     } as Omit<Career, "careerId" | "creationDate">);
   };
 

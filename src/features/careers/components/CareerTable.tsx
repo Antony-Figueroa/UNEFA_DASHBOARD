@@ -29,22 +29,13 @@ interface CareerTableProps {
   inactiveMode?: boolean;
   activeTab?: "Activas" | "Inactivas";
   loading?: boolean;
+  practiceOptions?: { value: string; label: string }[];
 }
 
 type SortKey = "careerCode" | "careerName" | "minimumGrade" | "careerAbbreviation";
 type SortOrder = "asc" | "desc";
 
 const formatDecimal = (n: number) => n.toFixed(2);
-
-/**
- * Opciones para el filtro de tipo de práctica.
- * Deben coincidir con las opciones permitidas en el backend/modelo.
- */
-const PRACTICE_TYPE_OPTIONS = [
-  { value: "HOSPITALARIA", label: "Hospitalaria" },
-  { value: "COMUNITARIA", label: "Comunitaria" },
-  { value: "ORDINARIA", label: "Ordinaria" },
-];
 
 export default function CareerTable({
   data = [],
@@ -58,6 +49,7 @@ export default function CareerTable({
   onBulkRestore,
   inactiveMode = false,
   activeTab = "Activas",
+  practiceOptions = [],
   // loading = false,
 }: CareerTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -229,8 +221,8 @@ export default function CareerTable({
               onChange={(e) => setPracticeTypeFilter(e.target.value)}
               className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
             >
-              <option value="" className="dark:bg-bg-dark">Seleccione Tipo</option>
-              {PRACTICE_TYPE_OPTIONS.map((opt) => (
+              <option value="" className="dark:bg-bg-dark">Todos los tipos</option>
+              {practiceOptions.map((opt) => (
                 <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                   {opt.label}
                 </option>

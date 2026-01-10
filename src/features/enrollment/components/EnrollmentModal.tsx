@@ -18,6 +18,8 @@ import { Tutor } from "../../tutors/types";
 import { Institution } from "../../institutions/types";
 import { InfoIcon } from "../../../icons";
 import { createPortal } from "react-dom";
+import { getInternshipTypesByCareer, getInternshipTypes, mapToOptions } from "../../internship-types/services/internshipTypesService";
+import { InternshipTypeOption } from "../../internship-types/types";
 
 interface EnrollmentModalProps {
   isOpen: boolean;
@@ -47,15 +49,6 @@ const enrollmentSchema = z.object({
 
 type EnrollmentFormData = z.infer<typeof enrollmentSchema>;
 
-// Tabla de referencia carrera-tipo de pasantía (Replicado de PreEnrollmentModal)
-const CAREER_PRACTICE_MAPPING: Record<string, string> = {
-  "Ingeniería de Sistemas": "ORDINARIA",
-  "Ingeniería Industrial": "ORDINARIA",
-  "Derecho": "ESPECIAL",
-  "Medicina": "HOSPITALARIA",
-  "Arquitectura": "COMUNITARIA",
-};
-
 export default function EnrollmentModal({
   isOpen,
   onClose,
@@ -67,6 +60,7 @@ export default function EnrollmentModal({
   const [periods, setPeriods] = useState<Periodo[]>([]);
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [practiceOptions, setPracticeOptions] = useState<InternshipTypeOption[]>([]);
   const [isLoadingPeriods, setIsLoadingPeriods] = useState(false);
   const [preEnrollmentError, setPreEnrollmentError] = useState<string | null>(null);
 
@@ -106,11 +100,14 @@ export default function EnrollmentModal({
     const fetchData = async () => {
       setIsLoadingPeriods(true);
       try {
-        const [periodData, tutorData, institutionData] = await Promise.all([
+        const [periodData, tutorData, institutionData, practiceData] = await Promise.all([
           getPeriods(),
           getTutors(),
           getInstitutions(),
+          getInternshipTypes()
         ]);
+        
+        setPracticeOptions(mapToOptions(practiceData));
         
         // Lógica de periodos (Replicada de PreEnrollmentModal)
         const currentPeriod = periodData.find(p => p.periodStatus === 2);
@@ -180,9 +177,20 @@ export default function EnrollmentModal({
       if (student) {
         setValue("studentName", `${student.firstName} ${student.lastName}`);
         
-        // Autocompletar Tipo de Práctica
-        const practiceType = CAREER_PRACTICE_MAPPING[student.careerName || ""] || "ORDINARIA";
-        setValue("practiceType", practiceType);
+        // Autocompletar Tipo de Práctica desde la BD
+        try {
+          const internshipTypes = await getInternshipTypesByCareer(student.careerId);
+          if (internshipTypes && internshipTypes.length > 0) {
+            // Seleccionamos el primero o el que tenga mayor prioridad
+            const mainType = internshipTypes.sort((a, b) => a.PRIORITY - b.PRIORITY)[0];
+            setValue("practiceType", mainType.NAME);
+          } else {
+            setValue("practiceType", "ORDINARIA"); // Fallback
+          }
+        } catch (error) {
+          console.error("Error al obtener tipos de pasantía para el estudiante:", error);
+          setValue("practiceType", "ORDINARIA");
+        }
       }
     } catch (error) {
       console.error("Error buscando estudiante:", error);
@@ -410,12 +418,7 @@ export default function EnrollmentModal({
                 control={control}
                 render={({ field }) => (
                   <Select
-                    options={[
-                      { value: "ORDINARIA", label: "ORDINARIA" },
-                      { value: "ESPECIAL", label: "ESPECIAL" },
-                      { value: "HOSPITALARIA", label: "HOSPITALARIA" },
-                      { value: "COMUNITARIA", label: "COMUNITARIA" },
-                    ]}
+                    options={practiceOptions}
                     placeholder="Selecciona el tipo"
                     onChange={field.onChange}
                     defaultValue={field.value}

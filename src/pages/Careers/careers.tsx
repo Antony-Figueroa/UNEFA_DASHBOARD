@@ -16,7 +16,7 @@ import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
-import { PlusCircleIcon, InformationCircleIcon } from "../../icons/actions";
+import { PlusCircleIcon } from "../../icons/actions";
 
 import CareerTable from "../../features/careers/components/CareerTable";
 import CareerModal from "../../features/careers/components/CareerModal";
@@ -24,16 +24,7 @@ import CareerViewModal from "../../features/careers/components/CareerViewModal";
 import { useCareers } from "../../features/careers/hooks/useCareers";
 import { Career, CareerRowData } from "../../features/careers/types";
 import { formatDateTime } from "../../utils/date";
-
-/**
- * Opciones estáticas para los tipos de prácticas.
- * @constant {Array<{value: string, text: string}>}
- */
-const internshipOptions = [
-  { value: "HOSPITALARIA", text: "Hospitalaria" },
-  { value: "COMUNITARIA", text: "Comunitaria" },
-  { value: "ORDINARIA", text: "Ordinaria" },
-];
+import { useInternshipTypes } from "../../features/internship-types/hooks/useInternshipTypes";
 
 /**
  * Transforma un objeto de tipo Career (dominio) a CareerRowData (vista).
@@ -62,13 +53,15 @@ const formatCareerToRow = (c: Career): CareerRowData => ({
  */
 export default function CareersPage() {
   const [pageLoading, setPageLoading] = useState(true);
+  const { options: internshipOptions, fetchAll: fetchInternshipTypes } = useInternshipTypes();
 
   useEffect(() => {
+    fetchInternshipTypes();
     const timer = setTimeout(() => {
       setPageLoading(false);
     }, 500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [fetchInternshipTypes]);
 
   /**
    * Hook personalizado que encapsula la lógica de negocio y peticiones al servidor.
@@ -299,9 +292,9 @@ export default function CareersPage() {
             <SkeletonLoader isLoading={pageLoading} skeleton={<TitleSkeleton />} id="careers-title">
               <div className="flex items-center gap-2">
                 <h2 className="text-2xl font-bold text-text-primary dark:text-white/90">Gestión de Carreras</h2>
-                <span className="inline-flex items-center rounded-full bg-bg-secondary px-2.5 py-0.5 text-xs font-medium text-text-primary dark:bg-bg-dark dark:text-text-tertiary border border-border-light dark:border-border-dark">
+                {/* <span className="inline-flex items-center rounded-full bg-bg-secondary px-2.5 py-0.5 text-xs font-medium text-text-primary dark:bg-bg-dark dark:text-text-tertiary border border-border-light dark:border-border-dark">
                   MockAPI
-                </span>
+                </span> */}
               </div>
               <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">Configura las ofertas académicas y parámetros de aprobación.</p>
             </SkeletonLoader>
@@ -314,14 +307,14 @@ export default function CareersPage() {
         </div>
 
         {/* Banner Informativo */}
-        {!pageLoading && (
+        {/* {!pageLoading && (
           <div className="mb-6 flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-700 dark:border-blue-900/30 dark:bg-blue-500/10 dark:text-blue-400">
             <InformationCircleIcon className="h-5 w-5 shrink-0" />
             <div className="text-sm">
               <span className="font-bold">Información de API:</span> Las carreras se gestionan mediante MockAPI para simular un entorno real. Los cambios persisten durante la sesión.
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Contenido principal */}
         <div className="space-y-6">
@@ -351,6 +344,7 @@ export default function CareersPage() {
                 status={status}
                 error={error}
                 activeTab={activeTab}
+                practiceOptions={internshipOptions}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onToggleStatus={handleToggleStatus}

@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import axios, { AxiosRequestConfig } from 'axios';
 import careersRoutes from './routes/careers.routes';
+import internshipTypesRoutes from './routes/internship-types.routes';
 import { supabase } from './lib/supabase';
 
 dotenv.config();
@@ -36,6 +37,7 @@ app.use(express.json());
 
 // Rutas de Supabase
 app.use('/api/careers', careersRoutes);
+app.use('/api/internship-types', internshipTypesRoutes);
 
 // Servir archivos estáticos si existiera la carpeta
 app.use(express.static('public'));

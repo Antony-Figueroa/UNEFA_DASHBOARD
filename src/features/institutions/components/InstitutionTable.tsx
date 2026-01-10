@@ -24,6 +24,7 @@ interface InstitutionTableProps {
   onBulkRestore?: (ids: string[]) => void;
   activeTab?: "Activas" | "Inactivas";
   careerOptions?: { value: string | number; label: string }[];
+  practiceOptions?: { value: string; label: string }[];
 }
 
 type SortKey = "rif" | "name" | "practiceType" | "careerName";
@@ -39,6 +40,7 @@ export default function InstitutionTable({
   onBulkRestore,
   activeTab = "Activas",
   careerOptions = [],
+  practiceOptions = [],
 }: InstitutionTableProps) {
   const [rifFilter, setRifFilter] = useState("");
   const [nameFilter, setNameFilter] = useState("");
@@ -209,9 +211,11 @@ export default function InstitutionTable({
                     className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 appearance-none"
                 >
                     <option value="" className="dark:bg-bg-dark">Todos los tipos</option>
-                    <option value="HOSPITALARIA" className="dark:bg-bg-dark">Hospitalaria</option>
-                    <option value="COMUNITARIA" className="dark:bg-bg-dark">Comunitaria</option>
-                    <option value="ORDINARIA" className="dark:bg-bg-dark">Ordinaria</option>
+                    {practiceOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
+                            {opt.label}
+                        </option>
+                    ))}
                 </select>
                 <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -4,7 +4,7 @@
  */
 
 import { useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
@@ -13,6 +13,7 @@ import Select from "../../../components/form/Select";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Institution } from "../types";
 import Button from "../../../components/ui/button/Button";
+import { useInternshipTypes } from "../../internship-types/hooks/useInternshipTypes";
 
 interface InstitutionModalProps {
   isOpen: boolean;
@@ -72,6 +73,15 @@ export default function InstitutionModal({
       institutionType: "",
     },
   });
+
+  const { options: practiceOptions, fetchByCareer } = useInternshipTypes();
+  const watchedCareerId = useWatch({ control, name: "careerId" });
+
+  useEffect(() => {
+    if (watchedCareerId) {
+      fetchByCareer(watchedCareerId);
+    }
+  }, [watchedCareerId, fetchByCareer]);
 
   useEffect(() => {
     if (isOpen) {
@@ -219,13 +229,11 @@ export default function InstitutionModal({
               control={control}
               render={({ field }) => (
                 <Select
-                  options={[
-                    { value: "HOSPITALARIA", label: "Hospitalaria" },
-                    { value: "COMUNITARIA", label: "Comunitaria" },
-                    { value: "ORDINARIA", label: "Ordinaria" },
-                  ]}
+                  options={practiceOptions}
                   onChange={field.onChange}
                   defaultValue={field.value}
+                  disabled={!watchedCareerId || practiceOptions.length === 0}
+                  placeholder={!watchedCareerId ? "Seleccione carrera primero" : "Seleccione tipo"}
                 />
               )}
             />

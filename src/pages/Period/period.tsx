@@ -232,9 +232,9 @@ export default function Period() {
                             <SkeletonLoader isLoading={pageLoading} skeleton={<TitleSkeleton />} id="periods-title">
                                 <div className="flex items-center gap-2">
                                     <h2 className="text-2xl font-bold text-text-primary dark:text-white/90">Gestión de Periodos</h2>
-                                    <span className="inline-flex items-center rounded-full bg-bg-secondary px-2.5 py-0.5 text-xs font-medium text-text-primary dark:bg-bg-dark dark:text-text-tertiary border border-border-light dark:border-border-dark">
+                                    {/* <span className="inline-flex items-center rounded-full bg-bg-secondary px-2.5 py-0.5 text-xs font-medium text-text-primary dark:bg-bg-dark dark:text-text-tertiary border border-border-light dark:border-border-dark">
                                         MockAPI
-                                    </span>
+                                    </span> */}
                                 </div>
                                 <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">Administra los lapsos académicos y su estado actual.</p>
                             </SkeletonLoader>

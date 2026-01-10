@@ -27,6 +27,7 @@ import { useInstitutionalResponsibles } from "../../features/institutions/hooks/
 import { Institution, InstitutionRowData, InstitutionalResponsible, InstitutionalResponsibleRowData } from "../../features/institutions/types";
 import { useCareers } from "../../features/careers/hooks/useCareers";
 import { formatDateTime } from "../../utils/date";
+import { useInternshipTypes } from "../../features/internship-types/hooks/useInternshipTypes";
 
 const formatInstToRow = (i: Institution): InstitutionRowData => ({
   ...i,
@@ -42,13 +43,15 @@ export default function InstitutionsPage() {
   const [pageLoading, setPageLoading] = useState(true);
   const { careers } = useCareers();
   const careerOptions = useMemo(() => careers.map(c => ({ value: c.careerId, label: c.careerName })), [careers]);
+  const { options: practiceOptions, fetchAll: fetchInternshipTypes } = useInternshipTypes();
 
   useEffect(() => {
+    fetchInternshipTypes();
     const timer = setTimeout(() => {
       setPageLoading(false);
     }, 500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [fetchInternshipTypes]);
 
   const {
     institutions,
@@ -274,6 +277,7 @@ export default function InstitutionsPage() {
                   status={instStatus}
                   activeTab={activeTab}
                   careerOptions={careerOptions}
+                  practiceOptions={practiceOptions}
                   onEdit={handleOpenEditModal}
                   onView={setViewInst}
                   onToggleStatus={handleToggleInstStatus}

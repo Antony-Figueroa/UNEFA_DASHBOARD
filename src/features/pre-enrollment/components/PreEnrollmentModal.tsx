@@ -13,6 +13,8 @@ import { getPeriods } from "../../periods/services/periodService";
 import { Periodo } from "../../periods/types";
 import { InfoIcon } from "../../../icons";
 import { createPortal } from "react-dom";
+import { getInternshipTypesByCareer, getInternshipTypes, mapToOptions } from "../../internship-types/services/internshipTypesService";
+import { InternshipTypeOption } from "../../internship-types/types";
 
 interface PreEnrollmentModalProps {
   isOpen: boolean;
@@ -21,15 +23,6 @@ interface PreEnrollmentModalProps {
   editingEntry?: PreEnrollment | null;
   isLoading?: boolean;
 }
-
-// Tabla de referencia carrera-tipo de pasantía
-const CAREER_PRACTICE_MAPPING: Record<string, string> = {
-  "Ingeniería de Sistemas": "ORDINARIA",
-  "Ingeniería Industrial": "ORDINARIA",
-  "Derecho": "ESPECIAL",
-  "Medicina": "HOSPITALARIA",
-  "Arquitectura": "COMUNITARIA",
-};
 
 const preEnrollmentSchema = z.object({
   identificationPrefix: z.string().min(1, "Seleccione un prefijo"),
@@ -56,6 +49,7 @@ export default function PreEnrollmentModal({
 }: PreEnrollmentModalProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [periods, setPeriods] = useState<Periodo[]>([]);
+  const [practiceOptions, setPracticeOptions] = useState<InternshipTypeOption[]>([]);
   const [isLoadingPeriods, setIsLoadingPeriods] = useState(false);
 
   const { 
@@ -81,19 +75,25 @@ export default function PreEnrollmentModal({
   const idNumber = useWatch({ control, name: "identificationNumber" });
   const idPrefix = useWatch({ control, name: "identificationPrefix" });
 
-  // Cargar periodos
+  // Cargar periodos y tipos de práctica
   useEffect(() => {
-    const fetchPeriods = async () => {
+    const fetchData = async () => {
       setIsLoadingPeriods(true);
       try {
-        const data = await getPeriods();
+        const [periodData, practiceData] = await Promise.all([
+          getPeriods(),
+          getInternshipTypes()
+        ]);
+        
+        setPracticeOptions(mapToOptions(practiceData));
+        
         // Filtrar periodos según requerimientos:
         // 1. Mostrar periodo en curso (status 2)
         // 2. Si no hay en curso, mostrar el primer pendiente (status 1)
         // 3. No mostrar culminados (status 3) para nuevas preinscripciones
         
-        const currentPeriod = data.find(p => p.periodStatus === 2);
-        const pendingPeriods = data.filter(p => p.periodStatus === 1).sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+        const currentPeriod = periodData.find(p => p.periodStatus === 2);
+        const pendingPeriods = periodData.filter(p => p.periodStatus === 1).sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
         
         let filteredPeriods: Periodo[] = [];
         if (currentPeriod) {
@@ -106,7 +106,7 @@ export default function PreEnrollmentModal({
         if (editingEntry) {
           const exists = filteredPeriods.some(p => p.description === editingEntry.period);
           if (!exists) {
-            const originalPeriod = data.find(p => p.description === editingEntry.period);
+            const originalPeriod = periodData.find(p => p.description === editingEntry.period);
             if (originalPeriod) {
               filteredPeriods.push(originalPeriod);
             }
@@ -127,7 +127,7 @@ export default function PreEnrollmentModal({
     };
 
     if (isOpen) {
-      fetchPeriods();
+      fetchData();
     }
   }, [isOpen, editingEntry, setValue]);
 
@@ -145,9 +145,20 @@ export default function PreEnrollmentModal({
         setValue("studentName", `${student.firstName} ${student.lastName}`);
         setValue("phone", student.phone || "");
         
-        // Autocompletar Tipo de Práctica
-        const practiceType = CAREER_PRACTICE_MAPPING[student.careerName || ""] || "ORDINARIA";
-        setValue("practiceType", practiceType);
+        // Autocompletar Tipo de Práctica desde la BD
+        try {
+          const internshipTypes = await getInternshipTypesByCareer(student.careerId);
+          if (internshipTypes && internshipTypes.length > 0) {
+            // Seleccionamos el primero o el que tenga mayor prioridad
+            const mainType = internshipTypes.sort((a, b) => a.PRIORITY - b.PRIORITY)[0];
+            setValue("practiceType", mainType.NAME);
+          } else {
+            setValue("practiceType", "ORDINARIA"); // Fallback
+          }
+        } catch (error) {
+          console.error("Error al obtener tipos de pasantía para el estudiante:", error);
+          setValue("practiceType", "ORDINARIA");
+        }
 
         // Generar Matrícula Automática
         // Formato: ${abreviación_carrera} - ${semestre_estudiante} - ${sección_estudiante} - ${jornada}
@@ -394,12 +405,7 @@ export default function PreEnrollmentModal({
                 control={control}
                 render={({ field }) => (
                   <Select
-                    options={[
-                      { value: "ORDINARIA", label: "ORDINARIA" },
-                      { value: "ESPECIAL", label: "ESPECIAL" },
-                      { value: "HOSPITALARIA", label: "HOSPITALARIA" },
-                      { value: "COMUNITARIA", label: "COMUNITARIA" },
-                    ]}
+                    options={practiceOptions}
                     placeholder="Selecciona el tipo"
                     onChange={field.onChange}
                     defaultValue={field.value}

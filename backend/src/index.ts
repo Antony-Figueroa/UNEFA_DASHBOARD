@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import axios, { AxiosRequestConfig } from 'axios';
+import careersRoutes from './routes/careers.routes';
+import { supabase } from './lib/supabase';
 
 dotenv.config();
 
@@ -31,6 +33,9 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// Rutas de Supabase
+app.use('/api/careers', careersRoutes);
 
 // Servir archivos estáticos si existiera la carpeta
 app.use(express.static('public'));
@@ -66,14 +71,19 @@ app.get('/.well-known/appspecific/com.chrome.devtools.json', (_req: Request, res
 app.get('/api/health', async (_req: Request, res: Response) => {
   try {
     const mockApiCheck = await axios.get(`${MOCK_API_URL}/health`).catch(() => ({ status: 'unknown' }));
+    
+    // Verificar conexión a Supabase
+    const { error: supabaseError } = await supabase.from('careers').select('count', { count: 'exact', head: true });
+    
     res.json({ 
       status: 'ok', 
       message: 'Backend is running',
       proxyTarget: MOCK_API_URL,
-      mockApiStatus: mockApiCheck.status === 200 ? 'reachable' : 'unreachable'
+      mockApiStatus: mockApiCheck.status === 200 ? 'reachable' : 'unreachable',
+      supabaseStatus: supabaseError ? `error: ${supabaseError.message}` : 'connected'
     });
   } catch {
-    res.json({ status: 'ok', message: 'Backend is running', mockApiStatus: 'unreachable' });
+    res.json({ status: 'ok', message: 'Backend is running', mockApiStatus: 'unreachable', supabaseStatus: 'error' });
   }
 });
 

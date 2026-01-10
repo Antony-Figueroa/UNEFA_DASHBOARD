@@ -4,14 +4,14 @@
  */
 
 export interface Career {
-  careerId: string; // identificador único (string para compatibilidad con MockAPI/UUID)
-  careerCode: string; // CAREER_CODE
-  careerName: string; // CAREER_NAME
-  minimumGrade: number; // MINIMUM_GRADE
-  careerAbbreviation: string; // CAREER_ABBREVIATION
-  internshipTypeIds: string[]; // IDs de tipos de prácticas asociados
-  creationDate: Date; // CREATION_DATE
-  status: boolean; // STATUS (true: activo, false: inactivo/eliminado)
+  careerId: string | number; // Cambiado para soportar ID numérico
+  careerCode: string | number; // Cambiado para soportar Código numérico
+  careerName: string;
+  minimumGrade: number;
+  careerAbbreviation: string;
+  internshipTypeIds?: string[]; // Opcional ya que no está en la imagen de la tabla
+  creationDate: Date;
+  status: boolean | number; // Cambiado para soportar 0/1 (smallint)
 }
 
 // Tipo para mostrar en tabla (fechas formateadas)

@@ -75,18 +75,17 @@ describe("careersService - update & delete", () => {
     expect(updated.status).toBe(false);
   });
 
-  it("deleteCareer envía status=false y usa updateCareer internamente", async () => {
+  it("deleteCareer envía petición DELETE al endpoint correcto", async () => {
     const c = buildCareer({ status: true });
-    vi.mocked(apiClient.put).mockResolvedValueOnce({
-      data: { id: "123", status: false },
+    vi.mocked(apiClient.delete).mockResolvedValueOnce({
       status: 200,
+      data: {}
     });
 
-    const res = await deleteCareer(c);
-    expect(res.status).toBe(false);
-    expect(apiClient.put).toHaveBeenCalledTimes(1);
-    const bodyArg = vi.mocked(apiClient.put).mock.calls[0][1] as Record<string, unknown>;
-    expect(bodyArg.status).toBe(false);
+    await deleteCareer(c.careerId);
+    expect(apiClient.delete).toHaveBeenCalledTimes(1);
+    const urlArg = vi.mocked(apiClient.delete).mock.calls[0][0] as string;
+    expect(urlArg).toMatch(/\/careers\/123$/);
   });
 });
 

@@ -20,6 +20,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@react-jvectormap/core": "^1.0.4",
     "@react-jvectormap/world": "^1.1.2",
+    "@supabase/supabase-js": "^2.90.1",
     "@tailwindcss/cli": "^4.1.18",
     "@vercel/analytics": "^1.6.1",
     "apexcharts": "^4.1.0",

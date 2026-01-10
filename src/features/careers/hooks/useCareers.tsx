@@ -24,6 +24,13 @@ export const useCareers = () => {
   const [loadingAction, setLoadingAction] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const { addToast } = useToast();
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredCareers = careers.filter((c) => {
+    const matchesSearch = String(c.careerName).toLowerCase().includes(searchTerm.toLowerCase()) ||
+      String(c.careerCode).toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
+  });
 
   // Efecto para manejar el timeout de seguridad (30 segundos) en acciones críticas
   useEffect(() => {
@@ -46,7 +53,7 @@ export const useCareers = () => {
       const data = await careersService.getCareers();
       
       // Verificamos si los datos vienen del fallback estático (IDs empiezan con 'static-')
-      const isFallback = data.some(c => c.careerId.startsWith('static-'));
+      const isFallback = data.some(c => String(c.careerId).startsWith('static-'));
 
       const uniqueData = Array.from(
         new Map(data.map((item) => [item.careerId, item])).values()
@@ -120,7 +127,7 @@ export const useCareers = () => {
   const editCareer = async (careerData: Career) => {
     setLoadingAction(true);
     try {
-      const oldCareer = careers.find(c => c.careerId === careerData.careerId);
+      const oldCareer = careers.find(c => String(c.careerId) === String(careerData.careerId));
       await careersService.updateCareer(careerData);
       await refreshCareers();
 
@@ -147,73 +154,64 @@ export const useCareers = () => {
     }
   };
 
-  const removeCareer = async (career: Career) => {
+  const removeCareer = async (careerId: string | number) => {
     setLoadingAction(true);
     try {
-      await careersService.deleteCareer(career);
+      const career = careers.find((c) => String(c.careerId) === String(careerId));
+      if (!career) throw new Error("Carrera no encontrada");
+
+      await careersService.deleteCareer(careerId);
       await refreshCareers();
+
       addToast({
-        variant: "warning",
-        title: "Carrera Inactivada",
-        message: (
-          <>
-            <p>La carrera <strong>{career.careerName}</strong> ha sido marcada como inactiva.</p>
-            <p className="mt-1 text-xs text-text-secondary italic">* Esta acción puede afectar a los estudiantes inscritos.</p>
-          </>
-        ),
-        onUndo: async () => {
-          await careersService.toggleCareerStatus(career);
-          await refreshCareers();
-        }
+        variant: "error",
+        title: "Carrera Eliminada",
+        message: `La carrera ${career.careerName} ha sido eliminada permanentemente.`,
       });
     } catch (e) {
-      const err = e instanceof Error ? e : new Error("Error desconocido al eliminar");
-      addToast({ variant: "error", title: "Error al Eliminar", message: err.message });
-      throw err;
+      const err = e instanceof Error ? e : new Error("Error al eliminar carrera");
+      addToast({ variant: "error", title: "Error", message: err.message });
     } finally {
       setLoadingAction(false);
     }
   };
 
-  const toggleStatus = async (career: Career) => {
+  const toggleStatus = async (careerId: string | number) => {
     setLoadingAction(true);
     try {
-      const newStatus = !career.status;
-      await careersService.toggleCareerStatus(career);
+      const career = careers.find((c) => String(c.careerId) === String(careerId));
+      if (!career) throw new Error("Carrera no encontrada");
+
+      // Alternar entre 1 (activo) y 0 (inactivo) o boolean
+      const currentStatus = career.status === true || career.status === 1;
+      const newStatus = currentStatus ? 0 : 1;
+      
+      await careersService.updateCareer({ ...career, status: newStatus });
       await refreshCareers();
+
       addToast({
-        variant: newStatus ? "success" : "warning",
-        title: newStatus ? "Carrera Restaurada" : "Carrera Inactivada",
-        message: (
-          <>
-            <p>La carrera <strong>{career.careerName}</strong> ahora está <strong>{newStatus ? 'activa' : 'inactiva'}</strong>.</p>
-            {!newStatus && <p className="mt-1 text-xs text-text-secondary italic">* Los registros asociados seguirán existiendo pero no estarán visibles en búsquedas activas.</p>}
-          </>
-        ),
-        onUndo: async () => {
-          await careersService.toggleCareerStatus({ ...career, status: newStatus });
-          await refreshCareers();
-        }
+        variant: "info",
+        title: "Estado Actualizado",
+        message: `La carrera ahora está ${!currentStatus ? "Activa" : "Inactiva"}.`,
       });
     } catch (e) {
-      const err = e instanceof Error ? e : new Error("Error desconocido al cambiar estado");
-      addToast({ variant: "error", title: "Error al Cambiar Estado", message: err.message });
-      throw err;
+      const err = e instanceof Error ? e : new Error("Error al cambiar estado");
+      addToast({ variant: "error", title: "Error", message: err.message });
     } finally {
       setLoadingAction(false);
     }
   };
 
-  const bulkRemoveCareers = async (careerIds: string[]) => {
+  const bulkRemoveCareers = async (careerIds: (string | number)[]) => {
     setLoadingAction(true);
     try {
-      const selectedCareers = careers.filter((c) => careerIds.includes(c.careerId));
-      await Promise.all(selectedCareers.map((c) => careersService.deleteCareer(c)));
+      const selectedCareers = careers.filter((c) => careerIds.map(id => String(id)).includes(String(c.careerId)));
+      await Promise.all(selectedCareers.map((c) => careersService.deleteCareer(c.careerId)));
       await refreshCareers();
       addToast({
         variant: "warning",
         title: "Eliminación Masiva",
-        message: `${careerIds.length} carreras inactivadas.`
+        message: `${careerIds.length} carreras eliminadas.`
       });
     } catch (e) {
       const err = e instanceof Error ? e : new Error("Error desconocido al eliminar en lote");
@@ -224,11 +222,12 @@ export const useCareers = () => {
     }
   };
 
-  const bulkRestoreCareers = async (careerIds: string[]) => {
+  const bulkRestoreCareers = async (careerIds: (string | number)[]) => {
     setLoadingAction(true);
     try {
-      const selectedCareers = careers.filter((c) => careerIds.includes(c.careerId));
-      await Promise.all(selectedCareers.map((c) => careersService.toggleCareerStatus(c)));
+      const selectedCareers = careers.filter((c) => careerIds.map(id => String(id)).includes(String(c.careerId)));
+      // Para restaurar, simplemente cambiamos el estado a activo (1)
+      await Promise.all(selectedCareers.map((c) => careersService.updateCareer({ ...c, status: 1 })));
       await refreshCareers();
       addToast({
         variant: "success",
@@ -237,7 +236,7 @@ export const useCareers = () => {
           <p>Se han restaurado <strong>{careerIds.length}</strong> carreras exitosamente.</p>
         ),
         onUndo: async () => {
-          await Promise.all(selectedCareers.map((c) => careersService.deleteCareer(c)));
+          await Promise.all(selectedCareers.map((c) => careersService.deleteCareer(c.careerId)));
           await refreshCareers();
         }
       });
@@ -262,5 +261,8 @@ export const useCareers = () => {
     toggleStatus,
     bulkRemoveCareers,
     bulkRestoreCareers,
+    searchTerm,
+    setSearchTerm,
+    filteredCareers,
   };
 };

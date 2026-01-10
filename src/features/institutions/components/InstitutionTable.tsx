@@ -23,7 +23,7 @@ interface InstitutionTableProps {
   onBulkDelete?: (ids: string[]) => void;
   onBulkRestore?: (ids: string[]) => void;
   activeTab?: "Activas" | "Inactivas";
-  careerOptions?: { value: string; label: string }[];
+  careerOptions?: { value: string | number; label: string }[];
 }
 
 type SortKey = "rif" | "name" | "practiceType" | "careerName";

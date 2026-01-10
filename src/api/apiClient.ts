@@ -5,7 +5,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
  * Configurado con timeouts, reintentos y manejo de errores robusto.
  */
 const apiClient = axios.create({
-  baseURL: "https://694ed7abb5bc648a93c169dc.mockapi.io", // Conexión directa a MockAPI
+  baseURL: "http://localhost:5000/api", // Conexión al nuevo backend con Supabase
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",

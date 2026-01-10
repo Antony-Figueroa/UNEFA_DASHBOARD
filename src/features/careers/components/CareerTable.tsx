@@ -21,11 +21,11 @@ interface CareerTableProps {
   status: "loading" | "success" | "error";
   error: Error | null;
   onEdit?: (career: CareerRowData) => void;
-  onDelete?: (careerId: string) => void;
-  onToggleStatus?: (careerId: string) => void;
+  onDelete?: (careerId: string | number) => void;
+  onToggleStatus?: (careerId: string | number) => void;
   onView?: (career: CareerRowData) => void;
-  onBulkDelete?: (ids: string[]) => void;
-  onBulkRestore?: (ids: string[]) => void;
+  onBulkDelete?: (ids: (string | number)[]) => void;
+  onBulkRestore?: (ids: (string | number)[]) => void;
   inactiveMode?: boolean;
   activeTab?: "Activas" | "Inactivas";
   loading?: boolean;
@@ -66,10 +66,10 @@ export default function CareerTable({
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [openRowId, setOpenRowId] = useState<string | number | null>(null);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<string | number>>(new Set());
 
   // Estados para selección y ordenamiento
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; order: SortOrder }>({
     key: "careerName",
     order: "asc",
@@ -92,7 +92,9 @@ export default function CareerTable({
           c.internshipTypeIds
             .map((t) => String(t).toUpperCase())
             .includes(String(practiceTypeFilter).toUpperCase()));
-      const matchesTab = activeTab === "Activas" ? c.status === true : c.status === false;
+      const matchesTab = activeTab === "Activas" 
+        ? (c.status === true || c.status === 1) 
+        : (c.status === false || c.status === 0);
       return matchesSearch && matchesType && matchesTab;
     });
 
@@ -141,15 +143,15 @@ export default function CareerTable({
     }
   };
 
-  const handleSelectRow = (id: string, checked: boolean) => {
+  const handleSelectRow = (id: string | number, checked: boolean) => {
     if (checked) {
       setSelectedIds((prev) => [...prev, id]);
     } else {
-      setSelectedIds((prev) => prev.filter((item) => item !== id));
+      setSelectedIds((prev) => prev.filter((i) => i !== id));
     }
   };
 
-  const toggleRowExpansion = (id: string) => {
+  const toggleRowExpansion = (id: string | number) => {
     const newExpanded = new Set(expandedRows);
     if (newExpanded.has(id)) {
       newExpanded.delete(id);
@@ -416,14 +418,7 @@ export default function CareerTable({
                             <EyeIcon className="icon-sm" /> Ver Detalles
                           </DropdownItem>
                         )}
-                        {onEdit && activeTab === "Activas" && (
-                          <DropdownItem
-                            onItemClick={() => onEdit(c)}
-                            className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-emphasis"
-                          >
-                            <EyeIcon className="icon-sm" /> Ver Detalles
-                          </DropdownItem>
-                        )}
+
                         {onEdit && activeTab === "Activas" && (
                           <DropdownItem
                             onItemClick={() => onEdit(c)}

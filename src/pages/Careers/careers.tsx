@@ -138,7 +138,7 @@ export default function CareersPage() {
    * @param {CareerRowData} row - Los datos de la fila seleccionada.
    */
   const handleEdit = (row: CareerRowData) => {
-    const original = careers.find((c) => c.careerId === row.careerId) || null;
+    const original = careers.find((c) => String(c.careerId) === String(row.careerId)) || null;
     setEditingCareer(original);
     setIsModalOpen(true);
   };
@@ -178,12 +178,12 @@ export default function CareersPage() {
 
   /**
    * Alterna el estado de una carrera entre Activo e Inactivo.
-   * @param {string} careerId - ID único de la carrera.
+   * @param {string | number} careerId - ID único de la carrera.
    */
-  const handleToggleStatus = (careerId: string) => {
-    const original = careers.find((c) => c.careerId === careerId);
+  const handleToggleStatus = (careerId: string | number) => {
+    const original = careers.find((c) => String(c.careerId) === String(careerId));
     if (!original) return;
-    const goingInactive = original.status === true;
+    const goingInactive = original.status === true || original.status === 1;
     setConfirmation({
       isOpen: true,
       title: goingInactive ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
@@ -192,7 +192,7 @@ export default function CareersPage() {
         : `¿Estás seguro de que deseas restaurar la carrera "${original.careerName}"?`,
       onConfirm: async () => {
         try {
-          await toggleStatus(original);
+          await toggleStatus(careerId);
         } catch (e) { console.error(e); }
         finally { setConfirmation(null); }
       },
@@ -203,10 +203,10 @@ export default function CareersPage() {
 
   /**
    * Maneja la eliminación de una carrera.
-   * @param {string} careerId - ID único de la carrera.
+   * @param {string | number} careerId - ID único de la carrera.
    */
-  const handleDelete = (careerId: string) => {
-    const original = careers.find((c) => c.careerId === careerId);
+  const handleDelete = (careerId: string | number) => {
+    const original = careers.find((c) => String(c.careerId) === String(careerId));
     if (!original) return;
 
     setConfirmation({
@@ -215,7 +215,7 @@ export default function CareersPage() {
       message: `¿Estás seguro de que deseas enviar la carrera "${original.careerName}" a Inactivos?`,
       onConfirm: async () => {
         try {
-          await removeCareer(original);
+          await removeCareer(careerId);
         } catch (e) {
           console.error(e);
         } finally {
@@ -229,9 +229,9 @@ export default function CareersPage() {
 
   /**
    * Ejecuta la eliminación masiva de múltiples carreras seleccionadas.
-   * @param {string[]} ids - Lista de IDs de carreras a eliminar.
+   * @param {(string | number)[]} ids - Lista de IDs de carreras a eliminar.
    */
-  const handleBulkDelete = (ids: string[]) => {
+  const handleBulkDelete = (ids: (string | number)[]) => {
     setConfirmation({
       isOpen: true,
       title: "Confirmar Envío a Inactivos (Masivo)",
@@ -252,9 +252,9 @@ export default function CareersPage() {
 
   /**
    * Ejecuta la restauración masiva de múltiples carreras seleccionadas.
-   * @param {string[]} ids - Lista de IDs de carreras a restaurar.
+   * @param {(string | number)[]} ids - Lista de IDs de carreras a restaurar.
    */
-  const handleBulkRestore = (ids: string[]) => {
+  const handleBulkRestore = (ids: (string | number)[]) => {
     setConfirmation({
       isOpen: true,
       title: "Confirmar Restauración Masiva",

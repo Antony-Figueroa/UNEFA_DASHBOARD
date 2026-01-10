@@ -1,0 +1,1385 @@
+
+--
+-- Base de datos: "UNEFA"
+--
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_activity_log"
+--
+
+CREATE TABLE "t_activity_log" (
+  "LOG_ID" SERIAL NOT NULL,
+  "SESSION_ID" int NOT NULL,
+  "USER_ID" int NOT NULL,
+  "ACTION" varchar(45) NOT NULL,
+  "MODIF_USER_ID" int NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" int NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" int NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_career"
+--
+
+CREATE TABLE "t_career" (
+  "CAREER_ID" SERIAL NOT NULL,
+  "CAREER_NAME" varchar(255) NOT NULL,
+  "CAREER_CODE" int NOT NULL,
+  "MINIMUM_GRADE" decimal(10,2) CHECK("MINIMUM_GRADE">=0) NOT NULL,
+  "CAREER_ABBREVIATION" varchar(255) NOT NULL,
+  "CREATION_DATE" TIMESTAMP NOT NULL,
+  "MODIF_USER_ID" int NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" int NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" int NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+--
+-- Volcado de datos para la tabla "t_career"
+--
+
+INSERT INTO "t_career" ("CAREER_ID", "CAREER_NAME", "CAREER_CODE", "MINIMUM_GRADE", "CAREER_ABBREVIATION", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES
+(3, 'TECNICO SUPERIOR UNIVERSITARIO EN ENFERMERIA', 3016, 15.00, 'TSU-E', '2025-05-04 17:58:15', 1, '2025-06-14 22:30:20', 1, '2025-06-08 14:43:29', 1, '2025-06-08 14:43:32', 1),
+(4, 'INGENIERIA INFORMATICA', 2016, 15.00, 'ING-I', '2025-05-10 15:09:45', 1, '2025-06-14 22:30:32', 3, '2025-05-10 15:09:45', 3, '2025-05-10 15:09:45', 1),
+(5, 'INGENIERIA AGROINSDUSTRIAL', 1916, 15.00, '', '2025-05-19 22:08:26', 1, '2025-06-14 20:31:30', 3, '2025-05-19 22:08:26', 3, '2025-05-19 22:08:26', 1),
+(7, 'CARRERA DE PRUEBA', 1561, 16.00, '', '2025-05-19 22:11:07', 1, '2025-06-14 20:31:35', 3, '2025-05-19 22:11:07', 3, '2025-05-19 22:11:07', 1),
+(8, 'TECNICO SUPERIOR UNIVERSTARIO EN ENFERMERIA', 123, 16.00, '', '2025-06-07 22:11:26', 1, '2025-06-07 22:11:42', 1, '2025-06-07 22:13:18', 1, '2025-06-08 13:38:09', 1),
+(9, 'EMPRESA DE PRUEBA', 2147483647, 16.00, '', '2025-06-08 13:37:53', 1, '2025-06-14 20:31:56', 1, '2025-06-08 13:37:53', 1, '2025-06-08 13:37:53', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_career_internship_type"
+--
+
+CREATE TABLE "t_career_internship_type" (
+  "ID_CAREER_INTERNSHIP_TYPE_ID" SERIAL NOT NULL,
+  "CAREER_ID" int NOT NULL,
+  "INTERNSHIP_TYPE_ID" int NOT NULL
+);
+
+--
+-- Volcado de datos para la tabla "t_career_internship_type"
+--
+
+INSERT INTO "t_career_internship_type" ("ID_CAREER_INTERNSHIP_TYPE_ID", "CAREER_ID", "INTERNSHIP_TYPE_ID") VALUES
+(26, 8, 2),
+(27, 8, 3),
+(55, 5, 1),
+(56, 7, 1),
+(57, 9, 1),
+(58, 3, 2),
+(59, 3, 3),
+(60, 4, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_change_log"
+--
+
+CREATE TABLE "t_change_log" (
+  "CHANGE_LOG_ID" SERIAL NOT NULL,
+  "DATE_TIME" TIMESTAMP NOT NULL,
+  "TABLE_ID" int NOT NULL,
+  "COLUMN_ID" int NOT NULL,
+  "OPERATION_ID" int NOT NULL,
+  "USER_ID" int NOT NULL,
+  "NEW_VALUE" varchar(45) NOT NULL,
+  "OLD_VALUE" varchar(45) NOT NULL,
+  "IP_ADDRESS" varchar(45) NOT NULL,
+  "FORM_ID" int NOT NULL,
+  "PRINT_EMAIL" varchar(60) NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_columns"
+--
+
+CREATE TABLE "t_columns" (
+  "COLUMN_ID" SERIAL NOT NULL,
+  "TABLE_ID" int NOT NULL,
+  "COLUMN_NAME" varchar(25) NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_config"
+--
+
+CREATE TABLE "t_config" (
+  "CONFIG_ID" SERIAL NOT NULL,
+  "RECOVERY_EMAIL" SMALLINT NOT NULL,
+  "BLOCKING_DAYS" SMALLINT NOT NULL,
+  "WRONG_KEY_LOCK" SMALLINT NOT NULL,
+  "ATTEMPTS_KEY_BLOCK" SMALLINT NOT NULL,
+  "KEY_EXPIRATION" int NOT NULL,
+  "EXPIRATION_DAYS" SMALLINT NOT NULL,
+  "USER_UPPERCASE" SMALLINT NOT NULL,
+  "USER_LOWERCASE" SMALLINT NOT NULL,
+  "USER_NUMBERS" SMALLINT NOT NULL,
+  "USER_SPECIAL_CHARACTERS" SMALLINT NOT NULL,
+  "USER_NUM_UPPERCASE" int NOT NULL,
+  "USER_NUM_LOWERCASE" int NOT NULL,
+  "USER_NUM_NUMBERS" int NOT NULL,
+  "USER_NUM_SPECIAL_CHARACTERS" int NOT NULL,
+  "KEY_UPPERCASE" SMALLINT NOT NULL,
+  "KEY_LOWERCASE" SMALLINT NOT NULL,
+  "KEY_NUMBERS" SMALLINT NOT NULL,
+  "KEY_SPECIAL_CHARACTERS" SMALLINT NOT NULL,
+  "KEY_NUM_UPPERCASE" int NOT NULL,
+  "KEY_NUM_LOWERCASE" int NOT NULL,
+  "KEY_NUM_NUMBERS" int NOT NULL,
+  "KEY_NUM_SPECIAL_CHARACTERS" int NOT NULL,
+  "USER_LENGTH" int NOT NULL,
+  "KEY_LEGTH" int NOT NULL,
+  "SECURITY_QUESTIONS" SMALLINT NOT NULL,
+  "TOTAL_QUESTIONS" int NOT NULL,
+  "TOTAL_PRESET_QUESTIONS" int NOT NULL,
+  "TOTAL_USER_QUESTIONS" int NOT NULL,
+  "TOTAL_ANSWERS" int NOT NULL
+);
+
+--
+-- Volcado de datos para la tabla "t_config"
+--
+
+INSERT INTO "t_config" ("CONFIG_ID", "RECOVERY_EMAIL", "BLOCKING_DAYS", "WRONG_KEY_LOCK", "ATTEMPTS_KEY_BLOCK", "KEY_EXPIRATION", "EXPIRATION_DAYS", "USER_UPPERCASE", "USER_LOWERCASE", "USER_NUMBERS", "USER_SPECIAL_CHARACTERS", "USER_NUM_UPPERCASE", "USER_NUM_LOWERCASE", "USER_NUM_NUMBERS", "USER_NUM_SPECIAL_CHARACTERS", "KEY_UPPERCASE", "KEY_LOWERCASE", "KEY_NUMBERS", "KEY_SPECIAL_CHARACTERS", "KEY_NUM_UPPERCASE", "KEY_NUM_LOWERCASE", "KEY_NUM_NUMBERS", "KEY_NUM_SPECIAL_CHARACTERS", "USER_LENGTH", "KEY_LEGTH", "SECURITY_QUESTIONS", "TOTAL_QUESTIONS", "TOTAL_PRESET_QUESTIONS", "TOTAL_USER_QUESTIONS", "TOTAL_ANSWERS") VALUES
+(1, 1, 0, 0, 3, 0, 120, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_institution"
+--
+
+CREATE TABLE "t_institution" (
+  "INSTITUTION_ID" SERIAL NOT NULL,
+  "INSTITUTION_NAME" varchar(255) NOT NULL,
+  "INSTITUTION_ADDRESS" varchar(255) NOT NULL,
+  "INSTITUTION_CONTACT" varchar(12) NOT NULL,
+  "PRACTICE_TYPE" varchar(255) NOT NULL,
+  "REGION" varchar(255) NOT NULL,
+  "NUCLEUS" varchar(255) NOT NULL,
+  "EXTENSION" varchar(255) NOT NULL,
+  "CREATION_DATE" TIMESTAMP NOT NULL,
+  "INSTITUTION_TYPE" varchar(255) NOT NULL,
+  "STATUS" SMALLINT NOT NULL,
+  "RIF" varchar(11) NOT NULL,
+  "CAREER_ID" int NOT NULL
+);
+
+--
+-- Volcado de datos para la tabla "t_institution"
+--
+
+INSERT INTO "t_institution" ("INSTITUTION_ID", "INSTITUTION_NAME", "INSTITUTION_ADDRESS", "INSTITUTION_CONTACT", "PRACTICE_TYPE", "REGION", "NUCLEUS", "EXTENSION", "CREATION_DATE", "INSTITUTION_TYPE", "STATUS", "RIF", "CAREER_ID") VALUES
+(1, 'ASDA', 'ASDAASDAD ASDA', '0412-1346545', '1', 'LOS LLAN', 'PORTUGUE', 'ACARIGUA', '2025-06-05 20:18:37', 'PUB', 1, 'J-301234564', 7),
+(2, 'QWEQ', 'AASDA ASDASD', '0412-1231231', '1', 'LOS LLAN', 'PORTUGUE', 'ACARIGUA', '2025-06-07 19:18:08', 'PUB', 1, 'J-321654987', 4),
+(3, 'ASDAZ', 'ASDASASDASD', '0412-1234566', '2', 'LOS LLAN', 'PORTUGUE', 'ACARIGUA', '2025-06-22 21:49:42', 'PUB', 1, 'J-123455123', 3),
+(4, 'EMPRESA DE PRUEBA', '1234567890', '0412-1346545', '1', 'LOS LLAN', 'PORTUGUE', 'ACARIGUA', '2025-12-01 21:58:03', 'PUB', 1, 'J-234567890', 7);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_institution_manager"
+--
+
+CREATE TABLE "t_institution_manager" (
+  "MANAGER_ID" SERIAL NOT NULL,
+  "MANAGER_CI" varchar(10) NOT NULL,
+  "NAME" varchar(255) NOT NULL,
+  "SECOND_NAME" varchar(255) DEFAULT NULL,
+  "SURNAME" varchar(255) NOT NULL,
+  "SECOND_SURNAME" varchar(255) DEFAULT NULL,
+  "CONTACT_PHONE" varchar(12) NOT NULL,
+  "EMAIL" varchar(255) NOT NULL,
+  "CREATION_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL,
+  "INSTITUTION_ID" int NOT NULL
+);
+
+--
+-- Volcado de datos para la tabla "t_institution_manager"
+--
+
+INSERT INTO "t_institution_manager" ("MANAGER_ID", "MANAGER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "EMAIL", "CREATION_DATE", "STATUS", "INSTITUTION_ID") VALUES
+(1, 'V-123456', 'LUIS', 'ANDRES', 'LOPEZ', 'PORTE', '0412-0424531', 'ADSAD@GKASD.CSWQ', '2025-06-09 02:09:41', 1, 1),
+(2, 'V-13465798', 'KAI', 'LEANDRO', 'PEREZ', 'ASTARTE', '04225346563', 'SEHIXOR759@CALORPG.COM', '2025-06-14 20:14:18', 1, 1),
+(3, 'V-13464578', 'LUIS', 'LEANDRO', 'PEREZ', 'ASDASDA', '0412-1231231', 'WISOGO1138@CRISTOUT.COM', '2025-06-22 23:27:00', 1, 3);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_internships_period"
+--
+
+CREATE TABLE "t_internships_period" (
+  "PERIOD_ID" SERIAL NOT NULL,
+  "START_DATE" date NOT NULL,
+  "END_DATE" date NOT NULL,
+  "CREATION_DATE" TIMESTAMP NOT NULL,
+  "DESCRIPTION" varchar(45) NOT NULL,
+  "PERIOD_STATUS" varchar(45) NOT NULL,
+  "STATUS" SMALLINT NOT NULL,
+  "T_INTERNSHIPS_CODE" varchar(8) NOT NULL
+);
+
+--
+-- Volcado de datos para la tabla "t_internships_period"
+--
+
+INSERT INTO "t_internships_period" ("PERIOD_ID", "START_DATE", "END_DATE", "CREATION_DATE", "DESCRIPTION", "PERIOD_STATUS", "STATUS", "T_INTERNSHIPS_CODE") VALUES
+(1, '2025-01-01', '2025-06-09', '2025-06-05 19:01:15', '2025-I', '3', 1, ''),
+(3, '2025-06-10', '2025-09-30', '2025-06-10 19:35:25', '2025-II', '3', 1, ''),
+(4, '2026-01-02', '2026-04-24', '2025-06-14 20:27:06', '2026-I', '1', 1, ''),
+(5, '2026-07-09', '2026-10-29', '2025-06-22 22:11:45', '2026-II', '1', 1, '');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_internship_type"
+--
+
+CREATE TABLE "t_internship_type" (
+  "INTERNSHIP_TYPE_ID" SERIAL NOT NULL,
+  "NAME" varchar(40) NOT NULL,
+  "PRIORITY" SMALLINT NOT NULL,
+  "CREATION_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+--
+-- Volcado de datos para la tabla "t_internship_type"
+--
+
+INSERT INTO "t_internship_type" ("INTERNSHIP_TYPE_ID", "NAME", "PRIORITY", "CREATION_DATE", "STATUS") VALUES
+(1, 'ORDINARIA', 0, '2025-05-05 01:24:07', 1),
+(2, 'HOSPITALARIA', 1, '2025-05-05 01:25:00', 1),
+(3, 'COMUNITARIA', 2, '2025-05-05 01:25:00', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_key_history"
+--
+
+CREATE TABLE "t_key_history" (
+  "KEY_HISTORY_ID" SERIAL NOT NULL,
+  "USER_KEY_ID" int NOT NULL,
+  "USER_ID" int NOT NULL,
+  "END_DATE" varchar(45) NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_list"
+--
+
+CREATE TABLE "t_list" (
+  "LIST_ID" SERIAL NOT NULL,
+  "NAME" varchar(40) NOT NULL,
+  "CREATION_DATE" TIMESTAMP NOT NULL,
+  "MODIF_USER_ID" int NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" int NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" int NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+) ;
+
+--
+-- Volcado de datos para la tabla "t_list"
+--
+
+INSERT INTO "t_list" ("LIST_ID", "NAME", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES
+(1, 'Sexo', '2025-03-11 17:03:01', 0, '2025-06-22 20:22:55', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(2, 'Registro Civil', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(3, 'Nacionalidad ', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 0, '2025-06-22 20:22:06', 1, '2025-03-11 17:03:01', 0),
+(4, 'Regimen/Turno', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(5, 'Trabajo', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(6, 'Tipo de empresa', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(7, 'Rif', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(8, 'Tipo de Practica', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(9, 'Condicion', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(10, 'Dedicacion', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(11, 'Categoria', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(12, 'Tipo de estudiante', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(13, 'Rango Militar', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 0, '2025-06-22 20:22:24', 1, '2025-03-11 17:03:01', 0),
+(14, 'Estatus Pasantia', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(15, 'Estatus Periodo', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(16, 'Region', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(17, 'Nucleo', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(18, 'Extensión', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(19, 'Traslado', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(20, 'Profesión', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(21, 'Carrera', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_operation"
+--
+
+CREATE TABLE "t_operation" (
+  "OPERATION_ID" SERIAL NOT NULL,
+  "ACTION" varchar(45) NOT NULL,
+  "DESCRIPTION" text DEFAULT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_permissions"
+--
+
+CREATE TABLE "t_permissions" (
+  "PERMISSIONS_ID" SERIAL NOT NULL,
+  "NAME" varchar(30) NOT NULL,
+  "DESCRIPTION" text DEFAULT NULL,
+  "MODIF_USER_ID" int NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" int NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" int NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_preset_questions"
+--
+
+CREATE TABLE "t_preset_questions" (
+  "PRESET_QUESTION_ID" SERIAL NOT NULL,
+  "DESCRIPTION" varchar(255) NOT NULL,
+  "ANSWER" varchar(255) NOT NULL,
+  "MODIF_USER_ID" int NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" int NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" int NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+--
+-- Volcado de datos para la tabla "t_preset_questions"
+--
+
+INSERT INTO "t_preset_questions" ("PRESET_QUESTION_ID", "DESCRIPTION", "ANSWER", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES
+(1, '¿Cuál era el apodo de tu mejor amigo de la infancia?', 'QWE', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 1),
+(2, '¿En qué ciudad se conocieron sus padres?', 'ASD', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 1),
+(3, '¿Cuál es el apellido de tu vecino?', 'ZXC', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 1),
+(4, '¿En qué ciudad se conocieron sus padres?', 'QWE', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 1),
+(5, '¿Cuántas mascotas tenías a los 10 años?', 'ASD', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 1),
+(6, '¿Cuál es el apellido de tu vecino?', 'ZXC', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_professional_practices"
+--
+
+CREATE TABLE "t_professional_practices" (
+  "PROFESSIONAL_PRACTICE_ID" SERIAL NOT NULL,
+  "START_DATE" date NOT NULL,
+  "END_DATE" date NOT NULL,
+  "REPORT_TITLE" varchar(255) NOT NULL,
+  "REGISTRATION_DATE" TIMESTAMP NOT NULL,
+  "CREATION_DATE" TIMESTAMP NOT NULL,
+  "GRADE" decimal(5,0) CHECK("GRADE">=0) NOT NULL,
+  "PRACTICES_STATUS" varchar(45) NOT NULL,
+  "TRANSFER" SMALLINT NOT NULL,
+  "TOUR" varchar(255) NOT NULL,
+  "PERIOD_ID" int NOT NULL,
+  "INSTITUTION_ID" int NOT NULL,
+  "STUDENTS_ID" int NOT NULL,
+  "STATUS" SMALLINT NOT NULL,
+  "MANAGER_ID" int NOT NULL,
+  "OBSERVATION" varchar(255) NOT NULL,
+  "ENROLLMENT" varchar(255) NOT NULL ,
+  "INTERSHIP_STATUS" int NOT NULL,
+  "INTERNSHIP_TYPE_ID" int NOT NULL
+);
+
+  COMMENT ON COLUMN "t_professional_practices"."ENROLLMENT" IS 'matricula y su estructura: abreviatura carrera - semestre - seccion - regimen/turno	';
+--
+-- Volcado de datos para la tabla "t_professional_practices"
+--
+CREATE Table "t_professional_practices_tutor"(
+  "PROFESSIONAL_PRACTICES_TUTOR_ID" SERIAL NOT NULL,
+  "TUTOR_ID" int NOT NULL,
+  "PROFESSIONAL_PRACTICE_ID" INT NOT NULL,
+  "TUTOR_TYPE" varchar(45) NOT NULL
+);
+
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_roles"
+--
+
+CREATE TABLE "t_roles" (
+  "ID_ROLS" SERIAL NOT NULL,
+  "NAME" varchar(30) NOT NULL,
+  "DESCRIPTION" text DEFAULT NULL,
+  "MODIF_USER_ID" int NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" int NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" int NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+
+INSERT INTO "t_roles" (
+"ID_ROLS","NAME","DESCRIPTION","MODIF_USER_ID","MODIF_USER_DATE","ELIM_USER_ID","ELIM_USER_DATE","REST_USER_ID",
+"REST_USER_DATE","STATUS"
+) VALUES (1,'ADMIN','ADMIN',0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 1) ;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_roles_permissions"
+--
+
+CREATE TABLE "t_roles_permissions" (
+  "ROLES_ID" SERIAL NOT NULL,
+  "PERMISSIONS_ID" int NOT NULL
+);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_security_questions"
+--
+
+CREATE TABLE "t_security_questions" (
+  "SECURITY_QUESTIONS_ID" SERIAL NOT NULL,
+  "USER_ID" int NOT NULL,
+  "PRESET_QUESTION_ID" int NOT NULL
+);
+
+--
+-- Volcado de datos para la tabla "t_security_questions"
+--
+
+INSERT INTO "t_security_questions" ("SECURITY_QUESTIONS_ID", "USER_ID", "PRESET_QUESTION_ID") VALUES
+(1, 3, 1),
+(2, 3, 2),
+(3, 3, 3),
+(4, 8, 4),
+(5, 8, 5),
+(6, 8, 6);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_session"
+--
+
+CREATE TABLE "t_session" (
+  "SESSION_ID" SERIAL NOT NULL,
+  "USER_ID" int NOT NULL,
+  "LOGIN_TIME" TIMESTAMP NOT NULL,
+  "MODIF_USER_ID" int NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" int NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" int NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+--
+-- Volcado de datos para la tabla "t_session"
+--
+
+INSERT INTO "t_session" ("SESSION_ID", "USER_ID", "LOGIN_TIME", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES
+(1, 3, '2025-05-01 21:14:42', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(2, 3, '2025-05-01 21:19:26', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(3, 3, '2025-05-01 21:27:58', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(4, 3, '2025-05-03 18:05:10', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(5, 3, '2025-05-04 17:23:06', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(6, 3, '2025-05-04 17:31:22', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(7, 3, '2025-05-06 19:14:57', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(8, 3, '2025-05-06 19:23:11', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(9, 3, '2025-05-06 19:24:49', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(10, 3, '2025-05-06 19:53:54', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(11, 3, '2025-05-06 20:16:02', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(12, 3, '2025-05-06 20:55:48', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(13, 3, '2025-05-10 15:05:26', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(14, 3, '2025-05-13 18:38:43', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(15, 3, '2025-05-17 13:32:38', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(16, 3, '2025-05-17 19:46:24', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(17, 3, '2025-05-18 14:49:54', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(18, 3, '2025-05-19 21:48:42', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(19, 3, '2025-05-20 20:33:18', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(20, 3, '2025-05-25 15:19:25', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(21, 3, '2025-05-25 17:12:28', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(22, 3, '2025-05-26 17:24:49', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(23, 3, '2025-06-01 15:58:28', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(24, 3, '2025-06-02 17:14:26', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(25, 3, '2025-06-02 17:15:29', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(26, 3, '2025-06-03 20:46:12', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(27, 3, '2025-06-03 20:47:30', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(28, 3, '2025-06-03 20:47:39', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(29, 3, '2025-06-03 20:47:52', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(30, 3, '2025-06-03 20:47:57', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(31, 3, '2025-06-03 20:48:15', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(32, 3, '2025-06-03 20:48:26', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(33, 3, '2025-06-03 20:49:14', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(34, 3, '2025-06-03 20:49:24', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(35, 3, '2025-06-03 20:51:18', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(36, 3, '2025-06-03 20:51:37', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(37, 3, '2025-06-03 20:51:47', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(38, 3, '2025-06-03 20:52:08', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(39, 3, '2025-06-03 20:53:44', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(40, 3, '2025-06-03 20:53:51', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(41, 3, '2025-06-03 20:53:57', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(42, 3, '2025-06-03 20:54:03', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(43, 3, '2025-06-03 20:54:11', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(44, 3, '2025-06-03 20:54:18', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(45, 3, '2025-06-03 20:54:30', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(46, 3, '2025-06-03 20:56:31', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(47, 3, '2025-06-03 20:56:48', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(48, 3, '2025-06-03 20:56:57', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(49, 3, '2025-06-03 20:59:59', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(50, 3, '2025-06-03 21:00:06', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(51, 3, '2025-06-03 21:00:19', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(52, 3, '2025-06-03 21:00:41', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(53, 3, '2025-06-03 21:00:52', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(54, 3, '2025-06-03 21:08:57', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(55, 3, '2025-06-03 21:09:06', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(56, 3, '2025-06-03 21:09:12', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(57, 3, '2025-06-03 21:09:22', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(58, 3, '2025-06-03 21:09:27', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(59, 3, '2025-06-03 21:11:46', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(60, 3, '2025-06-03 21:11:56', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(61, 3, '2025-06-03 21:12:04', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(62, 3, '2025-06-03 21:50:26', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(63, 3, '2025-06-03 21:51:04', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(64, 3, '2025-06-03 21:51:25', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(65, 3, '2025-06-03 21:51:32', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(66, 3, '2025-06-03 21:51:40', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(67, 3, '2025-06-03 21:52:02', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(68, 3, '2025-06-03 21:53:06', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(69, 3, '2025-06-03 21:53:14', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(70, 3, '2025-06-03 21:55:22', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(71, 3, '2025-06-03 21:55:29', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(72, 3, '2025-06-03 21:55:47', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(73, 3, '2025-06-03 21:55:56', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(74, 3, '2025-06-03 21:56:27', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(75, 3, '2025-06-03 21:57:35', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(76, 3, '2025-06-03 21:57:44', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(77, 3, '2025-06-05 18:55:02', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(78, 3, '2025-06-05 19:17:54', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(79, 3, '2025-06-06 20:43:52', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(80, 3, '2025-06-07 12:18:24', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(81, 3, '2025-06-07 19:05:29', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(82, 3, '2025-06-08 13:37:32', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(83, 3, '2025-06-09 21:12:27', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(84, 3, '2025-06-09 21:14:46', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(85, 3, '2025-06-09 21:17:22', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(86, 3, '2025-06-09 21:22:42', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(87, 3, '2025-06-10 19:26:38', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(88, 3, '2025-06-14 15:52:30', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(89, 3, '2025-06-15 18:58:26', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(90, 3, '2025-06-16 16:10:01', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(91, 3, '2025-06-16 19:28:04', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(92, 3, '2025-06-19 18:55:55', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(93, 3, '2025-06-19 19:47:54', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(94, 3, '2025-06-21 18:21:35', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(95, 8, '2025-06-21 18:27:33', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(96, 8, '2025-06-21 18:28:44', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 1),
+(97, 3, '2025-06-22 15:10:58', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(98, 3, '2025-06-22 20:21:56', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(99, 3, '2025-12-01 21:53:03', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(100, 3, '2025-12-01 21:53:20', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(101, 3, '2025-12-01 21:57:09', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_session_attempts"
+--
+
+CREATE TABLE "t_session_attempts" (
+  "ATTEMPT_ID" SERIAL NOT NULL,
+  "ATTEMPT_TIME" TIMESTAMP NOT NULL,
+  "USER_ID" int NOT NULL,
+  "ACTION" SMALLINT NOT NULL,
+  "MODIF_USER_ID" int NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" int NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" int NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+--
+-- Volcado de datos para la tabla "t_session_attempts"
+--
+
+INSERT INTO "t_session_attempts" ("ATTEMPT_ID", "ATTEMPT_TIME", "USER_ID", "ACTION", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES
+(1, '2025-05-04 17:31:14', 3, 0, 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(2, '2025-05-04 17:31:17', 3, 0, 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(3, '2025-05-06 20:55:35', 3, 0, 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(4, '2025-05-06 20:55:41', 3, 0, 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(5, '2025-05-25 15:19:19', 3, 0, 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(6, '2025-06-02 17:14:17', 3, 0, 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(7, '2025-06-03 20:52:02', 3, 0, 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(8, '2025-06-15 18:58:21', 3, 1, 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(9, '2025-11-20 21:39:36', 3, 1, 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(10, '2025-11-20 21:39:43', 3, 1, 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(11, '2025-11-20 21:39:49', 3, 1, 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(12, '2025-12-01 21:52:12', 3, 1, 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(13, '2025-12-01 21:52:28', 3, 1, 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_session_history"
+--
+
+CREATE TABLE "t_session_history" (
+  "SESSION_HISTORY_ID" SERIAL NOT NULL,
+  "SESSION_ID" int NOT NULL,
+  "USER_ID" int NOT NULL,
+  "LOGIN_TIME" TIMESTAMP NOT NULL,
+  "LOGOUT_TIME" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+--
+-- Volcado de datos para la tabla "t_session_history"
+--
+
+INSERT INTO "t_session_history" ("SESSION_HISTORY_ID", "SESSION_ID", "USER_ID", "LOGIN_TIME", "LOGOUT_TIME", "STATUS") VALUES
+(1, 1, 3, '2025-05-01 21:14:42', '2025-05-01 21:19:09', 1),
+(2, 2, 3, '2025-05-01 21:19:26', '2025-05-01 21:27:49', 1),
+(3, 3, 3, '2025-05-01 21:27:58', '2025-05-01 21:29:08', 1),
+(4, 4, 3, '2025-05-03 18:05:10', '2025-05-03 18:16:15', 1),
+(5, 5, 3, '2025-05-04 17:23:06', '2025-05-04 17:26:47', 1),
+(6, 6, 3, '2025-05-04 17:31:22', '2025-05-06 19:17:24', 1),
+(7, 8, 3, '2025-05-06 19:23:11', '2025-05-06 19:24:44', 1),
+(8, 9, 3, '2025-05-06 19:24:49', '2025-05-06 19:53:48', 1),
+(9, 10, 3, '2025-05-06 19:53:54', '2025-05-06 20:15:49', 1),
+(10, 11, 3, '2025-05-06 20:16:02', '2025-05-06 20:54:33', 1),
+(11, 12, 3, '2025-05-06 20:55:48', '2025-05-20 20:58:31', 1),
+(12, 20, 3, '2025-05-25 15:19:25', '2025-05-25 15:19:28', 1),
+(13, 21, 3, '2025-05-25 17:12:28', '2025-06-02 17:15:06', 1),
+(14, 25, 3, '2025-06-02 17:15:29', '2025-06-02 19:35:00', 1),
+(15, 26, 3, '2025-06-03 20:46:12', '2025-06-03 20:46:13', 1),
+(16, 27, 3, '2025-06-03 20:47:30', '2025-06-03 20:47:31', 1),
+(17, 28, 3, '2025-06-03 20:47:39', '2025-06-03 20:47:40', 1),
+(18, 29, 3, '2025-06-03 20:47:52', '2025-06-03 20:47:53', 1),
+(19, 30, 3, '2025-06-03 20:47:57', '2025-06-03 20:47:58', 1),
+(20, 31, 3, '2025-06-03 20:48:15', '2025-06-03 20:48:18', 1),
+(21, 32, 3, '2025-06-03 20:48:26', '2025-06-03 20:48:27', 1),
+(22, 33, 3, '2025-06-03 20:49:14', '2025-06-03 20:49:16', 1),
+(23, 34, 3, '2025-06-03 20:49:24', '2025-06-03 20:49:26', 1),
+(24, 35, 3, '2025-06-03 20:51:18', '2025-06-03 20:51:20', 1),
+(25, 36, 3, '2025-06-03 20:51:37', '2025-06-03 20:51:40', 1),
+(26, 37, 3, '2025-06-03 20:51:47', '2025-06-03 20:51:49', 1),
+(27, 38, 3, '2025-06-03 20:52:08', '2025-06-03 20:52:09', 1),
+(28, 39, 3, '2025-06-03 20:53:44', '2025-06-03 20:53:46', 1),
+(29, 40, 3, '2025-06-03 20:53:51', '2025-06-03 20:53:52', 1),
+(30, 41, 3, '2025-06-03 20:53:57', '2025-06-03 20:53:59', 1),
+(31, 42, 3, '2025-06-03 20:54:03', '2025-06-03 20:54:05', 1),
+(32, 43, 3, '2025-06-03 20:54:11', '2025-06-03 20:54:12', 1),
+(33, 44, 3, '2025-06-03 20:54:18', '2025-06-03 20:54:21', 1),
+(34, 45, 3, '2025-06-03 20:54:30', '2025-06-03 20:54:31', 1),
+(35, 46, 3, '2025-06-03 20:56:31', '2025-06-03 20:56:33', 1),
+(36, 47, 3, '2025-06-03 20:56:48', '2025-06-03 20:56:50', 1),
+(37, 48, 3, '2025-06-03 20:56:57', '2025-06-03 20:56:58', 1),
+(38, 49, 3, '2025-06-03 20:59:59', '2025-06-03 20:59:59', 1),
+(39, 50, 3, '2025-06-03 21:00:06', '2025-06-03 21:00:07', 1),
+(40, 51, 3, '2025-06-03 21:00:19', '2025-06-03 21:00:20', 1),
+(41, 52, 3, '2025-06-03 21:00:41', '2025-06-03 21:00:41', 1),
+(42, 53, 3, '2025-06-03 21:00:52', '2025-06-03 21:00:52', 1),
+(43, 54, 3, '2025-06-03 21:08:57', '2025-06-03 21:08:57', 1),
+(44, 55, 3, '2025-06-03 21:09:06', '2025-06-03 21:09:07', 1),
+(45, 56, 3, '2025-06-03 21:09:12', '2025-06-03 21:09:12', 1),
+(46, 57, 3, '2025-06-03 21:09:22', '2025-06-03 21:09:22', 1),
+(47, 58, 3, '2025-06-03 21:09:27', '2025-06-03 21:09:27', 1),
+(48, 59, 3, '2025-06-03 21:11:46', '2025-06-03 21:11:47', 1),
+(49, 60, 3, '2025-06-03 21:11:56', '2025-06-03 21:11:56', 1),
+(50, 61, 3, '2025-06-03 21:12:04', '2025-06-03 21:12:05', 1),
+(51, 62, 3, '2025-06-03 21:50:26', '2025-06-03 21:50:26', 1),
+(52, 63, 3, '2025-06-03 21:51:04', '2025-06-03 21:51:06', 1),
+(53, 64, 3, '2025-06-03 21:51:25', '2025-06-03 21:51:27', 1),
+(54, 65, 3, '2025-06-03 21:51:32', '2025-06-03 21:51:35', 1),
+(55, 66, 3, '2025-06-03 21:51:40', '2025-06-03 21:51:40', 1),
+(56, 67, 3, '2025-06-03 21:52:02', '2025-06-03 21:52:09', 1),
+(57, 68, 3, '2025-06-03 21:53:06', '2025-06-03 21:53:08', 1),
+(58, 69, 3, '2025-06-03 21:53:14', '2025-06-03 21:53:14', 1),
+(59, 70, 3, '2025-06-03 21:55:22', '2025-06-03 21:55:24', 1),
+(60, 71, 3, '2025-06-03 21:55:29', '2025-06-03 21:55:30', 1),
+(61, 72, 3, '2025-06-03 21:55:47', '2025-06-03 21:55:47', 1),
+(62, 73, 3, '2025-06-03 21:55:56', '2025-06-03 21:55:57', 1),
+(63, 74, 3, '2025-06-03 21:56:27', '2025-06-03 21:56:38', 1),
+(64, 75, 3, '2025-06-03 21:57:35', '2025-06-03 21:57:36', 1),
+(65, 76, 3, '2025-06-03 21:57:44', '2025-06-03 21:59:41', 1),
+(66, 77, 3, '2025-06-05 18:55:02', '2025-06-05 19:17:23', 1),
+(67, 78, 3, '2025-06-05 19:17:54', '2025-06-07 19:05:24', 1),
+(68, 81, 3, '2025-06-07 19:05:29', '2025-06-09 21:14:40', 1),
+(69, 84, 3, '2025-06-09 21:14:46', '2025-06-09 21:17:19', 1),
+(70, 85, 3, '2025-06-09 21:17:22', '2025-06-09 21:22:35', 1),
+(71, 86, 3, '2025-06-09 21:22:42', '2025-06-16 19:27:41', 1),
+(72, 91, 3, '2025-06-16 19:28:04', '2025-06-19 19:47:50', 1),
+(73, 93, 3, '2025-06-19 19:47:54', '2025-06-21 18:27:23', 1),
+(74, 95, 8, '2025-06-21 18:27:33', '2025-06-21 18:28:32', 1),
+(75, 97, 3, '2025-06-22 15:10:58', '2025-12-01 21:53:15', 1),
+(76, 100, 3, '2025-12-01 21:53:20', '2025-12-01 21:57:04', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_students"
+--
+
+CREATE TABLE "t_students" (
+  "STUDENTS_ID" SERIAL NOT NULL,
+  "STUDENTS_CI" varchar(10) NOT NULL,
+  "NAME" varchar(255) NOT NULL,
+  "SECOND_NAME" varchar(255) DEFAULT NULL,
+  "SURNAME" varchar(255) NOT NULL,
+  "SECOND_SURNAME" varchar(255) DEFAULT NULL,
+  "GENDER" char(10) NOT NULL,
+  "BIRTHDATE" date NOT NULL,
+  "CONTACT_PHONE" varchar(15) NOT NULL,
+  "EMAIL" varchar(255) NOT NULL,
+  "ADDRESS" varchar(255) NOT NULL,
+  "MARITAL_STATUS" varchar(45) NOT NULL,
+  "SEMESTER" varchar(45) NOT NULL,
+  "SECTION" varchar(45) NOT NULL,
+  "REGIME" varchar(45) NOT NULL,
+  "STUDENT_TYPE" varchar(45) NOT NULL,
+  "MILITARY_RANK" varchar(45) DEFAULT NULL,
+  "EMPLOYMENT" varchar(2) NOT NULL,
+  "STATUS" SMALLINT NOT NULL,
+  "REGISTRATION_DATE" TIMESTAMP DEFAULT NULL,
+  "CAREER_ID" int NOT NULL
+);
+
+--
+-- Volcado de datos para la tabla "t_students"
+--
+
+INSERT INTO "t_students" ("STUDENTS_ID", "STUDENTS_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "GENDER", "BIRTHDATE", "CONTACT_PHONE", "EMAIL", "ADDRESS", "MARITAL_STATUS", "SEMESTER", "SECTION", "REGIME", "STUDENT_TYPE", "MILITARY_RANK", "EMPLOYMENT", "STATUS", "REGISTRATION_DATE", "CAREER_ID") VALUES
+(1, 'V-29847715', 'JESU', '', 'PEREIRA', 'TORCATES', 'M', '2002-10-04', '0426-5311144', 'DAVIDTORCATES0410@GMAIL.COM', '', 'S', '341', '123', 'D1', 'CIV', ' ', 'NO', 1, '2025-05-17 00:00:00', 3),
+(3, 'V-13227478', 'ADASD', 'ASDA', 'ADFWS', 'QWER', 'M', '1970-02-14', '0414-1231212', 'SEHIXOR759@CALORPG.COM', '', 'S', '341', '123', 'D1', 'CIV', ' ', 'NO', 1, '2025-05-17 00:00:00', 3),
+(4, 'V-1245647', 'ADDA', 'NMASDL', 'QPORE', 'SOLLD', 'F', '2007-11-27', '0412-5313443', 'CADALE6601@BETZENN.COM', '', 'S', '341', '123', 'S3', 'CIV', ' ', 'NO', 1, '2025-05-25 17:43:10', 7),
+(5, 'V-12', 'QWEQE ', ' ASDA', ' QWEQ', ' ADSAF', 'F', '2007-12-30', '0412-5132567', 'WISOGO1138@CRISTOUT.COM', '', 'S', '123', '123', 'D1', 'MIL', ' ', 'NO', 1, '2025-06-01 16:55:45', 7),
+(6, 'V-16453829', 'QWEQE ', 'NMASDL', 'QPORE', 'SOLLD', 'F', '1980-05-21', '0412-4561233', 'BASELOV910@ACEDBY.COM', '', 'V', '123', '123', 'D1', 'CIV', ' ', 'NO', 1, '2025-06-05 18:56:18', 7);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_tables"
+--
+
+CREATE TABLE "t_tables" (
+  "TABLE_ID" SERIAL NOT NULL,
+  "NAME" varchar(25) NOT NULL,
+  "DESCRIPTION" text DEFAULT NULL,
+  "PHYSICAL_NAME" varchar(25) NOT NULL,
+  "LOG" SMALLINT NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_tutors"
+--
+
+CREATE TABLE "t_tutors" (
+  "TUTOR_ID" SERIAL NOT NULL,
+  "TUTOR_CI" varchar(10) NOT NULL,
+  "NAME" varchar(255) NOT NULL,
+  "SECOND_NAME" varchar(255) DEFAULT NULL,
+  "SURNAME" varchar(255) NOT NULL,
+  "SECOND_SURNAME" varchar(255) DEFAULT NULL,
+  "CONTACT_PHONE" varchar(12) NOT NULL,
+  "GENDER" varchar(45) NOT NULL,
+  "EMAIL" varchar(255) NOT NULL,
+  "PROFESSION" varchar(255) NOT NULL,
+  "CONDITION" varchar(45) NOT NULL,
+  "DEDICATION" varchar(45) NOT NULL,
+  "CATEGORY" varchar(45) NOT NULL,
+  "CREATION_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+--
+-- Volcado de datos para la tabla "t_tutors"
+--
+
+INSERT INTO "t_tutors" ("TUTOR_ID", "TUTOR_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "CONTACT_PHONE", "GENDER", "EMAIL", "PROFESSION", "CONDITION", "DEDICATION", "CATEGORY", "CREATION_DATE", "STATUS") VALUES
+(1, 'V-12456798', 'ORLANDO', 'PONTE', 'LOPEZ', 'FERREIRA', '0412-5433443', 'MASCULINO', 'DAVID@GMAI.COM', 'ING', 'ORD', 'DE', 'TITULAR', '2025-06-09 04:53:29', 1),
+(2, 'V-13227478', 'JOSE', 'MARIñO', 'PERALTA', 'PEDROZA', '0412-5365987', 'MASCULINO', 'SEHIXOR759@CALORPG.COM', 'ENF', 'ORD', 'TC', 'TITULAR', '2025-06-14 20:34:03', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_user"
+--
+
+CREATE TABLE "t_user" (
+  "USER_ID" SERIAL NOT NULL,
+  "USER" varchar(255) NOT NULL,
+  "USER_CI" varchar(10) NOT NULL,
+  "NAME" varchar(255) NOT NULL,
+  "SECOND_NAME" varchar(255) DEFAULT NULL,
+  "SURNAME" varchar(255) NOT NULL,
+  "SECOND_SURNAME" varchar(255) DEFAULT NULL,
+  "EMAIL" varchar(255) NOT NULL,
+  "PHONE_NUMBER" varchar(12) DEFAULT NULL,
+  "CREATION_DATE" TIMESTAMP NOT NULL,
+  "LOGIN" SMALLINT NOT NULL,
+  "TERMS_CONDITIONS" varchar(45) NOT NULL,
+  "STATUS_SESSION" SMALLINT NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+--
+-- Volcado de datos para la tabla "t_user"
+--
+
+INSERT INTO "t_user" ("USER_ID", "USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS") VALUES
+(3, 'admin', '00000000', 'admin', '', '', '', 'VIFAMIX371@BOCAPIES.COM', '04245313443', '2025-05-01 21:14:36', 1, '0', 1, 1),
+(5, '29847715', '29847715', 'Admin', '', '', '', '', '', '2025-06-19 19:11:00', 0, '0', 2, 1),
+(6, '13227478', '13227478', 'asdsadasda', '', '', '', '', '', '2025-06-19 19:12:42', 0, '0', 2, 1),
+(7, '456454979', '456454979', 'JESUS DAVID', '', '', '', '', '', '2025-06-19 19:16:55', 0, '0', 2, 1),
+(8, '9836206', '9836206', 'JESUS DAVID', '', '', '', 'WISOGO1138@CRISTOUT.COM', '04245298276', '2025-06-21 18:27:20', 1, '0', 1, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_user_key"
+--
+
+CREATE TABLE "t_user_key" (
+  "USER_KEY_ID" SERIAL NOT NULL,
+  "USER_ID" int NOT NULL,
+  "KEY" varchar(255) NOT NULL,
+  "START_DATE" TIMESTAMP NOT NULL,
+  "END_DATE" TIMESTAMP NOT NULL,
+  "MODIF_USER_ID" int NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" int NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" int NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+--
+-- Volcado de datos para la tabla "t_user_key"
+--
+
+INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES
+(3, 3, '$2y$10$D70iEW4rD6BpccXjnKgzk.KWoEX4s/qhRqebwbU6hwMye.aCFGlzq', '2025-05-01 21:14:36', '2025-05-01 21:27:46', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(10, 3, '$2y$10$JBXuzrJAzJ0eJgR/Pmq43uhezSoVKOo7KF4MwFmXsybb8riabTtfe', '2025-05-01 21:27:46', '2025-12-01 21:53:13', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(11, 5, '$2y$10$/hW9Q0Bzk9C21Df64Y78WOq3Tb6ARe1bYc2ix5j9DK.lTv7TAfidC', '2025-06-19 19:11:00', '2025-10-17 19:11:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 1),
+(12, 6, '$2y$10$XSYTvpo29iuo.xD6Df/7nu1wFyHkO6hMD45UURR8PnxbEvAahvERK', '2025-06-19 19:12:42', '2025-10-17 19:12:42', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 1),
+(13, 7, '$2y$10$eAcZt9z1tEwP3P/VLUEPve1cc1xBavKdANhTsT/Q7V55dRZSfEzrK', '2025-06-19 19:16:55', '2025-10-17 19:16:55', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 1),
+(14, 8, '$2y$10$7AGPMneTLgMjDUagPw6G8ONkvTYjQ7fAuuAj75jSC8AHtK.xA94fG', '2025-06-21 18:27:20', '2025-06-21 18:28:30', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0),
+(15, 8, '$2y$10$UHZBa3iGsuyB46SaRrZ2F.S5i0ZIt7kPr1A2vg33u.pGoGec.lGBu', '2025-06-21 18:28:30', '2025-10-19 18:28:30', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 1),
+(16, 3, '$2y$10$XuQ/0/nFiyasZcbByRd3r.lV92iLaKt56yLNf21V8G9rABlXbGbnO', '2025-12-01 21:53:13', '2026-03-31 21:53:13', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_user_questions"
+--
+
+CREATE TABLE "t_user_questions" (
+  "USER_QUESTION_ID" SERIAL NOT NULL,
+  "QUESTION" varchar(45) NOT NULL,
+  "ANSWER" varchar(45) NOT NULL,
+  "MODIF_USER_ID" int NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" int NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" int NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_user_roles"
+--
+
+CREATE TABLE "t_user_roles" (
+  "ID_USER" int NOT NULL,
+  "ID_ROLES" int NOT NULL
+);
+
+--
+-- Volcado de datos para la tabla "t_user_roles"
+--
+
+INSERT INTO "t_user_roles" ("ID_USER", "ID_ROLES") VALUES
+(3, 1),
+(7, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_value_list"
+--
+
+CREATE TABLE "t_value_list" (
+  "VALUE_LIST_ID" SERIAL NOT NULL,
+  "NAME" varchar(45) NOT NULL,
+  "ABBREVIATION" varchar(8) DEFAULT NULL,
+  "LIST_ID" int NOT NULL,
+  "CREATION_DATE" TIMESTAMP NOT NULL,
+  "MODIF_USER_ID" int NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" int NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" int NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+) ;
+
+--
+-- Volcado de datos para la tabla "t_value_list"
+--
+
+INSERT INTO "t_value_list" ("VALUE_LIST_ID", "NAME", "ABBREVIATION", "LIST_ID", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES
+(1, 'FEMENINO', 'F', 1, '2025-03-22 18:38:48', 1, '2025-03-22 18:38:48', 1, '2025-03-22 18:38:48', 1, '2025-03-22 18:38:48', 1),
+(2, 'MASCULINO', 'M', 1, '2025-03-22 18:41:55', 1, '2025-03-22 18:41:55', 1, '2025-03-22 18:41:55', 1, '2025-03-22 18:41:55', 1),
+(3, 'SOLTERO', 'S', 2, '2025-03-22 18:42:40', 1, '2025-03-22 18:42:40', 1, '2025-03-22 18:42:40', 1, '2025-03-22 18:42:40', 1),
+(4, 'CASADO', 'C', 2, '2025-03-22 18:43:33', 1, '2025-03-22 18:43:33', 1, '2025-03-22 18:43:33', 1, '2025-03-22 18:43:33', 1),
+(5, 'DIVORCIADO', 'D', 2, '2025-03-22 18:44:03', 1, '2025-03-22 18:44:03', 1, '2025-03-22 18:44:03', 1, '2025-03-22 18:44:03', 1),
+(6, 'CONCUBINO', 'CB', 2, '2025-03-22 18:44:27', 1, '2025-03-22 18:44:27', 1, '2025-03-22 18:44:27', 1, '2025-03-22 18:44:27', 1),
+(7, 'VIUDO', 'V', 2, '2025-03-22 18:45:11', 1, '2025-03-22 18:45:11', 1, '2025-03-22 18:45:11', 1, '2025-03-22 18:45:11', 1),
+(8, 'VENEZOLANO', 'V', 3, '2025-03-22 18:45:36', 1, '2025-03-22 18:45:36', 1, '2025-03-22 18:45:36', 1, '2025-03-22 18:45:36', 1),
+(9, 'EXTRANJERO', 'E', 3, '2025-03-22 18:46:02', 1, '2025-03-22 18:46:02', 1, '2025-03-22 18:46:02', 1, '2025-03-22 18:46:02', 1),
+(10, 'DIURNO', 'D1', 4, '2025-03-22 18:46:52', 1, '2025-03-22 18:46:52', 1, '2025-03-22 18:46:52', 1, '2025-03-22 18:46:52', 1),
+(11, 'NOCTURNO', 'N2', 4, '2025-03-22 18:47:17', 1, '2025-03-22 18:47:17', 1, '2025-03-22 18:47:17', 1, '2025-03-22 18:47:17', 1),
+(12, 'SABATINO', 'S3', 4, '2025-03-22 18:47:41', 1, '2025-03-22 18:47:41', 1, '2025-03-22 18:47:41', 1, '2025-03-22 18:47:41', 1),
+(13, 'SI', 'SI', 5, '2025-03-22 18:48:08', 1, '2025-03-22 18:48:08', 1, '2025-03-22 18:48:08', 1, '2025-03-22 18:48:08', 1),
+(14, 'NO', 'NO', 5, '2025-03-22 18:48:35', 1, '2025-03-22 18:48:35', 1, '2025-03-22 18:48:35', 1, '2025-03-22 18:48:35', 1),
+(15, 'PUBLICA', 'PUB', 6, '2025-03-22 18:48:49', 1, '2025-03-22 18:48:49', 1, '2025-03-22 18:48:49', 1, '2025-03-22 18:48:49', 1),
+(16, 'PRIVADA', 'PRIV', 6, '2025-03-22 18:49:21', 1, '2025-03-22 18:49:21', 1, '2025-03-22 18:49:21', 1, '2025-03-22 18:49:21', 1),
+(17, 'MIXTA', 'MIX', 6, '2025-03-22 18:49:56', 1, '2025-03-22 18:49:56', 1, '2025-03-22 18:49:56', 1, '2025-03-22 18:49:56', 1),
+(18, 'JURIDICO', 'J', 7, '2025-03-22 18:50:20', 1, '2025-03-22 18:50:20', 1, '2025-03-22 18:50:20', 1, '2025-03-22 18:50:20', 1),
+(19, 'GOBIERNO', 'G', 7, '2025-03-22 18:50:43', 1, '2025-03-22 18:50:43', 1, '2025-03-22 18:50:43', 1, '2025-03-22 18:50:43', 1),
+(20, 'COMUNA O CONSEJO COMUNAL', 'C', 7, '2025-03-22 18:51:04', 1, '2025-03-22 18:51:04', 1, '2025-03-22 18:51:04', 1, '2025-03-22 18:51:04', 1),
+(21, 'HOSPITALARIA', 'HOSP', 8, '2025-03-22 18:51:32', 1, '2025-03-22 18:51:32', 1, '2025-03-22 18:51:32', 1, '2025-03-22 18:51:32', 1),
+(22, 'COMUNITARIA', 'COM', 8, '2025-03-22 18:52:00', 1, '2025-03-22 18:52:00', 1, '2025-03-22 18:52:00', 1, '2025-03-22 18:52:00', 1),
+(23, 'ORDINARIA', 'ORD', 8, '2025-03-22 18:52:22', 1, '2025-03-22 18:52:22', 1, '2025-03-22 18:52:22', 1, '2025-03-22 18:52:22', 1),
+(24, 'ORDINARIO', 'ORD', 9, '2025-03-22 18:52:43', 1, '2025-03-22 18:52:43', 1, '2025-03-22 18:52:43', 1, '2025-03-22 18:52:43', 1),
+(25, 'CONTRATADO', 'CONT', 9, '2025-03-22 18:53:10', 1, '2025-03-22 18:53:10', 1, '2025-03-22 18:53:10', 1, '2025-03-22 18:53:10', 1),
+(26, 'DEDICACIÓN EXCLUSIVA', 'DE', 10, '2025-03-22 18:53:42', 1, '2025-03-22 18:53:42', 1, '2025-03-22 18:53:42', 1, '2025-03-22 18:53:42', 1),
+(27, 'TIEMPO COMPLETO', 'TC', 10, '2025-03-22 18:54:04', 1, '2025-03-22 18:54:04', 1, '2025-03-22 18:54:04', 1, '2025-03-22 18:54:04', 1),
+(28, 'TIEMPO CONVECIONAL', 'TV', 10, '2025-03-22 18:54:28', 1, '2025-03-22 18:54:28', 1, '2025-03-22 18:54:28', 1, '2025-03-22 18:54:28', 1),
+(29, 'MEDIO TIEMPO', 'MV', 10, '2025-03-22 18:54:49', 1, '2025-03-22 18:54:49', 1, '2025-03-22 18:54:49', 1, '2025-03-22 18:54:49', 1),
+(30, 'AUXILIAR DOCENTE', 'AUXILIAR', 11, '2025-03-22 18:55:11', 1, '2025-03-22 18:55:11', 1, '2025-03-22 18:55:11', 1, '2025-03-22 18:55:11', 1),
+(31, 'DOCENTE INSTRUCTOR', 'INSTRUCT', 11, '2025-03-22 18:55:46', 1, '2025-03-22 18:55:46', 1, '2025-03-22 18:55:46', 1, '2025-03-22 18:55:46', 1),
+(32, 'DOCENTE ASISTENTE', 'ASISTENT', 11, '2025-03-22 18:56:58', 1, '2025-03-22 18:56:58', 1, '2025-03-22 18:56:58', 1, '2025-03-22 18:56:58', 1),
+(33, 'DOCENTE AGREGADO', 'AGREGADO', 11, '2025-03-22 18:57:26', 1, '2025-03-22 18:57:26', 1, '2025-03-22 18:57:26', 1, '2025-03-22 18:57:26', 1),
+(34, 'DOCENTE ASOCIADO', 'ASOCIADO', 11, '2025-03-22 18:57:50', 1, '2025-03-22 18:57:50', 1, '2025-03-22 18:57:50', 1, '2025-03-22 18:57:50', 1),
+(35, 'DOCENTE TITULAR', 'TITULAR', 11, '2025-03-22 18:58:14', 1, '2025-03-22 18:58:14', 1, '2025-03-22 18:58:14', 1, '2025-03-22 18:58:14', 1),
+(36, 'CIVIL', 'CIV', 12, '2025-03-22 18:58:31', 1, '2025-03-22 18:58:31', 1, '2025-03-22 18:58:31', 1, '2025-03-22 18:58:31', 1),
+(37, 'MILITAR', 'MIL', 12, '2025-03-22 18:58:59', 1, '2025-03-22 18:58:59', 1, '2025-03-22 18:58:59', 1, '2025-03-22 18:58:59', 1),
+(38, 'SUBTENIENTE', 'SBTTE', 13, '2025-03-22 18:59:22', 1, '2025-03-22 18:59:22', 1, '2025-03-22 18:59:22', 1, '2025-03-22 18:59:22', 1),
+(39, 'TENIENTE', 'TTE', 13, '2025-03-22 18:59:43', 1, '2025-03-22 18:59:43', 1, '2025-03-22 18:59:43', 1, '2025-03-22 18:59:43', 1),
+(40, 'CAPITAN', 'CAP', 13, '2025-03-22 19:00:21', 1, '2025-03-22 19:00:21', 1, '2025-03-22 19:00:21', 1, '2025-03-22 19:00:21', 1),
+(41, 'MAYOR', 'MY', 13, '2025-03-22 19:00:41', 1, '2025-03-22 19:00:41', 1, '2025-03-22 19:00:41', 1, '2025-03-22 19:00:41', 1),
+(42, 'TENIENTE CORONEL', 'TTE CNEL', 13, '2025-03-22 19:01:00', 1, '2025-03-22 19:01:00', 1, '2025-03-22 19:01:00', 1, '2025-03-22 19:01:00', 1),
+(43, 'CORONEL', 'CNEL', 13, '2025-03-22 19:01:33', 1, '2025-03-22 19:01:33', 1, '2025-03-22 19:01:33', 1, '2025-03-22 19:01:33', 1),
+(44, 'APROBADO', 'A', 14, '2025-03-22 19:02:06', 1, '2025-03-22 19:02:06', 1, '2025-03-22 19:02:06', 1, '2025-03-22 19:02:06', 1),
+(45, 'REPROBADO', 'R', 14, '2025-03-22 19:02:24', 1, '2025-03-22 19:02:24', 1, '2025-03-22 19:02:24', 1, '2025-03-22 19:02:24', 1),
+(46, 'PENDIENTE', 'PEN', 15, '2025-03-22 19:02:46', 1, '2025-03-22 19:02:46', 1, '2025-03-22 19:02:46', 1, '2025-03-22 19:02:46', 1),
+(47, 'ABIERTO', 'ABT', 15, '2025-03-22 19:03:08', 1, '2025-03-22 19:03:08', 1, '2025-03-22 19:03:08', 1, '2025-03-22 19:03:08', 1),
+(48, 'CULMINADO', 'CULM', 15, '2025-03-22 19:03:28', 1, '2025-03-22 19:03:28', 1, '2025-03-22 19:03:28', 1, '2025-03-22 19:03:28', 1),
+(49, 'ANULADO', 'NULL', 15, '2025-03-22 19:03:51', 1, '2025-03-22 19:03:51', 1, '2025-03-22 19:03:51', 1, '2025-03-22 19:03:51', 1),
+(50, 'LOS LLANOS', 'LOS LLAN', 16, '2025-03-22 19:04:11', 1, '2025-03-22 19:04:11', 1, '2025-03-22 19:04:11', 1, '2025-03-22 19:04:11', 1),
+(51, 'PORTUGUESA', 'PORTUGUE', 17, '2025-03-22 19:04:35', 1, '2025-03-22 19:04:35', 1, '2025-03-22 19:04:35', 1, '2025-03-22 19:04:35', 1),
+(52, 'ACARIGUA', 'ACARIGUA', 18, '2025-03-22 19:05:21', 1, '2025-03-22 19:05:21', 1, '2025-03-22 19:05:21', 1, '2025-03-22 19:05:21', 1),
+(53, 'SI', 'SI', 19, '2025-03-22 19:05:45', 1, '2025-03-22 19:05:45', 1, '2025-03-22 19:05:45', 1, '2025-03-22 19:05:45', 1),
+(54, 'NO', 'NO', 19, '2025-03-22 19:06:11', 1, '2025-03-22 19:06:11', 1, '2025-03-22 19:06:11', 1, '2025-03-22 19:06:11', 1),
+(55, 'ENFERMERIA', 'ENF', 20, '2025-03-22 19:06:30', 1, '2025-03-22 19:06:30', 1, '2025-03-22 19:06:30', 1, '2025-03-22 19:06:30', 1),
+(56, 'INGENIERIA', 'ING', 20, '2025-03-22 19:08:26', 1, '2025-03-22 19:08:26', 1, '2025-03-22 19:08:26', 1, '2025-03-22 19:08:26', 1),
+(57, 'TSU EN ENFERMERIA', 'ENF', 21, '2025-03-22 19:06:48', 1, '2025-03-22 19:06:48', 1, '2025-03-22 19:06:48', 1, '2025-03-22 19:06:48', 1),
+(58, 'INGENIERIA', 'ING', 21, '2025-03-22 19:07:16', 1, '2025-03-22 19:07:16', 1, '2025-03-22 19:07:16', 1, '2025-03-22 19:07:16', 1),
+(59, 'NO APLICA', ' ', 13, '2025-05-18 15:37:12', 1, '2025-05-18 15:37:12', 1, '2025-05-18 15:37:12', 1, '2025-05-18 15:37:12', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_visit"
+--
+
+CREATE TABLE "t_visit" (
+  "VISIT_ID" SERIAL NOT NULL,
+  "VISIT_DATE" date NOT NULL,
+  "NOTE" varchar(255) DEFAULT NULL,
+  "REQUESTED_ACTIVITY" varchar(45) NOT NULL,
+  "CARRIED_ACTIVITY" varchar(45) NOT NULL,
+  "STATUS" SMALLINT NOT NULL,
+  "TUTOR_ID" INT NOT NULL,
+  "PROFESSIONAL_PRACTICE_ID" INT NOT NULL
+);
+
+--
+-- Índices para tablas volcadas
+--
+
+--
+-- Indices de la tabla "t_activity_log"
+--
+ALTER TABLE "t_activity_log"
+  ADD PRIMARY KEY ("LOG_ID","SESSION_ID","USER_ID");
+
+--
+-- Indices de la tabla "t_career"
+--
+ALTER TABLE "t_career"
+  ADD PRIMARY KEY ("CAREER_ID"),
+  ADD UNIQUE   ("CAREER_CODE");
+
+--
+-- Indices de la tabla "t_career_internship_type"
+--
+ALTER TABLE "t_career_internship_type"
+  ADD PRIMARY KEY ("ID_CAREER_INTERNSHIP_TYPE_ID");
+
+--
+-- Indices de la tabla "t_change_log"
+--
+ALTER TABLE "t_change_log"
+  ADD PRIMARY KEY ("CHANGE_LOG_ID","TABLE_ID","COLUMN_ID","OPERATION_ID","USER_ID");
+
+--
+-- Indices de la tabla "t_columns"
+--
+ALTER TABLE "t_columns"
+  ADD PRIMARY KEY ("COLUMN_ID"  );
+
+--
+-- Indices de la tabla "t_config"
+--
+ALTER TABLE "t_config"
+  ADD PRIMARY KEY ("CONFIG_ID");
+
+--
+-- Indices de la tabla "t_institution"
+--
+ALTER TABLE "t_institution"
+  ADD PRIMARY KEY ("INSTITUTION_ID"),
+  ADD UNIQUE  ("RIF");
+
+--
+-- Indices de la tabla "t_institution_manager"
+--
+ALTER TABLE "t_institution_manager"
+  ADD PRIMARY KEY ("MANAGER_ID"),
+  ADD UNIQUE  ("MANAGER_CI");
+
+--
+-- Indices de la tabla "t_internships_period"
+--
+ALTER TABLE "t_internships_period"
+  ADD PRIMARY KEY ("PERIOD_ID");
+
+--
+-- Indices de la tabla "t_internship_type"
+--
+ALTER TABLE "t_internship_type"
+  ADD PRIMARY KEY ("INTERNSHIP_TYPE_ID");
+
+--
+-- Indices de la tabla "t_key_history"
+--
+ALTER TABLE "t_key_history"
+  ADD PRIMARY KEY ("KEY_HISTORY_ID","USER_KEY_ID","USER_ID");
+
+--
+-- Indices de la tabla "t_list"
+--
+ALTER TABLE "t_list"
+  ADD PRIMARY KEY ("LIST_ID");
+
+--
+-- Indices de la tabla "t_operation"
+--
+ALTER TABLE "t_operation"
+  ADD PRIMARY KEY ("OPERATION_ID");
+
+--
+-- Indices de la tabla "t_permissions"
+--
+ALTER TABLE "t_permissions"
+  ADD PRIMARY KEY ("PERMISSIONS_ID");
+
+--
+-- Indices de la tabla "t_preset_questions"
+--
+ALTER TABLE "t_preset_questions"
+  ADD PRIMARY KEY ("PRESET_QUESTION_ID");
+
+--
+-- Indices de la tabla "t_professional_practices"
+--
+ALTER TABLE "t_professional_practices"
+  ADD PRIMARY KEY ("PROFESSIONAL_PRACTICE_ID");
+
+--
+-- Indices de la tabla "t_professional_practices_tutor"
+--
+
+ALTER TABLE "t_professional_practices_tutor"
+ADD PRIMARY KEY ("PROFESSIONAL_PRACTICES_TUTOR_ID");
+--
+-- Indices de la tabla "t_roles"
+--
+ALTER TABLE "t_roles"
+  ADD PRIMARY KEY ("ID_ROLS");
+
+--
+-- Indices de la tabla "t_roles_permissions"
+--
+ALTER TABLE "t_roles_permissions"
+  ADD PRIMARY KEY ("ROLES_ID","PERMISSIONS_ID");
+
+--
+-- Indices de la tabla "t_security_questions"
+--
+ALTER TABLE "t_security_questions"
+  ADD PRIMARY KEY ("SECURITY_QUESTIONS_ID");
+
+--
+-- Indices de la tabla "t_session"
+--
+ALTER TABLE "t_session"
+  ADD PRIMARY KEY ("SESSION_ID","USER_ID");
+
+--
+-- Indices de la tabla "t_session_attempts"
+--
+ALTER TABLE "t_session_attempts"
+  ADD PRIMARY KEY ("ATTEMPT_ID","USER_ID");
+
+--
+-- Indices de la tabla "t_session_history"
+--
+ALTER TABLE "t_session_history"
+  ADD PRIMARY KEY ("SESSION_HISTORY_ID","SESSION_ID","USER_ID");
+
+--
+-- Indices de la tabla "t_students"
+--
+ALTER TABLE "t_students"
+  ADD PRIMARY KEY ("STUDENTS_ID"),
+  ADD UNIQUE("STUDENTS_CI");
+
+--
+-- Indices de la tabla "t_tables"
+--
+ALTER TABLE "t_tables"
+  ADD PRIMARY KEY ("TABLE_ID");
+
+--
+-- Indices de la tabla "t_tutors"
+--
+ALTER TABLE "t_tutors"
+  ADD PRIMARY KEY ("TUTOR_ID"),
+  ADD UNIQUE ("TUTOR_CI");
+
+--
+-- Indices de la tabla "t_user"
+--
+ALTER TABLE "t_user"
+  ADD PRIMARY KEY ("USER_ID"),
+  ADD UNIQUE("USER_CI");
+
+--
+-- Indices de la tabla "t_user_key"
+--
+ALTER TABLE "t_user_key"
+  ADD PRIMARY KEY ("USER_KEY_ID","USER_ID");
+
+--
+-- Indices de la tabla "t_user_questions"
+--
+ALTER TABLE "t_user_questions"
+  ADD PRIMARY KEY ("USER_QUESTION_ID");
+
+--
+-- Indices de la tabla "t_user_roles"
+--
+ALTER TABLE "t_user_roles"
+  ADD PRIMARY KEY ("ID_USER","ID_ROLES");
+
+--
+-- Indices de la tabla "t_value_list"
+--
+ALTER TABLE "t_value_list"
+  ADD PRIMARY KEY ("VALUE_LIST_ID");
+
+--
+-- Indices de la tabla "t_visit"
+--
+ALTER TABLE "t_visit"
+  ADD PRIMARY KEY ("VISIT_ID");
+
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table "t_activity_log"
+--
+ALTER TABLE "t_activity_log"
+  ADD CONSTRAINT "fk_REGISTRO_ACTIVIDAD_SESION1" FOREIGN KEY ("SESSION_ID","USER_ID") REFERENCES "t_session" ("SESSION_ID", "USER_ID") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table "t_career_internship_type"
+--
+ALTER TABLE "t_career_internship_type"
+  ADD CONSTRAINT "CAREER_ID2" FOREIGN KEY ("CAREER_ID") REFERENCES "t_career" ("CAREER_ID") ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT "INTERNSHIP_TYPE_ID2" FOREIGN KEY ("INTERNSHIP_TYPE_ID") REFERENCES "t_internship_type" ("INTERNSHIP_TYPE_ID") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table "t_change_log"
+--
+ALTER TABLE "t_change_log"
+  ADD CONSTRAINT "fk_t_CHANGE_LOG_t_COLUMNS1" FOREIGN KEY ("COLUMN_ID") REFERENCES "t_columns" ("COLUMN_ID") ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT "fk_t_CHANGE_LOG_t_OPERATION1" FOREIGN KEY ("OPERATION_ID") REFERENCES "t_operation" ("OPERATION_ID") ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT "fk_t_CHANGE_LOG_t_TABLES1" FOREIGN KEY ("TABLE_ID") REFERENCES "t_tables" ("TABLE_ID") ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT "fk_t_CHANGE_LOG_t_USER1" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table "t_columns"
+--
+ALTER TABLE "t_columns"
+  ADD CONSTRAINT "fk_t_COLUMNS_t_TABLES1" FOREIGN KEY ("TABLE_ID") REFERENCES "t_tables" ("TABLE_ID") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table "t_institution_manager"
+--
+ALTER TABLE "t_institution_manager"
+  ADD CONSTRAINT "INSTITUTION_ID" FOREIGN KEY ("INSTITUTION_ID") REFERENCES "t_institution" ("INSTITUTION_ID") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table "t_key_history"
+--
+ALTER TABLE "t_key_history"
+  ADD CONSTRAINT "fk_HISTORIAL_CLAVE_CLAVE_USUARIO1" FOREIGN KEY ("USER_KEY_ID","USER_ID") REFERENCES "t_user_key" ("USER_KEY_ID", "USER_ID") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table "t_professional_practices"
+--
+ALTER TABLE "t_professional_practices"
+  ADD CONSTRAINT "INTERNSHIP_TYPE_ID" FOREIGN KEY ("INTERNSHIP_TYPE_ID") REFERENCES "t_internship_type" ("INTERNSHIP_TYPE_ID") ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT "IdPeriodo_Pasantias" FOREIGN KEY ("PERIOD_ID") REFERENCES "t_internships_period" ("PERIOD_ID") ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT "Id_Estudiantes" FOREIGN KEY ("STUDENTS_ID") REFERENCES "t_students" ("STUDENTS_ID") ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT "Id_Institucion" FOREIGN KEY ("INSTITUTION_ID") REFERENCES "t_institution" ("INSTITUTION_ID") ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT "MANAGER_ID" FOREIGN KEY ("MANAGER_ID") REFERENCES "t_institution_manager" ("MANAGER_ID") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table "t_professional_practices_tutor"
+--
+ALTER TABLE "t_professional_practices_tutor"
+  ADD CONSTRAINT "fk_t_professional_practices_tutor_tutor" FOREIGN KEY ("TUTOR_ID") REFERENCES "t_tutors" ("TUTOR_ID") ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT "fk_t_professional_practices_tutor_professional_practices" FOREIGN KEY ("PROFESSIONAL_PRACTICE_ID") REFERENCES "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table "t_roles_permissions"
+--
+ALTER TABLE "t_roles_permissions"
+  ADD CONSTRAINT "fk_ROLES_has_PERMISOS_PERMISOS1" FOREIGN KEY ("PERMISSIONS_ID") REFERENCES "t_permissions" ("PERMISSIONS_ID") ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT "fk_ROLES_has_PERMISOS_ROLES1" FOREIGN KEY ("ROLES_ID") REFERENCES "t_roles" ("ID_ROLS") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table "t_security_questions"
+--
+ALTER TABLE "t_security_questions"
+  ADD CONSTRAINT "t_security_questions_ibfk_1" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID"),
+  ADD CONSTRAINT "t_security_questions_ibfk_2" FOREIGN KEY ("PRESET_QUESTION_ID") REFERENCES "t_preset_questions" ("PRESET_QUESTION_ID");
+
+--
+-- Constraints for table "t_session"
+--
+ALTER TABLE "t_session"
+  ADD CONSTRAINT "fk_SESION_USUARIO1" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table "t_session_attempts"
+--
+ALTER TABLE "t_session_attempts"
+  ADD CONSTRAINT "fk_INTENTOS_DE_SESION_USUARIO1" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table "t_session_history"
+--
+ALTER TABLE "t_session_history"
+  ADD CONSTRAINT "fk_HISTORIAL_SESION_SESION1" FOREIGN KEY ("SESSION_ID","USER_ID") REFERENCES "t_session" ("SESSION_ID", "USER_ID") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table "t_students"
+--
+ALTER TABLE "t_students"
+  ADD CONSTRAINT "CAREER_ID" FOREIGN KEY ("CAREER_ID") REFERENCES "t_career" ("CAREER_ID") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table "t_user_key"
+--
+ALTER TABLE "t_user_key"
+  ADD CONSTRAINT "fk_CLAVE_USUARIO_USUARIO" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table "t_user_roles"
+--
+ALTER TABLE "t_user_roles"
+  ADD CONSTRAINT "fk_USUARIO_has_ROLES_ROLES1" FOREIGN KEY ("ID_ROLES") REFERENCES "t_roles" ("ID_ROLS") ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT "fk_USUARIO_has_ROLES_USUARIO1" FOREIGN KEY ("ID_USER") REFERENCES "t_user" ("USER_ID") ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+--
+-- Constraints for table "t_visit"
+--
+ALTER TABLE "t_visit"
+  ADD CONSTRAINT "PROFESSIONAL_PRACTICE_ID" FOREIGN KEY ("PROFESSIONAL_PRACTICE_ID") REFERENCES "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID") ON DELETE NO ACTION ON UPDATE NO ACTION,
+  ADD CONSTRAINT "TUTOR_ID" FOREIGN KEY ("TUTOR_ID") REFERENCES "t_tutors" ("TUTOR_ID") ON DELETE NO ACTION ON UPDATE NO ACTION;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

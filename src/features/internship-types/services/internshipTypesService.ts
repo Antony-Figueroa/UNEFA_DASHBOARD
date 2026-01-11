@@ -27,7 +27,7 @@ export const mapToOptions = (types: InternshipType[]): InternshipTypeOption[] =>
   return types.map((t) => {
     const label = t.NAME.charAt(0).toUpperCase() + t.NAME.slice(1).toLowerCase();
     return {
-      value: t.NAME,
+      value: String(t.INTERNSHIP_TYPE_ID),
       label,
       text: label, // Para MultiSelect
     };

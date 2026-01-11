@@ -13,6 +13,7 @@ const API_URL = "/periodos";
 // DTO (Data Transfer Object) que representa la estructura de la API
 interface PeriodoApiDTO {
   periodId?: string;
+  PERIOD_ID?: string | number;
   id?: string;
   ID?: string;
   _id?: string;
@@ -28,23 +29,29 @@ interface PeriodoApiDTO {
   createdAt?: number | string;
   fechaCreacion?: number | string;
   description?: string;
+  DESCRIPTION?: string;
   nombre?: string;
   name?: string;
   title?: string;
   periodo?: string;
   periodStatus?: number | string;
+  PERIOD_STATUS?: number | string;
   estadoPeriodo?: number | string;
   period_status?: number | string;
   status?: boolean | number;
+  STATUS?: boolean | number;
   activo?: boolean | number;
   enabled?: boolean | number;
+  T_INTERNSHIPS_CODE?: string;
+  code?: string;
+  codigo?: string;
   [key: string]: unknown;
 }
 
 const parseDate = (value: number | string | undefined): Date => {
   if (!value) return new Date();
   if (typeof value === "number") {
-    // Si viene en segundos (típico de MockAPI si se configuró así)
+    // Unix timestamp in ms or seconds
     const ms = value < 1e12 ? value * 1000 : value;
     return new Date(ms);
   }
@@ -53,14 +60,15 @@ const parseDate = (value: number | string | undefined): Date => {
 
 // Convierte el DTO de la API al modelo de dominio del Frontend (con objetos Date)
 const fromApi = (dto: PeriodoApiDTO): Periodo => {
-  // Flexibilidad total para nombres de campos comunes en MockAPI o APIs reales
-  const periodId = dto.periodId ?? dto.id ?? dto.ID ?? dto._id ?? "";
-  const description = dto.description ?? dto.nombre ?? dto.name ?? dto.title ?? dto.periodo ?? "";
-  const startDateRaw = dto.startDate ?? dto.fechaInicio ?? dto.start_date ?? dto.START_DATE;
-  const endDateRaw = dto.endDate ?? dto.fechaFin ?? dto.end_date ?? dto.END_DATE;
+  // Flexibilidad total para nombres de campos comunes en la API
+  const periodId = dto.PERIOD_ID ?? dto.periodId ?? dto.id ?? dto.ID ?? dto._id ?? "";
+  const description = dto.DESCRIPTION ?? dto.description ?? dto.nombre ?? dto.name ?? dto.title ?? dto.periodo ?? "";
+  const startDateRaw = dto.START_DATE ?? dto.startDate ?? dto.fechaInicio ?? dto.start_date;
+  const endDateRaw = dto.END_DATE ?? dto.endDate ?? dto.fechaFin ?? dto.end_date;
   const creationDateRaw = dto.creationDate ?? dto.createdAt ?? dto.fechaCreacion ?? Date.now();
-  const periodStatusRaw = dto.periodStatus ?? dto.estadoPeriodo ?? dto.period_status ?? 1;
-  const statusRaw = dto.status ?? dto.activo ?? dto.enabled ?? true;
+  const periodStatusRaw = dto.PERIOD_STATUS ?? dto.periodStatus ?? dto.estadoPeriodo ?? dto.period_status ?? 1;
+  const statusRaw = dto.STATUS ?? dto.status ?? dto.activo ?? dto.enabled ?? true;
+  const code = dto.T_INTERNSHIPS_CODE ?? dto.code ?? dto.codigo ?? "";
 
   return {
     periodId: String(periodId),
@@ -70,6 +78,7 @@ const fromApi = (dto: PeriodoApiDTO): Periodo => {
     creationDate: parseDate(creationDateRaw as number | string),
     periodStatus: (Number(periodStatusRaw) || 1) as 1 | 2 | 3,
     status: typeof statusRaw === 'number' ? statusRaw === 1 : !!statusRaw,
+    code: String(code),
   };
 };
 
@@ -81,7 +90,8 @@ const toApi = (periodo: Partial<Periodo>): Partial<PeriodoApiDTO> => {
   if (periodo.endDate) dto.endDate = Math.floor(periodo.endDate.getTime() / 1000);
   if (periodo.periodStatus) dto.periodStatus = periodo.periodStatus;
   if (typeof periodo.status === 'boolean') dto.status = periodo.status;
-  if (periodo.periodId) dto.id = periodo.periodId; // Para MockAPI
+  if (periodo.periodId) dto.id = periodo.periodId; 
+  if (periodo.code) dto.code = periodo.code;
   return dto;
 };
 

@@ -1,7 +1,6 @@
 /**
  * @file useStudents.tsx
- * @description Hook para la gestión de estudiantes en modo demostración.
- * Todas las operaciones son locales y no realizan llamadas a API externas.
+ * @description Hook para la gestión de estudiantes.
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -35,20 +34,6 @@ export const useStudents = () => {
   const [loadingAction, setLoadingAction] = useState(false);
   const { addToast } = useToast();
 
-  // Efecto para manejar el timeout de seguridad (30 segundos) en acciones críticas
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout>;
-    if (loadingAction) {
-      timeoutId = setTimeout(() => {
-        setLoadingAction(false);
-        console.warn("[useStudents] Timeout de 30s alcanzado. Rehabilitando botones.");
-      }, 30000);
-    }
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [loadingAction]);
-
   const refreshStudents = useCallback(async () => {
     setStatus("loading");
     try {
@@ -65,152 +50,141 @@ export const useStudents = () => {
     refreshStudents();
   }, [refreshStudents]);
 
-  /**
-   * Simulación de creación de estudiante.
-   * @param studentData Datos del nuevo estudiante
-   */
   const addStudent = async (studentData: Omit<Student, "studentId" | "enrollmentDate">) => {
     setLoadingAction(true);
-    // Simular retraso de red
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    const newStudent: Student = {
-      ...studentData,
-      studentId: Math.random().toString(36).substr(2, 9),
-      enrollmentDate: new Date(),
-    };
-
-    setStudents(prev => [newStudent, ...prev]);
-    setLoadingAction(false);
-
-    addToast({
-      variant: "success",
-      title: "Estudiante Creado",
-      message: (
-        <>
-          <p>El estudiante <strong>{newStudent.firstName} {newStudent.lastName}</strong> ha sido registrado correctamente.</p>
-          <RecordDetails
-            data={newStudent as unknown as Record<string, unknown>}
-            labels={STUDENT_LABELS}
-            fields={['identificationNumber', 'careerName', 'semester']}
-          />
-        </>
-      ),
-      onViewDetails: () => console.log("Ver detalles de:", newStudent.studentId),
-      onUndo: () => setStudents(prev => prev.filter(s => s.studentId !== newStudent.studentId))
-    });
+    try {
+      const newStudent = await studentsService.createStudent(studentData);
+      setStudents(prev => [newStudent, ...prev]);
+      
+      addToast({
+        variant: "success",
+        title: "Estudiante Creado",
+        message: (
+          <>
+            <p>El estudiante <strong>{newStudent.firstName} {newStudent.lastName}</strong> ha sido registrado correctamente.</p>
+            <RecordDetails
+              data={newStudent as unknown as Record<string, unknown>}
+              labels={STUDENT_LABELS}
+              fields={['identificationNumber', 'careerName', 'semester']}
+            />
+          </>
+        ),
+      });
+    } catch (error) {
+      console.error("Error adding student:", error);
+      addToast({
+        variant: "error",
+        title: "Error",
+        message: "No se pudo registrar el estudiante.",
+      });
+    } finally {
+      setLoadingAction(false);
+    }
   };
 
-  /**
-   * Simulación de edición de estudiante.
-   * @param studentData Datos actualizados
-   */
   const editStudent = async (studentData: Student) => {
     setLoadingAction(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    const oldStudent = students.find(s => s.studentId === studentData.studentId);
-
-    setStudents(prev => prev.map(s => s.studentId === studentData.studentId ? studentData : s));
-    setLoadingAction(false);
-
-    if (oldStudent) {
+    try {
+      const oldStudent = students.find(s => s.studentId === studentData.studentId);
+      const updatedStudent = await studentsService.updateStudent(studentData.studentId, studentData);
+      
+      setStudents(prev => prev.map(s => s.studentId === studentData.studentId ? updatedStudent : s));
+      
       addToast({
         variant: "success",
         title: "Actualización Exitosa",
         message: (
           <>
-            <p>Se han guardado los cambios para <strong>{studentData.firstName} {studentData.lastName}</strong>.</p>
-            <ChangeComparison
+            <p>Se han guardado los cambios para <strong>{updatedStudent.firstName} {updatedStudent.lastName}</strong>.</p>
+            {oldStudent && <ChangeComparison
               oldData={oldStudent as unknown as Record<string, unknown>}
-              newData={studentData as unknown as Record<string, unknown>}
+              newData={updatedStudent as unknown as Record<string, unknown>}
               labels={STUDENT_LABELS}
-            />
+            />}
           </>
         ),
-        onUndo: () => setStudents(prev => prev.map(s => s.studentId === studentData.studentId ? oldStudent : s))
       });
+    } catch (error) {
+      console.error("Error editing student:", error);
+      addToast({
+        variant: "error",
+        title: "Error",
+        message: "No se pudo actualizar el estudiante.",
+      });
+    } finally {
+      setLoadingAction(false);
     }
   };
 
-  /**
-   * Alternar estado activo/inactivo.
-   */
   const toggleStatus = async (student: Student) => {
     setLoadingAction(true);
-    await new Promise(resolve => setTimeout(resolve, 600));
+    try {
+      const newStatus = !student.status;
+      const updatedStudent = await studentsService.toggleStudentStatus(student.studentId, newStatus);
+      
+      setStudents(prev => prev.map(s => s.studentId === student.studentId ? updatedStudent : s));
 
-    const isInactivating = student.status;
-    const oldStatus = student.status;
-
-    setStudents(prev => prev.map(s => s.studentId === student.studentId ? { ...s, status: !s.status } : s));
-    setLoadingAction(false);
-
-    addToast({
-      variant: isInactivating ? "warning" : "success",
-      title: isInactivating ? "Estudiante Inactivado" : "Estudiante Restaurado",
-      message: (
-        <>
-          <p>
-            El estudiante <strong>{student.firstName} {student.lastName}</strong> ahora está
-            <span className={`font-bold ${isInactivating ? 'text-warning-600' : 'text-success-600'}`}>
-              {isInactivating ? ' INACTIVO' : ' ACTIVO'}
-            </span>.
-          </p>
-          {isInactivating && (
-            <p className="mt-1 text-xs text-text-secondary italic">
-              * El estudiante no aparecerá en las listas de asistencia actuales.
-            </p>
-          )}
-          {!isInactivating && (
-            <p className="mt-1 text-xs text-text-secondary italic">
-              * El registro ha sido recuperado con todos sus datos previos.
-            </p>
-          )}
-        </>
-      ),
-      onUndo: () => setStudents(prev => prev.map(s => s.studentId === student.studentId ? { ...s, status: oldStatus } : s))
-    });
+      addToast({
+        variant: newStatus ? "success" : "warning",
+        title: newStatus ? "Estudiante Restaurado" : "Estudiante Inactivado",
+        message: `El estudiante ${student.firstName} ${student.lastName} ahora está ${newStatus ? 'activo' : 'inactivo'}.`,
+      });
+    } catch (error) {
+      console.error("Error toggling student status:", error);
+      addToast({
+        variant: "error",
+        title: "Error",
+        message: "No se pudo cambiar el estado del estudiante.",
+      });
+    } finally {
+      setLoadingAction(false);
+    }
   };
 
-  /**
-   * Acciones masivas de eliminación.
-   */
   const bulkRemoveStudents = async (ids: string[]) => {
     setLoadingAction(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    setStudents(prev => prev.map(s => ids.includes(s.studentId) ? { ...s, status: false } : s));
-    setLoadingAction(false);
-
-    addToast({
-      variant: "warning",
-      title: "Eliminación Masiva",
-      message: (
-        <p>Se han inactivado <strong>{ids.length}</strong> estudiantes correctamente.</p>
-      ),
-      onUndo: () => setStudents(prev => prev.map(s => ids.includes(s.studentId) ? { ...s, status: true } : s))
-    });
+    try {
+      await Promise.all(ids.map(id => studentsService.toggleStudentStatus(id, false)));
+      setStudents(prev => prev.map(s => ids.includes(s.studentId) ? { ...s, status: false } : s));
+      
+      addToast({
+        variant: "warning",
+        title: "Eliminación Masiva",
+        message: `Se han inactivado ${ids.length} estudiantes correctamente.`,
+      });
+    } catch (error) {
+      console.error("Error in bulk remove:", error);
+      addToast({
+        variant: "error",
+        title: "Error",
+        message: "Ocurrió un error al inactivar los estudiantes.",
+      });
+    } finally {
+      setLoadingAction(false);
+    }
   };
 
-  /**
-   * Acciones masivas de restauración.
-   */
   const bulkRestoreStudents = async (ids: string[]) => {
     setLoadingAction(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    setStudents(prev => prev.map(s => ids.includes(s.studentId) ? { ...s, status: true } : s));
-    setLoadingAction(false);
-
-    addToast({
-      variant: "success",
-      title: "Restauración Masiva",
-      message: (
-        <p>Se han restaurado <strong>{ids.length}</strong> estudiantes exitosamente.</p>
-      ),
-      onUndo: () => setStudents(prev => prev.map(s => ids.includes(s.studentId) ? { ...s, status: false } : s))
-    });
+    try {
+      await Promise.all(ids.map(id => studentsService.toggleStudentStatus(id, true)));
+      setStudents(prev => prev.map(s => ids.includes(s.studentId) ? { ...s, status: true } : s));
+      
+      addToast({
+        variant: "success",
+        title: "Restauración Masiva",
+        message: `Se han restaurado ${ids.length} estudiantes exitosamente.`,
+      });
+    } catch (error) {
+      console.error("Error in bulk restore:", error);
+      addToast({
+        variant: "error",
+        title: "Error",
+        message: "Ocurrió un error al restaurar los estudiantes.",
+      });
+    } finally {
+      setLoadingAction(false);
+    }
   };
 
   return {
@@ -223,5 +197,6 @@ export const useStudents = () => {
     toggleStatus,
     bulkRemoveStudents,
     bulkRestoreStudents,
+    refreshStudents,
   };
 };

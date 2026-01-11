@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import flatpickr from "flatpickr";
+import { Spanish } from "flatpickr/dist/l10n/es.js";
 import "flatpickr/dist/flatpickr.css";
 import Label from "./Label";
 import { CalenderIcon } from "../../icons";
@@ -21,14 +22,15 @@ export default function DatePicker({
   onChange,
   label,
   defaultDate,
-  placeholder,
+  placeholder = "Seleccionar fecha",
 }: PropsType) {
   useEffect(() => {
     const flatPickr = flatpickr(`#${id}`, {
+      locale: Spanish,
       mode: mode || "single",
       static: true,
       monthSelectorType: "static",
-      dateFormat: "Y-m-d",
+      dateFormat: "d/m/Y",
       defaultDate,
       onChange,
     });

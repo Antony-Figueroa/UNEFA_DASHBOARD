@@ -41,7 +41,6 @@ const PageBreadcrumb: React.FC<BreadcrumbProps> = ({ pageTitle }) => {
       </nav>
       <h2
         className="text-xl font-semibold text-text-emphasis dark:text-text-emphasis"
-        x-text="pageName"
       >
         {pageTitle}
       </h2>

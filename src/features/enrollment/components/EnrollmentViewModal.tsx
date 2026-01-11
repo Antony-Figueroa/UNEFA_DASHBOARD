@@ -42,6 +42,10 @@ export default function EnrollmentViewModal({
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Cédula / ID</label>
                                 <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{item.identificationPrefix}-{item.identificationNumber}</p>
                             </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Carrera</label>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{item.careerName || "No asignada"}</p>
+                            </div>
                         </div>
                     </div>
 

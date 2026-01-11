@@ -263,6 +263,18 @@
   --z-index-999999: 999999;
 }
 
+@layer base {
+  :root.dark {
+    --color-text-primary: var(--color-gray-100);
+    --color-text-secondary: var(--color-gray-400);
+    --color-text-tertiary: var(--color-gray-500);
+    --color-text-emphasis: var(--color-white);
+    --color-bg-main: var(--color-gray-950);
+    --color-bg-secondary: var(--color-gray-dark);
+    --color-border-light: var(--color-gray-800);
+  }
+}
+
 /*
   The default border color has changed to `currentColor` in Tailwind CSS v4,
   so we've added these compatibility styles to make sure everything still

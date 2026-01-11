@@ -335,8 +335,15 @@ export default function PreEnrollmentTable({
     if (status === "error") {
         return (
             <div className="flex flex-col items-center justify-center py-12 text-error-500 animate-fadeIn">
-                <p className="font-semibold text-error-600 dark:text-error-400">Error al cargar pre-inscripciones</p>
-                <p className="text-sm text-text-secondary dark:text-text-tertiary">{error?.message || "Por favor, intente de nuevo más tarde."}</p>
+                <h3 className="text-lg font-semibold text-error-600 dark:text-error-400">Error de conexión</h3>
+                <p className="mt-2 text-text-secondary dark:text-text-tertiary font-medium">
+                    no hay conexion a la bd
+                </p>
+                {error && error.message !== 'no hay conexion a la bd' && (
+                    <div className="mt-4 text-xs text-error-500/70 italic">
+                        Detalles: {error.message}
+                    </div>
+                )}
             </div>
         );
     }

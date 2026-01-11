@@ -1,77 +1,48 @@
 /**
  * @file institutionsService.tsx
- * @description Servicio estático para la gestión de instituciones (Modo Demo).
+ * @description Servicio para la gestión de instituciones a través de la API.
  */
 
 import { Institution } from "../types";
+import apiClient from "../../../api/apiClient";
 
-const MOCK_INSTITUTIONS: Institution[] = [
-  {
-    institutionId: "1",
-    rif: "J-123456789",
-    name: "Hospital Central de Maracay",
-    fiscalAddress: "Av. Las Delicias, Maracay, Aragua",
-    phone: "0243-1234567",
-    practiceType: "HOSPITALARIA",
-    careerId: "ENF_GENERAL",
-    careerName: "Enfermería General",
-    region: "Central",
-    nucleus: "Aragua",
-    extension: "Maracay",
-    institutionType: "Pública",
-    status: true,
-    registrationDate: new Date("2023-05-10"),
-  },
-  {
-    institutionId: "2",
-    rif: "J-987654321",
-    name: "Centro Clínico Universitario",
-    fiscalAddress: "Calle 100, Valencia, Carabobo",
-    phone: "0241-7654321",
-    practiceType: "HOSPITALARIA",
-    careerId: "ENF_PEDIATRICA",
-    careerName: "Enfermería Pediátrica",
-    region: "Central",
-    nucleus: "Carabobo",
-    extension: "Valencia",
-    institutionType: "Privada",
-    status: true,
-    registrationDate: new Date("2023-06-15"),
-  },
-  {
-    institutionId: "3",
-    rif: "G-200012345",
-    name: "Alcaldía de Girardot",
-    fiscalAddress: "Palacio Municipal, Maracay",
-    phone: "0243-5551234",
-    practiceType: "ORDINARIA",
-    careerId: "ING_SISTEMAS",
-    careerName: "Ingeniería en Sistemas",
-    region: "Central",
-    nucleus: "Aragua",
-    extension: "Maracay",
-    institutionType: "Pública",
-    status: true,
-    registrationDate: new Date("2023-08-20"),
-  },
-  {
-    institutionId: "4",
-    rif: "J-311223344",
-    name: "Corporación Tecnológica C.A.",
-    fiscalAddress: "Torre BOD, Valencia",
-    phone: "0241-8884433",
-    practiceType: "ORDINARIA",
-    careerId: "ING_CIVIL",
-    careerName: "Ingeniería Civil",
-    region: "Central",
-    nucleus: "Carabobo",
-    extension: "Valencia",
-    institutionType: "Privada",
-    status: false,
-    registrationDate: new Date("2023-01-10"),
-  },
-];
+const API_URL = "/institutions";
 
+/**
+ * Obtiene la lista de instituciones desde la API.
+ */
 export const getInstitutions = async (): Promise<Institution[]> => {
-  return [...MOCK_INSTITUTIONS];
+  const response = await apiClient.get<Institution[]>(API_URL);
+  return response.data;
+};
+
+/**
+ * Crea una nueva institución.
+ */
+export const createInstitution = async (institution: Omit<Institution, "institutionId" | "registrationDate">): Promise<Institution> => {
+  const response = await apiClient.post<Institution>(API_URL, institution);
+  return response.data;
+};
+
+/**
+ * Actualiza una institución existente.
+ */
+export const updateInstitution = async (id: string, institution: Partial<Institution>): Promise<Institution> => {
+  const response = await apiClient.patch<Institution>(`${API_URL}/${id}`, institution);
+  return response.data;
+};
+
+/**
+ * Elimina (inactiva) una institución.
+ */
+export const deleteInstitution = async (id: string): Promise<void> => {
+  await apiClient.delete(`${API_URL}/${id}`);
+};
+
+/**
+ * Cambia el estado de una institución.
+ */
+export const toggleInstitutionStatus = async (id: string, status: boolean): Promise<Institution> => {
+  const response = await apiClient.patch<Institution>(`${API_URL}/${id}/status`, { status });
+  return response.data;
 };

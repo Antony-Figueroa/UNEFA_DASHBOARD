@@ -1,7 +1,6 @@
 /**
  * @file useTutors.tsx
- * @description Hook para la gestión de tutores en modo demostración.
- * Todas las operaciones son locales y no realizan llamadas a API externas.
+ * @description Hook para la gestión de tutores conectada a la API.
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -28,21 +27,9 @@ const TUTOR_LABELS: Record<string, string> = {
 export const useTutors = () => {
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [status, setStatus] = useState<Status>("loading");
+  const [error, setError] = useState<Error | null>(null);
   const [loadingAction, setLoadingAction] = useState(false);
   const { addToast } = useToast();
-
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout>;
-    if (loadingAction) {
-      timeoutId = setTimeout(() => {
-        setLoadingAction(false);
-        console.warn("[useTutors] Timeout de 30s alcanzado. Rehabilitando botones.");
-      }, 30000);
-    }
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [loadingAction]);
 
   const refreshTutors = useCallback(async () => {
     setStatus("loading");
@@ -50,11 +37,19 @@ export const useTutors = () => {
       const data = await tutorsService.getTutors();
       setTutors(data);
       setStatus("success");
+      setError(null);
     } catch (e) {
       console.error("Error loading tutors:", e);
       setStatus("error");
+      const err = e instanceof Error ? e : new Error("Error al cargar tutores");
+      setError(err);
+      addToast({
+        variant: "error",
+        title: "Error de conexión",
+        message: "No se pudo conectar con la base de datos o el servidor. Por favor, verifique su conexión.",
+      });
     }
-  }, []);
+  }, [addToast]);
 
   useEffect(() => {
     refreshTutors();
@@ -62,132 +57,166 @@ export const useTutors = () => {
 
   const addTutor = async (tutorData: Omit<Tutor, "tutorId" | "registrationDate">) => {
     setLoadingAction(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      const newTutor = await tutorsService.createTutor(tutorData);
+      setTutors(prev => [newTutor, ...prev]);
 
-    const newTutor: Tutor = {
-      ...tutorData,
-      tutorId: Math.random().toString(36).substr(2, 9),
-      registrationDate: new Date(),
-    };
-
-    setTutors(prev => [newTutor, ...prev]);
-    setLoadingAction(false);
-
-    addToast({
-      variant: "success",
-      title: "Tutor Registrado",
-      message: (
-        <>
-          <p>El tutor <strong>{newTutor.firstName} {newTutor.lastName}</strong> ha sido registrado correctamente.</p>
-          <RecordDetails
-            data={newTutor as unknown as Record<string, unknown>}
-            labels={TUTOR_LABELS}
-            fields={['identificationNumber', 'profession', 'condition']}
-          />
-        </>
-      ),
-      onUndo: () => setTutors(prev => prev.filter(t => t.tutorId !== newTutor.tutorId))
-    });
+      addToast({
+        variant: "success",
+        title: "Tutor Registrado",
+        message: (
+          <>
+            <p>El tutor <strong>{newTutor.firstName} {newTutor.lastName}</strong> ha sido registrado correctamente.</p>
+            <RecordDetails
+              data={newTutor as unknown as Record<string, unknown>}
+              labels={TUTOR_LABELS}
+              fields={['identificationNumber', 'profession', 'condition']}
+            />
+          </>
+        )
+      });
+    } catch (e) {
+      console.error("Error adding tutor:", e);
+      addToast({
+        variant: "error",
+        title: "Error al registrar",
+        message: "No se pudo registrar el tutor. Intente de nuevo.",
+      });
+    } finally {
+      setLoadingAction(false);
+    }
   };
 
   const editTutor = async (tutorData: Tutor) => {
     setLoadingAction(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      const updatedTutor = await tutorsService.updateTutor(tutorData.tutorId, tutorData);
+      const oldTutor = tutors.find(t => t.tutorId === tutorData.tutorId);
 
-    const oldTutor = tutors.find(t => t.tutorId === tutorData.tutorId);
+      setTutors(prev => prev.map(t => t.tutorId === tutorData.tutorId ? updatedTutor : t));
 
-    setTutors(prev => prev.map(t => t.tutorId === tutorData.tutorId ? tutorData : t));
-    setLoadingAction(false);
-
-    if (oldTutor) {
       addToast({
         variant: "success",
         title: "Actualización Exitosa",
         message: (
           <>
-            <p>Se han guardado los cambios para <strong>{tutorData.firstName} {tutorData.lastName}</strong>.</p>
-            <ChangeComparison
-              oldData={oldTutor as unknown as Record<string, unknown>}
-              newData={tutorData as unknown as Record<string, unknown>}
-              labels={TUTOR_LABELS}
-            />
+            <p>Se han guardado los cambios para <strong>{updatedTutor.firstName} {updatedTutor.lastName}</strong>.</p>
+            {oldTutor && (
+              <ChangeComparison
+                oldData={oldTutor as unknown as Record<string, unknown>}
+                newData={updatedTutor as unknown as Record<string, unknown>}
+                labels={TUTOR_LABELS}
+              />
+            )}
           </>
-        ),
-        onUndo: () => setTutors(prev => prev.map(t => t.tutorId === tutorData.tutorId ? oldTutor : t))
+        )
       });
+    } catch (e) {
+      console.error("Error editing tutor:", e);
+      addToast({
+        variant: "error",
+        title: "Error al actualizar",
+        message: "No se pudo actualizar el tutor. Intente de nuevo.",
+      });
+    } finally {
+      setLoadingAction(false);
     }
   };
 
   const toggleStatus = async (tutor: Tutor) => {
     setLoadingAction(true);
-    await new Promise(resolve => setTimeout(resolve, 600));
+    try {
+      const newStatus = !tutor.status;
+      const updatedTutor = await tutorsService.toggleTutorStatus(tutor.tutorId, newStatus);
+      
+      setTutors(prev => prev.map(t => t.tutorId === tutor.tutorId ? updatedTutor : t));
 
-    const isInactivating = tutor.status;
-    const oldStatus = tutor.status;
-
-    setTutors(prev => prev.map(t => t.tutorId === tutor.tutorId ? { ...t, status: !t.status } : t));
-    setLoadingAction(false);
-
-    addToast({
-      variant: isInactivating ? "warning" : "success",
-      title: isInactivating ? "Tutor Inactivado" : "Tutor Restaurado",
-      message: (
-        <>
-          <p>
-            El tutor <strong>{tutor.firstName} {tutor.lastName}</strong> ahora está
-            <span className={`font-bold ${isInactivating ? 'text-warning-600' : 'text-success-600'}`}>
-              {isInactivating ? ' INACTIVO' : ' ACTIVO'}
-            </span>.
-          </p>
-        </>
-      ),
-      onUndo: () => setTutors(prev => prev.map(t => t.tutorId === tutor.tutorId ? { ...t, status: oldStatus } : t))
-    });
+      addToast({
+        variant: newStatus ? "success" : "warning",
+        title: newStatus ? "Tutor Restaurado" : "Tutor Inactivado",
+        message: (
+          <>
+            <p>
+              El tutor <strong>{tutor.firstName} {tutor.lastName}</strong> ahora está
+              <span className={`font-bold ${!newStatus ? 'text-warning-600' : 'text-success-600'}`}>
+                {newStatus ? ' ACTIVO' : ' INACTIVO'}
+              </span>.
+            </p>
+          </>
+        )
+      });
+    } catch (e) {
+      console.error("Error toggling tutor status:", e);
+      addToast({
+        variant: "error",
+        title: "Error de estado",
+        message: "No se pudo cambiar el estado del tutor.",
+      });
+    } finally {
+      setLoadingAction(false);
+    }
   };
 
   const bulkRemoveTutors = async (ids: string[]) => {
     setLoadingAction(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    setTutors(prev => prev.map(t => ids.includes(t.tutorId) ? { ...t, status: false } : t));
-    setLoadingAction(false);
-
-    addToast({
-      variant: "warning",
-      title: "Eliminación Masiva",
-      message: (
-        <p>Se han inactivado <strong>{ids.length}</strong> tutores correctamente.</p>
-      ),
-      onUndo: () => setTutors(prev => prev.map(t => ids.includes(t.tutorId) ? { ...t, status: true } : t))
-    });
+    try {
+      await Promise.all(ids.map(id => tutorsService.toggleTutorStatus(id, false)));
+      setTutors(prev => prev.map(t => ids.includes(t.tutorId) ? { ...t, status: false } : t));
+      
+      addToast({
+        variant: "warning",
+        title: "Eliminación Masiva",
+        message: (
+          <p>Se han inactivado <strong>{ids.length}</strong> tutores correctamente.</p>
+        )
+      });
+    } catch (e) {
+      console.error("Error in bulk remove tutors:", e);
+      addToast({
+        variant: "error",
+        title: "Error masivo",
+        message: "No se pudieron inactivar todos los tutores seleccionados.",
+      });
+    } finally {
+      setLoadingAction(false);
+    }
   };
 
   const bulkRestoreTutors = async (ids: string[]) => {
     setLoadingAction(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      await Promise.all(ids.map(id => tutorsService.toggleTutorStatus(id, true)));
+      setTutors(prev => prev.map(t => ids.includes(t.tutorId) ? { ...t, status: true } : t));
 
-    setTutors(prev => prev.map(t => ids.includes(t.tutorId) ? { ...t, status: true } : t));
-    setLoadingAction(false);
-
-    addToast({
-      variant: "success",
-      title: "Restauración Masiva",
-      message: (
-        <p>Se han restaurado <strong>{ids.length}</strong> tutores exitosamente.</p>
-      ),
-      onUndo: () => setTutors(prev => prev.map(t => ids.includes(t.tutorId) ? { ...t, status: false } : t))
-    });
+      addToast({
+        variant: "success",
+        title: "Restauración Masiva",
+        message: (
+          <p>Se han restaurado <strong>{ids.length}</strong> tutores exitosamente.</p>
+        )
+      });
+    } catch (e) {
+      console.error("Error in bulk restore tutors:", e);
+      addToast({
+        variant: "error",
+        title: "Error masivo",
+        message: "No se pudieron restaurar todos los tutores seleccionados.",
+      });
+    } finally {
+      setLoadingAction(false);
+    }
   };
 
   return {
     tutors,
     status,
+    error,
     loadingAction,
-    error: null,
     addTutor,
     editTutor,
     toggleStatus,
     bulkRemoveTutors,
     bulkRestoreTutors,
+    refreshTutors,
   };
 };

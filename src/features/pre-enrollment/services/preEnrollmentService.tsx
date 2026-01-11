@@ -1,51 +1,50 @@
 /**
  * @file preEnrollmentService.tsx
- * @description Servicio estático para la gestión de pre-inscripciones (Modo Demo).
+ * @description Servicio para la gestión de pre-inscripciones mediante API.
  */
 
 import { PreEnrollment } from "../types";
+import apiClient from "../../../api/apiClient";
 
-const MOCK_PRE_ENROLLMENTS: PreEnrollment[] = [
-  {
-    preEnrollmentId: "1",
-    identificationPrefix: "V",
-    identificationNumber: "31114449",
-    studentName: "ANTONY FIGUEROA",
-    phone: "0424-1234567",
-    period: "2026 - II",
-    practiceType: "ORDINARIA",
-    enrollmentCode: "ING-AI-111-336-S3",
-    preEnrollmentDate: new Date("2026-01-07"),
-    status: true,
-  },
-  {
-    preEnrollmentId: "2",
-    identificationPrefix: "V",
-    identificationNumber: "28555666",
-    studentName: "MARIA LOPEZ",
-    phone: "0412-9876543",
-    period: "2026 - II",
-    practiceType: "ORDINARIA",
-    enrollmentCode: "ADM-EM-222-444-S1",
-    preEnrollmentDate: new Date("2026-01-06"),
-    status: true,
-  },
-  {
-    preEnrollmentId: "3",
-    identificationPrefix: "E",
-    identificationNumber: "84111222",
-    studentName: "JOHN DOE",
-    phone: "0416-5554433",
-    period: "2026 - I",
-    practiceType: "ESPECIAL",
-    enrollmentCode: "SIS-CP-333-555-S2",
-    preEnrollmentDate: new Date("2025-12-15"),
-    status: false,
-  }
-];
+const API_URL = "/pre-enrollments";
 
+/**
+ * Obtiene la lista de pre-inscripciones desde la API.
+ */
 export const getPreEnrollments = async (): Promise<PreEnrollment[]> => {
-  // Simular retraso de red
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return [...MOCK_PRE_ENROLLMENTS];
+  const response = await apiClient.get<PreEnrollment[]>(API_URL);
+  return response.data.map(p => ({
+    ...p,
+    preEnrollmentDate: new Date(p.preEnrollmentDate)
+  }));
+};
+
+/**
+ * Crea una pre-inscripción en la API.
+ */
+export const createPreEnrollment = async (data: Omit<PreEnrollment, "preEnrollmentId" | "preEnrollmentDate">): Promise<PreEnrollment> => {
+  const response = await apiClient.post<PreEnrollment>(API_URL, data);
+  return {
+    ...response.data,
+    preEnrollmentDate: new Date(response.data.preEnrollmentDate)
+  };
+};
+
+/**
+ * Actualiza una pre-inscripción en la API.
+ */
+export const updatePreEnrollment = async (data: PreEnrollment): Promise<PreEnrollment> => {
+  const { preEnrollmentId, ...updates } = data;
+  const response = await apiClient.put<PreEnrollment>(`${API_URL}/${preEnrollmentId}`, updates);
+  return {
+    ...response.data,
+    preEnrollmentDate: new Date(response.data.preEnrollmentDate)
+  };
+};
+
+/**
+ * Elimina (desactivar) una pre-inscripción en la API.
+ */
+export const deletePreEnrollment = async (id: string): Promise<void> => {
+  await apiClient.delete(`${API_URL}/${id}`);
 };

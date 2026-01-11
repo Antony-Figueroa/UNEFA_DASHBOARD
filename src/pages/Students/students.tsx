@@ -15,8 +15,6 @@ import Button from "../../components/ui/button/Button";
 import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
-import { InfoIcon } from "../../icons";
-
 import StudentTable from "../../features/students/components/StudentTable";
 import StudentModal from "../../features/students/components/StudentModal";
 import StudentViewModal from "../../features/students/components/StudentViewModal";
@@ -184,16 +182,13 @@ export default function StudentsPage() {
             {loadingAction && <FullScreenLoader label="Procesando..." />}
 
             <div className="stagger-delay">
-                {/* Banner de Modo Demostración */}
+
 
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <SkeletonLoader isLoading={pageLoading} skeleton={<TitleSkeleton />} id="students-title">
                             <div className="flex items-center gap-2">
                                 <h2 className="text-2xl font-bold text-text-primary dark:text-text-emphasis">Listado de Estudiantes</h2>
-                                <span className="inline-flex items-center rounded-full bg-bg-secondary px-2.5 py-0.5 text-xs font-medium text-text-primary dark:bg-white/5 dark:text-text-tertiary border border-border-light dark:border-border-dark">
-                                    Demo
-                                </span>
                             </div>
                             <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">Gestiona la información y estado académico de los estudiantes.</p>
                         </SkeletonLoader>
@@ -205,14 +200,6 @@ export default function StudentsPage() {
                         </Button>
                     )}
                 </div>
-                {!pageLoading && (
-                    <div className="mb-6 flex items-center gap-3 rounded-xl border border-alert-info-border bg-alert-info-bg p-4 text-alert-info-text dark:border-blue-light-700 dark:bg-blue-light-950 dark:text-blue-light-400">
-                        <InfoIcon className="h-5 w-5 shrink-0" />
-                        <div className="text-sm">
-                            <span className="font-bold">Modo Demostración Activo:</span> Esta vista utiliza datos estáticos locales. No se realizan conexiones a servicios externos.
-                        </div>
-                    </div>
-                )}
                 {/* Contenido principal */}
                 <div className="space-y-6">
                     {/* Tabla de Estudiantes */}

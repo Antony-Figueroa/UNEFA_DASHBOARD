@@ -11,6 +11,7 @@ export interface Periodo {
     creationDate: Date;
     periodStatus: 1 | 2 | 3; // 1: Pendiente, 2: En Curso, 3: Culminado
     status: boolean;      // true: Activo, false: Eliminado
+    code: string;
 }
 
 // Tipo para los datos que se muestran en la tabla, con fechas formateadas y progreso

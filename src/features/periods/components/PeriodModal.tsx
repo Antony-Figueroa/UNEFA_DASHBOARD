@@ -7,11 +7,11 @@
 import { useEffect, useMemo } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Periodo } from '../types';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
 import FlatpickrDatePicker from '../../../components/form/FlatpickrDatePicker';
 import Button from '../../../components/ui/button/Button';
+import { periodSchema, PeriodFormData, checkOverlap, checkSequentiality, getLapsoValue } from '../utils/periodValidations';
 
 interface PeriodModalProps {
     isOpen: boolean;
@@ -21,49 +21,6 @@ interface PeriodModalProps {
     isLoading?: boolean;
     existingPeriods: Periodo[];
 }
-
-// Esquema de validación con Zod
-const periodSchema = z.object({
-    year: z.string().min(1, { message: 'El año es obligatorio.' }),
-    periodoTipo: z.enum(['I', 'II']),
-    startDate: z.date({
-        message: 'La fecha de inicio es obligatoria.',
-    }),
-    endDate: z.date({
-        message: 'La fecha de fin es obligatoria.',
-    }),
-}).superRefine((data, ctx) => {
-    if (data.endDate <= data.startDate) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "La fecha de fin debe ser posterior a la de inicio.",
-            path: ["endDate"]
-        });
-        return;
-    }
-    // Validación de 16 semanas (16 semanas * 7 días * 24 horas * 60 min * 60 seg * 1000 ms)
-    const minDuration = 16 * 7 * 24 * 60 * 60 * 1000;
-    const duration = data.endDate.getTime() - data.startDate.getTime();
-
-    if (duration < minDuration) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "El período debe tener una duración mínima de 16 semanas.",
-            path: ["endDate"]
-        });
-    }
-    const yearNum = parseInt(data.year);
-    if (!isNaN(yearNum) && data.startDate.getFullYear() !== yearNum) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "La fecha de inicio debe corresponder al año seleccionado.",
-            path: ["startDate"]
-        });
-    }
-});
-
-// Extrae el tipo del esquema para usarlo en el formulario
-type PeriodFormData = z.infer<typeof periodSchema>;
 
 export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoading = false, existingPeriods }: PeriodModalProps) {
     const { register, handleSubmit, formState: { errors }, control, reset, watch, setError, setValue } = useForm<PeriodFormData>({
@@ -95,7 +52,6 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
      */
     const minNewPeriodStartDate = useMemo(() => {
         if (periodo || existingPeriods.length === 0) return 'today';
-        const getLapsoValue = (l: string) => parseInt(l.split('-')[0]) + (l.endsWith('I') ? 0 : 0.5);
         const lastPeriod = [...existingPeriods].sort((a, b) => getLapsoValue(b.description) - getLapsoValue(a.description))[0];
         const dayAfter = new Date(lastPeriod.endDate);
         dayAfter.setDate(dayAfter.getDate() + 1);
@@ -117,12 +73,27 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
      */
     const yearOptions = useMemo(() => {
         const currentYear = new Date().getFullYear();
-        const options: string[] = [];
+        const optionsSet = new Set<string>();
+
+        // Años desde el actual + 5
         for (let i = 0; i <= 5; i++) {
-            options.push(`${currentYear + i}`);
+            optionsSet.add(`${currentYear + i}`);
         }
-        return options;
-    }, []);
+
+        // Asegurar que el año del periodo que se está editando esté presente
+        if (periodo) {
+            const [year] = periodo.description.split('-');
+            optionsSet.add(year);
+        }
+
+        // Asegurar que los años de los periodos existentes estén presentes (opcional, pero útil para visualización)
+        existingPeriods.forEach(p => {
+            const [year] = p.description.split('-');
+            optionsSet.add(year);
+        });
+
+        return Array.from(optionsSet).sort((a, b) => parseInt(a) - parseInt(b));
+    }, [periodo, existingPeriods]);
 
     /**
      * Efecto para inicializar o resetear el formulario cuando el modal se abre.
@@ -142,22 +113,23 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                 });
             } else {
                 // --- Autocompletado para un nuevo periodo ---
-                const getLapsoValue = (l: string) => parseInt(l.split('-')[0]) + (l.endsWith('I') ? 0 : 0.5);
-
                 let nextYear = new Date().getFullYear().toString();
                 let nextPeriodoTipo: 'I' | 'II' = 'I';
                 let autoStartDate: Date | undefined = undefined;
 
                 if (existingPeriods.length > 0) {
                     const lastPeriod = [...existingPeriods].sort((a, b) => getLapsoValue(b.description) - getLapsoValue(a.description))[0];
-                    const [lastYear, lastTipo] = lastPeriod.description.split('-');
+                    const [lastYearStr, lastTipo] = lastPeriod.description.split('-');
+                    const lastYearNum = parseInt(lastYearStr);
 
-                    if (lastTipo === 'I') {
-                        nextYear = lastYear;
-                        nextPeriodoTipo = 'II';
-                    } else {
-                        nextYear = (parseInt(lastYear) + 1).toString();
-                        nextPeriodoTipo = 'I';
+                    if (!isNaN(lastYearNum)) {
+                        if (lastTipo === 'I') {
+                            nextYear = lastYearStr;
+                            nextPeriodoTipo = 'II';
+                        } else {
+                            nextYear = (lastYearNum + 1).toString();
+                            nextPeriodoTipo = 'I';
+                        }
                     }
 
                     const dayAfterLastEnd = new Date(lastPeriod.endDate);
@@ -183,18 +155,7 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
         let startDateToUse = data.startDate;
 
         // --- Validación de Solapamiento de Fechas ---
-        const { startDate: newStart, endDate: newEnd } = data;
-        const hasOverlap = existingPeriods.some(p => {
-            // Excluir el periodo actual si estamos editando
-            if (periodo && p.periodId === periodo.periodId) {
-                return false;
-            }
-            // Un solapamiento ocurre si un periodo empieza antes de que el otro termine,
-            // y termina después de que el otro empieza.
-            return (newStart < p.endDate) && (newEnd > p.startDate);
-        });
-
-        if (hasOverlap) {
+        if (checkOverlap(data.startDate, data.endDate, existingPeriods, periodo?.periodId)) {
             setError("startDate", {
                 type: "manual",
                 message: "El rango de fechas se solapa con un periodo existente."
@@ -203,36 +164,11 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
         }
 
         // --- Validación 2: Secuencialidad ---
-        // Solo validamos secuencia si estamos creando o si el lapso cambió al editar
         if (!periodo || periodo.description !== newDescription) {
-            // Función auxiliar para convertir lapso a valor numérico comparable (ej: 2025-I -> 2025.0, 2025-II -> 2025.5)
-            const getLapsoValue = (l: string) => {
-                const [y, t] = l.split('-');
-                return parseInt(y) + (t === 'I' ? 0 : 0.5);
-            };
-
-            if (existingPeriods.length > 0) {
-                // Encontrar el último periodo registrado
-                const sortedPeriods = [...existingPeriods].sort((a, b) => getLapsoValue(b.description) - getLapsoValue(a.description));
-                const lastPeriod = sortedPeriods[0];
-                const lastValue = getLapsoValue(lastPeriod.description);
-                const newValue = getLapsoValue(newDescription);
-
-                // El nuevo valor debe ser exactamente 0.5 mayor que el último (siguiente semestre)
-                // Nota: 0.5 representa el paso de I a II o de II al I del siguiente año.
-                if (newValue <= lastValue) {
-                    setError("periodoTipo", { message: `El lapso debe ser posterior a ${lastPeriod.description}.` });
-                    return;
-                }
-
-                // Si se requiere estrictamente el INMEDIATO siguiente (sin huecos):
-                if (newValue !== lastValue + 0.5) {
-                    // Calculamos cuál debería ser el siguiente para el mensaje de error
-                    const nextYear = lastPeriod.description.endsWith('I') ? lastPeriod.description.split('-')[0] : parseInt(lastPeriod.description.split('-')[0]) + 1;
-                    const nextType = lastPeriod.description.endsWith('I') ? 'II' : 'I';
-                    setError("periodoTipo", { message: `El orden debe ser secuencial. El siguiente lapso debería ser ${nextYear}-${nextType}.` });
-                    return;
-                }
+            const seqResult = checkSequentiality(newDescription, existingPeriods);
+            if (!seqResult.isValid) {
+                setError("periodoTipo", { message: seqResult.message });
+                return;
             }
         }
 
@@ -242,18 +178,16 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
         }
 
         const periodoData = {
+            ...(periodo && { periodId: periodo.periodId }),
+            code: newDescription,
             description: newDescription,
             startDate: startDateToUse,
             endDate: data.endDate,
-            periodStatus: periodo?.periodStatus || 1, // 1 = Pendiente por defecto
-            status: true // Activo por defecto
+            periodStatus: periodo?.periodStatus || 1,
+            status: periodo?.status ?? true
         };
 
-        if (periodo && 'periodId' in periodo) {
-            onSave({ ...periodo, ...periodoData });
-        } else {
-            onSave(periodoData);
-        }
+        onSave(periodoData);
     };
 
     return (
@@ -274,11 +208,11 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                     <div className="grid grid-cols-1 gap-y-5">
                         <div>
                             <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Lapso Académico *</label>
-                            <div className={`flex items-center rounded-lg border ${errors.year || errors.periodoTipo ? 'border-red-500' : 'border-border-light dark:border-border-dark'} bg-white dark:bg-bg-dark`}>
-                                <div className="relative w-full border-r border-border-light dark:border-border-dark">
+                            <div className={`flex flex-col sm:flex-row items-stretch sm:items-center rounded-lg border ${errors.year || errors.periodoTipo ? 'border-red-500' : 'border-border-light dark:border-border-dark'} bg-white dark:bg-bg-dark overflow-hidden`}>
+                                <div className="relative flex-1 border-b sm:border-b-0 sm:border-r border-border-light dark:border-border-dark">
                                     <select
-                                        disabled={isCulminado || isInCurso}
                                         {...register('year')}
+                                        disabled={isCulminado || isInCurso}
                                         className="w-full appearance-none bg-transparent py-2.5 pl-4 pr-10 text-sm text-text-primary outline-none dark:text-white"
                                     >
                                         <option value="" disabled className="bg-white dark:bg-bg-dark text-text-secondary dark:text-text-tertiary">Seleccione Año</option>
@@ -293,10 +227,10 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                                     </span>
                                 </div>
 
-                                <div className="relative w-28">
+                                <div className="relative w-full sm:w-28 bg-bg-secondary/10 dark:bg-white/5">
                                     <select
-                                        disabled={isCulminado || isInCurso}
                                         {...register('periodoTipo')}
+                                        disabled={isCulminado || isInCurso}
                                         className="w-full appearance-none bg-transparent py-2.5 pl-4 pr-10 text-sm text-text-primary outline-none dark:text-white text-center font-medium"
                                     >
                                         <option value="I" className="bg-white dark:bg-bg-dark text-black dark:text-white font-medium">I</option>
@@ -310,6 +244,9 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                                 </div>
                             </div>
                             {(errors.year || errors.periodoTipo) && <p className="mt-1 text-xs text-red-500">{errors.year?.message || errors.periodoTipo?.message}</p>}
+                            <p className="mt-1.5 text-[11px] text-text-tertiary dark:text-gray-400 italic">
+                                Ejemplo: 2026-I (Primer semestre), 2026-II (Segundo semestre).
+                            </p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -340,6 +277,7 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                                     )}
                                 />
                                 {errors.startDate && <p className="mt-1 text-xs text-red-500">{errors.startDate.message}</p>}
+                                <p className="mt-1 text-[10px] text-text-tertiary">Formato: DD/MM/AAAA. Ej: 15/01/2026</p>
                             </div>
 
                             <div>
@@ -362,6 +300,7 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                                     )}
                                 />
                                 {errors.endDate && <p className="mt-1 text-xs text-red-500">{errors.endDate.message}</p>}
+                                <p className="mt-1 text-[10px] text-text-tertiary">Duración mín: 16 semanas.</p>
                             </div>
                         </div>
                     </div>

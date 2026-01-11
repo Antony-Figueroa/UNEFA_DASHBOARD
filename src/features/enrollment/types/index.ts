@@ -12,6 +12,7 @@ export interface Enrollment {
   
   // Datos del Estudiante
   studentName: string;
+  careerName?: string;
   
   // Tutores
   academicTutorId: string;

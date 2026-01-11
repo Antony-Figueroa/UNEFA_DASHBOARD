@@ -11,6 +11,7 @@ import { getStudents } from "../../students/services/studentsService";
 import { getPeriods } from "../../periods/services/periodService";
 import { getTutors } from "../../tutors/services/tutorsService";
 import { getInstitutions } from "../../institutions/services/institutionsService";
+import { getCareers } from "../../careers/services/careersService";
 import { useInstitutionalResponsibles } from "../../institutions/hooks/useInstitutionalResponsibles";
 import { getPreEnrollments } from "../../pre-enrollment/services/preEnrollmentService";
 import { Periodo } from "../../periods/types";
@@ -38,6 +39,7 @@ const enrollmentSchema = z.object({
     .min(1, "El nombre del estudiante es obligatorio"),
   period: z.string().min(1, "Seleccione el período"),
   practiceType: z.string().min(1, "Seleccione el tipo de práctica"),
+  careerName: z.string().optional(),
   academicTutorId: z.string().min(1, "Seleccione el tutor académico"),
   methodologicalTutorId: z.string().min(1, "Seleccione el tutor metodológico"),
   institutionId: z.string().min(1, "Seleccione la institución"),
@@ -57,7 +59,6 @@ export default function EnrollmentModal({
   isLoading = false,
 }: EnrollmentModalProps) {
   const [isSearching, setIsSearching] = useState(false);
-  const [periods, setPeriods] = useState<Periodo[]>([]);
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [practiceOptions, setPracticeOptions] = useState<InternshipTypeOption[]>([]);
@@ -81,6 +82,7 @@ export default function EnrollmentModal({
       studentName: "",
       period: "",
       practiceType: "",
+      careerName: "",
       academicTutorId: "",
       methodologicalTutorId: "",
       institutionId: "",
@@ -130,7 +132,6 @@ export default function EnrollmentModal({
           }
         }
         
-        setPeriods(filteredPeriods);
         setTutors(tutorData.filter(t => t.status));
         setInstitutions(institutionData.filter(i => i.status));
 
@@ -155,9 +156,10 @@ export default function EnrollmentModal({
     setIsSearching(true);
     setPreEnrollmentError(null);
     try {
-      const [students, preEnrollments] = await Promise.all([
+      const [students, preEnrollments, careerData] = await Promise.all([
         getStudents(),
         getPreEnrollments(),
+        getCareers(),
       ]);
 
       const student = students.find(
@@ -171,11 +173,20 @@ export default function EnrollmentModal({
       if (!preEnrollment) {
         setPreEnrollmentError("El estudiante no posee una pre-inscripción activa. No puede proceder.");
         setValue("studentName", "");
+        setValue("careerName", "");
         return;
       }
 
       if (student) {
         setValue("studentName", `${student.firstName} ${student.lastName}`);
+        
+        // Autocompletar Carrera
+        const studentCareer = careerData.find(c => String(c.careerId) === String(student.careerId));
+        if (studentCareer) {
+          setValue("careerName", studentCareer.careerName);
+        } else {
+          setValue("careerName", "No encontrada");
+        }
         
         // Autocompletar Tipo de Práctica desde la BD
         try {
@@ -217,6 +228,7 @@ export default function EnrollmentModal({
           studentName: editingEntry.studentName,
           period: editingEntry.period,
           practiceType: editingEntry.practiceType,
+          careerName: editingEntry.careerName || "",
           academicTutorId: editingEntry.academicTutorId,
           methodologicalTutorId: editingEntry.methodologicalTutorId,
           institutionId: editingEntry.institutionId,
@@ -229,6 +241,7 @@ export default function EnrollmentModal({
           studentName: "",
           period: "",
           practiceType: "",
+          careerName: "",
           academicTutorId: "",
           methodologicalTutorId: "",
           institutionId: "",
@@ -385,26 +398,18 @@ export default function EnrollmentModal({
 
             {/* Período */}
             <div>
-              <label className="mb-2 sm:mb-2.5 block text-black dark:text-white font-medium text-sm">Período *</label>
-              <Controller
-                name="period"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    options={periods.map(p => ({
-                      value: p.description,
-                      label: p.description
-                    }))}
-                    placeholder={isLoadingPeriods ? "Cargando períodos..." : "Seleccione el período"}
-                    onChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={isLoadingPeriods || periods.length === 0}
-                  />
-                )}
+              <div className="flex items-center mb-2 sm:mb-2.5">
+                <label className="block text-black dark:text-white font-medium text-sm">Período *</label>
+                {!editingEntry && <AutoGeneratedBadge tooltip="Se asigna automáticamente el período académico vigente." />}
+              </div>
+              <Input
+                {...register("period")}
+                placeholder={isLoadingPeriods ? "Cargando períodos..." : "Período automático"}
+                error={!!errors.period}
+                hint={isSubmitted ? errors.period?.message : undefined}
+                readOnly
+                className="bg-bg-secondary dark:bg-white/5 cursor-not-allowed"
               />
-              {isSubmitted && errors.period && (
-                <p className="mt-1 text-xs text-error-500">{errors.period.message}</p>
-              )}
             </div>
 
             {/* Tipo Práctica */}
@@ -429,6 +434,22 @@ export default function EnrollmentModal({
               {isSubmitted && errors.practiceType && (
                 <p className="mt-1 text-xs text-red-500">{errors.practiceType.message}</p>
               )}
+            </div>
+
+            {/* Carrera */}
+            <div>
+              <div className="flex items-center mb-2 sm:mb-2.5">
+                <label className="block text-black dark:text-white font-medium text-sm">Carrera *</label>
+                {!editingEntry && <AutoGeneratedBadge tooltip="Se carga automáticamente al verificar al estudiante." />}
+              </div>
+              <Input
+                {...register("careerName")}
+                placeholder="Carrera automática"
+                error={!!errors.careerName}
+                hint={isSubmitted ? errors.careerName?.message : undefined}
+                readOnly
+                className="bg-bg-secondary dark:bg-white/5 cursor-not-allowed"
+              />
             </div>
 
             {/* Tutor Académico */}

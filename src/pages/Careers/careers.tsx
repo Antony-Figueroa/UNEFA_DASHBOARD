@@ -53,14 +53,14 @@ const formatCareerToRow = (c: Career): CareerRowData => ({
  */
 export default function CareersPage() {
   const [pageLoading, setPageLoading] = useState(true);
-  const { options: internshipOptions, fetchAll: fetchInternshipTypes } = useInternshipTypes();
+  const { options: internshipOptions, fetchAll: fetchInternshipTypes, isLoading: loadingTypes } = useInternshipTypes();
 
   useEffect(() => {
-    fetchInternshipTypes();
-    const timer = setTimeout(() => {
+    const init = async () => {
+      await fetchInternshipTypes();
       setPageLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
+    };
+    init();
   }, [fetchInternshipTypes]);
 
   /**
@@ -291,10 +291,7 @@ export default function CareersPage() {
           <div>
             <SkeletonLoader isLoading={pageLoading} skeleton={<TitleSkeleton />} id="careers-title">
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold text-text-primary dark:text-white/90">Gestión de Carreras</h2>
-                {/* <span className="inline-flex items-center rounded-full bg-bg-secondary px-2.5 py-0.5 text-xs font-medium text-text-primary dark:bg-bg-dark dark:text-text-tertiary border border-border-light dark:border-border-dark">
-                  MockAPI
-                </span> */}
+                <h2 className="text-2xl font-bold text-text-primary dark:text-text-emphasis">Gestión de Carreras</h2>
               </div>
               <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">Configura las ofertas académicas y parámetros de aprobación.</p>
             </SkeletonLoader>
@@ -305,16 +302,6 @@ export default function CareersPage() {
             </Button>
           )}
         </div>
-
-        {/* Banner Informativo */}
-        {/* {!pageLoading && (
-          <div className="mb-6 flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-blue-700 dark:border-blue-900/30 dark:bg-blue-500/10 dark:text-blue-400">
-            <InformationCircleIcon className="h-5 w-5 shrink-0" />
-            <div className="text-sm">
-              <span className="font-bold">Información de API:</span> Las carreras se gestionan mediante MockAPI para simular un entorno real. Los cambios persisten durante la sesión.
-            </div>
-          </div>
-        )} */}
 
         {/* Contenido principal */}
         <div className="space-y-6">
@@ -338,7 +325,7 @@ export default function CareersPage() {
                 </button>
               </div>
 
-            <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="careers-table">
+            <SkeletonLoader isLoading={pageLoading || status === "loading" || loadingTypes} skeleton={<TablePageSkeleton rows={5} />} id="careers-table">
               <CareerTable
                 data={filtered}
                 status={status}
@@ -375,6 +362,7 @@ export default function CareersPage() {
         onClose={() => setViewCareer(null)}
         onEdit={handleEdit}
         career={viewCareer}
+        internshipOptions={internshipOptions}
       />
 
       <UnifiedDialog

@@ -13,7 +13,6 @@ import Button from "../../components/ui/button/Button";
 import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
-import { InfoIcon } from "../../icons";
 
 import PreEnrollmentTable from "../../features/pre-enrollment/components/PreEnrollmentTable";
 import PreEnrollmentModal from "../../features/pre-enrollment/components/PreEnrollmentModal";
@@ -140,9 +139,6 @@ export default function PreEnrollmentPage() {
                         <SkeletonLoader isLoading={pageLoading} skeleton={<TitleSkeleton />} id="pre-enrollment-title">
                             <div className="flex items-center gap-2">
                                 <h2 className="text-2xl font-bold text-text-primary dark:text-white/90">Listado de Pre-Inscripciones</h2>
-                                <span className="inline-flex items-center rounded-full bg-bg-secondary px-2.5 py-0.5 text-xs font-medium text-text-primary dark:bg-bg-dark dark:text-text-tertiary border border-border-light dark:border-border-dark">
-                                    Demo
-                                </span>
                             </div>
                             <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">Gestiona las pre-inscripciones de los estudiantes para el período actual.</p>
                         </SkeletonLoader>
@@ -155,14 +151,7 @@ export default function PreEnrollmentPage() {
                     )}
                 </div>
 
-                {!pageLoading && (
-                    <div className="mb-6 flex items-center gap-3 rounded-xl border border-blue-light-200 bg-blue-light-50 p-4 text-blue-light-700 dark:border-blue-light-800 dark:bg-blue-light-950 dark:text-blue-light-400">
-                        <InfoIcon className="h-5 w-5 shrink-0" />
-                        <div className="text-sm">
-                            <span className="font-bold">Modo Demostración Activo:</span> Esta vista utiliza datos estáticos locales.
-                        </div>
-                    </div>
-                )}
+
 
                 <div className="space-y-6">
                     <ComponentCard title={activeTab === "Activas" ? "Pre Inscripciones Activas" : "Pre Inscripciones Inactivas"}>

@@ -52,9 +52,6 @@ export const useCareers = () => {
     try {
       const data = await careersService.getCareers();
       
-      // Verificamos si los datos vienen del fallback estático (IDs empiezan con 'static-')
-      const isFallback = data.some(c => String(c.careerId).startsWith('static-'));
-
       const uniqueData = Array.from(
         new Map(data.map((item) => [item.careerId, item])).values()
       );
@@ -65,14 +62,6 @@ export const useCareers = () => {
       setTimeout(() => {
         setCareers(uniqueData);
         setStatus("success");
-        
-        if (isFallback) {
-          addToast({
-            variant: "warning",
-            title: "Modo Offline / Backup",
-            message: "No se pudo conectar con el servidor. Mostrando datos de respaldo locales.",
-          });
-        }
       }, remainingTime);
     } catch (e) {
       const err =
@@ -84,10 +73,8 @@ export const useCareers = () => {
 
       addToast({
         variant: "error",
-        title: "Error al cargar carreras",
-        message: err.message.includes("404")
-          ? "No se pudo encontrar el recurso. Verifique la configuración del servidor."
-          : "Hubo un problema de conexión con el servidor.",
+        title: "Error de conexión",
+        message: "No se pudo conectar con la base de datos o el servidor. Por favor, verifique su conexión.",
       });
     }
   }, [addToast]);

@@ -9,7 +9,15 @@ export const ChangeComparison: React.FC<{
   labels?: Record<string, string>;
   excludeFields?: string[];
 }> = ({ oldData, newData, labels = {}, excludeFields = [] }) => {
-  const defaultExcludes = ["studentId", "careerId", "periodId", "updatedAt", "enrollmentDate", "status"];
+  const defaultExcludes = [
+    "studentId",
+    "careerId",
+    "periodId",
+    "updatedAt",
+    "enrollmentDate",
+    "status",
+    "periodStatus", // Excluido por requerimiento de seguridad/privacidad
+  ];
   const allExcludes = [...defaultExcludes, ...excludeFields];
 
   const changes = Object.keys(newData).filter((key) => {

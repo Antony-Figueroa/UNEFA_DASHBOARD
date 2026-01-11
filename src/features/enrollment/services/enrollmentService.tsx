@@ -1,78 +1,50 @@
 /**
  * @file enrollmentService.tsx
- * @description Servicio estático para la gestión de inscripciones (Modo Demo).
+ * @description Servicio para la gestión de inscripciones mediante API.
  */
 
 import { Enrollment } from "../types";
+import apiClient from "../../../api/apiClient";
 
-const MOCK_ENROLLMENTS: Enrollment[] = [
-  {
-    enrollmentId: "1",
-    identificationPrefix: "V",
-    identificationNumber: "31114449",
-    studentName: "ANTONY FIGUEROA",
-    academicTutorId: "1",
-    academicTutorName: "CARLOS PÉREZ",
-    methodologicalTutorId: "2",
-    methodologicalTutorName: "ANA RODRÍGUEZ",
-    institutionId: "1",
-    institutionName: "PDVSA",
-    institutionResponsibleId: "1",
-    institutionResponsibleName: "JUAN GONZÁLEZ",
-    practiceType: "ORDINARIA",
-    period: "2026 - II",
-    enrollmentDate: new Date("2026-01-08"),
-    status: true,
-  },
-  {
-    enrollmentId: "2",
-    identificationPrefix: "V",
-    identificationNumber: "28555666",
-    studentName: "MARIA LOPEZ",
-    academicTutorId: "3",
-    academicTutorName: "LUIS MARTÍNEZ",
-    methodologicalTutorId: "4",
-    methodologicalTutorName: "ELENA GÓMEZ",
-    institutionId: "2",
-    institutionName: "CANTV",
-    institutionResponsibleId: "3",
-    institutionResponsibleName: "PEDRO SÁNCHEZ",
-    practiceType: "ORDINARIA",
-    period: "2026 - II",
-    enrollmentDate: new Date("2026-01-07"),
-    status: true,
-  }
-];
+const API_URL = "/enrollments";
 
+/**
+ * Obtiene la lista de inscripciones desde la API.
+ */
 export const getEnrollments = async (): Promise<Enrollment[]> => {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return [...MOCK_ENROLLMENTS];
+  const response = await apiClient.get<Enrollment[]>(API_URL);
+  return response.data.map(e => ({
+    ...e,
+    enrollmentDate: new Date(e.enrollmentDate)
+  }));
 };
 
+/**
+ * Crea una inscripción en la API.
+ */
 export const createEnrollment = async (data: Omit<Enrollment, "enrollmentId" | "enrollmentDate">): Promise<Enrollment> => {
-  await new Promise(resolve => setTimeout(resolve, 800));
-  const newEnrollment: Enrollment = {
-    ...data,
-    enrollmentId: Math.random().toString(36).substr(2, 9),
-    enrollmentDate: new Date(),
+  const response = await apiClient.post<Enrollment>(API_URL, data);
+  return {
+    ...response.data,
+    enrollmentDate: new Date(response.data.enrollmentDate)
   };
-  MOCK_ENROLLMENTS.unshift(newEnrollment);
-  return newEnrollment;
 };
 
+/**
+ * Actualiza una inscripción en la API.
+ */
 export const updateEnrollment = async (data: Enrollment): Promise<Enrollment> => {
-  await new Promise(resolve => setTimeout(resolve, 800));
-  const index = MOCK_ENROLLMENTS.findIndex(e => e.enrollmentId === data.enrollmentId);
-  if (index !== -1) {
-    MOCK_ENROLLMENTS[index] = data;
-  }
-  return data;
+  const { enrollmentId, ...updates } = data;
+  const response = await apiClient.put<Enrollment>(`${API_URL}/${enrollmentId}`, updates);
+  return {
+    ...response.data,
+    enrollmentDate: new Date(response.data.enrollmentDate)
+  };
 };
 
+/**
+ * Elimina (desactivar) una inscripción en la API.
+ */
 export const deleteEnrollment = async (id: string): Promise<void> => {
-  await new Promise(resolve => setTimeout(resolve, 800));
-  const index = MOCK_ENROLLMENTS.findIndex(e => e.enrollmentId === id);
-  if (index !== -1) {
-    MOCK_ENROLLMENTS.splice(index, 1);
-  }
+  await apiClient.delete(`${API_URL}/${id}`);
 };

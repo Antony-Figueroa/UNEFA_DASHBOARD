@@ -94,6 +94,12 @@ export const usePeriods = () => {
         setLoadingAction(true);
         try {
             const oldPeriod = periodos.find(p => p.periodId === periodoData.periodId);
+
+            // LOGGING: Registro de auditoría para cambios de estatus (excluidos de la UI)
+            if (oldPeriod && oldPeriod.periodStatus !== periodoData.periodStatus) {
+                console.log(`[Audit Log] Cambio de estatus detectado para periodo ${periodoData.description}: ${oldPeriod.periodStatus} -> ${periodoData.periodStatus}`);
+            }
+
             await periodService.updatePeriod(periodoData);
             await refreshPeriods();
             setLoadingAction(false);

@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { useDbStatus } from "../../../context/db-status";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { DropdownPortal } from "../../../components/ui/dropdown/DropdownPortal";
 import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
@@ -40,7 +41,6 @@ const formatDecimal = (n: number) => n.toFixed(2);
 export default function CareerTable({
   data = [],
   status,
-  error,
   onEdit,
   onDelete,
   onToggleStatus,
@@ -50,7 +50,6 @@ export default function CareerTable({
   inactiveMode = false,
   activeTab = "Activas",
   practiceOptions = [],
-  // loading = false,
 }: CareerTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [practiceTypeFilter, setPracticeTypeFilter] = useState<string>("");
@@ -59,6 +58,7 @@ export default function CareerTable({
   const [openRowId, setOpenRowId] = useState<string | number | null>(null);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string | number>>(new Set());
+  const { status: dbStatus } = useDbStatus();
 
   // Estados para selección y ordenamiento
   const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
@@ -113,6 +113,28 @@ export default function CareerTable({
   const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paged = filteredData.slice(startIndex, startIndex + itemsPerPage);
+
+  if (status === "error" || dbStatus === "disconnected") {
+    return (
+      <div className="rounded-xl border border-alert-error-border bg-alert-error-bg p-8 text-center dark:border-error-800 dark:bg-error-950 animate-fadeIn">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-error-100 dark:bg-error-900/30">
+          <svg className="h-6 w-6 text-error-600 dark:text-error-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-semibold text-alert-error-text dark:text-error-400">Error de conexión</h3>
+        <p className="mt-2 text-text-secondary dark:text-text-tertiary font-medium">
+          {dbStatus === "disconnected" ? "La conexión con la base de datos se ha perdido" : "no hay conexion a la bd"}
+        </p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-6 px-4 py-2 bg-error-600 text-white rounded-lg hover:bg-error-700 transition-colors text-sm font-medium"
+        >
+          Reintentar conexión
+        </button>
+      </div>
+    );
+  }
 
   const handlePageChange = (page: number) => {
     if (page < 1 || page > totalPages) return;
@@ -186,17 +208,26 @@ export default function CareerTable({
     );
   };
 
-  if (status === "error") {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-red-500 animate-fadeIn">
-        <p className="font-semibold">Error al cargar carreras</p>
-        <p className="text-sm">{error?.message || "Por favor, intente de nuevo más tarde."}</p>
-      </div>
-    );
-  }
-
   return (
     <div className="table-container">
+      {/* Indicador de conexión a BD */}
+      <div className="px-4 py-2 border-b border-border-light dark:border-border-dark flex justify-end items-center gap-2 bg-gray-50/50 dark:bg-gray-900/20">
+        <span className="text-xs font-medium text-text-tertiary">Estado de BD:</span>
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-white dark:bg-bg-dark border border-border-light dark:border-border-dark shadow-sm">
+          <span className={`h-2 w-2 rounded-full ${
+            (dbStatus as string) === "connected" ? "bg-success-500 animate-pulse" : 
+            (dbStatus as string) === "disconnected" ? "bg-error-500" : "bg-warning-500"
+          }`} />
+          <span className={`text-[10px] font-bold uppercase tracking-wider ${
+            (dbStatus as string) === "connected" ? "text-success-600 dark:text-success-400" : 
+            (dbStatus as string) === "disconnected" ? "text-error-600 dark:text-error-400" : "text-warning-600 dark:text-warning-400"
+          }`}>
+            {(dbStatus as string) === "connected" ? "Conectado" : 
+             (dbStatus as string) === "disconnected" ? "No conectado" : "Verificando..."}
+          </span>
+        </div>
+      </div>
+
       {/* Cabecera reorganizada: filtros y búsqueda */}
       <div className="p-4 border-b border-border-light dark:border-border-dark space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -353,6 +384,7 @@ export default function CareerTable({
                   <SortIndicator column="careerAbbreviation" />
                 </div>
               </TableCell>
+              <TableCell isHeader className="table-header-cell">Tipos de Prácticas</TableCell>
               <TableCell isHeader className="table-header-cell text-right">Acciones</TableCell>
             </TableRow>
           </TableHeader>
@@ -378,6 +410,25 @@ export default function CareerTable({
                   </TableCell>
                   <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">{formatDecimal(Number(c.minimumGrade))}</TableCell>
                   <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">{c.careerAbbreviation}</TableCell>
+                  <TableCell className="table-cell">
+                    <div className="flex flex-wrap gap-1">
+                      {c.internshipTypeIds && c.internshipTypeIds.length > 0 ? (
+                        c.internshipTypeIds.slice(0, 2).map((id, i) => {
+                          const opt = practiceOptions.find(o => String(o.value) === String(id));
+                          return (
+                            <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-brand-50 text-brand-600 border border-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:border-brand-500/20">
+                              {opt ? opt.label : id}
+                            </span>
+                          );
+                        })
+                      ) : (
+                        <span className="text-[10px] text-text-tertiary italic">Ninguno</span>
+                      )}
+                      {c.internshipTypeIds && c.internshipTypeIds.length > 2 && (
+                        <span className="text-[10px] text-text-tertiary">+{c.internshipTypeIds.length - 2}</span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="table-cell text-right relative">
                     <div className="flex justify-end">
                       <button
@@ -508,6 +559,23 @@ export default function CareerTable({
                       <div className="flex flex-col items-center">
                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Código</p>
                         <p className="text-sm text-text-primary dark:text-text-emphasis font-medium">{c.careerCode}</p>
+                      </div>
+                      <div className="flex flex-col items-center col-span-2">
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Tipos de Prácticas</p>
+                        <div className="flex flex-wrap justify-center gap-1">
+                          {c.internshipTypeIds && c.internshipTypeIds.length > 0 ? (
+                            c.internshipTypeIds.map((id, i) => {
+                              const opt = practiceOptions.find(o => String(o.value) === String(id));
+                              return (
+                                <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-brand-50 text-brand-600 border border-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:border-brand-500/20">
+                                  {opt ? opt.label : id}
+                                </span>
+                              );
+                            })
+                          ) : (
+                            <span className="text-[10px] text-text-tertiary italic">Ninguno</span>
+                          )}
+                        </div>
                       </div>
                     </div>
 

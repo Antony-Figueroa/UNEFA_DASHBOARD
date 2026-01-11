@@ -27,6 +27,9 @@ export default function PeriodViewModal({ isOpen, onClose, periodo }: PeriodView
                     <div className="max-w-5xl mx-auto w-full">
                         <div className="flex items-center gap-3 mb-1">
                             <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-brand-500/10 text-brand-500">
+                                {periodo.code || 'SIN CÓDIGO'}
+                            </span>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-brand-500/10 text-brand-500">
                                 Vista Detallada
                             </span>
                         </div>

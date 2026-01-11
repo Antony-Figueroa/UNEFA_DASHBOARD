@@ -203,7 +203,7 @@ interface EnrollmentTableProps {
     loading?: boolean;
 }
 
-type SortKey = "studentName" | "academicTutorName" | "methodologicalTutorName" | "institutionName" | "practiceType" | "enrollmentDate";
+type SortKey = "studentName" | "careerName" | "academicTutorName" | "methodologicalTutorName" | "institutionName" | "practiceType" | "enrollmentDate";
 type SortOrder = "asc" | "desc";
 
 export default function EnrollmentTable({
@@ -238,7 +238,8 @@ export default function EnrollmentTable({
         const filtered = data.filter((s) => {
             const matchesSearch = !search || 
                 s.identificationNumber.toLowerCase().includes(search) || 
-                s.studentName.toLowerCase().includes(search);
+                s.studentName.toLowerCase().includes(search) ||
+                (s.careerName && s.careerName.toLowerCase().includes(search));
             const matchesPeriod = !periodSearch || s.period.toLowerCase().includes(periodSearch);
             const matchesTab = activeTab === "Activas" ? s.status === true : s.status === false;
 
@@ -337,8 +338,15 @@ export default function EnrollmentTable({
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
                     </svg>
                 </div>
-                <h3 className="text-lg font-bold text-text-primary dark:text-text-emphasis mb-2">Error al cargar inscripciones</h3>
-                <p className="text-sm text-text-secondary dark:text-text-tertiary">{error?.message || "Por favor, intente de nuevo más tarde."}</p>
+                <h3 className="text-lg font-semibold text-error-600 dark:text-error-400">Error de conexión</h3>
+                <p className="mt-2 text-text-secondary dark:text-text-tertiary font-medium">
+                    no hay conexion a la bd
+                </p>
+                {error && error.message !== 'no hay conexion a la bd' && (
+                    <div className="mt-4 text-xs text-error-500/70 italic">
+                        Detalles: {error.message}
+                    </div>
+                )}
             </div>
         );
     }
@@ -425,6 +433,9 @@ export default function EnrollmentTable({
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("studentName")}>
                                 <div className="flex items-center">Estudiante <SortIndicator column="studentName" /></div>
                             </TableCell>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("careerName")}>
+                                <div className="flex items-center">Carrera <SortIndicator column="careerName" /></div>
+                            </TableCell>
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("academicTutorName")}>
                                 <div className="flex items-center">Tutor Académico <SortIndicator column="academicTutorName" /></div>
                             </TableCell>
@@ -458,6 +469,9 @@ export default function EnrollmentTable({
                                         </div>
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
+                                        {s.careerName || "No asignada"}
+                                    </TableCell>
+                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                         {s.academicTutorName}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
@@ -489,7 +503,7 @@ export default function EnrollmentTable({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={8} className="p-0">
+                                <TableCell colSpan={9} className="p-0">
                                     <EmptyState
                                         title="No se encontraron inscripciones"
                                         description={searchTerm || periodFilter ? "Pruebe ajustando sus filtros de búsqueda." : "No hay registros de inscripciones para mostrar."}
@@ -531,6 +545,10 @@ export default function EnrollmentTable({
                                 {isExpanded && (
                                     <div className="mt-4 space-y-6 animate-fadeIn border-t border-border-light dark:border-border-dark pt-6">
                                         <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
+                                            <div className="flex flex-col items-center col-span-2">
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Carrera</p>
+                                                <p className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight">{s.careerName || "No asignada"}</p>
+                                            </div>
                                             <div className="flex flex-col items-center col-span-2">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Institución</p>
                                                 <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{s.institutionName}</p>

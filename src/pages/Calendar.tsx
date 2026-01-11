@@ -3,6 +3,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import esLocale from "@fullcalendar/core/locales/es";
 import { EventInput, DateSelectArg, EventClickArg, EventContentArg } from "@fullcalendar/core";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../components/ui/modal";
 import { useModal } from "../hooks/useModal";
@@ -14,6 +15,13 @@ interface CalendarEvent extends EventInput {
     calendar: string;
   };
 }
+
+const calendarsEvents: Record<string, string> = {
+  Urgente: "danger",
+  Completado: "success",
+  Principal: "primary",
+  Aviso: "warning",
+};
 
 const Calendar: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -28,35 +36,28 @@ const Calendar: React.FC = () => {
   const calendarRef = useRef<FullCalendar>(null);
   const { isOpen, openModal, closeModal } = useModal();
 
-  const calendarsEvents = {
-    Danger: "danger",
-    Success: "success",
-    Primary: "primary",
-    Warning: "warning",
-  };
-
   useEffect(() => {
     // Initialize with some events
     const timer = setTimeout(() => {
       setEvents([
         {
           id: "1",
-          title: "Event Conf.",
+          title: "Conf. de Evento",
           start: new Date().toISOString().split("T")[0],
-          extendedProps: { calendar: "Danger" },
+          extendedProps: { calendar: "Urgente" },
         },
         {
           id: "2",
-          title: "Meeting",
+          title: "Reunión",
           start: new Date(Date.now() + 86400000).toISOString().split("T")[0],
-          extendedProps: { calendar: "Success" },
+          extendedProps: { calendar: "Completado" },
         },
         {
           id: "3",
-          title: "Workshop",
+          title: "Taller",
           start: new Date(Date.now() + 172800000).toISOString().split("T")[0],
           end: new Date(Date.now() + 259200000).toISOString().split("T")[0],
-          extendedProps: { calendar: "Primary" },
+          extendedProps: { calendar: "Principal" },
         },
       ]);
       setIsLoading(false);
@@ -124,8 +125,8 @@ const Calendar: React.FC = () => {
   return (
     <>
       <PageMeta
-        title="React.js Calendar Dashboard | TailAdmin - Next.js Admin Dashboard Template"
-        description="This is React.js Calendar Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Panel de Calendario | TailAdmin"
+        description="Página de calendario para el panel de administración TailAdmin"
       />
       <div className="rounded-2xl border border-border-light bg-bg-main dark:border-border-dark dark:bg-white/3">
         <SkeletonLoader
@@ -138,6 +139,7 @@ const Calendar: React.FC = () => {
               ref={calendarRef}
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
+              locale={esLocale}
               headerToolbar={{
                 left: "prev,next addEventButton",
                 center: "title",
@@ -150,7 +152,7 @@ const Calendar: React.FC = () => {
               eventContent={renderEventContent}
               customButtons={{
                 addEventButton: {
-                  text: "Add Event +",
+                  text: "Añadir Evento +",
                   click: openModal,
                 },
               }}
@@ -166,10 +168,10 @@ const Calendar: React.FC = () => {
           <ModalHeader>
             <div>
               <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-                {selectedEvent ? "Edit Event" : "Add Event"}
+                {selectedEvent ? "Editar Evento" : "Añadir Evento"}
               </h5>
               <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
-                Plan your next big moment: schedule or edit an event to stay on track
+                Planifica tu próximo gran momento: programa o edita un evento para mantenerte al día
               </p>
             </div>
           </ModalHeader>
@@ -178,7 +180,7 @@ const Calendar: React.FC = () => {
             <div className="space-y-6">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-text-secondary dark:text-text-tertiary">
-                  Event Title
+                  Título del Evento
                 </label>
                 <input
                   id="event-title"
@@ -191,7 +193,7 @@ const Calendar: React.FC = () => {
 
               <div>
                 <label className="block mb-4 text-sm font-medium text-text-secondary dark:text-text-tertiary">
-                  Event Color
+                  Nivel del Evento
                 </label>
                 <div className="flex flex-wrap items-center gap-4 sm:gap-5">
                   {Object.entries(calendarsEvents).map(([key, value]) => (
@@ -230,7 +232,7 @@ const Calendar: React.FC = () => {
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-text-secondary dark:text-text-tertiary">
-                  Enter Start Date
+                  Fecha de Inicio
                 </label>
                 <div className="relative">
                   <input
@@ -245,7 +247,7 @@ const Calendar: React.FC = () => {
 
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-text-secondary dark:text-text-tertiary">
-                  Enter End Date
+                  Fecha de Fin
                 </label>
                 <div className="relative">
                   <input
@@ -265,13 +267,13 @@ const Calendar: React.FC = () => {
               onClick={closeModal}
               className="flex justify-center flex-1 px-4 py-2 text-sm font-medium text-text-secondary bg-bg-main border border-border-medium rounded-lg hover:bg-bg-secondary dark:border-border-dark dark:bg-bg-dark dark:text-text-tertiary dark:hover:bg-white/3 sm:w-auto sm:flex-none"
             >
-              Close
+              Cerrar
             </button>
             <button
               onClick={handleAddOrUpdateEvent}
               className="flex justify-center flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg bg-brand-500 hover:bg-brand-600 sm:w-auto sm:flex-none"
             >
-              {selectedEvent ? "Save Changes" : "Add Event"}
+              {selectedEvent ? "Guardar Cambios" : "Añadir Evento"}
             </button>
           </ModalFooter>
         </Modal>
@@ -281,7 +283,9 @@ const Calendar: React.FC = () => {
 };
 
 const renderEventContent = (eventInfo: EventContentArg) => {
-  const colorClass = `fc-bg-${eventInfo.event.extendedProps.calendar.toLowerCase()}`;
+  const calendarKey = eventInfo.event.extendedProps.calendar;
+  const colorValue = calendarsEvents[calendarKey] || calendarKey;
+  const colorClass = `fc-bg-${colorValue.toLowerCase()}`;
   return (
     <div
       className={`event-fc-color flex fc-event-main ${colorClass} p-1 rounded-sm`}

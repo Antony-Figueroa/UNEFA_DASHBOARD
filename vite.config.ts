@@ -22,10 +22,10 @@ export default defineConfig(() => {
       setupFiles: "./src/test/setup.ts",
     },
     server: {
-      // No proxy needed as we connect directly to MockAPI
+      // Direct connection to Backend API
     },
     preview: {
-      // No proxy needed as we connect directly to MockAPI
+      // Direct connection to Backend API
     },
   };
 });

@@ -8,40 +8,6 @@ import apiClient from "../../../api/apiClient";
 
 const API_URL = "/careers";
 
-// Datos de respaldo (Static Mock) para evitar bloqueos por fallos de red en MockAPI
-const STATIC_CAREERS: Career[] = [
-  {
-    careerId: "static-1",
-    careerCode: "SIS-01",
-    careerName: "Ingeniería de Sistemas",
-    minimumGrade: 14,
-    careerAbbreviation: "SIS",
-    internshipTypeIds: ["1", "2"],
-    creationDate: new Date(),
-    status: true,
-  },
-  {
-    careerId: "static-2",
-    careerCode: "IND-01",
-    careerName: "Ingeniería Industrial",
-    minimumGrade: 13,
-    careerAbbreviation: "IND",
-    internshipTypeIds: ["1"],
-    creationDate: new Date(),
-    status: true,
-  },
-  {
-    careerId: "static-3",
-    careerCode: "DER-01",
-    careerName: "Derecho",
-    minimumGrade: 15,
-    careerAbbreviation: "DER",
-    internshipTypeIds: ["3"],
-    creationDate: new Date(),
-    status: true,
-  },
-];
-
 // DTO de la API — flexible para adaptarse a números o strings
 interface CareerApiDTO {
   careerId?: string | number;
@@ -70,10 +36,10 @@ interface CareerApiDTO {
   career_abbreviation?: string;
   abbreviation?: string;
   siglas?: string;
-  internshipTypeIds?: string[];
-  INTERNSHIP_TYPE_IDS?: string[];
-  internship_type_ids?: string[];
-  internships?: string[];
+  internshipTypeIds?: (string | number)[];
+  INTERNSHIP_TYPE_IDS?: (string | number)[];
+  internship_type_ids?: (string | number)[];
+  internships?: (string | number)[];
   creationDate?: string | number;
   CREATION_DATE?: string | number;
   created_at?: string | number;
@@ -89,7 +55,7 @@ interface CareerApiDTO {
 const parseDate = (value: number | string | undefined): Date => {
   if (!value) return new Date();
   if (typeof value === "number") {
-    // Si viene en segundos (típico de MockAPI)
+    // Unix timestamp in ms or seconds
     const ms = value < 1e12 ? value * 1000 : value;
     return new Date(ms);
   }
@@ -143,6 +109,17 @@ const toApi = (career: Partial<Career>): Partial<CareerApiDTO> => {
   if (career.minimumGrade !== undefined) dto.MINIMUM_GRADE = career.minimumGrade;
   if (career.careerAbbreviation !== undefined) dto.CAREER_ABBREVIATION = career.careerAbbreviation;
   if (career.status !== undefined) dto.STATUS = career.status === true ? 1 : (career.status === false ? 0 : career.status);
+  if (career.internshipTypeIds !== undefined) {
+    // Asegurarse de que enviamos números, no strings. 
+    // Si ya son números o strings numéricos, se convierten.
+    // Si son nombres (como "ORDINARIA"), se filtran o manejan (aunque no deberían llegar aquí).
+    dto.INTERNSHIP_TYPE_IDS = career.internshipTypeIds
+      .map(id => {
+        const num = parseInt(String(id), 10);
+        return isNaN(num) ? 0 : num; // Enviamos 0 o filtramos si no es número
+      })
+      .filter(id => id > 0) as number[];
+  }
   
   // El ID se maneja en la URL en PUT/DELETE
   if (career.careerId !== undefined) {
@@ -153,15 +130,8 @@ const toApi = (career: Partial<Career>): Partial<CareerApiDTO> => {
 };
 
 export const getCareers = async (): Promise<Career[]> => {
-  try {
-    const response = await apiClient.get<CareerApiDTO[]>(API_URL);
-    return response.data.map(fromApi);
-  } catch (error) {
-    console.error(`[careersService] Error fetching careers from API, using static fallback:`, error);
-    // En lugar de propagar el error y romper la UI, devolvemos datos estáticos
-    // pero marcamos que son de respaldo (opcionalmente)
-    return STATIC_CAREERS;
-  }
+  const response = await apiClient.get<CareerApiDTO[]>(API_URL);
+  return response.data.map(fromApi);
 };
 
 export const createCareer = async (

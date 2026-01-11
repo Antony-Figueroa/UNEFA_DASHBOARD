@@ -13,6 +13,7 @@ interface CareerViewModalProps {
   onClose: () => void;
   onEdit?: (career: CareerRowData) => void;
   career: CareerRowData | null;
+  internshipOptions?: { value: string; label: string }[];
 }
 
 export default function CareerViewModal({
@@ -20,6 +21,7 @@ export default function CareerViewModal({
   onClose,
   onEdit,
   career,
+  internshipOptions,
 }: CareerViewModalProps) {
   if (!career) return null;
 
@@ -76,11 +78,15 @@ export default function CareerViewModal({
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipos de Prácticas Permitidas</label>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {career.internshipTypeIds && career.internshipTypeIds.length > 0 ? (
-                    career.internshipTypeIds.map((type, index) => (
-                      <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400 border border-brand-100 dark:border-brand-500/20">
-                        {type}
-                      </span>
-                    ))
+                    career.internshipTypeIds.map((id, index) => {
+                      const option = internshipOptions?.find(opt => String(opt.value) === String(id));
+                      const label = option ? option.label : `Tipo ${id}`;
+                      return (
+                        <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400 border border-brand-100 dark:border-brand-500/20">
+                          {label}
+                        </span>
+                      );
+                    })
                   ) : (
                     <span className="text-sm text-text-secondary italic">No hay tipos configurados</span>
                   )}

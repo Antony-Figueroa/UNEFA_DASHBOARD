@@ -7,6 +7,7 @@ import App from "./App.tsx";
 import { AppWrapper } from "./components/common/PageMeta.tsx";
 import { ThemeProvider } from "./context/ThemeContext.tsx";
 import { ToastProvider } from "./context/ToastContext.tsx";
+import { DbStatusProvider } from "./context/DbStatusContext.tsx";
 import ErrorBoundary from "./components/common/ErrorBoundary.tsx";
 
 createRoot(document.getElementById("root")!).render(
@@ -39,9 +40,11 @@ createRoot(document.getElementById("root")!).render(
     >
       <ThemeProvider>
         <ToastProvider>
-          <AppWrapper>
-            <App />
-          </AppWrapper>
+          <DbStatusProvider>
+            <AppWrapper>
+              <App />
+            </AppWrapper>
+          </DbStatusProvider>
         </ToastProvider>
       </ThemeProvider>
     </ErrorBoundary>

@@ -1,6 +1,7 @@
 import React from 'react';
 import Flatpickr from 'react-flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
+import { Spanish } from 'flatpickr/dist/l10n/es.js';
 import { useTheme } from '../../context/theme';
 import { CalendarIcon } from '../../icons/actions';
 
@@ -26,16 +27,17 @@ const FlatpickrDatePicker: React.FC<FlatpickrDatePickerProps> = ({
   const { colorMode } = useTheme();
 
   const defaultOptions: Record<string, unknown> = {
+    locale: Spanish,
     dateFormat: 'd/m/Y',
     altInput: true,
     altFormat: 'd/m/Y',
-    static: false,
-    appendTo: document.body,
+    static: false, // Cambiado a false para que el calendario se renderice en el body (portal)
+    monthSelectorType: 'static',
+    position: 'above auto', // Forzar posición arriba si hay espacio, sino auto
     onOpen: (_selectedDates: Date[], _dateStr: string, instance: { calendarContainer: HTMLElement }) => {
       if (colorMode === 'dark' && instance.calendarContainer) {
         instance.calendarContainer.classList.add('dark');
       }
-      // Asegurar que el z-index sea mayor que el del modal (z-999999)
       if (instance.calendarContainer) {
         instance.calendarContainer.style.zIndex = "9999999";
       }

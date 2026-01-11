@@ -48,11 +48,13 @@ interface ActionMenuProps {
     onEdit?: () => void;
     onDelete?: () => void;
     onCulminate?: () => void;
+    onActivate?: () => void;
     onRestore?: () => void;
     onView?: () => void;
     onOpen: () => void;
     onClose: () => void;
     periodo: PeriodoRowData;
+    canActivate?: boolean;
 }
 
 interface PeriodTableProps {
@@ -61,6 +63,7 @@ interface PeriodTableProps {
     error: Error | null;
     onEdit?: (periodo: PeriodoRowData) => void;
     onCulminate?: (periodo: PeriodoRowData) => void;
+    onActivate?: (periodo: PeriodoRowData) => void;
     onDelete?: (id: string) => void;
     onRestore?: (periodo: PeriodoRowData) => void;
     onView?: (periodo: PeriodoRowData) => void;
@@ -94,11 +97,13 @@ const ActionMenu = ({
     onEdit,
     onDelete,
     onCulminate,
+    onActivate,
     onRestore,
     onView,
     onOpen,
     onClose,
     periodo,
+    canActivate,
 }: ActionMenuProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [highlighted, setHighlighted] = useState(false);
@@ -241,6 +246,15 @@ const ActionMenu = ({
                                     Editar
                                 </DropdownItem>
                             )}
+                            {hasStatus && currentPeriodStatus === 1 && canActivate && onActivate && (
+                                <DropdownItem
+                                    onItemClick={() => handleAction(onActivate)}
+                                    className="flex items-center gap-2 text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-400/10 font-medium"
+                                >
+                                    <CheckCircleIcon className="icon-sm" />
+                                    Activar
+                                </DropdownItem>
+                            )}
                             {hasStatus && currentPeriodStatus === 2 && onCulminate && (
                                 <DropdownItem
                                     onItemClick={() => handleAction(onCulminate)}
@@ -285,11 +299,15 @@ const PeriodTable = ({
     error,
     onEdit,
     onCulminate,
+    onActivate,
     onDelete,
     onRestore,
     onView,
     loading: externalLoading,
 }: PeriodTableProps) => {
+    // Check if data is valid for rendering
+    const isInvalidData = !Array.isArray(data);
+
     const [highlightedRow, setHighlightedRow] = useState<string | null>(null);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [searchTerm, setSearchTerm] = useState("");
@@ -301,8 +319,48 @@ const PeriodTable = ({
         order: "asc",
     });
 
-    // Check if data is valid for rendering
-    const isInvalidData = !Array.isArray(data);
+    // Verificar si hay algún periodo "En Curso"
+    const hasActivePeriod = React.useMemo(() => {
+        return data.some(p => getSafePeriodStatus(p) === 2);
+    }, [data]);
+
+    // Identificar cuál es el PRÓXIMO periodo que se puede activar (Secuencia Cronológica Estricta)
+    const nextActivatablePeriodId = React.useMemo(() => {
+        if (hasActivePeriod) return null; // No se puede activar nada si ya hay uno en curso
+
+        const safeData = isInvalidData ? [] : data;
+        
+        // Obtener todos los periodos que no están culminados ni en curso (es decir, Pendientes)
+        const pendingPeriods = safeData.filter(p => getSafePeriodStatus(p) === 1);
+        if (pendingPeriods.length === 0) return null;
+
+        // Obtener el último periodo que fue culminado (si existe)
+        const nonPendingPeriods = safeData.filter(p => getSafePeriodStatus(p) !== 1);
+        
+        // Ordenar todos los periodos cronológicamente por su descripción (lapso)
+        // Usamos una versión local de getLapsoValue para no depender de imports externos si es posible,
+        // pero como ya lo tenemos en el proyecto, lo ideal es usarlo.
+        // Por simplicidad en este componente, ordenaremos por la fecha de inicio.
+        const sortedAll = [...safeData].sort((a, b) => a.rawStartDate.getTime() - b.rawStartDate.getTime());
+        
+        if (nonPendingPeriods.length === 0) {
+            // Si no hay ninguno culminado, el primero cronológicamente es el activable
+            return sortedAll[0]?.periodId;
+        }
+
+        // Si hay culminados, buscamos el primero que sea "Pendiente" después del último culminado
+        // Implementación manual de findLastIndex para compatibilidad
+        let lastNonPendingIndex = -1;
+        for (let i = sortedAll.length - 1; i >= 0; i--) {
+            if (getSafePeriodStatus(sortedAll[i]) !== 1) {
+                lastNonPendingIndex = i;
+                break;
+            }
+        }
+        const nextPeriod = sortedAll[lastNonPendingIndex + 1];
+
+        return (nextPeriod && getSafePeriodStatus(nextPeriod) === 1) ? nextPeriod.periodId : null;
+    }, [data, hasActivePeriod, isInvalidData]);
 
     // Filter and Sort data
     const filteredData = React.useMemo(() => {
@@ -398,9 +456,21 @@ const PeriodTable = ({
 
     if (status === "error") {
         return (
-            <div className="flex flex-col items-center justify-center py-12 text-red-500 animate-fadeIn">
-                <p className="font-semibold text-red-600 dark:text-red-400">Error al cargar periodos</p>
-                <p className="text-sm text-text-secondary dark:text-text-tertiary">{error?.message || "Por favor, intente de nuevo más tarde."}</p>
+            <div className="rounded-xl border border-alert-error-border bg-alert-error-bg p-8 text-center dark:border-error-800 dark:bg-error-950 animate-fadeIn">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-error-100 dark:bg-error-900/30">
+                    <svg className="h-6 w-6 text-error-600 dark:text-error-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-alert-error-text dark:text-error-400">Error de conexión</h3>
+        <p className="mt-2 text-text-secondary dark:text-text-tertiary font-medium">
+          no hay conexion a la bd
+        </p>
+        {error && error.message !== 'no hay conexion a la bd' && (
+          <div className="mt-4 text-xs text-alert-error-text/70 dark:text-error-500/70 italic">
+            Detalles: {error.message}
+          </div>
+        )}
             </div>
         );
     }
@@ -666,6 +736,9 @@ const PeriodTable = ({
                                                 onCulminate={
                                                     onCulminate ? () => onCulminate(periodo) : undefined
                                                 }
+                                                onActivate={
+                                                    onActivate ? () => onActivate(periodo) : undefined
+                                                }
                                                 onView={onView ? () => onView(periodo) : undefined}
                                                 onDelete={
                                                     onDelete && periodId
@@ -678,6 +751,7 @@ const PeriodTable = ({
                                                 onOpen={() => setHighlightedRow(periodId)}
                                                 onClose={() => setHighlightedRow(null)}
                                                 periodo={periodo}
+                                                canActivate={periodId === nextActivatablePeriodId}
                                             />
                                         </TableCell>
                                     </TableRow>
@@ -819,6 +893,14 @@ const PeriodTable = ({
                                                         className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-blue-200 dark:hover:border-blue-500/20"
                                                     >
                                                         <RefreshIcon className="icon-sm" /> Restaurar
+                                                    </button>
+                                                )}
+                                                {!!periodo.status && periodStatus === 1 && !hasActivePeriod && onActivate && (
+                                                    <button
+                                                        onClick={() => onActivate(periodo)}
+                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-brand-200 dark:hover:border-brand-500/20"
+                                                    >
+                                                        <CheckCircleIcon className="icon-sm" /> Activar
                                                     </button>
                                                 )}
                                                 {!!periodo.status && periodStatus === 1 && onDelete && (

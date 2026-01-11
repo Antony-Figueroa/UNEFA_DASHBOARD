@@ -221,9 +221,6 @@ export default function InstitutionsPage() {
                         <h2 className="text-2xl font-bold text-text-primary dark:text-white/90">
                           {mainTab === "Instituciones" ? "Listado de Instituciones" : "Responsables Institucionales"}
                         </h2>
-                        <span className="inline-flex items-center rounded-full bg-bg-secondary px-2.5 py-0.5 text-xs font-medium text-text-primary dark:bg-bg-dark dark:text-text-tertiary border border-border-light dark:border-border-dark">
-                            Demo
-                        </span>
                     </div>
                     <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">
                       {mainTab === "Instituciones" 
@@ -287,6 +284,7 @@ export default function InstitutionsPage() {
               ) : (
                 <InstitutionalResponsibleTable
                   data={respTableData}
+                  status={respStatus}
                   activeTab={activeTab}
                   onEdit={handleOpenEditRespModal}
                   onView={setViewResp}

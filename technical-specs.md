@@ -46,6 +46,11 @@ A 4-color system with icons for immediate visual feedback:
 - **Warning (Orange)**: Cautions and potential risks.
 - **Info (Blue)**: General information and announcements.
 
+**Excepciones de Visualización de Datos (Privacidad y Seguridad):**
+- **Campo `periodStatus`**: Los cambios en el estatus de los periodos académicos (ej. de Pendiente a En Curso) están excluidos de las alertas visuales y notificaciones del sistema para evitar ruido innecesario y proteger la integridad del flujo de trabajo. 
+- **Registro de Auditoría**: Aunque excluidos de la UI, estos cambios deben ser registrados obligatoriamente en los logs de auditoría del sistema (consola del servidor/cliente) con el formato `[Audit Log] Cambio de estatus detectado...`.
+- **Otros Campos Excluidos**: `studentId`, `careerId`, `periodId`, `updatedAt`, `enrollmentDate`, `status`.
+
 ## 3. Standardization Process
 
 ### Audit & Matrix

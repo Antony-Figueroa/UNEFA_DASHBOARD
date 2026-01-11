@@ -1,14 +1,45 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
+import { supabase } from "../../lib/supabase";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        navigate("/");
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "An error occurred during sign in";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col flex-1">
       <div className="w-full max-w-md pt-10 mx-auto">
@@ -30,6 +61,13 @@ export default function SignInForm() {
               Enter your email and password to sign in!
             </p>
           </div>
+
+          {error && (
+            <div className="p-3 mb-4 text-sm text-red-500 bg-red-100 rounded-lg dark:bg-red-500/10">
+              {error}
+            </div>
+          )}
+
           <div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
               <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-text-primary transition-colors bg-bg-secondary rounded-lg px-7 hover:bg-border-light hover:text-text-emphasis dark:bg-white/5 dark:text-text-emphasis dark:hover:bg-white/10">
@@ -83,13 +121,19 @@ export default function SignInForm() {
                 </span>
               </div>
             </div>
-            <form>
+            <form onSubmit={handleSignIn}>
               <div className="space-y-6">
                 <div>
                   <Label>
                     Email <span className="text-error-500">*</span>{" "}
                   </Label>
-                  <Input placeholder="info@gmail.com" />
+                  <Input 
+                    type="email"
+                    placeholder="info@gmail.com" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </div>
                 <div>
                   <Label>
@@ -99,51 +143,60 @@ export default function SignInForm() {
                     <Input
                       type={showPassword ? "text" : "password"}
                       placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
                     />
-                    <span
+                    <button
+                      type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
+                      className="absolute z-30 -translate-y-1/2 right-4 top-1/2"
                     >
                       {showPassword ? (
                         <EyeIcon className="fill-text-secondary dark:fill-text-tertiary size-5" />
                       ) : (
                         <EyeCloseIcon className="fill-text-secondary dark:fill-text-tertiary size-5" />
                       )}
-                    </span>
+                    </button>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Checkbox checked={isChecked} onChange={setIsChecked} />
-                    <span className="block font-normal text-text-primary text-theme-sm dark:text-text-tertiary">
-                    Keep me logged in
-                  </span>
+                    <span className="text-sm text-text-secondary dark:text-text-tertiary">
+                      Remember me
+                    </span>
                   </div>
                   <Link
-                    to="/reset-password"
-                    className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                    to="/forgot-password"
+                    className="text-sm font-medium text-brand-500 hover:text-brand-600"
                   >
                     Forgot password?
                   </Link>
                 </div>
                 <div>
-                  <Button className="w-full" size="sm">
-                    Sign in
+                  <Button 
+                    className="w-full" 
+                    size="md" 
+                    type="submit"
+                    disabled={loading}
+                  >
+                    {loading ? "Signing in..." : "Sign In"}
                   </Button>
                 </div>
               </div>
             </form>
 
             <div className="mt-5">
-              <p className="text-sm font-normal text-center text-text-primary dark:text-text-tertiary sm:text-start">
-              Don&apos;t have an account?{" "}
-              <Link
-                to="/signup"
-                className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
-              >
-                Sign Up
-              </Link>
-            </p>
+              <p className="text-sm font-normal text-center text-text-tertiary dark:text-text-tertiary">
+                Don't have an account?{" "}
+                <Link
+                  to="/signup"
+                  className="font-medium text-brand-500 hover:text-brand-600"
+                >
+                  Sign Up
+                </Link>
+              </p>
             </div>
           </div>
         </div>

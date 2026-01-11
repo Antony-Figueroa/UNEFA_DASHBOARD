@@ -24,7 +24,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      connectSrc: ["'self'", "http://localhost:3000", "http://localhost:5173", "ws://localhost:5173", "http://backend:3000"],
+      connectSrc: ["'self'", "http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "ws://localhost:5173", "ws://localhost:5174", "ws://localhost:5175", "http://backend:3000"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "blob:", "https://*"],
@@ -36,7 +36,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:3000"],
+  origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:3000"],
   credentials: true
 }));
 app.use(express.json());

@@ -78,20 +78,39 @@ class DatabaseManager {
   }
 
   public async checkHealth(): Promise<{ status: string; details?: Record<string, unknown> }> {
-    if (!this.client) return { status: 'disconnected' };
+    if (!this.client) {
+      if (!this.config.url || !this.config.key) {
+        return { 
+          status: 'unhealthy', 
+          details: { error: 'Faltan credenciales de Supabase en el archivo .env' } 
+        };
+      }
+      return { status: 'disconnected', details: { error: 'Cliente no inicializado' } };
+    }
 
     try {
       const start = Date.now();
-      const { error } = await this.client.from('t_career').select('count', { count: 'exact', head: true });
+      const { error, status, statusText } = await this.client.from('t_career').select('count', { count: 'exact', head: true });
       const duration = Date.now() - start;
 
-      if (error) throw error;
+      if (error) {
+        return { 
+          status: 'unhealthy', 
+          details: { 
+            error: error.message,
+            code: error.code,
+            hint: error.hint,
+            httpStatus: status,
+            httpStatusText: statusText
+          } 
+        };
+      }
 
       return { 
         status: 'healthy', 
         details: { 
           latency: `${duration}ms`,
-          url: this.config.url
+          url: this.config.url.replace(/\/\/[^@]+@/, '//***:***@') // Ocultar credenciales si las hubiera en el URL
         } 
       };
     } catch (error: unknown) {
@@ -99,7 +118,7 @@ class DatabaseManager {
       return { 
         status: 'unhealthy', 
         details: { 
-          error: err.message || 'Unknown error',
+          error: err.message || 'Error desconocido de conexión',
           code: err.code 
         } 
       };

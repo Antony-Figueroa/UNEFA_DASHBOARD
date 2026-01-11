@@ -1,0 +1,90 @@
+import { lazy, Suspense } from "react";
+import { Routes, Route } from "react-router";
+import { Analytics } from "@vercel/analytics/react";
+import AppLayout from "../layout/AppLayout";
+import { ScrollToTop } from "../components/common/ScrollToTop";
+import PageLoader from "../components/ui/loader";
+
+// Lazy loading components
+const Home = lazy(() => import("../pages/Dashboard/Home"));
+const SignIn = lazy(() => import("../pages/AuthPages/SignIn"));
+const SignUp = lazy(() => import("../pages/AuthPages/SignUp"));
+const UserProfiles = lazy(() => import("../pages/UserProfiles"));
+const Calendar = lazy(() => import("../pages/Calendar"));
+const Blank = lazy(() => import("../pages/Blank"));
+const Students = lazy(() => import("../pages/Students/students"));
+const Tutors = lazy(() => import("../pages/Tutors/tutors"));
+const InstitutionsPage = lazy(() => import("../pages/Institutions/institutions"));
+const PreEnrollmentPage = lazy(() => import("../pages/PreEnrollment/PreEnrollment"));
+const EnrollmentPage = lazy(() => import("../pages/Enrollment/Enrollment"));
+const TrackingPage = lazy(() => import("../pages/Tracking/Tracking"));
+const VisitRegistration = lazy(() => import("../pages/Tracking/VisitRegistration"));
+const FormElements = lazy(() => import("../pages/Forms/FormElements"));
+const BasicTables = lazy(() => import("../pages/Tables/BasicTables"));
+const Period = lazy(() => import("../pages/Period/period"));
+const CareersPage = lazy(() => import("../pages/Careers/careers"));
+const CrudExample = lazy(() => import("../pages/Management/CrudExample"));
+const Alerts = lazy(() => import("../pages/UiElements/Alerts"));
+const Avatars = lazy(() => import("../pages/UiElements/Avatars"));
+const Badges = lazy(() => import("../pages/UiElements/Badges"));
+const Buttons = lazy(() => import("../pages/UiElements/Buttons"));
+const Images = lazy(() => import("../pages/UiElements/Images"));
+const Videos = lazy(() => import("../pages/UiElements/Videos"));
+const LineChart = lazy(() => import("../pages/Charts/LineChart"));
+const BarChart = lazy(() => import("../pages/Charts/BarChart"));
+const NotFound = lazy(() => import("../pages/OtherPage/NotFound"));
+
+export const AppRoutes = () => {
+  return (
+    <>
+      <Analytics />
+      <ScrollToTop />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* Layout Wrapper */}
+          <Route element={<AppLayout />}>
+            <Route index path="/" element={<Home />} />
+            
+            {/* Core Features */}
+            <Route path="/profile" element={<UserProfiles />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/blank" element={<Blank />} />
+            <Route path="/students" element={<Students />} />
+            <Route path="/tutors" element={<Tutors />} />
+            <Route path="/institutions" element={<InstitutionsPage />} />
+            <Route path="/pre-enrollment" element={<PreEnrollmentPage />} />
+            <Route path="/enrollment" element={<EnrollmentPage />} />
+            <Route path="/tracking" element={<TrackingPage />} />
+            <Route path="/tracking/visits/:id" element={<VisitRegistration />} />
+            
+            {/* Forms & Tables */}
+            <Route path="/form-elements" element={<FormElements />} />
+            <Route path="/basic-tables" element={<BasicTables />} />
+            <Route path="/period" element={<Period />} />
+            <Route path="/careers" element={<CareersPage />} />
+            <Route path="/crud-example" element={<CrudExample />} />
+            
+            {/* UI Elements */}
+            <Route path="/alerts" element={<Alerts />} />
+            <Route path="/avatars" element={<Avatars />} />
+            <Route path="/badge" element={<Badges />} />
+            <Route path="/buttons" element={<Buttons />} />
+            <Route path="/images" element={<Images />} />
+            <Route path="/videos" element={<Videos />} />
+            
+            {/* Charts */}
+            <Route path="/line-chart" element={<LineChart />} />
+            <Route path="/bar-chart" element={<BarChart />} />
+          </Route>
+
+          {/* Auth Routes (No Layout) */}
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
+
+          {/* Fallback */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+    </>
+  );
+};

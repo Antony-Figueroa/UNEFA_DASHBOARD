@@ -54,7 +54,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Pre-Inscripción", path: "/pre-enrollment" },
       { name: "Inscripción", path: "/enrollment" },
-      { name: "Seguimiento", path: "/blank" },
+      { name: "Seguimiento", path: "/tracking" },
       { name: "Culminación Prácticas Profesionales", path: "/blank" },
     ],
   },

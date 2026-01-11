@@ -96,6 +96,8 @@ import Tutors from "./pages/Tutors/tutors";
 import InstitutionsPage from "./pages/Institutions/institutions";
 import PreEnrollmentPage from "./pages/PreEnrollment/PreEnrollment";
 import EnrollmentPage from "./pages/Enrollment/Enrollment";
+import TrackingPage from "./pages/Tracking/Tracking";
+import VisitRegistration from "./pages/Tracking/VisitRegistration";
 import ToastContainer from "./components/ui/toast/ToastContainer";
 
 // ============================================================================
@@ -204,8 +206,8 @@ import Period from "./pages/Period/period";
 import CareersPage from "./pages/Careers/careers";
 import CrudExample from "./pages/Management/CrudExample";
 
-// Vercel Analytics
-import { Analytics } from "@vercel/analytics/react"
+// Vercel Analytics removed because of missing dependency
+// import { Analytics } from "@vercel/analytics/react"
 
 /**
  * Componente raíz de la aplicación React
@@ -224,7 +226,7 @@ import { Analytics } from "@vercel/analytics/react"
 export default function App() {
   return (
     <>
-      <Analytics />
+      {/* <Analytics /> */}
       <ToastContainer />
       {/* 
         Router principal de la aplicación
@@ -288,6 +290,10 @@ export default function App() {
 
             {/* {Inscripción} */}
             <Route path="/enrollment" element={<EnrollmentPage />} />
+
+            {/* {Seguimiento} */}
+            <Route path="/tracking" element={<TrackingPage />} />
+            <Route path="/tracking/visits/:id" element={<VisitRegistration />} />
 
             {/* ================================================================
                SECCIÓN: FORMULARIOS

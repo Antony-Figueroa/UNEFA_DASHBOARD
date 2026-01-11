@@ -47,6 +47,8 @@ export const FullScreenLoader: React.FC<LoaderProps> = (props) => {
   );
 };
 
+export default FullScreenLoader;
+
 export const InlineLoader: React.FC<LoaderProps & { text?: string }> = ({
   text,
   ...props

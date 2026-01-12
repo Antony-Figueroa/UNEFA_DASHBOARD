@@ -1,7 +1,11 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager';
+import { cacheManager } from '../lib/cache-manager';
 
 const TABLE_NAME = 't_professional_practices';
+const CACHE_PREFIX = 'enrollments:';
+const CACHE_TTL = 300000; // 5 minutes for enrollments
+const ENROLLMENT_COLUMNS = 'PROFESSIONAL_PRACTICE_ID, START_DATE, END_DATE, REPORT_TITLE, REGISTRATION_DATE, GRADE, PRACTICES_STATUS, TRANSFER, TOUR, PERIOD_ID, INSTITUTION_ID, STUDENTS_ID, STATUS, MANAGER_ID, OBSERVATION, ENROLLMENT, INTERSHIP_STATUS, INTERNSHIP_TYPE_ID';
 
 const handleDbError = (res: Response, error: unknown) => {
   console.error('Database Error:', error);
@@ -73,12 +77,18 @@ interface ProfessionalPractice {
 }
 
 export const getEnrollments = async (req: Request, res: Response) => {
+  const cacheKey = `${CACHE_PREFIX}list`;
+  const cachedData = cacheManager.get(cacheKey);
+  if (cachedData) {
+    return res.json(cachedData);
+  }
+
   try {
     const data = await dbManager.withRetry(async (supabase) => {
       const { data, error } = await supabase
         .from(TABLE_NAME)
         .select(`
-          *,
+          ${ENROLLMENT_COLUMNS},
           t_students (
             STUDENTS_CI,
             NAME,
@@ -102,7 +112,7 @@ export const getEnrollments = async (req: Request, res: Response) => {
 
       if (error) throw error;
       return (data as unknown) as ProfessionalPractice[];
-    });
+    }, 'getEnrollments');
 
     // Mapear datos al formato que espera el frontend
     const mappedData = data.map((item: ProfessionalPractice) => {
@@ -132,6 +142,7 @@ export const getEnrollments = async (req: Request, res: Response) => {
       };
     });
 
+    cacheManager.set(cacheKey, mappedData, CACHE_TTL);
     res.json(mappedData);
   } catch (error) {
     handleDbError(res, error);
@@ -231,7 +242,10 @@ export const createEnrollment = async (req: Request, res: Response) => {
       if (tutorsError) throw tutorsError;
 
       return practice;
-    });
+    }, 'createEnrollment');
+
+    // Invalidar caché
+    cacheManager.deleteByPrefix(CACHE_PREFIX);
 
     res.status(201).json(result);
   } catch (error) {
@@ -313,7 +327,10 @@ export const updateEnrollment = async (req: Request, res: Response) => {
       }
 
       return practice;
-    });
+    }, 'updateEnrollment');
+
+    // Invalidar caché
+    cacheManager.deleteByPrefix(CACHE_PREFIX);
 
     res.json(result);
   } catch (error) {
@@ -331,7 +348,11 @@ export const deleteEnrollment = async (req: Request, res: Response) => {
         .eq('PROFESSIONAL_PRACTICE_ID', id);
 
       if (error) throw error;
-    });
+    }, 'deleteEnrollment');
+
+    // Invalidar caché
+    cacheManager.deleteByPrefix(CACHE_PREFIX);
+
     res.status(204).send();
   } catch (error) {
     handleDbError(res, error);

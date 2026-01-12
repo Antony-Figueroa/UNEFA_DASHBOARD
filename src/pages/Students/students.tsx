@@ -21,6 +21,8 @@ import StudentViewModal from "../../features/students/components/StudentViewModa
 import { useStudents } from "../../features/students/hooks/useStudents";
 import { Student, StudentRowData } from "../../features/students/types";
 import { useCareers } from "../../features/careers/hooks/useCareers";
+import { useLists } from "../../features/lists/hooks/useLists";
+import { ListValue } from "../../features/lists/types";
 import { formatDateTime } from "../../utils/date";
 
 /**
@@ -35,13 +37,29 @@ const formatStudentToRow = (s: Student): StudentRowData => ({
 
 export default function StudentsPage() {
     const [pageLoading, setPageLoading] = useState(true);
+    const { fetchMultipleLists } = useLists();
+    const [dynamicLists, setDynamicLists] = useState<Record<string, ListValue[]>>({});
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setPageLoading(false);
-        }, 500);
-        return () => clearTimeout(timer);
-    }, []);
+        const loadLists = async () => {
+            try {
+                const lists = await fetchMultipleLists([
+                    "Sexo",
+                    "Registro Civil",
+                    "Regimen/Turno",
+                    "Tipo de estudiante",
+                    "Trabajo",
+                    "Rango Militar"
+                ]);
+                setDynamicLists(lists);
+            } catch (error) {
+                console.error("Error loading dynamic lists:", error);
+            } finally {
+                setPageLoading(false);
+            }
+        };
+        loadLists();
+    }, [fetchMultipleLists]);
 
     const {
         students,
@@ -62,6 +80,8 @@ export default function StudentsPage() {
         [careers]);
 
     const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [viewStudent, setViewStudent] = useState<StudentRowData | null>(null);
@@ -78,6 +98,7 @@ export default function StudentsPage() {
     const [confirmation, setConfirmation] = useState<ConfirmationInfo | null>(null);
 
     const filtered = useMemo(() => {
+        if (!Array.isArray(students)) return [];
         const byStatus = students.filter((s) => (activeTab === "Activas" ? s.status : !s.status));
         return byStatus.map(formatStudentToRow);
     }, [students, activeTab]);
@@ -88,8 +109,8 @@ export default function StudentsPage() {
     };
 
     const handleEdit = (row: StudentRowData) => {
-        const original = students.find((s) => s.studentId === row.studentId) || null;
-        setEditingStudent(original);
+        const original = Array.isArray(students) ? students.find((s) => s.studentId === row.studentId) : null;
+        setEditingStudent(original || null);
         setIsModalOpen(true);
     };
 
@@ -119,7 +140,7 @@ export default function StudentsPage() {
     };
 
     const handleToggleStatus = (studentId: string) => {
-        const original = students.find((s) => s.studentId === studentId);
+        const original = Array.isArray(students) ? students.find((s) => s.studentId === studentId) : null;
         if (!original) return;
         const goingInactive = original.status === true;
         setConfirmation({
@@ -147,7 +168,11 @@ export default function StudentsPage() {
             onConfirm: async () => {
                 try {
                     await bulkRemoveStudents(ids);
-                } catch (e) { console.error(e); }
+                    setSelectedIds([]);
+                } catch (e) {
+                    console.error(e);
+                    setSelectedIds([]); // Ocultar botón incluso en caso de error según requisito 2
+                }
                 finally { setConfirmation(null); }
             },
             confirmText: "Confirmar",
@@ -163,7 +188,11 @@ export default function StudentsPage() {
             onConfirm: async () => {
                 try {
                     await bulkRestoreStudents(ids);
-                } catch (e) { console.error(e); }
+                    setSelectedIds([]);
+                } catch (e) {
+                    console.error(e);
+                    setSelectedIds([]); // Ocultar botón incluso en caso de error según requisito 2
+                }
                 finally { setConfirmation(null); }
             },
             confirmText: "Restaurar",
@@ -234,6 +263,8 @@ export default function StudentsPage() {
                                 onView={setViewStudent}
                                 onBulkDelete={handleBulkDelete}
                                 onBulkRestore={handleBulkRestore}
+                                selectedIds={selectedIds}
+                                onSelectionChange={setSelectedIds}
                                 inactiveMode={activeTab === "Inactivas"}
                                 careerOptions={careerOptions}
                                 loading={loadingAction}
@@ -246,9 +277,10 @@ export default function StudentsPage() {
                         onClose={() => setIsModalOpen(false)}
                         onSave={handleSave}
                         editingStudent={editingStudent}
-                        careerOptions={careerOptions}
-                        isLoading={loadingAction}
-                    />
+                careerOptions={careerOptions}
+                dynamicLists={dynamicLists}
+                isLoading={loadingAction}
+            />
 
                     <StudentViewModal
                         isOpen={!!viewStudent}

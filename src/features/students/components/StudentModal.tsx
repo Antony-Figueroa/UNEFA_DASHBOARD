@@ -5,9 +5,12 @@ import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Student } from "../types";
+import { ListValue } from "../../lists/types";
 import Button from "../../../components/ui/button/Button";
 import Select from "../../../components/form/Select";
 import FlatpickrDatePicker from "../../../components/form/FlatpickrDatePicker";
+import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
+import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 
 interface StudentModalProps {
   isOpen: boolean;
@@ -15,6 +18,7 @@ interface StudentModalProps {
   onSave: (student: Omit<Student, "studentId" | "enrollmentDate">) => void;
   editingStudent?: Student | null;
   careerOptions: { value: string | number; label: string }[];
+  dynamicLists?: Record<string, ListValue[]>;
   isLoading?: boolean;
 }
 
@@ -42,6 +46,7 @@ const studentSchema = z.object({
     .min(1, "El teléfono es obligatorio")
     .regex(/^\d+$/, "Solo se admiten números"),
   email: z.string().email("Email inválido").min(1, "El email es obligatorio"),
+  address: z.string().min(1, "La dirección es obligatoria"),
   careerId: z.union([z.string(), z.number()]).refine(val => String(val).length > 0, "La carrera es obligatoria"),
   semester: z.string()
     .min(1, "El semestre es obligatorio")
@@ -63,6 +68,7 @@ export default function StudentModal({
   onSave,
   editingStudent,
   careerOptions,
+  dynamicLists = {},
   isLoading = false,
 }: StudentModalProps) {
   const {
@@ -72,7 +78,7 @@ export default function StudentModal({
     reset,
     watch,
     setValue,
-    formState: { errors, isSubmitted },
+    formState: { errors, isSubmitted, isDirty },
   } = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
     defaultValues: {
@@ -87,6 +93,7 @@ export default function StudentModal({
       civilStatus: "",
       phone: "",
       email: "",
+      address: "",
       careerId: "",
       semester: "",
       section: "",
@@ -97,13 +104,20 @@ export default function StudentModal({
     },
   });
 
+  const {
+    showConfirmation,
+    handleCloseAttempt,
+    confirmClose,
+    cancelClose,
+  } = useUnsavedChanges(isDirty, onClose);
+
   const studentType = watch("studentType");
 
   useEffect(() => {
     if (studentType === "CIVIL") {
       setValue("militaryRank", "NO APLICA");
     } else if (studentType === "MILITAR") {
-      // Si es militar y el rango es "NO APLICA", limpiamos para que el usuario elija
+      // Si cambia a militar y estaba en "NO APLICA", limpiamos para que el usuario elija un rango
       if (watch("militaryRank") === "NO APLICA") {
         setValue("militaryRank", "");
       }
@@ -125,6 +139,7 @@ export default function StudentModal({
           civilStatus: editingStudent.civilStatus,
           phone: editingStudent.phone,
           email: editingStudent.email,
+          address: editingStudent.address,
           careerId: editingStudent.careerId,
           semester: editingStudent.semester,
           section: editingStudent.section,
@@ -146,6 +161,7 @@ export default function StudentModal({
           civilStatus: "",
           phone: "",
           email: "",
+          address: "",
           careerId: "",
           semester: "",
           section: "",
@@ -173,24 +189,25 @@ export default function StudentModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} showCloseButton>
-      <ModalHeader>
-        <div className="max-w-4xl mx-auto w-full">
-          <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-            {editingStudent ? "Editar Estudiante" : "Registrar Estudiante"}
-          </h5>
-          <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
-            {editingStudent ? "Modifica los detalles del estudiante." : "Ingresa los detalles del nuevo estudiante."}
-          </p>
-        </div>
-      </ModalHeader>
+    <>
+      <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton>
+        <ModalHeader>
+          <div className="max-w-4xl mx-auto w-full">
+            <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+              {editingStudent ? "Editar Estudiante" : "Registrar Estudiante"}
+            </h5>
+            <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
+              {editingStudent ? "Modifica los detalles del estudiante." : "Ingresa los detalles del nuevo estudiante."}
+            </p>
+          </div>
+        </ModalHeader>
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
         <form id="student-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
             {/* Fila 1 */}
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Cédula *</label>
+              <label htmlFor="identificationPrefix" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Cédula *</label>
               <div className="flex gap-2">
                 <div className="w-24">
                   <Controller
@@ -198,6 +215,7 @@ export default function StudentModal({
                     control={control}
                     render={({ field }) => (
                       <Select
+                        id="identificationPrefix"
                         options={[
                           { value: "V", label: "V-" },
                           { value: "E", label: "E-" },
@@ -258,13 +276,14 @@ export default function StudentModal({
               />
             </div>
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Sexo *</label>
+              <label htmlFor="sex" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Sexo *</label>
               <Controller
                 name="sex"
                 control={control}
                 render={({ field }) => (
                   <Select
-                    options={[
+                    id="sex"
+                    options={dynamicLists["Sexo"]?.map(v => ({ value: v.name, label: v.name })) || [
                       { value: "FEMENINO", label: "FEMENINO" },
                       { value: "MASCULINO", label: "MASCULINO" },
                       { value: "OTRO", label: "OTRO" },
@@ -311,13 +330,14 @@ export default function StudentModal({
               )}
             </div>
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Estado Civil *</label>
+              <label htmlFor="civilStatus" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Estado Civil *</label>
               <Controller
                 name="civilStatus"
                 control={control}
                 render={({ field }) => (
                   <Select
-                    options={[
+                    id="civilStatus"
+                    options={dynamicLists["Registro Civil"]?.map(v => ({ value: v.name, label: v.name })) || [
                       { value: "SOLTERO", label: "SOLTERO" },
                       { value: "CASADO", label: "CASADO" },
                       { value: "DIVORCIADO", label: "DIVORCIADO" },
@@ -355,12 +375,13 @@ export default function StudentModal({
               />
             </div>
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Carrera *</label>
+              <label htmlFor="careerId" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Carrera *</label>
               <Controller
                 name="careerId"
                 control={control}
                 render={({ field }) => (
                   <Select
+                    id="careerId"
                     options={careerOptions.map((opt) => ({ ...opt, value: String(opt.value) }))}
                     placeholder="Seleccione Carrera"
                     onChange={field.onChange}
@@ -394,13 +415,14 @@ export default function StudentModal({
               />
             </div>
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Régimen *</label>
+              <label htmlFor="regime" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Régimen *</label>
               <Controller
                 name="regime"
                 control={control}
                 render={({ field }) => (
                   <Select
-                    options={[
+                    id="regime"
+                    options={dynamicLists["Regimen/Turno"]?.map(v => ({ value: v.name, label: v.name })) || [
                       { value: "DIURNO", label: "DIURNO" },
                       { value: "NOCTURNO", label: "NOCTURNO" },
                       { value: "MIXTO", label: "MIXTO" },
@@ -416,13 +438,14 @@ export default function StudentModal({
               )}
             </div>
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Tipo Estudiante *</label>
+              <label htmlFor="studentType" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Tipo Estudiante *</label>
               <Controller
                 name="studentType"
                 control={control}
                 render={({ field }) => (
                   <Select
-                    options={[
+                    id="studentType"
+                    options={dynamicLists["Tipo de estudiante"]?.map(v => ({ value: v.name, label: v.name })) || [
                       { value: "CIVIL", label: "CIVIL" },
                       { value: "MILITAR", label: "MILITAR" },
                     ]}
@@ -439,37 +462,50 @@ export default function StudentModal({
 
             {/* Fila 6 */}
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Rango Militar *</label>
+              <label htmlFor="militaryRank" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Rango Militar *</label>
               <Controller
                 name="militaryRank"
                 control={control}
-                render={({ field }) => (
-                  <Select
-                    options={[
-                      { value: "NO APLICA", label: "NO APLICA" },
-                      { value: "SOLDADO", label: "SOLDADO" },
-                      { value: "CABO", label: "CABO" },
-                      { value: "SARGENTO", label: "SARGENTO" },
-                    ]}
-                    placeholder="Seleccione Rango Militar"
-                    onChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={studentType === "CIVIL"}
-                  />
-                )}
+                render={({ field }) => {
+                  const allOptions = dynamicLists["Rango Militar"]?.map(v => ({ value: v.name, label: v.name })) || [
+                    { value: "NO APLICA", label: "NO APLICA" },
+                    { value: "SOLDADO", label: "SOLDADO" },
+                    { value: "CABO", label: "CABO" },
+                    { value: "SARGENTO", label: "SARGENTO" },
+                  ];
+
+                  const filteredOptions = allOptions.filter(opt => {
+                    if (studentType === "CIVIL") return opt.value === "NO APLICA";
+                    if (studentType === "MILITAR") return opt.value !== "NO APLICA";
+                    return true;
+                  });
+
+                  return (
+                    <Select
+                      id="militaryRank"
+                      options={filteredOptions}
+                      placeholder="Seleccione Rango Militar"
+                      onChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={studentType === "CIVIL"}
+                      className={studentType === "CIVIL" ? "bg-bg-secondary cursor-not-allowed opacity-70" : ""}
+                    />
+                  );
+                }}
               />
               {isSubmitted && errors.militaryRank && (
                 <p className="mt-1 text-xs text-red-500">{errors.militaryRank.message}</p>
               )}
             </div>
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Trabaja *</label>
+              <label htmlFor="works" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Trabaja *</label>
               <Controller
                 name="works"
                 control={control}
                 render={({ field }) => (
                   <Select
-                    options={[
+                    id="works"
+                    options={dynamicLists["Trabajo"]?.map(v => ({ value: v.name, label: v.name })) || [
                       { value: "SI", label: "SI" },
                       { value: "NO", label: "NO" },
                     ]}
@@ -483,13 +519,24 @@ export default function StudentModal({
                 <p className="mt-1 text-xs text-red-500">{errors.works.message}</p>
               )}
             </div>
+
+            {/* Fila 7 */}
+            <div className="col-span-2">
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Dirección *</label>
+              <Input
+                {...register("address")}
+                placeholder="Ingrese la dirección completa de habitación"
+                error={!!errors.address}
+                hint={isSubmitted ? errors.address?.message : undefined}
+              />
+            </div>
           </div>
         </form>
       </ModalBody>
 
       <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
         <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-6xl mx-auto">
-          <Button variant="outline" onClick={onClose} disabled={isLoading} className="w-full sm:w-auto min-h-12">
+          <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
           <Button type="submit" form="student-form" loading={isLoading} className="w-full sm:w-auto min-h-12">
@@ -498,5 +545,17 @@ export default function StudentModal({
         </div>
       </ModalFooter>
     </Modal>
-  );
+
+    <UnifiedDialog
+      isOpen={showConfirmation}
+      onClose={cancelClose}
+      onConfirm={confirmClose}
+      variant="warning"
+      title="Cambios no guardados"
+      message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
+      confirmLabel="Cerrar sin guardar"
+      cancelLabel="Continuar editando"
+    />
+  </>
+);
 }

@@ -8,11 +8,19 @@ import apiClient from "../../../api/apiClient";
 
 const API_URL = "/students";
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 /**
  * Obtiene la lista de estudiantes desde la API.
  */
-export const getStudents = async (): Promise<Student[]> => {
-  const response = await apiClient.get<Student[]>(API_URL);
+export const getStudents = async (): Promise<PaginatedResponse<Student>> => {
+  const response = await apiClient.get<PaginatedResponse<Student>>(API_URL);
   return response.data;
 };
 

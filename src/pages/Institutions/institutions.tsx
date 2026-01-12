@@ -12,7 +12,6 @@ import ComponentCard from "../../components/common/ComponentCard";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
-import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { Tabs } from "../../components/ui/tabs/Tabs";
 import { PlusCircleIcon } from "../../icons/actions";
@@ -210,8 +209,6 @@ export default function InstitutionsPage() {
         <PageBreadcrumb pageTitle="Instituciones" />
       </SkeletonLoader>
 
-      {loadingAction && <FullScreenLoader label="Procesando..." />}
-
       <div className="stagger-delay">
         {/* Banner de Título */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -302,12 +299,17 @@ export default function InstitutionsPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={async (data) => {
-          if (editingInst) {
-            await editInstitution({ ...editingInst, ...data });
-          } else {
-            await addInstitution(data);
+          try {
+            if (editingInst) {
+              await editInstitution({ ...editingInst, ...data });
+            } else {
+              await addInstitution(data);
+            }
+            setIsModalOpen(false);
+          } catch (error) {
+            console.error("Error saving institution:", error);
+            // El error ya debería ser manejado por el hook useInstitutions (mostrando un toast, etc.)
           }
-          setIsModalOpen(false);
         }}
         editingInst={editingInst}
         careerOptions={careerOptions}
@@ -318,12 +320,16 @@ export default function InstitutionsPage() {
         isOpen={isRespModalOpen}
         onClose={() => setIsRespModalOpen(false)}
         onSave={async (data) => {
-          if (editingResp) {
-            await editResponsible({ ...editingResp, ...data } as InstitutionalResponsible);
-          } else {
-            await addResponsible(data as Omit<InstitutionalResponsible, "responsibleId" | "registrationDate">);
+          try {
+            if (editingResp) {
+              await editResponsible({ ...editingResp, ...data } as InstitutionalResponsible);
+            } else {
+              await addResponsible(data as Omit<InstitutionalResponsible, "responsibleId" | "registrationDate">);
+            }
+            setIsRespModalOpen(false);
+          } catch (error) {
+            console.error("Error saving responsible:", error);
           }
-          setIsRespModalOpen(false);
         }}
         editingResp={editingResp}
         institutionOptions={institutionOptions}

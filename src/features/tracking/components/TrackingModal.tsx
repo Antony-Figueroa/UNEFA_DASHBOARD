@@ -15,6 +15,8 @@ import TextArea from '../../../components/form/input/TextArea';
 import Select from '../../../components/form/Select';
 import { useStudents } from '../../students/hooks/useStudents';
 import { useNavigate } from 'react-router';
+import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
+import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
 
 interface TrackingModalProps {
     isOpen: boolean;
@@ -40,7 +42,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
     const { students } = useStudents();
     const [isEditing, setIsEditing] = useState(false);
     
-    const { register, handleSubmit, formState: { errors }, reset, watch, setValue, control } = useForm<TrackingFormData>({
+    const { register, handleSubmit, formState: { errors, isDirty }, reset, watch, setValue, control } = useForm<TrackingFormData>({
         resolver: zodResolver(trackingSchema),
         defaultValues: {
             studentIdNumber: '',
@@ -52,12 +54,19 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
         },
     });
 
+    const {
+        showConfirmation,
+        handleCloseAttempt,
+        confirmClose,
+        cancelClose,
+    } = useUnsavedChanges(isDirty, onClose);
+
     const studentIdNumber = watch('studentIdNumber');
     const isNew = !tracking;
 
     // Autocompletado del nombre basado en la cédula
     useEffect(() => {
-        if (studentIdNumber) {
+        if (studentIdNumber && Array.isArray(students)) {
             const student = students.find(s => s.identificationNumber === studentIdNumber);
             if (student) {
                 setValue('studentName', `${student.firstName} ${student.lastName}`);
@@ -92,16 +101,20 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
     }, [tracking, isOpen, reset]);
 
     const onSubmit: SubmitHandler<TrackingFormData> = (data) => {
-        const formattedData = {
-            ...data,
+        const formattedData: Omit<Tracking, 'trackingId' | 'creationDate'> = {
+            studentIdNumber: data.studentIdNumber,
+            studentName: data.studentName,
+            reportTitle: data.reportTitle,
             transfer: data.transfer === 'true',
+            route: data.route,
+            observations: data.observations || '',
             status: true,
         };
         
         if (tracking) {
-            onSave({ ...tracking, ...formattedData } as Tracking);
+            onSave({ ...tracking, ...formattedData });
         } else {
-            onSave(formattedData as any);
+            onSave(formattedData);
         }
         setIsEditing(false);
     };
@@ -118,8 +131,9 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
     const isDisabled = !isEditing && !!tracking;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose}>
-            <ModalHeader>
+        <>
+            <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton>
+                <ModalHeader>
                 {isNew ? 'Nuevo Seguimiento' : isEditing ? 'Editar Seguimiento' : 'Detalles de Seguimiento'}
             </ModalHeader>
             <form onSubmit={handleSubmit(onSubmit)}>
@@ -233,7 +247,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                             </Button>
                         ) : (
                             <>
-                                <Button type="button" variant="outline" onClick={onClose}>
+                                <Button type="button" variant="outline" onClick={handleCloseAttempt}>
                                     Cancelar
                                 </Button>
                                 <Button type="submit" loading={isLoading}>
@@ -245,5 +259,17 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                 </ModalFooter>
             </form>
         </Modal>
-    );
+
+        <UnifiedDialog
+            isOpen={showConfirmation}
+            onClose={cancelClose}
+            onConfirm={confirmClose}
+            variant="warning"
+            title="Cambios no guardados"
+            message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
+            confirmLabel="Cerrar sin guardar"
+            cancelLabel="Continuar editando"
+        />
+    </>
+);
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { DropdownPortal } from "../../../components/ui/dropdown/DropdownPortal";
 import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
@@ -26,6 +26,8 @@ interface StudentTableProps {
     onView?: (student: StudentRowData) => void;
     onBulkDelete?: (ids: string[]) => void;
     onBulkRestore?: (ids: string[]) => void;
+    selectedIds?: string[];
+    onSelectionChange?: (ids: string[]) => void;
     inactiveMode?: boolean;
     activeTab?: "Activas" | "Inactivas";
     careerOptions?: { value: string | number; label: string }[];
@@ -44,6 +46,8 @@ export default function StudentTable({
     onView,
     onBulkDelete,
     onBulkRestore,
+    selectedIds: controlledSelectedIds,
+    onSelectionChange,
     inactiveMode = false,
     activeTab = "Activas",
     careerOptions = [],
@@ -59,7 +63,29 @@ export default function StudentTable({
     const [openRowId, setOpenRowId] = useState<string | number | null>(null);
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    // Internal state for selection if not controlled from outside
+    const [internalSelectedIds, setInternalSelectedIds] = useState<string[]>([]);
+    
+    // Derived values to handle controlled/uncontrolled state
+    const selectedIds = controlledSelectedIds !== undefined ? controlledSelectedIds : internalSelectedIds;
+    
+    // Ref to keep track of selectedIds without triggering re-renders in callbacks
+    const selectedIdsRef = useRef(selectedIds);
+    useEffect(() => {
+        selectedIdsRef.current = selectedIds;
+    }, [selectedIds]);
+
+    const setSelectedIds = useCallback((ids: string[] | ((prev: string[]) => string[])) => {
+        if (onSelectionChange) {
+            if (typeof ids === "function") {
+                onSelectionChange(ids(selectedIdsRef.current));
+            } else {
+                onSelectionChange(ids);
+            }
+        } else {
+            setInternalSelectedIds(ids);
+        }
+    }, [onSelectionChange]);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; order: SortOrder }>({
         key: "lastName",
@@ -74,7 +100,7 @@ export default function StudentTable({
         setSelectedIds([]);
         // Reset filters when changing tabs? User didn't specify, but usually good.
         // For now let's keep them as requested.
-    }, [activeTab]);
+    }, [activeTab, setSelectedIds]);
 
     const filteredData = useMemo(() => {
         const idSearch = debouncedIdFilter.trim().toLowerCase();
@@ -442,8 +468,11 @@ export default function StudentTable({
 
                                             <DropdownPortal
                                                 isOpen={openRowId === (s.studentId ?? index)}
-                                                onClose={() => setOpenRowId(null)}
-                                                anchorRef={{ current: anchorEl as HTMLElement }}
+                                                onClose={() => {
+                                                    setOpenRowId(null);
+                                                    setAnchorEl(null);
+                                                }}
+                                                anchorEl={anchorEl}
                                                 className="min-w-44"
                                             >
                                                 {onView && (

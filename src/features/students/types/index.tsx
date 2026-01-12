@@ -23,6 +23,7 @@ export interface Student {
   civilStatus: "SOLTERO" | "CASADO" | "DIVORCIADO" | "VIUDO"; // Estado Civil
   phone: string; // Teléfono (ej: 0426-1234567)
   email: string; // Correo Electrónico
+  address: string; // Dirección de Habitación
 
   // Datos Académicos
   careerId: string; // ID de la carrera asociada

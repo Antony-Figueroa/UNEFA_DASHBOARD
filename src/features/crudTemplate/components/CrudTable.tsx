@@ -488,8 +488,11 @@ export function CrudTable<TItem extends { id: string }>({
 
                         <DropdownPortal
                           isOpen={openRowId === item.id}
-                          onClose={() => setOpenRowId(null)}
-                          anchorRef={{ current: anchorEl as HTMLElement }}
+                          onClose={() => {
+                            setOpenRowId(null);
+                            setAnchorEl(null);
+                          }}
+                          anchorEl={anchorEl}
                           className="min-w-44"
                         >
                           {rowActions.map((action) => {

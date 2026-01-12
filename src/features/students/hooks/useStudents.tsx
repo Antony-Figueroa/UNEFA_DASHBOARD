@@ -37,12 +37,15 @@ export const useStudents = () => {
   const refreshStudents = useCallback(async () => {
     setStatus("loading");
     try {
-      const data = await studentsService.getStudents();
-      setStudents(data);
+      const response = await studentsService.getStudents();
+      // Validamos que response.data sea un array antes de asignarlo
+      const studentsArray = Array.isArray(response.data) ? response.data : [];
+      setStudents(studentsArray);
       setStatus("success");
     } catch (e) {
       console.error("Error loading students:", e);
       setStatus("error");
+      setStudents([]); // Aseguramos que sea un array en caso de error
     }
   }, []);
 

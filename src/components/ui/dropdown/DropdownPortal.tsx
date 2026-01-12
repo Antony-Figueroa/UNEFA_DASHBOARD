@@ -5,34 +5,41 @@ import { createPortal } from "react-dom";
 interface DropdownPortalProps {
   isOpen: boolean;
   onClose: () => void;
-  anchorRef: React.RefObject<HTMLElement>;
+  anchorEl: HTMLElement | null;
   children: React.ReactNode;
   className?: string;
 }
 
 /**
  * Renderiza el menú como portal en `document.body` para evitar clipping por overflow.
- * Posiciona el menú de forma absoluta respecto al elemento disparador (anchorRef).
+ * Posiciona el menú de forma absoluta respecto al elemento disparador (anchorEl).
  */
 export const DropdownPortal: React.FC<DropdownPortalProps> = ({
   isOpen,
   onClose,
-  anchorRef,
+  anchorEl,
   children,
   className = "",
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
-  const [style, setStyle] = useState<React.CSSProperties>({ display: "none" });
+  const [style, setStyle] = useState<React.CSSProperties>({ 
+    display: "none",
+    position: "absolute",
+    zIndex: 50,
+    transform: "translateX(-100%)"
+  });
 
   // Cerrar al hacer click fuera y con Escape
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       if (
         menuRef.current &&
         !menuRef.current.contains(target) &&
-        anchorRef?.current &&
-        !anchorRef.current.contains(target)
+        anchorEl &&
+        !anchorEl.contains(target)
       ) {
         onClose();
       }
@@ -46,25 +53,36 @@ export const DropdownPortal: React.FC<DropdownPortalProps> = ({
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEsc);
     };
-  }, [onClose, anchorRef]);
+  }, [onClose, anchorEl, isOpen]);
 
   // Calcular posición cada vez que abre, y cuando se hace resize/scroll
   useLayoutEffect(() => {
+    if (!isOpen || !anchorEl) {
+      setStyle(prev => {
+        if (prev.display === "none") return prev;
+        return { ...prev, display: "none" };
+      });
+      return;
+    }
+
     const updatePosition = () => {
-      const anchor = anchorRef?.current;
-      if (!anchor || !isOpen) return;
-      const rect = anchor.getBoundingClientRect();
-      // bottom-end respecto al viewport, sumando scroll para posición absoluta en body
-      const top = rect.bottom + window.scrollY + 8; // 8px de separación
-      const left = rect.right + window.scrollX; // alineamos al borde derecho del anchor
-      setStyle({
-        position: "absolute",
-        top,
-        left,
-        transform: "translateX(-100%)",
-        zIndex: 50,
+      const rect = anchorEl.getBoundingClientRect();
+      const top = Math.round(rect.bottom + window.scrollY + 8); // 8px de separación
+      const left = Math.round(rect.right + window.scrollX); // alineamos al borde derecho del anchor
+      
+      setStyle(prev => {
+        if (prev.top === top && prev.left === left && prev.display === "block") {
+          return prev;
+        }
+        return {
+          ...prev,
+          display: "block",
+          top,
+          left,
+        };
       });
     };
+
     updatePosition();
     window.addEventListener("resize", updatePosition);
     window.addEventListener("scroll", updatePosition, true);
@@ -72,7 +90,7 @@ export const DropdownPortal: React.FC<DropdownPortalProps> = ({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [isOpen, anchorRef]);
+  }, [isOpen, anchorEl]);
 
   if (!isOpen) return null;
 

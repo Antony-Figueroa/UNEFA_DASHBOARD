@@ -75,6 +75,10 @@ export default function StudentViewModal({
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Email</label>
                                 <p className="text-sm text-text-primary dark:text-white/90 break-all">{student.email}</p>
                             </div>
+                            <div className="col-span-full">
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Dirección de Habitación</label>
+                                <p className="text-sm text-text-primary dark:text-white/90">{student.address || "-"}</p>
+                            </div>
                         </div>
                     </div>
 

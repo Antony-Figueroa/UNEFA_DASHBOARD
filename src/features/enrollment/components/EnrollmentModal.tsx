@@ -7,6 +7,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/
 import { Enrollment } from "../types";
 import Button from "../../../components/ui/button/Button";
 import Select from "../../../components/form/Select";
+import { Student } from "../../students/types";
 import { getStudents } from "../../students/services/studentsService";
 import { getPeriods } from "../../periods/services/periodService";
 import { getTutors } from "../../tutors/services/tutorsService";
@@ -17,10 +18,13 @@ import { getPreEnrollments } from "../../pre-enrollment/services/preEnrollmentSe
 import { Periodo } from "../../periods/types";
 import { Tutor } from "../../tutors/types";
 import { Institution } from "../../institutions/types";
+import { PreEnrollment } from "../../pre-enrollment/types";
 import { InfoIcon } from "../../../icons";
 import { createPortal } from "react-dom";
 import { getInternshipTypesByCareer, getInternshipTypes, mapToOptions } from "../../internship-types/services/internshipTypesService";
 import { InternshipTypeOption } from "../../internship-types/types";
+import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
+import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 
 interface EnrollmentModalProps {
   isOpen: boolean;
@@ -73,7 +77,7 @@ export default function EnrollmentModal({
     control,
     reset,
     setValue,
-    formState: { errors, isSubmitted },
+    formState: { errors, isSubmitted, isDirty },
   } = useForm<EnrollmentFormData>({
     resolver: zodResolver(enrollmentSchema),
     defaultValues: {
@@ -89,6 +93,13 @@ export default function EnrollmentModal({
       institutionResponsibleId: "",
     },
   });
+
+  const {
+    showConfirmation,
+    handleCloseAttempt,
+    confirmClose,
+    cancelClose,
+  } = useUnsavedChanges(isDirty, onClose);
 
   const idNumber = useWatch({ control, name: "identificationNumber" });
   const idPrefix = useWatch({ control, name: "identificationPrefix" });
@@ -162,12 +173,12 @@ export default function EnrollmentModal({
         getCareers(),
       ]);
 
-      const student = students.find(
-        s => s.identificationPrefix === prefix && s.identificationNumber === number
+      const student = students.data.find(
+        (s: Student) => s.identificationPrefix === prefix && s.identificationNumber === number
       );
 
       const preEnrollment = preEnrollments.find(
-        p => p.identificationPrefix === prefix && p.identificationNumber === number && p.status
+        (p: PreEnrollment) => p.identificationPrefix === prefix && p.identificationNumber === number && p.status
       );
 
       if (!preEnrollment) {
@@ -320,8 +331,9 @@ export default function EnrollmentModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} showCloseButton>
-      <ModalHeader>
+    <>
+      <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton>
+        <ModalHeader>
         <div className="max-w-4xl mx-auto w-full">
           <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
             {editingEntry ? "Editar Inscripción" : "Nueva Inscripción"}
@@ -563,7 +575,7 @@ export default function EnrollmentModal({
 
       <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
         <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-6xl mx-auto">
-          <Button variant="outline" onClick={onClose} disabled={isLoading} className="w-full sm:w-auto min-h-12">
+          <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
           <Button type="submit" form="enrollment-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!!preEnrollmentError}>
@@ -572,5 +584,17 @@ export default function EnrollmentModal({
         </div>
       </ModalFooter>
     </Modal>
-  );
+
+    <UnifiedDialog
+      isOpen={showConfirmation}
+      onClose={cancelClose}
+      onConfirm={confirmClose}
+      variant="warning"
+      title="Cambios no guardados"
+      message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
+      confirmLabel="Cerrar sin guardar"
+      cancelLabel="Continuar editando"
+    />
+  </>
+);
 }

@@ -12,6 +12,8 @@ import Input from "../../../components/form/input/InputField";
 import Select from "../../../components/form/Select";
 import Button from "../../../components/ui/button/Button";
 import { InstitutionalResponsible } from "../types";
+import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
+import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 
 const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
 
@@ -70,7 +72,7 @@ export default function InstitutionalResponsibleModal({
     handleSubmit,
     control,
     reset,
-    formState: { errors, isSubmitted },
+    formState: { errors, isSubmitted, isDirty },
   } = useForm<RespFormData>({
     resolver: zodResolver(respSchema),
     defaultValues: {
@@ -86,6 +88,13 @@ export default function InstitutionalResponsibleModal({
       institutionId: "",
     },
   });
+
+  const {
+    showConfirmation,
+    handleCloseAttempt,
+    confirmClose,
+    cancelClose,
+  } = useUnsavedChanges(isDirty, onClose);
 
   useEffect(() => {
     if (isOpen) {
@@ -143,11 +152,12 @@ export default function InstitutionalResponsibleModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl">
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
-        <ModalHeader>
-          {editingResp ? "Editar Responsable" : "Nuevo Responsable"}
-        </ModalHeader>
+    <>
+      <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} className="max-w-4xl" showCloseButton>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
+          <ModalHeader>
+            {editingResp ? "Editar Responsable" : "Nuevo Responsable"}
+          </ModalHeader>
 
         <ModalBody>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
@@ -305,7 +315,7 @@ export default function InstitutionalResponsibleModal({
         <ModalFooter>
           <Button 
             variant="outline" 
-            onClick={onClose} 
+            onClick={handleCloseAttempt} 
             type="button" 
             className="min-h-12 px-8 rounded-xl font-bold"
             disabled={isLoading}
@@ -323,5 +333,17 @@ export default function InstitutionalResponsibleModal({
         </ModalFooter>
       </form>
     </Modal>
-  );
+
+    <UnifiedDialog
+      isOpen={showConfirmation}
+      onClose={cancelClose}
+      onConfirm={confirmClose}
+      variant="warning"
+      title="Cambios no guardados"
+      message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
+      confirmLabel="Cerrar sin guardar"
+      cancelLabel="Continuar editando"
+    />
+  </>
+);
 }

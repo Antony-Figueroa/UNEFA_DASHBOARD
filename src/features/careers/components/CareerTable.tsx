@@ -449,8 +449,11 @@ export default function CareerTable({
 
                       <DropdownPortal
                         isOpen={openRowId === (c.careerId ?? idx)}
-                        onClose={() => setOpenRowId(null)}
-                        anchorRef={{ current: anchorEl as HTMLElement }}
+                        onClose={() => {
+                          setOpenRowId(null);
+                          setAnchorEl(null);
+                        }}
+                        anchorEl={anchorEl}
                         className="min-w-44"
                       >
                         {onView && (

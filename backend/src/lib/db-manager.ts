@@ -10,11 +10,13 @@ export interface DbConfig {
   retryDelay: number;
 }
 
-class DatabaseManager {
+export class DatabaseManager {
   private static instance: DatabaseManager;
   private client: SupabaseClient | null = null;
   private config: DbConfig;
   private connectionStatus: 'connected' | 'disconnected' | 'connecting' = 'disconnected';
+
+  private connectionPromise: Promise<SupabaseClient> | null = null;
 
   private constructor() {
     this.config = {
@@ -36,38 +38,62 @@ class DatabaseManager {
     return DatabaseManager.instance;
   }
 
+  /**
+   * Alias for getClient for backward compatibility
+   */
+  public getConnection(): SupabaseClient {
+    return this.getClient();
+  }
+
   public async connect(): Promise<SupabaseClient> {
     if (this.client && this.connectionStatus === 'connected') {
       return this.client;
     }
 
-    this.connectionStatus = 'connecting';
-    console.log(`[DatabaseManager] [${new Date().toISOString()}] Connecting to Supabase...`);
-
-    try {
-      this.client = createClient(this.config.url, this.config.key, {
-        auth: {
-          persistSession: false,
-        },
-        global: {
-          headers: { 'x-application-name': 'unefa-backend' },
-        },
-      });
-
-      // Test connection
-      const { error } = await this.client.from('t_career').select('count', { count: 'exact', head: true });
-      
-      if (error) throw error;
-
-      this.connectionStatus = 'connected';
-      console.log(`[DatabaseManager] [${new Date().toISOString()}] Successfully connected to Supabase`);
-      return this.client;
-    } catch (error: unknown) {
-      this.connectionStatus = 'disconnected';
-      const message = error instanceof Error ? error.message : String(error);
-      console.error(`[DatabaseManager] [${new Date().toISOString()}] Connection failed:`, message);
-      throw error;
+    if (this.connectionStatus === 'connecting' && this.connectionPromise) {
+      return this.connectionPromise;
     }
+
+    this.connectionStatus = 'connecting';
+    this.connectionPromise = (async () => {
+      console.log(`[DatabaseManager] [${new Date().toISOString()}] Connecting to Supabase...`);
+
+      try {
+        this.client = createClient(this.config.url, this.config.key, {
+          auth: {
+            persistSession: false,
+          },
+          global: {
+            headers: { 'x-application-name': 'unefa-backend' },
+          },
+        });
+
+        // Test connection
+        const { error, status, statusText } = await this.client.from('t_career').select('count', { count: 'exact', head: true });
+        
+        if (error) {
+          console.error(`[DatabaseManager] [${new Date().toISOString()}] Connection test failed:`, {
+            message: error.message,
+            code: error.code,
+            status,
+            statusText
+          });
+          throw error;
+        }
+
+        this.connectionStatus = 'connected';
+        console.log(`[DatabaseManager] [${new Date().toISOString()}] Successfully connected to Supabase`);
+        return this.client;
+      } catch (error: unknown) {
+        this.connectionStatus = 'disconnected';
+        this.connectionPromise = null;
+        const message = error instanceof Error ? error.message : JSON.stringify(error);
+        console.error(`[DatabaseManager] [${new Date().toISOString()}] Connection failed:`, message);
+        throw error;
+      }
+    })();
+
+    return this.connectionPromise;
   }
 
   public getClient(): SupabaseClient {
@@ -126,18 +152,29 @@ class DatabaseManager {
   }
 
   /**
-   * Ejecuta una operación con reintentos automáticos
+   * Ejecuta una operación con reintentos automáticos y monitoreo de rendimiento
    */
-  public async withRetry<T>(operation: (client: SupabaseClient) => Promise<T>): Promise<T> {
+  public async withRetry<T>(operation: (client: SupabaseClient) => Promise<T>, operationName: string = 'Anonymous Operation'): Promise<T> {
     let lastError: unknown;
+    const startTime = Date.now();
     
     for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
       try {
         const client = await this.connect();
-        return await operation(client);
+        const result = await operation(client);
+        
+        const duration = Date.now() - startTime;
+        if (duration > 500) {
+          console.warn(`[Performance] [${new Date().toISOString()}] SLOW OPERATION: ${operationName} took ${duration}ms`);
+        } else {
+          console.log(`[Performance] [${new Date().toISOString()}] ${operationName} took ${duration}ms`);
+        }
+        
+        return result;
       } catch (error: unknown) {
         lastError = error;
-        console.warn(`[DatabaseManager] [${new Date().toISOString()}] Attempt ${attempt} failed. Retrying in ${this.config.retryDelay * attempt}ms...`);
+        const duration = Date.now() - startTime;
+        console.warn(`[DatabaseManager] [${new Date().toISOString()}] Attempt ${attempt} for ${operationName} failed after ${duration}ms. Retrying...`);
         
         // Si el error es de conexión, forzar reconexión en el próximo intento
         this.connectionStatus = 'disconnected';
@@ -148,7 +185,8 @@ class DatabaseManager {
       }
     }
 
-    console.error(`[DatabaseManager] [${new Date().toISOString()}] All ${this.config.maxRetries} attempts failed.`);
+    const totalDuration = Date.now() - startTime;
+    console.error(`[DatabaseManager] [${new Date().toISOString()}] All ${this.config.maxRetries} attempts failed for ${operationName} after ${totalDuration}ms.`);
     throw lastError;
   }
 }

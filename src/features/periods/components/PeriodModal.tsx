@@ -12,6 +12,8 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/
 import FlatpickrDatePicker from '../../../components/form/FlatpickrDatePicker';
 import Button from '../../../components/ui/button/Button';
 import { periodSchema, PeriodFormData, checkOverlap, checkSequentiality, getLapsoValue } from '../utils/periodValidations';
+import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
+import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
 
 interface PeriodModalProps {
     isOpen: boolean;
@@ -23,13 +25,20 @@ interface PeriodModalProps {
 }
 
 export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoading = false, existingPeriods }: PeriodModalProps) {
-    const { register, handleSubmit, formState: { errors }, control, reset, watch, setError, setValue } = useForm<PeriodFormData>({
+    const { register, handleSubmit, formState: { errors, isDirty }, control, reset, watch, setError, setValue } = useForm<PeriodFormData>({
         resolver: zodResolver(periodSchema),
         defaultValues: {
             year: '',
             periodoTipo: 'I',
         },
     });
+
+    const {
+        showConfirmation,
+        handleCloseAttempt,
+        confirmClose,
+        cancelClose,
+    } = useUnsavedChanges(isDirty, onClose);
     const startDateValue = watch('startDate');
 
     const isCulminado = periodo?.periodStatus === 3;
@@ -191,8 +200,9 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} showCloseButton>
-            <ModalHeader>
+        <>
+            <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton>
+                <ModalHeader>
                 <div className="max-w-3xl mx-auto w-full">
                     <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
                         {periodo ? 'Editar Período' : 'Registrar Período'}
@@ -309,7 +319,7 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
 
             <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
                 <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-4xl mx-auto">
-                    <Button variant="outline" onClick={onClose} disabled={isLoading} className="w-full sm:w-auto min-h-12">
+                    <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
                         Cancelar
                     </Button>
                     <Button type="submit" form="period-form" loading={isLoading} className="w-full sm:w-auto min-h-12">
@@ -318,5 +328,17 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                 </div>
             </ModalFooter>
         </Modal>
-    );
+
+        <UnifiedDialog
+            isOpen={showConfirmation}
+            onClose={cancelClose}
+            onConfirm={confirmClose}
+            variant="warning"
+            title="Cambios no guardados"
+            message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
+            confirmLabel="Cerrar sin guardar"
+            cancelLabel="Continuar editando"
+        />
+    </>
+);
 }

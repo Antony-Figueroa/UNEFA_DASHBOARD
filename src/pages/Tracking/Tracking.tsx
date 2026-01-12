@@ -80,7 +80,7 @@ export default function TrackingPage() {
             }
             setIsModalOpen(false);
             setEditingTracking(null);
-        } catch (err) {
+        } catch {
             // Error handled in hook
         }
     };

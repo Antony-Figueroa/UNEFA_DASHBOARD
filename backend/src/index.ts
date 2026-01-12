@@ -7,12 +7,22 @@ import internshipTypesRoutes from './routes/internship-types.routes';
 import periodsRoutes from './routes/periods.routes';
 import enrollmentsRoutes from './routes/enrollments.routes';
 import preEnrollmentsRoutes from './routes/pre-enrollments.routes';
+import studentsRoutes from './routes/students.routes';
+import tutorsRoutes from './routes/tutors.routes';
+import trackingRoutes from './routes/tracking.routes';
+import institutionsRoutes from './routes/institutions.routes';
+import institutionalResponsiblesRoutes from './routes/institutional-responsibles.routes';
+import listsRoutes from './routes/lists.routes';
 import { dbManager } from './lib/db-manager';
+import { performanceMiddleware } from './lib/performance-middleware';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5000;
+
+// Performance monitoring
+app.use(performanceMiddleware);
 
 // Initialize Database
 dbManager.connect().catch(err => {
@@ -47,6 +57,12 @@ app.use('/api/internship-types', internshipTypesRoutes);
 app.use('/api/periodos', periodsRoutes);
 app.use('/api/enrollments', enrollmentsRoutes);
 app.use('/api/pre-enrollments', preEnrollmentsRoutes);
+app.use('/api/students', studentsRoutes);
+app.use('/api/tutors', tutorsRoutes);
+app.use('/api/tracking', trackingRoutes);
+app.use('/api/institutions', institutionsRoutes);
+app.use('/api/institutional-responsibles', institutionalResponsiblesRoutes);
+app.use('/api/lists', listsRoutes);
 
 // Endpoint de estado de la base de datos para el frontend
 app.get('/api/db-status', async (_req: Request, res: Response) => {

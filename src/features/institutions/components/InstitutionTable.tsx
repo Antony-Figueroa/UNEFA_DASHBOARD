@@ -393,8 +393,11 @@ export default function InstitutionTable({
                                 </button>
                                 <DropdownPortal
                                     isOpen={openRowId === (i.institutionId ?? index)}
-                                    onClose={() => setOpenRowId(null)}
-                                    anchorRef={{ current: anchorEl as HTMLElement }}
+                                    onClose={() => {
+                                        setOpenRowId(null);
+                                        setAnchorEl(null);
+                                    }}
+                                    anchorEl={anchorEl}
                                     className="min-w-44"
                                 >
                                     {onView && (

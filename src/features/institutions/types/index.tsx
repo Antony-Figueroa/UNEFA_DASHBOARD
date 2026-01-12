@@ -18,6 +18,7 @@ export interface Institution {
   institutionType: string;
   status: boolean;
   registrationDate: Date;
+  responsibleCount?: number;
 }
 
 /**

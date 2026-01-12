@@ -1,8 +1,12 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager';
+import { cacheManager } from '../lib/cache-manager';
 
 const TABLE_NAME = 't_career'; 
 const RELATION_TABLE = 't_career_internship_type';
+const CACHE_PREFIX = 'careers:';
+const CACHE_TTL = 3600000; // 1 hour for careers
+const CAREER_COLUMNS = 'CAREER_ID, CAREER_NAME, STATUS, ABBREVIATION';
 
 const handleDbError = (res: Response, error: unknown) => {
   console.error('Database Error:', error);
@@ -27,17 +31,23 @@ const handleDbError = (res: Response, error: unknown) => {
 };
 
 export const getCareers = async (req: Request, res: Response) => {
+  const cacheKey = `${CACHE_PREFIX}list`;
+  const cachedData = cacheManager.get(cacheKey);
+  if (cachedData) {
+    return res.json(cachedData);
+  }
+
   try {
     const transformed = await dbManager.withRetry(async (supabase) => {
       const { data: careers, error: careerError } = await supabase
         .from(TABLE_NAME)
         .select(`
-          *,
+          ${CAREER_COLUMNS},
           ${RELATION_TABLE} (
             INTERNSHIP_TYPE_ID
           )
         `)
-        .order('CREATION_DATE', { ascending: false });
+        .order('CAREER_NAME', { ascending: true });
 
       if (careerError) throw careerError;
 
@@ -50,8 +60,9 @@ export const getCareers = async (req: Request, res: Response) => {
           INTERNSHIP_TYPE_IDS: internshipTypeIds
         };
       });
-    });
+    }, 'getCareers');
 
+    cacheManager.set(cacheKey, transformed, CACHE_TTL);
     res.json(transformed);
   } catch (error) {
     handleDbError(res, error);
@@ -140,7 +151,10 @@ export const createCareer = async (req: Request, res: Response) => {
         ...newCareer,
         INTERNSHIP_TYPE_IDS: INTERNSHIP_TYPE_IDS || []
       };
-    });
+    }, 'createCareer');
+
+    // Invalidar caché
+    cacheManager.deleteByPrefix(CACHE_PREFIX);
 
     res.status(201).json(result);
   } catch (error) {
@@ -201,7 +215,10 @@ export const updateCareer = async (req: Request, res: Response) => {
         ...updatedCareer,
         INTERNSHIP_TYPE_IDS: INTERNSHIP_TYPE_IDS || []
       };
-    });
+    }, 'updateCareer');
+
+    // Invalidar caché
+    cacheManager.deleteByPrefix(CACHE_PREFIX);
 
     res.json(result);
   } catch (error) {
@@ -219,7 +236,11 @@ export const deleteCareer = async (req: Request, res: Response) => {
         .eq('CAREER_ID', id);
 
       if (error) throw error;
-    });
+    }, 'deleteCareer');
+
+    // Invalidar caché
+    cacheManager.deleteByPrefix(CACHE_PREFIX);
+
     res.status(204).send();
   } catch (error) {
     handleDbError(res, error);
@@ -240,7 +261,10 @@ export const bulkDeleteCareers = async (req: Request, res: Response) => {
         .in('CAREER_ID', ids);
 
       if (error) throw error;
-    });
+    }, 'bulkDeleteCareers');
+
+    // Invalidar caché
+    cacheManager.deleteByPrefix(CACHE_PREFIX);
 
     res.status(204).send();
   } catch (error) {

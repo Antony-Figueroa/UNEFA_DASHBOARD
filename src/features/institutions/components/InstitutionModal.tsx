@@ -14,6 +14,8 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/
 import { Institution } from "../types";
 import Button from "../../../components/ui/button/Button";
 import { useInternshipTypes } from "../../internship-types/hooks/useInternshipTypes";
+import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
+import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 
 interface InstitutionModalProps {
   isOpen: boolean;
@@ -56,7 +58,7 @@ export default function InstitutionModal({
     handleSubmit,
     control,
     reset,
-    formState: { errors, isSubmitted },
+    formState: { errors, isSubmitted, isDirty },
   } = useForm<InstFormData>({
     resolver: zodResolver(instSchema),
     defaultValues: {
@@ -73,6 +75,13 @@ export default function InstitutionModal({
       institutionType: "",
     },
   });
+
+  const {
+    showConfirmation,
+    handleCloseAttempt,
+    confirmClose,
+    cancelClose,
+  } = useUnsavedChanges(isDirty, onClose);
 
   const { options: practiceOptions, fetchByCareer } = useInternshipTypes();
   const watchedCareerId = useWatch({ control, name: "careerId" });
@@ -140,17 +149,17 @@ export default function InstitutionModal({
       careerId: String(data.careerId),
       careerName: careerOptions.find(c => String(c.value) === String(data.careerId))?.label,
     });
-    onClose();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} showCloseButton className="max-w-[95%] sm:max-w-[85%] md:max-w-[70%] lg:max-w-4xl">
-      <ModalHeader>
-        <h5 className="text-xl font-semibold text-text-primary dark:text-white/90">
-          {editingInst ? "Editar Institución" : "Registrar Institución"}
-        </h5>
-        <p className="text-sm text-text-secondary">Complete la información de la institución.</p>
-      </ModalHeader>
+    <>
+      <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton className="max-w-[95%] sm:max-w-[85%] md:max-w-[70%] lg:max-w-4xl">
+        <ModalHeader>
+          <h5 className="text-xl font-semibold text-text-primary dark:text-white/90">
+            {editingInst ? "Editar Institución" : "Registrar Institución"}
+          </h5>
+          <p className="text-sm text-text-secondary">Complete la información de la institución.</p>
+        </ModalHeader>
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50 max-h-[70vh] overflow-y-auto">
         <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -338,7 +347,7 @@ export default function InstitutionModal({
         </form>
       </ModalBody>
       <ModalFooter>
-        <Button variant="outline" onClick={onClose} disabled={isLoading}>
+        <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading}>
           Cancelar
         </Button>
         <Button onClick={handleSubmit(onSubmit)} loading={isLoading}>
@@ -346,5 +355,17 @@ export default function InstitutionModal({
         </Button>
       </ModalFooter>
     </Modal>
-  );
+
+    <UnifiedDialog
+      isOpen={showConfirmation}
+      onClose={cancelClose}
+      onConfirm={confirmClose}
+      variant="warning"
+      title="Cambios no guardados"
+      message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
+      confirmLabel="Cerrar sin guardar"
+      cancelLabel="Continuar editando"
+    />
+  </>
+);
 }

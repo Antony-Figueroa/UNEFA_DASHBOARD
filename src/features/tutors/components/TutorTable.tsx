@@ -81,16 +81,16 @@ export default function TutorTable({
         const professionSearch = professionFilter.trim().toLowerCase();
 
         const filtered = data.filter((t) => {
-            const matchesId = !idSearch || t.identificationNumber.toLowerCase().includes(idSearch);
+            const matchesId = !idSearch || (t.identificationNumber || "").toLowerCase().includes(idSearch);
             const matchesName = !nameSearch ||
-                t.firstName.toLowerCase().includes(nameSearch) ||
+                (t.firstName || "").toLowerCase().includes(nameSearch) ||
                 (t.middleName || "").toLowerCase().includes(nameSearch);
             const matchesLastName = !lastNameSearch ||
-                t.lastName.toLowerCase().includes(lastNameSearch) ||
+                (t.lastName || "").toLowerCase().includes(lastNameSearch) ||
                 (t.secondLastName || "").toLowerCase().includes(lastNameSearch);
-            const matchesProfession = !professionSearch || t.profession === professionSearch;
+            const matchesProfession = !professionSearch || (t.profession || "").toLowerCase() === professionSearch;
 
-            const matchesTab = activeTab === "Activas" ? t.status === true : t.status === false;
+            const matchesTab = activeTab === "Activas" ? !!t.status : !t.status;
 
             return matchesId && matchesName && matchesLastName && matchesProfession && matchesTab;
         });
@@ -452,7 +452,7 @@ export default function TutorTable({
                                                     setOpenRowId(null);
                                                     setAnchorEl(null);
                                                 }}
-                                                anchorRef={{ current: anchorEl as HTMLElement }}
+                                                anchorEl={anchorEl}
                                                 className="min-w-44"
                                             >
                                                 <div className="p-1">
@@ -460,6 +460,7 @@ export default function TutorTable({
                                                         onItemClick={() => {
                                                             onView?.(t);
                                                             setOpenRowId(null);
+                                                            setAnchorEl(null);
                                                         }}
                                                         className="flex items-center gap-2 text-text-secondary hover:bg-bg-secondary dark:text-text-secondary"
                                                     >
@@ -470,6 +471,7 @@ export default function TutorTable({
                                                         onItemClick={() => {
                                                             onEdit?.(t);
                                                             setOpenRowId(null);
+                                                            setAnchorEl(null);
                                                         }}
                                                         className="flex items-center gap-2 text-text-secondary hover:bg-bg-secondary dark:text-text-secondary"
                                                     >
@@ -480,6 +482,7 @@ export default function TutorTable({
                                                         onItemClick={() => {
                                                             onToggleStatus?.(t.tutorId);
                                                             setOpenRowId(null);
+                                                            setAnchorEl(null);
                                                         }}
                                                         className={`flex items-center gap-2 ${activeTab === "Activas"
                                                             ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10"

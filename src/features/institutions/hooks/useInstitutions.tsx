@@ -134,12 +134,13 @@ export const useInstitutions = () => {
         title: newStatus ? "Institución Restaurada" : "Institución Inactivada",
         message: `La institución ${inst.name} ahora está ${newStatus ? 'activa' : 'inactiva'}.`,
       });
-    } catch (e) {
+    } catch (e: any) {
       console.error("Error toggling institution status:", e);
+      const errorMessage = e.response?.data?.message || "No se pudo cambiar el estado de la institución.";
       addToast({
         variant: "error",
-        title: "Error de estado",
-        message: "No se pudo cambiar el estado de la institución.",
+        title: "Error de validación",
+        message: errorMessage,
       });
     } finally {
       setLoadingAction(false);
@@ -148,24 +149,38 @@ export const useInstitutions = () => {
 
   const bulkRemoveInstitutions = async (ids: string[]) => {
     setLoadingAction(true);
+    let successCount = 0;
+    let failMessages: string[] = [];
+
     try {
-      // Inactivar cada una (o usar un endpoint bulk si existiera)
-      await Promise.all(ids.map(id => institutionsService.toggleInstitutionStatus(id, false)));
+      for (const id of ids) {
+        try {
+          await institutionsService.toggleInstitutionStatus(id, false);
+          successCount++;
+          setInstitutions(prev => prev.map(i => i.institutionId === id ? { ...i, status: false } : i));
+        } catch (innerError: any) {
+          const msg = innerError.response?.data?.message || `Error al inactivar ID ${id}`;
+          if (!failMessages.includes(msg)) failMessages.push(msg);
+        }
+      }
       
-      setInstitutions(prev => prev.map(i => ids.includes(i.institutionId) ? { ...i, status: false } : i));
-      
-      addToast({
-        variant: "warning",
-        title: "Acción Masiva",
-        message: `${ids.length} instituciones han sido inactivadas.`,
-      });
+      if (successCount > 0) {
+        addToast({
+          variant: "warning",
+          title: "Acción Masiva",
+          message: `${successCount} instituciones han sido inactivadas.`,
+        });
+      }
+
+      if (failMessages.length > 0) {
+        addToast({
+          variant: "error",
+          title: "Restricción detectada",
+          message: failMessages.join(". "),
+        });
+      }
     } catch (e) {
       console.error("Error in bulk remove:", e);
-      addToast({
-        variant: "error",
-        title: "Error masivo",
-        message: "No se pudieron inactivar todas las instituciones seleccionadas.",
-      });
     } finally {
       setLoadingAction(false);
     }

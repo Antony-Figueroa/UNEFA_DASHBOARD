@@ -34,7 +34,18 @@ const fromApi = (dto: TrackingApiDTO): Tracking => ({
 });
 
 const toApi = (tracking: Partial<Tracking>): Partial<TrackingApiDTO> => {
-    const dto: Partial<TrackingApiDTO> = { ...tracking } as any;
+    const dto: Partial<TrackingApiDTO> = {
+        studentIdNumber: tracking.studentIdNumber,
+        studentName: tracking.studentName,
+        reportTitle: tracking.reportTitle,
+        transfer: tracking.transfer,
+        route: tracking.route,
+        observations: tracking.observations,
+        status: tracking.status,
+        creationDate: tracking.creationDate instanceof Date 
+            ? tracking.creationDate.toISOString() 
+            : tracking.creationDate
+    };
     if (tracking.trackingId) dto.id = tracking.trackingId;
     return dto;
 };

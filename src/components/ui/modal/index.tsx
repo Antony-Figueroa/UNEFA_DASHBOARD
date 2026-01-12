@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onCloseAttempt?: () => void; // Permite interceptar el cierre (ej. para cambios no guardados)
   className?: string;
   children: React.ReactNode;
   showCloseButton?: boolean; // New prop to control close button visibility
@@ -13,12 +14,16 @@ interface ModalProps {
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
+  onCloseAttempt,
   children,
   className,
   showCloseButton = true,
   isFullscreen = false,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Determinar la función a llamar al intentar cerrar
+  const handleClose = onCloseAttempt || onClose;
 
   // Manejo de foco para accesibilidad
   useEffect(() => {
@@ -35,7 +40,7 @@ export const Modal: React.FC<ModalProps> = ({
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onClose();
+        handleClose();
       }
     };
 
@@ -46,7 +51,7 @@ export const Modal: React.FC<ModalProps> = ({
     return () => {
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, handleClose]);
 
   useEffect(() => {
     if (isOpen) {
@@ -84,7 +89,7 @@ export const Modal: React.FC<ModalProps> = ({
     >
       <div
         className="fixed inset-0 h-full w-full bg-bg-dark/60 backdrop-blur-sm -z-1 transition-opacity duration-300 ease-in-out"
-        onClick={onClose}
+        onClick={handleClose}
       ></div>
       <div
         ref={modalRef}
@@ -93,7 +98,7 @@ export const Modal: React.FC<ModalProps> = ({
       >
         {showCloseButton && (
           <button
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Cerrar modal"
             className="absolute right-4 top-4 z-999 flex h-10 w-10 items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-all hover:bg-border-light hover:text-text-primary dark:bg-white/5 dark:text-text-tertiary dark:hover:bg-white/10 dark:hover:text-text-emphasis sm:right-8 sm:top-8 sm:h-12 sm:w-12"
           >

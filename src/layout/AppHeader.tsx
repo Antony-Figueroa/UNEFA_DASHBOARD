@@ -8,8 +8,32 @@ import UserDropdown from "../components/header/UserDropdown";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 0);
+  const headerRef = useRef<HTMLElement>(null);
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+      if (headerRef.current) {
+        setHeaderHeight(headerRef.current.offsetHeight);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    handleResize(); // Initial call
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Update CSS variable for layout adjustment
+  useEffect(() => {
+    document.documentElement.style.setProperty("--header-height", `${headerHeight}px`);
+    document.documentElement.style.setProperty("--header-spacing", `10px`);
+    document.documentElement.style.setProperty("--sidebar-mt", windowWidth < 1024 ? `${headerHeight}px` : `0px`);
+  }, [headerHeight, windowWidth]);
 
   const handleToggle = () => {
     if (window.innerWidth >= 1024) {
@@ -40,8 +64,18 @@ const AppHeader: React.FC = () => {
     };
   }, []);
 
+  const isHeaderTooTall = headerHeight > (typeof window !== "undefined" ? window.innerHeight * 0.3 : 0);
+
   return (
-    <header className="sticky top-0 flex w-full bg-bg-main border-border-light z-99999 dark:border-white/10 dark:bg-bg-dark lg:border-b">
+    <header 
+      ref={headerRef}
+      style={{ 
+        marginBottom: 'var(--header-spacing)',
+        maxHeight: isHeaderTooTall ? '30vh' : 'none',
+        overflowY: isHeaderTooTall ? 'auto' : 'visible'
+      }}
+      className="flex w-full bg-bg-main border-border-light z-99999 dark:border-white/10 dark:bg-bg-dark lg:border-b shadow-sm after:absolute after:bottom-[-10px] after:left-0 after:h-[10px] after:w-full after:content-[''] after:pointer-events-none after:bg-linear-to-b after:from-bg-main/50 after:to-transparent dark:after:from-bg-dark/50"
+    >
       <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
         <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-border-light dark:border-white/10 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
           <button

@@ -8,6 +8,8 @@ import { Tutor } from "../types";
 import Button from "../../../components/ui/button/Button";
 import Select from "../../../components/form/Select";
 import MultiSelect from "../../../components/form/MultiSelect";
+import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
+import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 
 interface TutorModalProps {
   isOpen: boolean;
@@ -115,7 +117,7 @@ export default function TutorModal({
     handleSubmit,
     control,
     reset,
-    formState: { errors, isSubmitted },
+    formState: { errors, isSubmitted, isDirty },
   } = useForm<TutorFormData>({
     resolver: zodResolver(tutorSchema),
     mode: "onChange",
@@ -137,6 +139,13 @@ export default function TutorModal({
       carreras: [],
     },
   });
+
+  const {
+    showConfirmation,
+    handleCloseAttempt,
+    confirmClose,
+    cancelClose,
+  } = useUnsavedChanges(isDirty, onClose);
 
   const watchedCarreras = useWatch({ control, name: "carreras" });
 
@@ -222,17 +231,20 @@ export default function TutorModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} showCloseButton>
-      <ModalHeader>
-        <div className="max-w-4xl mx-auto w-full">
-          <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+    <>
+      <Modal 
+        isOpen={isOpen} 
+        onClose={onClose} 
+        onCloseAttempt={handleCloseAttempt} 
+        showCloseButton 
+        className="max-w-[95%] sm:max-w-[85%] md:max-w-[70%] lg:max-w-4xl"
+      >
+        <ModalHeader>
+          <h5 className="text-xl font-semibold text-text-primary dark:text-white/90">
             {editingTutor ? "Editar Tutor" : "Registrar Tutor"}
           </h5>
-          <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
-            {editingTutor ? "Modifica los detalles del tutor." : "Ingresa los detalles del nuevo tutor."}
-          </p>
-        </div>
-      </ModalHeader>
+          <p className="text-sm text-text-secondary">Complete la información del tutor académico.</p>
+        </ModalHeader>
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
         <form id="tutor-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto">
@@ -469,7 +481,7 @@ export default function TutorModal({
 
       <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
         <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-6xl mx-auto">
-          <Button variant="outline" onClick={onClose} disabled={isLoading} className="w-full sm:w-auto min-h-12">
+          <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
           <Button
@@ -483,5 +495,17 @@ export default function TutorModal({
         </div>
       </ModalFooter>
     </Modal>
-  );
+
+    <UnifiedDialog
+      isOpen={showConfirmation}
+      onClose={cancelClose}
+      onConfirm={confirmClose}
+      variant="warning"
+      title="Cambios no guardados"
+      message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
+      confirmLabel="Cerrar sin guardar"
+      cancelLabel="Continuar editando"
+    />
+  </>
+);
 }

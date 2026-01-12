@@ -76,7 +76,7 @@ export default function TrackingTable({
 
     return (
         <div className="space-y-4">
-            <div className="overflow-x-auto rounded-xl border border-border-light dark:border-white/5 bg-white dark:bg-white/[0.03]">
+            <div className="overflow-x-auto rounded-xl border border-border-light dark:border-white/5 bg-white dark:bg-white/3">
                 <Table>
                     <TableHeader>
                         <TableRow>

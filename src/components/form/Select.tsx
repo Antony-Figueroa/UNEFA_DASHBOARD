@@ -6,6 +6,7 @@ interface Option {
 }
 
 interface SelectProps {
+  id?: string;
   options: Option[];
   placeholder?: string;
   onChange: (value: string) => void;
@@ -15,6 +16,7 @@ interface SelectProps {
 }
 
 const Select: React.FC<SelectProps> = ({
+  id,
   options,
   placeholder = "Seleccione una opción",
   onChange,
@@ -39,6 +41,7 @@ const Select: React.FC<SelectProps> = ({
   return (
     <div className="relative">
       <select
+        id={id}
         disabled={disabled}
         className={`h-11 w-full appearance-none rounded-lg border border-border-medium bg-transparent px-4 py-2.5 pr-11 text-sm shadow-theme-xs placeholder:text-text-tertiary focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary dark:focus:border-brand-800 ${selectedValue
             ? "text-text-primary dark:text-text-emphasis"

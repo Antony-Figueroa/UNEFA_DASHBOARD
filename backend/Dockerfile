@@ -13,8 +13,8 @@ RUN npm install --production=false
 # Copiar el resto del código fuente
 COPY . .
 
-# Build: compilar TypeScript a JS en /dist
-RUN npm run build
+# Build: compilar TypeScript a JS en /dist y listar artefactos para diagnóstico
+RUN npm run build && echo "---- dist contents ----" && ls -la dist || (echo "dist not found" && exit 1)
 
 # Exponer el puerto que usa la app (lee PORT en runtime)
 EXPOSE 5000

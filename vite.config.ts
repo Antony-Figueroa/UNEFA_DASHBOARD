@@ -30,7 +30,7 @@ export default defineConfig(() => {
         .split(',')
         .map(h => h.trim())
         .filter(Boolean)
-        .concat(['localhost', '127.0.0.1'])
+        .concat(['localhost', '127.0.0.1', '.railway.app'])
     },
     preview: {
       host: true,
@@ -38,7 +38,7 @@ export default defineConfig(() => {
         .split(',')
         .map(h => h.trim())
         .filter(Boolean)
-        .concat(['localhost', '127.0.0.1'])
+        .concat(['localhost', '127.0.0.1', '.railway.app'])
     },
   };
 });

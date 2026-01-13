@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
-import { dbManager } from '../lib/db-manager';
-import { cacheManager } from '../lib/cache-manager';
+import * as listsService from '../services/lists.service';
 
 const LISTS_TABLE = 't_list';
 const VALUES_TABLE = 't_value_list';
@@ -70,44 +69,9 @@ const mapListToFrontend = (l: DBList) => ({
  * Get all lists with their associated values
  */
 export const getAllLists = async (_req: Request, res: Response) => {
-  const cacheKey = `${CACHE_PREFIX}all`;
-  const cachedData = cacheManager.get(cacheKey);
-  if (cachedData) {
-    return res.json(cachedData);
-  }
-
   try {
-    const data = await dbManager.withRetry(async (supabase) => {
-      // Fetch lists con proyección específica
-      const { data: lists, error: listsError } = await supabase
-        .from(LISTS_TABLE)
-        .select('LIST_ID, NAME, STATUS')
-        .eq('STATUS', 1)
-        .order('NAME', { ascending: true });
-
-      if (listsError) throw listsError;
-
-      // Fetch all values con proyección específica
-      const { data: values, error: valuesError } = await supabase
-        .from(VALUES_TABLE)
-        .select('VALUE_LIST_ID, NAME, ABBREVIATION, LIST_ID, STATUS')
-        .eq('STATUS', 1);
-
-      if (valuesError) throw valuesError;
-
-      // Map values to their respective lists
-      const mappedLists = (lists || []).map(list => ({
-        ...list,
-        t_value_list: (values || []).filter(v => v.LIST_ID === list.LIST_ID)
-      }));
-
-      return mappedLists as DBList[];
-    }, 'getAllLists');
-
-    const result = data.map(mapListToFrontend);
-    cacheManager.set(cacheKey, result, CACHE_TTL);
-
-    res.json(result);
+    const data = await listsService.getAllLists();
+    res.json(data);
   } catch (error: unknown) {
     handleDbError(res, error);
   }
@@ -119,36 +83,8 @@ export const getAllLists = async (_req: Request, res: Response) => {
 export const getListByName = async (req: Request, res: Response) => {
   try {
     const { name } = req.params;
-    const data = await dbManager.withRetry(async (supabase) => {
-      const { data: list, error: listError } = await supabase
-        .from(LISTS_TABLE)
-        .select('*')
-        .eq('NAME', name)
-        .eq('STATUS', 1)
-        .single();
-
-      if (listError) {
-        if (listError.code === 'PGRST116') {
-          throw { code: '404', message: `Lista '${name}' no encontrada` };
-        }
-        throw listError;
-      }
-
-      const { data: values, error: valuesError } = await supabase
-        .from(VALUES_TABLE)
-        .select('*')
-        .eq('LIST_ID', list.LIST_ID)
-        .eq('STATUS', 1);
-
-      if (valuesError) throw valuesError;
-
-      return {
-        ...list,
-        t_value_list: values || []
-      } as DBList;
-    });
-
-    res.json(mapListToFrontend(data));
+    const data = await listsService.getListByName(name);
+    res.json(data);
   } catch (error: unknown) {
     handleDbError(res, error);
   }
@@ -158,52 +94,12 @@ export const getListByName = async (req: Request, res: Response) => {
  * Get values for multiple lists by their names
  */
 export const getMultipleListsByNames = async (req: Request, res: Response) => {
-  const { names } = req.body;
-  if (!Array.isArray(names)) {
-    return res.status(400).json({ message: 'Se requiere un array de nombres de listas' });
-  }
-
-  const cacheKey = `${CACHE_PREFIX}multiple:${names.sort().join(',')}`;
-  const cachedData = cacheManager.get(cacheKey);
-  if (cachedData) {
-    return res.json(cachedData);
-  }
-
   try {
-    const data = await dbManager.withRetry(async (supabase) => {
-      const { data: lists, error: listsError } = await supabase
-        .from(LISTS_TABLE)
-        .select('LIST_ID, NAME, STATUS')
-        .in('NAME', names)
-        .eq('STATUS', 1);
+    const { names } = req.body;
+    if (!Array.isArray(names)) return res.status(400).json({ message: 'Se requiere un array de nombres de listas' });
 
-      if (listsError) throw listsError;
-
-      const listIds = (lists || []).map(l => l.LIST_ID);
-      const { data: values, error: valuesError } = await supabase
-        .from(VALUES_TABLE)
-        .select('VALUE_LIST_ID, NAME, ABBREVIATION, LIST_ID, STATUS')
-        .in('LIST_ID', listIds)
-        .eq('STATUS', 1);
-
-      if (valuesError) throw valuesError;
-
-      const mappedLists = (lists || []).map(list => ({
-        ...list,
-        t_value_list: (values || []).filter(v => v.LIST_ID === list.LIST_ID)
-      }));
-
-      return mappedLists as DBList[];
-    }, 'getMultipleListsByNames');
-
-    const result: Record<string, ReturnType<typeof mapValueToFrontend>[]> = {};
-    data.forEach(list => {
-      result[list.NAME] = (list.t_value_list || []).map(mapValueToFrontend);
-    });
-
-    cacheManager.set(cacheKey, result, CACHE_TTL);
-
-    res.json(result);
+    const data = await listsService.getMultipleListsByNames(names);
+    res.json(data);
   } catch (error: unknown) {
     handleDbError(res, error);
   }

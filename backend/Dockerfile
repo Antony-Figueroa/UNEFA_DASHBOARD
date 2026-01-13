@@ -8,13 +8,16 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instalar dependencias
-RUN npm install
+RUN npm install --production=false
 
 # Copiar el resto del código fuente
 COPY . .
 
-# Exponer el puerto del backend
-EXPOSE 3000
+# Build: compilar TypeScript a JS en /dist
+RUN npm run build
 
-# Comando para iniciar el backend con TypeScript nativo (tsx watch)
-CMD ["npm", "run", "dev"]
+# Exponer el puerto que usa la app (lee PORT en runtime)
+EXPOSE 5000
+
+# Iniciar en modo producción ejecutando el build compilado
+CMD ["node", "dist/server.js"]

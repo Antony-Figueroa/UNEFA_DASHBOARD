@@ -23,7 +23,7 @@ const LayoutContent: React.FC = () => {
           <DatabaseStatusBanner />
           <AppHeader />
         </div>
-        <div className="mx-auto max-w-(--breakpoint-2xl) p-4 pt-2 md:p-6 md:pt-4">
+        <div className="mx-auto max-w-(--breakpoint-2xl) p-4 pt-16 md:p-6 md:pt-16">
           <Outlet />
         </div>
       </div>

@@ -2,10 +2,10 @@
 // Structure: --color-[function]-[state]
 
 // Brand / Primary
-$color-brand-normal: #465fff;
-$color-brand-hover: #3548e6;
-$color-brand-active: #2a39cc;
-$color-brand-disabled: rgba(70, 95, 255, 0.5);
+$color-brand-normal: #007fff; // Azul primario proporcionado
+$color-brand-hover: #2e5888; // Azul hover (más oscuro)
+$color-brand-active: #054f94; // Azul secundario/activo
+$color-brand-disabled: rgba(0, 127, 255, 0.45);
 
 // Success
 $color-success-normal: #12b76a;

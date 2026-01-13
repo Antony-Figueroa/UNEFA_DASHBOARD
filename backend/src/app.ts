@@ -23,6 +23,13 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
+// Leer orígenes permitidos desde env (coma-separados). Ejemplo:
+// ALLOWED_ORIGINS=https://your-frontend.vercel.app,http://localhost:5173
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:3000')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
 // Performance monitoring
 app.use(performanceMiddleware);
 
@@ -48,7 +55,12 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:3000"],
+  origin: (origin, callback) => {
+    // permitir requests sin origin (herramientas como curl, servidores-side)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('CORS policy: origin not allowed'), false);
+  },
   credentials: true
 }));
 app.use(express.json());

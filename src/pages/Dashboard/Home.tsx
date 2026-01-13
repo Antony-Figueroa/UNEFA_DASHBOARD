@@ -22,8 +22,8 @@ export default function Home() {
   return (
     <>
       <PageMeta
-        title="React.js Ecommerce Dashboard | Proyecto-Unefa - React.js Admin Dashboard Template"
-        description="This is React.js Ecommerce Dashboard page for Proyecto-Unefa - React.js Tailwind CSS Admin Dashboard Template"
+        title="SIGP - UNEFA DASHBOARD"
+        description="Sistema de Gestión de Pasantias de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional"
       />
       <div className="grid grid-cols-12 gap-4 md:gap-6 stagger-delay">
         <div className="col-span-12 space-y-6 xl:col-span-7">

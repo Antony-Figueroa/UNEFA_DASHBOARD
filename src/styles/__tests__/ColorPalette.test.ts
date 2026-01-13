@@ -3,7 +3,7 @@ import palette from "../palette.json";
 describe("Color Palette Integrity", () => {
   it("should have primary brand colors defined", () => {
     expect(palette.brand).toBeDefined();
-    expect(palette.brand["500"]).toBe("#465fff");
+    expect(palette.brand["500"]).toBe("#007fff");
   });
 
   it("should have functional colors (success, error, warning) defined", () => {

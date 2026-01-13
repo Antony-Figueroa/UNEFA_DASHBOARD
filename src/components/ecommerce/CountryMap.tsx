@@ -14,7 +14,7 @@ const CountryMap: React.FC<CountryMapProps> = ({ mapColor }) => {
       backgroundColor="transparent"
       markerStyle={{
         initial: {
-          fill: "#465FFF",
+          fill: "#007fff",
           r: 4, // Custom radius for markers
         } as Record<string, unknown>,
       }}
@@ -24,7 +24,7 @@ const CountryMap: React.FC<CountryMapProps> = ({ mapColor }) => {
           latLng: [37.2580397, -104.657039],
           name: "United States",
           style: {
-            fill: "#465FFF",
+            fill: "#007fff",
             borderWidth: 1,
             borderColor: "white",
             stroke: "#383f47",
@@ -33,18 +33,18 @@ const CountryMap: React.FC<CountryMapProps> = ({ mapColor }) => {
         {
           latLng: [20.7504374, 73.7276105],
           name: "India",
-          style: { fill: "#465FFF", borderWidth: 1, borderColor: "white" },
+          style: { fill: "#007fff", borderWidth: 1, borderColor: "white" },
         },
         {
           latLng: [53.613, -11.6368],
           name: "United Kingdom",
-          style: { fill: "#465FFF", borderWidth: 1, borderColor: "white" },
+          style: { fill: "#007fff", borderWidth: 1, borderColor: "white" },
         },
         {
           latLng: [-25.0304388, 115.2092761],
           name: "Sweden",
-          style: {
-            fill: "#465FFF",
+            style: {
+              fill: "#007fff",
             borderWidth: 1,
             borderColor: "white",
             strokeOpacity: 0,
@@ -58,7 +58,7 @@ const CountryMap: React.FC<CountryMapProps> = ({ mapColor }) => {
       zoomStep={1.5}
       regionStyle={{
         initial: {
-          fill: mapColor || "#D0D5DD",
+            fill: mapColor || "#D0D5DD",
           fillOpacity: 1,
           fontFamily: "Outfit",
           stroke: "none",
@@ -68,11 +68,11 @@ const CountryMap: React.FC<CountryMapProps> = ({ mapColor }) => {
         hover: {
           fillOpacity: 0.7,
           cursor: "pointer",
-          fill: "#465fff",
+          fill: "#007fff",
           stroke: "none",
         },
         selected: {
-          fill: "#465FFF",
+          fill: "#007fff",
         },
         selectedHover: {},
       }}

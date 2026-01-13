@@ -3,20 +3,20 @@ import { ThemeToggleButton } from "../common/ThemeToggleButton";
 import NotificationDropdown from "./NotificationDropdown";
 import UserDropdown from "./UserDropdown";
 import { Link } from "react-router";
-
-// Define the interface for the props
-interface HeaderProps {
-  onClick?: () => void; // Optional function that takes no arguments and returns void
-  onToggle: () => void;
-}
-const Header: React.FC<HeaderProps> = ({ onClick, onToggle }) => {
-  const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
-
-  const toggleApplicationMenu = () => {
-    setApplicationMenuOpen(!isApplicationMenuOpen);
-  };
-
-  return (
+            <img
+              className="dark:hidden"
+              src="/images/logo/bolivar-icon-dark.svg"
+              alt="Logo"
+              width={140}
+              height={40}
+            />
+            <img
+              className="hidden dark:block"
+              src="/images/logo/bolivar-icon-white.svg"
+              alt="Logo"
+              width={140}
+              height={40}
+            />
     <header className="sticky top-0 flex w-full bg-bg-main border-border-light z-99999 dark:border-border-dark dark:bg-bg-dark lg:border-b">
       <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
         <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-border-light dark:border-border-dark sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
@@ -81,15 +81,17 @@ const Header: React.FC<HeaderProps> = ({ onClick, onToggle }) => {
           <Link to="/" className="lg:hidden">
             <img
               className="dark:hidden"
-              src="/images/logo/logo-nuevo.png"
+              src="/images/bolivar-white.svg"
               alt="Logo"
               width={140}
+              height={40}
             />
             <img
               className="hidden dark:block"
-              src="/images/logo/logo-nuevo.png"
+              src="/images/logo/logo.svg"
               alt="Logo"
               width={140}
+              height={40}
             />
           </Link>
 

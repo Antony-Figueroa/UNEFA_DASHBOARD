@@ -5,7 +5,7 @@ import {
   createPeriod, 
   updatePeriod, 
   deletePeriod 
-} from '../controllers/periods.controller';
+} from '../controllers/periods.controller.js';
 
 const router = Router();
 

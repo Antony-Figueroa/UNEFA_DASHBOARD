@@ -1,6 +1,6 @@
-import { dbManager } from '../lib/db-manager';
-import { cacheManager } from '../lib/cache-manager';
-import { AppList, ValueListDB } from '../models/list';
+import { dbManager } from '../lib/db-manager.js';
+import { cacheManager } from '../lib/cache-manager.js';
+import { AppList, ValueListDB } from '../models/list.js';
 
 const LISTS_TABLE = 't_list';
 const VALUES_TABLE = 't_value_list';

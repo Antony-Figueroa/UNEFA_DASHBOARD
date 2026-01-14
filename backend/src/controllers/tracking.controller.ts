@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { DatabaseManager } from "../lib/db-manager";
+import { DatabaseManager } from "../lib/db-manager.js";
 
 interface DBProfessionalPractice {
   PROFESSIONAL_PRACTICE_ID: number;

@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { dbManager } from '../lib/db-manager';
+import { dbManager } from '../lib/db-manager.js';
 
 const LOOKUP_TABLE = 't_internship_type';
 const JOIN_TABLE = 't_career_internship_type';

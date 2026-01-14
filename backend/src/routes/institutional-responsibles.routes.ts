@@ -5,7 +5,7 @@ import {
   updateInstitutionalResponsible, 
   deleteInstitutionalResponsible, 
   toggleInstitutionalResponsibleStatus 
-} from '../controllers/institutional-responsibles.controller';
+} from '../controllers/institutional-responsibles.controller.js';
 
 const router = Router();
 

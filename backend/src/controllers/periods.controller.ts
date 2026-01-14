@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { dbManager } from '../lib/db-manager';
+import { dbManager } from '../lib/db-manager.js';
 
 const TABLE_NAME = 't_internships_period';
 

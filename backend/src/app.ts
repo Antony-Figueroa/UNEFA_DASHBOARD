@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 
 import careersRoutes from './routes/careers.routes.js';
 import internshipTypesRoutes from './routes/internship-types.routes.js';
@@ -25,7 +26,7 @@ const port = process.env.PORT || 5000;
 
 // Leer orígenes permitidos desde env (coma-separados). Ejemplo:
 // ALLOWED_ORIGINS=https://your-frontend.vercel.app,http://localhost:5173
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:3000')
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:3000')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
@@ -64,6 +65,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use(cookieParser());
 
 // Routes
 app.use('/api/careers', careersRoutes);

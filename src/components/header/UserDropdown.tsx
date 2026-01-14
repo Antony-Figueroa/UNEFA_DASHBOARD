@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { useAuth } from "../../context/AuthContext";
@@ -6,6 +7,7 @@ import { useAuth } from "../../context/AuthContext";
 export default function UserDropdown() {
   const { user, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -25,7 +27,7 @@ export default function UserDropdown() {
 
   const confirmSignOut = async () => {
     await signOut();
-    window.location.href = "/signin";
+    navigate("/signin", { replace: true });
   };
   return (
     <div className="relative">

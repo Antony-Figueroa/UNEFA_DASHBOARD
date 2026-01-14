@@ -15,6 +15,8 @@ export const login = async (req: Request, res: Response) => {
   const ip = req.ip || '';
   const userAgent = req.headers['user-agent'] || '';
 
+  console.log(`[Auth] Intento de login para CI: ${userCi}`);
+
   if (!userCi || !password) {
     return res.status(400).json({ message: 'Cédula y contraseña son requeridas' });
   }
@@ -23,10 +25,12 @@ export const login = async (req: Request, res: Response) => {
     const result = await authService.login(userCi, password, ip, userAgent);
 
     if (!result.success) {
+      console.warn(`[Auth] Login fallido para CI ${userCi}: ${result.message}`);
       return res.status(result.status || 401).json({ message: result.message });
     }
 
     if (result.requirePasswordChange) {
+      console.log(`[Auth] Cambio de clave requerido para CI: ${userCi}`);
       return res.json({
         requirePasswordChange: true,
         userId: result.userId,
@@ -36,6 +40,7 @@ export const login = async (req: Request, res: Response) => {
 
     // Establecer cookie para el token
     if (result.token) {
+      console.log(`[Auth] Generando cookie de sesión para CI: ${userCi}`);
       res.cookie('auth_token', result.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -44,11 +49,33 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
+    console.log(`[Auth] Login exitoso para CI: ${userCi}`);
     res.json({
       message: 'Login exitoso',
       user: result.user
     });
   } catch (error) {
+    console.error(`[Auth] Error crítico en login para CI ${userCi}:`, error);
+    handleAuthError(res, error);
+  }
+};
+
+export const getMe = async (req: any, res: Response) => {
+  try {
+    console.log(`[Auth] Verificando sesión para usuario ID: ${req.user?.userId}`);
+    // El usuario ya fue verificado por el middleware authenticateToken
+    // El payload del token está en req.user
+    res.json({
+      success: true,
+      user: {
+        id: req.user.userId,
+        role: req.user.role,
+        // No tenemos nombre/email en el token, pero para el estado de autenticación básico sirve
+        // Podríamos buscar en la DB si es necesario
+      }
+    });
+  } catch (error) {
+    console.error(`[Auth] Error en getMe:`, error);
     handleAuthError(res, error);
   }
 };

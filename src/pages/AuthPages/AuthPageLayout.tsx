@@ -28,7 +28,7 @@ export default function AuthLayout({
                 <img
                   width={180}
                   height={180}
-                  src="/logo-nuevo.svg"
+                  src="/logo-nuevo.png"
                   alt="Logo UNEFA"
                   className="drop-shadow-lg"
                 />

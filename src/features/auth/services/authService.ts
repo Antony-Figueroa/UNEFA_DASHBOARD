@@ -53,6 +53,11 @@ export const login = async (userCi: string, password: string): Promise<LoginResp
   return response.data;
 };
 
+export const getMe = async (): Promise<{ success: boolean; user: AuthUser }> => {
+  const response = await apiClient.get<{ success: boolean; user: AuthUser }>("/auth/me");
+  return response.data;
+};
+
 export const logout = async (): Promise<void> => {
   await apiClient.post("/auth/logout");
 };

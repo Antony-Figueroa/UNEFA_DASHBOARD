@@ -12,6 +12,7 @@ console.log(`[API] Inicializando cliente. Modo: ${isProd ? "Producción" : "Desa
 const apiClient = axios.create({
   baseURL,
   timeout: 20000, // Aumentado para dar margen a la BD
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -34,22 +35,20 @@ apiClient.interceptors.request.use((config) => {
  */
 apiClient.interceptors.response.use(
   (response) => {
-    console.log(`[API] Respuesta recibida: ${response.status} ${response.config.url}`);
-    // Validar que la respuesta sea JSON si se espera
-    const contentType = response.headers["content-type"];
-    if (response.data && contentType && !contentType.includes("application/json")) {
-      console.warn(`[API] Respuesta no es JSON: ${contentType}`);
-    }
     return response;
   },
   async (error: AxiosError) => {
-    console.error(`[API] Error detectado: ${error.message} (${error.code}) en ${error.config?.url}`);
     const config = error.config as InternalAxiosRequestConfig & { _retryCount?: number };
+    
+    // No loguear errores 401 como "Error detectado" ya que son parte del flujo normal de auth
+    if (error.response?.status !== 401) {
+      console.error(`[API] Error: ${error.message} en ${error.config?.url}`);
+    }
     
     // Si no hay config (ej: error de red extremo) o ya excedimos los reintentos
     if (!config || (config._retryCount ?? 0) >= 3) {
       if (error.code === 'ERR_NETWORK') {
-        console.error('[API] ERROR CRÍTICO DE RED: Posible problema de CORS o servidor caído.');
+        console.error('[API] Error de red: Verifique su conexión o el estado del servidor.');
       }
       return Promise.reject(error);
     }
@@ -66,9 +65,7 @@ apiClient.interceptors.response.use(
       error.response.status >= 500;    // Server errors
 
     if (shouldRetry) {
-      const delay = Math.pow(2, config._retryCount) * 1000; // Backoff exponencial: 2s, 4s, 8s
-      console.warn(`[API] Intento ${config._retryCount} fallido. Reintentando en ${delay}ms...`);
-      
+      const delay = Math.pow(2, config._retryCount) * 1000;
       await new Promise(resolve => setTimeout(resolve, delay));
       return apiClient(config);
     }

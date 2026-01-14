@@ -5,6 +5,7 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
 import * as authService from "../../features/auth/services/authService";
+import { useAuth } from "../../context/AuthContext";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -16,6 +17,7 @@ export default function SignInForm() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { checkAuth } = useAuth();
 
   useEffect(() => {
     if (location.state?.message) {
@@ -38,6 +40,7 @@ export default function SignInForm() {
       }
 
       if (data.user) {
+        await checkAuth(); // Actualizar el estado global del usuario
         navigate("/dashboard");
       }
     } catch (err: unknown) {

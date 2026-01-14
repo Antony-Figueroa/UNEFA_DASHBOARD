@@ -22,10 +22,10 @@ const PublicFooter: React.FC = () => {
             >
               <img
                 className="h-12 w-auto"
-                src="/images/logo/logo-nuevo.svg"
+                src="/logo-nuevo.png"
                 alt="UNEFA Logo"
               />
-              <span className="text-xl font-bold">SIGP</span>
+              <span className="text-xl font-bold">UNEFA</span>
             </a>
             <p className="text-gray-400 text-sm">
               Sistema de Gestión de Pasantías de la UNEFA. Transformando el futuro académico a través de la experiencia profesional.

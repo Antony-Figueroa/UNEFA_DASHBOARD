@@ -1,241 +1,277 @@
+import { useState, useEffect, useMemo } from "react";
+import { useAuth } from "../../context/AuthContext";
+import Badge from "../ui/badge/Badge";
 import { useModal } from "../../hooks/useModal";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
+import * as authService from "../../features/auth/services/authService";
+import { useToast } from "../../context/toast";
+import UnifiedDialog from "../ui/dialog/UnifiedDialog";
 
 export default function UserMetaCard() {
+  const { user, checkAuth } = useAuth();
+  const { addToast } = useToast();
   const { isOpen, openModal, closeModal } = useModal();
-  const handleSave = () => {
-    // Handle save logic here
-    console.log("Saving changes...");
-    closeModal();
+  const [loading, setLoading] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    secondName: "",
+    surname: "",
+    secondSurname: "",
+    email: "",
+    phoneNumber: ""
+  });
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    variant: "info" | "warning" | "error" | "success" | "confirm";
+  } | null>(null);
+
+  // Precargar datos
+  useEffect(() => {
+    if (user && isOpen) {
+      setFormData({
+        name: user.name || "",
+        secondName: user.secondName || "",
+        surname: user.surname || "",
+        secondSurname: user.secondSurname || "",
+        email: user.email || "",
+        phoneNumber: user.phoneNumber || ""
+      });
+    }
+  }, [user, isOpen]);
+
+  // Verificar si hay cambios
+  const hasChanges = useMemo(() => {
+    if (!user) return false;
+    return (
+      formData.name !== (user.name || "") ||
+      formData.secondName !== (user.secondName || "") ||
+      formData.surname !== (user.surname || "") ||
+      formData.secondSurname !== (user.secondSurname || "") ||
+      formData.email !== (user.email || "") ||
+      formData.phoneNumber !== (user.phoneNumber || "")
+    );
+  }, [formData, user]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
+
+  const handleCloseAttempt = () => {
+    if (hasChanges) {
+      setConfirmDialog({
+        isOpen: true,
+        title: "Cambios sin guardar",
+        message: "¿Hay cambios sin guardar, seguro que desea cerrar?",
+        variant: "warning",
+        onConfirm: () => {
+          setConfirmDialog(null);
+          closeModal();
+        }
+      });
+    } else {
+      closeModal();
+    }
+  };
+
+  const handleSaveAttempt = () => {
+    const nameTrimmed = formData.name.trim();
+    const surnameTrimmed = formData.surname.trim();
+    const emailTrimmed = formData.email.trim();
+    const phoneTrimmed = formData.phoneNumber.trim();
+
+    // 1. Nombre completo (requerido, mínimo 3 caracteres)
+    if (nameTrimmed.length < 3) {
+      addToast({
+        variant: "error",
+        title: "Nombre inválido",
+        message: "El nombre debe tener al menos 3 caracteres."
+      });
+      return;
+    }
+
+    if (!surnameTrimmed) {
+      addToast({
+        variant: "error",
+        title: "Apellido requerido",
+        message: "Por favor, ingrese su apellido."
+      });
+      return;
+    }
+
+    // 2. Email (formato válido, requerido)
+    if (!emailTrimmed) {
+      addToast({
+        variant: "error",
+        title: "Email requerido",
+        message: "Por favor, ingrese su correo electrónico."
+      });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailTrimmed)) {
+      addToast({
+        variant: "error",
+        title: "Email inválido",
+        message: "Ingrese un correo electrónico con formato válido."
+      });
+      return;
+    }
+
+    // 3. Teléfono (formato válido según región - Venezuela)
+    if (phoneTrimmed) {
+      const phoneRegex = /^04(12|14|16|24|26)\d{7}$/;
+      if (!phoneRegex.test(phoneTrimmed)) {
+        addToast({
+          variant: "error",
+          title: "Teléfono inválido",
+          message: "Ingrese un número de teléfono válido (ej: 04121234567)."
+        });
+        return;
+      }
+    }
+
+    setConfirmDialog({
+      isOpen: true,
+      title: "Confirmar cambios",
+      message: "¿Está seguro que desea guardar los cambios?",
+      variant: "confirm",
+      onConfirm: () => {
+        setConfirmDialog(null);
+        executeSave();
+      }
+    });
+  };
+
+  const executeSave = async () => {
+    setLoading(true);
+    try {
+      const result = await authService.updateProfile({
+        ...formData,
+        name: formData.name.trim(),
+        surname: formData.surname.trim(),
+        email: formData.email.trim(),
+      });
+
+      if (result.success) {
+        await checkAuth();
+        addToast({ variant: "success", title: "Éxito", message: "Perfil actualizado correctamente." });
+        closeModal();
+      } else {
+        addToast({ variant: "error", title: "Error", message: result.message });
+      }
+    } catch {
+      addToast({ variant: "error", title: "Error", message: "No se pudo conectar con el servidor." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <>
-      <div className="p-5 border border-border-light rounded-2xl dark:border-white/10 lg:p-6">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-          <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
-            <div className="w-20 h-20 overflow-hidden border border-border-light rounded-full dark:border-white/10">
-              <img src="/images/user/owner.jpg" alt="user" />
-            </div>
-            <div className="order-3 xl:order-2">
-              <h4 className="mb-2 text-lg font-semibold text-center text-text-emphasis dark:text-white xl:text-left">
-                Antony F.
-              </h4>
-              <div className="flex flex-col items-center gap-1 text-center xl:flex-row xl:gap-3 xl:text-left">
-                <p className="text-sm text-text-secondary dark:text-text-tertiary">
-                  Team Manager
-                </p>
-                <div className="hidden h-3.5 w-px bg-border-medium dark:bg-white/10 xl:block"></div>
-                <p className="text-sm text-text-secondary dark:text-text-tertiary">
-                  Arizona, United States
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center order-2 gap-2 grow xl:order-3 xl:justify-end">
-              <a
-                href="https://www.facebook.com/PimjoHQ"
-                target="_blank"
-                rel="noopener"
-                className="flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-border-medium bg-bg-main text-sm font-medium text-text-primary shadow-theme-xs hover:bg-bg-secondary hover:text-text-emphasis dark:border-border-dark dark:bg-white/3 dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-white"
-              >
-                <svg
-                  className="fill-current"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M11.6666 11.2503H13.7499L14.5833 7.91699H11.6666V6.25033C11.6666 5.39251 11.6666 4.58366 13.3333 4.58366H14.5833V1.78374C14.3118 1.7477 13.2858 1.66699 12.2023 1.66699C9.94025 1.66699 8.33325 3.04771 8.33325 5.58342V7.91699H5.83325V11.2503H8.33325V18.3337H11.6666V11.2503Z"
-                    fill=""
-                  />
-                </svg>
-              </a>
+    <div className="p-5 border border-border-light rounded-2xl dark:border-white/10 lg:p-6 bg-white dark:bg-bg-dark">
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
+          <div className="flex items-center justify-center w-24 h-24 overflow-hidden border border-border-light rounded-full bg-bg-secondary dark:bg-white/5 dark:border-white/10">
+            <svg className="w-14 h-14 text-text-secondary dark:text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
 
-              <a
-                href="https://x.com/PimjoHQ"
-                target="_blank"
-                rel="noopener"
-                className="flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-border-medium bg-bg-main text-sm font-medium text-text-primary shadow-theme-xs hover:bg-bg-secondary hover:text-text-emphasis dark:border-border-dark dark:bg-white/3 dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-white"
-              >
-                <svg
-                  className="fill-current"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M15.1708 1.875H17.9274L11.9049 8.75833L18.9899 18.125H13.4424L9.09742 12.4442L4.12578 18.125H1.36745L7.80912 10.7625L1.01245 1.875H6.70078L10.6283 7.0675L15.1708 1.875ZM14.2033 16.475H15.7308L5.87078 3.43833H4.23162L14.2033 16.475Z"
-                    fill=""
-                  />
-                </svg>
-              </a>
-
-              <a
-                href="https://www.linkedin.com/company/pimjo"
-                target="_blank"
-                rel="noopener"
-                className="flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-border-medium bg-bg-main text-sm font-medium text-text-primary shadow-theme-xs hover:bg-bg-secondary hover:text-text-emphasis dark:border-border-dark dark:bg-white/3 dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-white"
-              >
-                <svg
-                  className="fill-current"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M5.78381 4.16645C5.78351 4.84504 5.37181 5.45569 4.74286 5.71045C4.11391 5.96521 3.39331 5.81321 2.92083 5.32613C2.44836 4.83904 2.31837 4.11413 2.59216 3.49323C2.86596 2.87233 3.48886 2.47942 4.16715 2.49978C5.06804 2.52682 5.78422 3.26515 5.78381 4.16645ZM5.83381 7.06645H2.50048V17.4998H5.83381V7.06645ZM11.1005 7.06645H7.78381V17.4998H11.0672V12.0248C11.0672 8.97475 15.0422 8.69142 15.0422 12.0248V17.4998H18.3338V10.8914C18.3338 5.74978 12.4505 5.94145 11.0672 8.46642L11.1005 7.06645Z"
-                    fill=""
-                  />
-                </svg>
-              </a>
-
-              <a
-              href="https://instagram.com/PimjoHQ"
-              target="_blank"
-              rel="noopener"
-              className="flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-border-medium bg-bg-main text-sm font-medium text-text-primary shadow-theme-xs hover:bg-bg-secondary hover:text-text-emphasis dark:border-border-dark dark:bg-white/3 dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-white"
-            >
-                <svg
-                  className="fill-current"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M10.8567 1.66699C11.7946 1.66854 12.2698 1.67351 12.6805 1.68573L12.8422 1.69102C13.0291 1.69766 13.2134 1.70599 13.4357 1.71641C14.3224 1.75738 14.9273 1.89766 15.4586 2.10391C16.0078 2.31572 16.4717 2.60183 16.9349 3.06503C17.3974 3.52822 17.6836 3.99349 17.8961 4.54141C18.1016 5.07197 18.2419 5.67753 18.2836 6.56433C18.2935 6.78655 18.3015 6.97088 18.3081 7.15775L18.3133 7.31949C18.3255 7.73011 18.3311 8.20543 18.3328 9.1433L18.3335 9.76463C18.3336 9.84055 18.3336 9.91888 18.3336 9.99972L18.3335 10.2348L18.333 10.8562C18.3314 11.794 18.3265 12.2694 18.3142 12.68L18.3089 12.8417C18.3023 13.0286 18.294 13.213 18.2836 13.4351C18.2426 14.322 18.1016 14.9268 17.8961 15.458C17.6842 16.0074 17.3974 16.4713 16.9349 16.9345C16.4717 17.397 16.0057 17.6831 15.4586 17.8955C14.9273 18.1011 14.3224 18.2414 13.4357 18.2831C13.2134 18.293 13.0291 18.3011 12.8422 18.3076L12.6805 18.3128C12.2698 18.3251 11.7946 18.3306 10.8567 18.3324L10.2353 18.333C10.1594 18.333 10.0811 18.333 10.0002 18.333H9.76516L9.14375 18.3325C8.20591 18.331 7.7306 18.326 7.31997 18.3137L7.15824 18.3085C6.97136 18.3018 6.78703 18.2935 6.56481 18.2831C5.67801 18.2421 5.07384 18.1011 4.5419 17.8955C3.99328 17.6838 3.5287 17.397 3.06551 16.9345C2.60231 16.4713 2.3169 16.0053 2.1044 15.458C1.89815 14.9268 1.75856 14.322 1.7169 13.4351C1.707 13.213 1.69892 13.0286 1.69238 12.8417L1.68714 12.68C1.67495 12.2694 1.66939 11.794 1.66759 10.8562L1.66748 9.1433C1.66903 8.20543 1.67399 7.73011 1.68621 7.31949L1.69151 7.15775C1.69815 6.97088 1.70648 6.78655 1.7169 6.56433C1.75786 5.67683 1.89815 5.07266 2.1044 4.54141C2.3162 3.9928 2.60231 3.52822 3.06551 3.06503C3.5287 2.60183 3.99398 2.31641 4.5419 2.10391C5.07315 1.89766 5.67731 1.75808 6.56481 1.71641C6.78703 1.70652 6.97136 1.69844 7.15824 1.6919L7.31997 1.68666C7.7306 1.67446 8.20591 1.6689 9.14375 1.6671L10.8567 1.66699ZM10.0002 5.83308C7.69781 5.83308 5.83356 7.69935 5.83356 9.99972C5.83356 12.3021 7.69984 14.1664 10.0002 14.1664C12.3027 14.1664 14.1669 12.3001 14.1669 9.99972C14.1669 7.69732 12.3006 5.83308 10.0002 5.83308ZM10.0002 7.49974C11.381 7.49974 12.5002 8.61863 12.5002 9.99972C12.5002 11.3805 11.3813 12.4997 10.0002 12.4997C8.6195 12.4997 7.50023 11.3809 7.50023 9.99972C7.50023 8.61897 8.61908 7.49974 10.0002 7.49974ZM14.3752 4.58308C13.8008 4.58308 13.3336 5.04967 13.3336 5.62403C13.3336 6.19841 13.8002 6.66572 14.3752 6.66572C14.9496 6.66572 15.4169 6.19913 15.4169 5.62403C15.4169 5.04967 14.9488 4.58236 14.3752 4.58308Z"
-                    fill=""
-                  />
-                </svg>
-              </a>
+          <div className="flex-1 text-center xl:text-left">
+            <h4 className="mb-1 text-2xl font-bold text-text-emphasis dark:text-white">
+              {user ? `${user.name} ${user.surname}` : "Cargando..."}
+            </h4>
+            <p className="text-md text-text-secondary dark:text-text-tertiary">
+              {user?.email || "Sin correo registrado"}
+            </p>
+            <div className="mt-3 flex flex-wrap justify-center xl:justify-start gap-2">
+              <Badge color="success" variant="light">Usuario Activo</Badge>
+              <Badge color="light" variant="light">ID: {user?.userCi || "N/A"}</Badge>
             </div>
           </div>
-          <button
-            onClick={openModal}
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-border-medium bg-bg-main px-4 py-3 text-sm font-medium text-text-primary shadow-theme-xs hover:bg-bg-secondary hover:text-text-emphasis dark:border-border-dark dark:bg-white/3 dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-white lg:inline-flex lg:w-auto"
-          >
-            <svg
-              className="fill-current"
-              width="18"
-              height="18"
-              viewBox="0 0 18 18"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+
+          <div className="w-full xl:w-auto">
+            <button
+              onClick={openModal}
+              className="w-full xl:w-auto flex items-center justify-center gap-2 rounded-full border border-border-medium bg-bg-main px-4 py-2.5 text-sm font-medium text-text-primary shadow-theme-xs hover:bg-bg-secondary hover:text-text-emphasis dark:border-border-dark dark:bg-white/3 dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-white"
             >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M15.0911 2.78206C14.2125 1.90338 12.7878 1.90338 11.9092 2.78206L4.57524 10.116C4.26682 10.4244 4.0547 10.8158 3.96468 11.2426L3.31231 14.3352C3.25997 14.5833 3.33653 14.841 3.51583 15.0203C3.69512 15.1996 3.95286 15.2761 4.20096 15.2238L7.29355 14.5714C7.72031 14.4814 8.11172 14.2693 8.42013 13.9609L15.7541 6.62695C16.6327 5.74827 16.6327 4.32365 15.7541 3.44497L15.0911 2.78206ZM12.9698 3.84272C13.2627 3.54982 13.7376 3.54982 14.0305 3.84272L14.6934 4.50563C14.9863 4.79852 14.9863 5.2734 14.6934 5.56629L14.044 6.21573L12.3204 4.49215L12.9698 3.84272ZM11.2597 5.55281L5.6359 11.1766C5.53309 11.2794 5.46238 11.4099 5.43238 11.5522L5.01758 13.5185L6.98394 13.1037C7.1262 13.0737 7.25666 13.003 7.35947 12.9002L12.9833 7.27639L11.2597 5.55281Z"
-                fill=""
-              />
-            </svg>
-            Edit
-          </button>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+              Editar Perfil
+            </button>
+          </div>
         </div>
       </div>
-      <Modal isOpen={isOpen} onClose={closeModal} className="max-w-3xl" showCloseButton>
-        <div className="flex flex-col h-full bg-bg-main dark:bg-bg-dark">
-          <ModalHeader className="shrink-0 pt-6 px-6 sm:pt-10 sm:px-12 bg-bg-main dark:bg-bg-dark border-b border-border-light dark:border-white/10">
-            <div className="w-full">
-              <h4 className="mb-1 text-2xl font-semibold text-text-emphasis dark:text-white">
-                Edit Personal Information
-              </h4>
-              <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
-                Update your details to keep your profile up-to-date.
-              </p>
+
+      <Modal isOpen={isOpen} onClose={handleCloseAttempt} className="max-w-137.5">
+        <ModalHeader onClose={handleCloseAttempt}>
+          <div className="flex flex-col">
+            <h2 className="text-xl font-bold text-text-emphasis dark:text-white">Actualizar Perfil</h2>
+            <p className="text-sm text-text-secondary dark:text-text-tertiary">Modifique sus datos personales a continuación.</p>
+          </div>
+        </ModalHeader>
+        
+        <ModalBody>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="name">Primer Nombre <span className="text-error">*</span></Label>
+              <Input id="name" name="name" value={formData.name} onChange={handleInputChange} placeholder="Su primer nombre" />
             </div>
-          </ModalHeader>
+            <div className="space-y-2">
+              <Label htmlFor="secondName">Segundo Nombre</Label>
+              <Input id="secondName" name="secondName" value={formData.secondName} onChange={handleInputChange} placeholder="Opcional" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="surname">Primer Apellido <span className="text-error">*</span></Label>
+              <Input id="surname" name="surname" value={formData.surname} onChange={handleInputChange} placeholder="Su primer apellido" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="secondSurname">Segundo Apellido</Label>
+              <Input id="secondSurname" name="secondSurname" value={formData.secondSurname} onChange={handleInputChange} placeholder="Opcional" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Correo Electrónico <span className="text-error">*</span></Label>
+              <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="ejemplo@unefa.edu.ve" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phoneNumber">Teléfono</Label>
+              <Input id="phoneNumber" name="phoneNumber" type="tel" value={formData.phoneNumber} onChange={handleInputChange} placeholder="Su número de teléfono" />
+            </div>
+          </div>
+        </ModalBody>
 
-          <ModalBody className="overflow-y-auto custom-scrollbar grow px-6 sm:px-12 py-6 sm:py-10 bg-bg-secondary/30 dark:bg-white/2">
-            <form id="user-meta-form" onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-7">
-              <div>
-                <h5 className="mb-5 text-lg font-medium text-text-emphasis dark:text-white lg:mb-6">
-                  Social Links
-                </h5>
-
-                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-                  <div>
-                    <Label>Facebook</Label>
-                    <Input
-                      type="text"
-                      defaultValue="https://www.facebook.com/PimjoHQ"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>X.com</Label>
-                    <Input type="text" defaultValue="https://x.com/PimjoHQ" />
-                  </div>
-
-                  <div>
-                    <Label>Linkedin</Label>
-                    <Input
-                      type="text"
-                      defaultValue="https://www.linkedin.com/company/pimjo"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Instagram</Label>
-                    <Input type="text" defaultValue="https://instagram.com/PimjoHQ" />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h5 className="mb-5 text-lg font-medium text-text-emphasis dark:text-white lg:mb-6">
-                  Personal Information
-                </h5>
-
-                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-                  <div className="col-span-2 lg:col-span-1">
-                    <Label>First Name</Label>
-                    <Input type="text" defaultValue="Antony F." />
-                  </div>
-
-                  <div className="col-span-2 lg:col-span-1">
-                    <Label>Last Name</Label>
-                    <Input type="text" defaultValue="Chowdhury" />
-                  </div>
-
-                  <div className="col-span-2 lg:col-span-1">
-                    <Label>Email Address</Label>
-                    <Input type="text" defaultValue="randomuser@pimjo.com" />
-                  </div>
-
-                  <div className="col-span-2 lg:col-span-1">
-                    <Label>Phone</Label>
-                    <Input type="text" defaultValue="+09 363 398 46" />
-                  </div>
-
-                  <div className="col-span-2">
-                    <Label>Bio</Label>
-                    <Input type="text" defaultValue="Team Manager" />
-                  </div>
-                </div>
-              </div>
-            </form>
-          </ModalBody>
-
-          <ModalFooter className="shrink-0">
-            <Button size="sm" variant="outline" onClick={closeModal} className="flex-1 sm:flex-none">
-              Close
+        <ModalFooter>
+          <div className="flex w-full justify-end gap-3">
+            <Button variant="outline" onClick={handleCloseAttempt} disabled={loading} className="px-6">Cancelar</Button>
+            <Button onClick={handleSaveAttempt} disabled={loading} className="px-6 min-w-30">
+              {loading ? "Guardando..." : "Guardar Cambios"}
             </Button>
-            <Button size="sm" type="submit" form="user-meta-form" className="flex-1 sm:flex-none">
-              Save Changes
-            </Button>
-          </ModalFooter>
-        </div>
+          </div>
+        </ModalFooter>
       </Modal>
-    </>
+
+      {confirmDialog && (
+        <UnifiedDialog
+          isOpen={confirmDialog.isOpen}
+          onClose={() => setConfirmDialog(null)}
+          onConfirm={confirmDialog.onConfirm}
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          variant={confirmDialog.variant}
+          confirmLabel="Confirmar"
+          cancelLabel="Cancelar"
+        />
+      )}
+    </div>
   );
 }

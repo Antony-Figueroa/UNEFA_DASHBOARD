@@ -334,9 +334,10 @@ const AppSidebar: React.FC = () => {
     <aside
       style={{ 
         marginTop: 'var(--sidebar-mt, 0px)',
-        height: 'calc(100vh - var(--sidebar-mt, 0px))'
+        height: 'calc(100vh - var(--sidebar-mt, 0px) - var(--banner-height, 0px))',
+        top: 'var(--banner-height, 0px)'
       }}
-      className={`fixed flex flex-col top-0 px-5 left-0 bg-white dark:bg-bg-dark dark:border-white/10 text-text-primary transition-all duration-300 ease-in-out z-50 border-r border-border-light shadow-theme-md 
+      className={`fixed flex flex-col px-5 left-0 bg-white dark:bg-bg-dark dark:border-white/10 text-text-primary transition-all duration-300 ease-in-out z-999999 border-r border-border-light shadow-theme-md 
         ${isExpanded || isMobileOpen
           ? "w-72.5"
           : isHovered
@@ -354,20 +355,20 @@ const AppSidebar: React.FC = () => {
       >
         <Link to="/">
           {isExpanded || isHovered || isMobileOpen ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-5">
               <img
-                src="/images/logo/logo-nuevo.svg"
+                src="/logo-nuevo.png"
                 alt="Logo"
-                width={45}
-                height={45}
+                width={35}
+                height={35}
               />
               <span className="text-xl font-bold text-text-emphasis">
-                SIGP
+                Dashboard UNEFA
               </span>
             </div>
           ) : (
             <img
-              src="/images/logo/logo-nuevo.svg"
+              src="/logo-nuevo.png"
               alt="Logo"
               width={35}
               height={35}

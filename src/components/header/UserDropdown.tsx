@@ -35,11 +35,26 @@ export default function UserDropdown() {
         onClick={toggleDropdown}
         className="flex items-center text-text-primary dropdown-toggle dark:text-text-tertiary"
       >
-        <span className="mr-3 overflow-hidden rounded-full h-9 w-9">
-          <img src="/images/user/owner.jpg" alt="User" />
+        <span className="flex items-center justify-center mr-3 overflow-hidden rounded-full h-9 w-9 bg-bg-secondary dark:bg-white/5">
+          <svg
+            className="w-6 h-6 text-text-secondary dark:text-text-tertiary"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+            />
+          </svg>
         </span>
 
-        <span className="block mr-1 font-medium text-theme-sm">{user?.email?.split('@')[0] || "Usuario"}</span>
+        <span className="block mr-1 font-medium text-theme-sm">
+          {user ? `${user.name} ${user.surname}` : "Usuario"}
+        </span>
         <svg
           className={`stroke-text-secondary dark:stroke-text-tertiary transition-transform duration-200 icon-xs ${isOpen ? "rotate-180" : ""
             }`}
@@ -62,12 +77,12 @@ export default function UserDropdown() {
         onClose={closeDropdown}
         className="absolute right-0 mt-4.25 flex w-65 flex-col rounded-2xl border border-border-light bg-white p-3 shadow-theme-md dark:border-white/10 dark:bg-bg-dark transition-colors duration-300"
       >
-        <div>
-          <span className="block font-medium text-text-primary text-theme-sm dark:text-text-tertiary">
-            {user?.email?.split('@')[0] || "Usuario"}
+        <div className="px-3 py-2 border-b border-border-light dark:border-white/10 mb-2">
+          <span className="block font-semibold text-text-primary text-theme-sm dark:text-text-tertiary">
+            {user ? `${user.name} ${user.surname}` : "Usuario"}
           </span>
-          <span className="mt-0.5 block text-theme-xs text-text-secondary dark:text-text-tertiary">
-            {user?.email || "usuario@unefa.edu.ve"}
+          <span className="mt-0.5 block text-theme-xs text-text-secondary dark:text-text-tertiary truncate">
+            {user?.email || "Sin correo registrado"}
           </span>
         </div>
 

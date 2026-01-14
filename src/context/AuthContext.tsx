@@ -3,9 +3,13 @@ import * as authService from "../features/auth/services/authService";
 
 interface AuthUser {
   id: number;
+  userCi: string;
   name: string;
+  secondName?: string;
   surname: string;
+  secondSurname?: string;
   email: string;
+  phoneNumber?: string;
   role: number;
 }
 

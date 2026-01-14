@@ -33,10 +33,14 @@ const TopBanner: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    document.documentElement.style.setProperty("--banner-height", isVisible ? "60px" : "0px");
+  }, [isVisible]);
+
   return (
     <div 
-      className={`w-full bg-white dark:bg-white border-b border-border-light dark:border-border-dark overflow-hidden z-99999 transition-all duration-300 ease-in-out shadow-theme-md ${
-        isVisible ? "max-h-15 opacity-100" : "max-h-0 opacity-0 border-none"
+      className={`fixed top-0 left-0 w-full bg-white dark:bg-white border-b border-border-light dark:border-border-dark overflow-hidden z-99999 transition-all duration-300 ease-in-out shadow-theme-md ${
+        isVisible ? "h-15 opacity-100" : "h-0 opacity-0 border-none"
       }`}
     >
       <img

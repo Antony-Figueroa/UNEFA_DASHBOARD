@@ -22,14 +22,14 @@ const Header: React.FC<HeaderProps> = ({ onToggle, onClick }) => {
           <Link to="/" className="hidden lg:block mr-4">
             <img
               className="dark:hidden"
-              src="/images/logo/bolivar-icon-dark.svg"
+              src="/logo-nuevo.png"
               alt="Logo"
               width={140}
               height={40}
             />
             <img
               className="hidden dark:block"
-              src="/images/logo/bolivar-icon-white.svg"
+              src="/logo-nuevo.png"
               alt="Logo"
               width={140}
               height={40}
@@ -95,7 +95,7 @@ const Header: React.FC<HeaderProps> = ({ onToggle, onClick }) => {
 
           <Link to="/" className="lg:hidden">
             <img
-              src="/images/logo/logo-nuevo.svg"
+              src="/logo-nuevo.png"
               alt="Logo"
               width={40}
               height={40}

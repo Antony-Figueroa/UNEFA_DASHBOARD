@@ -2,10 +2,23 @@ import apiClient from "../../../api/apiClient";
 
 export interface AuthUser {
   id: number;
+  userCi: string;
   name: string;
+  secondName?: string;
   surname: string;
+  secondSurname?: string;
   email: string;
+  phoneNumber?: string;
   role: number;
+}
+
+export interface UpdateProfileData {
+  name: string;
+  secondName?: string;
+  surname: string;
+  secondSurname?: string;
+  email: string;
+  phoneNumber?: string;
 }
 
 export interface LoginResponse {
@@ -55,6 +68,11 @@ export const login = async (userCi: string, password: string): Promise<LoginResp
 
 export const getMe = async (): Promise<{ success: boolean; user: AuthUser }> => {
   const response = await apiClient.get<{ success: boolean; user: AuthUser }>("/auth/me");
+  return response.data;
+};
+
+export const updateProfile = async (data: UpdateProfileData): Promise<{ success: boolean; message: string }> => {
+  const response = await apiClient.put<{ success: boolean; message: string }>("/auth/profile", data);
   return response.data;
 };
 

@@ -45,14 +45,14 @@ export const DbStatusProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.error('[DbStatusContext] Error al verificar estado:', err);
       const errorMessage = err instanceof Error ? err.message : 'Error de red';
       
-      if (previousStatus.current !== 'disconnected') {
+      if (previousStatus.current !== 'disconnected' && previousStatus.current !== 'checking') {
         addToast({
           variant: 'error',
           title: 'Error de Red',
           message: 'No se pudo verificar el estado de la base de datos.',
         });
-        previousStatus.current = 'disconnected';
       }
+      previousStatus.current = 'disconnected';
       
       setStatus('disconnected');
       setError(errorMessage);

@@ -3,8 +3,6 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 const isProd = import.meta.env.PROD;
 const baseURL = import.meta.env.VITE_API_URL || (isProd ? "/api" : "http://localhost:5000/api");
 
-console.log(`[API] Inicializando cliente. Modo: ${isProd ? "Producción" : "Desarrollo"}. BaseURL: ${baseURL}`);
-
 /**
  * Cliente de API centralizado para TailAdmin.
  * Configurado con timeouts, reintentos y manejo de errores robusto.
@@ -20,10 +18,9 @@ const apiClient = axios.create({
 });
 
 /**
- * Interceptor de solicitud para logging.
+ * Interceptor de solicitud para logging opcional.
  */
 apiClient.interceptors.request.use((config) => {
-  console.log(`[API] Solicitud enviada: ${config.method?.toUpperCase()} ${config.url}`);
   return config;
 }, (error) => {
   console.error(`[API] Error en solicitud:`, error);

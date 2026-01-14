@@ -122,9 +122,6 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
     const handleVisitRegister = () => {
         if (tracking?.trackingId) {
             navigate(`/tracking/visits/${tracking.trackingId}`);
-        } else {
-            // Si es nuevo, tal vez debamos guardar primero o mostrar un aviso
-            alert("Debe guardar el seguimiento antes de registrar visitas.");
         }
     };
 

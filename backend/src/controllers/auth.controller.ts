@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as authService from '../services/auth.service.js';
+import { AuthRequest } from '../middlewares/auth.middleware.js';
 
 const handleAuthError = (res: Response, error: unknown) => {
   console.error('Auth Error:', error);
@@ -60,7 +61,7 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-export const getMe = async (req: any, res: Response) => {
+export const getMe = async (req: AuthRequest, res: Response) => {
   try {
     console.log(`[Auth] Verificando sesión para usuario ID: ${req.user?.userId}`);
     // El usuario ya fue verificado por el middleware authenticateToken

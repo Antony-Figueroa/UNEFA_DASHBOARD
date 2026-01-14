@@ -38,8 +38,7 @@ export default function SignUpForm() {
       if (error) throw error;
 
       if (data.user) {
-        alert("Check your email for the confirmation link!");
-        navigate("/signin");
+        navigate("/signin", { state: { message: "¡Registro exitoso! Por favor, revisa tu correo para confirmar tu cuenta." } });
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "An error occurred during sign up";

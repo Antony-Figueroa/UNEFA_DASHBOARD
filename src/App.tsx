@@ -10,6 +10,7 @@
 import { BrowserRouter as Router } from "react-router";
 import { AppRoutes } from "./routes";
 import ToastContainer from "./components/ui/toast/ToastContainer";
+import ScrollToTop from "./components/common/ScrollToTop";
 
 /**
  * Componente raíz de la aplicación React
@@ -20,6 +21,7 @@ export default function App() {
   return (
     <>
       <ToastContainer />
+      <ScrollToTop />
       <Router>
         <AppRoutes />
       </Router>

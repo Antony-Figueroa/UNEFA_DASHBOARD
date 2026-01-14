@@ -52,7 +52,7 @@
   --color-brand-200: #c2d6ff;
   --color-brand-300: #9cb9ff;
   --color-brand-400: #67baff;
-  --color-brand-500: #007fff;
+  --color-brand-500: #2d90c4;
   --color-brand-600: #054f94;
   --color-brand-700: #2e5888;
   --color-brand-800: #233e66;
@@ -177,15 +177,11 @@
   --color-alert-info-border: var(--color-blue-light-500);
   --color-alert-info-text: var(--color-blue-light-700);
 
-  --shadow-theme-md: 0px 4px 8px -2px rgba(16, 24, 40, 0.1),
-    0px 2px 4px -2px rgba(16, 24, 40, 0.06);
-  --shadow-theme-lg: 0px 12px 16px -4px rgba(16, 24, 40, 0.08),
-    0px 4px 6px -2px rgba(16, 24, 40, 0.03);
-  --shadow-theme-sm: 0px 1px 3px 0px rgba(16, 24, 40, 0.1),
-    0px 1px 2px 0px rgba(16, 24, 40, 0.06);
-  --shadow-theme-xs: 0px 1px 2px 0px rgba(16, 24, 40, 0.05);
-  --shadow-theme-xl: 0px 20px 24px -4px rgba(16, 24, 40, 0.08),
-    0px 8px 8px -4px rgba(16, 24, 40, 0.03);
+  --shadow-theme-md: 0px 2px 3px rgba(0, 0, 0, 0.1);
+  --shadow-theme-lg: 0px 3px 5px rgba(0, 0, 0, 0.1);
+  --shadow-theme-sm: 0px 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-theme-xs: 0px 1px 1px rgba(0, 0, 0, 0.05);
+  --shadow-theme-xl: 0px 4px 6px rgba(0, 0, 0, 0.1);
   --shadow-datepicker: -5px 0 0 var(--color-bg-dark), 5px 0 0 var(--color-bg-dark);
   --shadow-focus-ring: 0px 0px 0px 4px rgba(0, 127, 255, 0.12);
   --shadow-slider-navigation: 0px 1px 2px 0px rgba(16, 24, 40, 0.1),

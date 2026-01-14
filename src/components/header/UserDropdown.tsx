@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
+import { useAuth } from "../../context/AuthContext";
 
 export default function UserDropdown() {
+  const { user, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -21,7 +23,8 @@ export default function UserDropdown() {
     closeDropdown();
   };
 
-  const confirmSignOut = () => {
+  const confirmSignOut = async () => {
+    await signOut();
     window.location.href = "/signin";
   };
   return (
@@ -34,7 +37,7 @@ export default function UserDropdown() {
           <img src="/images/user/owner.jpg" alt="User" />
         </span>
 
-        <span className="block mr-1 font-medium text-theme-sm">Antony F.</span>
+        <span className="block mr-1 font-medium text-theme-sm">{user?.email?.split('@')[0] || "Usuario"}</span>
         <svg
           className={`stroke-text-secondary dark:stroke-text-tertiary transition-transform duration-200 icon-xs ${isOpen ? "rotate-180" : ""
             }`}
@@ -55,14 +58,14 @@ export default function UserDropdown() {
       <Dropdown
         isOpen={isOpen}
         onClose={closeDropdown}
-        className="absolute right-0 mt-4.25 flex w-65 flex-col rounded-2xl border border-border-light bg-bg-main p-3 shadow-theme-lg dark:border-white/10 dark:bg-bg-dark"
+        className="absolute right-0 mt-4.25 flex w-65 flex-col rounded-2xl border border-border-light bg-white p-3 shadow-theme-md dark:border-white/10 dark:bg-bg-dark transition-colors duration-300"
       >
         <div>
           <span className="block font-medium text-text-primary text-theme-sm dark:text-text-tertiary">
-            Antony F.
+            {user?.email?.split('@')[0] || "Usuario"}
           </span>
           <span className="mt-0.5 block text-theme-xs text-text-secondary dark:text-text-tertiary">
-            correo.ramdom@gmail.com
+            {user?.email || "usuario@unefa.edu.ve"}
           </span>
         </div>
 

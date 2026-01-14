@@ -3,6 +3,23 @@ import { ThemeToggleButton } from "../common/ThemeToggleButton";
 import NotificationDropdown from "./NotificationDropdown";
 import UserDropdown from "./UserDropdown";
 import { Link } from "react-router";
+interface HeaderProps {
+  onToggle?: () => void;
+  onClick?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onToggle, onClick }) => {
+  const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
+
+  const toggleApplicationMenu = () => {
+    setApplicationMenuOpen(!isApplicationMenuOpen);
+  };
+
+  return (
+    <header className="sticky top-0 flex w-full bg-bg-main border-border-light z-99999 dark:border-border-dark dark:bg-bg-dark lg:border-b">
+      <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
+        <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-border-light dark:border-border-dark sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
+          <Link to="/" className="hidden lg:block mr-4">
             <img
               className="dark:hidden"
               src="/images/logo/bolivar-icon-dark.svg"
@@ -17,9 +34,7 @@ import { Link } from "react-router";
               width={140}
               height={40}
             />
-    <header className="sticky top-0 flex w-full bg-bg-main border-border-light z-99999 dark:border-border-dark dark:bg-bg-dark lg:border-b">
-      <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
-        <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-border-light dark:border-border-dark sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
+          </Link>
           <button
             className="block w-9 h-9 text-text-secondary lg:hidden dark:text-text-tertiary"
             onClick={onToggle}
@@ -80,17 +95,9 @@ import { Link } from "react-router";
 
           <Link to="/" className="lg:hidden">
             <img
-              className="dark:hidden"
-              src="/images/bolivar-white.svg"
+              src="/images/logo/logo-nuevo.svg"
               alt="Logo"
-              width={140}
-              height={40}
-            />
-            <img
-              className="hidden dark:block"
-              src="/images/logo/logo.svg"
-              alt="Logo"
-              width={140}
+              width={40}
               height={40}
             />
           </Link>

@@ -29,7 +29,7 @@ const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Inicio",
-    path: "/",
+    path: "/dashboard",
   },
   {
     name: "Gestión",
@@ -87,7 +87,7 @@ const bibliotecaItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }],
+    subItems: [{ name: "Ecommerce", path: "/dashboard", pro: false }],
   },
   {
     icon: <CalenderIcon />,
@@ -336,7 +336,7 @@ const AppSidebar: React.FC = () => {
         marginTop: 'var(--sidebar-mt, 0px)',
         height: 'calc(100vh - var(--sidebar-mt, 0px))'
       }}
-      className={`fixed flex flex-col top-0 px-5 left-0 bg-bg-main dark:bg-bg-dark dark:border-white/10 text-text-primary transition-all duration-300 ease-in-out z-50 border-r border-border-light 
+      className={`fixed flex flex-col top-0 px-5 left-0 bg-white dark:bg-bg-dark dark:border-white/10 text-text-primary transition-all duration-300 ease-in-out z-50 border-r border-border-light shadow-theme-md 
         ${isExpanded || isMobileOpen
           ? "w-72.5"
           : isHovered
@@ -354,28 +354,23 @@ const AppSidebar: React.FC = () => {
       >
         <Link to="/">
           {isExpanded || isHovered || isMobileOpen ? (
-            <>
+            <div className="flex items-center gap-3">
               <img
-                className="dark:hidden"
-                src="/images/logo/bolivar-icon-dark.svg"
+                src="/images/logo/logo-nuevo.svg"
                 alt="Logo"
-                width={150}
-                height={40}
+                width={45}
+                height={45}
               />
-              <img
-                className="hidden dark:block"
-                src="/images/logo/bolivar-icon-white.svg"
-                alt="Logo"
-                width={150}
-                height={40}
-              />
-            </>
+              <span className="text-xl font-bold text-text-emphasis">
+                SIGP
+              </span>
+            </div>
           ) : (
             <img
-              src="/images/logo/logo-icon.svg"
+              src="/images/logo/logo-nuevo.svg"
               alt="Logo"
-              width={32}
-              height={32}
+              width={35}
+              height={35}
             />
           )}
         </Link>

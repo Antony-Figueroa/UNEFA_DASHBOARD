@@ -30,7 +30,7 @@ export default function SignInForm() {
       if (error) throw error;
 
       if (data.user) {
-        navigate("/");
+        navigate("/dashboard");
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "An error occurred during sign in";

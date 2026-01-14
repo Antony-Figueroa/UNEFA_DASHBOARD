@@ -1,7 +1,7 @@
-type BadgeVariant = "light" | "solid" | "outline";
-type BadgeSize = "sm" | "md";
-type BadgeShape = "full" | "rounded";
-type BadgeColor =
+export type BadgeVariant = "light" | "solid" | "outline";
+export type BadgeSize = "sm" | "md";
+export type BadgeShape = "full" | "rounded";
+export type BadgeColor =
   | "primary"
   | "success"
   | "error"
@@ -10,7 +10,7 @@ type BadgeColor =
   | "light"
   | "dark";
 
-interface BadgeProps {
+export interface BadgeProps {
   variant?: BadgeVariant; // Light, solid, or outline variant
   size?: BadgeSize; // Badge size
   shape?: BadgeShape; // Badge shape: full (default) or rounded

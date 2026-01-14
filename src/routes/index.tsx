@@ -11,6 +11,8 @@ import PublicRoute from "../components/auth/PublicRoute";
 const Home = lazy(() => import("../pages/Dashboard/Home"));
 const SignIn = lazy(() => import("../pages/AuthPages/SignIn"));
 const SignUp = lazy(() => import("../pages/AuthPages/SignUp"));
+const FirstLogin = lazy(() => import("../pages/AuthPages/FirstLogin"));
+const PasswordRecovery = lazy(() => import("../pages/AuthPages/PasswordRecovery"));
 const UserProfiles = lazy(() => import("../pages/UserProfiles"));
 const Calendar = lazy(() => import("../pages/Calendar"));
 const Blank = lazy(() => import("../pages/Blank"));
@@ -61,6 +63,22 @@ export const AppRoutes = () => {
             element={
               <PublicRoute>
                 <SignUp />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/first-login"
+            element={
+              <PublicRoute>
+                <FirstLogin />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <PublicRoute>
+                <PasswordRecovery />
               </PublicRoute>
             }
           />

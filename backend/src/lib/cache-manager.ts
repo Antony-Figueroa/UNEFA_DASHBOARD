@@ -6,7 +6,7 @@ type CacheEntry<T> = {
 
 export class CacheManager {
   private static instance: CacheManager;
-  private cache: Map<string, CacheEntry<any>> = new Map();
+  private cache: Map<string, CacheEntry<unknown>> = new Map();
   private defaultTTL: number = 60000; // 1 minute default
 
   private constructor() {}

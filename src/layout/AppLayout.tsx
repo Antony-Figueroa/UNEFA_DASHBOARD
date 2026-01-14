@@ -6,9 +6,11 @@ import Backdrop from "./Backdrop";
 import AppSidebar from "./AppSidebar";
 import { DatabaseStatusBanner } from "../components/common/DatabaseStatusBanner";
 import TopBanner from "../components/layout/TopBanner";
+import { useSessionTimeout } from "../hooks/useSessionTimeout";
 
 const LayoutContent: React.FC = () => {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+  useSessionTimeout();
 
   return (
     <div className="min-h-screen xl:flex">

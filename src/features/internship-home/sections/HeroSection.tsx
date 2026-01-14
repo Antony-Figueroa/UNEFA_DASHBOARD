@@ -4,10 +4,84 @@ import Button from "../../../components/ui/button/Button";
 import Badge from "../../../components/ui/badge/Badge";
 import RotatingText from "../components/RotatingText";
 import CountUp from "../components/CountUp";
+import { smoothScrollTo } from "../../../utils/scrollUtils";
 
 const HeroSection: React.FC = () => {
+  const rowCount = 15; // Aumentado para cubrir mejor el fondo
+  const logosPerRow = 25; // Aumentado para asegurar que no haya espacios laterales
+
   return (
-    <section className="relative overflow-hidden bg-white pt-16 pb-24 dark:bg-bg-dark lg:pt-24 lg:pb-32">
+    <section id="inicio" className="relative overflow-hidden bg-white pt-16 pb-24 dark:bg-bg-dark lg:pt-24 lg:pb-32">
+      <style>
+        {`
+          @keyframes scroll-right {
+            from { transform: translateX(-50%); }
+            to { transform: translateX(0); }
+          }
+          @keyframes scroll-left {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+          }
+          .logo-row {
+            display: flex;
+            white-space: nowrap;
+            width: fit-content;
+            margin: -5px 0; /* Reducir espacio vertical entre filas */
+          }
+          .logo-item {
+            padding: 15px 30px; /* Ajustado: menos vertical, más horizontal */
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease;
+            pointer-events: auto;
+          }
+          .logo-item:hover {
+            transform: scale(1.2);
+            filter: brightness(1.2);
+          }
+          .animate-scroll-right {
+            animation: scroll-right 60s linear infinite;
+          }
+          .animate-scroll-left {
+            animation: scroll-left 60s linear infinite;
+          }
+        `}
+      </style>
+
+      {/* Patrón de fondo con logo de la UNEFA animado */}
+      <div 
+        className="absolute inset-0 z-0 overflow-hidden"
+        aria-hidden="true"
+      >
+        <div 
+          className="absolute -inset-full opacity-10 flex flex-col justify-center items-center"
+          style={{
+            transform: 'rotate(15deg)',
+            filter: 'grayscale(1) brightness(1.5)',
+          }}
+        >
+          {Array.from({ length: rowCount }).map((_, rowIndex) => (
+            <div 
+              key={rowIndex}
+              className={`logo-row ${rowIndex % 2 === 0 ? 'animate-scroll-right' : 'animate-scroll-left'}`}
+            >
+              {/* Duplicamos los logos para el efecto de loop infinito */}
+              {Array.from({ length: logosPerRow * 2 }).map((_, logoIndex) => (
+                <div key={logoIndex} className="logo-item">
+                  <img 
+                    src="/logo-nuevo.png" 
+                    alt="" 
+                    className="w-12.5 h-12.5 object-contain"
+                  />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Background Shapes (Placeholders) */}
       <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 opacity-20 dark:opacity-10">
         <div className="h-64 w-64 rounded-full bg-brand-200 blur-3xl" />
@@ -50,7 +124,12 @@ const HeroSection: React.FC = () => {
                   Comenzar ahora
                 </Button>
               </Link>
-              <Button variant="outline" size="md" className="px-8">
+              <Button 
+                variant="outline" 
+                size="md" 
+                className="px-8"
+                onClick={() => smoothScrollTo("procesos")}
+              >
                 Saber más
               </Button>
             </div>

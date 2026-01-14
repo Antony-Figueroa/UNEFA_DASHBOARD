@@ -1,6 +1,6 @@
 import { dbManager } from '../lib/db-manager.js';
 import { cacheManager } from '../lib/cache-manager.js';
-import { AppList, ValueListDB } from '../models/list.js';
+import { AppList, ValueListDB, ListDB } from '../models/list.js';
 
 const LISTS_TABLE = 't_list';
 const VALUES_TABLE = 't_value_list';
@@ -38,13 +38,13 @@ export const getAllLists = async (): Promise<AppList[]> => {
 
     const mappedLists = (lists || []).map(list => ({
       ...list,
-      t_value_list: (values || []).filter((v: any) => v.LIST_ID === list.LIST_ID)
+      t_value_list: (values || []).filter((v: ValueListDB) => v.LIST_ID === list.LIST_ID)
     }));
 
-    return mappedLists as any[];
+    return mappedLists as ListDB[];
   }, 'getAllLists');
 
-  const result = (data as any[]).map(l => ({
+  const result = (data as ListDB[]).map(l => ({
     id: String(l.LIST_ID),
     name: l.NAME,
     status: l.STATUS === 1,
@@ -77,20 +77,21 @@ export const getListByName = async (name: string) => {
 
     if (valuesError) throw valuesError;
 
-    return { ...list, t_value_list: values || [] };
+    return { ...list, t_value_list: values || [] } as ListDB;
   }, 'getListByName');
 
+  const listData = data as ListDB;
   return {
-    id: String((data as any).LIST_ID),
-    name: (data as any).NAME,
-    status: (data as any).STATUS === 1,
-    values: ((data as any).t_value_list || []).map(mapValue)
+    id: String(listData.LIST_ID),
+    name: listData.NAME,
+    status: listData.STATUS === 1,
+    values: (listData.t_value_list || []).map(mapValue)
   };
 };
 
 export const getMultipleListsByNames = async (names: string[]) => {
   const cacheKey = `${CACHE_PREFIX}multiple:${names.sort().join(',')}`;
-  const cached = cacheManager.get<Record<string, any> | null>(cacheKey);
+  const cached = cacheManager.get<Record<string, AppList['values']> | null>(cacheKey);
   if (cached) return cached;
 
   const data = await dbManager.withRetry(async (supabase) => {
@@ -102,7 +103,7 @@ export const getMultipleListsByNames = async (names: string[]) => {
 
     if (listsError) throw listsError;
 
-    const listIds = (lists || []).map((l: any) => l.LIST_ID);
+    const listIds = (lists || []).map((l: ListDB) => l.LIST_ID);
     const { data: values, error: valuesError } = await supabase
       .from(VALUES_TABLE)
       .select('VALUE_LIST_ID, NAME, ABBREVIATION, LIST_ID, STATUS')
@@ -111,16 +112,16 @@ export const getMultipleListsByNames = async (names: string[]) => {
 
     if (valuesError) throw valuesError;
 
-    const mappedLists = (lists || []).map((list: any) => ({
+    const mappedLists = (lists || []).map((list: ListDB) => ({
       ...list,
-      t_value_list: (values || []).filter((v: any) => v.LIST_ID === list.LIST_ID)
+      t_value_list: (values || []).filter((v: ValueListDB) => v.LIST_ID === list.LIST_ID)
     }));
 
-    return mappedLists as any[];
+    return mappedLists as ListDB[];
   }, 'getMultipleListsByNames');
 
-  const result: Record<string, any[]> = {};
-  (data as any[]).forEach(list => {
+  const result: Record<string, AppList['values']> = {};
+  (data as ListDB[]).forEach(list => {
     result[list.NAME] = (list.t_value_list || []).map(mapValue);
   });
 

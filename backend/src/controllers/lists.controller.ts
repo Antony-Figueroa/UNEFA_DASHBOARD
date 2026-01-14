@@ -1,11 +1,6 @@
 import { Request, Response } from 'express';
 import * as listsService from '../services/lists.service.js';
 
-const LISTS_TABLE = 't_list';
-const VALUES_TABLE = 't_value_list';
-const CACHE_PREFIX = 'lists:';
-const CACHE_TTL = 3600000; // 1 hour for lists
-
 interface AppError extends Error {
   code?: string;
   details?: string;
@@ -34,36 +29,6 @@ const handleDbError = (res: Response, error: unknown) => {
     code: dbError.code
   });
 };
-
-interface DBValueList {
-  VALUE_LIST_ID: number;
-  NAME: string;
-  ABBREVIATION: string;
-  LIST_ID: number;
-  STATUS: number;
-}
-
-interface DBList {
-  LIST_ID: number;
-  NAME: string;
-  STATUS: number;
-  t_value_list?: DBValueList[];
-}
-
-const mapValueToFrontend = (v: DBValueList) => ({
-  id: String(v.VALUE_LIST_ID),
-  name: v.NAME,
-  abbreviation: v.ABBREVIATION,
-  listId: String(v.LIST_ID),
-  status: v.STATUS === 1
-});
-
-const mapListToFrontend = (l: DBList) => ({
-  id: String(l.LIST_ID),
-  name: l.NAME,
-  status: l.STATUS === 1,
-  values: (l.t_value_list || []).map(mapValueToFrontend)
-});
 
 /**
  * Get all lists with their associated values

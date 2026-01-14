@@ -3,9 +3,23 @@ import { Link } from "react-router";
 import Button from "../../../components/ui/button/Button";
 import { ThemeToggleButton } from "../../../components/common/ThemeToggleButton";
 import { motion, AnimatePresence } from "motion/react";
+import { smoothScrollTo } from "../../../utils/scrollUtils";
 
 const PublicNavbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  // Update scroll progress
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = (window.pageYOffset / totalHeight) * 100;
+      setScrollProgress(progress);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Close menu when resizing to desktop
   useEffect(() => {
@@ -28,14 +42,27 @@ const PublicNavbar: React.FC = () => {
   }, [isOpen]);
 
   const navLinks = [
-    { name: "Inicio", href: "#" },
-    { name: "Comunidad", href: "#" },
-    { name: "Procesos", href: "#" },
-    { name: "Contacto", href: "#" },
+    { name: "Inicio", href: "#inicio" },
+    { name: "Ofertas", href: "#ofertas" },
+    { name: "Procesos", href: "#procesos" },
+    { name: "Contacto he Información", href: "#contacto" },
   ];
+
+  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith("#")) {
+      e.preventDefault();
+      const targetId = href.replace("#", "");
+      smoothScrollTo(targetId);
+    }
+  };
 
   return (
     <nav className="w-full bg-bg-main/80 backdrop-blur-md border-b border-border-light dark:bg-bg-dark/80 dark:border-border-dark sticky top-0 z-9999">
+      {/* Scroll Progress Bar */}
+      <div 
+        className="absolute bottom-0 left-0 h-0.5 bg-brand-500 transition-all duration-150 ease-out z-10"
+        style={{ width: `${scrollProgress}%` }}
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
@@ -55,13 +82,14 @@ const PublicNavbar: React.FC = () => {
           {/* Navigation Links - Desktop */}
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
-              <Link
+              <a
                 key={link.name}
-                to={link.href}
+                href={link.href}
+                onClick={(e) => scrollToSection(e, link.href)}
                 className="text-sm font-medium text-text-secondary hover:text-brand-500 transition-colors"
               >
                 {link.name}
-              </Link>
+              </a>
             ))}
           </div>
 
@@ -122,14 +150,17 @@ const PublicNavbar: React.FC = () => {
           >
             <div className="px-4 pt-2 pb-6 space-y-1">
               {navLinks.map((link) => (
-                <Link
+                <a
                   key={link.name}
-                  to={link.href}
-                  onClick={() => setIsOpen(false)}
+                  href={link.href}
+                  onClick={(e) => {
+                    setIsOpen(false);
+                    scrollToSection(e, link.href);
+                  }}
                   className="block px-3 py-4 text-base font-medium text-text-secondary hover:text-brand-500 hover:bg-bg-secondary rounded-lg transition-all"
                 >
                   {link.name}
-                </Link>
+                </a>
               ))}
               <div className="pt-4 border-t border-border-light dark:border-border-dark sm:hidden">
                 <Link to="/signin" onClick={() => setIsOpen(false)}>

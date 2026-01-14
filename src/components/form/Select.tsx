@@ -12,6 +12,7 @@ interface SelectProps {
   onChange: (value: string) => void;
   className?: string;
   defaultValue?: string;
+  value?: string;
   disabled?: boolean;
 }
 
@@ -22,15 +23,24 @@ const Select: React.FC<SelectProps> = ({
   onChange,
   className = "",
   defaultValue = "",
+  value,
   disabled = false,
 }) => {
   // Manage the selected value
-  const [selectedValue, setSelectedValue] = useState<string>(defaultValue);
+  const [selectedValue, setSelectedValue] = useState<string>(value !== undefined ? value : defaultValue);
 
-  // Sync state if defaultValue changes (important for reset form)
+  // Sync state if value or defaultValue changes
   useEffect(() => {
-    setSelectedValue(defaultValue);
-  }, [defaultValue]);
+    if (value !== undefined) {
+      setSelectedValue(value);
+    }
+  }, [value]);
+
+  useEffect(() => {
+    if (value === undefined) {
+      setSelectedValue(defaultValue);
+    }
+  }, [defaultValue, value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;

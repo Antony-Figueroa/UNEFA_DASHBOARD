@@ -1,6 +1,6 @@
-import { dbManager } from '../lib/db-manager';
-import { cacheManager } from '../lib/cache-manager';
-import { Career, CareerDBRecord } from '../models/career';
+import { dbManager } from '../lib/db-manager.js';
+import { cacheManager } from '../lib/cache-manager.js';
+import { Career, CareerDBRecord } from '../models/career.js';
 
 const TABLE_NAME = 't_career';
 const RELATION_TABLE = 't_career_internship_type';

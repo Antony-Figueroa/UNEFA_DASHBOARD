@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import * as preEnrollmentsController from '../controllers/pre-enrollments.controller';
+import * as preEnrollmentsController from '../controllers/pre-enrollments.controller.js';
 
 const router = Router();
 

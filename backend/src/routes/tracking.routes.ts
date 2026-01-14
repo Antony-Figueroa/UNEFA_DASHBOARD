@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getTrackings, createTracking, updateTracking, deleteTracking } from '../controllers/tracking.controller';
+import { getTrackings, createTracking, updateTracking, deleteTracking } from '../controllers/tracking.controller.js';
 
 const router = Router();
 

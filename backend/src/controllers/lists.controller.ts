@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import * as listsService from '../services/lists.service';
+import * as listsService from '../services/lists.service.js';
 
 const LISTS_TABLE = 't_list';
 const VALUES_TABLE = 't_value_list';

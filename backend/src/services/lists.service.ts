@@ -65,7 +65,7 @@ export const getListByName = async (name: string) => {
       .single();
 
     if (listError) {
-      if ((listError as any).code === 'PGRST116') throw { code: '404', message: `Lista '${name}' no encontrada` };
+      if (listError.code === 'PGRST116') throw { code: '404', message: `Lista '${name}' no encontrada` };
       throw listError;
     }
 

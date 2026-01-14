@@ -1,22 +1,23 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router';
-import * as authService from '../features/auth/services/authService';
+import { useAuth } from '../context/AuthContext';
 
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutos
 
 export const useSessionTimeout = () => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleLogout = useCallback(async () => {
     try {
-      await authService.logout();
-      navigate('/signin', { state: { message: 'Su sesión ha expirado por inactividad.' } });
+      await signOut();
+      navigate('/signin', { state: { message: 'Su sesión ha expirado por inactividad.' }, replace: true });
     } catch (error) {
       console.error('Error logging out:', error);
-      navigate('/signin');
+      navigate('/signin', { replace: true });
     }
-  }, [navigate]);
+  }, [navigate, signOut]);
 
   const resetTimeout = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);

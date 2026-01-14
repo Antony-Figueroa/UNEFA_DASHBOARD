@@ -22,7 +22,7 @@ const GraduateStatsSection: React.FC = () => {
           <ComponentCard title="Pasantes Acarigua" className="bg-linear-to-br from-[#2d90c4]/10 to-transparent">
             <div className="text-center py-6">
               <p className="text-5xl font-bold text-[#2d90c4] mb-2">
-                <CountUp from={0} to={5100} duration={2} />
+                +<CountUp from={0} to={3500} duration={2} />
               </p>
               <p className="text-sm font-medium text-text-secondary uppercase tracking-wider">
                 Total Acumulado (Est.)
@@ -33,7 +33,7 @@ const GraduateStatsSection: React.FC = () => {
           <ComponentCard title="Promedio Anual" className="bg-linear-to-br from-[#2d90c4]/10 to-transparent">
             <div className="text-center py-6">
               <p className="text-5xl font-bold text-[#2d90c4] mb-2">
-                <CountUp from={0} to={350} duration={2} />
+                +<CountUp from={0} to={100} duration={2} />
               </p>
               <p className="text-sm font-medium text-text-secondary uppercase tracking-wider">
                 Pasantes por Ciclo

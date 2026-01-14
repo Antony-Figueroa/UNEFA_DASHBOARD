@@ -19,14 +19,15 @@ export default function AuthLayout({
             <div className="flex flex-col items-center max-w-xs">
               <Link to="/" className="block mb-4">
                 <img
-                  width={231}
-                  height={48}
-                  src="/images/logo/auth-logo.svg"
+                  width={120}
+                  height={120}
+                  src="/images/logo/logo-nuevo.svg"
                   alt="Logo"
                 />
               </Link>
+              <h2 className="text-2xl font-bold text-white mb-2">SIGP - UNEFA</h2>
               <p className="text-center text-text-tertiary dark:text-white/60">
-                Free and Open-Source Tailwind CSS Admin Dashboard Template
+                Sistema de Gestión de Pasantías de la Universidad Nacional Experimental Politécnica de la Fuerza Armada
               </p>
             </div>
           </div>

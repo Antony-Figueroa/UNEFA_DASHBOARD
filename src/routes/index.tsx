@@ -2,8 +2,10 @@ import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router";
 import { Analytics } from "@vercel/analytics/react";
 import AppLayout from "../layout/AppLayout";
-import { ScrollToTop } from "../components/common/ScrollToTop";
+import ScrollToTop from "../components/common/ScrollToTop";
 import PageLoader from "../components/ui/loader";
+import ProtectedRoute from "../components/auth/ProtectedRoute";
+import PublicRoute from "../components/auth/PublicRoute";
 
 // Lazy loading components
 const Home = lazy(() => import("../pages/Dashboard/Home"));
@@ -23,6 +25,7 @@ const FormElements = lazy(() => import("../pages/Forms/FormElements"));
 const BasicTables = lazy(() => import("../pages/Tables/BasicTables"));
 const Period = lazy(() => import("../pages/Period/period"));
 const CareersPage = lazy(() => import("../pages/Careers/careers"));
+const InternshipHome = lazy(() => import("../pages/InternshipHome/InternshipHome"));
 const CrudExample = lazy(() => import("../pages/Management/CrudExample"));
 const Alerts = lazy(() => import("../pages/UiElements/Alerts"));
 const Avatars = lazy(() => import("../pages/UiElements/Avatars"));
@@ -41,9 +44,36 @@ export const AppRoutes = () => {
       <ScrollToTop />
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          {/* Layout Wrapper */}
-          <Route element={<AppLayout />}>
-            <Route index path="/" element={<Home />} />
+          {/* Public Landing Page */}
+          <Route path="/" element={<InternshipHome />} />
+
+          {/* Auth Routes (Public but restricted for logged-in users) */}
+          <Route
+            path="/signin"
+            element={
+              <PublicRoute>
+                <SignIn />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              <PublicRoute>
+                <SignUp />
+              </PublicRoute>
+            }
+          />
+
+          {/* Protected Dashboard Routes */}
+          <Route
+            element={
+              <ProtectedRoute>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/dashboard" element={<Home />} />
             
             {/* Core Features */}
             <Route path="/profile" element={<UserProfiles />} />
@@ -76,10 +106,6 @@ export const AppRoutes = () => {
             <Route path="/line-chart" element={<LineChart />} />
             <Route path="/bar-chart" element={<BarChart />} />
           </Route>
-
-          {/* Auth Routes (No Layout) */}
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
 
           {/* Fallback */}
           <Route path="*" element={<NotFound />} />

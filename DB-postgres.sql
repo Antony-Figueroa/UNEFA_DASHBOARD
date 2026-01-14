@@ -26,6 +26,41 @@ CREATE TABLE "t_activity_log" (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla "t_recovery_tokens"
+--
+
+CREATE TABLE "t_recovery_tokens" (
+  "TOKEN_ID" SERIAL NOT NULL,
+  "USER_ID" INTEGER NOT NULL,
+  "TOKEN" VARCHAR(255) NOT NULL,
+  "EXPIRATION_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT DEFAULT 1,
+  "CREATION_DATE" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY ("TOKEN_ID"),
+  CONSTRAINT "fk_recovery_user" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID")
+);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_auth_log"
+--
+
+CREATE TABLE "t_auth_log" (
+  "AUTH_LOG_ID" SERIAL NOT NULL,
+  "USER_ID" INTEGER,
+  "USER_CI" VARCHAR(10),
+  "ACTION" VARCHAR(50) NOT NULL,
+  "IP_ADDRESS" VARCHAR(45),
+  "USER_AGENT" TEXT,
+  "DETAILS" TEXT,
+  "CREATION_DATE" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY ("AUTH_LOG_ID")
+);
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla "t_career"
 --
 
@@ -482,7 +517,8 @@ CREATE TABLE "t_roles_permissions" (
 CREATE TABLE "t_security_questions" (
   "SECURITY_QUESTIONS_ID" SERIAL NOT NULL,
   "USER_ID" int NOT NULL,
-  "PRESET_QUESTION_ID" int NOT NULL
+  "PRESET_QUESTION_ID" int NOT NULL,
+  "ANSWER" varchar(255) NOT NULL
 );
 
 --
@@ -867,7 +903,10 @@ CREATE TABLE "t_user" (
   "LOGIN" SMALLINT NOT NULL,
   "TERMS_CONDITIONS" varchar(45) NOT NULL,
   "STATUS_SESSION" SMALLINT NOT NULL,
-  "STATUS" SMALLINT NOT NULL
+  "STATUS" SMALLINT NOT NULL,
+  "FAILED_ATTEMPTS" INTEGER DEFAULT 0,
+  "LOCK_DATE" TIMESTAMP DEFAULT NULL,
+  "FORCE_PASSWORD_CHANGE" BOOLEAN DEFAULT FALSE
 );
 
 --
@@ -899,7 +938,8 @@ CREATE TABLE "t_user_key" (
   "ELIM_USER_DATE" TIMESTAMP NOT NULL,
   "REST_USER_ID" int NOT NULL,
   "REST_USER_DATE" TIMESTAMP NOT NULL,
-  "STATUS" SMALLINT NOT NULL
+  "STATUS" SMALLINT NOT NULL,
+  "IS_TEMPORARY" BOOLEAN DEFAULT FALSE
 );
 
 --

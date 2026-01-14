@@ -11,8 +11,8 @@ const CAREER_COLUMNS = 'CAREER_ID, CAREER_NAME, CAREER_CODE, MINIMUM_GRADE, STAT
 const mapRecord = (career: Record<string, unknown>): Career => {
   const internshipTypeIds = (career[RELATION_TABLE] as { INTERNSHIP_TYPE_ID: string }[])?.map(r => r.INTERNSHIP_TYPE_ID) || [];
   const careerData = { ...career } as CareerDBRecord;
-  delete (careerData as any)[RELATION_TABLE];
-    const c = career as CareerDBRecord;
+  delete careerData[RELATION_TABLE];
+  const c = careerData;
 
     return {
       // CamelCase keys for frontend
@@ -110,7 +110,10 @@ export const createCareer = async (payload: Record<string, unknown>) => {
     if (error) throw error;
 
     if (INTERNSHIP_TYPE_IDS && Array.isArray(INTERNSHIP_TYPE_IDS) && INTERNSHIP_TYPE_IDS.length > 0) {
-      const relations = (INTERNSHIP_TYPE_IDS as string[]).map(id => ({ CAREER_ID: (newCareer as any).CAREER_ID, INTERNSHIP_TYPE_ID: id }));
+      const relations = (INTERNSHIP_TYPE_IDS as string[]).map(id => ({ 
+        CAREER_ID: (newCareer as CareerDBRecord).CAREER_ID, 
+        INTERNSHIP_TYPE_ID: id 
+      }));
       const { error: relErr } = await supabase.from(RELATION_TABLE).insert(relations);
       if (relErr) throw relErr;
     }
@@ -125,13 +128,14 @@ export const createCareer = async (payload: Record<string, unknown>) => {
 export const updateCareer = async (id: string, payload: Record<string, unknown>) => {
   const { INTERNSHIP_TYPE_IDS, ...updates } = payload;
   const now = new Date().toISOString();
-  delete (updates as any).CAREER_ID;
-  delete (updates as any).CREATION_DATE;
+  const updateData = updates as Record<string, unknown>;
+  delete updateData.CAREER_ID;
+  delete updateData.CREATION_DATE;
 
   const result = await dbManager.withRetry(async (supabase) => {
     const { data: updatedCareer, error } = await supabase
       .from(TABLE_NAME)
-      .update({ ...updates, MODIF_USER_DATE: now, MODIF_USER_ID: 1 })
+      .update({ ...updateData, MODIF_USER_DATE: now, MODIF_USER_ID: 1 })
       .eq('CAREER_ID', id)
       .select()
       .single();
@@ -140,8 +144,9 @@ export const updateCareer = async (id: string, payload: Record<string, unknown>)
 
     if (INTERNSHIP_TYPE_IDS !== undefined && Array.isArray(INTERNSHIP_TYPE_IDS)) {
       await supabase.from(RELATION_TABLE).delete().eq('CAREER_ID', id);
-      if ((INTERNSHIP_TYPE_IDS as any[]).length > 0) {
-        const relations = (INTERNSHIP_TYPE_IDS as any[]).map(typeId => ({ CAREER_ID: id, INTERNSHIP_TYPE_ID: typeId }));
+      const typeIds = INTERNSHIP_TYPE_IDS as string[];
+      if (typeIds.length > 0) {
+        const relations = typeIds.map(typeId => ({ CAREER_ID: id, INTERNSHIP_TYPE_ID: typeId }));
         const { error: relErr } = await supabase.from(RELATION_TABLE).insert(relations);
         if (relErr) throw relErr;
       }
@@ -163,9 +168,9 @@ export const deleteCareer = async (id: string) => {
   cacheManager.deleteByPrefix(CACHE_PREFIX);
 };
 
-export const bulkDeleteCareers = async (ids: unknown[]) => {
+export const bulkDeleteCareers = async (ids: (string | number)[]) => {
   await dbManager.withRetry(async (supabase) => {
-    const { error } = await supabase.from(TABLE_NAME).update({ STATUS: 0 }).in('CAREER_ID', ids as any[]);
+    const { error } = await supabase.from(TABLE_NAME).update({ STATUS: 0 }).in('CAREER_ID', ids);
     if (error) throw error;
   }, 'bulkDeleteCareers');
 

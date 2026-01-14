@@ -1,3 +1,11 @@
+export interface ListDB {
+  LIST_ID: number;
+  NAME: string;
+  STATUS: number;
+  t_value_list?: ValueListDB[];
+  [key: string]: unknown;
+}
+
 export interface ValueListDB {
   VALUE_LIST_ID: number;
   NAME: string;

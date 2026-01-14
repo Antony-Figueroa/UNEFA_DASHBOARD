@@ -1,21 +1,32 @@
 import React from "react";
 import { Link } from "react-router";
 
+import { smoothScrollTo } from "../../../utils/scrollUtils";
+
 const PublicFooter: React.FC = () => {
+  const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    smoothScrollTo(id);
+  };
+
   return (
-    <footer className="bg-bg-dark text-white py-12 border-t border-white/5">
+    <footer id="contacto" className="bg-bg-dark text-white py-12 border-t border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="col-span-1 md:col-span-1 space-y-4">
-            <Link to="/" className="flex items-center gap-2">
+            <a 
+              href="#inicio" 
+              onClick={(e) => handleScroll(e, "inicio")}
+              className="flex items-center gap-2"
+            >
               <img
                 className="h-12 w-auto"
                 src="/images/logo/logo-nuevo.svg"
                 alt="UNEFA Logo"
               />
               <span className="text-xl font-bold">SIGP</span>
-            </Link>
+            </a>
             <p className="text-gray-400 text-sm">
               Sistema de Gestión de Pasantías de la UNEFA. Transformando el futuro académico a través de la experiencia profesional.
             </p>
@@ -25,9 +36,33 @@ const PublicFooter: React.FC = () => {
           <div>
             <h4 className="font-bold mb-4">Plataforma</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link to="#" className="hover:text-brand-400 transition-colors">Inicio</Link></li>
-              <li><Link to="#" className="hover:text-brand-400 transition-colors">Carreras</Link></li>
-              <li><Link to="#" className="hover:text-brand-400 transition-colors">Instituciones</Link></li>
+              <li>
+                <a 
+                  href="#inicio" 
+                  onClick={(e) => handleScroll(e, "inicio")}
+                  className="hover:text-brand-400 transition-colors"
+                >
+                  Inicio
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#comunidad" 
+                  onClick={(e) => handleScroll(e, "comunidad")}
+                  className="hover:text-brand-400 transition-colors"
+                >
+                  Comunidad
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#procesos" 
+                  onClick={(e) => handleScroll(e, "procesos")}
+                  className="hover:text-brand-400 transition-colors"
+                >
+                  Procesos
+                </a>
+              </li>
               <li><Link to="#" className="hover:text-brand-400 transition-colors">Preguntas Frecuentes</Link></li>
             </ul>
           </div>

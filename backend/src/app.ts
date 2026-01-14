@@ -14,9 +14,9 @@ import trackingRoutes from './routes/tracking.routes.js';
 import institutionsRoutes from './routes/institutions.routes.js';
 import institutionalResponsiblesRoutes from './routes/institutional-responsibles.routes.js';
 import listsRoutes from './routes/lists.routes.js';
+import authRoutes from './routes/auth.routes.js';
 import { dbManager } from './lib/db-manager.js';
 import { performanceMiddleware } from './lib/performance-middleware.js';
-import { cacheManager } from './lib/cache-manager.js';
 
 dotenv.config();
 
@@ -77,6 +77,7 @@ app.use('/api/tracking', trackingRoutes);
 app.use('/api/institutions', institutionsRoutes);
 app.use('/api/institutional-responsibles', institutionalResponsiblesRoutes);
 app.use('/api/lists', listsRoutes);
+app.use('/api/auth', authRoutes);
 
 // DB status endpoint
 app.get('/api/db-status', async (_req, res) => {

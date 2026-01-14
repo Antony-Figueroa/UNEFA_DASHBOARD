@@ -1,13 +1,15 @@
 import React from "react";
-import { Navigate, useLocation } from "react-router";
-import { useAuth } from "../../context/AuthContext";
-import PageLoader from "../ui/loader";
+// import { Navigate, useLocation } from "react-router";
+// import { useAuth } from "../../context/AuthContext";
+// import PageLoader from "../ui/loader";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  // Comentado temporalmente para permitir acceso libre al dashboard
+  /*
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -19,6 +21,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     // Redirect to login if not authenticated
     return <Navigate to="/signin" state={{ from: location }} replace />;
   }
+  */
 
   return <>{children}</>;
 };

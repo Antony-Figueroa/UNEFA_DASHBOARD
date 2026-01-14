@@ -1,0 +1,375 @@
+import { dbManager } from '../lib/db-manager.js';
+import { comparePassword, hashPassword, generateToken } from '../utils/auth.utils.js';
+
+export const logAuthAction = async (userId: number | null, userCi: string | null, action: string, ip: string, userAgent: string, details: string) => {
+  try {
+    await dbManager.withRetry(async (supabase) => {
+      const { error } = await supabase.from('t_auth_log').insert({
+        USER_ID: userId,
+        USER_CI: userCi,
+        ACTION: action,
+        IP_ADDRESS: ip,
+        USER_AGENT: userAgent,
+        DETAILS: details
+      });
+      if (error) {
+        // Si el error es que la tabla no existe, no lanzamos excepción para no romper el flujo principal
+        if (error.code === 'PGRST204' || error.code === 'PGRST205') {
+          console.warn(`[AuthLog] La tabla t_auth_log no existe. Acción '${action}' no registrada.`);
+          return;
+        }
+        throw error;
+      }
+    });
+  } catch (error) {
+    console.error('[AuthLog] Error al registrar acción de autenticación:', error);
+  }
+};
+
+interface UserRow {
+  USER_ID: number;
+  USER_CI: string;
+  STATUS: number;
+  FAILED_ATTEMPTS?: number;
+  LOCK_DATE?: string;
+  FORCE_PASSWORD_CHANGE?: boolean;
+  NAME: string;
+  SURNAME: string;
+  EMAIL: string;
+  t_user_roles?: { ID_ROLES: number }[];
+}
+
+interface UserKeyRow {
+  USER_KEY_ID: number;
+  USER_ID: number;
+  KEY: string;
+  STATUS: number;
+  IS_TEMPORARY?: boolean;
+}
+
+export const login = async (userCi: string, password: string, ip: string, userAgent: string) => {
+  return await dbManager.withRetry(async (supabase) => {
+    // 1. Buscar usuario por CI
+    const { data: userData, error: userError } = await supabase
+      .from('t_user')
+      .select('*, t_user_roles(ID_ROLES)')
+      .eq('USER_CI', userCi)
+      .single();
+
+    const user = userData as unknown as UserRow;
+
+    if (userError || !user) {
+      await logAuthAction(null, userCi, 'LOGIN_FAILED', ip, userAgent, 'Usuario no encontrado');
+      return { success: false, status: 401, message: 'Las credenciales ingresadas no son válidas. Por favor, verifique su número de cédula.' };
+    }
+
+    // 2. Verificar si está bloqueado
+    if (user.STATUS === 0 && user.LOCK_DATE) {
+      const lockDate = new Date(user.LOCK_DATE);
+      if (lockDate > new Date()) {
+        const remainingMs = lockDate.getTime() - Date.now();
+        const minutes = Math.ceil(remainingMs / (60 * 1000));
+        await logAuthAction(user.USER_ID, userCi, 'LOGIN_FAILED', ip, userAgent, 'Cuenta bloqueada');
+        return { 
+          success: false, 
+          status: 403, 
+          message: `Cuenta bloqueada temporalmente por seguridad. Intente de nuevo en ${minutes} minutos.` 
+        };
+      } else {
+        // Desbloquear automáticamente si ya pasó el tiempo
+        await supabase.from('t_user').update({ STATUS: 1, FAILED_ATTEMPTS: 0, LOCK_DATE: null }).eq('USER_ID', user.USER_ID);
+        user.STATUS = 1;
+        user.FAILED_ATTEMPTS = 0;
+      }
+    } else if (user.STATUS === 0) {
+      await logAuthAction(user.USER_ID, userCi, 'LOGIN_FAILED', ip, userAgent, 'Cuenta bloqueada');
+      return { success: false, status: 403, message: 'Cuenta bloqueada temporalmente. Contacte al administrador.' };
+    }
+
+    // 3. Obtener la clave actual activa
+    const { data: keyData, error: keyError } = await supabase
+      .from('t_user_key')
+      .select('*')
+      .eq('USER_ID', user.USER_ID)
+      .eq('STATUS', 1)
+      .order('START_DATE', { ascending: false })
+      .limit(1)
+      .single();
+
+    const userKey = keyData as unknown as UserKeyRow;
+
+    if (keyError || !userKey) {
+      await logAuthAction(user.USER_ID, userCi, 'LOGIN_FAILED', ip, userAgent, 'Clave no configurada');
+      return { success: false, status: 401, message: 'Credenciales inválidas' };
+    }
+
+    // 4. Comparar contraseña
+    const isMatch = await comparePassword(password, userKey.KEY);
+
+    if (!isMatch) {
+      const newFailedAttempts = (user.FAILED_ATTEMPTS || 0) + 1;
+      const MAX_ATTEMPTS = 5; 
+      const attemptsRemaining = MAX_ATTEMPTS - newFailedAttempts;
+      
+      // Intentar actualizar intentos fallidos solo si la columna existe
+      try {
+        if (newFailedAttempts >= MAX_ATTEMPTS) {
+          const lockUntil = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+          const updateData: Partial<UserRow> = { STATUS: 0 };
+          
+          // Solo agregar columnas si existen (basado en el error previo o verificando esquema)
+          if ('FAILED_ATTEMPTS' in user) updateData.FAILED_ATTEMPTS = newFailedAttempts;
+          if ('LOCK_DATE' in user) updateData.LOCK_DATE = lockUntil;
+          
+          await supabase.from('t_user').update(updateData).eq('USER_ID', user.USER_ID);
+          
+          await logAuthAction(user.USER_ID, userCi, 'ACCOUNT_LOCKED', ip, userAgent, `Máximo de intentos alcanzado. Bloqueado hasta ${lockUntil}`);
+          return { 
+            success: false, 
+            status: 403, 
+            message: 'Cuenta bloqueada por demasiados intentos fallidos. Intente de nuevo en 30 minutos.' 
+          };
+        } else {
+          if ('FAILED_ATTEMPTS' in user) {
+            await supabase.from('t_user').update({ FAILED_ATTEMPTS: newFailedAttempts }).eq('USER_ID', user.USER_ID);
+          }
+          await logAuthAction(user.USER_ID, userCi, 'LOGIN_FAILED', ip, userAgent, `Intento fallido ${newFailedAttempts}/${MAX_ATTEMPTS}`);
+          return { 
+            success: false, 
+            status: 401, 
+            message: `Contraseña incorrecta. Le quedan ${attemptsRemaining} intentos antes de que su cuenta sea bloqueada.`,
+            attemptsRemaining
+          };
+        }
+      } catch (updateError) {
+        console.error('[Auth] Error al actualizar intentos fallidos (posiblemente faltan columnas en DB):', updateError);
+        return { 
+          success: false, 
+          status: 401, 
+          message: 'Contraseña incorrecta.' 
+        };
+      }
+    }
+
+    // 5. Login exitoso - Resetear intentos
+    try {
+      const resetData: Partial<UserRow> = { STATUS: 1 };
+      if ('FAILED_ATTEMPTS' in user) resetData.FAILED_ATTEMPTS = 0;
+      if ('LOCK_DATE' in user) resetData.LOCK_DATE = undefined;
+      await supabase.from('t_user').update(resetData).eq('USER_ID', user.USER_ID);
+    } catch (resetError) {
+      console.warn('[Auth] No se pudieron resetear los intentos fallidos:', resetError);
+    }
+
+    // 6. Verificar si requiere cambio de clave
+    if (userKey.IS_TEMPORARY || user.FORCE_PASSWORD_CHANGE) {
+      return { 
+        success: true,
+        requirePasswordChange: true,
+        userId: user.USER_ID,
+        message: 'Debe cambiar su contraseña antes de continuar'
+      };
+    }
+
+    // 7. Generar Token
+    const token = generateToken({ 
+      userId: user.USER_ID, 
+      userCi: user.USER_CI,
+      role: user.t_user_roles?.[0]?.ID_ROLES 
+    });
+
+    await logAuthAction(user.USER_ID, userCi, 'LOGIN_SUCCESS', ip, userAgent, 'Inicio de sesión exitoso');
+
+    return { 
+      success: true,
+      token,
+      user: {
+        id: user.USER_ID,
+        name: user.NAME,
+        surname: user.SURNAME,
+        email: user.EMAIL,
+        role: user.t_user_roles?.[0]?.ID_ROLES
+      }
+    };
+  });
+};
+
+export const changePassword = async (userId: number, newPassword: string, securityQuestions?: { questionId: number, answer: string }[]) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const hashedPassword = await hashPassword(newPassword);
+
+    // 1. Desactivar clave anterior
+    await supabase.from('t_user_key').update({ STATUS: 0 }).eq('USER_ID', userId).eq('STATUS', 1);
+
+    // 2. Insertar nueva clave
+    const now = new Date().toISOString();
+    const expiry = new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString();
+    
+    await supabase.from('t_user_key').insert({
+      USER_ID: userId,
+      KEY: hashedPassword,
+      START_DATE: now,
+      END_DATE: expiry,
+      STATUS: 1,
+      IS_TEMPORARY: false,
+      MODIF_USER_ID: userId,
+      MODIF_USER_DATE: now,
+      ELIM_USER_ID: 0,
+      ELIM_USER_DATE: '2025-01-01 00:00:00',
+      REST_USER_ID: 0,
+      REST_USER_DATE: '2025-01-01 00:00:00'
+    });
+
+    // 3. Actualizar estado del usuario
+    await supabase.from('t_user').update({ 
+      FORCE_PASSWORD_CHANGE: false,
+      LOGIN: 1 
+    }).eq('USER_ID', userId);
+
+    // 4. Guardar preguntas de seguridad
+    if (securityQuestions && Array.isArray(securityQuestions)) {
+      // Primero eliminar anteriores si existen
+      await supabase.from('t_security_questions').delete().eq('USER_ID', userId);
+      
+      const questionsToInsert = securityQuestions.map(q => ({
+        USER_ID: userId,
+        PRESET_QUESTION_ID: q.questionId,
+        ANSWER: q.answer
+      }));
+      
+      await supabase.from('t_security_questions').insert(questionsToInsert);
+    }
+
+    return { success: true, message: 'Contraseña actualizada correctamente' };
+  });
+};
+
+export const getSecurityQuestions = async (userCi: string) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { data: user, error: userError } = await supabase
+      .from('t_user')
+      .select('USER_ID')
+      .eq('USER_CI', userCi)
+      .single();
+
+    if (userError || !user) {
+      return { success: false, message: 'Usuario no encontrado' };
+    }
+
+    interface SecurityQuestionResult {
+      PRESET_QUESTION_ID: number;
+      t_preset_questions: { DESCRIPTION: string } | { DESCRIPTION: string }[] | null;
+    }
+
+    const { data, error: qError } = await supabase
+      .from('t_security_questions')
+      .select('PRESET_QUESTION_ID, t_preset_questions(DESCRIPTION)')
+      .eq('USER_ID', user.USER_ID);
+
+    const questions = data as unknown as SecurityQuestionResult[] | null;
+
+    if (qError || !questions || questions.length === 0) {
+      return { success: false, message: 'El usuario no tiene preguntas de seguridad configuradas' };
+    }
+
+    return { 
+      success: true, 
+      userId: user.USER_ID,
+      questions: questions.map(q => ({
+        id: q.PRESET_QUESTION_ID,
+        description: Array.isArray(q.t_preset_questions) 
+          ? q.t_preset_questions[0]?.DESCRIPTION 
+          : q.t_preset_questions?.DESCRIPTION || ''
+      }))
+    };
+  });
+};
+
+export const verifySecurityQuestions = async (userId: number, answers: { questionId: number, answer: string }[]) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { data: storedQuestions, error } = await supabase
+      .from('t_security_questions')
+      .select('PRESET_QUESTION_ID, ANSWER')
+      .eq('USER_ID', userId);
+
+    if (error || !storedQuestions || storedQuestions.length === 0) {
+      return { success: false, message: 'No se encontraron preguntas de seguridad configuradas' };
+    }
+
+    // Verificar cada respuesta
+    for (const provided of answers) {
+      const stored = storedQuestions.find(q => q.PRESET_QUESTION_ID === provided.questionId);
+      if (!stored || stored.ANSWER.toLowerCase().trim() !== provided.answer.toLowerCase().trim()) {
+        return { success: false, message: 'Una o más respuestas son incorrectas' };
+      }
+    }
+
+    // Si todas son correctas, generar un token temporal para el cambio de clave
+    const resetToken = generateToken({ userId, type: 'password_reset' });
+    
+    return { success: true, resetToken };
+  });
+};
+
+export const resetPassword = async (userId: number, newPassword: string) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const hashedPassword = await hashPassword(newPassword);
+    const now = new Date().toISOString();
+    const expiry = new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString();
+
+    // 1. Desactivar clave anterior
+    await supabase.from('t_user_key').update({ STATUS: 0 }).eq('USER_ID', userId).eq('STATUS', 1);
+
+    // 2. Insertar nueva clave
+    await supabase.from('t_user_key').insert({
+      USER_ID: userId,
+      KEY: hashedPassword,
+      START_DATE: now,
+      END_DATE: expiry,
+      STATUS: 1,
+      IS_TEMPORARY: false,
+      MODIF_USER_ID: userId,
+      MODIF_USER_DATE: now,
+      ELIM_USER_ID: 0,
+      ELIM_USER_DATE: '2025-01-01 00:00:00',
+      REST_USER_ID: 0,
+      REST_USER_DATE: '2025-01-01 00:00:00'
+    });
+
+    // 3. Resetear intentos fallidos y asegurar que la cuenta esté activa
+    // Intentamos resetear columnas de seguridad si existen
+    try {
+      await supabase.from('t_user').update({
+        STATUS: 1,
+        FAILED_ATTEMPTS: 0,
+        LOCK_DATE: undefined,
+        FORCE_PASSWORD_CHANGE: false
+      } as Partial<UserRow>).eq('USER_ID', userId);
+    } catch {
+      // Fallback si las columnas no existen
+      await supabase.from('t_user').update({ STATUS: 1 }).eq('USER_ID', userId);
+    }
+
+    return { success: true, message: 'Contraseña restablecida correctamente' };
+  });
+};
+
+export const getPresetQuestions = async () => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { data, error } = await supabase
+      .from('t_preset_questions')
+      .select('PRESET_QUESTION_ID, DESCRIPTION')
+      .eq('STATUS', 1);
+
+    if (error) throw error;
+
+    return { 
+      success: true, 
+      questions: data.map(q => ({
+        id: q.PRESET_QUESTION_ID,
+        description: q.DESCRIPTION
+      }))
+    };
+  });
+};
+

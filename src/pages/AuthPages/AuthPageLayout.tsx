@@ -1,5 +1,4 @@
 import React from "react";
-import GridShape from "../../components/common/GridShape";
 import { Link } from "react-router";
 import ThemeTogglerTwo from "../../components/common/ThemeTogglerTwo";
 
@@ -12,21 +11,30 @@ export default function AuthLayout({
     <div className="relative p-6 bg-bg-main z-1 dark:bg-bg-dark sm:p-0">
       <div className="relative flex flex-col justify-center w-full h-screen lg:flex-row dark:bg-bg-dark sm:p-0">
         {children}
-        <div className="items-center hidden w-full h-full lg:w-1/2 bg-brand-950 dark:bg-white/5 lg:grid">
+        <div 
+          className="items-center hidden w-full h-full lg:w-1/2 lg:grid relative overflow-hidden"
+          style={{
+            backgroundImage: 'url("/unefa-img/fondo-login.png")',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
+        >
+          {/* Overlay to ensure text readability */}
+          <div className="absolute inset-0 bg-brand-950/40 backdrop-blur-[2px]"></div>
+          
           <div className="relative flex items-center justify-center z-1">
-            {/* <!-- ===== Common Grid Shape Start ===== --> */}
-            <GridShape />
-            <div className="flex flex-col items-center max-w-xs">
-              <Link to="/" className="block mb-4">
+            <div className="flex flex-col items-center max-w-sm px-6">
+              <Link to="/" className="block mb-6">
                 <img
-                  width={120}
-                  height={120}
-                  src="/images/logo/logo-nuevo.svg"
-                  alt="Logo"
+                  width={180}
+                  height={180}
+                  src="/logo-nuevo.svg"
+                  alt="Logo UNEFA"
+                  className="drop-shadow-lg"
                 />
               </Link>
-              <h2 className="text-2xl font-bold text-white mb-2">SIGP - UNEFA</h2>
-              <p className="text-center text-text-tertiary dark:text-white/60">
+              <h2 className="text-3xl font-bold text-white mb-4 text-center drop-shadow-md">SIGP - UNEFA</h2>
+              <p className="text-center text-white font-medium text-lg drop-shadow-sm">
                 Sistema de Gestión de Pasantías de la Universidad Nacional Experimental Politécnica de la Fuerza Armada
               </p>
             </div>

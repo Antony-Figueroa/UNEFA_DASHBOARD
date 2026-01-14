@@ -1,12 +1,6 @@
 import { Request, Response } from 'express';
 import * as careersService from '../services/careers.service.js';
 
-const TABLE_NAME = 't_career'; 
-const RELATION_TABLE = 't_career_internship_type';
-const CACHE_PREFIX = 'careers:';
-const CACHE_TTL = 3600000; // 1 hour for careers
-const CAREER_COLUMNS = 'CAREER_ID, CAREER_NAME, STATUS, CAREER_ABBREVIATION';
-
 const handleDbError = (res: Response, error: unknown) => {
   console.error('Database Error:', error);
   const dbError = error as { message?: string; details?: string; code?: string };

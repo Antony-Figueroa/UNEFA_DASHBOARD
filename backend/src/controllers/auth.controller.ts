@@ -63,20 +63,63 @@ export const login = async (req: Request, res: Response) => {
 
 export const getMe = async (req: AuthRequest, res: Response) => {
   try {
-    console.log(`[Auth] Verificando sesión para usuario ID: ${req.user?.userId}`);
-    // El usuario ya fue verificado por el middleware authenticateToken
-    // El payload del token está en req.user
-    res.json({
-      success: true,
-      user: {
-        id: req.user.userId,
-        role: req.user.role,
-        // No tenemos nombre/email en el token, pero para el estado de autenticación básico sirve
-        // Podríamos buscar en la DB si es necesario
-      }
-    });
+    const userId = req.user?.userId;
+    console.log(`[Auth] Verificando sesión para usuario ID: ${userId}`);
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Sesión no válida' });
+    }
+
+    const result = await authService.getUserById(userId);
+    
+    if (!result.success) {
+      return res.status(404).json(result);
+    }
+
+    res.json(result);
   } catch (error) {
     console.error(`[Auth] Error en getMe:`, error);
+    handleAuthError(res, error);
+  }
+};
+
+export const updateProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const { name, secondName, surname, secondSurname, email, phoneNumber } = req.body;
+    const ip = req.ip || '';
+    const userAgent = req.headers['user-agent'] || '';
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Sesión no válida' });
+    }
+
+    // Validaciones básicas
+    if (!name || !surname || !email) {
+      return res.status(400).json({ success: false, message: 'Campos obligatorios faltantes' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ success: false, message: 'Formato de correo inválido' });
+    }
+
+    const result = await authService.updateProfile(userId, {
+      name,
+      secondName,
+      surname,
+      secondSurname,
+      email,
+      phoneNumber
+    }, ip, userAgent);
+
+    if (!result.success) {
+      return res.status(500).json(result);
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error(`[Auth] Error en updateProfile:`, error);
     handleAuthError(res, error);
   }
 };

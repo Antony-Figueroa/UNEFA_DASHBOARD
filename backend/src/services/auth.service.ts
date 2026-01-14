@@ -34,8 +34,11 @@ interface UserRow {
   LOCK_DATE?: string;
   FORCE_PASSWORD_CHANGE?: boolean;
   NAME: string;
+  SECOND_NAME?: string;
   SURNAME: string;
+  SECOND_SURNAME?: string;
   EMAIL: string;
+  PHONE_NUMBER?: string;
   t_user_roles?: { ID_ROLES: number }[];
 }
 
@@ -351,6 +354,93 @@ export const resetPassword = async (userId: number, newPassword: string) => {
     }
 
     return { success: true, message: 'Contraseña restablecida correctamente' };
+  });
+};
+
+export const getUserById = async (userId: number) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { data, error } = await supabase
+      .from('t_user')
+      .select('USER_ID, USER_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME, EMAIL, PHONE_NUMBER, STATUS, FAILED_ATTEMPTS, LOCK_DATE, FORCE_PASSWORD_CHANGE, t_user_roles(ID_ROLES)')
+      .eq('USER_ID', userId)
+      .single();
+
+    if (error || !data) {
+      return { success: false, message: 'Usuario no encontrado' };
+    }
+
+    const user = data as unknown as UserRow;
+    return {
+      success: true,
+      user: {
+        id: user.USER_ID,
+        userCi: user.USER_CI,
+        name: user.NAME,
+        secondName: user.SECOND_NAME,
+        surname: user.SURNAME,
+        secondSurname: user.SECOND_SURNAME,
+        email: user.EMAIL,
+        phoneNumber: user.PHONE_NUMBER,
+        status: user.STATUS,
+        failedAttempts: user.FAILED_ATTEMPTS,
+        lockDate: user.LOCK_DATE,
+        forcePasswordChange: user.FORCE_PASSWORD_CHANGE,
+        role: user.t_user_roles && user.t_user_roles.length > 0 ? user.t_user_roles[0].ID_ROLES : 0
+      }
+    };
+  });
+};
+
+export const updateProfile = async (userId: number, data: { 
+  name: string; 
+  secondName?: string; 
+  surname: string; 
+  secondSurname?: string; 
+  email: string; 
+  phoneNumber?: string;
+}, ip: string = '', userAgent: string = '') => {
+  return await dbManager.withRetry(async (supabase) => {
+    // 1. Obtener datos actuales para auditoría
+    const { data: oldData } = await supabase
+      .from('t_user')
+      .select('NAME, SECOND_NAME, SURNAME, SECOND_SURNAME, EMAIL, PHONE_NUMBER')
+      .eq('USER_ID', userId)
+      .single();
+
+    // 2. Actualizar perfil
+    const { error } = await supabase
+      .from('t_user')
+      .update({
+        NAME: data.name,
+        SECOND_NAME: data.secondName || null,
+        SURNAME: data.surname,
+        SECOND_SURNAME: data.secondSurname || null,
+        EMAIL: data.email,
+        PHONE_NUMBER: data.phoneNumber || null
+      })
+      .eq('USER_ID', userId);
+
+    if (error) {
+      console.error('[Auth] Error al actualizar perfil:', error);
+      return { success: false, message: 'No se pudo actualizar el perfil' };
+    }
+
+    // 3. Registro de auditoría
+    const changes = [];
+    if (oldData) {
+      if (oldData.NAME !== data.name) changes.push(`Nombre: ${oldData.NAME} -> ${data.name}`);
+      if (oldData.SECOND_NAME !== (data.secondName || null)) changes.push(`Segundo Nombre: ${oldData.SECOND_NAME} -> ${data.secondName}`);
+      if (oldData.SURNAME !== data.surname) changes.push(`Apellido: ${oldData.SURNAME} -> ${data.surname}`);
+      if (oldData.SECOND_SURNAME !== (data.secondSurname || null)) changes.push(`Segundo Apellido: ${oldData.SECOND_SURNAME} -> ${data.secondSurname}`);
+      if (oldData.EMAIL !== data.email) changes.push(`Email: ${oldData.EMAIL} -> ${data.email}`);
+      if (oldData.PHONE_NUMBER !== (data.phoneNumber || null)) changes.push(`Teléfono: ${oldData.PHONE_NUMBER} -> ${data.phoneNumber}`);
+    }
+
+    if (changes.length > 0) {
+      await logAuthAction(userId, '', 'PROFILE_UPDATE', ip, userAgent, `Cambios realizados: ${changes.join(', ')}`);
+    }
+
+    return { success: true, message: 'Perfil actualizado correctamente' };
   });
 };
 

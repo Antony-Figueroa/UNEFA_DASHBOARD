@@ -1,27 +1,18 @@
-import { useState, useEffect } from "react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import UserMetaCard from "../components/UserProfile/UserMetaCard";
 import UserInfoCard from "../components/UserProfile/UserInfoCard";
-import UserAddressCard from "../components/UserProfile/UserAddressCard";
 import PageMeta from "../components/common/PageMeta";
 import { SkeletonLoader, ProfileSkeleton, BreadcrumbSkeleton } from "../components/ui/skeleton";
+import { useAuth } from "../context/AuthContext";
 
 export default function UserProfiles() {
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Simulamos carga de perfil
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
+  const { loading: isLoading } = useAuth();
 
   return (
     <>
       <PageMeta
-        title="React.js Profile Dashboard | TailAdmin - Next.js Admin Dashboard Template"
-        description="This is React.js Profile Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Configuración de Perfil de Usuario"
+        description="Configuración de Perfil de Usuario"
       />
 
       <SkeletonLoader
@@ -29,26 +20,17 @@ export default function UserProfiles() {
         id="profile-breadcrumb"
         skeleton={<BreadcrumbSkeleton />}
       >
-        <PageBreadcrumb pageTitle="Profile" />
+        <PageBreadcrumb pageTitle="Perfil" />
       </SkeletonLoader>
 
-      <div className="rounded-2xl border border-border-light bg-bg-main p-5 dark:border-border-dark dark:bg-white/3 lg:p-6 stagger-delay">
-        <h3 className="mb-5 text-lg font-semibold text-text-primary dark:text-white/90 lg:mb-7">
-          Profile
-        </h3>
-
-        <SkeletonLoader
-          isLoading={isLoading}
-          id="profile-content"
-          skeleton={<ProfileSkeleton />}
-        >
-          <div className="space-y-6">
-            <UserMetaCard />
-            <UserInfoCard />
-            <UserAddressCard />
-          </div>
-        </SkeletonLoader>
-      </div>
+      <SkeletonLoader
+        isLoading={isLoading}
+        id="profile-content"
+        skeleton={<ProfileSkeleton />}
+      >
+        <UserMetaCard />
+        <UserInfoCard />
+      </SkeletonLoader>
     </>
   );
 }

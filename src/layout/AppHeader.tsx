@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 
-import { Link } from "react-router";
 import { useSidebar } from "../context/sidebar";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import NotificationDropdown from "../components/header/NotificationDropdown";
@@ -117,22 +116,22 @@ const AppHeader: React.FC = () => {
             {/* Cross Icon */}
           </button>
 
-          <Link to="/dashboard" className="lg:hidden">
+          {/* <Link to="/dashboard" className="lg:hidden">
             <img
               className="dark:hidden"
-              src="/images/logo/bolivar-icon-dark.svg"
+              src="/logo-nuevo.png"
               alt="Logo"
-              width={150}
-              height={40}
+              width={35}
+              height={35}
             />
             <img
               className="hidden dark:block"
-              src="/images/logo/bolivar-icon-white.svg"
+              src="/logo-nuevo.png"
               alt="Logo"
-              width={150}
-              height={40}
+              width={35}
+              height={35}
             />
-          </Link>
+          </Link> */}
 
           <button
             onClick={toggleApplicationMenu}

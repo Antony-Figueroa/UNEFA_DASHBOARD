@@ -214,7 +214,7 @@ export default function UserMetaCard() {
       </div>
 
       <Modal isOpen={isOpen} onClose={handleCloseAttempt} className="max-w-137.5">
-        <ModalHeader onClose={handleCloseAttempt}>
+        <ModalHeader>
           <div className="flex flex-col">
             <h2 className="text-xl font-bold text-text-emphasis dark:text-white">Actualizar Perfil</h2>
             <p className="text-sm text-text-secondary dark:text-text-tertiary">Modifique sus datos personales a continuación.</p>

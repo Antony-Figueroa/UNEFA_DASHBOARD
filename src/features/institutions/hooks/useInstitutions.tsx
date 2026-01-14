@@ -134,9 +134,10 @@ export const useInstitutions = () => {
         title: newStatus ? "Institución Restaurada" : "Institución Inactivada",
         message: `La institución ${inst.name} ahora está ${newStatus ? 'activa' : 'inactiva'}.`,
       });
-    } catch (e: any) {
+    } catch (e) {
       console.error("Error toggling institution status:", e);
-      const errorMessage = e.response?.data?.message || "No se pudo cambiar el estado de la institución.";
+      const error = e as { response?: { data?: { message?: string } } };
+      const errorMessage = error.response?.data?.message || "No se pudo cambiar el estado de la institución.";
       addToast({
         variant: "error",
         title: "Error de validación",
@@ -150,7 +151,7 @@ export const useInstitutions = () => {
   const bulkRemoveInstitutions = async (ids: string[]) => {
     setLoadingAction(true);
     let successCount = 0;
-    let failMessages: string[] = [];
+    const failMessages: string[] = [];
 
     try {
       for (const id of ids) {
@@ -158,8 +159,9 @@ export const useInstitutions = () => {
           await institutionsService.toggleInstitutionStatus(id, false);
           successCount++;
           setInstitutions(prev => prev.map(i => i.institutionId === id ? { ...i, status: false } : i));
-        } catch (innerError: any) {
-          const msg = innerError.response?.data?.message || `Error al inactivar ID ${id}`;
+        } catch (innerError) {
+          const error = innerError as { response?: { data?: { message?: string } } };
+          const msg = error.response?.data?.message || `Error al inactivar ID ${id}`;
           if (!failMessages.includes(msg)) failMessages.push(msg);
         }
       }

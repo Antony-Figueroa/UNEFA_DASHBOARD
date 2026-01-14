@@ -8,14 +8,12 @@ import UserDropdown from "../components/header/UserDropdown";
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
-  const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 0);
   const headerRef = useRef<HTMLElement>(null);
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
   useEffect(() => {
     const handleResize = () => {
-      setWindowWidth(window.innerWidth);
       if (headerRef.current) {
         setHeaderHeight(headerRef.current.offsetHeight);
       }
@@ -31,8 +29,7 @@ const AppHeader: React.FC = () => {
   useEffect(() => {
     document.documentElement.style.setProperty("--header-height", `${headerHeight}px`);
     document.documentElement.style.setProperty("--header-spacing", `10px`);
-    document.documentElement.style.setProperty("--sidebar-mt", windowWidth < 1024 ? `${headerHeight}px` : `0px`);
-  }, [headerHeight, windowWidth]);
+  }, [headerHeight]);
 
   const handleToggle = () => {
     if (window.innerWidth >= 1024) {

@@ -28,6 +28,7 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
+      - /app/dist
     environment:
       - PORT=3000
       - NODE_ENV=development

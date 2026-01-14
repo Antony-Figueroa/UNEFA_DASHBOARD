@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import * as careersService from '../services/careers.service';
+import * as careersService from '../services/careers.service.js';
 
 const TABLE_NAME = 't_career'; 
 const RELATION_TABLE = 't_career_internship_type';

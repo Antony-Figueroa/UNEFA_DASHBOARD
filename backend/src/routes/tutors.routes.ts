@@ -5,7 +5,7 @@ import {
   updateTutor, 
   deleteTutor, 
   toggleTutorStatus 
-} from '../controllers/tutors.controller';
+} from '../controllers/tutors.controller.js';
 
 const router = Router();
 

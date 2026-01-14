@@ -1,4 +1,4 @@
-import { app, port } from './app';
+import { app, port } from './app.js';
 import http from 'http';
 
 const server: http.Server = app.listen(port, () => {

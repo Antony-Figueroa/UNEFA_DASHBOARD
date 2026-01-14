@@ -5,7 +5,7 @@ import {
   updateInstitution, 
   deleteInstitution, 
   toggleInstitutionStatus 
-} from '../controllers/institutions.controller';
+} from '../controllers/institutions.controller.js';
 
 const router = Router();
 

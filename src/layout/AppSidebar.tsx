@@ -333,9 +333,8 @@ const AppSidebar: React.FC = () => {
   return (
     <aside
       style={{ 
-        marginTop: 'var(--sidebar-mt, 0px)',
-        height: 'calc(100vh - var(--sidebar-mt, 0px) - var(--banner-height, 0px))',
-        top: 'var(--banner-height, 0px)'
+        height: '100vh',
+        top: 0
       }}
       className={`fixed flex flex-col px-5 left-0 bg-white dark:bg-bg-dark dark:border-white/10 text-text-primary transition-all duration-300 ease-in-out z-999999 border-r border-border-light shadow-theme-md 
         ${isExpanded || isMobileOpen

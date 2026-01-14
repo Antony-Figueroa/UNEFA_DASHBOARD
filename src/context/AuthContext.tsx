@@ -34,7 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setUser(null);
       }
-    } catch (error) {
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);

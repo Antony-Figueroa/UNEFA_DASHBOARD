@@ -24,8 +24,8 @@ async function runLoadTest(concurrentRequests: number, totalRequests: number) {
       await axios.get(`${API_URL}${endpoint}`);
       const duration = Date.now() - reqStart;
       latencies.push(duration);
-    } catch (error: any) {
-      console.error(`Error en ${endpoint}: ${error.message}`);
+    } catch (error) {
+      console.error(`Error en ${endpoint}: ${(error as Error).message}`);
     } finally {
       completed++;
     }

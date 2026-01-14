@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/auth.utils.js';
 
 export interface AuthRequest extends Request {
-  user?: any;
+  user?: string | object;
 }
 
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {

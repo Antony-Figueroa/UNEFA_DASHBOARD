@@ -3,20 +3,20 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 
-import careersRoutes from './routes/careers.routes';
-import internshipTypesRoutes from './routes/internship-types.routes';
-import periodsRoutes from './routes/periods.routes';
-import enrollmentsRoutes from './routes/enrollments.routes';
-import preEnrollmentsRoutes from './routes/pre-enrollments.routes';
-import studentsRoutes from './routes/students.routes';
-import tutorsRoutes from './routes/tutors.routes';
-import trackingRoutes from './routes/tracking.routes';
-import institutionsRoutes from './routes/institutions.routes';
-import institutionalResponsiblesRoutes from './routes/institutional-responsibles.routes';
-import listsRoutes from './routes/lists.routes';
-import { dbManager } from './lib/db-manager';
-import { performanceMiddleware } from './lib/performance-middleware';
-import { cacheManager } from './lib/cache-manager';
+import careersRoutes from './routes/careers.routes.js';
+import internshipTypesRoutes from './routes/internship-types.routes.js';
+import periodsRoutes from './routes/periods.routes.js';
+import enrollmentsRoutes from './routes/enrollments.routes.js';
+import preEnrollmentsRoutes from './routes/pre-enrollments.routes.js';
+import studentsRoutes from './routes/students.routes.js';
+import tutorsRoutes from './routes/tutors.routes.js';
+import trackingRoutes from './routes/tracking.routes.js';
+import institutionsRoutes from './routes/institutions.routes.js';
+import institutionalResponsiblesRoutes from './routes/institutional-responsibles.routes.js';
+import listsRoutes from './routes/lists.routes.js';
+import { dbManager } from './lib/db-manager.js';
+import { performanceMiddleware } from './lib/performance-middleware.js';
+import { cacheManager } from './lib/cache-manager.js';
 
 dotenv.config();
 

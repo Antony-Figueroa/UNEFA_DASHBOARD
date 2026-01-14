@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { dbManager } from '../lib/db-manager';
-import { cacheManager } from '../lib/cache-manager';
+import { dbManager } from '../lib/db-manager.js';
+import { cacheManager } from '../lib/cache-manager.js';
 
 const TABLE_NAME = 't_institution';
 const CACHE_PREFIX = 'institutions:';

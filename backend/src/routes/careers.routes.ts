@@ -6,7 +6,7 @@ import {
   updateCareer, 
   deleteCareer,
   bulkDeleteCareers 
-} from '../controllers/careers.controller';
+} from '../controllers/careers.controller.js';
 
 const router = Router();
 

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { 
   getAllInternshipTypes, 
   getInternshipTypesByCareer 
-} from '../controllers/internship-types.controller';
+} from '../controllers/internship-types.controller.js';
 
 const router = Router();
 

@@ -31,6 +31,8 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,ht
   .map(s => s.trim())
   .filter(Boolean);
 
+console.log(`[CORS] Allowed Origins:`, allowedOrigins);
+
 // Performance monitoring
 app.use(performanceMiddleware);
 
@@ -44,7 +46,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      connectSrc: ["'self'", "http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "ws://localhost:5173", "ws://localhost:5174", "ws://localhost:5175", "http://backend:3000"],
+      connectSrc: ["'self'", "https://*.onrender.com", "http://localhost:*", "ws://localhost:*", "http://backend:3000"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "blob:", "https://*"],
@@ -59,7 +61,16 @@ app.use(cors({
   origin: (origin, callback) => {
     // permitir requests sin origin (herramientas como curl, servidores-side)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    
+    const isAllowed = allowedOrigins.some(allowed => 
+      allowed.replace(/\/$/, '') === origin.replace(/\/$/, '')
+    );
+
+    if (isAllowed || origin.endsWith('.onrender.com')) {
+      return callback(null, true);
+    }
+    
+    console.warn(`[CORS] Rejected origin: ${origin}`);
     return callback(new Error('CORS policy: origin not allowed'), false);
   },
   credentials: true

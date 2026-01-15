@@ -159,7 +159,7 @@ const HeroSection: React.FC = () => {
           </div>
 
           {/* Right Column: Image */}
-          <div className="relative transition-all duration-300 ease-in-out hidden md:block md:scale-75 min-[1200px]:scale-100 origin-center">
+          <div className="relative transition-all duration-300 ease-in-out hidden lg:block md:scale-75 min-[1200px]:scale-100 origin-center">
             <div className="relative mx-auto w-full max-w-lg lg:max-w-none">
               {/* Main Image Placeholder */}
               <div className="aspect-square md:aspect-4/5 overflow-hidden rounded-3xl bg-gray-50 dark:bg-gray-900 shadow-theme-xl border border-border-light dark:border-border-dark">

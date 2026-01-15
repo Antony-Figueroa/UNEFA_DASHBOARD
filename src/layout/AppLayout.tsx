@@ -23,7 +23,7 @@ const LayoutContent: React.FC = () => {
         <Backdrop />
       </div>
       <div
-        className={`flex-1 transition-all duration-300 ease-in-out ${isExpanded || isHovered ? "lg:ml-72.5" : "lg:ml-22.5"
+        className={`flex-1 transition-all duration-300 ease-in-out ${isExpanded || isHovered ? "lg:ml-72" : "lg:ml-22"
           } ${isMobileOpen ? "ml-0" : ""}`}
       >
         <div 
@@ -33,7 +33,7 @@ const LayoutContent: React.FC = () => {
           <DatabaseStatusBanner />
           <AppHeader />
         </div>
-        <div className="mx-auto max-w-(--breakpoint-1xl) p-4 pt-10 md:p-6 md:pt-10">
+        <div className="mx-auto max-w-(--breakpoint-1xl) p-4 pt-8 md:p-6 md:pt-10">
           <Outlet />
         </div>
       </div>

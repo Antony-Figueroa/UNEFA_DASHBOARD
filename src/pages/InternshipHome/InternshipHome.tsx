@@ -7,6 +7,7 @@ import CommunityInfoSection from "../../features/internship-home/sections/Commun
 import GraduateStatsSection from "../../features/internship-home/sections/GraduateStatsSection";
 import ProcessFlowSection from "../../features/internship-home/sections/ProcessFlowSection";
 import PartnerLogosSection from "../../features/internship-home/sections/PartnerLogosSection";
+import MissionVisionSection from "../../features/internship-home/sections/MissionVisionSection";
 import WorkspaceImageGallery from "../../features/internship-home/sections/WorkspaceImageGallery";
 import TopBanner from "../../components/layout/TopBanner";
 
@@ -30,6 +31,9 @@ const InternshipHome: React.FC = () => {
       <main>
         {/* Hero Section */}
         <HeroSection />
+
+        {/* Sección de Misión y Visión */}
+        <MissionVisionSection />
 
         {/* Sección de Redes Sociales (Logo Loop) */}
         <PartnerLogosSection />

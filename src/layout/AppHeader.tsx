@@ -28,7 +28,7 @@ const AppHeader: React.FC = () => {
   // Update CSS variable for layout adjustment
   useEffect(() => {
     document.documentElement.style.setProperty("--header-height", `${headerHeight}px`);
-    document.documentElement.style.setProperty("--header-spacing", `10px`);
+    document.documentElement.style.setProperty("--header-spacing", `0px`);
   }, [headerHeight]);
 
   const handleToggle = () => {

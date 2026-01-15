@@ -4,17 +4,31 @@ import { Link } from "react-router";
 import { smoothScrollTo } from "../../../utils/scrollUtils";
 
 const PublicFooter: React.FC = () => {
+  const resources = [
+    { name: "Reglamento de Prácticas", path: "/docs/reglamento PRACTICAS PROFESIONALES vigente.pdf" },
+    { name: "Carta de Postulación", path: "/docs/CARTA DE POSTULACION PP.pdf" },
+    { name: "Actas Evaluativas", path: "/docs/ACTAS EVALUATIVAS.pdf" },
+    { name: "Estructura del Informe", path: "/docs/ESTRUCTURA DEL INFORME.pdf" },
+    { name: "Guía Metodológica", path: "/docs/METODOLOGÍA.pdf" },
+    { name: "Guía de Prácticas", path: "/docs/PRACTICAS PROFESIONALES.pdf" },
+    { name: "Plan de la Patria 7T", path: "/docs/plan-de-la-patria-de-las-7t-uv-2.pdf" },
+    { name: "Constitución RBV", path: "/docs/CONSTITUCION RBV (1).pdf" },
+    { name: "Plan de la Patria 2019-2025", path: "/docs/Venezuela_Plan de la Patria 2019-2025 (2019).pdf" },
+    { name: "Formato de Membrete", path: "/docs/MEMBRETE.doc" },
+    { name: "Anexo: Portada", path: "/docs/ANEXO K_PORTADA.doc" },
+  ];
+
   const handleScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
     smoothScrollTo(id);
   };
 
   return (
-    <footer id="contacto" className="bg-bg-dark text-white py-12 border-t border-white/5">
+    <footer id="contacto" className="bg-bg-dark text-white py-12 border-t border-white/5 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
           {/* Brand */}
-          <div className="col-span-1 md:col-span-1 space-y-4">
+          <div className="space-y-4">
             <a 
               href="#inicio" 
               onClick={(e) => handleScroll(e, "inicio")}
@@ -27,14 +41,14 @@ const PublicFooter: React.FC = () => {
               />
               <span className="text-xl font-bold">UNEFA</span>
             </a>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-400 text-sm leading-relaxed">
               Sistema de Gestión de Pasantías de la UNEFA. Transformando el futuro académico a través de la experiencia profesional.
             </p>
           </div>
 
           {/* Links 1 */}
           <div>
-            <h4 className="font-bold mb-4">Plataforma</h4>
+            <h4 className="font-bold mb-4 text-white">Plataforma</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               <li>
                 <a 
@@ -69,27 +83,60 @@ const PublicFooter: React.FC = () => {
 
           {/* Links 2 */}
           <div>
-            <h4 className="font-bold mb-4">Recursos</h4>
+            <h4 className="font-bold mb-4 text-white">Recursos</h4>
             <ul className="space-y-2 text-sm text-gray-400">
-              <li><Link to="#" className="hover:text-brand-400 transition-colors">Manual de Usuario</Link></li>
-              <li><Link to="#" className="hover:text-brand-400 transition-colors">Reglamento de Pasantías</Link></li>
-              <li><Link to="#" className="hover:text-brand-400 transition-colors">Formatos y Planillas</Link></li>
-              <li><Link to="#" className="hover:text-brand-400 transition-colors">Soporte Técnico</Link></li>
+              {resources.map((resource, index) => (
+                <li key={index}>
+                  <a 
+                    href={resource.path} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="hover:text-brand-400 transition-colors"
+                  >
+                    {resource.name}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
 
           {/* Contact */}
           <div>
-            <h4 className="font-bold mb-4">Contacto</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li className="flex items-center gap-2">
-                <span>📍</span> Caracas, Venezuela
+            <h4 className="font-bold mb-4 text-white">Contacto Acarigua</h4>
+            <ul className="space-y-3 text-sm text-gray-400">
+              <li className="flex items-start gap-2">
+                <span className="mt-1 flex-shrink-0">📍</span>
+                <span className="break-words">HQ9J+R7P, Calle 6, Araure 3303, Portuguesa</span>
               </li>
               <li className="flex items-center gap-2">
-                <span>📧</span> contacto@unefa.edu.ve
+                <span className="flex-shrink-0">🌐</span>
+                <a href="https://www.unefa.edu.ve" target="_blank" rel="noopener noreferrer" className="hover:text-brand-400 break-all">www.unefa.edu.ve</a>
               </li>
               <li className="flex items-center gap-2">
-                <span>📞</span> +58 (212) 123-4567
+                <span className="flex-shrink-0">📸</span>
+                <a href="https://instagram.com/unefaportuguesa" target="_blank" rel="noopener noreferrer" className="hover:text-brand-400 break-all">@unefaportuguesa</a>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1 flex-shrink-0">📧</span>
+                <div className="flex flex-col min-w-0">
+                  <a href="mailto:atencion.egresado.unefa19@gmail.com" className="hover:text-brand-400 break-all">atencion.egresado.unefa19@gmail.com</a>
+                  <a href="mailto:registro@unefa.edu.ve" className="hover:text-brand-400 break-all">registro@unefa.edu.ve</a>
+                </div>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1 flex-shrink-0">📞</span>
+                <div className="flex flex-col">
+                  <span>+58 (212) 908.21.07</span>
+                  <span>+58 (212) 908.20.94</span>
+                </div>
+              </li>
+              <li className="flex items-start gap-2 text-xs border-t border-white/5 pt-3 mt-3 italic">
+                <span className="flex-shrink-0">ℹ️</span>
+                <span className="leading-relaxed">Trámites específicos se gestionan presencialmente en sede Vía Payara.</span>
+              </li>
+              <li className="flex items-center gap-2 pt-2">
+                <span className="flex-shrink-0">🕒</span>
+                <span>Lun-Vie: 07:30 AM - 05:30 PM</span>
               </li>
             </ul>
           </div>

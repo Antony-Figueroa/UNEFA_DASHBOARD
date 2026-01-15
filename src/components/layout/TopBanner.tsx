@@ -10,12 +10,12 @@ const TopBanner: React.FC = () => {
   const isMobileOpen = sidebarContext?.isMobileOpen ?? false;
   
   const [isVisible, setIsVisible] = useState(true);
-  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024);
+  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1000);
   const scrollRef = useRef<number>(0);
 
   useEffect(() => {
     const handleResize = () => {
-      setIsLargeScreen(window.innerWidth >= 1024);
+      setIsLargeScreen(window.innerWidth >= 1000);
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -25,7 +25,7 @@ const TopBanner: React.FC = () => {
   // Si no hay contexto de sidebar (páginas públicas), el ancho es siempre 0px
   const sidebarWidth = !sidebarContext || !isLargeScreen || isMobileOpen 
     ? "0px" 
-    : (isExpanded || isHovered ? "290px" : "90px");
+    : (isExpanded || isHovered ? "260px" : "70px");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -37,9 +37,8 @@ const TopBanner: React.FC = () => {
       }
 
       scrollRef.current = requestAnimationFrame(() => {
-        // En páginas públicas (sin sidebar), el banner siempre es visible en el tope
-        // En el dashboard, se oculta al hacer scroll
-        if (!sidebarContext || currentScrollY <= 0) {
+        // El banner solo es visible en la posición inicial (0) del scroll
+        if (currentScrollY <= 0) {
           setIsVisible(true);
         } else {
           setIsVisible(false);
@@ -57,7 +56,7 @@ const TopBanner: React.FC = () => {
   }, [sidebarContext]);
 
   useEffect(() => {
-    const height = isVisible ? (window.innerWidth >= 1024 ? "60px" : "48px") : "0px";
+    const height = isVisible && isLargeScreen ? (window.innerWidth >= 1000 ? "60px" : "48px") : "0px";
     document.documentElement.style.setProperty("--banner-height", height);
   }, [isVisible, isLargeScreen]);
 
@@ -67,14 +66,14 @@ const TopBanner: React.FC = () => {
         left: sidebarWidth,
         width: `calc(100% - ${sidebarWidth})`
       }}
-      className={`${!sidebarContext ? "relative" : "fixed top-0"} bg-white dark:bg-bg-dark border-b border-border-light dark:border-border-dark overflow-hidden z-99999 transition-all duration-300 ease-in-out flex items-center justify-start ${
-        isVisible ? "h-12 lg:h-15 opacity-100" : "h-0 opacity-0 border-none"
+      className={`${!sidebarContext ? "relative" : "fixed top-0"} ${!isLargeScreen ? "hidden" : "flex"} bg-white dark:bg-bg-dark border-b border-border-light dark:border-border-dark overflow-hidden z-99999 transition-all duration-300 ease-in-out items-center justify-start ${
+        isVisible ? "h-12 lg:h-[60px] opacity-100" : "h-0 opacity-0 border-none"
       }`}
     >
       <img
         src="/unefa-img/menbrete-nuevo.jpg"
         alt="Gobierno Bolivariano de Venezuela"
-        className="hidden min-[1025px]:block h-full w-full object-fill object-left"
+        className="h-full w-full object-fill object-left"
       />
     </div>
   );

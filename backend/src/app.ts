@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
@@ -22,7 +22,7 @@ import { performanceMiddleware } from './lib/performance-middleware.js';
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 3000;
 
 // Leer orígenes permitidos desde env (coma-separados). Ejemplo:
 // ALLOWED_ORIGINS=https://your-frontend.vercel.app,http://localhost:5173
@@ -67,6 +67,12 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+// Request Logger (Debug)
+app.use((req, _res, next) => {
+  console.log(`[Request] ${req.method} ${req.url} - Origin: ${req.headers.origin}`);
+  next();
+});
+
 // Routes
 app.use('/api/careers', careersRoutes);
 app.use('/api/internship-types', internshipTypesRoutes);
@@ -106,6 +112,16 @@ app.get('/api/health', async (_req, res) => {
     database: health.details,
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Error Handler
+app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {
+  void _next; // Satisfy linter for unused required parameter
+  console.error('[Error Handler]', err);
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error',
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 });
 

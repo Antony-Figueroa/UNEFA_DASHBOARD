@@ -1,7 +1,9 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 
 const isProd = import.meta.env.PROD;
-const baseURL = import.meta.env.VITE_API_URL || (isProd ? "/api" : "http://localhost:5000/api");
+const baseURL = import.meta.env.VITE_API_URL || (isProd ? "/api" : "http://localhost:3000/api");
+
+console.log(`[API] Base URL: ${baseURL} (Mode: ${isProd ? 'Production' : 'Development'})`);
 
 /**
  * Cliente de API centralizado para TailAdmin.

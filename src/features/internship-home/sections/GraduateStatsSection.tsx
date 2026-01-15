@@ -64,7 +64,7 @@ const GraduateStatsSection: React.FC = () => {
               <div className="space-y-4">
                 <div>
                   <p className="text-sm font-bold text-text-tertiary uppercase">Universidad</p>
-                  <p className="text-text-primary font-medium">UNEFA - Núcleo Portuguesa</p>
+                  <p className="text-text-primary font-medium">Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional Bolivariana</p>
                 </div>
                 <div>
                   <p className="text-sm font-bold text-text-tertiary uppercase">Unidad Académica</p>

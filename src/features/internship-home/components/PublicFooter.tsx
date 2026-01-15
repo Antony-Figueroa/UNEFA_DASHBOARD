@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router";
+// import { Link } from "react-router";
 
 import { smoothScrollTo } from "../../../utils/scrollUtils";
 
@@ -77,7 +77,7 @@ const PublicFooter: React.FC = () => {
                   Procesos
                 </a>
               </li>
-              <li><Link to="#" className="hover:text-brand-400 transition-colors">Preguntas Frecuentes</Link></li>
+              {/* <li><Link to="#" className="hover:text-brand-400 transition-colors">Preguntas Frecuentes</Link></li> */}
             </ul>
           </div>
 

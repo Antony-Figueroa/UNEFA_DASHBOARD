@@ -419,7 +419,7 @@ export function CrudTable<TItem extends { id: string }>({
               })}
               {rowActions.length > 0 && (
                 <TableCell isHeader className="table-header-cell text-right">
-                  Acciones
+                  &nbsp;
                 </TableCell>
               )}
             </TableRow>
@@ -500,23 +500,22 @@ export function CrudTable<TItem extends { id: string }>({
 
                             const icon =
                               action.icon === "edit" ? (
-                                <EditIcon className="h-4 w-4" />
+                                <EditIcon className="icon-md" />
                               ) : action.icon === "delete" ? (
-                                <TrashIcon className="h-4 w-4" />
+                                <TrashIcon className="icon-md" />
                               ) : action.icon === "view" ? (
-                                <EyeIcon className="h-4 w-4" />
+                                <EyeIcon className="icon-md" />
                               ) : action.icon === "restore" ? (
-                                <RefreshIcon className="h-4 w-4" />
+                                <RefreshIcon className="icon-md" />
                               ) : typeof action.icon === "string" ? null : (
                                 action.icon
                               );
 
-                            const variantClasses =
-                              action.variant === "danger"
-                                ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10"
-                                : action.variant === "brand"
-                                  ? "text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-400/10"
-                                  : "text-text-secondary hover:bg-bg-secondary dark:text-text-tertiary dark:hover:bg-white/5";
+                            const variant = 
+                              action.icon === "edit" ? "edit" :
+                              action.icon === "delete" ? "delete" :
+                              action.icon === "view" ? "view" :
+                              action.icon === "restore" ? "restore" : "default";
 
                             return (
                               <DropdownItem
@@ -525,7 +524,7 @@ export function CrudTable<TItem extends { id: string }>({
                                   action.onClick(item);
                                   setOpenRowId(null);
                                 }}
-                                className={`flex items-center gap-2 ${variantClasses}`}
+                                variant={variant}
                               >
                                 {icon}
                                 {action.label}

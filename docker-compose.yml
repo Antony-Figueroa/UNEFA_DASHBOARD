@@ -9,7 +9,6 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-      - /app/backend # Evitar que el backend local interfiera si se mapea la raíz
     environment:
       - VITE_API_URL=http://localhost:3000/api
       - VITE_PROXY_TARGET=http://backend:3000
@@ -17,6 +16,7 @@ services:
       - backend
     networks:
       - unefa-network
+    restart: unless-stopped
 
   backend:
     build:
@@ -29,11 +29,14 @@ services:
       - ./backend:/app
       - /app/node_modules
       - /app/dist
+    env_file:
+      - ./backend/.env
     environment:
       - PORT=3000
       - NODE_ENV=development
     networks:
       - unefa-network
+    restart: unless-stopped
 
 networks:
   unefa-network:

@@ -385,7 +385,7 @@ export default function TutorTable({
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("profession")}>
                                 <div className="flex items-center">Profesión <SortIndicator column="profession" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell text-right">Acciones</TableCell>
+                            <TableCell isHeader className="table-header-cell text-right">&nbsp;</TableCell>
                         </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-border-light dark:divide-border-dark">
@@ -462,9 +462,9 @@ export default function TutorTable({
                                                             setOpenRowId(null);
                                                             setAnchorEl(null);
                                                         }}
-                                                        className="flex items-center gap-2 text-text-secondary hover:bg-bg-secondary dark:text-text-secondary"
+                                                        variant="view"
                                                     >
-                                                        <EyeIcon className="icon-sm" />
+                                                        <EyeIcon className="icon-md" />
                                                         Ver detalles
                                                     </DropdownItem>
                                                     <DropdownItem
@@ -473,9 +473,9 @@ export default function TutorTable({
                                                             setOpenRowId(null);
                                                             setAnchorEl(null);
                                                         }}
-                                                        className="flex items-center gap-2 text-text-secondary hover:bg-bg-secondary dark:text-text-secondary"
+                                                        variant="edit"
                                                     >
-                                                        <EditIcon className="icon-sm" />
+                                                        <EditIcon className="icon-md" />
                                                         Editar
                                                     </DropdownItem>
                                                     <DropdownItem
@@ -484,18 +484,16 @@ export default function TutorTable({
                                                             setOpenRowId(null);
                                                             setAnchorEl(null);
                                                         }}
-                                                        className={`flex items-center gap-2 ${activeTab === "Activas"
-                                                            ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10"
-                                                            : "text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-400/10"}`}
+                                                        variant={activeTab === "Activas" ? "delete" : "restore"}
                                                     >
                                                         {activeTab === "Activas" ? (
                                                             <>
-                                                                <TrashIcon className="icon-sm" />
+                                                                <TrashIcon className="icon-md" />
                                                                 Eliminar
                                                             </>
                                                         ) : (
                                                             <>
-                                                                <RefreshIcon className="icon-sm" />
+                                                                <RefreshIcon className="icon-md" />
                                                                 Restaurar
                                                             </>
                                                         )}

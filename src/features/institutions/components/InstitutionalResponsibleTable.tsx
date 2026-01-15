@@ -339,7 +339,7 @@ export default function InstitutionalResponsibleTable({
                 </div>
               </TableCell>
               <TableCell isHeader className="table-header-cell text-right">
-                ACCIONES
+                &nbsp;
               </TableCell>
             </TableRow>
           </TableHeader>
@@ -547,50 +547,42 @@ export default function InstitutionalResponsibleTable({
       >
         {onView && (
           <DropdownItem
-            onClick={() => {
-              const item = data.find((i) => i.responsibleId === openRowId);
+            onItemClick={() => {
+              const item = currentData.find(i => i.responsibleId === openRowId);
               if (item) onView(item);
               setOpenRowId(null);
+              setAnchorEl(null);
             }}
-            className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-tertiary"
+            variant="view"
           >
-            <EyeIcon className="icon-sm" /> Ver Detalles
+            <EyeIcon className="icon-md" /> Ver Detalles
           </DropdownItem>
         )}
         {onEdit && activeTab === "Activas" && (
           <DropdownItem
-            onClick={() => {
-              const item = data.find((i) => i.responsibleId === openRowId);
+            onItemClick={() => {
+              const item = currentData.find(i => i.responsibleId === openRowId);
               if (item) onEdit(item);
               setOpenRowId(null);
+              setAnchorEl(null);
             }}
-            className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-tertiary"
+            variant="edit"
           >
-            <EditIcon className="icon-sm" /> Editar
+            <EditIcon className="icon-md" /> Editar
           </DropdownItem>
         )}
         {onToggleStatus && (
           <DropdownItem
-            onClick={() => {
-              const item = data.find((i) => i.responsibleId === openRowId);
+            onItemClick={() => {
+              const item = currentData.find(i => i.responsibleId === openRowId);
               if (item) onToggleStatus(item);
               setOpenRowId(null);
+              setAnchorEl(null);
             }}
-            className={`flex items-center gap-2 ${
-              activeTab === "Inactivas"
-                ? "text-brand-600 hover:bg-brand-50 dark:text-brand-400"
-                : "text-red-600 hover:bg-red-50 dark:text-red-400"
-            }`}
+            variant={activeTab === "Inactivas" ? "restore" : "delete"}
           >
-            {activeTab === "Inactivas" ? (
-              <>
-                <RefreshIcon className="icon-sm" /> Restaurar
-              </>
-            ) : (
-              <>
-                <TrashIcon className="icon-sm" /> Eliminar
-              </>
-            )}
+            {activeTab === "Inactivas" ? <RefreshIcon className="icon-md" /> : <TrashIcon className="icon-md" />}
+            {activeTab === "Inactivas" ? "Restaurar" : "Eliminar"}
           </DropdownItem>
         )}
       </DropdownPortal>

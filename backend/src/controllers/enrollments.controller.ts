@@ -71,8 +71,8 @@ interface ProfessionalPractice {
   t_students?: Student;
   t_internships_period?: { DESCRIPTION: string };
   t_internship_type?: { NAME: string };
-  t_institution?: { NAME: string };
-  t_institution_manager?: { NAME: string };
+  t_institution?: { INSTITUTION_NAME: string };
+  t_institution_manager?: { NAME: string; SURNAME: string };
   t_professional_practices_tutor?: TutorAssociation[];
 }
 
@@ -99,8 +99,8 @@ export const getEnrollments = async (req: Request, res: Response) => {
           ),
           t_internships_period (DESCRIPTION),
           t_internship_type (NAME),
-          t_institution (NAME),
-          t_institution_manager (NAME),
+          t_institution (INSTITUTION_NAME),
+          t_institution_manager (NAME, SURNAME),
           t_professional_practices_tutor (
             TUTOR_ID,
             TUTOR_TYPE,
@@ -115,29 +115,29 @@ export const getEnrollments = async (req: Request, res: Response) => {
     }, 'getEnrollments');
 
     // Mapear datos al formato que espera el frontend
-    const mappedData = data.map((item: ProfessionalPractice) => {
+    const mappedData = (data || []).map((item: ProfessionalPractice) => {
       const ciParts = item.t_students?.STUDENTS_CI?.split('-') || ['', ''];
       
       const academicTutor = item.t_professional_practices_tutor?.find((t: TutorAssociation) => t.TUTOR_TYPE === 'ACADEMICO');
       const methodologicalTutor = item.t_professional_practices_tutor?.find((t: TutorAssociation) => t.TUTOR_TYPE === 'METODOLOGICO');
 
       return {
-        enrollmentId: item.PROFESSIONAL_PRACTICE_ID.toString(),
+        enrollmentId: item.PROFESSIONAL_PRACTICE_ID?.toString() || '',
         identificationPrefix: ciParts[0] || 'V',
         identificationNumber: ciParts[1] || '',
         studentName: `${item.t_students?.NAME || ''} ${item.t_students?.SURNAME || ''}`.trim(),
-        careerName: item.t_students?.t_career?.CAREER_NAME,
+        careerName: item.t_students?.t_career?.CAREER_NAME || '',
         academicTutorId: academicTutor?.TUTOR_ID?.toString() || '',
         academicTutorName: academicTutor ? `${academicTutor.t_tutors?.NAME || ''} ${academicTutor.t_tutors?.SURNAME || ''}`.trim() : '',
         methodologicalTutorId: methodologicalTutor?.TUTOR_ID?.toString() || '',
         methodologicalTutorName: methodologicalTutor ? `${methodologicalTutor.t_tutors?.NAME || ''} ${methodologicalTutor.t_tutors?.SURNAME || ''}`.trim() : '',
         institutionId: item.INSTITUTION_ID?.toString() || '',
-        institutionName: item.t_institution?.NAME,
+        institutionName: item.t_institution?.INSTITUTION_NAME || '',
         institutionResponsibleId: item.MANAGER_ID?.toString() || '',
-        institutionResponsibleName: item.t_institution_manager?.NAME,
+        institutionResponsibleName: item.t_institution_manager ? `${item.t_institution_manager.NAME || ''} ${item.t_institution_manager.SURNAME || ''}`.trim() : '',
         practiceType: item.t_internship_type?.NAME || '',
         period: item.t_internships_period?.DESCRIPTION || '',
-        enrollmentDate: item.REGISTRATION_DATE,
+        enrollmentDate: item.REGISTRATION_DATE || '',
         status: item.STATUS === 1
       };
     });
@@ -289,7 +289,7 @@ export const updateEnrollment = async (req: Request, res: Response) => {
       const { data: practice, error: practiceError } = await supabase
         .from(TABLE_NAME)
         .update(updateData)
-        .eq('PROFESSIONAL_PRACTICE_ID', id)
+        .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id))
         .select()
         .single();
 
@@ -300,7 +300,7 @@ export const updateEnrollment = async (req: Request, res: Response) => {
         await supabase
           .from('t_professional_practices_tutor')
           .delete()
-          .eq('PROFESSIONAL_PRACTICE_ID', id);
+          .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id));
 
         const tutorsToInsert = [];
         if (academicTutorId) {
@@ -345,7 +345,7 @@ export const deleteEnrollment = async (req: Request, res: Response) => {
       const { error } = await supabase
         .from(TABLE_NAME)
         .update({ STATUS: 0 })
-        .eq('PROFESSIONAL_PRACTICE_ID', id);
+        .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id));
 
       if (error) throw error;
     }, 'deleteEnrollment');

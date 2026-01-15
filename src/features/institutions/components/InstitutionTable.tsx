@@ -351,7 +351,7 @@ export default function InstitutionTable({
               <TableCell isHeader className="cursor-pointer group" onClick={() => handleSort("careerName")}>
                   <div className="flex items-center">Carrera <SortIndicator column="careerName" /></div>
               </TableCell>
-              <TableCell isHeader className="text-right">Acciones</TableCell>
+              <TableCell isHeader className="text-right">&nbsp;</TableCell>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -403,25 +403,25 @@ export default function InstitutionTable({
                                     {onView && (
                                         <DropdownItem
                                             onItemClick={() => onView(i)}
-                                            className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-tertiary"
+                                            variant="view"
                                         >
-                                            <EyeIcon className="icon-sm" /> Ver Detalles
+                                            <EyeIcon className="icon-md" /> Ver Detalles
                                         </DropdownItem>
                                     )}
                                     {onEdit && activeTab === "Activas" && (
                                         <DropdownItem
                                             onItemClick={() => onEdit(i)}
-                                            className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-tertiary"
+                                            variant="edit"
                                         >
-                                            <EditIcon className="icon-sm" /> Editar
+                                            <EditIcon className="icon-md" /> Editar
                                         </DropdownItem>
                                     )}
                                     {onToggleStatus && (
                                         <DropdownItem
                                             onItemClick={() => onToggleStatus(i)}
-                                            className={`flex items-center gap-2 ${activeTab === "Inactivas" ? "text-brand-600 hover:bg-brand-50 dark:text-brand-400" : "text-red-600 hover:bg-red-50 dark:text-red-400"}`}
+                                            variant={activeTab === "Inactivas" ? "restore" : "delete"}
                                         >
-                                            {activeTab === "Inactivas" ? <RefreshIcon className="icon-sm" /> : <TrashIcon className="icon-sm" />}
+                                            {activeTab === "Inactivas" ? <RefreshIcon className="icon-md" /> : <TrashIcon className="icon-md" />}
                                             {activeTab === "Inactivas" ? "Restaurar" : "Eliminar"}
                                         </DropdownItem>
                                     )}

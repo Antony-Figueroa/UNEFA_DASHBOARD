@@ -67,7 +67,7 @@ const TopBanner: React.FC = () => {
         width: `calc(100% - ${sidebarWidth})`
       }}
       className={`${!sidebarContext ? "relative" : "fixed top-0"} ${!isLargeScreen ? "hidden" : "flex"} bg-white dark:bg-bg-dark border-b border-border-light dark:border-border-dark overflow-hidden z-99999 transition-all duration-300 ease-in-out items-center justify-start ${
-        isVisible ? "h-12 lg:h-[60px] opacity-100" : "h-0 opacity-0 border-none"
+        isVisible ? "h-12 lg:h-15 opacity-100" : "h-0 opacity-0 border-none"
       }`}
     >
       <img

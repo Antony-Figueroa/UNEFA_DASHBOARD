@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
+import { useAuth } from "../context/AuthContext";
 
 // Assume these icons are imported from an icon library
 import {
@@ -22,7 +23,8 @@ type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+  roles?: number[];
+  subItems?: { name: string; path: string; pro?: boolean; new?: boolean; roles?: number[] }[];
 };
 
 const navItems: NavItem[] = [
@@ -68,8 +70,9 @@ const navItems: NavItem[] = [
   {
     name: "Configuración",
     icon: <PlugInIcon />,
+    roles: [1], // Solo Admin
     subItems: [
-      { name: "Usuarios", path: "/blank" },
+      { name: "Usuarios", path: "/configure/users" },
       { name: "Configuración", path: "/blank" },
       { name: "Roles y Permisos", path: "/blank" },
       { name: "Logs de Actividad", path: "/blank" },
@@ -150,7 +153,19 @@ const bibliotecaItems: NavItem[] = [
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { user } = useAuth();
   const location = useLocation();
+
+  const filteredNavItems = navItems.filter(item => {
+    if (item.roles && user && !item.roles.includes(user.role)) return false;
+    return true;
+  }).map(item => ({
+    ...item,
+    subItems: item.subItems?.filter(sub => {
+      if (sub.roles && user && !sub.roles.includes(user.role)) return false;
+      return true;
+    })
+  }));
 
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "main" | "biblioteca";
@@ -391,7 +406,7 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots className="icon-md" />
                 )}
               </h2>
-              {renderMenuItems(navItems, "main")}
+              {renderMenuItems(filteredNavItems as NavItem[], "main")}
             </div>
             <div className="">
               <h2

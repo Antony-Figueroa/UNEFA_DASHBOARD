@@ -67,33 +67,32 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Clases para el contenido: Centrado, con márgenes (máximo 90% de pantalla)
-  // Responsivo: ancho automático basado en contenido pero limitado.
+  // Clases para el contenido: Si es fullscreen ocupa todo, si no es centrado
   const contentClasses = `
     relative w-full mx-auto
     bg-white dark:bg-bg-dark 
-    rounded-[24px] sm:rounded-[32px] 
     shadow-2xl 
     transition-all duration-300 ease-out
-    ${className?.includes('max-w-')
-      ? ''
-      : isFullscreen ? "max-w-[95%] md:max-w-6xl" : "max-w-[95%] sm:max-w-[85%] md:max-w-[70%] lg:max-w-4xl"}
-    max-h-[85vh] sm:max-h-[90vh] flex flex-col overflow-hidden
+    ${isFullscreen 
+      ? "h-screen w-screen max-w-none max-h-none rounded-none" 
+      : `rounded-[24px] sm:rounded-[32px] max-h-[85vh] sm:max-h-[90vh] ${className?.includes('max-w-') ? '' : "max-w-[95%] sm:max-w-[85%] md:max-w-[70%] lg:max-w-4xl"}`
+    }
+    flex flex-col overflow-hidden
   `;
 
   const modalContent = (
     <div
-      className="fixed inset-0 flex items-center justify-center p-4 sm:p-6 md:p-10 z-999999 animate-fade-in overflow-hidden"
+      className={`fixed inset-0 flex items-center justify-center ${isFullscreen ? "p-0" : "p-4 sm:p-6 md:p-10"} z-999999 animate-fade-in overflow-hidden`}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="fixed inset-0 h-full w-full bg-bg-dark/60 backdrop-blur-sm -z-1 transition-opacity duration-300 ease-in-out"
+        className={`fixed inset-0 h-full w-full bg-bg-dark/60 backdrop-blur-sm -z-1 transition-opacity duration-300 ease-in-out ${isFullscreen ? "hidden" : ""}`}
         onClick={handleClose}
       ></div>
       <div
         ref={modalRef}
-        className={`${contentClasses} ${className ?? ""} scale-95 animate-in zoom-in-95 duration-300`}
+        className={`${contentClasses} ${className ?? ""} ${isFullscreen ? "scale-100" : "scale-95 animate-in zoom-in-95 duration-300"}`}
         onClick={(e) => e.stopPropagation()}
       >
         {showCloseButton && (

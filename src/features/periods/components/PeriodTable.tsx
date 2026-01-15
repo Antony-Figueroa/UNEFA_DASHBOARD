@@ -1,6 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { DropdownPortal } from "../../../components/ui/dropdown/DropdownPortal";
-import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import {
     Table,
@@ -14,10 +12,10 @@ import Badge from "../../../components/ui/badge/Badge";
 import Button from "../../../components/ui/button/Button";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
+import { ActionButton } from "../../../components/common/ActionButton";
 import {
     EditIcon,
     TrashIcon,
-    ThreeDotsIcon,
     CheckCircleIcon,
     RefreshIcon,
     EyeIcon,
@@ -44,19 +42,6 @@ const STATUS_LABELS = {
 // ============================================
 // INTERFACES
 // ============================================
-interface ActionMenuProps {
-    onEdit?: () => void;
-    onDelete?: () => void;
-    onCulminate?: () => void;
-    onActivate?: () => void;
-    onRestore?: () => void;
-    onView?: () => void;
-    onOpen: () => void;
-    onClose: () => void;
-    periodo: PeriodoRowData;
-    canActivate?: boolean;
-}
-
 interface PeriodTableProps {
     data: PeriodoRowData[];
     status: "loading" | "success" | "error";
@@ -90,130 +75,101 @@ const getSafeProgress = (periodo: PeriodoRowData): number | null => {
     return isNaN(numProgress) ? null : Math.min(Math.max(numProgress, 0), 100);
 };
 
+interface ActionButtonsProps {
+    onEdit?: () => void;
+    onDelete?: () => void;
+    onCulminate?: () => void;
+    onActivate?: () => void;
+    onRestore?: () => void;
+    onView?: () => void;
+    periodo: PeriodoRowData;
+    canActivate: boolean;
+    isMobile?: boolean;
+}
+
 // ============================================
-// COMPONENT: ActionMenu
+// COMPONENT: ActionButtons
 // ============================================
-const ActionMenu = ({
+const ActionButtons = ({
     onEdit,
     onDelete,
     onCulminate,
     onActivate,
     onRestore,
     onView,
-    onOpen,
-    onClose,
     periodo,
     canActivate,
-}: ActionMenuProps) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [highlighted, setHighlighted] = useState(false);
-    const trigger = useRef<HTMLButtonElement>(null);
-
-    const toggleMenu = useCallback(
-        (e: React.MouseEvent<HTMLButtonElement>) => {
-            e.stopPropagation();
-            if (isOpen) {
-                setIsOpen(false);
-                setHighlighted(false);
-                onClose();
-            } else {
-                setIsOpen(true);
-                setHighlighted(true);
-                onOpen();
-            }
-        },
-        [isOpen, onOpen, onClose]
-    );
-
-    const handleAction = useCallback(
-        (action?: () => void) => {
-            setIsOpen(false);
-            setHighlighted(false);
-            onClose();
-            action?.();
-        },
-        [onClose]
-    );
-
+    isMobile = false,
+}: ActionButtonsProps) => {
     const currentPeriodStatus = getSafePeriodStatus(periodo);
     const hasStatus = !!periodo.status;
 
+    const containerClasses = isMobile 
+        ? "flex flex-col gap-3 pt-2" 
+        : "flex justify-end gap-3";
+
     return (
-        <div className={`relative flex justify-end ${highlighted ? "z-50" : ""}`}>
-            <button
-                ref={trigger}
-                onClick={toggleMenu}
-                className="dropdown-toggle inline-flex items-center rounded-full p-1 text-text-secondary hover:bg-bg-secondary hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/5 min-h-12 min-w-12 justify-center"
-                title="Acciones"
-                aria-label="Menú de acciones"
-            >
-                <ThreeDotsIcon className="icon-sm" />
-            </button>
-            <DropdownPortal
-                isOpen={isOpen}
-                onClose={() => {
-                    setIsOpen(false);
-                    setHighlighted(false);
-                    onClose();
-                }}
-                anchorEl={trigger.current}
-                className="min-w-40"
-            >
-                {onView && (
-                    <DropdownItem
-                        onItemClick={() => handleAction(onView)}
-                        variant="view"
-                    >
-                        <EyeIcon className="icon-md" />
-                        Ver Detalles
-                    </DropdownItem>
-                )}
-                {hasStatus && currentPeriodStatus !== 3 && onEdit && (
-                    <DropdownItem
-                        onItemClick={() => handleAction(onEdit)}
-                        variant="edit"
-                    >
-                        <EditIcon className="icon-md" />
-                        Editar
-                    </DropdownItem>
-                )}
-                {hasStatus && currentPeriodStatus === 1 && canActivate && onActivate && (
-                    <DropdownItem
-                        onItemClick={() => handleAction(onActivate)}
-                        variant="restore"
-                    >
-                        <CheckCircleIcon className="icon-md" />
-                        Activar
-                    </DropdownItem>
-                )}
-                {hasStatus && currentPeriodStatus === 2 && onCulminate && (
-                    <DropdownItem
-                        onItemClick={() => handleAction(onCulminate)}
-                        variant="restore"
-                    >
-                        <CheckCircleIcon className="icon-md" />
-                        Culminar
-                    </DropdownItem>
-                )}
-                {!hasStatus && onRestore && (
-                    <DropdownItem
-                        onItemClick={() => handleAction(onRestore)}
-                        variant="restore"
-                    >
-                        <RefreshIcon className="icon-md" />
-                        Restaurar
-                    </DropdownItem>
-                )}
-                {hasStatus && currentPeriodStatus === 1 && onDelete && (
-                    <DropdownItem
-                        onItemClick={() => handleAction(onDelete)}
-                        variant="delete"
-                    >
-                        <TrashIcon className="icon-md" />
-                        Eliminar
-                    </DropdownItem>
-                )}
-            </DropdownPortal>
+        <div className={containerClasses}>
+            {onView && (
+                <ActionButton
+                    onClick={() => onView()}
+                    icon={<EyeIcon />}
+                    tooltip="Ver Detalles"
+                    label={isMobile ? "Ver Detalles" : undefined}
+                    variant="primary"
+                    fullWidth={isMobile}
+                />
+            )}
+            {hasStatus && currentPeriodStatus !== 3 && onEdit && (
+                <ActionButton
+                    onClick={() => onEdit()}
+                    icon={<EditIcon />}
+                    tooltip="Editar"
+                    label={isMobile ? "Editar Periodo" : undefined}
+                    variant="primary"
+                    fullWidth={isMobile}
+                />
+            )}
+            {hasStatus && currentPeriodStatus === 1 && canActivate && onActivate && (
+                <ActionButton
+                    onClick={() => onActivate()}
+                    icon={<CheckCircleIcon />}
+                    tooltip="Activar"
+                    label={isMobile ? "Activar Periodo" : undefined}
+                    variant="success"
+                    fullWidth={isMobile}
+                />
+            )}
+            {hasStatus && currentPeriodStatus === 2 && onCulminate && (
+                <ActionButton
+                    onClick={() => onCulminate()}
+                    icon={<CheckCircleIcon />}
+                    tooltip="Culminar"
+                    label={isMobile ? "Culminar Periodo" : undefined}
+                    variant="success"
+                    fullWidth={isMobile}
+                />
+            )}
+            {!hasStatus && onRestore && (
+                <ActionButton
+                    onClick={() => onRestore()}
+                    icon={<RefreshIcon />}
+                    tooltip="Restaurar"
+                    label={isMobile ? "Restaurar Periodo" : undefined}
+                    variant="success"
+                    fullWidth={isMobile}
+                />
+            )}
+            {hasStatus && currentPeriodStatus === 1 && onDelete && (
+                <ActionButton
+                    onClick={() => onDelete()}
+                    icon={<TrashIcon />}
+                    tooltip="Eliminar"
+                    label={isMobile ? "Eliminar Periodo" : undefined}
+                    variant="danger"
+                    fullWidth={isMobile}
+                />
+            )}
         </div>
     );
 };
@@ -236,7 +192,6 @@ const PeriodTable = ({
     // Check if data is valid for rendering
     const isInvalidData = !Array.isArray(data);
 
-    const [highlightedRow, setHighlightedRow] = useState<string | null>(null);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("");
@@ -248,12 +203,12 @@ const PeriodTable = ({
     });
 
     // Verificar si hay algún periodo "En Curso"
-    const hasActivePeriod = React.useMemo(() => {
+    const hasActivePeriod = useMemo(() => {
         return data.some(p => getSafePeriodStatus(p) === 2);
     }, [data]);
 
     // Identificar cuál es el PRÓXIMO periodo que se puede activar (Secuencia Cronológica Estricta)
-    const nextActivatablePeriodId = React.useMemo(() => {
+    const nextActivatablePeriodId = useMemo(() => {
         if (hasActivePeriod) return null; // No se puede activar nada si ya hay uno en curso
 
         const safeData = isInvalidData ? [] : data;
@@ -291,7 +246,7 @@ const PeriodTable = ({
     }, [data, hasActivePeriod, isInvalidData]);
 
     // Filter and Sort data
-    const filteredData = React.useMemo(() => {
+    const filteredData = useMemo(() => {
         const safeData = isInvalidData ? [] : data;
 
         const filtered = safeData.filter((periodo) => {
@@ -610,7 +565,7 @@ const PeriodTable = ({
                                 return (
                                     <TableRow
                                         key={periodId}
-                                        className={`${highlightedRow === periodId ? 'bg-bg-secondary dark:bg-bg-dark' : ''} table-row-hover`}
+                                        className="table-row-hover"
                                     >
                                         <TableCell className="table-cell font-medium text-text-primary dark:text-white/90">
                                             {periodo.description}
@@ -660,7 +615,7 @@ const PeriodTable = ({
                                             )}
                                         </TableCell>
                                         <TableCell className="table-cell text-right">
-                                            <ActionMenu
+                                            <ActionButtons
                                                 onEdit={onEdit ? () => onEdit(periodo) : undefined}
                                                 onCulminate={
                                                     onCulminate ? () => onCulminate(periodo) : undefined
@@ -677,8 +632,6 @@ const PeriodTable = ({
                                                 onRestore={
                                                     onRestore ? () => onRestore(periodo) : undefined
                                                 }
-                                                onOpen={() => setHighlightedRow(periodId)}
-                                                onClose={() => setHighlightedRow(null)}
                                                 periodo={periodo}
                                                 canActivate={periodId === nextActivatablePeriodId}
                                             />
@@ -799,48 +752,27 @@ const PeriodTable = ({
                                                 </div>
                                             )}
 
-                                            <div className="flex flex-col gap-3 pt-2">
-                                                {!!periodo.status && periodStatus === 3 && onView && (
-                                                    <button
-                                                        onClick={() => onView(periodo)}
-                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-primary dark:text-text-tertiary rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-light dark:hover:border-white/10"
-                                                    >
-                                                        <EyeIcon className="icon-sm" /> Ver
-                                                    </button>
-                                                )}
-                                                {!!periodo.status && periodStatus !== 3 && onEdit && (
-                                                    <button
-                                                        onClick={() => onEdit(periodo)}
-                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-primary dark:text-text-tertiary rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-light dark:hover:border-white/10"
-                                                    >
-                                                        <EditIcon className="icon-sm" /> Editar
-                                                    </button>
-                                                )}
-                                                {!periodo.status && onRestore && (
-                                                    <button
-                                                        onClick={() => onRestore(periodo)}
-                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-blue-200 dark:hover:border-blue-500/20"
-                                                    >
-                                                        <RefreshIcon className="icon-sm" /> Restaurar
-                                                    </button>
-                                                )}
-                                                {!!periodo.status && periodStatus === 1 && !hasActivePeriod && onActivate && (
-                                                    <button
-                                                        onClick={() => onActivate(periodo)}
-                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-brand-200 dark:hover:border-brand-500/20"
-                                                    >
-                                                        <CheckCircleIcon className="icon-sm" /> Activar
-                                                    </button>
-                                                )}
-                                                {!!periodo.status && periodStatus === 1 && onDelete && (
-                                                    <button
-                                                        onClick={() => onDelete(periodo.periodId!)}
-                                                        className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-red-200 dark:hover:border-red-500/20"
-                                                    >
-                                                        <TrashIcon className="icon-sm" /> Eliminar
-                                                    </button>
-                                                )}
-                                            </div>
+                                            <ActionButtons
+                                                onEdit={onEdit ? () => onEdit(periodo) : undefined}
+                                                onCulminate={
+                                                    onCulminate ? () => onCulminate(periodo) : undefined
+                                                }
+                                                onActivate={
+                                                    onActivate ? () => onActivate(periodo) : undefined
+                                                }
+                                                onView={onView ? () => onView(periodo) : undefined}
+                                                onDelete={
+                                                    onDelete && periodo.periodId
+                                                        ? () => onDelete(periodo.periodId!)
+                                                        : undefined
+                                                }
+                                                onRestore={
+                                                    onRestore ? () => onRestore(periodo) : undefined
+                                                }
+                                                periodo={periodo}
+                                                canActivate={periodId === nextActivatablePeriodId}
+                                                isMobile={true}
+                                            />
                                         </div>
                                     </div>
                                 )}

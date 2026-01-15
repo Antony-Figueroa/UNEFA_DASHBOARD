@@ -5,9 +5,10 @@ import PageLoader from "../ui/loader";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  allowedRoles?: number[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
@@ -18,6 +19,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   if (!user) {
     // Redirect to login if not authenticated
     return <Navigate to="/signin" state={{ from: location }} replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    // Redirect to dashboard if role not allowed
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

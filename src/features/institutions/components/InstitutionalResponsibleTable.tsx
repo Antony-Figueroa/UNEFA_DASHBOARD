@@ -3,7 +3,7 @@
  * @description Tabla para listar responsables institucionales con filtros y acciones.
  */
 
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -19,14 +19,12 @@ import {
   EditIcon,
   TrashIcon,
   RefreshIcon,
-  ThreeDotsIcon,
   EyeIcon,
 } from "../../../icons/actions";
 import { InstitutionalResponsibleRowData } from "../types";
 import Badge from "../../../components/ui/badge/Badge";
-import { DropdownPortal } from "../../../components/ui/dropdown/DropdownPortal";
-import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
 import Button from "../../../components/ui/button/Button";
+import { ActionButton } from "../../../components/common/ActionButton";
 import { useDebounce } from "../../../hooks/useDebounce";
 import Checkbox from "../../../components/form/input/Checkbox";
 
@@ -44,6 +42,61 @@ interface InstitutionalResponsibleTableProps {
 
 type SortKey = keyof InstitutionalResponsibleRowData;
 
+interface ActionButtonsProps {
+    onEdit?: () => void;
+    onToggleStatus?: () => void;
+    onView?: () => void;
+    activeTab: "Activas" | "Inactivas";
+    isMobile?: boolean;
+}
+
+const ActionButtons = ({
+    onEdit,
+    onToggleStatus,
+    onView,
+    activeTab,
+    isMobile = false,
+}: ActionButtonsProps) => {
+    const containerClasses = isMobile 
+        ? "flex flex-col gap-3 pt-2" 
+        : "flex justify-end gap-3";
+
+    return (
+        <div className={containerClasses}>
+            {onView && (
+                <ActionButton
+                    onClick={() => onView()}
+                    icon={<EyeIcon />}
+                    tooltip="Ver Detalles"
+                    label={isMobile ? "Ver Detalles" : undefined}
+                    variant="primary"
+                    fullWidth={isMobile}
+                />
+            )}
+            {onEdit && activeTab === "Activas" && (
+                <ActionButton
+                    onClick={() => onEdit()}
+                    icon={<EditIcon />}
+                    tooltip="Editar"
+                    label={isMobile ? "Editar Responsable" : undefined}
+                    variant="primary"
+                    fullWidth={isMobile}
+                />
+            )}
+            {onToggleStatus && (
+                <ActionButton
+                    onClick={() => onToggleStatus()}
+                    icon={activeTab === "Inactivas" ? <RefreshIcon /> : <TrashIcon />}
+                    tooltip={activeTab === "Inactivas" ? "Restaurar" : "Eliminar"}
+                    label={isMobile ? (activeTab === "Inactivas" ? "Restaurar Responsable" : "Eliminar Responsable") : undefined}
+                    variant={activeTab === "Inactivas" ? "success" : "danger"}
+                    fullWidth={isMobile}
+                />
+            )}
+        </div>
+    );
+};
+
 export default function InstitutionalResponsibleTable({
   data,
   activeTab,
@@ -55,8 +108,6 @@ export default function InstitutionalResponsibleTable({
   onBulkAction,
   isLoading = false,
 }: InstitutionalResponsibleTableProps) {
-  const [openRowId, setOpenRowId] = useState<string | null>(null);
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
@@ -189,12 +240,6 @@ export default function InstitutionalResponsibleTable({
     if (checked) newSelected.add(id);
     else newSelected.delete(id);
     setSelectedIds(newSelected);
-  };
-
-  const handleActionClick = (e: React.MouseEvent<HTMLButtonElement>, id: string) => {
-    e.stopPropagation();
-    setAnchorEl(e.currentTarget as HTMLElement);
-    setOpenRowId(id);
   };
 
   if (isLoading) {
@@ -376,17 +421,13 @@ export default function InstitutionalResponsibleTable({
                       {item.institutionName}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right relative">
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        className="dropdown-toggle inline-flex items-center rounded-full p-1 text-text-secondary hover:bg-bg-secondary hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/5 min-h-12 min-w-12 justify-center"
-                        aria-label="Acciones"
-                        onClick={(e) => handleActionClick(e, item.responsibleId)}
-                      >
-                        <ThreeDotsIcon className="icon-sm" />
-                      </button>
-                    </div>
+                  <TableCell className="table-cell text-right">
+                    <ActionButtons
+                      onView={onView ? () => onView(item) : undefined}
+                      onEdit={onEdit ? () => onEdit(item) : undefined}
+                      onToggleStatus={onToggleStatus ? () => onToggleStatus(item) : undefined}
+                      activeTab={activeTab}
+                    />
                   </TableCell>
                 </TableRow>
               ))
@@ -469,44 +510,13 @@ export default function InstitutionalResponsibleTable({
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 pt-2">
-                      {onView && (
-                        <button
-                          onClick={() => onView(item)}
-                          className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-primary dark:text-text-tertiary rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-light dark:hover:border-white/10"
-                        >
-                          <EyeIcon className="w-4 h-4" /> Ver Detalles
-                        </button>
-                      )}
-                      {onEdit && activeTab === "Activas" && (
-                        <button
-                          onClick={() => onEdit(item)}
-                          className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-primary dark:text-text-tertiary rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-light dark:hover:border-white/10"
-                        >
-                          <EditIcon className="w-4 h-4" /> Editar
-                        </button>
-                      )}
-                      {onToggleStatus && (
-                        <button
-                          onClick={() => onToggleStatus(item)}
-                          className={`w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold rounded-xl min-h-12 active:scale-95 transition-all border border-transparent ${
-                            activeTab === "Inactivas"
-                              ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-500/20"
-                              : "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:border-red-200 dark:hover:border-red-500/20"
-                          }`}
-                        >
-                          {activeTab === "Inactivas" ? (
-                            <>
-                              <RefreshIcon className="w-4 h-4" /> Restaurar
-                            </>
-                          ) : (
-                            <>
-                              <TrashIcon className="w-4 h-4" /> Eliminar
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
+                    <ActionButtons
+                      onView={onView ? () => onView(item) : undefined}
+                      onEdit={onEdit ? () => onEdit(item) : undefined}
+                      onToggleStatus={onToggleStatus ? () => onToggleStatus(item) : undefined}
+                      activeTab={activeTab}
+                      isMobile={true}
+                    />
                   </div>
                 )}
               </div>
@@ -534,58 +544,6 @@ export default function InstitutionalResponsibleTable({
         }}
         totalItems={filteredData.length}
       />
-
-      {/* Dropdown Actions */}
-      <DropdownPortal
-        isOpen={!!openRowId}
-        onClose={() => {
-          setOpenRowId(null);
-          setAnchorEl(null);
-        }}
-        anchorEl={anchorEl}
-        className="min-w-44"
-      >
-        {onView && (
-          <DropdownItem
-            onItemClick={() => {
-              const item = currentData.find(i => i.responsibleId === openRowId);
-              if (item) onView(item);
-              setOpenRowId(null);
-              setAnchorEl(null);
-            }}
-            variant="view"
-          >
-            <EyeIcon className="icon-md" /> Ver Detalles
-          </DropdownItem>
-        )}
-        {onEdit && activeTab === "Activas" && (
-          <DropdownItem
-            onItemClick={() => {
-              const item = currentData.find(i => i.responsibleId === openRowId);
-              if (item) onEdit(item);
-              setOpenRowId(null);
-              setAnchorEl(null);
-            }}
-            variant="edit"
-          >
-            <EditIcon className="icon-md" /> Editar
-          </DropdownItem>
-        )}
-        {onToggleStatus && (
-          <DropdownItem
-            onItemClick={() => {
-              const item = currentData.find(i => i.responsibleId === openRowId);
-              if (item) onToggleStatus(item);
-              setOpenRowId(null);
-              setAnchorEl(null);
-            }}
-            variant={activeTab === "Inactivas" ? "restore" : "delete"}
-          >
-            {activeTab === "Inactivas" ? <RefreshIcon className="icon-md" /> : <TrashIcon className="icon-md" />}
-            {activeTab === "Inactivas" ? "Restaurar" : "Eliminar"}
-          </DropdownItem>
-        )}
-      </DropdownPortal>
     </div>
   );
 }

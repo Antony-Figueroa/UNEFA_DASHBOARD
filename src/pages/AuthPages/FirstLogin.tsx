@@ -70,6 +70,14 @@ export default function FirstLogin() {
       return;
     }
 
+    const hasUpperCase = /[A-Z]/.test(newPassword);
+    const hasNumber = /[0-9]/.test(newPassword);
+
+    if (!hasUpperCase || !hasNumber) {
+      setError("La contraseña debe contener al menos una mayúscula y un número");
+      return;
+    }
+
     const hasEmptyQuestion = userQuestions.some(q => !q.questionId || !q.answer);
     if (hasEmptyQuestion) {
       setError("Debe seleccionar y responder todas las preguntas de seguridad");

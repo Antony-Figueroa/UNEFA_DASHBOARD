@@ -18,8 +18,10 @@ import institutionsRoutes from './routes/institutions.routes.js';
 import institutionalResponsiblesRoutes from './routes/institutional-responsibles.routes.js';
 import listsRoutes from './routes/lists.routes.js';
 import authRoutes from './routes/auth.routes.js';
+import usersRoutes from './routes/users.routes.js';
 import { dbManager } from './lib/db-manager.js';
 import { performanceMiddleware } from './lib/performance-middleware.js';
+import { authenticateToken, restrictAsistente } from './middlewares/auth.middleware.js';
 
 dotenv.config();
 
@@ -90,6 +92,12 @@ app.use((req, _res, next) => {
 });
 
 // Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
+
+// Apply protection to all subsequent /api routes
+app.use('/api', authenticateToken, restrictAsistente);
+
 app.use('/api/careers', careersRoutes);
 app.use('/api/internship-types', internshipTypesRoutes);
 app.use('/api/periodos', periodsRoutes);
@@ -101,7 +109,6 @@ app.use('/api/tracking', trackingRoutes);
 app.use('/api/institutions', institutionsRoutes);
 app.use('/api/institutional-responsibles', institutionalResponsiblesRoutes);
 app.use('/api/lists', listsRoutes);
-app.use('/api/auth', authRoutes);
 
 // Servir archivos estáticos del frontend (Vite build)
 const frontendDistPath = path.join(__dirname, '../../dist');

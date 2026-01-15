@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { createPortal } from "react-dom";
-import { Dropdown } from "../../../components/ui/dropdown/Dropdown";
+import { DropdownPortal } from "../../../components/ui/dropdown/DropdownPortal";
 import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
+import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import {
     Table,
     TableBody,
@@ -108,9 +108,6 @@ const ActionMenu = ({
     const [isOpen, setIsOpen] = useState(false);
     const [highlighted, setHighlighted] = useState(false);
     const trigger = useRef<HTMLButtonElement>(null);
-    const dropdown = useRef<HTMLDivElement>(null);
-    const [isTop, setIsTop] = useState(false);
-    const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
 
     const toggleMenu = useCallback(
         (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -120,17 +117,9 @@ const ActionMenu = ({
                 setHighlighted(false);
                 onClose();
             } else {
-                if (trigger.current) {
-                    const rect = trigger.current.getBoundingClientRect();
-                    setTriggerRect(rect);
-                    const spaceBelow = window.innerHeight - rect.bottom;
-                    const menuHeight = 120;
-                    const showTop = spaceBelow < menuHeight;
-                    setIsTop(showTop);
-                    setIsOpen(true);
-                    setHighlighted(true);
-                    onOpen();
-                }
+                setIsOpen(true);
+                setHighlighted(true);
+                onOpen();
             }
         },
         [isOpen, onOpen, onClose]
@@ -146,51 +135,6 @@ const ActionMenu = ({
         [onClose]
     );
 
-    useEffect(() => {
-        if (!isOpen) return;
-
-        const handleClickOutside = (event: MouseEvent) => {
-            if (
-                dropdown.current &&
-                !dropdown.current.contains(event.target as Node) &&
-                trigger.current &&
-                !trigger.current.contains(event.target as Node)
-            ) {
-                setIsOpen(false);
-                setHighlighted(false);
-                onClose();
-            }
-        };
-
-        const handleScroll = () => {
-            if (isOpen) {
-                setIsOpen(false);
-                setHighlighted(false);
-                onClose();
-            }
-        };
-
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === "Escape") {
-                setIsOpen(false);
-                setHighlighted(false);
-                onClose();
-            }
-        };
-
-        document.addEventListener("mousedown", handleClickOutside);
-        window.addEventListener("scroll", handleScroll, true);
-        window.addEventListener("resize", handleScroll);
-        document.addEventListener("keydown", handleKeyDown);
-
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-            window.removeEventListener("scroll", handleScroll, true);
-            window.removeEventListener("resize", handleScroll);
-            document.removeEventListener("keydown", handleKeyDown);
-        };
-    }, [isOpen, onClose]);
-
     const currentPeriodStatus = getSafePeriodStatus(periodo);
     const hasStatus = !!periodo.status;
 
@@ -205,87 +149,71 @@ const ActionMenu = ({
             >
                 <ThreeDotsIcon className="icon-sm" />
             </button>
-            {isOpen &&
-                triggerRect &&
-                createPortal(
-                    <div
-                        ref={dropdown}
-                        style={{
-                            position: "fixed",
-                            top: isTop ? "auto" : triggerRect.bottom + 5,
-                            bottom: isTop ? window.innerHeight - triggerRect.top + 5 : "auto",
-                            left: triggerRect.right,
-                            transform: "translateX(-100%)",
-                            zIndex: 9999,
-                        }}
+            <DropdownPortal
+                isOpen={isOpen}
+                onClose={() => {
+                    setIsOpen(false);
+                    setHighlighted(false);
+                    onClose();
+                }}
+                anchorEl={trigger.current}
+                className="min-w-40"
+            >
+                {onView && (
+                    <DropdownItem
+                        onItemClick={() => handleAction(onView)}
+                        variant="view"
                     >
-                        <Dropdown
-                            isOpen={isOpen}
-                            onClose={() => {
-                                setIsOpen(false);
-                                setHighlighted(false);
-                                onClose();
-                            }}
-                            className="w-40 min-w-37.5 animate-fadeIn"
-                        >
-                            {onView && (
-                                <DropdownItem
-                                    onItemClick={() => handleAction(onView)}
-                                    className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-tertiary"
-                                >
-                                    <EyeIcon className="icon-sm" />
-                                    Ver Detalles
-                                </DropdownItem>
-                            )}
-                            {hasStatus && currentPeriodStatus !== 3 && onEdit && (
-                                <DropdownItem
-                                    onItemClick={() => handleAction(onEdit)}
-                                    className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-tertiary"
-                                >
-                                    <EditIcon className="icon-sm" />
-                                    Editar
-                                </DropdownItem>
-                            )}
-                            {hasStatus && currentPeriodStatus === 1 && canActivate && onActivate && (
-                                <DropdownItem
-                                    onItemClick={() => handleAction(onActivate)}
-                                    className="flex items-center gap-2 text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-400/10 font-medium"
-                                >
-                                    <CheckCircleIcon className="icon-sm" />
-                                    Activar
-                                </DropdownItem>
-                            )}
-                            {hasStatus && currentPeriodStatus === 2 && onCulminate && (
-                                <DropdownItem
-                                    onItemClick={() => handleAction(onCulminate)}
-                                    className="flex items-center gap-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-400/10 font-medium"
-                                >
-                                    <CheckCircleIcon className="icon-sm" />
-                                    Culminar
-                                </DropdownItem>
-                            )}
-                            {!hasStatus && onRestore && (
-                                <DropdownItem
-                                    onItemClick={() => handleAction(onRestore)}
-                                    className="flex items-center gap-2 text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-400/10"
-                                >
-                                    <RefreshIcon className="icon-sm" />
-                                    Restaurar
-                                </DropdownItem>
-                            )}
-                            {hasStatus && currentPeriodStatus === 1 && onDelete && (
-                                <DropdownItem
-                                    onItemClick={() => handleAction(onDelete)}
-                                    className="flex items-center gap-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10"
-                                >
-                                    <TrashIcon className="icon-sm" />
-                                    Eliminar
-                                </DropdownItem>
-                            )}
-                        </Dropdown>
-                    </div>,
-                    document.body
+                        <EyeIcon className="icon-md" />
+                        Ver Detalles
+                    </DropdownItem>
                 )}
+                {hasStatus && currentPeriodStatus !== 3 && onEdit && (
+                    <DropdownItem
+                        onItemClick={() => handleAction(onEdit)}
+                        variant="edit"
+                    >
+                        <EditIcon className="icon-md" />
+                        Editar
+                    </DropdownItem>
+                )}
+                {hasStatus && currentPeriodStatus === 1 && canActivate && onActivate && (
+                    <DropdownItem
+                        onItemClick={() => handleAction(onActivate)}
+                        variant="restore"
+                    >
+                        <CheckCircleIcon className="icon-md" />
+                        Activar
+                    </DropdownItem>
+                )}
+                {hasStatus && currentPeriodStatus === 2 && onCulminate && (
+                    <DropdownItem
+                        onItemClick={() => handleAction(onCulminate)}
+                        variant="restore"
+                    >
+                        <CheckCircleIcon className="icon-md" />
+                        Culminar
+                    </DropdownItem>
+                )}
+                {!hasStatus && onRestore && (
+                    <DropdownItem
+                        onItemClick={() => handleAction(onRestore)}
+                        variant="restore"
+                    >
+                        <RefreshIcon className="icon-md" />
+                        Restaurar
+                    </DropdownItem>
+                )}
+                {hasStatus && currentPeriodStatus === 1 && onDelete && (
+                    <DropdownItem
+                        onItemClick={() => handleAction(onDelete)}
+                        variant="delete"
+                    >
+                        <TrashIcon className="icon-md" />
+                        Eliminar
+                    </DropdownItem>
+                )}
+            </DropdownPortal>
         </div>
     );
 };
@@ -669,7 +597,7 @@ const PeriodTable = ({
                                 isHeader
                                 className="table-header-cell"
                             >
-                                Acciones
+                                &nbsp;
                             </TableCell>
                         </TableRow>
                     </TableHeader>
@@ -704,26 +632,27 @@ const PeriodTable = ({
                                                 {getStatusLabel(periodStatus)}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="table-cell">
+                                          <TableCell className="table-cell">
                                             {getSafePeriodStatus(periodo) === 2 && getSafeProgress(periodo) !== null ? (
-                                                <div className="group relative flex items-center gap-2 cursor-help">
-                                                    <div className="w-full bg-border-light rounded-full h-2.5 dark:bg-border-dark">
-                                                        <div
-                                                            className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-                                                            style={{ width: `${getSafeProgress(periodo)}%` }}
-                                                        ></div>
-                                                    </div>
-                                                    <span className="text-xs font-medium text-text-secondary dark:text-text-tertiary">
-                                                        {Math.round(getSafeProgress(periodo) ?? 0)}%
-                                                    </span>
-                                                    {/* Tooltip */}
-                                                    <div className="absolute bottom-full left-1/2 mb-2 w-max -translate-x-1/2 rounded bg-black px-2 py-1 text-xs text-white opacity-0 transition-opacity duration-300 pointer-events-none group-hover:opacity-100 dark:bg-white dark:text-black z-50 shadow-sm">
+                                                <Tooltip content={
+                                                    <div className="space-y-1">
                                                         <p>Han pasado: {periodo.daysPassed} días</p>
                                                         <p>Faltan: {periodo.daysRemaining} días</p>
                                                         <p>Semanas restantes: {periodo.weeksRemaining}</p>
-                                                        <div className="absolute top-full left-1/2 -mt-1 -ml-1 border-4 border-transparent border-t-black dark:border-t-white"></div>
                                                     </div>
-                                                </div>
+                                                }>
+                                                    <div className="flex items-center gap-2 cursor-help">
+                                                        <div className="w-full bg-border-light rounded-full h-2.5 dark:bg-border-dark">
+                                                            <div
+                                                                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                                                                style={{ width: `${getSafeProgress(periodo)}%` }}
+                                                            ></div>
+                                                        </div>
+                                                        <span className="text-xs font-medium text-text-secondary dark:text-text-tertiary">
+                                                            {Math.round(getSafeProgress(periodo) ?? 0)}%
+                                                        </span>
+                                                    </div>
+                                                </Tooltip>
                                             ) : (
                                                 <span className="text-text-tertiary dark:text-text-secondary">
                                                     -

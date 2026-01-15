@@ -36,6 +36,8 @@
   --text-title-sm--line-height: 2.375rem;
   --text-theme-xl: 1.25rem;
   --text-theme-xl--line-height: 1.875rem;
+  --text-theme-base: 1.05rem;
+  --text-theme-base--line-height: 1.5rem;
   --text-theme-sm: 0.875rem;
   --text-theme-sm--line-height: 1.25rem;
   --text-theme-xs: 0.75rem;
@@ -177,6 +179,14 @@
   --color-alert-info-border: var(--color-blue-light-500);
   --color-alert-info-text: var(--color-blue-light-700);
 
+  /* Action Colors */
+  --color-action-view: var(--color-blue-light-600);
+  --color-action-edit: var(--color-brand-500);
+  --color-action-delete: var(--color-error-600);
+  --color-action-restore: var(--color-success-600);
+  --color-action-hover-bg: var(--color-gray-100);
+  --color-action-dark-hover-bg: rgba(255, 255, 255, 0.05);
+
   --shadow-theme-md: 0px 2px 3px rgba(0, 0, 0, 0.1);
   --shadow-theme-lg: 0px 3px 5px rgba(0, 0, 0, 0.1);
   --shadow-theme-sm: 0px 1px 2px rgba(0, 0, 0, 0.1);
@@ -298,6 +308,10 @@
 
 @utility menu-item {
   @apply relative flex items-center w-full gap-3 px-3 py-2 font-medium rounded-lg text-theme-sm;
+}
+
+@utility action-menu-item {
+  @apply relative flex items-center w-full gap-3 px-4 py-3 font-semibold rounded-lg text-theme-base transition-all duration-200;
 }
 
 @utility menu-item-active {

@@ -211,7 +211,7 @@ export default function CareerTable({
   return (
     <div className="table-container">
       {/* Indicador de conexión a BD */}
-      <div className="px-4 py-2 border-b border-border-light dark:border-border-dark flex justify-end items-center gap-2 bg-gray-50/50 dark:bg-gray-900/20">
+      {/* <div className="px-4 py-2 border-b border-border-light dark:border-border-dark flex justify-end items-center gap-2 bg-gray-50/50 dark:bg-gray-900/20">
         <span className="text-xs font-medium text-text-tertiary">Estado de BD:</span>
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-white dark:bg-bg-dark border border-border-light dark:border-border-dark shadow-sm">
           <span className={`h-2 w-2 rounded-full ${
@@ -226,7 +226,7 @@ export default function CareerTable({
              (dbStatus as string) === "disconnected" ? "No conectado" : "Verificando..."}
           </span>
         </div>
-      </div>
+      </div> */}
 
       {/* Cabecera reorganizada: filtros y búsqueda */}
       <div className="p-4 border-b border-border-light dark:border-border-dark space-y-4">
@@ -385,7 +385,7 @@ export default function CareerTable({
                 </div>
               </TableCell>
               <TableCell isHeader className="table-header-cell">Tipos de Prácticas</TableCell>
-              <TableCell isHeader className="table-header-cell text-right">Acciones</TableCell>
+              <TableCell isHeader className="table-header-cell text-right">&nbsp;</TableCell>
             </TableRow>
           </TableHeader>
           <TableBody className="divide-y divide-border-light dark:divide-border-dark">
@@ -459,35 +459,35 @@ export default function CareerTable({
                         {onView && (
                           <DropdownItem
                             onItemClick={() => onView(c)}
-                            className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-emphasis"
+                            variant="view"
                           >
-                            <EyeIcon className="icon-sm" /> Ver Detalles
+                            <EyeIcon className="icon-md" /> Ver Detalles
                           </DropdownItem>
                         )}
 
                         {onEdit && activeTab === "Activas" && (
                           <DropdownItem
                             onItemClick={() => onEdit(c)}
-                            className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-emphasis"
+                            variant="edit"
                           >
-                            <EditIcon className="icon-sm" /> Editar
+                            <EditIcon className="icon-md" /> Editar
                           </DropdownItem>
                         )}
                         {onToggleStatus && (inactiveMode || c.status === false) && (
                           <DropdownItem
                             onItemClick={() => onToggleStatus(c.careerId)}
-                            className="flex items-center gap-2 text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-400/10"
+                            variant="restore"
                           >
-                            <RefreshIcon className="icon-sm" />
+                            <RefreshIcon className="icon-md" />
                             {inactiveMode ? "Restaurar" : "Activar"}
                           </DropdownItem>
                         )}
                         {onDelete && activeTab === "Activas" && (
                           <DropdownItem
                             onItemClick={() => onDelete(c.careerId)}
-                            className="flex items-center gap-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10"
+                            variant="delete"
                           >
-                            <TrashIcon className="icon-sm" /> Eliminar
+                            <TrashIcon className="icon-md" /> Eliminar
                           </DropdownItem>
                         )}
                       </DropdownPortal>

@@ -171,7 +171,7 @@ const mapDBToFrontend = (s: DBStudent) => ({
   address: s.ADDRESS,
   careerId: String(s.CAREER_ID),
   careerName: Array.isArray(s.t_career) ? s.t_career[0]?.CAREER_NAME : s.t_career?.CAREER_NAME,
-  semester: s.SEMESTER,
+  semester: String(s.SEMESTER),
   section: s.SECTION,
   regime: s.REGIME,
   studentType: s.STUDENT_TYPE,
@@ -184,8 +184,23 @@ const mapDBToFrontend = (s: DBStudent) => ({
 export const createStudent = async (req: Request, res: Response) => {
   try {
     const s = req.body;
+    
+    // Validación básica de campos requeridos
+    if (!s.identificationNumber || !s.firstName || !s.lastName || !s.careerId) {
+      return res.status(400).json({ 
+        message: 'Error: Faltan campos requeridos (Cédula, Nombres, Apellidos y Carrera son obligatorios)' 
+      });
+    }
+
+    const careerId = parseInt(s.careerId);
+    const semester = parseInt(s.semester);
+
+    if (isNaN(careerId)) {
+      return res.status(400).json({ message: 'Error: El ID de carrera debe ser un número válido' });
+    }
+
     const dbData = {
-      STUDENTS_CI: `${s.identificationPrefix}-${s.identificationNumber}`,
+      STUDENTS_CI: `${s.identificationPrefix || 'V'}-${s.identificationNumber}`,
       NAME: s.firstName,
       SECOND_NAME: s.middleName || null,
       SURNAME: s.lastName,
@@ -196,8 +211,8 @@ export const createStudent = async (req: Request, res: Response) => {
       EMAIL: s.email,
       ADDRESS: s.address,
       MARITAL_STATUS: s.civilStatus,
-      CAREER_ID: parseInt(s.careerId),
-      SEMESTER: s.semester,
+      CAREER_ID: careerId,
+      SEMESTER: isNaN(semester) ? 1 : semester,
       SECTION: s.section,
       REGIME: s.regime,
       STUDENT_TYPE: s.studentType,
@@ -231,8 +246,23 @@ export const updateStudent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const s = req.body;
+
+    // Validación básica de campos requeridos
+    if (!s.identificationNumber || !s.firstName || !s.lastName || !s.careerId) {
+      return res.status(400).json({ 
+        message: 'Error: Faltan campos requeridos (Cédula, Nombres, Apellidos y Carrera son obligatorios)' 
+      });
+    }
+
+    const careerId = parseInt(s.careerId);
+    const semester = parseInt(s.semester);
+
+    if (isNaN(careerId)) {
+      return res.status(400).json({ message: 'Error: El ID de carrera debe ser un número válido' });
+    }
+
     const dbData = {
-      STUDENTS_CI: `${s.identificationPrefix}-${s.identificationNumber}`,
+      STUDENTS_CI: `${s.identificationPrefix || 'V'}-${s.identificationNumber}`,
       NAME: s.firstName,
       SECOND_NAME: s.middleName || null,
       SURNAME: s.lastName,
@@ -243,8 +273,8 @@ export const updateStudent = async (req: Request, res: Response) => {
       EMAIL: s.email,
       ADDRESS: s.address,
       MARITAL_STATUS: s.civilStatus,
-      CAREER_ID: parseInt(s.careerId),
-      SEMESTER: s.semester,
+      CAREER_ID: careerId,
+      SEMESTER: isNaN(semester) ? 1 : semester,
       SECTION: s.section,
       REGIME: s.regime,
       STUDENT_TYPE: s.studentType,
@@ -257,7 +287,7 @@ export const updateStudent = async (req: Request, res: Response) => {
       const { data, error } = await supabase
         .from(TABLE_NAME)
         .update(dbData)
-        .eq('STUDENTS_ID', id)
+        .eq('STUDENTS_ID', parseInt(id))
         .select(STUDENT_COLUMNS)
         .single();
 
@@ -281,7 +311,7 @@ export const deleteStudent = async (req: Request, res: Response) => {
       const { error } = await supabase
         .from(TABLE_NAME)
         .delete()
-        .eq('STUDENTS_ID', id);
+        .eq('STUDENTS_ID', parseInt(id));
 
       if (error) throw error;
     }, 'deleteStudent');
@@ -303,7 +333,7 @@ export const toggleStudentStatus = async (req: Request, res: Response) => {
       const { data, error } = await supabase
         .from(TABLE_NAME)
         .update({ STATUS: status ? 1 : 0 })
-        .eq('STUDENTS_ID', id)
+        .eq('STUDENTS_ID', parseInt(id))
         .select()
         .single();
 

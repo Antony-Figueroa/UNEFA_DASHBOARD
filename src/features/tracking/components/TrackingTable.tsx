@@ -85,7 +85,7 @@ export default function TrackingTable({
                             <TableCell isHeader>Título Informe</TableCell>
                             <TableCell isHeader>Traslado</TableCell>
                             <TableCell isHeader>Estado</TableCell>
-                            <TableCell isHeader className="text-right pr-10">Acciones</TableCell>
+                            <TableCell isHeader className="text-right pr-10">&nbsp;</TableCell>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -127,37 +127,35 @@ export default function TrackingTable({
                                         onClose={() => setOpenDropdownId(null)}
                                         className="w-40"
                                     >
-                                        <DropdownItem onItemClick={() => { onView?.(item); setOpenDropdownId(null); }}>
-                                            <div className="flex items-center">
-                                                <EyeIcon className="mr-2 h-4 w-4" />
-                                                Ver Detalles
-                                            </div>
+                                        <DropdownItem 
+                                            onItemClick={() => { onView?.(item); setOpenDropdownId(null); }}
+                                            variant="view"
+                                        >
+                                            <EyeIcon className="icon-md" />
+                                            Ver Detalles
                                         </DropdownItem>
-                                        <DropdownItem onItemClick={() => { onEdit?.(item); setOpenDropdownId(null); }}>
-                                            <div className="flex items-center">
-                                                <EditIcon className="mr-2 h-4 w-4" />
-                                                Editar
-                                            </div>
+                                        <DropdownItem 
+                                            onItemClick={() => { onEdit?.(item); setOpenDropdownId(null); }}
+                                            variant="edit"
+                                        >
+                                            <EditIcon className="icon-md" />
+                                            Editar
                                         </DropdownItem>
                                         {item.status ? (
                                             <DropdownItem
                                                 onItemClick={() => { onDelete?.(item.trackingId); setOpenDropdownId(null); }}
-                                                className="text-error-500"
+                                                variant="delete"
                                             >
-                                                <div className="flex items-center">
-                                                    <TrashIcon className="mr-2 h-4 w-4" />
-                                                    Inactivar
-                                                </div>
+                                                <TrashIcon className="icon-md" />
+                                                Inactivar
                                             </DropdownItem>
                                         ) : (
                                             <DropdownItem
                                                 onItemClick={() => { onRestore?.(item); setOpenDropdownId(null); }}
-                                                className="text-success-500"
+                                                variant="restore"
                                             >
-                                                <div className="flex items-center">
-                                                    <RefreshIcon className="mr-2 h-4 w-4" />
-                                                    Restaurar
-                                                </div>
+                                                <RefreshIcon className="icon-md" />
+                                                Restaurar
                                             </DropdownItem>
                                         )}
                                     </Dropdown>

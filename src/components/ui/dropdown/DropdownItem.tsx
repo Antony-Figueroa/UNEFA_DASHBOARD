@@ -8,6 +8,7 @@ interface DropdownItemProps {
   onItemClick?: () => void;
   baseClassName?: string;
   className?: string;
+  variant?: "default" | "view" | "edit" | "delete" | "restore";
   children: React.ReactNode;
 }
 
@@ -18,9 +19,27 @@ export const DropdownItem: React.FC<DropdownItemProps> = ({
   onItemClick,
   baseClassName = "block w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-secondary hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-text-emphasis",
   className = "",
+  variant = "default",
   children,
 }) => {
-  const combinedClasses = `${baseClassName} ${className}`.trim();
+  const getVariantClasses = () => {
+    switch (variant) {
+      case "view":
+        return "action-menu-item text-[var(--color-action-view)] hover:bg-[var(--color-action-hover-bg)] dark:hover:bg-[var(--color-action-dark-hover-bg)]";
+      case "edit":
+        return "action-menu-item text-[var(--color-action-edit)] hover:bg-[var(--color-action-hover-bg)] dark:hover:bg-[var(--color-action-dark-hover-bg)]";
+      case "delete":
+        return "action-menu-item text-[var(--color-action-delete)] hover:bg-red-50 dark:hover:bg-red-500/10";
+      case "restore":
+        return "action-menu-item text-[var(--color-action-restore)] hover:bg-green-50 dark:hover:bg-green-500/10";
+      default:
+        return "";
+    }
+  };
+
+  const combinedClasses = variant === "default" 
+    ? `${baseClassName} ${className}`.trim()
+    : `action-menu-item ${getVariantClasses()} ${className}`.trim();
 
   const handleClick = (event: React.MouseEvent) => {
     if (tag === "button") {

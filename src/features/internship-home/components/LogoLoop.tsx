@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
+import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 
 interface Logo {
   node?: React.ReactNode;
@@ -76,36 +77,32 @@ const LogoLoop: React.FC<LogoLoopProps> = ({
         transition={loopTransition}
       >
         {[...logos, ...logos, ...logos, ...logos].map((logo, index) => (
-          <div key={`${logo.title}-${index}`} className="relative group shrink-0">
-            <a
-              href={logo.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center transition-transform duration-300"
-              style={{ height: `${logoHeight}px` }}
-            >
-              <motion.div
-                whileHover={scaleOnHover ? { scale: 1.1 } : {}}
-                className="text-text-secondary hover:text-brand-500 transition-colors"
-                style={{ fontSize: `${logoHeight}px` }}
+          <div key={`${logo.title}-${index}`} className="shrink-0">
+            <Tooltip content={logo.title}>
+              <a
+                href={logo.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center transition-transform duration-300"
+                style={{ height: `${logoHeight}px` }}
               >
-                {logo.node ? (
-                  logo.node
-                ) : (
-                  <img
-                    src={logo.src}
-                    alt={logo.alt || logo.title}
-                    style={{ height: "100%", width: "auto" }}
-                  />
-                )}
-              </motion.div>
-            </a>
-            
-            {/* Tooltip */}
-            <div className="absolute -top-10 left-1/2 -translate-x-1/2 px-3 py-1 bg-[#2d90c4] text-white text-xs font-bold rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none whitespace-nowrap shadow-theme-md">
-              {logo.title}
-              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#2d90c4] rotate-45" />
-            </div>
+                <motion.div
+                  whileHover={scaleOnHover ? { scale: 1.1 } : {}}
+                  className="text-text-secondary hover:text-brand-500 transition-colors"
+                  style={{ fontSize: `${logoHeight}px` }}
+                >
+                  {logo.node ? (
+                    logo.node
+                  ) : (
+                    <img
+                      src={logo.src}
+                      alt={logo.alt || logo.title}
+                      style={{ height: "100%", width: "auto" }}
+                    />
+                  )}
+                </motion.div>
+              </a>
+            </Tooltip>
           </div>
         ))}
       </motion.div>

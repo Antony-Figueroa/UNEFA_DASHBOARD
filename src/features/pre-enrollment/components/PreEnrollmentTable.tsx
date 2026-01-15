@@ -1,6 +1,5 @@
-import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
-import { createPortal } from "react-dom";
-import { Dropdown } from "../../../components/ui/dropdown/Dropdown";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { DropdownPortal } from "../../../components/ui/dropdown/DropdownPortal";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ThreeDotsIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
@@ -30,9 +29,6 @@ const ActionMenu = ({
     const [isOpen, setIsOpen] = useState(false);
     const [highlighted, setHighlighted] = useState(false);
     const trigger = useRef<HTMLButtonElement>(null);
-    const dropdown = useRef<HTMLDivElement>(null);
-    const [isTop, setIsTop] = useState(false);
-    const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
 
     const toggleMenu = useCallback(
         (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -42,17 +38,9 @@ const ActionMenu = ({
                 setHighlighted(false);
                 onClose();
             } else {
-                if (trigger.current) {
-                    const rect = trigger.current.getBoundingClientRect();
-                    setTriggerRect(rect);
-                    const spaceBelow = window.innerHeight - rect.bottom;
-                    const menuHeight = 120;
-                    const showTop = spaceBelow < menuHeight;
-                    setIsTop(showTop);
-                    setIsOpen(true);
-                    setHighlighted(true);
-                    onOpen();
-                }
+                setIsOpen(true);
+                setHighlighted(true);
+                onOpen();
             }
         },
         [isOpen, onOpen, onClose]
@@ -71,27 +59,6 @@ const ActionMenu = ({
     useEffect(() => {
         if (!isOpen) return;
 
-        const handleClickOutside = (event: MouseEvent) => {
-            if (
-                dropdown.current &&
-                !dropdown.current.contains(event.target as Node) &&
-                trigger.current &&
-                !trigger.current.contains(event.target as Node)
-            ) {
-                setIsOpen(false);
-                setHighlighted(false);
-                onClose();
-            }
-        };
-
-        const handleScroll = () => {
-            if (isOpen) {
-                setIsOpen(false);
-                setHighlighted(false);
-                onClose();
-            }
-        };
-
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === "Escape") {
                 setIsOpen(false);
@@ -100,15 +67,9 @@ const ActionMenu = ({
             }
         };
 
-        document.addEventListener("mousedown", handleClickOutside);
-        window.addEventListener("scroll", handleScroll, true);
-        window.addEventListener("resize", handleScroll);
         document.addEventListener("keydown", handleKeyDown);
 
         return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-            window.removeEventListener("scroll", handleScroll, true);
-            window.removeEventListener("resize", handleScroll);
             document.removeEventListener("keydown", handleKeyDown);
         };
     }, [isOpen, onClose]);
@@ -124,73 +85,53 @@ const ActionMenu = ({
             >
                 <ThreeDotsIcon className="icon-sm" />
             </button>
-            {isOpen &&
-                triggerRect &&
-                createPortal(
-                    <div
-                        ref={dropdown}
-                        style={{
-                            position: "fixed",
-                            top: isTop ? "auto" : triggerRect.bottom + 5,
-                            bottom: isTop ? window.innerHeight - triggerRect.top + 5 : "auto",
-                            left: triggerRect.right,
-                            transform: "translateX(-100%)",
-                            zIndex: 9999,
-                        }}
+            <DropdownPortal
+                isOpen={isOpen}
+                onClose={() => {
+                    setIsOpen(false);
+                    setHighlighted(false);
+                    onClose();
+                }}
+                anchorEl={trigger.current}
+                className="w-40 min-w-37.5"
+            >
+                {onView && (
+                    <DropdownItem
+                        onItemClick={() => handleAction(onView)}
+                        variant="view"
                     >
-                        <Dropdown
-                            isOpen={isOpen}
-                            onClose={() => {
-                                setIsOpen(false);
-                                setHighlighted(false);
-                                onClose();
-                            }}
-                            className="w-40 min-w-37.5 animate-fadeIn"
-                        >
-                            {onView && (
-                                <DropdownItem
-                                    onItemClick={() => handleAction(onView)}
-                                    className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-secondary"
-                                >
-                                    <EyeIcon className="icon-sm" />
-                                    Ver Detalles
-                                </DropdownItem>
-                            )}
-                            {onEdit && (
-                                <DropdownItem
-                                    onItemClick={() => handleAction(onEdit)}
-                                    className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-secondary"
-                                >
-                                    <EditIcon className="icon-sm" />
-                                    Editar
-                                </DropdownItem>
-                            )}
-                            {onToggleStatus && (
-                                <DropdownItem
-                                    onItemClick={() => handleAction(onToggleStatus)}
-                                    className={`flex items-center gap-2 font-medium ${
-                                        item.status 
-                                            ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-error-950" 
-                                            : "text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-950"
-                                    }`}
-                                >
-                                    {item.status ? (
-                                        <>
-                                            <TrashIcon className="icon-sm" />
-                                            Eliminar
-                                        </>
-                                    ) : (
-                                        <>
-                                            <RefreshIcon className="icon-sm" />
-                                            Restaurar
-                                        </>
-                                    )}
-                                </DropdownItem>
-                            )}
-                        </Dropdown>
-                    </div>,
-                    document.body
+                        <EyeIcon className="icon-md" />
+                        Ver Detalles
+                    </DropdownItem>
                 )}
+                {onEdit && (
+                    <DropdownItem
+                        onItemClick={() => handleAction(onEdit)}
+                        variant="edit"
+                    >
+                        <EditIcon className="icon-md" />
+                        Editar
+                    </DropdownItem>
+                )}
+                {onToggleStatus && (
+                    <DropdownItem
+                        onItemClick={() => handleAction(onToggleStatus)}
+                        variant={item.status ? "delete" : "restore"}
+                    >
+                        {item.status ? (
+                            <>
+                                <TrashIcon className="icon-md" />
+                                Eliminar
+                            </>
+                        ) : (
+                            <>
+                                <RefreshIcon className="icon-md" />
+                                Restaurar
+                            </>
+                        )}
+                    </DropdownItem>
+                )}
+            </DropdownPortal>
         </div>
     );
 };
@@ -295,7 +236,7 @@ export default function PreEnrollmentTable({
         if (expandedRows.size === paged.length) {
             setExpandedRows(new Set());
         } else {
-            const allIds = paged.map((s, index) => s.preEnrollmentId ?? `idx-${index}`);
+            const allIds = paged.map((s: PreEnrollmentRowData, index: number) => s.preEnrollmentId ?? `idx-${index}`);
             setExpandedRows(new Set(allIds));
         }
     };
@@ -459,13 +400,13 @@ export default function PreEnrollmentTable({
                                 <div className="flex items-center">Fecha <SortIndicator column="preEnrollmentDate" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell text-right">
-                                Acciones
+                                &nbsp;
                             </TableCell>
                         </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-border-light dark:divide-border-dark">
                         {paged.length > 0 ? (
-                            paged.map((s) => (
+                            paged.map((s: PreEnrollmentRowData) => (
                                 <TableRow 
                                     key={s.preEnrollmentId}
                                     className={`${highlightedRow === s.preEnrollmentId ? 'bg-bg-secondary dark:bg-white/5' : ''} table-row-hover`}
@@ -531,7 +472,7 @@ export default function PreEnrollmentTable({
             {/* Mobile View (Card format) */}
             <div className="md:hidden divide-y divide-border-light dark:divide-border-dark">
                 {paged.length > 0 ? (
-                    paged.map((s, index) => {
+                    paged.map((s: PreEnrollmentRowData, index: number) => {
                         const preEnrollmentId = s.preEnrollmentId || `idx-${index}`;
                         const isExpanded = expandedRows.has(preEnrollmentId);
 

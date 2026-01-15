@@ -415,7 +415,7 @@ export default function StudentTable({
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("careerName")}>
                                 <div className="flex items-center">Carrera <SortIndicator column="careerName" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell text-right">Acciones</TableCell>
+                            <TableCell isHeader className="table-header-cell text-right">&nbsp;</TableCell>
                         </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-border-light dark:divide-border-dark">
@@ -478,34 +478,34 @@ export default function StudentTable({
                                                 {onView && (
                                                     <DropdownItem
                                                         onItemClick={() => onView(s)}
-                                                        className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-emphasis"
+                                                        variant="view"
                                                     >
-                                                        <EyeIcon className="icon-sm" /> Ver Detalles
+                                                        <EyeIcon className="icon-md" /> Ver Detalles
                                                     </DropdownItem>
                                                 )}
                                                 {onEdit && activeTab === "Activas" && (
                                                     <DropdownItem
                                                         onItemClick={() => onEdit(s)}
-                                                        className="flex items-center gap-2 text-text-primary hover:bg-bg-secondary dark:text-text-emphasis"
+                                                        variant="edit"
                                                     >
-                                                        <EditIcon className="icon-sm" /> Editar
+                                                        <EditIcon className="icon-md" /> Editar
                                                     </DropdownItem>
                                                 )}
                                                 {onToggleStatus && (inactiveMode || s.status === false) && (
                                                     <DropdownItem
                                                         onItemClick={() => onToggleStatus(s.studentId)}
-                                                        className="flex items-center gap-2 text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-400/10"
+                                                        variant="restore"
                                                     >
-                                                        <RefreshIcon className="icon-sm" />
+                                                        <RefreshIcon className="icon-md" />
                                                         {inactiveMode ? "Restaurar" : "Activar"}
                                                     </DropdownItem>
                                                 )}
                                                 {onToggleStatus && activeTab === "Activas" && (
                                                     <DropdownItem
                                                         onItemClick={() => onToggleStatus(s.studentId)}
-                                                        className="flex items-center gap-2 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-400/10"
+                                                        variant="delete"
                                                     >
-                                                        <TrashIcon className="icon-sm" /> Eliminar
+                                                        <TrashIcon className="icon-md" /> Eliminar
                                                     </DropdownItem>
                                                 )}
                                             </DropdownPortal>

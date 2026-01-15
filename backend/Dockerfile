@@ -1,32 +1,40 @@
-# Usar una imagen base de Node.js optimizada
+# Stage 1: Builder
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copiar package.json y lockfile para instalar dependencias
+# Copiar archivos de definición de dependencias
 COPY package*.json ./
 
-# Instalar dependencias incluyendo devDependencies para compilar
+# Instalar todas las dependencias para compilar
 RUN npm ci
 
-# Copiar el resto del código fuente y compilar
+# Copiar el resto del código fuente
 COPY . .
-# Ignorar errores de compilación TS para permitir generar el build
-RUN npx tsc || true
-RUN echo "---- dist contents (builder) ----" && ls -la dist || (echo "dist not found in builder" && exit 1)
 
+# Compilar TypeScript (generar carpeta dist)
+RUN npx tsc
+
+# Stage 2: Runner (Producción)
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Copiar sólo package.json para instalar dependencias de producción
+# Establecer NODE_ENV
+ENV NODE_ENV=production
+
+# Copiar archivos de dependencias
 COPY package*.json ./
-RUN npm ci --omit=dev
+
+# Instalar solo dependencias de producción
+RUN npm ci --omit=dev && npm cache clean --force
 
 # Copiar artefactos compilados desde el builder
 COPY --from=builder /app/dist ./dist
-RUN echo "---- dist contents (runner) ----" && ls -la dist || (echo "dist not found in runner" && exit 1)
 
-# Exponer el puerto por defecto
+# Crear carpeta pública si no existe
+RUN mkdir -p public
+
+# Exponer el puerto
 EXPOSE 3000
 
-# Ejecutar el servidor compilado
+# Comando para iniciar
 CMD ["node", "dist/server.js"]

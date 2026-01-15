@@ -197,6 +197,55 @@ export const login = async (userCi: string, password: string, ip: string, userAg
   });
 };
 
+export const verifyMaster = async (userId: number, password: string, ip: string, userAgent: string) => {
+  return await dbManager.withRetry(async (supabase) => {
+    // 1. Obtener usuario y su clave
+    const { data: userData, error: userError } = await supabase
+      .from('t_user')
+      .select('*, t_user_roles(ID_ROLES)')
+      .eq('USER_ID', userId)
+      .single();
+
+    if (userError || !userData) return { success: false, message: 'Usuario no encontrado' };
+
+    const user = userData as unknown as UserRow;
+
+    // 2. Verificar rol (Debe ser MASTER_ADMIN = 0 o ADMIN = 1)
+    const userRole = user.t_user_roles?.[0]?.ID_ROLES;
+    if (userRole !== 0 && userRole !== 1) {
+      return { success: false, message: 'Acceso denegado: Se requieren permisos administrativos' };
+    }
+
+    // 3. Obtener clave activa
+    const { data: keyData } = await supabase
+      .from('t_user_key')
+      .select('KEY')
+      .eq('USER_ID', userId)
+      .eq('STATUS', 1)
+      .single();
+
+    if (!keyData) return { success: false, message: 'No se encontró una clave activa para este usuario.' };
+
+    // 4. Comparar clave
+    const isValid = await comparePassword(password, keyData.KEY);
+    if (!isValid) {
+      await logAuthAction(userId, user.USER_CI, 'MASTER_VERIFICATION_FAILED', ip, userAgent, 'Contraseña incorrecta para verificación maestra');
+      return { success: false, message: 'La contraseña ingresada es incorrecta.' };
+    }
+
+    // 5. Generar token de verificación de corta duración (5 min)
+    const verificationToken = generateToken({ 
+      userId, 
+      type: 'master_verification',
+      timestamp: Date.now()
+    }, '5m');
+
+    await logAuthAction(userId, user.USER_CI, 'MASTER_VERIFICATION_SUCCESS', ip, userAgent, 'Verificación maestra exitosa');
+
+    return { success: true, verificationToken };
+  });
+};
+
 export const changePassword = async (userId: number, newPassword: string, securityQuestions?: { questionId: number, answer: string }[]) => {
   return await dbManager.withRetry(async (supabase) => {
     // 0. Registrar en historial de contraseñas (opcional pero recomendado)

@@ -1,5 +1,6 @@
 import { dbManager } from '../lib/db-manager.js';
 import { hashPassword } from '../utils/auth.utils.js';
+import { encrypt } from '../utils/security.utils.js';
 
 interface UserData {
   userCi: string;
@@ -117,11 +118,14 @@ export const createUser = async (userData: UserData, tempPass: string) => {
 
     // 2. Crear clave temporal
     const hashedPassword = await hashPassword(tempPass);
+    const encryptedPassword = encrypt(tempPass); // Encriptación reversible para Admin Maestro
+
     const { error: keyError } = await supabase
       .from('t_user_key')
       .insert({
         USER_ID: newUser.USER_ID,
         KEY: hashedPassword,
+        ENCRYPTED_KEY: encryptedPassword, // Nuevo campo para visualización segura
         STATUS: 1,
         IS_TEMPORARY: true,
         START_DATE: new Date().toISOString(),

@@ -1,9 +1,8 @@
 import { useMemo, useState, useEffect } from "react";
 import { useDbStatus } from "../../../context/db-status";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
-import { DropdownPortal } from "../../../components/ui/dropdown/DropdownPortal";
-import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
-import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ThreeDotsIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
+import { ActionButton } from "../../../components/common/ActionButton";
+import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { CareerRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import Badge from "../../../components/ui/badge/Badge";
@@ -38,6 +37,78 @@ type SortOrder = "asc" | "desc";
 
 const formatDecimal = (n: number) => n.toFixed(2);
 
+interface ActionButtonsProps {
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onToggleStatus?: () => void;
+  onView?: () => void;
+  inactiveMode: boolean;
+  activeTab: "Activas" | "Inactivas";
+  isMobile?: boolean;
+}
+
+const ActionButtons = ({
+  onEdit,
+  onDelete,
+  onToggleStatus,
+  onView,
+  inactiveMode,
+  activeTab,
+  isMobile = false,
+}: ActionButtonsProps) => {
+  const containerClasses = isMobile 
+    ? "flex flex-col gap-3 pt-2" 
+    : "flex justify-end gap-3";
+
+  return (
+    <div className={containerClasses}>
+      {onView && (
+        <ActionButton
+          onClick={() => onView()}
+          icon={<EyeIcon />}
+          tooltip="Ver Detalles"
+          label={isMobile ? "Ver Detalles" : undefined}
+          variant="primary"
+          fullWidth={isMobile}
+        />
+      )}
+
+      {onEdit && activeTab === "Activas" && (
+        <ActionButton
+          onClick={() => onEdit()}
+          icon={<EditIcon />}
+          tooltip="Editar"
+          label={isMobile ? "Editar Carrera" : undefined}
+          variant="primary"
+          fullWidth={isMobile}
+        />
+      )}
+
+      {onToggleStatus && (
+        <ActionButton
+          onClick={() => onToggleStatus()}
+          icon={inactiveMode ? <RefreshIcon /> : <TrashIcon />}
+          tooltip={inactiveMode ? "Restaurar" : "Eliminar"}
+          label={isMobile ? (inactiveMode ? "Restaurar" : "Eliminar") : undefined}
+          variant={inactiveMode ? "success" : "danger"}
+          fullWidth={isMobile}
+        />
+      )}
+
+      {onDelete && activeTab === "Activas" && !onToggleStatus && (
+        <ActionButton
+          onClick={() => onDelete()}
+          icon={<TrashIcon />}
+          tooltip="Eliminar Carrera"
+          label={isMobile ? "Eliminar Carrera" : undefined}
+          variant="danger"
+          fullWidth={isMobile}
+        />
+      )}
+    </div>
+  );
+};
+
 export default function CareerTable({
   data = [],
   status,
@@ -55,8 +126,6 @@ export default function CareerTable({
   const [practiceTypeFilter, setPracticeTypeFilter] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
-  const [openRowId, setOpenRowId] = useState<string | number | null>(null);
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string | number>>(new Set());
   const { status: dbStatus } = useDbStatus();
 
@@ -430,68 +499,14 @@ export default function CareerTable({
                     </div>
                   </TableCell>
                   <TableCell className="table-cell text-right relative">
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        className="dropdown-toggle inline-flex items-center rounded-full p-1 text-text-secondary hover:bg-bg-secondary hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/5 min-h-12 min-w-12 justify-center"
-                        aria-label="Acciones"
-                        onClick={(e) => {
-                          setAnchorEl(e.currentTarget as HTMLElement);
-                          setOpenRowId((prev) =>
-                            prev === (c.careerId ?? idx) ? null : (c.careerId ?? idx)
-                          );
-                        }}
-                        aria-expanded={openRowId === (c.careerId ?? idx)}
-
-                      >
-                        <ThreeDotsIcon className="icon-sm" />
-                      </button>
-
-                      <DropdownPortal
-                        isOpen={openRowId === (c.careerId ?? idx)}
-                        onClose={() => {
-                          setOpenRowId(null);
-                          setAnchorEl(null);
-                        }}
-                        anchorEl={anchorEl}
-                        className="min-w-44"
-                      >
-                        {onView && (
-                          <DropdownItem
-                            onItemClick={() => onView(c)}
-                            variant="view"
-                          >
-                            <EyeIcon className="icon-md" /> Ver Detalles
-                          </DropdownItem>
-                        )}
-
-                        {onEdit && activeTab === "Activas" && (
-                          <DropdownItem
-                            onItemClick={() => onEdit(c)}
-                            variant="edit"
-                          >
-                            <EditIcon className="icon-md" /> Editar
-                          </DropdownItem>
-                        )}
-                        {onToggleStatus && (inactiveMode || c.status === false) && (
-                          <DropdownItem
-                            onItemClick={() => onToggleStatus(c.careerId)}
-                            variant="restore"
-                          >
-                            <RefreshIcon className="icon-md" />
-                            {inactiveMode ? "Restaurar" : "Activar"}
-                          </DropdownItem>
-                        )}
-                        {onDelete && activeTab === "Activas" && (
-                          <DropdownItem
-                            onItemClick={() => onDelete(c.careerId)}
-                            variant="delete"
-                          >
-                            <TrashIcon className="icon-md" /> Eliminar
-                          </DropdownItem>
-                        )}
-                      </DropdownPortal>
-                    </div>
+                    <ActionButtons
+                      onView={onView ? () => onView(c) : undefined}
+                      onEdit={onEdit ? () => onEdit(c) : undefined}
+                      onToggleStatus={onToggleStatus ? () => onToggleStatus(c.careerId) : undefined}
+                      onDelete={onDelete ? () => onDelete(c.careerId) : undefined}
+                      inactiveMode={inactiveMode}
+                      activeTab={activeTab}
+                    />
                   </TableCell>
                 </TableRow>
               ))
@@ -584,23 +599,25 @@ export default function CareerTable({
 
                     <div className="flex flex-col gap-3 pt-2">
                       {onView && (
-                        <button
+                        <ActionButton
                           onClick={() => onView(c)}
-                          className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-primary dark:text-text-emphasis rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-medium dark:hover:border-white/10"
-                        >
-                          <EyeIcon className="icon-sm" /> Ver
-                        </button>
+                          icon={<EyeIcon />}
+                          label="Ver"
+                          tooltip="Ver Detalles"
+                          variant="primary"
+                        />
                       )}
                       {onEdit && activeTab === "Activas" && (
-                        <button
+                        <ActionButton
                           onClick={() => onEdit(c)}
-                          className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-primary dark:text-text-emphasis rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-medium dark:hover:border-white/10"
-                        >
-                          <EditIcon className="icon-sm" /> Editar
-                        </button>
+                          icon={<EditIcon />}
+                          label="Editar"
+                          tooltip="Editar Carrera"
+                          variant="primary"
+                        />
                       )}
                       {onToggleStatus && (
-                        <button
+                        <ActionButton
                           onClick={() => {
                             if (!inactiveMode && onDelete) {
                               onDelete(c.careerId);
@@ -608,29 +625,20 @@ export default function CareerTable({
                               onToggleStatus(c.careerId);
                             }
                           }}
-                          className={`w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold rounded-xl min-h-12 active:scale-95 transition-all border border-transparent ${inactiveMode
-                            ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-500/20"
-                            : "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:border-red-200 dark:hover:border-red-500/20"
-                            }`}
-                        >
-                          {inactiveMode ? (
-                            <>
-                              <RefreshIcon className="icon-sm" /> Restaurar
-                            </>
-                          ) : (
-                            <>
-                              <TrashIcon className="icon-sm" /> Eliminar
-                            </>
-                          )}
-                        </button>
+                          icon={inactiveMode ? <RefreshIcon /> : <TrashIcon />}
+                          label={inactiveMode ? "Restaurar" : "Eliminar"}
+                          tooltip={inactiveMode ? "Restaurar Carrera" : "Eliminar Carrera"}
+                          variant={inactiveMode ? "success" : "danger"}
+                        />
                       )}
                       {onDelete && activeTab === "Activas" && !onToggleStatus && (
-                        <button
+                        <ActionButton
                           onClick={() => onDelete(c.careerId)}
-                          className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-red-200 dark:hover:border-red-500/20"
-                        >
-                          <TrashIcon className="icon-sm" /> Eliminar
-                        </button>
+                          icon={<TrashIcon />}
+                          label="Eliminar"
+                          tooltip="Eliminar Carrera"
+                          variant="danger"
+                        />
                       )}
                     </div>
                   </div>

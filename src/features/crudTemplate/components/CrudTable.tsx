@@ -1,10 +1,9 @@
 import { useMemo, useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../../components/ui/table";
 import Checkbox from "../../../components/form/input/Checkbox";
-import { DropdownPortal } from "../../../components/ui/dropdown/DropdownPortal";
-import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
+import { ActionButton } from "../../../components/common/ActionButton";
 import type { CrudColumn, CrudFilterConfig, CrudFilterState, CrudActionConfig, CrudRowAction } from "../types";
-import { TrashIcon, RefreshIcon, EditIcon, EyeIcon, ThreeDotsIcon } from "../../../icons/actions";
+import { TrashIcon, RefreshIcon, EditIcon, EyeIcon } from "../../../icons/actions";
 
 export interface CrudTableProps<TItem extends { id: string }> {
   items: TItem[];
@@ -44,13 +43,11 @@ export function CrudTable<TItem extends { id: string }>({
   errorMessage = null,
   onSelectionChange,
 }: CrudTableProps<TItem>) {
+  const [itemsPerPage, setItemsPerPage] = useState(initialPageSize);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(initialPageSize);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [openRowId, setOpenRowId] = useState<string | null>(null);
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   // Reset selection when items change (e.g. filter or tab change)
   useEffect(() => {
@@ -471,67 +468,40 @@ export function CrudTable<TItem extends { id: string }>({
                     </TableCell>
                   ))}
                   {rowActions.length > 0 && (
-                    <TableCell className="table-cell text-right relative">
-                      <div className="flex justify-end">
-                        <button
-                          type="button"
-                          className="dropdown-toggle inline-flex items-center rounded-full p-1 text-text-tertiary hover:bg-bg-secondary hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/5"
-                          aria-label="Acciones"
-                          onClick={(e) => {
-                            setAnchorEl(e.currentTarget as HTMLElement);
-                            setOpenRowId((prev) => (prev === item.id ? null : item.id));
-                          }}
-                          aria-expanded={openRowId === item.id}
-                        >
-                          <ThreeDotsIcon className="h-5 w-5" />
-                        </button>
+                    <TableCell className="table-cell text-right">
+                      <div className="flex justify-end gap-3">
+                        {rowActions.map((action) => {
+                          if (action.show && !action.show(item)) return null;
 
-                        <DropdownPortal
-                          isOpen={openRowId === item.id}
-                          onClose={() => {
-                            setOpenRowId(null);
-                            setAnchorEl(null);
-                          }}
-                          anchorEl={anchorEl}
-                          className="min-w-44"
-                        >
-                          {rowActions.map((action) => {
-                            if (action.show && !action.show(item)) return null;
-
-                            const icon =
-                              action.icon === "edit" ? (
-                                <EditIcon className="icon-md" />
-                              ) : action.icon === "delete" ? (
-                                <TrashIcon className="icon-md" />
-                              ) : action.icon === "view" ? (
-                                <EyeIcon className="icon-md" />
-                              ) : action.icon === "restore" ? (
-                                <RefreshIcon className="icon-md" />
-                              ) : typeof action.icon === "string" ? null : (
-                                action.icon
-                              );
-
-                            const variant = 
-                              action.icon === "edit" ? "edit" :
-                              action.icon === "delete" ? "delete" :
-                              action.icon === "view" ? "view" :
-                              action.icon === "restore" ? "restore" : "default";
-
-                            return (
-                              <DropdownItem
-                                key={action.id}
-                                onItemClick={() => {
-                                  action.onClick(item);
-                                  setOpenRowId(null);
-                                }}
-                                variant={variant}
-                              >
-                                {icon}
-                                {action.label}
-                              </DropdownItem>
+                          const icon =
+                            action.icon === "edit" ? (
+                              <EditIcon />
+                            ) : action.icon === "delete" ? (
+                              <TrashIcon />
+                            ) : action.icon === "view" ? (
+                              <EyeIcon />
+                            ) : action.icon === "restore" ? (
+                              <RefreshIcon />
+                            ) : typeof action.icon === "string" ? null : (
+                              action.icon
                             );
-                          })}
-                        </DropdownPortal>
+
+                          const variant =
+                            action.icon === "edit" ? "primary" :
+                              action.icon === "delete" ? "danger" :
+                                action.icon === "view" ? "primary" :
+                                  action.icon === "restore" ? "success" : "primary";
+
+                          return (
+                            <ActionButton
+                              key={action.id}
+                              onClick={() => action.onClick(item)}
+                              icon={icon}
+                              tooltip={action.label}
+                              variant={variant}
+                            />
+                          );
+                        })}
                       </div>
                     </TableCell>
                   )}

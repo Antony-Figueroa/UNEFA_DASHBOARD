@@ -12,16 +12,13 @@ import {
     TableRow,
     Pagination,
 } from "../../../components/ui/table";
-import { Dropdown } from "../../../components/ui/dropdown/Dropdown";
-import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
+import { ActionButton } from "../../../components/common/ActionButton";
 import Badge from "../../../components/ui/badge/Badge";
-import Button from "../../../components/ui/button/Button";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
 import {
     EditIcon,
     TrashIcon,
-    ThreeDotsIcon,
     EyeIcon,
     RefreshIcon,
 } from "../../../icons/actions";
@@ -37,6 +34,76 @@ interface TrackingTableProps {
     onView?: (tracking: TrackingRowData) => void;
 }
 
+interface ActionButtonsProps {
+    onEdit?: () => void;
+    onDelete?: () => void;
+    onRestore?: () => void;
+    onView?: () => void;
+    status: boolean;
+    isMobile?: boolean;
+}
+
+const ActionButtons = ({
+    onEdit,
+    onDelete,
+    onRestore,
+    onView,
+    status,
+    isMobile = false,
+}: ActionButtonsProps) => {
+    const containerClasses = isMobile 
+        ? "flex flex-col gap-3 pt-2" 
+        : "flex justify-end gap-3";
+
+    return (
+        <div className={containerClasses}>
+            {onView && (
+                <ActionButton
+                    onClick={() => onView()}
+                    icon={<EyeIcon />}
+                    tooltip="Ver Detalles"
+                    label={isMobile ? "Ver Detalles" : undefined}
+                    variant="primary"
+                    fullWidth={isMobile}
+                />
+            )}
+            {onEdit && (
+                <ActionButton
+                    onClick={() => onEdit()}
+                    icon={<EditIcon />}
+                    tooltip="Editar"
+                    label={isMobile ? "Editar Seguimiento" : undefined}
+                    variant="primary"
+                    fullWidth={isMobile}
+                />
+            )}
+            {status ? (
+                onDelete && (
+                    <ActionButton
+                        onClick={() => onDelete()}
+                        icon={<TrashIcon />}
+                        tooltip="Inactivar"
+                        label={isMobile ? "Inactivar Seguimiento" : undefined}
+                        variant="danger"
+                        fullWidth={isMobile}
+                    />
+                )
+            ) : (
+                onRestore && (
+                    <ActionButton
+                        onClick={() => onRestore()}
+                        icon={<RefreshIcon />}
+                        tooltip="Restaurar"
+                        label={isMobile ? "Restaurar Seguimiento" : undefined}
+                        variant="success"
+                        fullWidth={isMobile}
+                    />
+                )
+            )}
+        </div>
+    );
+};
+
 export default function TrackingTable({
     data,
     status,
@@ -48,7 +115,6 @@ export default function TrackingTable({
 }: TrackingTableProps) {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
-    const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
     // Lógica de paginación
     const totalPages = Math.ceil(data.length / itemsPerPage);
@@ -110,55 +176,14 @@ export default function TrackingTable({
                                         {item.status ? "Activo" : "Inactivo"}
                                     </Badge>
                                 </TableCell>
-                                <TableCell className="text-right relative pr-10">
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="ml-auto"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setOpenDropdownId(openDropdownId === item.trackingId ? null : item.trackingId);
-                                        }}
-                                    >
-                                        <ThreeDotsIcon className="h-5 w-5" />
-                                    </Button>
-                                    <Dropdown
-                                        isOpen={openDropdownId === item.trackingId}
-                                        onClose={() => setOpenDropdownId(null)}
-                                        className="w-40"
-                                    >
-                                        <DropdownItem 
-                                            onItemClick={() => { onView?.(item); setOpenDropdownId(null); }}
-                                            variant="view"
-                                        >
-                                            <EyeIcon className="icon-md" />
-                                            Ver Detalles
-                                        </DropdownItem>
-                                        <DropdownItem 
-                                            onItemClick={() => { onEdit?.(item); setOpenDropdownId(null); }}
-                                            variant="edit"
-                                        >
-                                            <EditIcon className="icon-md" />
-                                            Editar
-                                        </DropdownItem>
-                                        {item.status ? (
-                                            <DropdownItem
-                                                onItemClick={() => { onDelete?.(item.trackingId); setOpenDropdownId(null); }}
-                                                variant="delete"
-                                            >
-                                                <TrashIcon className="icon-md" />
-                                                Inactivar
-                                            </DropdownItem>
-                                        ) : (
-                                            <DropdownItem
-                                                onItemClick={() => { onRestore?.(item); setOpenDropdownId(null); }}
-                                                variant="restore"
-                                            >
-                                                <RefreshIcon className="icon-md" />
-                                                Restaurar
-                                            </DropdownItem>
-                                        )}
-                                    </Dropdown>
+                                <TableCell className="table-cell text-right">
+                                    <ActionButtons
+                                        onView={onView ? () => onView(item) : undefined}
+                                        onEdit={onEdit ? () => onEdit(item) : undefined}
+                                        onDelete={onDelete ? () => onDelete(item.trackingId) : undefined}
+                                        onRestore={onRestore ? () => onRestore(item) : undefined}
+                                        status={item.status}
+                                    />
                                 </TableCell>
                             </TableRow>
                         ))}

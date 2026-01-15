@@ -1,8 +1,8 @@
 import { useMemo, useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
-import { DropdownPortal } from "../../../components/ui/dropdown/DropdownPortal";
-import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
-import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ThreeDotsIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
+
+import { ActionButton } from "../../../components/common/ActionButton";
+import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { TutorRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { useDebounce } from "../../../hooks/useDebounce";
@@ -35,6 +35,61 @@ interface TutorTableProps {
 type SortKey = "identificationNumber" | "firstName" | "lastName" | "email" | "profession" | "registrationDate";
 type SortOrder = "asc" | "desc";
 
+interface ActionButtonsProps {
+    onEdit?: () => void;
+    onToggleStatus?: () => void;
+    onView?: () => void;
+    activeTab: "Activas" | "Inactivas";
+    isMobile?: boolean;
+}
+
+const ActionButtons = ({
+    onEdit,
+    onToggleStatus,
+    onView,
+    activeTab,
+    isMobile = false,
+}: ActionButtonsProps) => {
+    const containerClasses = isMobile 
+        ? "flex flex-col gap-3 pt-2" 
+        : "flex justify-end gap-3";
+
+    return (
+        <div className={containerClasses}>
+            {onView && (
+                <ActionButton
+                    onClick={() => onView()}
+                    icon={<EyeIcon />}
+                    tooltip="Ver detalles"
+                    label={isMobile ? "Ver Detalles" : undefined}
+                    variant="primary"
+                    fullWidth={isMobile}
+                />
+            )}
+            {onEdit && activeTab === "Activas" && (
+                <ActionButton
+                    onClick={() => onEdit()}
+                    icon={<EditIcon />}
+                    tooltip="Editar"
+                    label={isMobile ? "Editar Tutor" : undefined}
+                    variant="primary"
+                    fullWidth={isMobile}
+                />
+            )}
+            {onToggleStatus && (
+                <ActionButton
+                    onClick={() => onToggleStatus()}
+                    icon={activeTab === "Activas" ? <TrashIcon /> : <RefreshIcon />}
+                    tooltip={activeTab === "Activas" ? "Eliminar" : "Restaurar"}
+                    label={isMobile ? (activeTab === "Activas" ? "Eliminar Tutor" : "Restaurar Tutor") : undefined}
+                    variant={activeTab === "Activas" ? "danger" : "success"}
+                    fullWidth={isMobile}
+                />
+            )}
+        </div>
+    );
+};
+
 export default function TutorTable({
     data = [],
     status,
@@ -56,8 +111,6 @@ export default function TutorTable({
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
-    const [openRowId, setOpenRowId] = useState<string | number | null>(null);
-    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -430,77 +483,12 @@ export default function TutorTable({
                                         )}
                                     </TableCell>
                                     <TableCell className="table-cell text-right">
-                                        <div className="flex justify-end">
-                                            <button
-                                                type="button"
-                                                className="dropdown-toggle inline-flex items-center rounded-full p-1 text-text-tertiary hover:bg-bg-secondary hover:text-text-secondary dark:text-text-tertiary dark:hover:bg-white/5 min-h-12 min-w-12 justify-center"
-                                                aria-label="Acciones"
-                                                onClick={(e) => {
-                                                    setAnchorEl(e.currentTarget as HTMLElement);
-                                                    setOpenRowId((prev) =>
-                                                        prev === t.tutorId ? null : t.tutorId
-                                                    );
-                                                }}
-                                                aria-expanded={openRowId === t.tutorId}
-                                            >
-                                                <ThreeDotsIcon className="icon-sm" />
-                                            </button>
-
-                                            <DropdownPortal
-                                                isOpen={openRowId === t.tutorId}
-                                                onClose={() => {
-                                                    setOpenRowId(null);
-                                                    setAnchorEl(null);
-                                                }}
-                                                anchorEl={anchorEl}
-                                                className="min-w-44"
-                                            >
-                                                <div className="p-1">
-                                                    <DropdownItem
-                                                        onItemClick={() => {
-                                                            onView?.(t);
-                                                            setOpenRowId(null);
-                                                            setAnchorEl(null);
-                                                        }}
-                                                        variant="view"
-                                                    >
-                                                        <EyeIcon className="icon-md" />
-                                                        Ver detalles
-                                                    </DropdownItem>
-                                                    <DropdownItem
-                                                        onItemClick={() => {
-                                                            onEdit?.(t);
-                                                            setOpenRowId(null);
-                                                            setAnchorEl(null);
-                                                        }}
-                                                        variant="edit"
-                                                    >
-                                                        <EditIcon className="icon-md" />
-                                                        Editar
-                                                    </DropdownItem>
-                                                    <DropdownItem
-                                                        onItemClick={() => {
-                                                            onToggleStatus?.(t.tutorId);
-                                                            setOpenRowId(null);
-                                                            setAnchorEl(null);
-                                                        }}
-                                                        variant={activeTab === "Activas" ? "delete" : "restore"}
-                                                    >
-                                                        {activeTab === "Activas" ? (
-                                                            <>
-                                                                <TrashIcon className="icon-md" />
-                                                                Eliminar
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <RefreshIcon className="icon-md" />
-                                                                Restaurar
-                                                            </>
-                                                        )}
-                                                    </DropdownItem>
-                                                </div>
-                                            </DropdownPortal>
-                                        </div>
+                                        <ActionButtons
+                                            onView={onView ? () => onView(t) : undefined}
+                                            onEdit={onEdit ? () => onEdit(t) : undefined}
+                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(t.tutorId) : undefined}
+                                            activeTab={activeTab}
+                                        />
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -586,43 +574,13 @@ export default function TutorTable({
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-col gap-3 pt-2">
-                                            {onView && (
-                                                <button
-                                                    onClick={() => onView(t)}
-                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-secondary dark:text-text-secondary rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-medium dark:hover:border-border-dark"
-                                                >
-                                                    <EyeIcon className="w-4 h-4" /> Ver
-                                                </button>
-                                            )}
-                                            {onEdit && activeTab === "Activas" && (
-                                                <button
-                                                    onClick={() => onEdit(t)}
-                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-secondary dark:text-text-secondary rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-medium dark:hover:border-border-dark"
-                                                >
-                                                    <EditIcon className="w-4 h-4" /> Editar
-                                                </button>
-                                            )}
-                                            {onToggleStatus && (
-                                                <button
-                                                    onClick={() => onToggleStatus(t.tutorId)}
-                                                    className={`w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold rounded-xl min-h-12 active:scale-95 transition-all border border-transparent ${activeTab !== "Activas"
-                                                        ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-500/20"
-                                                        : "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:border-red-200 dark:hover:border-red-500/20"
-                                                        }`}
-                                                >
-                                                    {activeTab !== "Activas" ? (
-                                                        <>
-                                                            <RefreshIcon className="w-4 h-4" /> Restaurar
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <TrashIcon className="w-4 h-4" /> Eliminar
-                                                        </>
-                                                    )}
-                                                </button>
-                                            )}
-                                        </div>
+                                        <ActionButtons
+                                            onView={onView ? () => onView(t) : undefined}
+                                            onEdit={onEdit ? () => onEdit(t) : undefined}
+                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(t.tutorId) : undefined}
+                                            activeTab={activeTab}
+                                            isMobile={true}
+                                        />
                                     </div>
                                 )}
                             </div>

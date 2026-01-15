@@ -96,11 +96,11 @@ const CommunityInfoSection: React.FC = () => {
               Explora las carreras disponibles exclusivamente en nuestra sede Acarigua. Formación de excelencia para el desarrollo de la región.
             </p>
           </div>
-          <div className="hidden md:block">
+          {/* <div className="hidden md:block">
             <Badge color="primary" variant="light" size="md" className="px-4 py-2">
               Sede Exclusiva: Acarigua
             </Badge>
-          </div>
+          </div> */}
         </div>
 
         {/* Categories / Grid */}

@@ -61,6 +61,34 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
+export const verifyMaster = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const { password } = req.body;
+    const ip = req.ip || '';
+    const userAgent = req.headers['user-agent'] || '';
+
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Sesión no válida' });
+    }
+
+    if (!password) {
+      return res.status(400).json({ success: false, message: 'La contraseña es requerida' });
+    }
+
+    const result = await authService.verifyMaster(userId, password, ip, userAgent);
+
+    if (!result.success) {
+      return res.status(401).json(result);
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error(`[Auth] Error en verifyMaster:`, error);
+    handleAuthError(res, error);
+  }
+};
+
 export const getMe = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;

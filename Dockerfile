@@ -15,10 +15,11 @@ RUN npm ci --network-timeout=100000
 COPY . .
 RUN npm run build
 
-# Etapa 2: Servidor de desarrollo (más ligero para WSL)
+# Etapa 2: Producción
 FROM node:20-alpine
 WORKDIR /app
 COPY --from=builder /app ./
 
-EXPOSE 5173
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Usar el puerto de Render
+EXPOSE 3000
+CMD ["npm", "start"]

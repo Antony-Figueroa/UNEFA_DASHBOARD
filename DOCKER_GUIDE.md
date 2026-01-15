@@ -8,7 +8,17 @@ Antes de comenzar, asegúrate de tener instalado:
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows/macOS) o Docker Engine (Linux).
 - [Docker Compose](https://docs.docker.com/compose/install/) (incluido en Docker Desktop).
 
-## 🚀 Configuración Rápida
+## 🚀 Configuración Rápida (Recomendado)
+
+Para una configuración automática que gestiona errores y archivos `.env`:
+
+```bash
+npm run docker:start
+```
+
+*Este comando detectará automáticamente tu sistema operativo (Windows/Linux/macOS), configurará los archivos `.env` necesarios y lanzará los contenedores.*
+
+## 🛠️ Configuración Manual (Opcional)
 
 1. **Clonar el repositorio:**
    ```bash
@@ -17,11 +27,9 @@ Antes de comenzar, asegúrate de tener instalado:
    ```
 
 2. **Variables de Entorno:**
-   Asegúrate de tener los archivos `.env` configurados:
-   - Raíz: `.env` (Frontend)
-   - Backend: `backend/.env` (Backend)
-
-   *Nota: Si no los tienes, puedes copiar los archivos `.env.example` si están disponibles.*
+   Si prefieres configurarlas manualmente:
+   - Copia `.env.example` a `.env` en la raíz.
+   - Copia `backend/.env.example` a `backend/.env`.
 
 3. **Construir y ejecutar:**
    ```bash

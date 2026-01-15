@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "docker:start": "node -e \"const { platform } = require('os'); const { spawn } = require('child_process'); const cmd = platform() === 'win32' ? 'setup-docker.bat' : './setup-docker.sh'; spawn(cmd, { stdio: 'inherit', shell: true });\""
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.15",

@@ -1,6 +1,5 @@
 
 import React from "react";
-import Button from "../../../components/ui/button/Button";
 
 const steps = [
   {
@@ -19,7 +18,7 @@ const steps = [
     description: "Entrega de los documentos solicitados.",
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
       </svg>
     ),
   },
@@ -49,7 +48,7 @@ const steps = [
     description: "Realiza el seguimiento de tus actividades y recibe feedback de tus tutores.",
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
     ),
   },
@@ -59,7 +58,7 @@ const steps = [
     description: "Defiende el informe final de las prácticas profesionales.",
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
       </svg>
     ),
   },
@@ -108,7 +107,7 @@ const ProcessFlowSection: React.FC = () => {
         </div>
 
         {/* CTA Banner */}
-        <div className="mt-24 rounded-3xl bg-[#2d90c4]/10 p-8 md:p-12 dark:bg-[#2d90c4]/20 border border-[#2d90c4]/30 flex flex-col md:flex-row items-center justify-between gap-8">
+        {/* <div className="mt-24 rounded-3xl bg-[#2d90c4]/10 p-8 md:p-12 dark:bg-[#2d90c4]/20 border border-[#2d90c4]/30 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="space-y-4 text-center md:text-left">
             <h3 className="text-2xl font-bold text-[#2d90c4]">
               ¿Eres una institución o tutor?
@@ -133,7 +132,7 @@ const ProcessFlowSection: React.FC = () => {
               Postular como Tutor
             </Button>
           </div>
-        </div>
+        </div> */}
       </div>
     </section>
   );

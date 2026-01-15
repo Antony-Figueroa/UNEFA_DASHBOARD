@@ -1,10 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config({ override: true });
 
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabaseUrl = (process.env.SUPABASE_URL || '').trim().replace(/['`"]/g, '');
+const supabaseServiceRoleKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim().replace(/['`"]/g, '');
+
+console.log(`[Supabase.ts] Intentando inicializar con URL: ${supabaseUrl.substring(0, 20)}...`);
 
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   console.error('[Supabase] CRITICAL: Missing credentials in .env');

@@ -26,6 +26,8 @@ fi
 if [ ! -f "backend/.env" ]; then
     echo "ℹ️ Creando .env desde .env.example (Backend)"
     cp backend/.env.example backend/.env
+    echo "⚠️ ATENCION: Se ha creado backend/.env. DEBES EDITARLO con tus credenciales de Supabase."
+    read -p "Presiona Enter cuando hayas configurado el archivo..."
 fi
 
 # 4. Limpieza preventiva

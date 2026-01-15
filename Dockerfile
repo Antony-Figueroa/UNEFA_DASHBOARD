@@ -1,33 +1,24 @@
-# Stage 1: Build
+# Etapa 1: Construcción
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copiar archivos de dependencias
+# Configurar npm para resiliencia
+RUN npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000
+
+# Copiar solo lo necesario para instalar dependencias
 COPY package*.json ./
+RUN npm ci --network-timeout=100000
 
-# Instalar dependencias
-RUN npm install
-
-# Copiar código fuente
+# Copiar el resto y construir
 COPY . .
-
-# Generar build de producción
 RUN npm run build
 
-# Stage 2: Production with Nginx (Opcional, pero para desarrollo seguiremos con Vite)
-# Sin embargo, para que funcione el HMR en desarrollo, usaremos una imagen simple
+# Etapa 2: Servidor de desarrollo (más ligero para WSL)
 FROM node:20-alpine
 WORKDIR /app
+COPY --from=builder /app ./
 
-# Copiar dependencias e instalarlas (para modo desarrollo)
-COPY package*.json ./
-RUN npm install
-
-# Copiar el resto del código
-COPY . .
-
-# Exponer puerto de Vite
 EXPOSE 5173
-
-# Comando para desarrollo con host configurado para Docker
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

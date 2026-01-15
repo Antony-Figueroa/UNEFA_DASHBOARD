@@ -31,6 +31,8 @@ if not exist ".env" (
 if not exist "backend\.env" (
     echo ℹ️ Creando .env desde .env.example (Backend)
     copy "backend\.env.example" "backend\.env"
+    echo ⚠️ ATENCION: Se ha creado backend\.env. DEBES EDITARLO con tus credenciales de Supabase.
+    pause
 )
 
 :: 4. Verificar Puertos (5173 y 5000)

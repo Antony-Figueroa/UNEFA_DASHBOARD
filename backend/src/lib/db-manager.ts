@@ -19,12 +19,17 @@ export class DatabaseManager {
   private connectionPromise: Promise<SupabaseClient> | null = null;
 
   private constructor() {
+    // Forzar recarga de dotenv para asegurar que lee los valores más recientes
+    dotenv.config({ override: true });
+
     this.config = {
-      url: process.env.SUPABASE_URL || '',
-      key: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+      url: (process.env.SUPABASE_URL || '').trim().replace(/['`"]/g, ''),
+      key: (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim().replace(/['`"]/g, ''),
       maxRetries: 3,
       retryDelay: 1000,
     };
+
+    console.log(`[DatabaseManager] Intentando inicializar con URL: ${this.config.url.substring(0, 20)}...`);
 
     if (!this.config.url || !this.config.key) {
       console.error('[DatabaseManager] CRITICAL: Missing Supabase credentials');
@@ -105,10 +110,10 @@ export class DatabaseManager {
 
   public async checkHealth(): Promise<{ status: string; details?: Record<string, unknown> }> {
     if (!this.client) {
-      if (!this.config.url || !this.config.key) {
+      if (!this.config.url || !this.config.key || this.config.url.includes('your-project') || this.config.key.includes('your-')) {
         return { 
           status: 'unhealthy', 
-          details: { error: 'Faltan credenciales de Supabase en el archivo .env' } 
+          details: { error: '⚠️ Credenciales de Supabase no configuradas. Por favor edita el archivo backend/.env con tus credenciales reales.' } 
         };
       }
       return { status: 'disconnected', details: { error: 'Cliente no inicializado' } };

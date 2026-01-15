@@ -1,8 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/auth.utils.js';
 
+export interface UserPayload {
+  userId: number;
+  userCi: string;
+  role: number;
+}
+
 export interface AuthRequest extends Request {
-  user?: string | object;
+  user?: UserPayload;
 }
 
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -17,6 +23,6 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     return res.status(403).json({ message: 'Sesión inválida o expirada' });
   }
 
-  req.user = payload;
+  req.user = payload as unknown as UserPayload;
   next();
 };

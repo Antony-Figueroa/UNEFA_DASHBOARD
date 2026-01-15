@@ -1,8 +1,11 @@
 import { app, port } from './app.js';
 import http from 'http';
 
-const server: http.Server = app.listen(port, () => {
-  console.log(`[server]: Server is running at http://localhost:${port}`);
+const server: http.Server = app.listen(Number(port), '0.0.0.0', () => {
+  console.log(`[server]: 🚀 Backend is running!`);
+  console.log(`[server]: Port: ${port}`);
+  console.log(`[server]: Interface: 0.0.0.0 (Accessible from Docker)`);
+  console.log(`[server]: URL: http://localhost:${port}`);
 });
 
 server.on('error', (err: { code?: string }) => {

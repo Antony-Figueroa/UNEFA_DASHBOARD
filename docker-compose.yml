@@ -16,6 +16,9 @@ services:
       - backend
     networks:
       - unefa-network
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     restart: unless-stopped
 
   backend:
@@ -36,6 +39,9 @@ services:
       - NODE_ENV=development
     networks:
       - unefa-network
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     restart: unless-stopped
 
 networks:

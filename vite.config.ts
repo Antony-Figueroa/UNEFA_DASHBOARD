@@ -10,7 +10,6 @@ export default defineConfig(() => {
       svgr({
         svgrOptions: {
           icon: true,
-          // This will transform your SVG to a React component
           exportType: "named",
           namedExport: "ReactComponent",
         },
@@ -22,15 +21,13 @@ export default defineConfig(() => {
       setupFiles: "./src/test/setup.ts",
     },
     server: {
-      // Direct connection to Backend API
       host: true,
-      // Allow specific hosts via env var ALLOWED_HOSTS (comma separated)
-      // Example: ALLOWED_HOSTS=unefadashboard-production.up.railway.app
+      // Hemos añadido '.onrender.com' para que acepte cualquier subdominio de Render
       allowedHosts: (process.env.ALLOWED_HOSTS || '')
         .split(',')
         .map(h => h.trim())
         .filter(Boolean)
-        .concat(['localhost', '127.0.0.1', '.railway.app'])
+        .concat(['localhost', '127.0.0.1', '.railway.app', '.onrender.com', 'unefa-dashboard.onrender.com'])
     },
     preview: {
       host: true,
@@ -38,7 +35,7 @@ export default defineConfig(() => {
         .split(',')
         .map(h => h.trim())
         .filter(Boolean)
-        .concat(['localhost', '127.0.0.1', '.railway.app'])
+        .concat(['localhost', '127.0.0.1', '.railway.app', '.onrender.com', 'unefa-dashboard.onrender.com'])
     },
   };
 });

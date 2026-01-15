@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 import careersRoutes from './routes/careers.routes.js';
 import internshipTypesRoutes from './routes/internship-types.routes.js';
@@ -20,6 +22,9 @@ import { dbManager } from './lib/db-manager.js';
 import { performanceMiddleware } from './lib/performance-middleware.js';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -98,6 +103,10 @@ app.use('/api/institutional-responsibles', institutionalResponsiblesRoutes);
 app.use('/api/lists', listsRoutes);
 app.use('/api/auth', authRoutes);
 
+// Servir archivos estáticos del frontend (Vite build)
+const frontendDistPath = path.join(__dirname, '../../dist');
+app.use(express.static(frontendDistPath));
+
 // DB status endpoint
 app.get('/api/db-status', async (_req, res) => {
   const health = await dbManager.checkHealth();
@@ -109,12 +118,6 @@ app.get('/api/db-status', async (_req, res) => {
   });
 });
 
-app.use(express.static('public'));
-
-app.get('/', (_req, res) => {
-  res.send('<html><body><h1>Proyecto-Unefa Backend</h1></body></html>');
-});
-
 app.get('/api/health', async (_req, res) => {
   const health = await dbManager.checkHealth();
   res.status(health.status === 'healthy' ? 200 : 503).json({ 
@@ -124,6 +127,15 @@ app.get('/api/health', async (_req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
   });
+});
+
+// Catch-all para el frontend (SPA)
+app.get('*', (req, res, next) => {
+  // Si la ruta empieza por /api, no servir el index.html
+  if (req.url.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(frontendDistPath, 'index.html'));
 });
 
 // Error Handler

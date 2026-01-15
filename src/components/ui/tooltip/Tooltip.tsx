@@ -1,14 +1,24 @@
-import React, { useState, useRef, useLayoutEffect } from 'react';
+import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 interface TooltipProps {
   content: React.ReactNode;
   children: React.ReactElement;
   className?: string;
+  delay?: number; // Delay in ms before appearing
+  duration?: number; // Duration in ms to stay visible
 }
 
-export const Tooltip: React.FC<TooltipProps> = ({ content, children, className = "" }) => {
+export const Tooltip: React.FC<TooltipProps> = ({ 
+  content, 
+  children, 
+  className = "",
+  delay = 0,
+  duration
+}) => {
   const [isVisible, setIsVisible] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const durationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [style, setStyle] = useState<React.CSSProperties>({
     position: 'absolute',
     visibility: 'hidden',
@@ -81,8 +91,35 @@ export const Tooltip: React.FC<TooltipProps> = ({ content, children, className =
     };
   }, [isVisible, updatePosition]);
 
-  const handleMouseEnter = () => setIsVisible(true);
-  const handleMouseLeave = () => setIsVisible(false);
+  const handleMouseEnter = () => {
+    // Clear any pending timeouts
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (durationTimeoutRef.current) clearTimeout(durationTimeoutRef.current);
+
+    timeoutRef.current = setTimeout(() => {
+      setIsVisible(true);
+      
+      // If duration is set, auto-hide after that time
+      if (duration) {
+        durationTimeoutRef.current = setTimeout(() => {
+          setIsVisible(false);
+        }, duration);
+      }
+    }, delay);
+  };
+
+  const handleMouseLeave = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (durationTimeoutRef.current) clearTimeout(durationTimeoutRef.current);
+    setIsVisible(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (durationTimeoutRef.current) clearTimeout(durationTimeoutRef.current);
+    };
+  }, []);
 
   // Clonar el elemento hijo para añadirle los eventos de hover
   const trigger = React.cloneElement(children as React.ReactElement, {

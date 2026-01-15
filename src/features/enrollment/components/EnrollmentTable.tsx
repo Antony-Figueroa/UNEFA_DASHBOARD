@@ -1,139 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { DropdownPortal } from "../../../components/ui/dropdown/DropdownPortal";
+import { useState, useEffect, useMemo } from "react";
+import { ActionButton } from "../../../components/common/ActionButton";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
-import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
-import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ThreeDotsIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
+import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { EnrollmentRowData } from "../types";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
-
-interface ActionMenuProps {
-    onEdit?: () => void;
-    onToggleStatus?: () => void;
-    onView?: () => void;
-    onOpen: () => void;
-    onClose: () => void;
-    item: EnrollmentRowData;
-}
-
-const ActionMenu = ({
-    onEdit,
-    onToggleStatus,
-    onView,
-    onOpen,
-    onClose,
-    item,
-}: ActionMenuProps) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [highlighted, setHighlighted] = useState(false);
-    const trigger = useRef<HTMLButtonElement>(null);
-
-    const toggleMenu = useCallback(
-        (e: React.MouseEvent<HTMLButtonElement>) => {
-            e.stopPropagation();
-            if (isOpen) {
-                setIsOpen(false);
-                setHighlighted(false);
-                onClose();
-            } else {
-                setIsOpen(true);
-                setHighlighted(true);
-                onOpen();
-            }
-        },
-        [isOpen, onOpen, onClose]
-    );
-
-    const handleAction = useCallback(
-        (action?: () => void) => {
-            setIsOpen(false);
-            setHighlighted(false);
-            onClose();
-            action?.();
-        },
-        [onClose]
-    );
-
-    useEffect(() => {
-        if (!isOpen) return;
-
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === "Escape") {
-                setIsOpen(false);
-                setHighlighted(false);
-                onClose();
-            }
-        };
-
-        document.addEventListener("keydown", handleKeyDown);
-        return () => {
-            document.removeEventListener("keydown", handleKeyDown);
-        };
-    }, [isOpen, onClose]);
-
-    return (
-        <div className={`relative flex justify-end ${highlighted ? "z-50" : ""}`}>
-            <button
-                ref={trigger}
-                onClick={toggleMenu}
-                className="dropdown-toggle inline-flex items-center rounded-full p-1 text-text-secondary hover:bg-bg-secondary hover:text-text-emphasis dark:text-text-tertiary dark:hover:bg-white/10 min-h-12 min-w-12 justify-center"
-                title="Acciones"
-                aria-label="Menú de acciones"
-            >
-                <ThreeDotsIcon className="icon-sm" />
-            </button>
-
-            <DropdownPortal
-                isOpen={isOpen}
-                onClose={() => {
-                    setIsOpen(false);
-                    setHighlighted(false);
-                    onClose();
-                }}
-                anchorEl={trigger.current}
-                className="w-40 min-w-37.5"
-            >
-                {onView && (
-                    <DropdownItem
-                        onItemClick={() => handleAction(onView)}
-                        variant="view"
-                    >
-                        <EyeIcon className="icon-md" />
-                        Ver Detalles
-                    </DropdownItem>
-                )}
-                {onEdit && (
-                    <DropdownItem
-                        onItemClick={() => handleAction(onEdit)}
-                        variant="edit"
-                    >
-                        <EditIcon className="icon-md" />
-                        Editar
-                    </DropdownItem>
-                )}
-                {onToggleStatus && (
-                    <DropdownItem
-                        onItemClick={() => handleAction(onToggleStatus)}
-                        variant={item.status ? "delete" : "restore"}
-                    >
-                        {item.status ? (
-                            <>
-                                <TrashIcon className="icon-md" />
-                                Eliminar
-                            </>
-                        ) : (
-                            <>
-                                <RefreshIcon className="icon-md" />
-                                Restaurar
-                            </>
-                        )}
-                    </DropdownItem>
-                )}
-            </DropdownPortal>
-        </div>
-    );
-};
 
 interface EnrollmentTableProps {
     data: EnrollmentRowData[];
@@ -148,6 +20,61 @@ interface EnrollmentTableProps {
 
 type SortKey = "studentName" | "careerName" | "academicTutorName" | "methodologicalTutorName" | "institutionName" | "practiceType" | "enrollmentDate";
 type SortOrder = "asc" | "desc";
+
+interface ActionButtonsProps {
+    onEdit?: () => void;
+    onToggleStatus?: () => void;
+    onView?: () => void;
+    status: boolean;
+    isMobile?: boolean;
+}
+
+const ActionButtons = ({
+    onEdit,
+    onToggleStatus,
+    onView,
+    status,
+    isMobile = false,
+}: ActionButtonsProps) => {
+    const containerClasses = isMobile 
+        ? "flex flex-col gap-3 pt-2" 
+        : "flex justify-end gap-3";
+
+    return (
+        <div className={containerClasses}>
+            {onView && (
+                <ActionButton
+                    onClick={() => onView()}
+                    icon={<EyeIcon />}
+                    tooltip="Ver Detalles"
+                    label={isMobile ? "Ver Detalles" : undefined}
+                    variant="primary"
+                    fullWidth={isMobile}
+                />
+            )}
+            {onEdit && status && (
+                <ActionButton
+                    onClick={() => onEdit()}
+                    icon={<EditIcon />}
+                    tooltip="Editar"
+                    label={isMobile ? "Editar Inscripción" : undefined}
+                    variant="primary"
+                    fullWidth={isMobile}
+                />
+            )}
+            {onToggleStatus && (
+                <ActionButton
+                    onClick={() => onToggleStatus()}
+                    icon={status ? <TrashIcon /> : <RefreshIcon />}
+                    tooltip={status ? "Eliminar" : "Restaurar"}
+                    label={isMobile ? (status ? "Eliminar Inscripción" : "Restaurar Inscripción") : undefined}
+                    variant={status ? "danger" : "success"}
+                    fullWidth={isMobile}
+                />
+            )}
+        </div>
+    );
+};
 
 export default function EnrollmentTable({
     data = [],
@@ -164,7 +91,6 @@ export default function EnrollmentTable({
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
-    const [highlightedRow, setHighlightedRow] = useState<string | null>(null);
 
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; order: SortOrder }>({
@@ -403,7 +329,7 @@ export default function EnrollmentTable({
                             paged.map((s: EnrollmentRowData) => (
                                 <TableRow 
                                     key={s.enrollmentId}
-                                    className={`${highlightedRow === s.enrollmentId ? 'bg-bg-secondary dark:bg-white/5' : ''} table-row-hover`}
+                                    className="table-row-hover"
                                 >
                                     <TableCell className="table-cell font-medium text-text-primary dark:text-text-emphasis">
                                         <div className="flex flex-col">
@@ -433,13 +359,11 @@ export default function EnrollmentTable({
                                         {s.enrollmentDate}
                                     </TableCell>
                                     <TableCell className="table-cell text-right">
-                                        <ActionMenu
-                                            item={s}
+                                        <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(s.enrollmentId) : undefined}
-                                            onOpen={() => setHighlightedRow(s.enrollmentId)}
-                                            onClose={() => setHighlightedRow(null)}
+                                            status={s.status}
                                         />
                                     </TableCell>
                                 </TableRow>
@@ -514,43 +438,13 @@ export default function EnrollmentTable({
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-col gap-3 pt-2">
-                                            {onView && (
-                                                <button
-                                                    onClick={() => onView(s)}
-                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-primary dark:text-text-secondary rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-medium dark:hover:border-border-dark"
-                                                >
-                                                    <EyeIcon className="icon-sm" /> Ver Detalles
-                                                </button>
-                                            )}
-                                            {onEdit && s.status && (
-                                                <button
-                                                    onClick={() => onEdit(s)}
-                                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold bg-bg-secondary dark:bg-white/5 text-text-primary dark:text-text-secondary rounded-xl min-h-12 active:scale-95 transition-all border border-transparent hover:border-border-medium dark:hover:border-border-dark"
-                                                >
-                                                    <EditIcon className="icon-sm" /> Editar
-                                                </button>
-                                            )}
-                                            {onToggleStatus && (
-                                                <button
-                                                     onClick={() => onToggleStatus(s.enrollmentId)}
-                                                     className={`w-full flex items-center justify-center gap-2 py-3 px-4 text-xs font-bold rounded-xl min-h-12 active:scale-95 transition-all border border-transparent ${!s.status
-                                                         ? "bg-success-50 dark:bg-success-950 text-success-600 dark:text-success-400 hover:border-success-200 dark:hover:border-success-700"
-                                                         : "bg-error-50 dark:bg-error-950 text-error-600 dark:text-error-400 hover:border-error-200 dark:hover:border-error-700"
-                                                         }`}
-                                                 >
-                                                    {!s.status ? (
-                                                        <>
-                                                            <RefreshIcon className="icon-sm" /> Restaurar
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <TrashIcon className="icon-sm" /> Eliminar
-                                                        </>
-                                                    )}
-                                                </button>
-                                            )}
-                                        </div>
+                                        <ActionButtons
+                                            onView={onView ? () => onView(s) : undefined}
+                                            onEdit={onEdit ? () => onEdit(s) : undefined}
+                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s.enrollmentId) : undefined}
+                                            status={s.status}
+                                            isMobile={true}
+                                        />
                                     </div>
                                 )}
                             </div>

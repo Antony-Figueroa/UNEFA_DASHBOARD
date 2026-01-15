@@ -199,6 +199,22 @@ export const login = async (userCi: string, password: string, ip: string, userAg
 
 export const changePassword = async (userId: number, newPassword: string, securityQuestions?: { questionId: number, answer: string }[]) => {
   return await dbManager.withRetry(async (supabase) => {
+    // 0. Registrar en historial de contraseñas (opcional pero recomendado)
+    const { data: currentKey } = await supabase
+      .from('t_user_key')
+      .select('KEY')
+      .eq('USER_ID', userId)
+      .eq('STATUS', 1)
+      .single();
+
+    if (currentKey) {
+      await supabase.from('t_password_history').insert({
+        USER_ID: userId,
+        KEY: currentKey.KEY,
+        CREATION_DATE: new Date().toISOString()
+      });
+    }
+
     const hashedPassword = await hashPassword(newPassword);
 
     // 1. Desactivar clave anterior

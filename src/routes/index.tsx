@@ -14,6 +14,7 @@ const SignUp = lazy(() => import("../pages/AuthPages/SignUp"));
 const FirstLogin = lazy(() => import("../pages/AuthPages/FirstLogin"));
 const PasswordRecovery = lazy(() => import("../pages/AuthPages/PasswordRecovery"));
 const UserProfiles = lazy(() => import("../pages/UserProfiles"));
+const UserManagementPage = lazy(() => import("../pages/Config/UserManagementPage"));
 const Calendar = lazy(() => import("../pages/Calendar"));
 const Blank = lazy(() => import("../pages/Blank"));
 const Students = lazy(() => import("../pages/Students/students"));
@@ -100,17 +101,31 @@ export const AppRoutes = () => {
             <Route path="/students" element={<Students />} />
             <Route path="/tutors" element={<Tutors />} />
             <Route path="/institutions" element={<InstitutionsPage />} />
+            
+            {/* Management */}
+            <Route path="/period" element={<Period />} />
+            <Route path="/careers" element={<CareersPage />} />
+            <Route path="/crud-example" element={<CrudExample />} />
+            
+            {/* Process */}
             <Route path="/pre-enrollment" element={<PreEnrollmentPage />} />
             <Route path="/enrollment" element={<EnrollmentPage />} />
             <Route path="/tracking" element={<TrackingPage />} />
-            <Route path="/tracking/visits/:id" element={<VisitRegistration />} />
+            <Route path="/visit-registration" element={<VisitRegistration />} />
+
+            {/* Configuration - Only for Admin (Role 1) */}
+            <Route 
+              path="/configure/users" 
+              element={
+                <ProtectedRoute allowedRoles={[1]}>
+                  <UserManagementPage />
+                </ProtectedRoute>
+              } 
+            />
             
             {/* Forms & Tables */}
             <Route path="/form-elements" element={<FormElements />} />
             <Route path="/basic-tables" element={<BasicTables />} />
-            <Route path="/period" element={<Period />} />
-            <Route path="/careers" element={<CareersPage />} />
-            <Route path="/crud-example" element={<CrudExample />} />
             
             {/* UI Elements */}
             <Route path="/alerts" element={<Alerts />} />

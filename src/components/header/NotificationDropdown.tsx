@@ -22,7 +22,7 @@ export default function NotificationDropdown() {
   return (
     <div className="relative">
       <button
-        className="relative flex items-center justify-center transition-colors rounded-full text-text-secondary bg-bg-main border border-border-light dropdown-toggle hover:text-text-emphasis h-9 w-9 hover:bg-bg-secondary dark:border-border-dark dark:bg-bg-dark dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-text-emphasis"
+        className="relative flex items-center justify-center transition-all duration-200 rounded-full text-text-secondary bg-bg-main border border-border-light dropdown-toggle hover:text-text-emphasis h-9 w-9 hover:bg-bg-secondary dark:border-border-dark dark:bg-bg-dark dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-text-emphasis"
         onClick={handleClick}
       >
         <span
@@ -57,7 +57,7 @@ export default function NotificationDropdown() {
           </h5>
           <button
             onClick={toggleDropdown}
-            className="transition text-text-secondary dark:text-text-tertiary hover:text-text-emphasis dark:hover:text-text-emphasis"
+            className="transition-all duration-200 text-text-secondary dark:text-text-tertiary hover:text-text-emphasis dark:hover:text-text-emphasis"
           >
             <svg
               className="fill-current"
@@ -80,7 +80,7 @@ export default function NotificationDropdown() {
           <li>
             <DropdownItem
               onItemClick={closeDropdown}
-              className="flex gap-3 rounded-lg border-b border-border-light p-3 px-4.5 py-3 hover:bg-bg-secondary dark:border-border-dark dark:hover:bg-white/5"
+              className="flex gap-3 rounded-lg border-b border-border-light p-3 px-4.5 py-3 hover:bg-brand-500 hover:text-white group dark:border-border-dark dark:hover:bg-brand-500 dark:hover:text-white"
             >
               <span className="relative block w-full h-9 rounded-full z-1 max-w-9">
                 <img
@@ -94,19 +94,19 @@ export default function NotificationDropdown() {
               </span>
 
               <span className="block">
-                <span className="mb-1.5 block  text-theme-sm text-text-secondary dark:text-text-tertiary space-x-1">
-                  <span className="font-medium text-text-emphasis dark:text-text-emphasis">
+                <span className="mb-1.5 block text-theme-sm text-text-secondary group-hover:text-white dark:text-text-tertiary dark:group-hover:text-white space-x-1">
+                  <span className="font-medium text-text-emphasis group-hover:text-white dark:text-text-emphasis dark:group-hover:text-white">
                     Terry Franci
                   </span>
                   <span> requests permission to change</span>
-                  <span className="font-medium text-text-emphasis dark:text-text-emphasis">
+                  <span className="font-medium text-text-emphasis group-hover:text-white dark:text-text-emphasis dark:group-hover:text-white">
                     Project - Nganter App
                   </span>
                 </span>
 
-                <span className="flex items-center gap-2 text-text-secondary text-theme-xs dark:text-text-tertiary">
+                <span className="flex items-center gap-2 text-text-secondary group-hover:text-white text-theme-xs dark:text-text-tertiary dark:group-hover:text-white">
                   <span>Project</span>
-                  <span className="w-1 h-1 rounded-full bg-border-medium"></span>
+                  <span className="w-1 h-1 rounded-full bg-border-medium group-hover:bg-white"></span>
                   <span>5 min ago</span>
                 </span>
               </span>
@@ -116,7 +116,7 @@ export default function NotificationDropdown() {
           <li>
             <DropdownItem
               onItemClick={closeDropdown}
-              className="flex gap-3 rounded-lg border-b border-border-light p-3 px-4.5 py-3 hover:bg-bg-secondary dark:border-border-dark dark:hover:bg-white/5"
+              className="flex gap-3 rounded-lg border-b border-border-light p-3 px-4.5 py-3 hover:bg-brand-500 hover:text-white group dark:border-border-dark dark:hover:bg-brand-500 dark:hover:text-white"
             >
               <span className="relative block w-full h-9 rounded-full z-1 max-w-9">
                 <img
@@ -130,19 +130,19 @@ export default function NotificationDropdown() {
               </span>
 
               <span className="block">
-                <span className="mb-1.5 block space-x-1 text-theme-sm text-text-secondary dark:text-text-tertiary">
-                  <span className="font-medium text-text-emphasis dark:text-text-emphasis">
+                <span className="mb-1.5 block space-x-1 text-theme-sm text-text-secondary group-hover:text-white dark:text-text-tertiary dark:group-hover:text-white">
+                  <span className="font-medium text-text-emphasis group-hover:text-white dark:text-text-emphasis dark:group-hover:text-white">
                     Alena Franci
                   </span>
                   <span>requests permission to change</span>
-                  <span className="font-medium text-text-emphasis dark:text-text-emphasis">
+                  <span className="font-medium text-text-emphasis group-hover:text-white dark:text-text-emphasis dark:group-hover:text-white">
                     Project - Nganter App
                   </span>
                 </span>
 
-                <span className="flex items-center gap-2 text-text-secondary text-theme-xs dark:text-text-tertiary">
+                <span className="flex items-center gap-2 text-text-secondary group-hover:text-white text-theme-xs dark:text-text-tertiary dark:group-hover:text-white">
                   <span>Project</span>
-                  <span className="w-1 h-1 rounded-full bg-border-medium"></span>
+                  <span className="w-1 h-1 rounded-full bg-border-medium group-hover:bg-white"></span>
                   <span>8 min ago</span>
                 </span>
               </span>
@@ -152,7 +152,7 @@ export default function NotificationDropdown() {
           <li>
             <DropdownItem
               onItemClick={closeDropdown}
-              className="flex gap-3 rounded-lg border-b border-border-light p-3 px-4.5 py-3 hover:bg-bg-secondary dark:border-border-dark dark:hover:bg-white/5"
+              className="flex gap-3 rounded-lg border-b border-border-light p-3 px-4.5 py-3 hover:bg-brand-500 hover:text-white group dark:border-border-dark dark:hover:bg-brand-500 dark:hover:text-white"
             >
               <span className="relative block w-full h-9 rounded-full z-1 max-w-9">
                 <img
@@ -166,19 +166,19 @@ export default function NotificationDropdown() {
               </span>
 
               <span className="block">
-                <span className="mb-1.5 block space-x-1 text-theme-sm text-text-secondary dark:text-text-tertiary">
-                  <span className="font-medium text-text-emphasis dark:text-text-emphasis">
+                <span className="mb-1.5 block space-x-1 text-theme-sm text-text-secondary group-hover:text-white dark:text-text-tertiary dark:group-hover:text-white">
+                  <span className="font-medium text-text-emphasis group-hover:text-white dark:text-text-emphasis dark:group-hover:text-white">
                     Jocelyn Kenter
                   </span>
                   <span> requests permission to change</span>
-                  <span className="font-medium text-text-emphasis dark:text-text-emphasis">
+                  <span className="font-medium text-text-emphasis group-hover:text-white dark:text-text-emphasis dark:group-hover:text-white">
                     Project - Nganter App
                   </span>
                 </span>
 
-                <span className="flex items-center gap-2 text-text-secondary text-theme-xs dark:text-text-tertiary">
+                <span className="flex items-center gap-2 text-text-secondary group-hover:text-white text-theme-xs dark:text-text-tertiary dark:group-hover:text-white">
                   <span>Project</span>
-                  <span className="w-1 h-1 rounded-full bg-border-medium"></span>
+                  <span className="w-1 h-1 rounded-full bg-border-medium group-hover:bg-white"></span>
                   <span>15 min ago</span>
                 </span>
               </span>
@@ -188,7 +188,7 @@ export default function NotificationDropdown() {
           <li>
             <DropdownItem
               onItemClick={closeDropdown}
-              className="flex gap-3 rounded-lg border-b border-border-light p-3 px-4.5 py-3 hover:bg-bg-secondary dark:border-border-dark dark:hover:bg-white/5"
+              className="flex gap-3 rounded-lg border-b border-border-light p-3 px-4.5 py-3 hover:bg-brand-500 hover:text-white group dark:border-border-dark dark:hover:bg-brand-500 dark:hover:text-white"
               to="/"
             >
               <span className="relative block w-full h-9 rounded-full z-1 max-w-9">
@@ -203,19 +203,19 @@ export default function NotificationDropdown() {
               </span>
 
               <span className="block">
-                <span className="mb-1.5 space-x-1 block text-theme-sm text-text-secondary dark:text-text-tertiary">
-                  <span className="font-medium text-text-emphasis dark:text-text-emphasis">
+                <span className="mb-1.5 space-x-1 block text-theme-sm text-text-secondary group-hover:text-white dark:text-text-tertiary dark:group-hover:text-white">
+                  <span className="font-medium text-text-emphasis group-hover:text-white dark:text-text-emphasis dark:group-hover:text-white">
                     Brandon Philips
                   </span>
                   <span>requests permission to change</span>
-                  <span className="font-medium text-text-emphasis dark:text-text-emphasis">
+                  <span className="font-medium text-text-emphasis group-hover:text-white dark:text-text-emphasis dark:group-hover:text-white">
                     Project - Nganter App
                   </span>
                 </span>
 
-                <span className="flex items-center gap-2 text-text-secondary text-theme-xs dark:text-text-tertiary">
+                <span className="flex items-center gap-2 text-text-secondary group-hover:text-white text-theme-xs dark:text-text-tertiary dark:group-hover:text-white">
                   <span>Project</span>
-                  <span className="w-1 h-1 rounded-full bg-border-medium"></span>
+                  <span className="w-1 h-1 rounded-full bg-border-medium group-hover:bg-white"></span>
                   <span>1 hr ago</span>
                 </span>
               </span>
@@ -224,7 +224,7 @@ export default function NotificationDropdown() {
 
           <li>
             <DropdownItem
-              className="flex gap-3 rounded-lg border-b border-border-light p-3 px-4.5 py-3 hover:bg-bg-secondary dark:border-border-dark dark:hover:bg-white/5"
+              className="flex gap-3 rounded-lg border-b border-border-light p-3 px-4.5 py-3 hover:bg-brand-500 hover:text-white group dark:border-border-dark dark:hover:bg-brand-500 dark:hover:text-white"
               onItemClick={closeDropdown}
             >
               <span className="relative block w-full h-10 rounded-full z-1 max-w-10">
@@ -239,19 +239,19 @@ export default function NotificationDropdown() {
               </span>
 
               <span className="block">
-                <span className="mb-1.5 block space-x-1 text-theme-sm text-text-secondary dark:text-text-tertiary">
-                  <span className="font-medium text-text-emphasis dark:text-text-emphasis">
+                <span className="mb-1.5 block space-x-1 text-theme-sm text-text-secondary group-hover:text-white dark:text-text-tertiary dark:group-hover:text-white">
+                  <span className="font-medium text-text-emphasis group-hover:text-white dark:text-text-emphasis dark:group-hover:text-white">
                     Terry Franci
                   </span>
                   <span> requests permission to change</span>
-                  <span className="font-medium text-text-emphasis dark:text-text-emphasis">
+                  <span className="font-medium text-text-emphasis group-hover:text-white dark:text-text-emphasis dark:group-hover:text-white">
                     Project - Nganter App
                   </span>
                 </span>
 
-                <span className="flex items-center gap-2 text-text-secondary text-theme-xs dark:text-text-tertiary">
+                <span className="flex items-center gap-2 text-text-secondary group-hover:text-white text-theme-xs dark:text-text-tertiary dark:group-hover:text-white">
                   <span>Project</span>
-                  <span className="w-1 h-1 rounded-full bg-border-medium"></span>
+                  <span className="w-1 h-1 rounded-full bg-border-medium group-hover:bg-white"></span>
                   <span>5 min ago</span>
                 </span>
               </span>
@@ -261,7 +261,7 @@ export default function NotificationDropdown() {
           <li>
             <DropdownItem
               onItemClick={closeDropdown}
-              className="flex gap-3 rounded-lg border-b border-border-light p-3 px-4.5 py-3 hover:bg-bg-secondary dark:border-border-dark dark:hover:bg-white/5"
+              className="flex gap-3 rounded-lg border-b border-border-light p-3 px-4.5 py-3 hover:bg-brand-500 hover:text-white group dark:border-border-dark dark:hover:bg-brand-500 dark:hover:text-white"
             >
               <span className="relative block w-full h-10 rounded-full z-1 max-w-10">
                 <img
@@ -275,19 +275,19 @@ export default function NotificationDropdown() {
               </span>
 
               <span className="block">
-                <span className="mb-1.5 block space-x-1 text-theme-sm text-text-secondary dark:text-text-tertiary">
-                  <span className="font-medium text-text-emphasis dark:text-text-emphasis">
+                <span className="mb-1.5 block space-x-1 text-theme-sm text-text-secondary group-hover:text-white dark:text-text-tertiary dark:group-hover:text-white">
+                  <span className="font-medium text-text-emphasis group-hover:text-white dark:text-text-emphasis dark:group-hover:text-white">
                     Alena Franci
                   </span>
                   <span> requests permission to change</span>
-                  <span className="font-medium text-text-emphasis dark:text-text-emphasis">
+                  <span className="font-medium text-text-emphasis group-hover:text-white dark:text-text-emphasis dark:group-hover:text-white">
                     Project - Nganter App
                   </span>
                 </span>
 
-                <span className="flex items-center gap-2 text-text-secondary text-theme-xs dark:text-text-tertiary">
+                <span className="flex items-center gap-2 text-text-secondary group-hover:text-white text-theme-xs dark:text-text-tertiary dark:group-hover:text-white">
                   <span>Project</span>
-                  <span className="w-1 h-1 rounded-full bg-border-medium"></span>
+                  <span className="w-1 h-1 rounded-full bg-border-medium group-hover:bg-white"></span>
                   <span>8 min ago</span>
                 </span>
               </span>
@@ -297,7 +297,7 @@ export default function NotificationDropdown() {
           <li>
             <DropdownItem
               onItemClick={closeDropdown}
-              className="flex gap-3 rounded-lg border-b border-border-light p-3 px-4.5 py-3 hover:bg-bg-secondary dark:border-border-dark dark:hover:bg-white/5"
+              className="flex gap-3 rounded-lg border-b border-border-light p-3 px-4.5 py-3 hover:bg-brand-500 hover:text-white group dark:border-border-dark dark:hover:bg-brand-500 dark:hover:text-white"
             >
               <span className="relative block w-full h-10 rounded-full z-1 max-w-10">
                 <img
@@ -311,19 +311,19 @@ export default function NotificationDropdown() {
               </span>
 
               <span className="block">
-                <span className="mb-1.5 block  space-x-1 text-theme-sm text-text-secondary dark:text-text-tertiary">
-                  <span className="font-medium text-text-emphasis dark:text-text-emphasis">
+                <span className="mb-1.5 block  space-x-1 text-theme-sm text-text-secondary group-hover:text-white dark:text-text-tertiary dark:group-hover:text-white">
+                  <span className="font-medium text-text-emphasis group-hover:text-white dark:text-text-emphasis dark:group-hover:text-white">
                     Jocelyn Kenter
                   </span>
                   <span> requests permission to change</span>
-                  <span className="font-medium text-text-emphasis dark:text-text-emphasis">
+                  <span className="font-medium text-text-emphasis group-hover:text-white dark:text-text-emphasis dark:group-hover:text-white">
                     Project - Nganter App
                   </span>
                 </span>
 
-                <span className="flex items-center gap-2 text-text-secondary text-theme-xs dark:text-text-tertiary">
+                <span className="flex items-center gap-2 text-text-secondary group-hover:text-white text-theme-xs dark:text-text-tertiary dark:group-hover:text-white">
                   <span>Project</span>
-                  <span className="w-1 h-1 rounded-full bg-border-medium"></span>
+                  <span className="w-1 h-1 rounded-full bg-border-medium group-hover:bg-white"></span>
                   <span>15 min ago</span>
                 </span>
               </span>
@@ -333,7 +333,7 @@ export default function NotificationDropdown() {
           <li>
             <DropdownItem
               onItemClick={closeDropdown}
-              className="flex gap-3 rounded-lg border-b border-border-light p-3 px-4.5 py-3 hover:bg-bg-secondary dark:border-border-dark dark:hover:bg-white/5"
+              className="flex gap-3 rounded-lg border-b border-border-light p-3 px-4.5 py-3 hover:bg-brand-500 hover:text-white group dark:border-border-dark dark:hover:bg-brand-500 dark:hover:text-white"
             >
               <span className="relative block w-full h-10 rounded-full z-1 max-w-10">
                 <img
@@ -347,19 +347,19 @@ export default function NotificationDropdown() {
               </span>
 
               <span className="block">
-                <span className="mb-1.5 block space-x-1 text-theme-sm text-text-secondary dark:text-text-tertiary">
-                  <span className="font-medium text-text-emphasis dark:text-text-emphasis">
+                <span className="mb-1.5 block space-x-1 text-theme-sm text-text-secondary group-hover:text-white dark:text-text-tertiary dark:group-hover:text-white">
+                  <span className="font-medium text-text-emphasis group-hover:text-white dark:text-text-emphasis dark:group-hover:text-white">
                     Brandon Philips
                   </span>
-                  <span>requests permission to change</span>
-                  <span className="font-medium text-text-emphasis dark:text-text-emphasis">
+                  <span> requests permission to change</span>
+                  <span className="font-medium text-text-emphasis group-hover:text-white dark:text-text-emphasis dark:group-hover:text-white">
                     Project - Nganter App
                   </span>
                 </span>
 
-                <span className="flex items-center gap-2 text-text-secondary text-theme-xs dark:text-text-tertiary">
+                <span className="flex items-center gap-2 text-text-secondary group-hover:text-white text-theme-xs dark:text-text-tertiary dark:group-hover:text-white">
                   <span>Project</span>
-                  <span className="w-1 h-1 rounded-full bg-border-medium"></span>
+                  <span className="w-1 h-1 rounded-full bg-border-medium group-hover:bg-white"></span>
                   <span>1 hr ago</span>
                 </span>
               </span>
@@ -369,7 +369,7 @@ export default function NotificationDropdown() {
         </ul>
         <Link
           to="/"
-          className="block px-4 py-2 mt-3 text-sm font-medium text-center rounded-lg text-text-primary bg-bg-main border border-border-light hover:bg-bg-secondary dark:border-border-dark dark:bg-bg-dark dark:text-text-tertiary dark:hover:bg-white/10"
+          className="block px-4 py-2 mt-3 text-sm font-medium text-center rounded-lg text-text-primary bg-bg-main border border-border-light hover:bg-brand-500 hover:text-white dark:border-border-dark dark:bg-bg-dark dark:text-text-tertiary dark:hover:bg-brand-500 dark:hover:text-white transition-colors"
         >
           View All Notifications
         </Link>

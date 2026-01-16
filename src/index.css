@@ -184,8 +184,8 @@
   --color-action-edit: var(--color-brand-500);
   --color-action-delete: var(--color-error-600);
   --color-action-restore: var(--color-success-600);
-  --color-action-hover-bg: var(--color-gray-100);
-  --color-action-dark-hover-bg: rgba(255, 255, 255, 0.05);
+  --color-action-hover-bg: var(--color-brand-500);
+  --color-action-dark-hover-bg: var(--color-brand-500);
 
   --shadow-theme-md: 0px 2px 3px rgba(0, 0, 0, 0.1);
   --shadow-theme-lg: 0px 3px 5px rgba(0, 0, 0, 0.1);
@@ -307,7 +307,7 @@
 }
 
 @utility menu-item {
-  @apply relative flex items-center w-full gap-3 px-3 py-2 font-medium rounded-lg text-theme-sm;
+  @apply relative flex items-center w-full gap-3 px-3 py-2 font-medium rounded-lg text-theme-sm transition-all duration-200;
 }
 
 @utility action-menu-item {
@@ -315,11 +315,11 @@
 }
 
 @utility menu-item-active {
-  @apply bg-brand-50 text-brand-500 dark:bg-brand-500/12 dark:text-brand-400;
+  @apply bg-brand-500 text-white dark:bg-brand-500 dark:text-white;
 }
 
 @utility menu-item-inactive {
-  @apply text-text-secondary hover:bg-bg-secondary group-hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-text-tertiary;
+  @apply text-text-secondary hover:bg-brand-500 hover:text-white group-hover:text-white dark:text-text-tertiary dark:hover:bg-brand-500 dark:hover:text-white dark:group-hover:text-white;
 }
 
 @utility menu-item-icon {
@@ -327,7 +327,7 @@
 }
 
 @utility menu-item-icon-active {
-  @apply text-brand-500 dark:text-brand-400;
+  @apply text-white dark:text-white;
 }
 
 @utility menu-item-icon-size {
@@ -337,7 +337,7 @@
 }
 
 @utility menu-item-icon-inactive {
-  @apply text-text-secondary group-hover:text-text-primary dark:text-text-tertiary dark:group-hover:text-text-tertiary;
+  @apply text-text-secondary group-hover:text-white dark:text-text-tertiary dark:group-hover:text-white;
 }
 
 @utility menu-item-arrow {
@@ -345,23 +345,23 @@
 }
 
 @utility menu-item-arrow-active {
-  @apply rotate-180 text-brand-500 dark:text-brand-400;
+  @apply rotate-180 text-white dark:text-white;
 }
 
 @utility menu-item-arrow-inactive {
-  @apply text-text-secondary group-hover:text-text-primary dark:text-text-tertiary dark:group-hover:text-text-tertiary;
+  @apply text-text-secondary group-hover:text-white dark:text-text-tertiary dark:group-hover:text-white;
 }
 
 @utility menu-dropdown-item {
-  @apply relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-theme-sm font-medium;
+  @apply relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-theme-sm font-medium transition-all duration-200;
 }
 
 @utility menu-dropdown-item-active {
-  @apply bg-brand-50 text-brand-500 dark:bg-brand-500/12 dark:text-brand-400;
+  @apply bg-brand-500 text-white dark:bg-brand-500 dark:text-white;
 }
 
 @utility menu-dropdown-item-inactive {
-  @apply text-text-secondary hover:bg-bg-secondary dark:text-text-tertiary dark:hover:bg-white/5;
+  @apply text-text-secondary hover:bg-brand-500 hover:text-white dark:text-text-tertiary dark:hover:bg-brand-500 dark:hover:text-white;
 }
 
 @utility menu-dropdown-badge {
@@ -496,7 +496,7 @@
 }
 
 @utility table-row-hover {
-  @apply hover:bg-bg-secondary dark:hover:bg-white/5;
+  @apply even:bg-gray-100/50 hover:bg-gray-100 dark:even:bg-white/3 dark:hover:bg-white/8;
 }
 
 @utility skeleton {

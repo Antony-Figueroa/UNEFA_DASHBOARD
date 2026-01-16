@@ -1,5 +1,6 @@
 import type React from "react";
 import { useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface DropdownProps {
   isOpen: boolean;
@@ -33,14 +34,20 @@ export const Dropdown: React.FC<DropdownProps> = ({
     };
   }, [onClose]);
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      ref={dropdownRef}
-      className={`absolute z-40  right-0 mt-2  rounded-xl border border-border-light bg-bg-main  shadow-theme-lg dark:border-border-dark dark:bg-bg-dark ${className}`}
-    >
-      {children}
-    </div>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          ref={dropdownRef}
+          initial={{ opacity: 0, y: -10, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -10, scale: 0.95 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className={`absolute z-40 right-0 mt-2 rounded-xl border border-border-light bg-bg-main shadow-theme-lg dark:border-border-dark dark:bg-bg-dark ${className}`}
+        >
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

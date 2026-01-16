@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import UserMetaCard from "../UserMetaCard";
 import { ThemeProvider } from "../../../context/ThemeContext";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../context/auth";
 import { SidebarProvider } from "../../../context/SidebarContext";
 import { ToastProvider } from "../../../context/ToastContext";
 

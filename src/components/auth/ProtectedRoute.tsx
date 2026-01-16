@@ -1,6 +1,6 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth";
 import PageLoader from "../ui/loader";
 
 interface ProtectedRouteProps {

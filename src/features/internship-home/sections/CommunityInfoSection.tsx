@@ -25,27 +25,6 @@ const sectors: Sector[] = [
     category: "Ingeniería",
   },
   {
-    title: "AZÚCAR",
-    image: "/unefa-img/azucar.jpg",
-    color: "warning",
-    extension: "Extensión Acarigua",
-    category: "Ingeniería",
-  },
-  {
-    title: "GAS",
-    image: "/unefa-img/gas.jpg",
-    color: "error",
-    extension: "Extensión Acarigua",
-    category: "Ingeniería",
-  },
-  {
-    title: "ECONOMÍA SOCIAL",
-    image: "/unefa-img/economia.jpg",
-    color: "success",
-    extension: "Extensión Acarigua",
-    category: "Licenciatura",
-  },
-  {
     title: "ENFERMERÍA",
     image: "/unefa-img/enfermeria.jpg",
     color: "info",
@@ -73,9 +52,6 @@ const CommunityInfoSection: React.FC = () => {
   const allowedCareers = [
     "AGRONÓMICA",
     "AGROINDUSTRIAL",
-    "AZÚCAR",
-    "GAS",
-    "ECONOMÍA SOCIAL",
     "ENFERMERÍA",
   ];
 

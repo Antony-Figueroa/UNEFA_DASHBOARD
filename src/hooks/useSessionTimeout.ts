@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/auth';
 
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutos
 

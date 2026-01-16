@@ -3,7 +3,7 @@ import UserMetaCard from "../components/UserProfile/UserMetaCard";
 import UserInfoCard from "../components/UserProfile/UserInfoCard";
 import PageMeta from "../components/common/PageMeta";
 import { SkeletonLoader, ProfileSkeleton, BreadcrumbSkeleton } from "../components/ui/skeleton";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/auth";
 
 export default function UserProfiles() {
   const { loading: isLoading } = useAuth();

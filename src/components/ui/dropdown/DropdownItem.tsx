@@ -17,7 +17,7 @@ export const DropdownItem: React.FC<DropdownItemProps> = ({
   to,
   onClick,
   onItemClick,
-  baseClassName = "block w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-bg-secondary hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-text-emphasis",
+  baseClassName = "block w-full text-left px-4 py-2 text-sm text-text-secondary hover:bg-brand-500 hover:text-white dark:text-text-tertiary dark:hover:bg-brand-500 dark:hover:text-white transition-all duration-200",
   className = "",
   variant = "default",
   children,
@@ -25,13 +25,13 @@ export const DropdownItem: React.FC<DropdownItemProps> = ({
   const getVariantClasses = () => {
     switch (variant) {
       case "view":
-        return "action-menu-item text-[var(--color-action-view)] hover:bg-[var(--color-action-hover-bg)] dark:hover:bg-[var(--color-action-dark-hover-bg)]";
+        return "action-menu-item text-[var(--color-action-view)] hover:bg-[var(--color-action-hover-bg)] hover:text-white dark:hover:bg-[var(--color-action-dark-hover-bg)] dark:hover:text-white";
       case "edit":
-        return "action-menu-item text-[var(--color-action-edit)] hover:bg-[var(--color-action-hover-bg)] dark:hover:bg-[var(--color-action-dark-hover-bg)]";
+        return "action-menu-item text-[var(--color-action-edit)] hover:bg-[var(--color-action-hover-bg)] hover:text-white dark:hover:bg-[var(--color-action-dark-hover-bg)] dark:hover:text-white";
       case "delete":
-        return "action-menu-item text-[var(--color-action-delete)] hover:bg-red-50 dark:hover:bg-red-500/10";
+        return "action-menu-item text-[var(--color-action-delete)] hover:bg-red-500 hover:text-white dark:hover:bg-red-500 dark:hover:text-white";
       case "restore":
-        return "action-menu-item text-[var(--color-action-restore)] hover:bg-green-50 dark:hover:bg-green-500/10";
+        return "action-menu-item text-[var(--color-action-restore)] hover:bg-green-500 hover:text-white dark:hover:bg-green-500 dark:hover:text-white";
       default:
         return "";
     }

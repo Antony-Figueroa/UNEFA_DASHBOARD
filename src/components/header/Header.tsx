@@ -36,7 +36,7 @@ const Header: React.FC<HeaderProps> = ({ onToggle, onClick }) => {
             />
           </Link>
           <button
-            className="block w-9 h-9 text-text-secondary lg:hidden dark:text-text-tertiary"
+            className="block w-9 h-9 text-text-secondary lg:hidden dark:text-text-tertiary transition-all duration-200"
             onClick={onToggle}
           >
             {/* Hamburger Icon */}
@@ -74,7 +74,7 @@ const Header: React.FC<HeaderProps> = ({ onToggle, onClick }) => {
           </button>
           <button
             onClick={onClick}
-            className="items-center justify-center hidden w-9 h-9 text-text-secondary border-border-light rounded-lg z-99999 dark:border-border-dark lg:flex dark:text-text-tertiary lg:h-10 lg:w-10 lg:border"
+            className="items-center justify-center hidden w-9 h-9 text-text-secondary border-border-light rounded-lg z-99999 dark:border-border-dark lg:flex dark:text-text-tertiary lg:h-10 lg:w-10 lg:border transition-all duration-200"
           >
             <svg
               className="hidden fill-current lg:block"

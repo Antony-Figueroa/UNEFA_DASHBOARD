@@ -1,26 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import * as authService from "../features/auth/services/authService";
-
-interface AuthUser {
-  id: number;
-  userCi: string;
-  name: string;
-  secondName?: string;
-  surname: string;
-  secondSurname?: string;
-  email: string;
-  phoneNumber?: string;
-  role: number;
-}
-
-interface AuthContextType {
-  user: AuthUser | null;
-  loading: boolean;
-  signOut: () => Promise<void>;
-  checkAuth: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { AuthContext, type AuthUser } from "./auth";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -42,6 +22,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    // Evitar verificaciones de autenticación en páginas públicas
+    // para prevenir intentos de conexión a la base de datos innecesarios al cargar
+    const publicPaths = ['/', '/signin', '/signup', '/first-login', '/forgot-password'];
+    const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
+    
+    if (publicPaths.includes(currentPath)) {
+      setLoading(false);
+      return;
+    }
     checkAuth();
   }, []);
 
@@ -60,12 +49,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
 };

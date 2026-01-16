@@ -76,30 +76,6 @@ const GraduateStatsSection: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            <div className="bg-bg-secondary dark:bg-white/5 p-8 rounded-2xl border border-border-light dark:border-border-dark shadow-theme-md">
-              <h3 className="text-2xl font-bold text-text-emphasis mb-6 flex items-center gap-3">
-                <span className="h-8 w-1.5 bg-[#2d90c4] rounded-full" />
-                Cronología Operativa
-              </h3>
-              <div className="relative border-l-2 border-[#2d90c4]/30 ml-3 space-y-8 pb-1">
-                <div className="relative pl-8">
-                  <div className="absolute -left-2.25 top-1 h-4 w-4 rounded-full bg-[#2d90c4]" />
-                  <p className="text-xs font-bold text-[#2d90c4] uppercase">Año 2008</p>
-                  <h4 className="font-bold text-text-primary">Primeras Cohortes de Prácticas</h4>
-                </div>
-                <div className="relative pl-8">
-                  <div className="absolute -left-2.25 top-1 h-4 w-4 rounded-full bg-[#2d90c4]" />
-                  <p className="text-xs font-bold text-[#2d90c4] uppercase">Año 2015</p>
-                  <h4 className="font-bold text-text-primary">Máximo Histórico de Activos (1,366)</h4>
-                </div>
-                <div className="relative pl-8">
-                  <div className="absolute -left-2.25 top-1 h-4 w-4 rounded-full bg-[#2d90c4]" />
-                  <p className="text-xs font-bold text-[#2d90c4] uppercase">2025</p>
-                  <h4 className="font-bold text-text-primary">Consolidación Sector Agroindustrial</h4>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div className="bg-bg-secondary dark:bg-white/5 p-8 rounded-3xl border border-border-light dark:border-border-dark shadow-theme-md">
@@ -117,9 +93,9 @@ const GraduateStatsSection: React.FC = () => {
                 <div>
                   <h4 className="font-bold text-text-primary">Principales Sectores de Colocación</h4>
                   <div className="grid grid-cols-1 gap-2 mt-2">
-                    <p className="text-xs text-text-secondary"><span className="font-bold">Agroindustrial:</span> Centrales azucareros, plantas de arroz y silos.</p>
-                    <p className="text-xs text-text-secondary"><span className="font-bold">Sector Público:</span> Alcaldías, institutos autónomos y seguridad.</p>
-                    <p className="text-xs text-text-secondary"><span className="font-bold">Sector Salud:</span> Hospitales y ambulatorios (Páez y Araure).</p>
+                    <p className="text-xs text-text-secondary"><span className="font-bold">Agroindustrial y Agronómico:</span> Centrales azucareros, plantas de arroz, silos y unidades de producción.</p>
+                    <p className="text-xs text-text-secondary"><span className="font-bold">Sector Salud:</span> Hospitales, ambulatorios y centros asistenciales (Enfermería).</p>
+                    <p className="text-xs text-text-secondary"><span className="font-bold">Sector Público y Privado:</span> Alcaldías e instituciones de desarrollo regional.</p>
                   </div>
                 </div>
               </li>

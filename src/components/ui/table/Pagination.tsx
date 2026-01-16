@@ -66,7 +66,7 @@ export const Pagination: React.FC<PaginationProps> = ({
                 <button
                     onClick={() => onPageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="p-2 text-text-secondary hover:bg-bg-secondary dark:hover:bg-white/5 rounded-lg disabled:opacity-30 transition-colors min-h-11 min-w-11 flex items-center justify-center"
+                    className="p-2 text-text-secondary hover:bg-brand-500 hover:text-white dark:hover:bg-brand-500 dark:hover:text-white rounded-lg disabled:opacity-30 transition-colors min-h-11 min-w-11 flex items-center justify-center"
                     aria-label="Página siguiente"
                 >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

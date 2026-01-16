@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/auth";
 
 // Assume these icons are imported from an icon library
 import {
   BoxCubeIcon,
-  CalenderIcon,
   ChevronDownIcon,
   GridIcon,
   HorizontaLDots,
-  ListIcon,
-  PageIcon,
   PieChartIcon,
   PlugInIcon,
   TableIcon,
@@ -86,71 +83,6 @@ const navItems: NavItem[] = [
   },
 ];
 
-const bibliotecaItems: NavItem[] = [
-  {
-    icon: <GridIcon />,
-    name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/dashboard", pro: false }],
-  },
-  {
-    icon: <CalenderIcon />,
-    name: "Calendar",
-    path: "/calendar",
-  },
-  {
-    icon: <UserCircleIcon />,
-    name: "User Profile",
-    path: "/profile",
-  },
-  {
-    name: "Forms",
-    icon: <ListIcon />,
-    subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
-  },
-  {
-    name: "Tables",
-    icon: <TableIcon />,
-    subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
-  },
-  {
-    name: "Pages",
-    icon: <PageIcon />,
-    subItems: [
-      { name: "Blank Page", path: "/blank", pro: false },
-      { name: "Plantilla CRUD", path: "/crud-example", pro: false },
-      { name: "404 Error", path: "/error-404", pro: false },
-    ],
-  },
-  {
-    icon: <PieChartIcon />,
-    name: "Charts",
-    subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false },
-      { name: "Bar Chart", path: "/bar-chart", pro: false },
-    ],
-  },
-  {
-    icon: <BoxCubeIcon />,
-    name: "UI Elements",
-    subItems: [
-      { name: "Alerts", path: "/alerts", pro: false },
-      { name: "Avatar", path: "/avatars", pro: false },
-      { name: "Badge", path: "/badge", pro: false },
-      { name: "Buttons", path: "/buttons", pro: false },
-      { name: "Images", path: "/images", pro: false },
-      { name: "Videos", path: "/videos", pro: false },
-    ],
-  },
-  {
-    icon: <PlugInIcon />,
-    name: "Authentication",
-    subItems: [
-      { name: "Sign In", path: "/signin", pro: false },
-      { name: "Sign Up", path: "/signup", pro: false },
-    ],
-  },
-];
-
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const { user } = useAuth();
@@ -167,14 +99,11 @@ const AppSidebar: React.FC = () => {
     })
   }));
 
-  const [openSubmenu, setOpenSubmenu] = useState<{
-    type: "main" | "biblioteca";
-    index: number;
-  } | null>(null);
-  const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
+  const [openSubmenu, setOpenSubmenu] = useState<number | null>(null);
+  const [subMenuHeight, setSubMenuHeight] = useState<Record<number, number>>(
     {}
   );
-  const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const subMenuRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   // const isActive = (path: string) => location.pathname === path;
   const isActive = useCallback(
@@ -184,21 +113,15 @@ const AppSidebar: React.FC = () => {
 
   useEffect(() => {
     let submenuMatched = false;
-    ["main", "biblioteca"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : bibliotecaItems;
-      items.forEach((nav, index) => {
-        if (nav.subItems) {
-          nav.subItems.forEach((subItem) => {
-            if (isActive(subItem.path)) {
-              setOpenSubmenu({
-                type: menuType as "main" | "biblioteca",
-                index,
-              });
-              submenuMatched = true;
-            }
-          });
-        }
-      });
+    navItems.forEach((nav, index) => {
+      if (nav.subItems) {
+        nav.subItems.forEach((subItem) => {
+          if (isActive(subItem.path)) {
+            setOpenSubmenu(index);
+            submenuMatched = true;
+          }
+        });
+      }
     });
 
     if (!submenuMatched) {
@@ -208,37 +131,32 @@ const AppSidebar: React.FC = () => {
 
   useEffect(() => {
     if (openSubmenu !== null) {
-      const key = `${openSubmenu.type}-${openSubmenu.index}`;
-      if (subMenuRefs.current[key]) {
+      if (subMenuRefs.current[openSubmenu]) {
         setSubMenuHeight((prevHeights) => ({
           ...prevHeights,
-          [key]: subMenuRefs.current[key]?.scrollHeight || 0,
+          [openSubmenu]: subMenuRefs.current[openSubmenu]?.scrollHeight || 0,
         }));
       }
     }
   }, [openSubmenu]);
 
-  const handleSubmenuToggle = (index: number, menuType: "main" | "biblioteca") => {
+  const handleSubmenuToggle = (index: number) => {
     setOpenSubmenu((prevOpenSubmenu) => {
-      if (
-        prevOpenSubmenu &&
-        prevOpenSubmenu.type === menuType &&
-        prevOpenSubmenu.index === index
-      ) {
+      if (prevOpenSubmenu === index) {
         return null;
       }
-      return { type: menuType, index };
+      return index;
     });
   };
 
-  const renderMenuItems = (items: NavItem[], menuType: "main" | "biblioteca") => (
+  const renderMenuItems = (items: NavItem[]) => (
     <ul className="flex flex-col gap-4">
       {items.map((nav, index) => (
         <li key={nav.name}>
           {nav.subItems ? (
             <button
-              onClick={() => handleSubmenuToggle(index, menuType)}
-              className={`menu-item group ${openSubmenu?.type === menuType && openSubmenu?.index === index
+              onClick={() => handleSubmenuToggle(index)}
+              className={`menu-item group ${openSubmenu === index
                 ? "menu-item-active"
                 : "menu-item-inactive"
                 } cursor-pointer ${!isExpanded && !isHovered
@@ -247,7 +165,7 @@ const AppSidebar: React.FC = () => {
                 }`}
             >
               <span
-                className={`menu-item-icon-size  ${openSubmenu?.type === menuType && openSubmenu?.index === index
+                className={`menu-item-icon-size  ${openSubmenu === index
                   ? "menu-item-icon-active"
                   : "menu-item-icon-inactive"
                   }`}
@@ -259,8 +177,7 @@ const AppSidebar: React.FC = () => {
               )}
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
-                  className={`ml-auto icon-sm transition-transform duration-200 ${openSubmenu?.type === menuType &&
-                    openSubmenu?.index === index
+                  className={`ml-auto icon-sm transition-transform duration-200 ${openSubmenu === index
                     ? "rotate-180 text-brand-500"
                     : ""
                     }`}
@@ -291,13 +208,13 @@ const AppSidebar: React.FC = () => {
           {nav.subItems && (isExpanded || isHovered || isMobileOpen) && (
             <div
               ref={(el) => {
-                subMenuRefs.current[`${menuType}-${index}`] = el;
+                subMenuRefs.current[index] = el;
               }}
               className="overflow-hidden transition-all duration-300"
               style={{
                 height:
-                  openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? `${subMenuHeight[`${menuType}-${index}`]}px`
+                  openSubmenu === index
+                    ? `${subMenuHeight[index]}px`
                     : "0px",
               }}
             >
@@ -406,22 +323,7 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots className="icon-md" />
                 )}
               </h2>
-              {renderMenuItems(filteredNavItems as NavItem[], "main")}
-            </div>
-            <div className="">
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-5 text-text-tertiary ${!isExpanded && !isHovered
-                  ? "lg:justify-center"
-                  : "justify-start"
-                  }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  "Recursos Biblioteca"
-                ) : (
-                  <HorizontaLDots className="icon-md" />
-                )}
-              </h2>
-              {renderMenuItems(bibliotecaItems, "biblioteca")}
+              {renderMenuItems(filteredNavItems as NavItem[])}
             </div>
           </div>
         </nav>

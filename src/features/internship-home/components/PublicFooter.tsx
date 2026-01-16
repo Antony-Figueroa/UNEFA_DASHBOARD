@@ -132,7 +132,7 @@ const PublicFooter: React.FC = () => {
               </li>
               <li className="flex items-start gap-2 text-xs border-t border-white/5 pt-3 mt-3 italic">
                 <span className="shrink-0">ℹ️</span>
-                <span className="leading-relaxed">Trámites específicos se gestionan presencialmente en sede Vía Payara.</span>
+                <span className="leading-relaxed">Trámites específicos se gestionan presencialmente en la sede Acarigua Araure.</span>
               </li>
               <li className="flex items-center gap-2 pt-2">
                 <span className="shrink-0">🕒</span>

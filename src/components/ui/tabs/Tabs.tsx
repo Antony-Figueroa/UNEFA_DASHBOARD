@@ -31,7 +31,7 @@ export const Tabs: React.FC<TabsProps> = ({
             className={`px-6 py-2 rounded-lg font-medium transition-all ${
               activeTab === tab.id
                 ? "bg-brand-500 text-white shadow-md"
-                : "bg-bg-main text-text-secondary hover:bg-bg-secondary dark:bg-bg-dark dark:text-text-tertiary dark:hover:bg-white/10 border border-border-light dark:border-border-dark"
+                : "bg-bg-main text-text-secondary hover:bg-brand-500 hover:text-white dark:bg-bg-dark dark:text-text-tertiary dark:hover:bg-brand-500 dark:hover:text-white border border-border-light dark:border-border-dark"
             }`}
           >
             {tab.label}

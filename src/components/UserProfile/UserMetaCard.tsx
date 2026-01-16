@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth";
 import Badge from "../ui/badge/Badge";
 import { useModal } from "../../hooks/useModal";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../ui/modal";

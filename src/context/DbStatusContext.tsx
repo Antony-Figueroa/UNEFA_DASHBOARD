@@ -11,6 +11,15 @@ export const DbStatusProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const previousStatus = useRef<DbStatus>('checking');
 
   const checkStatus = useCallback(async () => {
+    // No realizar verificaciones de base de datos en páginas públicas
+    const publicPaths = ['/', '/signin', '/signup', '/first-login', '/forgot-password'];
+    const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
+    
+    if (publicPaths.includes(currentPath)) {
+      setStatus('checking');
+      return;
+    }
+
     try {
       const response = await apiClient.get('/db-status');
       const data = response.data;
@@ -42,10 +51,16 @@ export const DbStatusProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setError(data.error || null);
       setLastChecked(new Date());
     } catch (err: unknown) {
-      console.error('[DbStatusContext] Error al verificar estado:', err);
+      const publicPaths = ['/', '/signin', '/signup', '/first-login', '/forgot-password'];
+      const isPublicPage = publicPaths.includes(window.location.pathname);
+
+      if (!isPublicPage) {
+        console.error('[DbStatusContext] Error al verificar estado:', err);
+      }
+      
       const errorMessage = err instanceof Error ? err.message : 'Error de red';
       
-      if (previousStatus.current !== 'disconnected' && previousStatus.current !== 'checking') {
+      if (previousStatus.current !== 'disconnected' && previousStatus.current !== 'checking' && !isPublicPage) {
         addToast({
           variant: 'error',
           title: 'Error de Red',

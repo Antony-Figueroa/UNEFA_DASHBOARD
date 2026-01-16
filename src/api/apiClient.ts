@@ -38,15 +38,19 @@ apiClient.interceptors.response.use(
   },
   async (error: AxiosError) => {
     const config = error.config as InternalAxiosRequestConfig & { _retryCount?: number };
+    const publicPaths = ['/', '/signin', '/signup', '/first-login', '/forgot-password'];
+    const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
+    const isPublicPage = publicPaths.includes(currentPath);
     
     // No loguear errores 401 como "Error detectado" ya que son parte del flujo normal de auth
-    if (error.response?.status !== 401) {
+    // Tampoco loguear si estamos en páginas públicas para evitar ruidos en consola
+    if (error.response?.status !== 401 && !isPublicPage) {
       console.error(`[API] Error: ${error.message} en ${error.config?.url}`);
     }
     
     // Si no hay config (ej: error de red extremo) o ya excedimos los reintentos
     if (!config || (config._retryCount ?? 0) >= 3) {
-      if (error.code === 'ERR_NETWORK') {
+      if (error.code === 'ERR_NETWORK' && !isPublicPage) {
         console.error('[API] Error de red: Verifique su conexión o el estado del servidor.');
       }
       return Promise.reject(error);

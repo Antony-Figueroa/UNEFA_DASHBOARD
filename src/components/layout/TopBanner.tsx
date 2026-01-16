@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, { useState, useEffect, useRef, useContext, useCallback } from "react";
 import { SidebarContext } from "../../context/sidebar";
 
 const TopBanner: React.FC = () => {
@@ -12,14 +12,25 @@ const TopBanner: React.FC = () => {
   const [isVisible, setIsVisible] = useState(true);
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1000);
   const scrollRef = useRef<number>(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const updateBannerHeight = useCallback(() => {
+    if (containerRef.current && isVisible && isLargeScreen) {
+      const height = containerRef.current.offsetHeight;
+      document.documentElement.style.setProperty("--banner-height", `${height}px`);
+    } else {
+      document.documentElement.style.setProperty("--banner-height", "0px");
+    }
+  }, [isVisible, isLargeScreen]);
 
   useEffect(() => {
     const handleResize = () => {
       setIsLargeScreen(window.innerWidth >= 1000);
+      updateBannerHeight();
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [updateBannerHeight]);
 
   // Calcular el desplazamiento a la izquierda basado en el estado del sidebar y el tamaño de pantalla
   // Si no hay contexto de sidebar (páginas públicas), el ancho es siempre 0px
@@ -56,24 +67,25 @@ const TopBanner: React.FC = () => {
   }, [sidebarContext]);
 
   useEffect(() => {
-    const height = isVisible && isLargeScreen ? (window.innerWidth >= 1000 ? "60px" : "48px") : "0px";
-    document.documentElement.style.setProperty("--banner-height", height);
-  }, [isVisible, isLargeScreen]);
+    updateBannerHeight();
+  }, [updateBannerHeight, sidebarWidth]);
 
   return (
     <div 
+      ref={containerRef}
       style={{ 
         left: sidebarWidth,
         width: `calc(100% - ${sidebarWidth})`
       }}
       className={`${!sidebarContext ? "relative" : "fixed top-0"} ${!isLargeScreen ? "hidden" : "flex"} bg-white dark:bg-bg-dark border-b border-border-light dark:border-border-dark overflow-hidden z-99999 transition-all duration-300 ease-in-out items-center justify-start ${
-        isVisible ? "h-12 lg:h-15 opacity-100" : "h-0 opacity-0 border-none"
+        isVisible ? "h-auto opacity-100" : "h-0 opacity-0 border-none"
       }`}
     >
       <img
         src="/unefa-img/menbrete-nuevo.jpg"
         alt="Gobierno Bolivariano de Venezuela"
-        className="h-full w-full object-fill object-left"
+        className="w-full h-auto block"
+        onLoad={updateBannerHeight}
       />
     </div>
   );

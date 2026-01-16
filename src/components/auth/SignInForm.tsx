@@ -5,7 +5,7 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
 import * as authService from "../../features/auth/services/authService";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth";
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);

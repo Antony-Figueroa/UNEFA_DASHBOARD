@@ -254,7 +254,7 @@ export default function Period() {
                         {!pageLoading && (
                             <Button onClick={handleOpenCreateModal} className="sm:w-auto">
                                 <PlusCircleIcon className="w-5 h-5" />
-                                <span className="ml-2">Nuevo Periodo</span>
+                                <span className="ml-2">Nuevo Período</span>
                             </Button>
                         )}
                     </div>

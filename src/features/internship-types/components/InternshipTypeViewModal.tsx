@@ -38,6 +38,12 @@ export default function InternshipTypeViewModal({
                 </p>
               </div>
               <div>
+                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Abreviación</label>
+                <p className="text-sm font-semibold text-text-primary dark:text-white/90 uppercase">
+                  {item.ABBREVIATION}
+                </p>
+              </div>
+              <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Prioridad</label>
                 <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
                   {item.PRIORITY}

@@ -295,6 +295,7 @@ INSERT INTO "t_internships_period" ("PERIOD_ID", "START_DATE", "END_DATE", "CREA
 CREATE TABLE "t_internship_type" (
   "INTERNSHIP_TYPE_ID" SERIAL NOT NULL,
   "NAME" varchar(40) NOT NULL,
+  "ABBREVIATION" varchar(10) NOT NULL,
   "PRIORITY" SMALLINT NOT NULL,
   "CREATION_DATE" TIMESTAMP NOT NULL,
   "STATUS" SMALLINT NOT NULL
@@ -304,10 +305,10 @@ CREATE TABLE "t_internship_type" (
 -- Volcado de datos para la tabla "t_internship_type"
 --
 
-INSERT INTO "t_internship_type" ("INTERNSHIP_TYPE_ID", "NAME", "PRIORITY", "CREATION_DATE", "STATUS") VALUES
-(1, 'ORDINARIA', 0, '2025-05-05 01:24:07', 1),
-(2, 'HOSPITALARIA', 1, '2025-05-05 01:25:00', 1),
-(3, 'COMUNITARIA', 2, '2025-05-05 01:25:00', 1);
+INSERT INTO "t_internship_type" ("INTERNSHIP_TYPE_ID", "NAME", "ABBREVIATION", "PRIORITY", "CREATION_DATE", "STATUS") VALUES
+(1, 'ORDINARIA', 'ORD', 0, '2025-05-05 01:24:07', 1),
+(2, 'HOSPITALARIA', 'HOSP', 1, '2025-05-05 01:25:00', 1),
+(3, 'COMUNITARIA', 'COM', 2, '2025-05-05 01:25:00', 1);
 
 -- --------------------------------------------------------
 

@@ -72,7 +72,7 @@ export const getPeriodById = async (req: Request, res: Response) => {
 
       if (error) {
         if (error.code === 'PGRST116') { // PostgREST error code for no rows found
-          const notFoundError = new Error(`No se encontró el periodo con PERIOD_ID: ${id}`) as AppError;
+          const notFoundError = new Error(`No se encontró el périodo con PERIOD_ID: ${id}`) as AppError;
           notFoundError.code = '404';
           throw notFoundError;
         }
@@ -160,7 +160,7 @@ export const updatePeriod = async (req: Request, res: Response) => {
       if (error) throw error;
       
       if (!data || data.length === 0) {
-        const notFoundError = new Error(`No se encontró el periodo con PERIOD_ID: ${id}`) as AppError;
+        const notFoundError = new Error(`No se encontró el périodo con PERIOD_ID: ${id}`) as AppError;
         notFoundError.code = '404';
         throw notFoundError;
       }

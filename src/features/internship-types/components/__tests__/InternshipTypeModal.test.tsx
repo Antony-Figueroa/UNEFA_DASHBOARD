@@ -8,6 +8,7 @@ import { InternshipType } from "../../types";
 const sampleType: InternshipType = {
   INTERNSHIP_TYPE_ID: 1,
   NAME: "Pasantía de Prueba",
+  ABBREVIATION: "PP",
   PRIORITY: 5,
   STATUS: 1,
   CREATION_DATE: "2026-01-17",
@@ -52,16 +53,19 @@ describe("InternshipTypeModal", () => {
     );
 
     const nameInput = screen.getByPlaceholderText(/Ingrese el nombre/i);
+    const abbreviationInput = screen.getByPlaceholderText(/Ej: PP, SS, etc./i);
     const priorityInput = screen.getByPlaceholderText(/Ingrese la prioridad/i);
     const saveButton = screen.getByRole("button", { name: /Guardar Tipo/i });
 
     await user.type(nameInput, "Nueva Pasantía");
+    await user.type(abbreviationInput, "NP");
     await user.type(priorityInput, "10");
     await user.click(saveButton);
 
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledWith({
         NAME: "Nueva Pasantía",
+        ABBREVIATION: "NP",
         PRIORITY: 10,
         STATUS: 1,
       });
@@ -86,6 +90,7 @@ describe("InternshipTypeModal", () => {
 
     await waitFor(() => {
       expect(screen.getByText(/El nombre es obligatorio/i)).toBeDefined();
+      expect(screen.getByText(/La abreviación es obligatoria/i)).toBeDefined();
       expect(screen.getByText(/La prioridad es obligatoria/i)).toBeDefined();
     });
     

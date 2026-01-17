@@ -28,46 +28,46 @@ describe('Period Validations', () => {
 
     describe('checkOverlap', () => {
         it('should detect overlap when new period starts during existing period', () => {
-            const newStart = new Date('2025-05-15');
-            const newEnd = new Date('2025-09-15');
+            const newStart = new Date('2026-05-15');
+            const newEnd = new Date('2026-09-15');
             expect(checkOverlap(newStart, newEnd, existingPeriods)).toBe(true);
         });
 
         it('should detect overlap when new period ends during existing period', () => {
-            const newStart = new Date('2024-12-15');
-            const newEnd = new Date('2025-02-15');
+            const newStart = new Date('2025-12-15');
+            const newEnd = new Date('2026-02-15');
             expect(checkOverlap(newStart, newEnd, existingPeriods)).toBe(true);
         });
 
         it('should not detect overlap when new period is outside existing ranges', () => {
-            const newStart = new Date('2026-01-01');
-            const newEnd = new Date('2026-05-31');
+            const newStart = new Date('2027-01-01');
+            const newEnd = new Date('2027-05-31');
             expect(checkOverlap(newStart, newEnd, existingPeriods)).toBe(false);
         });
 
         it('should ignore current period when editing', () => {
-            const currentStart = new Date('2025-06-01');
-            const currentEnd = new Date('2025-10-31');
+            const currentStart = new Date('2026-06-01');
+            const currentEnd = new Date('2026-10-31');
             expect(checkOverlap(currentStart, currentEnd, existingPeriods, '2')).toBe(false);
         });
     });
 
     describe('checkSequentiality', () => {
         it('should validate correctly for the next immediate period (I -> II)', () => {
-            const result = checkSequentiality('2026-I', existingPeriods);
+            const result = checkSequentiality('I-2027', existingPeriods);
             expect(result.isValid).toBe(true);
         });
 
         it('should fail if the period is not sequential (skipping a semester)', () => {
-            const result = checkSequentiality('2026-II', existingPeriods);
+            const result = checkSequentiality('II-2027', existingPeriods);
             expect(result.isValid).toBe(false);
-            expect(result.message).toContain('El siguiente lapso debería ser 2026-I');
+            expect(result.message).toContain('El siguiente lapso obligatorio es I-2027');
         });
 
         it('should fail if the period is in the past', () => {
-            const result = checkSequentiality('2024-II', existingPeriods);
+            const result = checkSequentiality('II-2025', existingPeriods);
             expect(result.isValid).toBe(false);
-            expect(result.message).toContain('El lapso debe ser posterior a 2025-II');
+            expect(result.message).toContain('El lapso debe ser posterior al último período registrado (II-2026)');
         });
     });
 
@@ -152,8 +152,8 @@ describe('Period Validations', () => {
         it('should pass if endDate is in the next year', () => {
             const data = {
                 year: '2027',
-                periodoTipo: 'II' as const,
-                startDate: new Date(2027, 8, 1), // Sept 2027
+                periodoTipo: 'I' as const,
+                startDate: new Date(2027, 8, 1), // Sept 2027 (as an example of late start)
                 endDate: new Date(2028, 0, 15)   // Jan 2028
             };
             const result = schema.safeParse(data);

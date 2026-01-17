@@ -24,12 +24,32 @@ const CACHE_INDEX_KEY = 'unefa_info_index';
 const WIKIPEDIA_BASE_API = 'https://es.wikipedia.org/api/rest_v1/page/summary/';
 const WIKIPEDIA_PAGES = [
   'Universidad_Nacional_Experimental_Politécnica_de_la_Fuerza_Armada_Nacional_Bolivariana',
+  'Historia_de_Venezuela',
+  'Independencia_de_Venezuela',
+  'Simón_Bolívar',
+  'Andrés_Bello',
   'Sistema_Educativo_de_Venezuela',
   'Ministerio_del_Poder_Popular_para_la_Educación_Universitaria'
 ];
 
 // Datos de respaldo (Fallback) en caso de que las APIs fallen o para rotar
 const FALLBACK_DATA: UnefaInfo[] = [
+  {
+    title: "Origen de la UNEFA",
+    extract: "Fundada el 3 de febrero de 1974 como el Instituto Universitario Politécnico de las Fuerzas Armadas Nacionales (IUPFAN), fue transformada en universidad por decreto presidencial en 1999.",
+    thumbnail: "/unefa-img/hero-bg.jpg",
+    source: "Historia Institucional",
+    type: 'history',
+    timestamp: Date.now()
+  },
+  {
+    title: "La Batalla de Carabobo",
+    extract: "El 24 de junio de 1821 se libró la batalla que selló la independencia de Venezuela del imperio español, bajo el mando del Libertador Simón Bolívar.",
+    thumbnail: "/unefa-img/hero-bg.jpg",
+    source: "Historia de Venezuela",
+    type: 'history',
+    timestamp: Date.now()
+  },
   {
     title: "Excelencia Educativa",
     extract: "La UNEFA se consolida como la universidad líder en formación integral con valores socialistas y excelencia académica en toda Venezuela.",
@@ -39,27 +59,19 @@ const FALLBACK_DATA: UnefaInfo[] = [
     timestamp: Date.now()
   },
   {
+    title: "Simón Rodríguez: El Maestro",
+    extract: "Conocido como Samuel Robinson, fue el tutor y mentor de Simón Bolívar, promoviendo una educación original y adaptada a la realidad americana.",
+    thumbnail: "/unefa-img/hero-bg.jpg",
+    source: "Historia y Educación",
+    type: 'history',
+    timestamp: Date.now()
+  },
+  {
     title: "Inscripciones Abiertas 2026",
     extract: "Se informa a toda la comunidad que el proceso de inscripciones para el nuevo periodo académico ya está disponible en todos nuestros núcleos a nivel nacional.",
     thumbnail: "/unefa-img/menbrete-nuevo.jpg",
     source: "Noticias UNEFA",
     type: 'news',
-    timestamp: Date.now()
-  },
-  {
-    title: "Valores Institucionales",
-    extract: "Disciplina, Lealtad y Patriotismo son los pilares fundamentales que guían a nuestros estudiantes en su formación como profesionales de la República.",
-    thumbnail: "/unefa-img/hero-bg.jpg",
-    source: "UNEFA Cultura",
-    type: 'history',
-    timestamp: Date.now()
-  },
-  {
-    title: "Investigación y Desarrollo",
-    extract: "La UNEFA impulsa proyectos de investigación tecnológica y científica que contribuyen al desarrollo soberano de la nación.",
-    thumbnail: "/unefa-img/menbrete-nuevo.jpg",
-    source: "UNEFA I+D",
-    type: 'event',
     timestamp: Date.now()
   }
 ];

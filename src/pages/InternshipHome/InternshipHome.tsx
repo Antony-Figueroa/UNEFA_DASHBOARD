@@ -10,6 +10,7 @@ import PartnerLogosSection from "../../features/internship-home/sections/Partner
 import MissionVisionSection from "../../features/internship-home/sections/MissionVisionSection";
 import WorkspaceImageGallery from "../../features/internship-home/sections/WorkspaceImageGallery";
 import UnefaInfoSection from "../../features/internship-home/sections/UnefaInfoSection";
+import UnefaMapSection from "../../features/internship-home/sections/UnefaMapSection";
 import TopBanner from "../../components/layout/TopBanner";
 
 const InternshipHome: React.FC = () => {
@@ -53,6 +54,9 @@ const InternshipHome: React.FC = () => {
 
         {/* Nueva Sección Informativa Dinámica */}
         <UnefaInfoSection />
+
+        {/* Mapa de Ubicación */}
+        <UnefaMapSection />
 
         {/* Placeholder para componentes externos (Siguientes Pasos) */}
         {/* 

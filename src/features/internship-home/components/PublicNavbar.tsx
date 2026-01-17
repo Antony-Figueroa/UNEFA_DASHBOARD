@@ -86,7 +86,7 @@ const PublicNavbar: React.FC = () => {
                 key={link.name}
                 href={link.href}
                 onClick={(e) => scrollToSection(e, link.href)}
-                className="text-sm font-medium text-text-secondary hover:text-brand-500 transition-colors"
+                className="text-base font-semibold text-text-secondary hover:text-brand-500 transition-colors"
               >
                 {link.name}
               </a>

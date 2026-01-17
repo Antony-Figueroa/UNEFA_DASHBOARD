@@ -56,67 +56,97 @@ export const usePreEnrollment = () => {
 
   const addPreEnrollment = async (data: Omit<PreEnrollment, "preEnrollmentId" | "preEnrollmentDate">) => {
     setLoadingAction(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      await preEnrollmentService.createPreEnrollment(data);
+      
+      addToast({
+        variant: "success",
+        title: "Pre-Inscripción Registrada",
+        message: (
+          <>
+            <p>La pre-inscripción de <strong>{data.studentName}</strong> ha sido registrada correctamente.</p>
+            <RecordDetails
+              data={data as unknown as Record<string, unknown>}
+              labels={PRE_ENROLLMENT_LABELS}
+              fields={['identificationNumber', 'period', 'enrollmentCode']}
+            />
+          </>
+        ),
+      });
 
-    const newEntry: PreEnrollment = {
-      ...data,
-      preEnrollmentId: Math.random().toString(36).substr(2, 9),
-      preEnrollmentDate: new Date(),
-    };
-
-    setPreEnrollments(prev => [newEntry, ...prev]);
-    setLoadingAction(false);
-
-    addToast({
-      variant: "success",
-      title: "Pre-Inscripción Registrada",
-      message: (
-        <>
-          <p>La pre-inscripción de <strong>{newEntry.studentName}</strong> ha sido registrada correctamente.</p>
-          <RecordDetails
-            data={newEntry as unknown as Record<string, unknown>}
-            labels={PRE_ENROLLMENT_LABELS}
-            fields={['identificationNumber', 'period', 'enrollmentCode']}
-          />
-        </>
-      ),
-    });
+      // Refrescar la lista para mostrar los datos actualizados
+      await refreshPreEnrollments();
+    } catch (error) {
+      console.error("Error creating pre-enrollment:", error);
+      addToast({
+        variant: "error",
+        title: "Error al Registrar",
+        message: "No se pudo registrar la pre-inscripción. Intente nuevamente.",
+      });
+      throw error;
+    } finally {
+      setLoadingAction(false);
+    }
   };
 
   const editPreEnrollment = async (data: PreEnrollment) => {
     setLoadingAction(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      await preEnrollmentService.updatePreEnrollment(data);
 
-    setPreEnrollments(prev => prev.map(p => p.preEnrollmentId === data.preEnrollmentId ? data : p));
-    setLoadingAction(false);
+      addToast({
+        variant: "success",
+        title: "Pre-Inscripción Actualizada",
+        message: <p>Los datos de <strong>{data.studentName}</strong> han sido actualizados.</p>,
+      });
 
-    addToast({
-      variant: "success",
-      title: "Pre-Inscripción Actualizada",
-      message: <p>Los datos de <strong>{data.studentName}</strong> han sido actualizados.</p>,
-    });
+      // Refrescar la lista para mostrar los datos actualizados
+      await refreshPreEnrollments();
+    } catch (error) {
+      console.error("Error updating pre-enrollment:", error);
+      addToast({
+        variant: "error",
+        title: "Error al Actualizar",
+        message: "No se pudo actualizar la pre-inscripción. Intente nuevamente.",
+      });
+      throw error;
+    } finally {
+      setLoadingAction(false);
+    }
   };
 
   const toggleStatus = async (item: PreEnrollment) => {
     setLoadingAction(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      const updated = { ...item, status: !item.status };
+      await preEnrollmentService.updatePreEnrollment(updated);
 
-    const updated = { ...item, status: !item.status };
-    setPreEnrollments(prev => prev.map(p => p.preEnrollmentId === item.preEnrollmentId ? updated : p));
-    setLoadingAction(false);
+      addToast({
+        variant: updated.status ? "success" : "warning",
+        title: updated.status ? "Pre-Inscripción Restaurada" : "Pre-Inscripción Desactivada",
+        message: (
+          <p>
+            La pre-inscripción de <strong>{item.studentName}</strong> ahora está{" "}
+            <span className={`font-bold ${updated.status ? "text-success-600" : "text-warning-600"}`}>
+              {updated.status ? "ACTIVA" : "INACTIVA"}
+            </span>.
+          </p>
+        ),
+      });
 
-    addToast({
-      variant: updated.status ? "success" : "warning",
-      title: updated.status ? "Pre-Inscripción Restaurada" : "Pre-Inscripción Desactivada",
-      message: (
-        <p>
-          La pre-inscripción de <strong>{item.studentName}</strong> ahora está{" "}
-          <span className={`font-bold ${updated.status ? "text-success-600" : "text-warning-600"}`}>
-            {updated.status ? "ACTIVA" : "INACTIVA"}
-          </span>.
-        </p>
-      ),
-    });
+      // Refrescar la lista para mostrar los datos actualizados
+      await refreshPreEnrollments();
+    } catch (error) {
+      console.error("Error toggling pre-enrollment status:", error);
+      addToast({
+        variant: "error",
+        title: "Error al Cambiar Estado",
+        message: "No se pudo cambiar el estado de la pre-inscripción. Intente nuevamente.",
+      });
+      throw error;
+    } finally {
+      setLoadingAction(false);
+    }
   };
 
 

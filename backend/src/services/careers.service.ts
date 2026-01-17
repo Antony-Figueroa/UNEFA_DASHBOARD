@@ -115,7 +115,7 @@ export const getCareerById = async (id: string) => {
   return career;
 };
 
-export const createCareer = async (payload: Record<string, unknown>) => {
+export const createCareer = async (payload: Record<string, unknown>, userId: number = 1) => {
   const { INTERNSHIP_TYPE_IDS, ...careerData } = payload;
   const now = new Date().toISOString();
 
@@ -148,11 +148,11 @@ export const createCareer = async (payload: Record<string, unknown>) => {
           CAREER_TYPE: careerType,
           STATUS: careerData.STATUS ?? 1,
           CREATION_DATE: now,
-          MODIF_USER_ID: 1,
+          MODIF_USER_ID: userId,
           MODIF_USER_DATE: now,
-          ELIM_USER_ID: 1,
+          ELIM_USER_ID: userId,
           ELIM_USER_DATE: now,
-          REST_USER_ID: 1,
+          REST_USER_ID: userId,
           REST_USER_DATE: now
         }
       ])
@@ -177,7 +177,7 @@ export const createCareer = async (payload: Record<string, unknown>) => {
   return result;
 };
 
-export const updateCareer = async (id: string, payload: Record<string, unknown>) => {
+export const updateCareer = async (id: string, payload: Record<string, unknown>, userId: number = 1) => {
   const { INTERNSHIP_TYPE_IDS, ...updates } = payload;
   const now = new Date().toISOString();
   const updateData = updates as Record<string, unknown>;
@@ -190,10 +190,26 @@ export const updateCareer = async (id: string, payload: Record<string, unknown>)
   if (updateData.CAREER_TYPE) updateData.CAREER_TYPE = String(updateData.CAREER_TYPE).toUpperCase();
 
   const result = await dbManager.withRetry(async (supabase) => {
-    // 0. Validar duplicados si se está intentando cambiar nombre o código
-    if (updateData.CAREER_NAME || updateData.CAREER_CODE) {
-      const name = updateData.CAREER_NAME ? String(updateData.CAREER_NAME).toUpperCase() : undefined;
-      const code = updateData.CAREER_CODE ? Number(updateData.CAREER_CODE) : undefined;
+    // Obtener datos actuales para comparar y evitar validaciones innecesarias
+    const { data: current, error: fetchError } = await supabase
+      .from(TABLE_NAME)
+      .select('*')
+      .eq('CAREER_ID', id)
+      .single();
+
+    if (fetchError || !current) throw { code: 'NOT_FOUND', message: 'Carrera no encontrada' };
+
+    // 0. Validar duplicados solo si se está cambiando nombre o código
+    const isChangingName = updateData.CAREER_NAME && String(updateData.CAREER_NAME).toUpperCase() !== current.CAREER_NAME;
+    
+    // Convertir ambos a número para una comparación segura
+    const newCode = updateData.CAREER_CODE !== undefined ? Number(updateData.CAREER_CODE) : undefined;
+    const currentCode = current.CAREER_CODE !== null ? Number(current.CAREER_CODE) : undefined;
+    const isChangingCode = newCode !== undefined && newCode !== currentCode;
+
+    if (isChangingName || isChangingCode) {
+      const name = isChangingName ? String(updateData.CAREER_NAME).toUpperCase() : undefined;
+      const code = isChangingCode ? newCode : undefined;
 
       const query = supabase.from(TABLE_NAME).select('CAREER_ID').neq('CAREER_ID', id).eq('STATUS', 1);
       
@@ -217,23 +233,20 @@ export const updateCareer = async (id: string, payload: Record<string, unknown>)
     const isInUse = (students && students.length > 0) || (institutions && institutions.length > 0) || (practices && practices.length > 0);
 
     // El código NUNCA se puede editar una vez creado
-    if (updateData.CAREER_CODE) {
-      const { data: current } = await supabase.from(TABLE_NAME).select('CAREER_CODE').eq('CAREER_ID', id).single();
-      if (current && Number(updateData.CAREER_CODE) !== current.CAREER_CODE) {
-        throw { code: 'BUSINESS_RULE_VIOLATION', message: 'No se puede editar el código de una carrera registrada' };
-      }
+    if (isChangingCode) {
+      throw { code: 'BUSINESS_RULE_VIOLATION', message: 'No se puede editar el código de una carrera registrada' };
     }
 
     // El tipo de carrera no se puede editar si está en uso
-    if (isInUse && updateData.CAREER_TYPE) {
-      const { data: current } = await supabase.from(TABLE_NAME).select('CAREER_TYPE').eq('CAREER_ID', id).single();
-      if (current && updateData.CAREER_TYPE !== current.CAREER_TYPE) {
-        throw { code: 'BUSINESS_RULE_VIOLATION', message: 'No se puede editar el tipo de una carrera en uso' };
-      }
+    if (isInUse && updateData.CAREER_TYPE && updateData.CAREER_TYPE !== current.CAREER_TYPE) {
+      throw { code: 'BUSINESS_RULE_VIOLATION', message: 'No se puede editar el tipo de una carrera en uso' };
     }
 
-    // 2. Verificar restricción de nota mínima
-    if (updateData.MINIMUM_GRADE) {
+    // 2. Verificar restricción de nota mínima solo si cambia
+    const newMinGrade = updateData.MINIMUM_GRADE !== undefined ? Number(updateData.MINIMUM_GRADE) : undefined;
+    const currentMinGrade = current.MINIMUM_GRADE !== null ? Number(current.MINIMUM_GRADE) : undefined;
+    
+    if (newMinGrade !== undefined && newMinGrade !== currentMinGrade) {
       // Buscar estudiantes de esta carrera
       const { data: careerStudents } = await supabase
         .from('t_students')
@@ -260,7 +273,7 @@ export const updateCareer = async (id: string, payload: Record<string, unknown>)
 
     const { data: updatedCareer, error } = await supabase
       .from(TABLE_NAME)
-      .update({ ...updateData, MODIF_USER_DATE: now, MODIF_USER_ID: 1 })
+      .update({ ...updateData, MODIF_USER_DATE: now, MODIF_USER_ID: userId })
       .eq('CAREER_ID', id)
       .select()
       .single();
@@ -284,9 +297,21 @@ export const updateCareer = async (id: string, payload: Record<string, unknown>)
   return result;
 };
 
-export const deleteCareer = async (id: string) => {
+export const deleteCareer = async (id: string, userId: number = 1) => {
   await dbManager.withRetry(async (supabase) => {
-    // Verificar si está en uso antes de "eliminar" (desactivar)
+    const now = new Date().toISOString();
+    // 1. Confirmar existencia del registro
+    const { data: existing, error: existError } = await supabase
+      .from(TABLE_NAME)
+      .select('CAREER_ID')
+      .eq('CAREER_ID', id)
+      .single();
+
+    if (existError || !existing) {
+      throw { code: 'BUSINESS_RULE_VIOLATION', message: 'La carrera no existe o ya ha sido eliminada' };
+    }
+
+    // 2. Verificar si está en uso antes de "eliminar" (desactivar)
     const { data: students } = await supabase.from('t_students').select('STUDENTS_ID').eq('CAREER_ID', id).eq('STATUS', 1).limit(1);
     const { data: institutions } = await supabase.from('t_institution').select('INSTITUTION_ID').eq('CAREER_ID', id).eq('STATUS', 1).limit(1);
     const { data: practices } = await supabase.from('t_professional_practices').select('PROFESSIONAL_PRACTICE_ID').eq('CAREER_ID', id).eq('STATUS', 1).limit(1);
@@ -300,18 +325,47 @@ export const deleteCareer = async (id: string) => {
       throw { code: 'BUSINESS_RULE_VIOLATION', message: `No se puede eliminar la carrera porque está siendo usada en: ${usageLocation}` };
     }
 
-    const { error } = await supabase.from(TABLE_NAME).update({ STATUS: 0 }).eq('CAREER_ID', id);
+    const { error } = await supabase.from(TABLE_NAME).update({ STATUS: 0, ELIM_USER_ID: userId, ELIM_USER_DATE: now }).eq('CAREER_ID', id);
     if (error) throw error;
   }, 'deleteCareer');
 
   cacheManager.deleteByPrefix(CACHE_PREFIX);
 };
 
-export const bulkDeleteCareers = async (ids: (string | number)[]) => {
+export const bulkDeleteCareers = async (ids: (string | number)[], userId: number = 1) => {
   await dbManager.withRetry(async (supabase) => {
-    const { error } = await supabase.from(TABLE_NAME).update({ STATUS: 0 }).in('CAREER_ID', ids);
+    const now = new Date().toISOString();
+    // 1. Verificar si alguna de las carreras está en uso
+    const { data: students } = await supabase.from('t_students').select('CAREER_ID').in('CAREER_ID', ids).eq('STATUS', 1);
+    const { data: institutions } = await supabase.from('t_institution').select('CAREER_ID').in('CAREER_ID', ids).eq('STATUS', 1);
+    const { data: practices } = await supabase.from('t_professional_practices').select('CAREER_ID').in('CAREER_ID', ids).eq('STATUS', 1);
+
+    const usedIds = new Set([
+      ...(students || []).map(s => String(s.CAREER_ID)),
+      ...(institutions || []).map(i => String(i.CAREER_ID)),
+      ...(practices || []).map(p => String(p.CAREER_ID))
+    ]);
+
+    if (usedIds.size > 0) {
+      throw { 
+        code: 'BUSINESS_RULE_VIOLATION', 
+        message: `No se pueden eliminar ${usedIds.size} de las carreras seleccionadas porque están siendo utilizadas.` 
+      };
+    }
+
+    const { error } = await supabase.from(TABLE_NAME).update({ STATUS: 0, ELIM_USER_ID: userId, ELIM_USER_DATE: now }).in('CAREER_ID', ids);
     if (error) throw error;
   }, 'bulkDeleteCareers');
+
+  cacheManager.deleteByPrefix(CACHE_PREFIX);
+};
+
+export const bulkRestoreCareers = async (ids: (string | number)[], userId: number = 1) => {
+  await dbManager.withRetry(async (supabase) => {
+    const now = new Date().toISOString();
+    const { error } = await supabase.from(TABLE_NAME).update({ STATUS: 1, REST_USER_ID: userId, REST_USER_DATE: now }).in('CAREER_ID', ids);
+    if (error) throw error;
+  }, 'bulkRestoreCareers');
 
   cacheManager.deleteByPrefix(CACHE_PREFIX);
 };

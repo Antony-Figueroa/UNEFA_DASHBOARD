@@ -1,7 +1,18 @@
 import { z } from 'zod';
 import { Periodo } from '../types';
 
-export const periodSchema = z.object({
+/**
+ * Convierte un lapso (ej: "I-2025") a un valor numérico comparable.
+ */
+export const getLapsoValue = (l: string) => {
+    if (!l || !l.includes('-')) return 0;
+    const [t, y] = l.split('-');
+    const yearNum = parseInt(y);
+    if (isNaN(yearNum)) return 0;
+    return yearNum * 10 + (t === 'I' ? 1 : 2);
+};
+
+export const getPeriodSchema = (existingPeriods: Periodo[], currentPeriodId?: string, isEditing: boolean = false) => z.object({
     year: z.string().min(1, { message: 'El año es obligatorio.' }),
     periodoTipo: z.enum(['I', 'II']),
     startDate: z.date({
@@ -11,6 +22,18 @@ export const periodSchema = z.object({
         message: 'La fecha de fin es obligatoria.',
     }),
 }).superRefine((data, ctx) => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    
+    // El periodo no puede empezar en una fecha que ya pasó (solo para nuevos periodos)
+    if (!isEditing && data.startDate < now) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "La fecha de inicio no puede ser una fecha pasada.",
+            path: ["startDate"]
+        });
+    }
+
     if (data.endDate <= data.startDate) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -33,7 +56,6 @@ export const periodSchema = z.object({
     const yearNum = parseInt(data.year);
     if (!isNaN(yearNum)) {
         const startYear = data.startDate.getFullYear();
-        const endYear = data.endDate.getFullYear();
         
         if (startYear !== yearNum) {
             ctx.addIssue({
@@ -42,53 +64,63 @@ export const periodSchema = z.object({
                 path: ["startDate"]
             });
         }
-        
-        // El periodo puede terminar en el año siguiente si es el periodo II y dura mucho, 
-        // pero generalmente debería estar dentro del rango razonable.
-        // Requisito: "Validar que las fechas ingresadas correspondan estrictamente al año seleccionado"
-        if (endYear !== yearNum && data.periodoTipo === 'I') {
+    }
+
+    // --- Validación de Solapamiento ---
+    if (checkOverlap(data.startDate, data.endDate, existingPeriods, currentPeriodId)) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "El rango de fechas se solapa con un periodo existente.",
+            path: ["startDate"]
+        });
+    }
+
+    // --- Validación de Secuencialidad y Duplicados ---
+    const newDescription = `${data.periodoTipo}-${data.year}`;
+    
+    // Verificar si ya existe un periodo igual (Duplicados)
+    const duplicate = existingPeriods.find(p => p.description === newDescription && p.periodId !== currentPeriodId);
+    if (duplicate) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `El periodo ${newDescription} ya existe en el sistema.`,
+            path: ["periodoTipo"]
+        });
+        return;
+    }
+
+    const originalPeriod = existingPeriods.find(p => p.periodId === currentPeriodId);
+    if (!isEditing || (originalPeriod && originalPeriod.description !== newDescription)) {
+        const seqResult = checkSequentiality(newDescription, existingPeriods);
+        if (!seqResult.isValid) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: `Para el período I, la fecha de fin debe corresponder al año ${yearNum}.`,
-                path: ["endDate"]
+                message: seqResult.message,
+                path: ["periodoTipo"]
             });
         }
     }
 });
 
-export type PeriodFormData = z.infer<typeof periodSchema>;
+export type PeriodFormData = z.infer<ReturnType<typeof getPeriodSchema>>;
 
 /**
- * Valida si un nuevo periodo se solapa con periodos existentes.
- * Retorna true si hay solapamiento.
+ * Verifica si un rango de fechas se solapa con periodos existentes.
  */
-export const checkOverlap = (newStart: Date, newEnd: Date, existingPeriods: Periodo[], currentPeriodId?: string) => {
-    // Normalizar fechas a medianoche para comparación precisa de días
-    const start = new Date(newStart.getFullYear(), newStart.getMonth(), newStart.getDate());
-    const end = new Date(newEnd.getFullYear(), newEnd.getMonth(), newEnd.getDate());
+export const checkOverlap = (
+    startDate: Date,
+    endDate: Date,
+    existingPeriods: Periodo[],
+    currentPeriodId?: string
+): boolean => {
+    return existingPeriods.some((p) => {
+        // Ignorar el periodo actual si estamos editando
+        if (currentPeriodId && p.periodId === currentPeriodId) return false;
 
-    return existingPeriods.some(p => {
-        if (currentPeriodId && p.periodId === currentPeriodId) {
-            return false;
-        }
-        
-        const pStart = new Date(p.startDate.getFullYear(), p.startDate.getMonth(), p.startDate.getDate());
-        const pEnd = new Date(p.endDate.getFullYear(), p.endDate.getMonth(), p.endDate.getDate());
-
+        // Verificar solapamiento
         // (StartA <= EndB) and (EndA >= StartB)
-        return (start <= pEnd) && (end >= pStart);
+        return startDate <= p.endDate && endDate >= p.startDate;
     });
-};
-
-/**
- * Convierte un lapso (ej: "2025-I") a un valor numérico comparable.
- */
-export const getLapsoValue = (l: string) => {
-    if (!l || !l.includes('-')) return 0;
-    const [y, t] = l.split('-');
-    const yearNum = parseInt(y);
-    if (isNaN(yearNum)) return 0;
-    return yearNum * 10 + (t === 'I' ? 1 : 2);
 };
 
 /**
@@ -110,8 +142,8 @@ export const checkSequentiality = (newDescription: string, existingPeriods: Peri
         };
     }
 
-    // El siguiente valor debe ser exactamente +1 (ej: 20251 -> 20252, o 20252 -> 20261)
-    const [lastYearStr, lastTipo] = lastPeriod.description.split('-');
+    // El siguiente valor debe ser exactamente +1 (ej: I-2025 -> II-2025, o II-2025 -> I-2026)
+    const [lastTipo, lastYearStr] = lastPeriod.description.split('-');
     const lastYearNum = parseInt(lastYearStr);
     
     let expectedYear: number;
@@ -125,7 +157,7 @@ export const checkSequentiality = (newDescription: string, existingPeriods: Peri
         expectedTipo = 'I';
     }
 
-    const expectedDescription = `${expectedYear}-${expectedTipo}`;
+    const expectedDescription = `${expectedTipo}-${expectedYear}`;
 
     if (newDescription !== expectedDescription) {
         return { 

@@ -124,8 +124,8 @@ const ActionButtons = ({
                 <ActionButton
                     onClick={() => onEdit()}
                     icon={<EditIcon />}
-                    tooltip="Editar"
-                    label={isMobile ? "Editar Periodo" : undefined}
+                    tooltip={currentPeriodStatus === 2 ? "Editar (Solo Fecha Fin)" : "Editar"}
+                    label={isMobile ? (currentPeriodStatus === 2 ? "Editar Fecha Fin" : "Editar Periodo") : undefined}
                     variant="primary"
                     fullWidth={isMobile}
                 />

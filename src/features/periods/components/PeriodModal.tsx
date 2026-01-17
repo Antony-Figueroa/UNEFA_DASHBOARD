@@ -11,7 +11,7 @@ import { Periodo } from '../types';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
 import FlatpickrDatePicker from '../../../components/form/FlatpickrDatePicker';
 import Button from '../../../components/ui/button/Button';
-import { periodSchema, PeriodFormData, checkOverlap, checkSequentiality, getLapsoValue } from '../utils/periodValidations';
+import { getPeriodSchema, PeriodFormData, getLapsoValue } from '../utils/periodValidations';
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
 
@@ -25,8 +25,9 @@ interface PeriodModalProps {
 }
 
 export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoading = false, existingPeriods }: PeriodModalProps) {
-    const { register, handleSubmit, formState: { errors, isDirty }, control, reset, watch, setError, setValue } = useForm<PeriodFormData>({
-        resolver: zodResolver(periodSchema),
+    const { register, handleSubmit, formState: { errors, isDirty }, control, reset, watch, setValue } = useForm<PeriodFormData>({
+        resolver: zodResolver(getPeriodSchema(existingPeriods, periodo?.periodId || undefined, !!periodo)),
+        mode: 'onChange',
         defaultValues: {
             year: '',
             periodoTipo: 'I',
@@ -104,14 +105,47 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
         return Array.from(optionsSet).sort((a, b) => parseInt(a) - parseInt(b));
     }, [periodo, existingPeriods]);
 
+    // Obtener valores actuales para reactividad
+    const yearValue = watch('year');
+
+    /**
+     * Efecto para sincronizar el año del calendario cuando cambia el selector de año.
+     */
+    useEffect(() => {
+        if (!isOpen || periodo || !yearValue) return;
+
+        const selectedYearNum = parseInt(yearValue);
+        if (isNaN(selectedYearNum)) return;
+
+        const currentStartDate = watch('startDate');
+        
+        // Si no hay fecha o el año de la fecha actual no coincide con el seleccionado
+        if (!currentStartDate || currentStartDate.getFullYear() !== selectedYearNum) {
+            // Crear una nueva fecha para el 1 de enero del año seleccionado (o la fecha mínima disponible)
+            const newDate = new Date(selectedYearNum, 0, 1);
+            
+            // Si la fecha mínima disponible es mayor al 1 de enero, usar la mínima
+            if (minNewPeriodStartDate instanceof Date && newDate < minNewPeriodStartDate) {
+                // Solo si el año coincide, si no, forzamos el 1 de enero de ese año
+                if (minNewPeriodStartDate.getFullYear() === selectedYearNum) {
+                    setValue('startDate', minNewPeriodStartDate, { shouldValidate: true });
+                } else {
+                    setValue('startDate', newDate, { shouldValidate: true });
+                }
+            } else {
+                setValue('startDate', newDate, { shouldValidate: true });
+            }
+        }
+    }, [yearValue, isOpen, periodo, minNewPeriodStartDate, setValue, watch]);
+
     /**
      * Efecto para inicializar o resetear el formulario cuando el modal se abre.
      */
     useEffect(() => {
         if (isOpen) {
             if (periodo) {
-                // Dividir el lapso existente (ej: "2025-I") en año y tipo
-                const [year, tipo] = periodo.description.split('-');
+                // Dividir el lapso existente (ej: "I-2025") en año y tipo
+                const [tipo, year] = periodo.description.split('-');
                 const inicio = periodo.startDate; // Ya es un objeto Date gracias al servicio
                 const fin = periodo.endDate;     // Ya es un objeto Date gracias al servicio
                 reset({
@@ -128,7 +162,7 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
 
                 if (existingPeriods.length > 0) {
                     const lastPeriod = [...existingPeriods].sort((a, b) => getLapsoValue(b.description) - getLapsoValue(a.description))[0];
-                    const [lastYearStr, lastTipo] = lastPeriod.description.split('-');
+                    const [lastTipo, lastYearStr] = lastPeriod.description.split('-');
                     const lastYearNum = parseInt(lastYearStr);
 
                     if (!isNaN(lastYearNum)) {
@@ -160,26 +194,8 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
      * Maneja el envío del formulario, valida las fechas y llama a la función onSave.
      */
     const onSubmit: SubmitHandler<PeriodFormData> = (data) => {
-        let newDescription = `${data.year}-${data.periodoTipo}`;
+        let newDescription = `${data.periodoTipo}-${data.year}`;
         let startDateToUse = data.startDate;
-
-        // --- Validación de Solapamiento de Fechas ---
-        if (checkOverlap(data.startDate, data.endDate, existingPeriods, periodo?.periodId)) {
-            setError("startDate", {
-                type: "manual",
-                message: "El rango de fechas se solapa con un periodo existente."
-            });
-            return;
-        }
-
-        // --- Validación 2: Secuencialidad ---
-        if (!periodo || periodo.description !== newDescription) {
-            const seqResult = checkSequentiality(newDescription, existingPeriods);
-            if (!seqResult.isValid) {
-                setError("periodoTipo", { message: seqResult.message });
-                return;
-            }
-        }
 
         if (periodo && isInCurso) {
             newDescription = periodo.description;
@@ -218,8 +234,24 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                     <div className="grid grid-cols-1 gap-y-5">
                         <div>
                             <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Lapso Académico *</label>
-                            <div className={`flex flex-col sm:flex-row items-stretch sm:items-center rounded-lg border ${errors.year || errors.periodoTipo ? 'border-red-500' : 'border-border-light dark:border-border-dark'} bg-white dark:bg-bg-dark overflow-hidden`}>
-                                <div className="relative flex-1 border-b sm:border-b-0 sm:border-r border-border-light dark:border-border-dark">
+                            <div className={`flex flex-row items-center rounded-lg border ${errors.year || errors.periodoTipo ? 'border-red-500' : 'border-border-light dark:border-border-dark'} bg-white dark:bg-bg-dark overflow-hidden`}>
+                                <div className="relative w-20 sm:w-28 bg-bg-secondary/10 dark:bg-white/5 border-r border-border-light dark:border-border-dark">
+                                    <select
+                                        {...register('periodoTipo')}
+                                        disabled={isCulminado || isInCurso}
+                                        className="w-full appearance-none bg-transparent py-2.5 pl-4 pr-10 text-sm text-text-primary outline-none dark:text-white font-medium"
+                                    >
+                                        <option value="I" className="bg-white dark:bg-bg-dark text-black dark:text-white font-medium">I</option>
+                                        <option value="II" className="bg-white dark:bg-bg-dark text-black dark:text-white font-medium">II</option>
+                                    </select>
+                                    <span className="absolute top-1/2 right-3 -translate-y-1/2 pointer-events-none text-text-secondary dark:text-text-tertiary">
+                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </span>
+                                </div>
+
+                                <div className="relative flex-1">
                                     <select
                                         {...register('year')}
                                         disabled={isCulminado || isInCurso}
@@ -236,79 +268,67 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                                         </svg>
                                     </span>
                                 </div>
-
-                                <div className="relative w-full sm:w-28 bg-bg-secondary/10 dark:bg-white/5">
-                                    <select
-                                        {...register('periodoTipo')}
-                                        disabled={isCulminado || isInCurso}
-                                        className="w-full appearance-none bg-transparent py-2.5 pl-4 pr-10 text-sm text-text-primary outline-none dark:text-white text-center font-medium"
-                                    >
-                                        <option value="I" className="bg-white dark:bg-bg-dark text-black dark:text-white font-medium">I</option>
-                                        <option value="II" className="bg-white dark:bg-bg-dark text-black dark:text-white font-medium">II</option>
-                                    </select>
-                                    <span className="absolute top-1/2 right-3 -translate-y-1/2 pointer-events-none text-text-secondary dark:text-text-tertiary">
-                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </span>
-                                </div>
                             </div>
                             {(errors.year || errors.periodoTipo) && <p className="mt-1 text-xs text-red-500">{errors.year?.message || errors.periodoTipo?.message}</p>}
                             <p className="mt-1.5 text-[11px] text-text-tertiary dark:text-gray-400 italic">
-                                Ejemplo: 2026-I (Primer semestre), 2026-II (Segundo semestre).
+                                Ejemplo: I-2025 (Primer semestre), II-2025 (Segundo semestre).
                             </p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Fecha de Inicio *</label>
-                                <Controller
-                                    control={control}
-                                    name="startDate"
-                                    render={({ field }) => (
-                                        <FlatpickrDatePicker
-                                            disabled={isCulminado || isInCurso}
-                                            value={field.value ?? ''}
-                                            onChange={(dates) => {
-                                                const date = dates[0];
-                                                field.onChange(date);
-                                                if (date) {
-                                                    const minDuration = 16 * 7 * 24 * 60 * 60 * 1000;
-                                                    setValue('endDate', new Date(date.getTime() + minDuration), { shouldValidate: true });
-                                                }
-                                            }}
-                                            options={{
-                                                minDate: minNewPeriodStartDate,
-                                                disable: disabledDateRanges,
-                                            }}
-                                            error={!!errors.startDate}
-                                            placeholder="Selecciona fecha"
-                                        />
-                                    )}
-                                />
+                                <div className="relative">
+                                    <Controller
+                                        control={control}
+                                        name="startDate"
+                                        render={({ field }) => (
+                                            <FlatpickrDatePicker
+                                                disabled={isCulminado || isInCurso}
+                                                value={field.value ?? ''}
+                                                onChange={(dates) => {
+                                                    const date = dates[0];
+                                                    field.onChange(date);
+                                                    if (date) {
+                                                        const minDuration = 16 * 7 * 24 * 60 * 60 * 1000;
+                                                        setValue('endDate', new Date(date.getTime() + minDuration), { shouldValidate: true });
+                                                    }
+                                                }}
+                                                options={{
+                                                    minDate: minNewPeriodStartDate,
+                                                    disable: disabledDateRanges,
+                                                }}
+                                                error={!!errors.startDate}
+                                                placeholder="Selecciona fecha"
+                                            />
+                                        )}
+                                    />
+                                </div>
                                 {errors.startDate && <p className="mt-1 text-xs text-red-500">{errors.startDate.message}</p>}
                                 <p className="mt-1 text-[10px] text-text-tertiary">Formato: DD/MM/AAAA. Ej: 15/01/2026</p>
                             </div>
 
                             <div>
                                 <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Fecha de Fin *</label>
-                                <Controller
-                                    control={control}
-                                    name="endDate"
-                                    render={({ field }) => (
-                                        <FlatpickrDatePicker
-                                            disabled={isCulminado}
-                                            value={field.value ?? ''}
-                                            onChange={(dates) => field.onChange(dates[0])}
-                                            options={{
-                                                minDate: minEndDate,
-                                                disable: disabledDateRanges,
-                                            }}
-                                            error={!!errors.endDate}
-                                            placeholder="Selecciona fecha"
-                                        />
-                                    )}
-                                />
+                                <div className="relative">
+                                    <Controller
+                                        control={control}
+                                        name="endDate"
+                                        render={({ field }) => (
+                                            <FlatpickrDatePicker
+                                                disabled={isCulminado}
+                                                value={field.value ?? ''}
+                                                onChange={(dates) => field.onChange(dates[0])}
+                                                options={{
+                                                    minDate: minEndDate,
+                                                    disable: disabledDateRanges,
+                                                }}
+                                                error={!!errors.endDate}
+                                                placeholder="Selecciona fecha"
+                                            />
+                                        )}
+                                    />
+                                </div>
                                 {errors.endDate && <p className="mt-1 text-xs text-red-500">{errors.endDate.message}</p>}
                                 <p className="mt-1 text-[10px] text-text-tertiary">Duración mín: 16 semanas.</p>
                             </div>

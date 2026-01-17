@@ -189,11 +189,14 @@ export default function PreEnrollmentModal({
               setValue("practiceType", sortedTypes[0].NAME);
             }
           } else {
-<<<<<<< Updated upstream
             // Fallback a tipos globales
-            const globalTypes = await getInternshipTypes();
-            setPracticeOptions(mapToOptions(globalTypes));
-            setValue("practiceType", "ORDINARIA");
+            try {
+              const globalTypes = await getInternshipTypes();
+              setPracticeOptions(mapToOptions(globalTypes));
+            } catch (fallbackError) {
+              console.error("Error al cargar tipos globales:", fallbackError);
+            }
+            setValue("practiceType", "ÚNICA");
           }
         } catch (error) {
           console.error("Error al obtener tipos de pasantía para el estudiante:", error);
@@ -204,14 +207,7 @@ export default function PreEnrollmentModal({
           } catch (fallbackError) {
             console.error("Error al cargar tipos globales:", fallbackError);
           }
-          setValue("practiceType", "ORDINARIA");
-=======
-            setValue("practiceType", "ÚNICA"); // Fallback
-          }
-        } catch (error) {
-          console.error("Error al obtener tipos de pasantía para el estudiante:", error);
           setValue("practiceType", "ÚNICA");
->>>>>>> Stashed changes
         }
 
         // Generar Matrícula Automática

@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 import careersRoutes from './routes/careers.routes.js';
@@ -114,26 +115,7 @@ app.use((req, _res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 
-// Apply protection to all subsequent /api routes
-app.use('/api', authenticateToken, restrictAsistente);
-
-app.use('/api/careers', careersRoutes);
-app.use('/api/internship-types', internshipTypesRoutes);
-app.use('/api/periodos', periodsRoutes);
-app.use('/api/enrollments', enrollmentsRoutes);
-app.use('/api/pre-enrollments', preEnrollmentsRoutes);
-app.use('/api/students', studentsRoutes);
-app.use('/api/tutors', tutorsRoutes);
-app.use('/api/tracking', trackingRoutes);
-app.use('/api/institutions', institutionsRoutes);
-app.use('/api/institutional-responsibles', institutionalResponsiblesRoutes);
-app.use('/api/lists', listsRoutes);
-
-// Servir archivos estáticos del frontend (Vite build)
-const frontendDistPath = path.join(__dirname, '../../dist');
-app.use(express.static(frontendDistPath));
-
-// DB status endpoint
+// Public Health endpoints (Must be before authentication)
 app.get('/api/db-status', async (_req, res) => {
   const health = await dbManager.checkHealth();
   res.status(health.status === 'healthy' ? 200 : 503).json({ 
@@ -155,13 +137,67 @@ app.get('/api/health', async (_req, res) => {
   });
 });
 
+// Apply protection to all subsequent /api routes
+app.use('/api', authenticateToken, restrictAsistente);
+
+app.use('/api/careers', careersRoutes);
+app.use('/api/internship-types', internshipTypesRoutes);
+app.use('/api/periodos', periodsRoutes);
+app.use('/api/enrollments', enrollmentsRoutes);
+app.use('/api/pre-enrollments', preEnrollmentsRoutes);
+app.use('/api/students', studentsRoutes);
+app.use('/api/tutors', tutorsRoutes);
+app.use('/api/tracking', trackingRoutes);
+app.use('/api/institutions', institutionsRoutes);
+app.use('/api/institutional-responsibles', institutionalResponsiblesRoutes);
+app.use('/api/lists', listsRoutes);
+
+// Servir archivos estáticos del frontend (Vite build)
+// Intentar encontrar la carpeta dist en lugares comunes
+const possibleDistPaths = [
+  path.join(process.cwd(), '../dist'),      // Desarrollo en Docker (backend está en /app, frontend en /app/../dist -> /dist?? No)
+  path.join(process.cwd(), 'dist'),         // Producción en contenedor backend solo
+  path.join(process.cwd(), '../../dist'),   // Producción en contenedor raíz
+  path.join(__dirname, '../../dist'),       // Basado en __dirname
+  path.join(__dirname, '../dist'),
+];
+
+let frontendDistPath = '';
+for (const p of possibleDistPaths) {
+  if (fs.existsSync(path.join(p, 'index.html'))) {
+    frontendDistPath = p;
+    break;
+  }
+}
+
+if (frontendDistPath) {
+  console.log(`[Static] Serving frontend from: ${frontendDistPath}`);
+  app.use(express.static(frontendDistPath));
+} else {
+  console.warn(`[Static] Frontend dist directory not found. SPA catch-all will be disabled.`);
+}
+
 // Catch-all para el frontend (SPA)
 app.get('*', (req, res, next) => {
   // Si la ruta empieza por /api, no servir el index.html
   if (req.url.startsWith('/api')) {
     return next();
   }
-  res.sendFile(path.join(frontendDistPath, 'index.html'));
+  
+  if (frontendDistPath) {
+    const indexPath = path.join(frontendDistPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      return res.sendFile(indexPath);
+    }
+  }
+
+  // En desarrollo, o si no se encontró el build, devolvemos un JSON informativo
+  res.status(404).json({
+    message: 'Frontend build not found or route not handled',
+    hint: 'If you are in development, use the frontend dev server (localhost:5173).',
+    path: req.url,
+    distPath: frontendDistPath || 'not found'
+  });
 });
 
 // Error Handler

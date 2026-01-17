@@ -9,6 +9,11 @@ RUN npm run build
 # Stage 2: Runtime
 FROM node:20-alpine
 WORKDIR /app
+
+# NOTA DE SEGURIDAD: Los archivos .env se montan como solo lectura (read-only)
+# para prevenir modificaciones accidentales o maliciosas desde el contenedor.
+# La configuración se encuentra en docker-compose.yml utilizando el flag :ro
+
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist

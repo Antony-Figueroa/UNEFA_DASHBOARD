@@ -66,10 +66,10 @@ export const getPeriodSchema = (existingPeriods: Periodo[], currentPeriodId?: st
         }
 
         const endYear = data.endDate.getFullYear();
-        if (endYear !== yearNum) {
+        if (endYear > yearNum + 1) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: `La fecha de cierre debe corresponder estrictamente al año seleccionado (${yearNum}).`,
+                message: `La fecha de cierre no puede exceder más de un año del periodo seleccionado (${yearNum}).`,
                 path: ["endDate"]
             });
         }

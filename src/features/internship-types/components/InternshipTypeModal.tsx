@@ -19,6 +19,7 @@ interface InternshipTypeModalProps {
 
 const internshipTypeSchema = z.object({
   NAME: z.string().min(1, "El nombre es obligatorio"),
+  ABBREVIATION: z.string().min(1, "La abreviación es obligatoria"),
   PRIORITY: z.union([
     z.string().min(1, "La prioridad es obligatoria").refine((val) => !isNaN(Number(val)), "Debe ser un número válido"),
     z.number()
@@ -43,6 +44,7 @@ export default function InternshipTypeModal({
     resolver: zodResolver(internshipTypeSchema),
     defaultValues: {
       NAME: "",
+      ABBREVIATION: "",
       PRIORITY: "",
     },
   });
@@ -59,11 +61,13 @@ export default function InternshipTypeModal({
       if (editingItem) {
         reset({
           NAME: editingItem.NAME,
+          ABBREVIATION: editingItem.ABBREVIATION,
           PRIORITY: String(editingItem.PRIORITY),
         });
       } else {
         reset({
           NAME: "",
+          ABBREVIATION: "",
           PRIORITY: "",
         });
       }
@@ -75,6 +79,7 @@ export default function InternshipTypeModal({
   const onSubmit = (data: InternshipTypeFormData) => {
     onSave({
       NAME: data.NAME,
+      ABBREVIATION: data.ABBREVIATION,
       PRIORITY: Number(data.PRIORITY),
       STATUS: editingItem?.STATUS ?? 1,
     });
@@ -107,12 +112,24 @@ export default function InternshipTypeModal({
                   hint={isSubmitted ? errors.NAME?.message : undefined}
                 />
               </div>
+
+              <div>
+                <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Abreviación *</label>
+                <Input
+                  {...register("ABBREVIATION")}
+                  type="text"
+                  placeholder="Ej: PP, SS, etc."
+                  error={!!errors.ABBREVIATION}
+                  hint={isSubmitted ? errors.ABBREVIATION?.message : undefined}
+                />
+              </div>
+
               <div>
                 <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Prioridad *</label>
                 <Input
                   {...register("PRIORITY")}
                   type="text"
-                  placeholder="Ingrese la prioridad (número)"
+                  placeholder="Ingrese la prioridad (ej: 1)"
                   error={!!errors.PRIORITY}
                   hint={isSubmitted ? errors.PRIORITY?.message : undefined}
                 />

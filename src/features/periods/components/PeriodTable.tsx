@@ -125,7 +125,7 @@ const ActionButtons = ({
                     onClick={() => onEdit()}
                     icon={<EditIcon />}
                     tooltip={currentPeriodStatus === 2 ? "Editar (Solo Fecha Fin)" : "Editar"}
-                    label={isMobile ? (currentPeriodStatus === 2 ? "Editar Fecha Fin" : "Editar Periodo") : undefined}
+                    label={isMobile ? (currentPeriodStatus === 2 ? "Editar Fecha Fin" : "Editar Período") : undefined}
                     variant="primary"
                     fullWidth={isMobile}
                 />
@@ -135,7 +135,7 @@ const ActionButtons = ({
                     onClick={() => onActivate()}
                     icon={<CheckCircleIcon />}
                     tooltip="Activar"
-                    label={isMobile ? "Activar Periodo" : undefined}
+                    label={isMobile ? "Activar Período" : undefined}
                     variant="success"
                     fullWidth={isMobile}
                 />
@@ -145,7 +145,7 @@ const ActionButtons = ({
                     onClick={() => onCulminate()}
                     icon={<CheckCircleIcon />}
                     tooltip="Culminar"
-                    label={isMobile ? "Culminar Periodo" : undefined}
+                    label={isMobile ? "Culminar Período" : undefined}
                     variant="success"
                     fullWidth={isMobile}
                 />
@@ -155,7 +155,7 @@ const ActionButtons = ({
                     onClick={() => onRestore()}
                     icon={<RefreshIcon />}
                     tooltip="Restaurar"
-                    label={isMobile ? "Restaurar Periodo" : undefined}
+                    label={isMobile ? "Restaurar Período" : undefined}
                     variant="success"
                     fullWidth={isMobile}
                 />
@@ -165,7 +165,7 @@ const ActionButtons = ({
                     onClick={() => onDelete()}
                     icon={<TrashIcon />}
                     tooltip="Eliminar"
-                    label={isMobile ? "Eliminar Periodo" : undefined}
+                    label={isMobile ? "Eliminar Período" : undefined}
                     variant="danger"
                     fullWidth={isMobile}
                 />
@@ -202,7 +202,7 @@ const PeriodTable = ({
         order: "asc",
     });
 
-    // Verificar si hay algún periodo "En Curso"
+    // Verificar si hay algún período "En Curso"
     const hasActivePeriod = useMemo(() => {
         return data.some(p => getSafePeriodStatus(p) === 2);
     }, [data]);
@@ -410,7 +410,7 @@ const PeriodTable = ({
                     <div className="relative max-w-xs w-full">
                         <input
                             type="text"
-                            placeholder="Buscar por descripción..."
+                            placeholder="Buscar por descripción"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full rounded-lg border border-border-medium bg-transparent py-2 pl-10 pr-4 text-sm text-text-primary placeholder-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 dark:placeholder-text-tertiary"
@@ -436,9 +436,9 @@ const PeriodTable = ({
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="w-full rounded-lg border border-border-medium bg-transparent py-2 px-4 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 appearance-none"
+                            className="p-4 w-full rounded-lg border border-border-medium bg-transparent py-2 px-4 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 appearance-none"
                         >
-                            <option value="" className="dark:bg-bg-dark">
+                            <option value="" className="dark:bg-bg-dark p-2">
                                 Seleccione Estado
                             </option>
                             <option value="2" className="dark:bg-bg-dark">
@@ -451,7 +451,7 @@ const PeriodTable = ({
                                 Culminado
                             </option>
                         </select>
-                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                        <div className="p-4 pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
@@ -723,7 +723,7 @@ const PeriodTable = ({
                                         <div className="space-y-6">
                                             {periodStatus === 2 && getSafeProgress(periodo) !== null && (
                                                 <div className="text-center">
-                                                    <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-3">Progreso del Periodo</p>
+                                                    <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-3">Progreso del Período</p>
                                                     <div className="flex flex-col items-center gap-2">
                                                         <div className="w-full bg-border-light rounded-full h-2 dark:bg-border-dark max-w-50">
                                                             <div

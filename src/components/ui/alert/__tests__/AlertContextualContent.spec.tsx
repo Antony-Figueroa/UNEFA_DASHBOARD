@@ -18,7 +18,7 @@ describe('ChangeComparison component', () => {
 
     const labels = {
       description: 'Descripción',
-      periodStatus: 'Estado del Periodo',
+      periodStatus: 'Estado del Período',
       otherField: 'Otro Campo'
     };
 
@@ -36,7 +36,7 @@ describe('ChangeComparison component', () => {
     expect(screen.getByText(/new value/i)).toBeDefined();
 
     // NO debe mostrar el cambio en periodStatus
-    const statusLabel = screen.queryByText(/Estado del Periodo:/i);
+    const statusLabel = screen.queryByText(/Estado del Período:/i);
     expect(statusLabel).toBeNull();
     
     const statusValue1 = screen.queryByText('1');

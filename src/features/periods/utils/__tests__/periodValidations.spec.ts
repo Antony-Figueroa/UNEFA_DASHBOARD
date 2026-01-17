@@ -6,20 +6,20 @@ describe('Period Validations', () => {
     const existingPeriods: Periodo[] = [
         {
             periodId: '1',
-            code: '2025-I',
-            description: '2025-I',
-            startDate: new Date('2025-01-01'),
-            endDate: new Date('2025-05-31'),
+            code: '2026-I',
+            description: 'I-2026',
+            startDate: new Date('2026-01-01'),
+            endDate: new Date('2026-05-31'),
             periodStatus: 3,
             status: true,
             creationDate: new Date()
         },
         {
             periodId: '2',
-            code: '2025-II',
-            description: '2025-II',
-            startDate: new Date('2025-06-01'),
-            endDate: new Date('2025-10-31'),
+            code: '2026-II',
+            description: 'II-2026',
+            startDate: new Date('2026-06-01'),
+            endDate: new Date('2026-10-31'),
             periodStatus: 2,
             status: true,
             creationDate: new Date()
@@ -83,20 +83,20 @@ describe('Period Validations', () => {
 
         it('should fail if endDate is before startDate', () => {
             const data = {
-                year: '2026',
+                year: '2027',
                 periodoTipo: 'I' as const,
-                startDate: new Date('2026-05-01'),
-                endDate: new Date('2026-04-01')
+                startDate: new Date('2027-05-01'),
+                endDate: new Date('2027-04-01')
             };
             const result = schema.safeParse(data);
             expect(result.success).toBe(false);
         });
 
         it('should fail if duration is less than 16 weeks', () => {
-            const startDate = new Date('2026-01-01');
+            const startDate = new Date('2027-01-01');
             const endDate = new Date(startDate.getTime() + (15 * 7 * 24 * 60 * 60 * 1000)); // 15 weeks
             const data = {
-                year: '2026',
+                year: '2027',
                 periodoTipo: 'I' as const,
                 startDate,
                 endDate
@@ -107,49 +107,79 @@ describe('Period Validations', () => {
 
         it('should fail if year does not match startDate year', () => {
             const data = {
-                year: '2026',
+                year: '2027',
                 periodoTipo: 'I' as const,
-                startDate: new Date(2025, 0, 1),
-                endDate: new Date(2025, 5, 1)
+                startDate: new Date(2026, 0, 1), // Jan 2026 is still in the past if today is 2026-01-17, but I'll use 2028
+                endDate: new Date(2026, 5, 1)
             };
+            // Wait, I'll use years that are definitely not past.
+            data.startDate = new Date(2028, 0, 1);
+            data.endDate = new Date(2028, 5, 1);
+            data.year = '2027';
+
             const result = schema.safeParse(data);
             expect(result.success).toBe(false);
             if (!result.success) {
-                expect(result.error.issues[0].message).toContain('La fecha de inicio no puede ser anterior al año 2026');
+                expect(result.error.issues[0].message).toContain('La fecha de inicio debe corresponder estrictamente al año seleccionado (2027)');
             }
         });
 
         it('should fail if startDate year is after selected year', () => {
             const data = {
-                year: '2025',
+                year: '2027',
                 periodoTipo: 'I' as const,
-                startDate: new Date(2026, 0, 1),
-                endDate: new Date(2026, 5, 1)
+                startDate: new Date(2028, 0, 1),
+                endDate: new Date(2028, 5, 1)
             };
             const result = schema.safeParse(data);
             expect(result.success).toBe(false);
             if (!result.success) {
-                expect(result.error.issues[0].message).toContain('La fecha de inicio debe corresponder al año 2025');
+                expect(result.error.issues[0].message).toContain('La fecha de inicio debe corresponder estrictamente al año seleccionado (2027)');
             }
         });
 
         it('should pass if year matches startDate year', () => {
             const data = {
-                year: '2025',
+                year: '2027',
                 periodoTipo: 'I' as const,
-                startDate: new Date(2025, 0, 15),
-                endDate: new Date(2025, 5, 15)
+                startDate: new Date(2027, 0, 15),
+                endDate: new Date(2027, 5, 15)
             };
             const result = schema.safeParse(data);
             expect(result.success).toBe(true);
         });
 
+        it('should pass if endDate is in the next year', () => {
+            const data = {
+                year: '2027',
+                periodoTipo: 'II' as const,
+                startDate: new Date(2027, 8, 1), // Sept 2027
+                endDate: new Date(2028, 0, 15)   // Jan 2028
+            };
+            const result = schema.safeParse(data);
+            expect(result.success).toBe(true);
+        });
+
+        it('should fail if endDate is 2 years after selected year', () => {
+            const data = {
+                year: '2027',
+                periodoTipo: 'I' as const,
+                startDate: new Date(2027, 0, 1),
+                endDate: new Date(2029, 0, 1)
+            };
+            const result = schema.safeParse(data);
+            expect(result.success).toBe(false);
+            if (!result.success) {
+                expect(result.error.issues[0].message).toContain('La fecha de cierre no puede exceder más de un año');
+            }
+        });
+
         it('should handle different date formats correctly via Date object', () => {
             const data = {
-                year: '2025',
+                year: '2027',
                 periodoTipo: 'I' as const,
-                startDate: new Date(2025, 2, 10),
-                endDate: new Date(2025, 7, 20)
+                startDate: new Date(2027, 2, 10),
+                endDate: new Date(2027, 7, 20)
             };
             const result = schema.safeParse(data);
             expect(result.success).toBe(true);

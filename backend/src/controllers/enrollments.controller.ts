@@ -182,7 +182,7 @@ export const createEnrollment = async (req: Request, res: Response) => {
         .eq('DESCRIPTION', period)
         .single();
       
-      if (periodError || !periodData) throw new Error('Periodo no encontrado');
+      if (periodError || !periodData) throw new Error('Período no encontrado');
 
       // 3. Buscar Tipo de Práctica
       const { data: typeData, error: typeError } = await supabase

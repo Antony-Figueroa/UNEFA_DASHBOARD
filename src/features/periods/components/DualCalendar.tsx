@@ -16,8 +16,24 @@ const DualCalendar: React.FC<DualCalendarProps> = ({ startDate, endDate }) => {
     return d;
   };
 
-  const [month1, setMonth1] = useState(getStartOfMonth(startDate));
-  const [month2, setMonth2] = useState(getStartOfMonth(endDate.getMonth() === startDate.getMonth() ? addMonths(startDate, 1) : endDate));
+  const minMonth = getStartOfMonth(startDate);
+  const maxMonth = getStartOfMonth(endDate);
+
+  const [baseMonth, setBaseMonth] = useState(minMonth);
+
+  const month1 = baseMonth;
+  const month2 = addMonths(baseMonth, 1);
+
+  const canGoPrev = baseMonth.getTime() > minMonth.getTime();
+  const canGoNext = addMonths(baseMonth, 1).getTime() < maxMonth.getTime();
+
+  const handlePrev = () => {
+    if (canGoPrev) setBaseMonth(addMonths(baseMonth, -1));
+  };
+
+  const handleNext = () => {
+    if (canGoNext) setBaseMonth(addMonths(baseMonth, 1));
+  };
 
   const formatDate = (date: Date, options: Intl.DateTimeFormatOptions) => {
     return new Intl.DateTimeFormat('es-ES', options).format(date);
@@ -36,7 +52,7 @@ const DualCalendar: React.FC<DualCalendarProps> = ({ startDate, endDate }) => {
     return d >= s && d <= e;
   };
 
-  const renderMonth = (month: Date, setMonth: React.Dispatch<React.SetStateAction<Date>>) => {
+  const renderMonth = (month: Date, isLeft: boolean) => {
     const year = month.getFullYear();
     const monthIdx = month.getMonth();
     
@@ -65,18 +81,31 @@ const DualCalendar: React.FC<DualCalendarProps> = ({ startDate, endDate }) => {
             {formatDate(month, { month: 'long', year: 'numeric' })}
           </h3>
           <div className="flex gap-1">
-            <button 
-              onClick={() => setMonth(addMonths(month, -1))}
-              className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-colors"
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-            </button>
-            <button 
-              onClick={() => setMonth(addMonths(month, 1))}
-              className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400 transition-colors"
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-            </button>
+            {isLeft ? (
+              <button 
+                onClick={handlePrev}
+                disabled={!canGoPrev}
+                className={`p-1.5 rounded-full transition-colors ${
+                  canGoPrev 
+                    ? "hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400" 
+                    : "text-gray-200 dark:text-gray-700 cursor-not-allowed"
+                }`}
+              >
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              </button>
+            ) : (
+              <button 
+                onClick={handleNext}
+                disabled={!canGoNext}
+                className={`p-1.5 rounded-full transition-colors ${
+                  canGoNext 
+                    ? "hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400" 
+                    : "text-gray-200 dark:text-gray-700 cursor-not-allowed"
+                }`}
+              >
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+              </button>
+            )}
           </div>
         </div>
         <div className="grid grid-cols-7 mb-2">
@@ -158,9 +187,9 @@ const DualCalendar: React.FC<DualCalendarProps> = ({ startDate, endDate }) => {
   return (
     <div className="w-full max-w-full overflow-hidden">
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 bg-white dark:bg-white/3 p-5 sm:p-7 rounded-3xl border border-gray-100 dark:border-white/10 shadow-sm">
-        {renderMonth(month1, setMonth1)}
+        {renderMonth(month1, true)}
         <div className="hidden lg:block w-px bg-gray-100 dark:bg-white/10 my-4"></div>
-        {renderMonth(month2, setMonth2)}
+        {renderMonth(month2, false)}
       </div>
       
       <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-5">

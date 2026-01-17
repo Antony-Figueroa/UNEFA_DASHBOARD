@@ -9,7 +9,7 @@ const GraduateStatsSection: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold text-text-emphasis sm:text-4xl mb-4">
-            Reporte Estadístico: Pasantías y Prácticas Profesionales
+            Reporte Estadístico: Prácticas Profesionales
           </h2>
           <div className="h-1.5 w-24 bg-[#2d90c4] mx-auto rounded-full mb-6" />
           <p className="max-w-3xl mx-auto text-lg text-text-secondary">
@@ -79,7 +79,7 @@ const GraduateStatsSection: React.FC = () => {
           </div>
 
           <div className="bg-bg-secondary dark:bg-white/5 p-8 rounded-3xl border border-border-light dark:border-border-dark shadow-theme-md">
-            <h3 className="text-2xl font-bold text-text-emphasis mb-6">Ficha Técnica: Pasantías Acarigua</h3>
+            <h3 className="text-2xl font-bold text-text-emphasis mb-6">Ficha Técnica: Prácticas Profesionales Acarigua</h3>
             <ul className="space-y-6">
               <li className="flex gap-4">
                 <div className="h-6 w-6 shrink-0 rounded-full bg-[#2d90c4]/20 flex items-center justify-center text-[#2d90c4] text-xs font-bold">1</div>

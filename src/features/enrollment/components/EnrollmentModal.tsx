@@ -206,11 +206,11 @@ export default function EnrollmentModal({
             const mainType = internshipTypes.sort((a, b) => a.PRIORITY - b.PRIORITY)[0];
             setValue("practiceType", mainType.NAME);
           } else {
-            setValue("practiceType", "ORDINARIA"); // Fallback
+            setValue("practiceType", "ÚNICA"); // Fallback
           }
         } catch (error) {
           console.error("Error al obtener tipos de pasantía para el estudiante:", error);
-          setValue("practiceType", "ORDINARIA");
+          setValue("practiceType", "ÚNICA");
         }
       }
     } catch (error) {

@@ -525,6 +525,9 @@ export default function CareersPage() {
         editingCareer={editingCareer}
         internshipOptions={internshipOptions}
         isLoading={loadingAction}
+        hasPendingEvaluations={editingCareer?.hasPendingEvaluations}
+        isInUse={editingCareer?.isInUse}
+        existingCareers={careers}
       />
 
       <CareerViewModal

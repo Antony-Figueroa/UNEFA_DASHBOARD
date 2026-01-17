@@ -79,7 +79,7 @@ export const ActionButton = React.forwardRef<HTMLButtonElement, ActionButtonProp
 
     // If there's a label, we might not need a tooltip, but it doesn't hurt
     return (
-      <Tooltip content={tooltip} delay={300} duration={5000}>
+      <Tooltip content={tooltip} delay={300} duration={5000} isDisabled={disabled}>
         {buttonElement}
       </Tooltip>
     );

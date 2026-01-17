@@ -5,6 +5,10 @@ const handleDbError = (res: Response, error: unknown) => {
   console.error('Database Error:', error);
   const dbError = error as { message?: string; details?: string; code?: string };
   
+  if (dbError.code === 'BUSINESS_RULE_VIOLATION') {
+    return res.status(400).json({ message: dbError.message });
+  }
+
   // Mensaje amigable según el código de error de Postgres
   let userMessage = 'Error en la base de datos';
   if (dbError.code === '23502') {

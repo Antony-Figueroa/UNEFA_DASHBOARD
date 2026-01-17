@@ -13,6 +13,7 @@ describe("careersService - createCareer y fromApi", () => {
       careerName: "CAREER_NAME 1",
       minimumGrade: 12,
       careerAbbreviation: "CAREER_ABBREVIATION 1",
+      careerType: "LARGA",
       internshipTypeIds: ["1", "3", "2"],
       status: true,
     };
@@ -30,6 +31,7 @@ describe("careersService - createCareer y fromApi", () => {
             CAREER_NAME: "CAREER_NAME 1",
             MINIMUM_GRADE: 12,
             CAREER_ABBREVIATION: "CAREER_ABBREVIATION 1",
+            CAREER_TYPE: "LARGA",
             INTERNSHIP_TYPE_IDS: [1, 3, 2],
             CREATION_DATE: 1767211511,
             STATUS: true,
@@ -45,6 +47,7 @@ describe("careersService - createCareer y fromApi", () => {
       careerName: "CAREER_NAME 1",
       minimumGrade: 12,
       careerAbbreviation: "CAREER_ABBREVIATION 1",
+      careerType: "LARGA",
       internshipTypeIds: ["1", "3", "2"],
       status: true,
     });

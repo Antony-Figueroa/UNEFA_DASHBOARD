@@ -16,15 +16,20 @@ import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
+import { Tabs } from "../../components/ui/tabs/Tabs";
 import { PlusCircleIcon } from "../../icons/actions";
 
 import CareerTable from "../../features/careers/components/CareerTable";
 import CareerModal from "../../features/careers/components/CareerModal";
 import CareerViewModal from "../../features/careers/components/CareerViewModal";
+import InternshipTypeTable from "../../features/internship-types/components/InternshipTypeTable";
+import InternshipTypeModal from "../../features/internship-types/components/InternshipTypeModal";
+import InternshipTypeViewModal from "../../features/internship-types/components/InternshipTypeViewModal";
 import { useCareers } from "../../features/careers/hooks/useCareers";
 import { Career, CareerRowData } from "../../features/careers/types";
 import { formatDateTime } from "../../utils/date";
 import { useInternshipTypes } from "../../features/internship-types/hooks/useInternshipTypes";
+import { InternshipType } from "../../features/internship-types/types";
 
 /**
  * Transforma un objeto de tipo Career (dominio) a CareerRowData (vista).
@@ -53,7 +58,19 @@ const formatCareerToRow = (c: Career): CareerRowData => ({
  */
 export default function CareersPage() {
   const [pageLoading, setPageLoading] = useState(true);
-  const { options: internshipOptions, fetchAll: fetchInternshipTypes, isLoading: loadingTypes } = useInternshipTypes();
+  const { 
+    internshipTypes,
+    options: internshipOptions, 
+    fetchAll: fetchInternshipTypes, 
+    isLoading: loadingTypes,
+    loadingAction: loadingTypeAction,
+    addInternshipType,
+    editInternshipType,
+    toggleStatus: toggleTypeStatus,
+    bulkRemove: bulkRemoveTypes,
+    bulkRestore: bulkRestoreTypes,
+    // error: typeError // Eliminado porque no se usa
+  } = useInternshipTypes();
 
   useEffect(() => {
     const init = async () => {
@@ -70,7 +87,7 @@ export default function CareersPage() {
   const {
     careers,
     status,
-    loadingAction,
+    loadingAction: loadingCareerAction,
     error,
     addCareer,
     editCareer,
@@ -80,17 +97,23 @@ export default function CareersPage() {
     bulkRestoreCareers,
   } = useCareers();
 
+  const loadingAction = loadingCareerAction || loadingTypeAction;
+
+  /** @state {('Carreras'|'Tipos de Prácticas')} mainTab - Controla qué sección se muestra. */
+  const [mainTab, setMainTab] = useState<"Carreras" | "Tipos de Prácticas">("Carreras");
+
   /** @state {('Activas'|'Inactivas')} activeTab - Controla qué conjunto de datos se muestra en la tabla. */
   const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
 
-  /** @state {boolean} isModalOpen - Controla la visibilidad del modal de creación/edición. */
+  // Estados para Carreras
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  /** @state {Career|null} editingCareer - Almacena la carrera que se está editando actualmente. */
   const [editingCareer, setEditingCareer] = useState<Career | null>(null);
-
-  /** @state {CareerRowData|null} viewCareer - Almacena los datos de la carrera para el modal de vista rápida. */
   const [viewCareer, setViewCareer] = useState<CareerRowData | null>(null);
+
+  // Estados para Tipos de Prácticas
+  const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
+  const [editingType, setEditingType] = useState<InternshipType | null>(null);
+  const [viewType, setViewType] = useState<InternshipType | null>(null);
 
   /**
    * Definición de tipos para el estado de confirmación.
@@ -119,11 +142,16 @@ export default function CareersPage() {
   }, [careers, activeTab]);
 
   /**
-   * Prepara el estado para crear una nueva carrera y abre el modal.
+   * Prepara el estado para crear una nueva carrera o tipo de práctica y abre el modal.
    */
   const handleCreate = () => {
-    setEditingCareer(null);
-    setIsModalOpen(true);
+    if (mainTab === "Carreras") {
+      setEditingCareer(null);
+      setIsModalOpen(true);
+    } else {
+      setEditingType(null);
+      setIsTypeModalOpen(true);
+    }
   };
 
   /**
@@ -134,6 +162,14 @@ export default function CareersPage() {
     const original = careers.find((c) => String(c.careerId) === String(row.careerId)) || null;
     setEditingCareer(original);
     setIsModalOpen(true);
+  };
+
+  /**
+   * Prepara el estado para editar un tipo de práctica.
+   */
+  const handleEditType = (item: InternshipType) => {
+    setEditingType(item);
+    setIsTypeModalOpen(true);
   };
 
   /**
@@ -170,6 +206,34 @@ export default function CareersPage() {
   };
 
   /**
+   * Procesa el guardado de un tipo de práctica.
+   */
+  const handleSaveType = (payload: Omit<InternshipType, "INTERNSHIP_TYPE_ID" | "CREATION_DATE">) => {
+    const isEditing = !!editingType;
+    setConfirmation({
+      isOpen: true,
+      title: isEditing ? "Confirmar Modificación" : "Confirmar Registro",
+      message: `¿Estás seguro de que deseas ${isEditing ? "guardar los cambios en" : "registrar"} este tipo de práctica?`,
+      onConfirm: async () => {
+        try {
+          if (isEditing && editingType) {
+            await editInternshipType(editingType.INTERNSHIP_TYPE_ID, payload);
+          } else {
+            await addInternshipType(payload);
+          }
+          setIsTypeModalOpen(false);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setConfirmation(null);
+        }
+      },
+      confirmText: isEditing ? "Guardar" : "Registrar",
+      variant: "info",
+    });
+  };
+
+  /**
    * Alterna el estado de una carrera entre Activo e Inactivo.
    * @param {string | number} careerId - ID único de la carrera.
    */
@@ -186,6 +250,30 @@ export default function CareersPage() {
       onConfirm: async () => {
         try {
           await toggleStatus(careerId);
+        } catch (e) { console.error(e); }
+        finally { setConfirmation(null); }
+      },
+      confirmText: goingInactive ? "Confirmar" : "Restaurar",
+      variant: goingInactive ? "error" : "success",
+    });
+  };
+
+  /**
+   * Alterna el estado de un tipo de práctica.
+   */
+  const handleToggleTypeStatus = (id: number) => {
+    const original = internshipTypes.find((t) => t.INTERNSHIP_TYPE_ID === id);
+    if (!original) return;
+    const goingInactive = original.STATUS === 1;
+    setConfirmation({
+      isOpen: true,
+      title: goingInactive ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
+      message: goingInactive 
+        ? `¿Estás seguro de que deseas enviar el tipo de práctica "${original.NAME}" a Inactivos?`
+        : `¿Estás seguro de que deseas restaurar el tipo de práctica "${original.NAME}"?`,
+      onConfirm: async () => {
+        try {
+          await toggleTypeStatus(id);
         } catch (e) { console.error(e); }
         finally { setConfirmation(null); }
       },
@@ -244,6 +332,28 @@ export default function CareersPage() {
   };
 
   /**
+   * Ejecuta la eliminación masiva de tipos de prácticas.
+   */
+  const handleBulkDeleteTypes = (ids: number[]) => {
+    setConfirmation({
+      isOpen: true,
+      title: "Confirmar Envío a Inactivos (Masivo)",
+      message: `¿Estás seguro de que deseas enviar los ${ids.length} tipos de prácticas seleccionados a Inactivos?`,
+      onConfirm: async () => {
+        try {
+          await bulkRemoveTypes(ids);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setConfirmation(null);
+        }
+      },
+      confirmText: "Confirmar",
+      variant: "error",
+    });
+  };
+
+  /**
    * Ejecuta la restauración masiva de múltiples carreras seleccionadas.
    * @param {(string | number)[]} ids - Lista de IDs de carreras a restaurar.
    */
@@ -267,21 +377,47 @@ export default function CareersPage() {
   };
 
   /**
+   * Ejecuta la restauración masiva de tipos de prácticas.
+   */
+  const handleBulkRestoreTypes = (ids: number[]) => {
+    setConfirmation({
+      isOpen: true,
+      title: "Confirmar Restauración Masiva",
+      message: `¿Estás seguro de que deseas restaurar los ${ids.length} tipos de prácticas seleccionados?`,
+      onConfirm: async () => {
+        try {
+          await bulkRestoreTypes(ids);
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setConfirmation(null);
+        }
+      },
+      confirmText: "Restaurar",
+      variant: "success",
+    });
+  };
+
+  /**
    * Renderizado del componente.
    * Estructura:
    * 1. Meta información y Breadcrumbs.
-   * 2. Encabezado con título y acción primaria (Nueva Carrera).
+   * 2. Encabezado con título y acción primaria (Nueva Carrera/Tipo de Práctica).
    * 3. Alertas de página (éxito/error).
-   * 4. Card principal con navegación por pestañas (Activas/Inactivas).
-   * 5. Tabla de datos (CareerTable).
-   * 6. Modales secundarios (Edición, Vista, Confirmación).
+   * 4. Pestañas principales (Carreras/Tipos de Prácticas).
+   * 5. Card principal con navegación por pestañas secundarias (Activas/Inactivas).
+   * 6. Tabla de datos (CareerTable o InternshipTypeTable).
+   * 7. Modales secundarios (Edición, Vista, Confirmación).
    */
   return (
     <>
-      <PageMeta title="Gestión de Carreras" description="Administración de carreras académicas" />
+      <PageMeta 
+        title={mainTab === "Carreras" ? "Gestión de Carreras" : "Tipos de Prácticas"} 
+        description="Administración de carreras y tipos de prácticas académicas" 
+      />
 
       <SkeletonLoader isLoading={pageLoading} skeleton={<BreadcrumbSkeleton />} id="careers-breadcrumb">
-        <PageBreadcrumb pageTitle="Carreras" />
+        <PageBreadcrumb pageTitle={mainTab} />
       </SkeletonLoader>
 
       {loadingAction && <FullScreenLoader label="Procesando..." />}
@@ -291,62 +427,97 @@ export default function CareersPage() {
           <div>
             <SkeletonLoader isLoading={pageLoading} skeleton={<TitleSkeleton />} id="careers-title">
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold text-text-primary dark:text-text-emphasis">Gestión de Carreras</h2>
+                <h2 className="text-2xl font-bold text-text-primary dark:text-text-emphasis">
+                  {mainTab === "Carreras" ? "Gestión de Carreras" : "Tipos de Prácticas"}
+                </h2>
               </div>
-              <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">Configura las ofertas académicas y parámetros de aprobación.</p>
+              <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">
+                {mainTab === "Carreras" 
+                  ? "Configura las ofertas académicas y parámetros de aprobación." 
+                  : "Administra los diferentes tipos de prácticas profesionales disponibles."}
+              </p>
             </SkeletonLoader>
           </div>
           {!pageLoading && (
             <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
-              Nueva Carrera
+              {mainTab === "Carreras" ? "Nueva Carrera" : "Nuevo Tipo"}
             </Button>
           )}
         </div>
 
+        {/* Pestañas Principales */}
+        <div className="mb-6">
+          <Tabs
+            options={[
+              { id: "Carreras", label: "Carreras" },
+              { id: "Tipos de Prácticas", label: "Tipos de Prácticas" }
+            ]}
+            activeTab={mainTab}
+            onTabChange={(id) => setMainTab(id as "Carreras" | "Tipos de Prácticas")}
+            variant="pills"
+          />
+        </div>
+
         {/* Contenido principal */}
         <div className="space-y-6">
-            <ComponentCard title={activeTab === "Activas" ? "Carreras Activas" : "Carreras Inactivas"}>
-              <div className="mb-6 flex border-b border-border-light dark:border-white/5">
-                <button
-                  onClick={() => setActiveTab("Activas")}
-                  className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Activas" ? "text-brand-500" : "text-text-secondary hover:text-text-primary"
-                    }`}
-                >
-                  Activas
-                  {activeTab === "Activas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-                </button>
-                <button
-                  onClick={() => setActiveTab("Inactivas")}
-                  className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Inactivas" ? "text-brand-500" : "text-text-secondary hover:text-text-primary"
-                    }`}
-                >
-                  Inactivas
-                  {activeTab === "Inactivas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-                </button>
-              </div>
+          <ComponentCard title={activeTab === "Activas" ? `${mainTab} Activos` : `${mainTab} Inactivos`}>
+            <div className="mb-6 flex border-b border-border-light dark:border-white/5">
+              <button
+                onClick={() => setActiveTab("Activas")}
+                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Activas" ? "text-brand-500" : "text-text-secondary hover:text-text-primary"
+                  }`}
+              >
+                Activos
+                {activeTab === "Activas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
+              </button>
+              <button
+                onClick={() => setActiveTab("Inactivas")}
+                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Inactivas" ? "text-brand-500" : "text-text-secondary hover:text-text-primary"
+                  }`}
+              >
+                Inactivos
+                {activeTab === "Inactivas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
+              </button>
+            </div>
 
-            <SkeletonLoader isLoading={pageLoading || status === "loading" || loadingTypes} skeleton={<TablePageSkeleton rows={5} />} id="careers-table">
-              <CareerTable
-                data={filtered}
-                status={status}
-                error={error}
-                activeTab={activeTab}
-                practiceOptions={internshipOptions}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onToggleStatus={handleToggleStatus}
-                onView={setViewCareer}
-                onBulkDelete={handleBulkDelete}
-                onBulkRestore={handleBulkRestore}
-                inactiveMode={activeTab === "Inactivas"}
-                loading={loadingAction}
-              />
+            <SkeletonLoader isLoading={pageLoading || (mainTab === "Carreras" ? status === "loading" : loadingTypes)} skeleton={<TablePageSkeleton rows={5} />} id="careers-table">
+              {mainTab === "Carreras" ? (
+                <CareerTable
+                  data={filtered}
+                  status={status}
+                  error={error}
+                  activeTab={activeTab}
+                  practiceOptions={internshipOptions}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onToggleStatus={handleToggleStatus}
+                  onView={setViewCareer}
+                  onBulkDelete={handleBulkDelete}
+                  onBulkRestore={handleBulkRestore}
+                  inactiveMode={activeTab === "Inactivas"}
+                  loading={loadingAction}
+                />
+              ) : (
+                <InternshipTypeTable
+                  data={internshipTypes.filter((t) => (activeTab === "Activas" ? t.STATUS === 1 : t.STATUS === 0))}
+                  status={loadingTypes ? "loading" : "success"}
+                  error={null}
+                  activeTab={activeTab}
+                  onEdit={handleEditType}
+                  onDelete={handleToggleTypeStatus}
+                  onToggleStatus={handleToggleTypeStatus}
+                  onView={setViewType}
+                  onBulkDelete={handleBulkDeleteTypes}
+                  onBulkRestore={handleBulkRestoreTypes}
+                  inactiveMode={activeTab === "Inactivas"}
+                />
+              )}
             </SkeletonLoader>
           </ComponentCard>
         </div>
       </div>
 
-      {/* Modal Crear/Editar */}
+      {/* Modales de Carreras */}
       <CareerModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -356,13 +527,28 @@ export default function CareersPage() {
         isLoading={loadingAction}
       />
 
-      {/* Modal Ver */}
       <CareerViewModal
         isOpen={!!viewCareer}
         onClose={() => setViewCareer(null)}
         onEdit={handleEdit}
         career={viewCareer}
         internshipOptions={internshipOptions}
+      />
+
+      {/* Modales de Tipos de Prácticas */}
+      <InternshipTypeModal
+        isOpen={isTypeModalOpen}
+        onClose={() => setIsTypeModalOpen(false)}
+        onSave={handleSaveType}
+        editingItem={editingType}
+        isLoading={loadingAction}
+      />
+
+      <InternshipTypeViewModal
+        isOpen={!!viewType}
+        onClose={() => setViewType(null)}
+        onEdit={handleEditType}
+        item={viewType}
       />
 
       <UnifiedDialog

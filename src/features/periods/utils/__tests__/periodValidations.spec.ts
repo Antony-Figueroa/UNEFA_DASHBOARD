@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { checkOverlap, checkSequentiality, getLapsoValue, periodSchema } from '../periodValidations';
+import { checkOverlap, checkSequentiality, getLapsoValue, getPeriodSchema } from '../periodValidations';
 import { Periodo } from '../../types';
 
 describe('Period Validations', () => {
@@ -72,13 +72,15 @@ describe('Period Validations', () => {
     });
 
     describe('getLapsoValue', () => {
-        it('should convert I to .0 and II to .5', () => {
-            expect(getLapsoValue('2025-I')).toBe(2025.0);
-            expect(getLapsoValue('2025-II')).toBe(2025.5);
+        it('should convert I to 1 and II to 2 with year prefix', () => {
+            expect(getLapsoValue('I-2025')).toBe(20251);
+            expect(getLapsoValue('II-2025')).toBe(20252);
         });
     });
 
-    describe('periodSchema (Zod)', () => {
+    describe('getPeriodSchema (Zod)', () => {
+        const schema = getPeriodSchema(existingPeriods, undefined, false);
+
         it('should fail if endDate is before startDate', () => {
             const data = {
                 year: '2026',
@@ -86,7 +88,7 @@ describe('Period Validations', () => {
                 startDate: new Date('2026-05-01'),
                 endDate: new Date('2026-04-01')
             };
-            const result = periodSchema.safeParse(data);
+            const result = schema.safeParse(data);
             expect(result.success).toBe(false);
         });
 
@@ -99,7 +101,7 @@ describe('Period Validations', () => {
                 startDate,
                 endDate
             };
-            const result = periodSchema.safeParse(data);
+            const result = schema.safeParse(data);
             expect(result.success).toBe(false);
         });
 
@@ -110,7 +112,7 @@ describe('Period Validations', () => {
                 startDate: new Date(2025, 0, 1),
                 endDate: new Date(2025, 5, 1)
             };
-            const result = periodSchema.safeParse(data);
+            const result = schema.safeParse(data);
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error.issues[0].message).toContain('La fecha de inicio no puede ser anterior al año 2026');
@@ -124,7 +126,7 @@ describe('Period Validations', () => {
                 startDate: new Date(2026, 0, 1),
                 endDate: new Date(2026, 5, 1)
             };
-            const result = periodSchema.safeParse(data);
+            const result = schema.safeParse(data);
             expect(result.success).toBe(false);
             if (!result.success) {
                 expect(result.error.issues[0].message).toContain('La fecha de inicio debe corresponder al año 2025');
@@ -138,7 +140,7 @@ describe('Period Validations', () => {
                 startDate: new Date(2025, 0, 15),
                 endDate: new Date(2025, 5, 15)
             };
-            const result = periodSchema.safeParse(data);
+            const result = schema.safeParse(data);
             expect(result.success).toBe(true);
         });
 
@@ -149,7 +151,7 @@ describe('Period Validations', () => {
                 startDate: new Date(2025, 2, 10),
                 endDate: new Date(2025, 7, 20)
             };
-            const result = periodSchema.safeParse(data);
+            const result = schema.safeParse(data);
             expect(result.success).toBe(true);
         });
     });

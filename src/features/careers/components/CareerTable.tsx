@@ -5,6 +5,7 @@ import { ActionButton } from "../../../components/common/ActionButton";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { CareerRowData } from "../types";
+import { InternshipTypeOption } from "../../internship-types/types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import Badge from "../../../components/ui/badge/Badge";
 
@@ -30,7 +31,7 @@ interface CareerTableProps {
   inactiveMode?: boolean;
   activeTab?: "Activas" | "Inactivas";
   loading?: boolean;
-  practiceOptions?: { value: string; label: string }[];
+  practiceOptions?: InternshipTypeOption[];
 }
 
 type SortKey = "careerCode" | "careerName" | "minimumGrade" | "careerAbbreviation";
@@ -340,7 +341,7 @@ export default function CareerTable({
             >
               <option value="" className="dark:bg-bg-dark">Todos los tipos</option>
               {practiceOptions.map((opt) => (
-                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
+                <option key={opt.id} value={opt.id} className="dark:bg-bg-dark">
                   {opt.label}
                 </option>
               ))}
@@ -495,7 +496,7 @@ export default function CareerTable({
                     <div className="flex flex-wrap gap-1">
                       {c.internshipTypeIds && c.internshipTypeIds.length > 0 ? (
                         c.internshipTypeIds.slice(0, 2).map((id, i) => {
-                          const opt = practiceOptions.find(o => String(o.value) === String(id));
+                          const opt = practiceOptions.find(o => Number(o.id) === Number(id));
                           return (
                             <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-brand-50 text-brand-600 border border-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:border-brand-500/20">
                               {opt ? opt.label : id}
@@ -595,7 +596,7 @@ export default function CareerTable({
                         <div className="flex flex-wrap justify-center gap-1">
                           {c.internshipTypeIds && c.internshipTypeIds.length > 0 ? (
                             c.internshipTypeIds.map((id, i) => {
-                              const opt = practiceOptions.find(o => String(o.value) === String(id));
+                              const opt = practiceOptions.find(o => Number(o.id) === Number(id));
                               return (
                                 <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-brand-50 text-brand-600 border border-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:border-brand-500/20">
                                   {opt ? opt.label : id}

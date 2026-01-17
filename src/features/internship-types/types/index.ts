@@ -8,6 +8,7 @@ export interface InternshipType {
 }
 
 export interface InternshipTypeOption {
+  id: number;
   value: string;
   label: string;
   text: string; // Para compatibilidad con MultiSelect

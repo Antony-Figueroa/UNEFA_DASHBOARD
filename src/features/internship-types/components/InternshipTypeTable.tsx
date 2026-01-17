@@ -4,11 +4,14 @@ import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "
 import { ActionButton } from "../../../components/common/ActionButton";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon } from "../../../icons/actions";
 import { InternshipType } from "../types";
+import { Career } from "../../careers/types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import Badge from "../../../components/ui/badge/Badge";
+import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 
 interface InternshipTypeTableProps {
   data: InternshipType[];
+  careers?: Career[];
   status: "loading" | "success" | "error";
   error: Error | null;
   onEdit?: (item: InternshipType) => void;
@@ -27,6 +30,7 @@ type SortOrder = "asc" | "desc";
 
 export default function InternshipTypeTable({
   data = [],
+  careers = [],
   status,
   onEdit,
   // onDelete, // Eliminado porque no se usa
@@ -47,6 +51,11 @@ export default function InternshipTypeTable({
     key: "NAME",
     order: "asc",
   });
+
+  // Función para verificar si un tipo de práctica está vinculado a alguna carrera
+  const hasLinkedCareers = (typeId: number) => {
+    return careers.some(c => c.internshipTypeIds?.includes(String(typeId)));
+  };
 
   useEffect(() => {
     setSelectedIds([]);
@@ -225,12 +234,26 @@ export default function InternshipTypeTable({
                           variant="primary"
                         />
                       )}
-                      <ActionButton
-                        onClick={() => onToggleStatus?.(item.INTERNSHIP_TYPE_ID)}
-                        icon={inactiveMode ? <RefreshIcon /> : <TrashIcon />}
-                        tooltip={inactiveMode ? "Restaurar" : "Eliminar"}
-                        variant={inactiveMode ? "success" : "danger"}
-                      />
+                      {hasLinkedCareers(item.INTERNSHIP_TYPE_ID) && !inactiveMode ? (
+                        <Tooltip content="No se puede eliminar porque tiene carreras afiliadas">
+                          <div className="cursor-not-allowed opacity-50">
+                            <ActionButton
+                              disabled
+                              onClick={() => {}}
+                              icon={<TrashIcon />}
+                              tooltip="Eliminar (Bloqueado)"
+                              variant="danger"
+                            />
+                          </div>
+                        </Tooltip>
+                      ) : (
+                        <ActionButton
+                          onClick={() => onToggleStatus?.(item.INTERNSHIP_TYPE_ID)}
+                          icon={inactiveMode ? <RefreshIcon /> : <TrashIcon />}
+                          tooltip={inactiveMode ? "Restaurar" : "Eliminar"}
+                          variant={inactiveMode ? "success" : "danger"}
+                        />
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

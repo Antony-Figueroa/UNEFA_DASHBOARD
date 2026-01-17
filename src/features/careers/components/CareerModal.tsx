@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,12 +11,14 @@ import Button from "../../../components/ui/button/Button";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 
+import { InternshipTypeOption } from "../../internship-types/types";
+
 interface CareerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (career: Omit<Career, "careerId" | "creationDate">) => void;
   editingCareer?: Career | null;
-  internshipOptions: { value: string; text: string }[];
+  internshipOptions: InternshipTypeOption[];
   isLoading?: boolean;
   hasPendingEvaluations?: boolean;
   isInUse?: boolean;
@@ -157,6 +159,15 @@ export default function CareerModal({
     } as Omit<Career, "careerId" | "creationDate">);
   };
 
+  // Mapear opciones para que el value sea el ID (necesario para MultiSelect en este modal)
+  const mappedInternshipOptions = useMemo(() => 
+    internshipOptions.map(opt => ({
+      ...opt,
+      value: String(opt.id)
+    })), 
+    [internshipOptions]
+  );
+
   return (
     <>
       <Modal
@@ -202,13 +213,27 @@ export default function CareerModal({
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+            <div className="md:col-span-2">
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nombre de la Carrera *</label>
+              <Input
+                {...register("careerName")}
+                placeholder="Ej: INGENIERÍA DE SISTEMAS"
+                error={!!errors.careerName}
+                hint={errors.careerName?.message}
+                onChange={(e) => {
+                  e.target.value = e.target.value.toUpperCase();
+                  register("careerName").onChange(e);
+                }}
+              />
+            </div>
+
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Código *</label>
               <Input
                 {...register("careerCode")}
                 type="text"
-                placeholder="Código"
+                placeholder="Ej: 0501"
                 maxLength={8}
                 error={!!errors.careerCode}
                 hint={errors.careerCode?.message}
@@ -217,21 +242,6 @@ export default function CareerModal({
               {editingCareer && (
                 <p className="mt-1 text-[10px] text-text-tertiary italic">El código no es editable.</p>
               )}
-            </div>
-
-            <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nombre de carrera *</label>
-              <Input
-                {...register("careerName")}
-                type="text"
-                placeholder="Ingrese el nombre"
-                error={!!errors.careerName}
-                hint={errors.careerName?.message}
-                onChange={(e) => {
-                  e.target.value = e.target.value.toUpperCase();
-                  register("careerName").onChange(e);
-                }}
-              />
             </div>
 
             <div>
@@ -244,7 +254,7 @@ export default function CareerModal({
                     options={careerTypeOptions}
                     value={field.value}
                     onChange={field.onChange}
-                    placeholder="Seleccione Tipo"
+                    placeholder="Seleccione tipo"
                     disabled={isInUse}
                   />
                 )}
@@ -302,7 +312,7 @@ export default function CareerModal({
                 render={({ field }) => (
                   <MultiSelect
                     label="Tipos de Prácticas"
-                    options={internshipOptions}
+                    options={mappedInternshipOptions}
                     value={field.value}
                     onChange={(selectedIds: string[]) => {
                       // IDs según base de datos: 1 (ÚNICA), 2 (HOSPITALARIA), 3 (COMUNITARIA)

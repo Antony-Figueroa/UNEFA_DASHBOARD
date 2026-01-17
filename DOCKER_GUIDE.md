@@ -50,36 +50,37 @@ npm run docker:start
 - **Puerto:** 5173
 - **Base:** Node 20 Alpine
 - **HMR:** Configurado para funcionar a través del contenedor.
+- **Seguridad:** Archivo `.env` montado como solo lectura (`:ro`).
 
 ### Backend (unefa-backend)
 - **Puerto:** 3000
 - **Base:** Node 20 Alpine (Multi-stage build)
-- **Dependencias:** Instalación limpia de producción en la imagen final.
+- **Seguridad:** Archivo `.env` montado como solo lectura (`:ro`).
+- **Comando Dev:** Utiliza `tsx` para ejecución directa de TypeScript sin necesidad de `dist`.
 
-## ❓ Solución de Problemas Comunes
+## 🛡️ Seguridad de Configuración
 
-### 1. Error: "Cannot find package 'cookie-parser'"
-Este error suele ocurrir por inconsistencias en el `package-lock.json` o volúmenes corruptos.
-**Solución:**
-```bash
-docker-compose down -v
-docker-compose up --build
-```
+Para garantizar la integridad del sistema, se han implementado las siguientes medidas:
 
-### 2. Cambios en el código no se reflejan (HMR)
-En algunos sistemas (especialmente Windows con WSL2), los eventos de archivos no se propagan correctamente.
-**Solución:** Asegúrate de que el proyecto esté en el sistema de archivos de WSL2 y no en `/mnt/c/`.
-
-### 3. Error de compilación TypeScript en el Backend
-Si el backend no inicia por errores de tipos:
-**Solución:** El Dockerfile está configurado para fallar si `tsc` falla. Revisa los errores en la consola y corrígelos antes de re-construir.
+1. **Restricción de Escritura:** Los archivos `.env` se montan en modo de solo lectura. Ningún proceso dentro del contenedor puede modificarlos.
+2. **Validación de Integridad:** Los scripts de inicio (`setup-docker.sh/bat`) verifican el hash MD5 de los archivos de configuración antes y después de lanzar Docker.
+3. **Pruebas de Integridad (Healthchecks):** Docker Compose realiza pruebas automáticas periódicas para asegurar que la restricción de solo lectura se mantiene activa.
 
 ## 🧪 Verificación del Sistema
 
 Para verificar que todo funciona correctamente:
-1. Accede a `http://localhost:5173` (Frontend).
-2. Accede a `http://localhost:3000/api/health` (Backend Status).
-3. Verifica la consola para asegurar que no hay errores de conexión a Supabase.
+
+1. **Frontend:** Accede a `http://localhost:5173`.
+2. **Backend API:** Accede a `http://localhost:3000/api/health`.
+3. **Prueba de Seguridad (Manual):**
+   ```bash
+   # Verificar backend
+   docker exec unefa-backend npm run test:env
+   
+   # Verificar frontend
+   docker exec unefa-frontend sh /app/test-env-readonly.sh
+   ```
+4. **Estado de Contenedores:** `docker-compose ps` (debe mostrar `healthy` en el estado).
 
 ---
 *Desarrollado para el Sistema de Gestión UNEFA.*

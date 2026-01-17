@@ -42,7 +42,7 @@ const PublicFooter: React.FC = () => {
               <span className="text-xl font-bold">UNEFA</span>
             </a>
             <p className="text-gray-400 text-sm leading-relaxed">
-              Sistema de Gestión de Pasantías de la UNEFA. Transformando el futuro académico a través de la experiencia profesional.
+              Sistema de Gestión de Infromación de la UNEFA. Transformando el futuro académico a través de la experiencia profesional.
             </p>
           </div>
 
@@ -61,8 +61,8 @@ const PublicFooter: React.FC = () => {
               </li>
               <li>
                 <a 
-                  href="#comunidad" 
-                  onClick={(e) => handleScroll(e, "comunidad")}
+                  href="#mision-vision" 
+                  onClick={(e) => handleScroll(e, "mision-vision")}
                   className="hover:text-brand-400 transition-colors"
                 >
                   Comunidad

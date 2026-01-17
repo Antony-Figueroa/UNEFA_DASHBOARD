@@ -18,7 +18,7 @@ const InternshipHome: React.FC = () => {
     <div className="min-h-screen bg-bg-main dark:bg-bg-dark">
       <PageMeta
         title="Prácticas Profesionales | UNEFA"
-        description="Página informativa sobre el proceso de prácticas profesionales y pasantías de la UNEFA."
+        description="Página informativa sobre el proceso de prácticas profesionales de la UNEFA."
       />
 
       {/* Header Pegajoso (Banner + Nav) */}

@@ -45,7 +45,7 @@ const PublicNavbar: React.FC = () => {
     { name: "Inicio", href: "#inicio" },
     { name: "Ofertas", href: "#ofertas" },
     { name: "Procesos", href: "#procesos" },
-    { name: "Contacto he Información", href: "#contacto" },
+    { name: "Contacto e Información", href: "#contacto" },
   ];
 
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {

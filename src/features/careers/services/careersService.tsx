@@ -174,6 +174,16 @@ export const deleteCareer = async (careerId: string | number): Promise<void> => 
   await apiClient.delete(`${API_URL}/${careerId}`);
 };
 
+export const bulkDeleteCareers = async (ids: (string | number)[]): Promise<void> => {
+  await apiClient.post(`${API_URL}/bulk-delete`, { ids });
+};
+
+export const bulkRestoreCareers = async (ids: (string | number)[]): Promise<void> => {
+  // Para restaurar masivamente, usamos un endpoint que podemos crear o simplemente el de update si existiera para bulk.
+  // Como el backend solo tiene bulk-delete (que pone STATUS=0), crearemos bulk-restore.
+  await apiClient.post(`${API_URL}/bulk-restore`, { ids });
+};
+
 // Cambio de estado explícito
 export const toggleCareerStatus = async (career: Career): Promise<Career> => {
   if (!career.careerId || String(career.careerId).trim().length === 0) {

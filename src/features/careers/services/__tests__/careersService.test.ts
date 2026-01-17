@@ -20,6 +20,7 @@ const buildCareer = (overrides: Partial<Career> = {}): Career => ({
   careerName: "Ingeniería de Sistemas",
   minimumGrade: 13,
   careerAbbreviation: "IS",
+  careerType: "LARGA",
   internshipTypeIds: ["1", "2"],
   creationDate: new Date("2024-01-01T00:00:00.000Z"),
   status: true,

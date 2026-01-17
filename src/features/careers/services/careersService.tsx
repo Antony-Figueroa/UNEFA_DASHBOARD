@@ -72,6 +72,9 @@ const fromApi = (dto: CareerApiDTO): Career => {
   const internshipTypeIdsRaw = (dto.internshipTypeIds ?? dto.INTERNSHIP_TYPE_IDS ?? dto.internship_type_ids ?? dto.internships ?? []) as string[];
   const rawCreation = dto.creationDate ?? dto.CREATION_DATE ?? dto.created_at ?? dto.createdAt ?? dto.fechaCreacion ?? Date.now();
   const rawStatus = dto.status ?? dto.STATUS ?? dto.activo ?? dto.enabled;
+  const careerTypeRaw = (dto.careerType ?? dto.CAREER_TYPE ?? "LARGA") as "CORTA" | "LARGA";
+  const isInUseRaw = (dto.isInUse ?? dto.IS_IN_USE ?? false) as boolean;
+  const hasPendingEvaluationsRaw = (dto.hasPendingEvaluations ?? dto.HAS_PENDING_EVALUATIONS ?? false) as boolean;
 
   const minimumGrade = typeof rawMinimum === "string" ? parseFloat(rawMinimum) : rawMinimum;
   const creationDate = parseDate(rawCreation as number | string);
@@ -94,9 +97,12 @@ const fromApi = (dto: CareerApiDTO): Career => {
     careerName,
     minimumGrade: isNaN(minimumGrade as number) ? 0 : (minimumGrade as number),
     careerAbbreviation,
+    careerType: careerTypeRaw,
     internshipTypeIds,
     creationDate,
     status,
+    isInUse: isInUseRaw,
+    hasPendingEvaluations: hasPendingEvaluationsRaw,
   };
 };
 
@@ -108,6 +114,7 @@ const toApi = (career: Partial<Career>): Partial<CareerApiDTO> => {
   if (career.careerName !== undefined) dto.CAREER_NAME = career.careerName;
   if (career.minimumGrade !== undefined) dto.MINIMUM_GRADE = career.minimumGrade;
   if (career.careerAbbreviation !== undefined) dto.CAREER_ABBREVIATION = career.careerAbbreviation;
+  if (career.careerType !== undefined) dto.CAREER_TYPE = career.careerType;
   if (career.status !== undefined) dto.STATUS = career.status === true ? 1 : (career.status === false ? 0 : career.status);
   if (career.internshipTypeIds !== undefined) {
     // Asegurarse de que enviamos números, no strings. 

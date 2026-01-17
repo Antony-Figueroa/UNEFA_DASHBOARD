@@ -6,7 +6,7 @@ const TABLE_NAME = 't_career';
 const RELATION_TABLE = 't_career_internship_type';
 const CACHE_PREFIX = 'careers:';
 const CACHE_TTL = 3600000;
-const CAREER_COLUMNS = 'CAREER_ID, CAREER_NAME, CAREER_CODE, MINIMUM_GRADE, STATUS, CAREER_ABBREVIATION';
+const CAREER_COLUMNS = 'CAREER_ID, CAREER_NAME, CAREER_CODE, MINIMUM_GRADE, STATUS, CAREER_ABBREVIATION, CAREER_TYPE';
 
 const mapRecord = (career: Record<string, unknown>): Career => {
   const internshipTypeIds = (career[RELATION_TABLE] as { INTERNSHIP_TYPE_ID: string }[])?.map(r => r.INTERNSHIP_TYPE_ID) || [];
@@ -21,6 +21,7 @@ const mapRecord = (career: Record<string, unknown>): Career => {
       careerCode: (c.CAREER_CODE as unknown as number) ?? undefined,
       minimumGrade: (c.MINIMUM_GRADE as unknown as number) ?? undefined,
       careerAbbreviation: (c.CAREER_ABBREVIATION as string) ?? undefined,
+      careerType: (c.CAREER_TYPE as string) ?? undefined,
       status: typeof c.STATUS === 'number' ? c.STATUS === 1 : undefined,
       internshipTypeIds: internshipTypeIds || [],
       // Uppercase keys for backward compatibility (frontend legacy)
@@ -29,6 +30,7 @@ const mapRecord = (career: Record<string, unknown>): Career => {
       CAREER_CODE: c.CAREER_CODE,
       MINIMUM_GRADE: c.MINIMUM_GRADE,
       CAREER_ABBREVIATION: c.CAREER_ABBREVIATION,
+      CAREER_TYPE: c.CAREER_TYPE,
       STATUS: c.STATUS,
       // Mantener metadatos / auditoría
       CREATION_DATE: c.CREATION_DATE,
@@ -37,7 +39,10 @@ const mapRecord = (career: Record<string, unknown>): Career => {
       ELIM_USER_ID: c.ELIM_USER_ID,
       ELIM_USER_DATE: c.ELIM_USER_DATE,
       REST_USER_ID: c.REST_USER_ID,
-      REST_USER_DATE: c.REST_USER_DATE
+      REST_USER_DATE: c.REST_USER_DATE,
+      // Información de uso (opcional para el frontend)
+      isInUse: (career.IS_IN_USE as boolean) ?? false,
+      hasPendingEvaluations: (career.HAS_PENDING_EVALUATIONS as boolean) ?? false
     } as Career & Record<string, unknown>;
 };
 
@@ -47,6 +52,7 @@ export const getCareers = async () => {
   if (cached) return cached;
 
   const transformed = await dbManager.withRetry(async (supabase) => {
+    // 1. Obtener carreras básicas
     const { data: careers, error } = await supabase
       .from(TABLE_NAME)
       .select(`
@@ -59,7 +65,35 @@ export const getCareers = async () => {
 
     if (error) throw error;
 
-    return (careers || []).map((c: Record<string, unknown>) => mapRecord(c));
+    // 2. Verificar uso de forma eficiente (opcional, pero ayuda a la UI)
+    // Para simplificar, consultaremos si existen en las tablas relacionadas
+    const { data: studentUsage } = await supabase.from('t_students').select('CAREER_ID').eq('STATUS', 1);
+    const { data: institutionUsage } = await supabase.from('t_institution').select('CAREER_ID').eq('STATUS', 1);
+    const { data: practiceUsage } = await supabase.from('t_professional_practices').select('CAREER_ID').eq('STATUS', 1);
+
+    // 3. Verificar si hay evaluaciones pendientes para la restricción de nota mínima
+    const { data: pendingEvals } = await supabase
+      .from('t_professional_practices')
+      .select('CAREER_ID')
+      .eq('STATUS', 1)
+      .eq('INTERSHIP_STATUS', 1); // Asumimos 1 como pendiente de evaluación
+
+    const usedIds = new Set([
+      ...(studentUsage || []).map(s => s.CAREER_ID),
+      ...(institutionUsage || []).map(i => i.CAREER_ID),
+      ...(practiceUsage || []).map(p => p.CAREER_ID)
+    ]);
+
+    const pendingEvalIds = new Set((pendingEvals || []).map(p => p.CAREER_ID));
+
+    return (careers || []).map((c: Record<string, unknown>) => {
+      const careerId = c.CAREER_ID as string | number;
+      return mapRecord({ 
+        ...c, 
+        IS_IN_USE: usedIds.has(careerId),
+        HAS_PENDING_EVALUATIONS: pendingEvalIds.has(careerId)
+      });
+    });
   }, 'getCareers');
 
   cacheManager.set(cacheKey, transformed, CACHE_TTL);
@@ -85,15 +119,33 @@ export const createCareer = async (payload: Record<string, unknown>) => {
   const { INTERNSHIP_TYPE_IDS, ...careerData } = payload;
   const now = new Date().toISOString();
 
+  // Asegurar mayúsculas
+  const careerName = String(careerData.CAREER_NAME || '').toUpperCase();
+  const careerAbbreviation = String(careerData.CAREER_ABBREVIATION || '').toUpperCase();
+  const careerType = String(careerData.CAREER_TYPE || 'LARGA').toUpperCase();
+
   const result = await dbManager.withRetry(async (supabase) => {
+    // Validar duplicados por nombre o código (ignorando el registro actual en caso de edición)
+    const { data: existing } = await supabase
+      .from(TABLE_NAME)
+      .select('CAREER_ID')
+      .or(`CAREER_NAME.eq."${careerName}",CAREER_CODE.eq.${careerData.CAREER_CODE}`)
+      .eq('STATUS', 1)
+      .maybeSingle();
+
+    if (existing) {
+      throw { code: 'BUSINESS_RULE_VIOLATION', message: 'Ya existe una carrera con ese nombre o código' };
+    }
+
     const { data: newCareer, error } = await supabase
       .from(TABLE_NAME)
       .insert([
         {
           CAREER_CODE: careerData.CAREER_CODE,
-          CAREER_NAME: careerData.CAREER_NAME,
+          CAREER_NAME: careerName,
           MINIMUM_GRADE: careerData.MINIMUM_GRADE,
-          CAREER_ABBREVIATION: careerData.CAREER_ABBREVIATION,
+          CAREER_ABBREVIATION: careerAbbreviation,
+          CAREER_TYPE: careerType,
           STATUS: careerData.STATUS ?? 1,
           CREATION_DATE: now,
           MODIF_USER_ID: 1,
@@ -132,7 +184,80 @@ export const updateCareer = async (id: string, payload: Record<string, unknown>)
   delete updateData.CAREER_ID;
   delete updateData.CREATION_DATE;
 
+  // Asegurar mayúsculas en campos relevantes
+  if (updateData.CAREER_NAME) updateData.CAREER_NAME = String(updateData.CAREER_NAME).toUpperCase();
+  if (updateData.CAREER_ABBREVIATION) updateData.CAREER_ABBREVIATION = String(updateData.CAREER_ABBREVIATION).toUpperCase();
+  if (updateData.CAREER_TYPE) updateData.CAREER_TYPE = String(updateData.CAREER_TYPE).toUpperCase();
+
   const result = await dbManager.withRetry(async (supabase) => {
+    // 0. Validar duplicados si se está intentando cambiar nombre o código
+    if (updateData.CAREER_NAME || updateData.CAREER_CODE) {
+      const name = updateData.CAREER_NAME ? String(updateData.CAREER_NAME).toUpperCase() : undefined;
+      const code = updateData.CAREER_CODE ? Number(updateData.CAREER_CODE) : undefined;
+
+      const query = supabase.from(TABLE_NAME).select('CAREER_ID').neq('CAREER_ID', id).eq('STATUS', 1);
+      
+      const orConditions: string[] = [];
+      if (name) orConditions.push(`CAREER_NAME.eq."${name}"`);
+      if (code) orConditions.push(`CAREER_CODE.eq.${code}`);
+      
+      if (orConditions.length > 0) {
+        const { data: existing } = await query.or(orConditions.join(',')).maybeSingle();
+        if (existing) {
+          throw { code: 'BUSINESS_RULE_VIOLATION', message: 'Ya existe otra carrera con ese nombre o código' };
+        }
+      }
+    }
+
+    // 1. Verificar si la carrera está en uso para restricciones generales
+    const { data: students } = await supabase.from('t_students').select('STUDENTS_ID').eq('CAREER_ID', id).eq('STATUS', 1).limit(1);
+    const { data: institutions } = await supabase.from('t_institution').select('INSTITUTION_ID').eq('CAREER_ID', id).eq('STATUS', 1).limit(1);
+    const { data: practices } = await supabase.from('t_professional_practices').select('PROFESSIONAL_PRACTICE_ID').eq('CAREER_ID', id).eq('STATUS', 1).limit(1);
+    
+    const isInUse = (students && students.length > 0) || (institutions && institutions.length > 0) || (practices && practices.length > 0);
+
+    // El código NUNCA se puede editar una vez creado
+    if (updateData.CAREER_CODE) {
+      const { data: current } = await supabase.from(TABLE_NAME).select('CAREER_CODE').eq('CAREER_ID', id).single();
+      if (current && Number(updateData.CAREER_CODE) !== current.CAREER_CODE) {
+        throw { code: 'BUSINESS_RULE_VIOLATION', message: 'No se puede editar el código de una carrera registrada' };
+      }
+    }
+
+    // El tipo de carrera no se puede editar si está en uso
+    if (isInUse && updateData.CAREER_TYPE) {
+      const { data: current } = await supabase.from(TABLE_NAME).select('CAREER_TYPE').eq('CAREER_ID', id).single();
+      if (current && updateData.CAREER_TYPE !== current.CAREER_TYPE) {
+        throw { code: 'BUSINESS_RULE_VIOLATION', message: 'No se puede editar el tipo de una carrera en uso' };
+      }
+    }
+
+    // 2. Verificar restricción de nota mínima
+    if (updateData.MINIMUM_GRADE) {
+      // Buscar estudiantes de esta carrera
+      const { data: careerStudents } = await supabase
+        .from('t_students')
+        .select('STUDENTS_ID')
+        .eq('CAREER_ID', id);
+
+      if (careerStudents && careerStudents.length > 0) {
+        const studentIds = careerStudents.map(s => s.STUDENTS_ID);
+        
+        // Buscar prácticas con estatus de evaluación pendiente para estos estudiantes
+        const { data: pendingEval } = await supabase
+          .from('t_professional_practices')
+          .select('PROFESSIONAL_PRACTICE_ID')
+          .eq('STATUS', 1)
+          .eq('INTERSHIP_STATUS', 1) // Asumimos 1 como cursando/pendiente de evaluación
+          .in('STUDENTS_ID', studentIds)
+          .limit(1);
+
+        if (pendingEval && pendingEval.length > 0) {
+          throw { code: 'BUSINESS_RULE_VIOLATION', message: 'No se puede editar la nota mínima si hay estudiantes pendientes por evaluar' };
+        }
+      }
+    }
+
     const { data: updatedCareer, error } = await supabase
       .from(TABLE_NAME)
       .update({ ...updateData, MODIF_USER_DATE: now, MODIF_USER_ID: 1 })
@@ -161,6 +286,20 @@ export const updateCareer = async (id: string, payload: Record<string, unknown>)
 
 export const deleteCareer = async (id: string) => {
   await dbManager.withRetry(async (supabase) => {
+    // Verificar si está en uso antes de "eliminar" (desactivar)
+    const { data: students } = await supabase.from('t_students').select('STUDENTS_ID').eq('CAREER_ID', id).eq('STATUS', 1).limit(1);
+    const { data: institutions } = await supabase.from('t_institution').select('INSTITUTION_ID').eq('CAREER_ID', id).eq('STATUS', 1).limit(1);
+    const { data: practices } = await supabase.from('t_professional_practices').select('PROFESSIONAL_PRACTICE_ID').eq('CAREER_ID', id).eq('STATUS', 1).limit(1);
+
+    if ((students && students.length > 0) || (institutions && institutions.length > 0) || (practices && practices.length > 0)) {
+      let usageLocation = '';
+      if (students?.length) usageLocation = 'Estudiantes';
+      else if (institutions?.length) usageLocation = 'Instituciones';
+      else if (practices?.length) usageLocation = 'Prácticas Profesionales';
+      
+      throw { code: 'BUSINESS_RULE_VIOLATION', message: `No se puede eliminar la carrera porque está siendo usada en: ${usageLocation}` };
+    }
+
     const { error } = await supabase.from(TABLE_NAME).update({ STATUS: 0 }).eq('CAREER_ID', id);
     if (error) throw error;
   }, 'deleteCareer');

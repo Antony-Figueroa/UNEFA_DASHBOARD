@@ -11,6 +11,7 @@ const sampleCareerFromBackend: Career = {
   careerName: "CAREER_NAME 1" as unknown as string,
   minimumGrade: 12,
   careerAbbreviation: "CAREER_ABBREVIATION 1" as unknown as string,
+  careerType: "LARGA",
   internshipTypeIds: ["1", "3", "2"], // normalizado en servicio
   creationDate: new Date(1767211511 * 1000),
   status: true,

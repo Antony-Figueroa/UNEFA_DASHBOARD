@@ -3,6 +3,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
+import Select from "../../../components/form/Select";
 import MultiSelect from "../../../components/form/MultiSelect";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Career } from "../types";
@@ -17,23 +18,57 @@ interface CareerModalProps {
   editingCareer?: Career | null;
   internshipOptions: { value: string; text: string }[];
   isLoading?: boolean;
+  hasPendingEvaluations?: boolean;
+  isInUse?: boolean;
+  existingCareers?: Career[];
 }
 
-const careerSchema = z.object({
-  careerName: z.string().min(1, "El nombre de la carrera es obligatorio"),
-  careerCode: z.union([
-    z.string().min(1, "El código es obligatorio").refine((val) => !isNaN(Number(val)), "El código debe ser un número"),
-    z.number()
-  ]),
-  minimumGrade: z.union([
-    z.string().min(1, "La nota mínima es obligatoria").refine((val) => !isNaN(Number(val)), "Debe ser un número válido"),
-    z.number()
-  ]),
-  careerAbbreviation: z.string().min(1, "La abreviatura es obligatoria"),
-  internshipTypeIds: z.array(z.string()).optional(),
-});
+const createCareerSchema = (existingCareers: Career[], editingCareerId?: string | number) => 
+  z.object({
+    careerName: z.string()
+      .min(1, "El nombre de la carrera es obligatorio")
+      .regex(/^[A-ZÁÉÍÓÚÑ\s]+$/, "El nombre solo permite letras mayúsculas y acentos")
+      .transform(val => val.toUpperCase())
+      .refine(val => {
+        const normalizedVal = val.trim().toUpperCase();
+        return !existingCareers.some(c => 
+          c.careerName.trim().toUpperCase() === normalizedVal && 
+          String(c.careerId) !== String(editingCareerId)
+        );
+      }, "Ya existe una carrera con este nombre"),
+    careerCode: z.string()
+      .min(1, "El código es obligatorio")
+      .max(4, "El código no puede tener más de 4 números")
+      .regex(/^\d+$/, "El código solo permite números")
+      .refine(val => {
+        const normalizedVal = val.trim();
+        return !existingCareers.some(c => 
+          String(c.careerCode).trim() === normalizedVal && 
+          String(c.careerId) !== String(editingCareerId)
+        );
+      }, "Ya existe una carrera con este código"),
+    minimumGrade: z.string().min(1, "Debe seleccionar una nota mínima"),
+    careerAbbreviation: z.string()
+      .min(1, "La abreviatura es obligatoria")
+      .regex(/^[A-ZÁÉÍÓÚÑ\d\W\s]+$/, "La abreviatura solo permite letras, números y caracteres especiales")
+      .transform(val => val.toUpperCase()),
+    careerType: z.enum(['CORTA', 'LARGA'], {
+      message: "Debe seleccionar un tipo de carrera"
+    }),
+    internshipTypeIds: z.array(z.string()).min(1, "Debe seleccionar al menos un tipo de práctica"),
+  });
 
-type CareerFormData = z.infer<typeof careerSchema>;
+type CareerFormData = z.infer<ReturnType<typeof createCareerSchema>>;
+
+const gradeOptions = Array.from({ length: 20 }, (_, i) => ({
+  value: String(i + 1),
+  label: String(i + 1)
+}));
+
+const careerTypeOptions = [
+  { value: 'CORTA', label: 'CORTA' },
+  { value: 'LARGA', label: 'LARGA' }
+];
 
 export default function CareerModal({
   isOpen,
@@ -42,23 +77,40 @@ export default function CareerModal({
   editingCareer,
   internshipOptions,
   isLoading = false,
+  hasPendingEvaluations = false,
+  isInUse = false,
+  existingCareers = [],
 }: CareerModalProps) {
   const {
     register,
     handleSubmit,
     control,
     reset,
-    formState: { errors, isSubmitted, isDirty },
+    watch,
+    setValue,
+    formState: { errors, isDirty },
   } = useForm<CareerFormData>({
-    resolver: zodResolver(careerSchema),
+    resolver: zodResolver(createCareerSchema(existingCareers, editingCareer?.careerId)),
+    mode: "onChange",
     defaultValues: {
       careerName: "",
       careerCode: "",
       minimumGrade: "",
       careerAbbreviation: "",
+      careerType: undefined,
       internshipTypeIds: [],
     },
   });
+
+  const careerCode = watch("careerCode");
+  const minimumGrade = watch("minimumGrade");
+
+  // Efecto para establecer automáticamente la nota mínima en 16 al escribir el código
+  useEffect(() => {
+    if (!editingCareer && careerCode && careerCode.length > 0 && !minimumGrade) {
+      setValue("minimumGrade", "16", { shouldValidate: true });
+    }
+  }, [careerCode, minimumGrade, setValue, editingCareer]);
 
   const {
     showConfirmation,
@@ -72,9 +124,10 @@ export default function CareerModal({
       if (editingCareer) {
         reset({
           careerName: editingCareer.careerName,
-          careerCode: editingCareer.careerCode,
-          minimumGrade: String(editingCareer.minimumGrade),
+          careerCode: String(editingCareer.careerCode),
+          minimumGrade: String(Math.floor(editingCareer.minimumGrade)),
           careerAbbreviation: editingCareer.careerAbbreviation,
+          careerType: editingCareer.careerType as 'CORTA' | 'LARGA',
           internshipTypeIds: (editingCareer.internshipTypeIds ?? []).map(String),
         });
       } else {
@@ -83,6 +136,7 @@ export default function CareerModal({
           careerCode: "",
           minimumGrade: "",
           careerAbbreviation: "",
+          careerType: undefined,
           internshipTypeIds: [],
         });
       }
@@ -93,9 +147,10 @@ export default function CareerModal({
 
   const onSubmit = (data: CareerFormData) => {
     onSave({
-      careerName: data.careerName,
-      careerCode: Number(data.careerCode),
-      careerAbbreviation: data.careerAbbreviation,
+      careerName: data.careerName.toUpperCase(),
+      careerCode: data.careerCode,
+      careerAbbreviation: data.careerAbbreviation.toUpperCase(),
+      careerType: data.careerType,
       internshipTypeIds: data.internshipTypeIds || [],
       minimumGrade: Number(data.minimumGrade),
       status: editingCareer?.status ?? 1,
@@ -104,7 +159,12 @@ export default function CareerModal({
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton>
+      <Modal
+        isOpen={isOpen}
+        onClose={handleCloseAttempt}
+        onCloseAttempt={handleCloseAttempt}
+        showCloseButton
+      >
         <ModalHeader>
           <div className="max-w-4xl mx-auto w-full">
             <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
@@ -118,7 +178,47 @@ export default function CareerModal({
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
         <form id="career-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-4xl mx-auto">
+          {isInUse && (
+            <div className="rounded-xl border border-warning-200 bg-warning-50 p-4 dark:border-warning-400/20 dark:bg-warning-400/10 animate-fadeIn">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 text-warning-600 dark:text-warning-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-5 w-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-bold text-warning-800 dark:text-warning-300">Aviso: Carrera en Uso</h3>
+                  <div className="mt-1 text-xs text-warning-700 dark:text-warning-400 leading-relaxed">
+                    Esta carrera está siendo utilizada por estudiantes o instituciones. Solo se permite editar:
+                    <ul className="mt-1 list-disc list-inside space-y-0.5 font-medium">
+                      <li>Nombre de la carrera</li>
+                      <li>Abreviatura</li>
+                      <li>Tipos de prácticas</li>
+                      <li>Nota mínima (solo si no hay estudiantes en evaluación)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+            <div>
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Código *</label>
+              <Input
+                {...register("careerCode")}
+                type="text"
+                placeholder="Código"
+                maxLength={8}
+                error={!!errors.careerCode}
+                hint={errors.careerCode?.message}
+                disabled={!!editingCareer}
+              />
+              {editingCareer && (
+                <p className="mt-1 text-[10px] text-text-tertiary italic">El código no es editable.</p>
+              )}
+            </div>
+
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nombre de carrera *</label>
               <Input
@@ -126,28 +226,60 @@ export default function CareerModal({
                 type="text"
                 placeholder="Ingrese el nombre"
                 error={!!errors.careerName}
-                hint={isSubmitted ? errors.careerName?.message : undefined}
+                hint={errors.careerName?.message}
+                onChange={(e) => {
+                  e.target.value = e.target.value.toUpperCase();
+                  register("careerName").onChange(e);
+                }}
               />
             </div>
+
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Código *</label>
-              <Input
-                {...register("careerCode")}
-                type="text"
-                placeholder="Código"
-                error={!!errors.careerCode}
-                hint={isSubmitted ? errors.careerCode?.message : undefined}
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Tipo de Carrera *</label>
+              <Controller
+                name="careerType"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    options={careerTypeOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="Seleccione Tipo"
+                    disabled={isInUse}
+                  />
+                )}
               />
+              {isInUse && (
+                <p className="mt-1 text-[10px] text-text-tertiary italic uppercase font-bold tracking-tighter opacity-70">Bloqueado por uso</p>
+              )}
+              {errors.careerType && (
+                <p className="mt-1 text-xs text-error-500">{errors.careerType.message}</p>
+              )}
             </div>
+
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nota mínima *</label>
-              <Input
-                {...register("minimumGrade")}
-                type="text"
-                placeholder="Nota mínima"
-                error={!!errors.minimumGrade}
-                hint={isSubmitted ? errors.minimumGrade?.message : undefined}
-              />
+              <Controller
+                name="minimumGrade"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                      options={gradeOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Seleccione Nota Mínima"
+                      disabled={isInUse && hasPendingEvaluations}
+                    />
+                  )}
+                />
+                {isInUse && hasPendingEvaluations && (
+                  <p className="mt-1 text-xs text-warning-600 dark:text-warning-400 font-medium italic">
+                    Bloqueado: Estudiantes en proceso de evaluación.
+                  </p>
+                )}
+                {errors.minimumGrade && (
+                <p className="mt-1 text-xs text-error-500">{errors.minimumGrade.message}</p>
+              )}
             </div>
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Abreviatura *</label>
@@ -156,7 +288,11 @@ export default function CareerModal({
                 type="text"
                 placeholder="Ej: TSU-ENF"
                 error={!!errors.careerAbbreviation}
-                hint={isSubmitted ? errors.careerAbbreviation?.message : undefined}
+                hint={errors.careerAbbreviation?.message}
+                onChange={(e) => {
+                  e.target.value = e.target.value.toUpperCase();
+                  register("careerAbbreviation").onChange(e);
+                }}
               />
             </div>
             <div className="md:col-span-2">
@@ -168,11 +304,47 @@ export default function CareerModal({
                     label="Tipos de Prácticas"
                     options={internshipOptions}
                     value={field.value}
-                    onChange={field.onChange}
+                    onChange={(selectedIds: string[]) => {
+                      // IDs según base de datos: 1 (ÚNICA), 2 (HOSPITALARIA), 3 (COMUNITARIA)
+                      const lastSelected = selectedIds[selectedIds.length - 1];
+                      const wasSelected = field.value || [];
+                      
+                      // Caso 1: Se selecciona 'ÚNICA' (ID "1")
+                      if (lastSelected === "1") {
+                        field.onChange(["1"]);
+                        return;
+                      }
+
+                      // Caso 2: Se selecciona Hospitalaria (2) o Comunitaria (3)
+                      const justSelectedHosp = selectedIds.includes("2") && !wasSelected.includes("2");
+                      const justSelectedComu = selectedIds.includes("3") && !wasSelected.includes("3");
+
+                      if (justSelectedHosp || justSelectedComu) {
+                        // Se activan ambos y se quita ÚNICA
+                        field.onChange(["2", "3"]);
+                        return;
+                      }
+
+                      // Caso 3: Se deselecciona Hospitalaria (2) o Comunitaria (3)
+                      const justDeselectedHosp = wasSelected.includes("2") && !selectedIds.includes("2");
+                      const justDeselectedComu = wasSelected.includes("3") && !selectedIds.includes("3");
+
+                      if (justDeselectedHosp || justDeselectedComu) {
+                        // Se quitan ambos
+                        field.onChange(selectedIds.filter(id => id !== "2" && id !== "3"));
+                        return;
+                      }
+
+                      // Caso por defecto (deselección de ÚNICA o lista vacía)
+                      field.onChange(selectedIds);
+                    }}
                     placeholder="Seleccione los tipos"
                   />
                 )}
               />
+              {errors.internshipTypeIds && (
+                <p className="mt-1 text-xs text-error-500">{errors.internshipTypeIds.message}</p>
+              )}
             </div>
           </div>
         </form>

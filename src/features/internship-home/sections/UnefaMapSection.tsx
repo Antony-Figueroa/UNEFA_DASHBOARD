@@ -11,7 +11,7 @@ const UnefaMapSection: React.FC = () => {
   const markers = useMemo(() => [
     {
       position: unefaAraurePos,
-      popup: "<div class='text-center'><b>UNEFA Extensión Araure</b><br/><span class='text-xs'>Sede Principal</span></div>"
+      popup: "<div class='text-center'><b>UNEFA Extensión Araure</b><br/><span class='text-xs'>Av. 13 de Junio</span></div>"
     }
   ], [unefaAraurePos]);
 

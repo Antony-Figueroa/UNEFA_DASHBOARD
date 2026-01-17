@@ -53,10 +53,29 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      connectSrc: ["'self'", "https://*.onrender.com", "http://localhost:*", "ws://localhost:*", "http://backend:3000"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      connectSrc: [
+        "'self'", 
+        "https://*.onrender.com", 
+        "http://localhost:*", 
+        "ws://localhost:*", 
+        "http://backend:3000",
+        "https://basemaps.cartocdn.com",
+        "https://server.arcgisonline.com",
+        "https://*.tile.openstreetmap.org"
+      ],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "blob:"],
+      workerSrc: ["'self'", "blob:"],
+      childSrc: ["'self'", "blob:"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      imgSrc: ["'self'", "data:", "blob:", "https://*"],
+      imgSrc: [
+        "'self'", 
+        "data:", 
+        "blob:", 
+        "https://*",
+        "https://basemaps.cartocdn.com",
+        "https://server.arcgisonline.com",
+        "https://*.tile.openstreetmap.org"
+      ],
       fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
       upgradeInsecureRequests: null,
     },

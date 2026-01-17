@@ -149,7 +149,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
         <div
           ref={tooltipRef}
           style={style}
-          className="pointer-events-none fixed z-[9999]"
+          className="pointer-events-none fixed z-9999"
         >
           <div className={`rounded-lg bg-bg-dark px-3 py-2 text-xs text-white shadow-2xl animate-fadeIn border border-white/10 max-w-xs ${className}`}>
             {content}

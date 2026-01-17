@@ -116,6 +116,16 @@ export default function CareersPage() {
   const [viewType, setViewType] = useState<InternshipType | null>(null);
 
   /**
+   * Determina si un tipo de práctica está en uso (asignado a una carrera activa).
+   */
+  const isTypeInUse = (typeId: number) => {
+    return careers.some(c => 
+      c.internshipTypeIds?.includes(String(typeId)) && 
+      (c.status === true || c.status === 1)
+    );
+  };
+
+  /**
    * Definición de tipos para el estado de confirmación.
    */
   type ConfirmationInfo = {
@@ -500,6 +510,7 @@ export default function CareersPage() {
               ) : (
                 <InternshipTypeTable
                   data={internshipTypes.filter((t) => (activeTab === "Activas" ? t.STATUS === 1 : t.STATUS === 0))}
+                  careers={careers}
                   status={loadingTypes ? "loading" : "success"}
                   error={null}
                   activeTab={activeTab}
@@ -544,6 +555,8 @@ export default function CareersPage() {
         onClose={() => setIsTypeModalOpen(false)}
         onSave={handleSaveType}
         editingItem={editingType}
+        existingTypes={internshipTypes}
+        isInUse={editingType ? isTypeInUse(editingType.INTERNSHIP_TYPE_ID) : false}
         isLoading={loadingAction}
       />
 

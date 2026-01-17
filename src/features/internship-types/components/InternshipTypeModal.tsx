@@ -1,8 +1,9 @@
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
+import Select from "../../../components/form/Select";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { InternshipType } from "../types";
 import Button from "../../../components/ui/button/Button";
@@ -14,37 +15,44 @@ interface InternshipTypeModalProps {
   onClose: () => void;
   onSave: (item: Omit<InternshipType, "INTERNSHIP_TYPE_ID" | "CREATION_DATE">) => void;
   editingItem?: InternshipType | null;
+  existingTypes?: InternshipType[];
+  isInUse?: boolean;
   isLoading?: boolean;
 }
 
 const internshipTypeSchema = z.object({
   NAME: z.string().min(1, "El nombre es obligatorio"),
-  ABBREVIATION: z.string().min(1, "La abreviación es obligatoria"),
-  PRIORITY: z.union([
-    z.string().min(1, "La prioridad es obligatoria").refine((val) => !isNaN(Number(val)), "Debe ser un número válido"),
-    z.number()
-  ]),
+  PRIORITY: z.string().min(1, "La prioridad es obligatoria"),
 });
 
 type InternshipTypeFormData = z.infer<typeof internshipTypeSchema>;
+
+const priorityOptions = [
+  { value: "0", label: "0" },
+  { value: "1", label: "1" },
+  { value: "2", label: "2" },
+];
 
 export default function InternshipTypeModal({
   isOpen,
   onClose,
   onSave,
   editingItem,
+  existingTypes = [],
+  isInUse = false,
   isLoading = false,
 }: InternshipTypeModalProps) {
   const {
     register,
     handleSubmit,
     reset,
+    control,
+    setError,
     formState: { errors, isSubmitted, isDirty },
   } = useForm<InternshipTypeFormData>({
     resolver: zodResolver(internshipTypeSchema),
     defaultValues: {
       NAME: "",
-      ABBREVIATION: "",
       PRIORITY: "",
     },
   });
@@ -61,13 +69,11 @@ export default function InternshipTypeModal({
       if (editingItem) {
         reset({
           NAME: editingItem.NAME,
-          ABBREVIATION: editingItem.ABBREVIATION,
           PRIORITY: String(editingItem.PRIORITY),
         });
       } else {
         reset({
           NAME: "",
-          ABBREVIATION: "",
           PRIORITY: "",
         });
       }
@@ -77,9 +83,21 @@ export default function InternshipTypeModal({
   }, [editingItem, isOpen, reset]);
 
   const onSubmit = (data: InternshipTypeFormData) => {
+    // Validar duplicados
+    const isDuplicate = existingTypes.some(
+      (t) => 
+        t.NAME.toLowerCase() === data.NAME.toLowerCase() && 
+        t.INTERNSHIP_TYPE_ID !== editingItem?.INTERNSHIP_TYPE_ID
+    );
+
+    if (isDuplicate) {
+      setError("NAME", { type: "manual", message: "Este tipo de práctica ya existe" });
+      return;
+    }
+
     onSave({
       NAME: data.NAME,
-      ABBREVIATION: data.ABBREVIATION,
+      ABBREVIATION: data.NAME.substring(0, 10).toUpperCase(), // Fallback para campo obligatorio en BD
       PRIORITY: Number(data.PRIORITY),
       STATUS: editingItem?.STATUS ?? 1,
     });
@@ -114,25 +132,26 @@ export default function InternshipTypeModal({
               </div>
 
               <div>
-                <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Abreviación *</label>
-                <Input
-                  {...register("ABBREVIATION")}
-                  type="text"
-                  placeholder="Ej: PP, SS, etc."
-                  error={!!errors.ABBREVIATION}
-                  hint={isSubmitted ? errors.ABBREVIATION?.message : undefined}
-                />
-              </div>
-
-              <div>
                 <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Prioridad *</label>
-                <Input
-                  {...register("PRIORITY")}
-                  type="text"
-                  placeholder="Ingrese la prioridad (ej: 1)"
-                  error={!!errors.PRIORITY}
-                  hint={isSubmitted ? errors.PRIORITY?.message : undefined}
+                <Controller
+                  name="PRIORITY"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      options={priorityOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Seleccione prioridad"
+                      disabled={isInUse}
+                    />
+                  )}
                 />
+                {isSubmitted && errors.PRIORITY && (
+                  <p className="mt-1 text-xs text-error-500">{errors.PRIORITY.message}</p>
+                )}
+                {isInUse && (
+                  <p className="mt-1 text-xs text-text-tertiary italic">No se puede editar la prioridad porque está asignada a un registro activo</p>
+                )}
               </div>
             </div>
           </form>

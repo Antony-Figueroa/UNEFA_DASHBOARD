@@ -8,12 +8,14 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/
 import Button from "../../../components/ui/button/Button";
 import { CareerRowData } from "../types";
 
+import { InternshipTypeOption } from "../../internship-types/types";
+
 interface CareerViewModalProps {
   isOpen: boolean;
   onClose: () => void;
   onEdit?: (career: CareerRowData) => void;
   career: CareerRowData | null;
-  internshipOptions?: { value: string; label: string }[];
+  internshipOptions?: InternshipTypeOption[];
 }
 
 export default function CareerViewModal({
@@ -73,7 +75,7 @@ export default function CareerViewModal({
                 <div className="flex flex-wrap gap-2 mt-1">
                   {career.internshipTypeIds && career.internshipTypeIds.length > 0 ? (
                     career.internshipTypeIds.map((id, index) => {
-                      const option = internshipOptions?.find(opt => String(opt.value) === String(id));
+                      const option = internshipOptions?.find(opt => String(opt.id) === String(id));
                       const label = option ? option.label : `Tipo ${id}`;
                       return (
                         <span key={index} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400 border border-brand-100 dark:border-brand-500/20">

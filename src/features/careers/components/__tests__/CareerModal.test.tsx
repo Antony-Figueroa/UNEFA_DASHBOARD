@@ -18,9 +18,9 @@ const sampleCareerFromBackend: Career = {
 };
 
 const internshipOptions = [
-  { value: "1", text: "Hospitalaria" },
-  { value: "2", text: "Comunitaria" },
-  { value: "3", text: "Ordinaria" },
+  { id: 1, value: "HOSPITALARIA", label: "Hospitalaria", text: "Hospitalaria" },
+  { id: 2, value: "COMUNITARIA", label: "Comunitaria", text: "Comunitaria" },
+  { id: 3, value: "ORDINARIA", label: "Ordinaria", text: "Ordinaria" },
 ];
 
 describe("CareerModal", () => {

@@ -14,6 +14,7 @@ import { getPeriods } from "../../periods/services/periodService";
 import { Periodo } from "../../periods/types";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { getInternshipTypesByCareer, getInternshipTypes, mapToOptions } from "../../internship-types/services/internshipTypesService";
+import { getPreEnrollments } from "../services/preEnrollmentService";
 import { InternshipTypeOption } from "../../internship-types/types";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
@@ -61,6 +62,7 @@ export default function PreEnrollmentModal({
     control,
     reset,
     setValue,
+    getValues,
     formState: { errors, isSubmitted, isDirty },
   } = useForm<PreEnrollmentFormData>({
     resolver: zodResolver(preEnrollmentSchema),
@@ -157,16 +159,50 @@ export default function PreEnrollmentModal({
         
         // Autocompletar Tipo de Práctica desde la BD
         try {
+          const currentPeriod = getValues('period');
+          const allPreEnrollments = await getPreEnrollments();
+          
+          // Filtrar pre-inscripciones del estudiante en el período actual
+          const studentPreEnrollments = allPreEnrollments.filter(p => 
+            p.identificationNumber === number && 
+            p.identificationPrefix === prefix
+          );
+          const periodPreEnrollments = studentPreEnrollments.filter(p => p.period === currentPeriod);
+          const approvedPreEnrollments = periodPreEnrollments.filter(p => p.status);
+          const usedTypes = approvedPreEnrollments.map(p => p.practiceType);
+
           const internshipTypes = await getInternshipTypesByCareer(student.careerId);
           if (internshipTypes && internshipTypes.length > 0) {
-            // Seleccionamos el primero o el que tenga mayor prioridad
-            const mainType = internshipTypes.sort((a, b) => a.PRIORITY - b.PRIORITY)[0];
-            setValue("practiceType", mainType.NAME);
+            const mappedOptions = mapToOptions(internshipTypes);
+            setPracticeOptions(mappedOptions);
+            
+            // Ordenar tipos por prioridad (menor PRIORITY primero)
+            const sortedTypes = internshipTypes.sort((a, b) => a.PRIORITY - b.PRIORITY);
+            
+            // Encontrar el siguiente tipo disponible que no haya sido usado
+            const nextType = sortedTypes.find(type => !usedTypes.includes(type.NAME));
+            
+            if (nextType) {
+              setValue("practiceType", nextType.NAME);
+            } else {
+              // Si todos los tipos han sido usados, usar el de mayor prioridad
+              setValue("practiceType", sortedTypes[0].NAME);
+            }
           } else {
-            setValue("practiceType", "ORDINARIA"); // Fallback
+            // Fallback a tipos globales
+            const globalTypes = await getInternshipTypes();
+            setPracticeOptions(mapToOptions(globalTypes));
+            setValue("practiceType", "ORDINARIA");
           }
         } catch (error) {
           console.error("Error al obtener tipos de pasantía para el estudiante:", error);
+          // Fallback
+          try {
+            const globalTypes = await getInternshipTypes();
+            setPracticeOptions(mapToOptions(globalTypes));
+          } catch (fallbackError) {
+            console.error("Error al cargar tipos globales:", fallbackError);
+          }
           setValue("practiceType", "ORDINARIA");
         }
 
@@ -184,7 +220,7 @@ export default function PreEnrollmentModal({
     } finally {
       setIsSearching(false);
     }
-  }, [setValue]);
+  }, [setValue, getValues]);
 
   useEffect(() => {
     if (!editingEntry && idNumber) {
@@ -247,7 +283,7 @@ export default function PreEnrollmentModal({
             {editingEntry ? "Editar Preinscripción" : "Nueva Preinscripción"}
           </h5>
           <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
-            {editingEntry ? "Modifica los detalles de la pre-inscripción." : "Ingresa los detalles para la nueva pre-inscripción."}
+            {editingEntry ? "Solo se puede modificar el período de la pre-inscripción." : "Ingresa los detalles para la nueva pre-inscripción."}
           </p>
         </div>
       </ModalHeader>
@@ -274,6 +310,7 @@ export default function PreEnrollmentModal({
                         onChange={field.onChange}
                         defaultValue={field.value}
                         placeholder="Tipo ID"
+                        disabled={!!editingEntry}
                       />
                     )}
                   />
@@ -284,6 +321,12 @@ export default function PreEnrollmentModal({
                     placeholder="Escriba el número"
                     error={!!errors.identificationNumber}
                     className={isSearching ? "animate-pulse" : ""}
+                    readOnly={!!editingEntry}
+                    onKeyDown={(e) => {
+                      if (!/[0-9]/.test(e.key) && !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
                   />
                   {isSearching && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -308,8 +351,8 @@ export default function PreEnrollmentModal({
                 placeholder="Nombre automático"
                 error={!!errors.studentName}
                 hint={isSubmitted ? errors.studentName?.message : undefined}
-                readOnly={!editingEntry}
-                className={!editingEntry ? "bg-bg-secondary dark:bg-white/5 cursor-not-allowed" : ""}
+                readOnly={!!editingEntry}
+                className={editingEntry ? "bg-bg-secondary dark:bg-white/5 cursor-not-allowed" : ""}
               />
             </div>
 
@@ -324,8 +367,8 @@ export default function PreEnrollmentModal({
                 placeholder="Teléfono automático"
                 error={!!errors.phone}
                 hint={isSubmitted ? errors.phone?.message : undefined}
-                readOnly={!editingEntry}
-                className={!editingEntry ? "bg-bg-secondary dark:bg-white/5 cursor-not-allowed" : ""}
+                readOnly={!!editingEntry}
+                className={editingEntry ? "bg-bg-secondary dark:bg-white/5 cursor-not-allowed" : ""}
               />
             </div>
 
@@ -379,7 +422,7 @@ export default function PreEnrollmentModal({
                     placeholder="Selecciona el tipo"
                     onChange={field.onChange}
                     defaultValue={field.value}
-                    disabled={!editingEntry}
+                    disabled={!!editingEntry}
                   />
                 )}
               />
@@ -399,8 +442,8 @@ export default function PreEnrollmentModal({
                 placeholder="Generación automática"
                 error={!!errors.enrollmentCode}
                 hint={isSubmitted ? errors.enrollmentCode?.message : undefined}
-                readOnly={!editingEntry}
-                className={!editingEntry ? "bg-bg-secondary dark:bg-white/5 cursor-not-allowed" : ""}
+                readOnly={!!editingEntry}
+                className={editingEntry ? "bg-bg-secondary dark:bg-white/5 cursor-not-allowed" : ""}
               />
             </div>
           </div>

@@ -216,7 +216,7 @@ export default function PreEnrollmentTable({
     }
 
     // Get unique periods for the filter dropdown
-    const uniquePeriods = Array.from(new Set(data.map(item => item.period))).sort();
+    const uniquePeriods = Array.from(new Set(data.map(item => item.period).filter(Boolean))).sort();
 
     return (
         <div className="table-container">
@@ -254,11 +254,11 @@ export default function PreEnrollmentTable({
                             onChange={(e) => setPeriodFilter(e.target.value)}
                             className="w-full rounded-lg border border-border-medium bg-transparent py-2 px-4 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                         >
-                            <option value="" className="dark:bg-bg-dark">
+                            <option key="all-periods" value="" className="dark:bg-bg-dark">
                                 Seleccione Período
                             </option>
-                            {uniquePeriods.map(period => (
-                                <option key={period} value={period} className="dark:bg-bg-dark">
+                            {uniquePeriods.map((period, index) => (
+                                <option key={`period-${index}-${period}`} value={period} className="dark:bg-bg-dark">
                                     {period}
                                 </option>
                             ))}
@@ -355,7 +355,7 @@ export default function PreEnrollmentTable({
                                     <TableCell className="table-cell text-right">
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
-                                            onEdit={onEdit ? () => onEdit(s) : undefined}
+                                            onEdit={activeTab === "Activas" && onEdit ? () => onEdit(s) : undefined}
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(s.preEnrollmentId) : undefined}
                                             status={s.status}
                                         />
@@ -440,7 +440,7 @@ export default function PreEnrollmentTable({
 
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
-                                            onEdit={onEdit ? () => onEdit(s) : undefined}
+                                            onEdit={activeTab === "Activas" && onEdit ? () => onEdit(s) : undefined}
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(s.preEnrollmentId) : undefined}
                                             status={s.status}
                                             isMobile={true}

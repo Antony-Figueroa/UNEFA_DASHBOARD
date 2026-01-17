@@ -9,6 +9,7 @@ import ProcessFlowSection from "../../features/internship-home/sections/ProcessF
 import PartnerLogosSection from "../../features/internship-home/sections/PartnerLogosSection";
 import MissionVisionSection from "../../features/internship-home/sections/MissionVisionSection";
 import WorkspaceImageGallery from "../../features/internship-home/sections/WorkspaceImageGallery";
+import UnefaInfoSection from "../../features/internship-home/sections/UnefaInfoSection";
 import TopBanner from "../../components/layout/TopBanner";
 
 const InternshipHome: React.FC = () => {
@@ -49,6 +50,9 @@ const InternshipHome: React.FC = () => {
 
         {/* Sección de Galería de Espacios UNEFA */}
         <WorkspaceImageGallery />
+
+        {/* Nueva Sección Informativa Dinámica */}
+        <UnefaInfoSection />
 
         {/* Placeholder para componentes externos (Siguientes Pasos) */}
         {/* 

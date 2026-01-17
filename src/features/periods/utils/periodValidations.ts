@@ -64,6 +64,15 @@ export const getPeriodSchema = (existingPeriods: Periodo[], currentPeriodId?: st
                 path: ["startDate"]
             });
         }
+
+        const endYear = data.endDate.getFullYear();
+        if (endYear !== yearNum) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: `La fecha de cierre debe corresponder estrictamente al año seleccionado (${yearNum}).`,
+                path: ["endDate"]
+            });
+        }
     }
 
     // --- Validación de Solapamiento ---

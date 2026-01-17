@@ -73,7 +73,6 @@ export const getPreEnrollments = async (req: Request, res: Response) => {
           t_internship_type (NAME)
         `)
         .eq('PRACTICES_STATUS', 'PRE-INSCRITO')
-        .eq('STATUS', 1)
         .order('REGISTRATION_DATE', { ascending: false });
 
       if (error) throw error;
@@ -184,7 +183,7 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
 export const updatePreEnrollment = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { period, practiceType, enrollmentCode } = req.body;
+    const { period, practiceType, enrollmentCode, status } = req.body;
 
     const result = await dbManager.withRetry(async (supabase) => {
       let periodId, internshipTypeId;
@@ -200,9 +199,10 @@ export const updatePreEnrollment = async (req: Request, res: Response) => {
       }
 
       const updateData: Partial<ProfessionalPractice> = {};
-      if (periodId) updateData.PERIOD_ID = periodId;
-      if (internshipTypeId) updateData.INTERNSHIP_TYPE_ID = internshipTypeId;
+      if (periodId !== undefined) updateData.PERIOD_ID = periodId;
+      if (internshipTypeId !== undefined) updateData.INTERNSHIP_TYPE_ID = internshipTypeId;
       if (enrollmentCode) updateData.ENROLLMENT = enrollmentCode;
+      if (status !== undefined) updateData.STATUS = status ? 1 : 0;
 
       const { data, error } = await supabase
         .from(TABLE_NAME)

@@ -34,7 +34,7 @@ const navItems: NavItem[] = [
     name: "Gestión",
     icon: <TableIcon />,
     subItems: [
-      { name: "Periodo", path: "/period" },
+      { name: "Período", path: "/period" },
       { name: "Carrera", path: "/careers" },
     ],
   },

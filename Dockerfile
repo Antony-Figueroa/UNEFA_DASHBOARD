@@ -18,6 +18,9 @@ RUN cd backend && npm ci --network-timeout=100000
 # Copiar todo el código
 COPY . .
 
+# Asegurar permisos para el script de prueba
+RUN chmod +x test-env-readonly.sh
+
 # Construir frontend
 RUN npm run build
 
@@ -28,8 +31,14 @@ RUN cd backend && npm run build
 FROM node:20-alpine
 WORKDIR /app
 
+# NOTA DE SEGURIDAD: Los archivos .env se montan como solo lectura (read-only)
+# para prevenir modificaciones accidentales o maliciosas desde el contenedor.
+# La configuración se encuentra en docker-compose.yml utilizando el flag :ro
+
 # Copiar archivos necesarios para producción
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/backend/dist ./backend/dist
 COPY --from=builder /app/backend/package*.json ./backend/
 COPY --from=builder /app/backend/node_modules ./backend/node_modules

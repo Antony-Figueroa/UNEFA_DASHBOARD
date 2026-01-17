@@ -97,6 +97,13 @@ backend/
 
 ## 🛠️ Guía de Configuración y Despliegue
 
+### 🛡️ Seguridad y Configuración de Docker
+Para garantizar la integridad de la configuración, se han implementado las siguientes medidas de seguridad en el entorno Docker:
+
+1. **Montaje de Solo Lectura**: Los archivos `.env` (tanto en la raíz como en `backend/`) se montan en los contenedores con el flag `:ro` (read-only). Esto impide que cualquier proceso dentro del contenedor modifique las variables de entorno.
+2. **Verificación de Integridad**: Los scripts `setup-docker.sh` y `setup-docker.bat` calculan hashes MD5 de los archivos `.env` antes y después de la ejecución para detectar cambios no autorizados.
+3. **Validación en Tiempo de Ejecución**: Se han añadido notas de seguridad en los Dockerfiles documentando esta restricción.
+
 ### Requisitos del Sistema
 - **Node.js**: >= 18.x
 - **NPM**: >= 9.x

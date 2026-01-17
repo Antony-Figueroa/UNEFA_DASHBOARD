@@ -3,6 +3,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { AxiosError } from "axios";
 import { Career } from "../types";
 import * as careersService from "../services/careersService";
 import { useToast } from "../../../context/toast";
@@ -103,9 +104,10 @@ export const useCareers = () => {
         onViewDetails: () => console.log("Ver detalles de carrera:", newCareer.careerId),
       });
     } catch (e) {
-      const err = e instanceof Error ? e : new Error("Error desconocido al crear");
-      addToast({ variant: "error", title: "Error al Crear", message: err.message });
-      throw err;
+      const axiosError = e as AxiosError<{ message: string }>;
+      const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error desconocido al crear";
+      addToast({ variant: "error", title: "Error al Crear", message: errorMessage });
+      throw e;
     } finally {
       setLoadingAction(false);
     }
@@ -133,9 +135,10 @@ export const useCareers = () => {
         } : undefined
       });
     } catch (e) {
-      const err = e instanceof Error ? e : new Error("Error desconocido al actualizar");
-      addToast({ variant: "error", title: "Error al Actualizar", message: err.message });
-      throw err;
+      const axiosError = e as AxiosError<{ message: string }>;
+      const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error desconocido al actualizar";
+      addToast({ variant: "error", title: "Error al Actualizar", message: errorMessage });
+      throw e;
     } finally {
       setLoadingAction(false);
     }
@@ -156,8 +159,9 @@ export const useCareers = () => {
         message: `La carrera ${career.careerName} ha sido eliminada permanentemente.`,
       });
     } catch (e) {
-      const err = e instanceof Error ? e : new Error("Error al eliminar carrera");
-      addToast({ variant: "error", title: "Error", message: err.message });
+      const axiosError = e as AxiosError<{ message: string }>;
+      const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error al eliminar carrera";
+      addToast({ variant: "error", title: "Error", message: errorMessage });
     } finally {
       setLoadingAction(false);
     }
@@ -182,8 +186,9 @@ export const useCareers = () => {
         message: `La carrera ahora está ${!currentStatus ? "Activa" : "Inactiva"}.`,
       });
     } catch (e) {
-      const err = e instanceof Error ? e : new Error("Error al cambiar estado");
-      addToast({ variant: "error", title: "Error", message: err.message });
+      const axiosError = e as AxiosError<{ message: string }>;
+      const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error al cambiar estado";
+      addToast({ variant: "error", title: "Error", message: errorMessage });
     } finally {
       setLoadingAction(false);
     }
@@ -192,18 +197,18 @@ export const useCareers = () => {
   const bulkRemoveCareers = async (careerIds: (string | number)[]) => {
     setLoadingAction(true);
     try {
-      const selectedCareers = careers.filter((c) => careerIds.map(id => String(id)).includes(String(c.careerId)));
-      await Promise.all(selectedCareers.map((c) => careersService.deleteCareer(c.careerId)));
+      await careersService.bulkDeleteCareers(careerIds);
       await refreshCareers();
       addToast({
         variant: "warning",
         title: "Eliminación Masiva",
-        message: `${careerIds.length} carreras eliminadas.`
+        message: `${careerIds.length} carreras enviadas a inactivos.`
       });
     } catch (e) {
-      const err = e instanceof Error ? e : new Error("Error desconocido al eliminar en lote");
-      addToast({ variant: "error", title: "Error al Eliminar", message: err.message });
-      throw err;
+      const axiosError = e as AxiosError<{ message: string }>;
+      const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error desconocido al eliminar en lote";
+      addToast({ variant: "error", title: "Error al Eliminar", message: errorMessage });
+      throw e;
     } finally {
       setLoadingAction(false);
     }
@@ -212,9 +217,7 @@ export const useCareers = () => {
   const bulkRestoreCareers = async (careerIds: (string | number)[]) => {
     setLoadingAction(true);
     try {
-      const selectedCareers = careers.filter((c) => careerIds.map(id => String(id)).includes(String(c.careerId)));
-      // Para restaurar, simplemente cambiamos el estado a activo (1)
-      await Promise.all(selectedCareers.map((c) => careersService.updateCareer({ ...c, status: 1 })));
+      await careersService.bulkRestoreCareers(careerIds);
       await refreshCareers();
       addToast({
         variant: "success",
@@ -223,14 +226,15 @@ export const useCareers = () => {
           <p>Se han restaurado <strong>{careerIds.length}</strong> carreras exitosamente.</p>
         ),
         onUndo: async () => {
-          await Promise.all(selectedCareers.map((c) => careersService.deleteCareer(c.careerId)));
+          await careersService.bulkDeleteCareers(careerIds);
           await refreshCareers();
         }
       });
     } catch (e) {
-      const err = e instanceof Error ? e : new Error("Error desconocido al restaurar masivamente");
-      addToast({ variant: "error", title: "Error al Restaurar", message: err.message });
-      throw err;
+      const axiosError = e as AxiosError<{ message: string }>;
+      const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error desconocido al restaurar en lote";
+      addToast({ variant: "error", title: "Error al Restaurar", message: errorMessage });
+      throw e;
     } finally {
       setLoadingAction(false);
     }

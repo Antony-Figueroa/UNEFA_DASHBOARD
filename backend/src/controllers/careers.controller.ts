@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as careersService from '../services/careers.service.js';
+import { AuthRequest } from '../middlewares/auth.middleware.js';
 
 const handleDbError = (res: Response, error: unknown) => {
   console.error('Database Error:', error);
@@ -7,6 +8,10 @@ const handleDbError = (res: Response, error: unknown) => {
   
   if (dbError.code === 'BUSINESS_RULE_VIOLATION') {
     return res.status(400).json({ message: dbError.message });
+  }
+
+  if (dbError.code === 'NOT_FOUND') {
+    return res.status(404).json({ message: dbError.message });
   }
 
   // Mensaje amigable según el código de error de Postgres
@@ -46,43 +51,62 @@ export const getCareerById = async (req: Request, res: Response) => {
   }
 };
 
-export const createCareer = async (req: Request, res: Response) => {
+export const createCareer = async (req: AuthRequest, res: Response) => {
   try {
-    const result = await careersService.createCareer(req.body);
+    const userId = req.user?.userId || 1;
+    const result = await careersService.createCareer(req.body, userId);
     res.status(201).json(result);
   } catch (error) {
     handleDbError(res, error);
   }
 };
 
-export const updateCareer = async (req: Request, res: Response) => {
+export const updateCareer = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const result = await careersService.updateCareer(id, req.body);
+    const userId = req.user?.userId || 1;
+    const result = await careersService.updateCareer(id, req.body, userId);
     res.json(result);
   } catch (error) {
     handleDbError(res, error);
   }
 };
 
-export const deleteCareer = async (req: Request, res: Response) => {
+export const deleteCareer = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    await careersService.deleteCareer(id);
+    const userId = req.user?.userId || 1;
+    await careersService.deleteCareer(id, userId);
     res.status(204).send();
   } catch (error) {
     handleDbError(res, error);
   }
 };
 
-export const bulkDeleteCareers = async (req: Request, res: Response) => {
+export const bulkDeleteCareers = async (req: AuthRequest, res: Response) => {
   try {
     const { ids } = req.body;
+    const userId = req.user?.userId || 1;
     if (!ids || !Array.isArray(ids)) {
       return res.status(400).json({ message: 'Se requiere un array de IDs' });
     }
 
-    await careersService.bulkDeleteCareers(ids);
+    await careersService.bulkDeleteCareers(ids, userId);
+    res.status(204).send();
+  } catch (error) {
+    handleDbError(res, error);
+  }
+};
+
+export const bulkRestoreCareers = async (req: AuthRequest, res: Response) => {
+  try {
+    const { ids } = req.body;
+    const userId = req.user?.userId || 1;
+    if (!ids || !Array.isArray(ids)) {
+      return res.status(400).json({ message: 'Se requiere un array de IDs' });
+    }
+
+    await careersService.bulkRestoreCareers(ids, userId);
     res.status(204).send();
   } catch (error) {
     handleDbError(res, error);

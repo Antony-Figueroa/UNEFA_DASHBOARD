@@ -5,7 +5,8 @@ import {
   createCareer, 
   updateCareer, 
   deleteCareer,
-  bulkDeleteCareers 
+  bulkDeleteCareers,
+  bulkRestoreCareers 
 } from '../controllers/careers.controller.js';
 
 const router = Router();
@@ -16,5 +17,6 @@ router.post('/', createCareer);
 router.put('/:id', updateCareer);
 router.delete('/:id', deleteCareer);
 router.post('/bulk-delete', bulkDeleteCareers);
+router.post('/bulk-restore', bulkRestoreCareers);
 
 export default router;

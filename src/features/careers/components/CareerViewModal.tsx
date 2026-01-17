@@ -52,12 +52,6 @@ export default function CareerViewModal({
                 </p>
               </div>
               <div>
-                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Abreviatura</label>
-                <p className="text-sm font-bold text-text-primary dark:text-white/90">
-                  {career.careerAbbreviation}
-                </p>
-              </div>
-              <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Nota Mínima Aprobatoria</label>
                 <p className="text-sm font-bold text-text-primary dark:text-white/90">
                   {career.minimumGrade.toFixed(2)}

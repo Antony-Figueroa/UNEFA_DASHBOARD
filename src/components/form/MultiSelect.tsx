@@ -1,5 +1,6 @@
 import type React from "react";
 import { useState, useEffect, useRef } from "react";
+import { Tooltip } from "../ui/tooltip/Tooltip";
 
 interface Option {
   value: string;
@@ -14,6 +15,7 @@ interface MultiSelectProps {
   onChange?: (selected: string[]) => void;
   disabled?: boolean;
   placeholder?: string;
+  infoTooltip?: string;
 }
 
 const MultiSelect: React.FC<MultiSelectProps> = ({
@@ -24,6 +26,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   onChange,
   disabled = false,
   placeholder = "Select options",
+  infoTooltip,
 }) => {
   const isControlled = value !== undefined;
   const [internalSelected, setInternalSelected] =
@@ -105,14 +108,25 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
 
   return (
     <div className="w-full" ref={dropdownRef}>
-      <label
-        className="mb-1.5 block text-sm font-medium text-text-secondary dark:text-text-tertiary"
-        id={`${label}-label`}
-      >
-        {label}
-      </label>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <label
+          className="block text-sm font-medium text-text-secondary dark:text-text-tertiary"
+          id={`${label}-label`}
+        >
+          {label}
+        </label>
+        {infoTooltip && (
+          <Tooltip content={infoTooltip}>
+            <span className="cursor-help text-warning-500">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+              </svg>
+            </span>
+          </Tooltip>
+        )}
+      </div>
 
-      <div className="relative z-20 inline-block w-full">
+      <div className="relative z-50 inline-block w-full">
         <div className="relative flex flex-col items-center">
           <div
             onClick={toggleDropdown}
@@ -209,7 +223,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
 
           {isOpen && (
             <div
-              className="absolute left-0 z-40 w-full overflow-y-auto bg-bg-main rounded-lg shadow-sm top-full max-h-select dark:bg-bg-dark"
+              className="absolute left-0 z-50 w-full overflow-y-auto bg-bg-main rounded-lg shadow-lg top-full max-h-60 dark:bg-bg-dark border border-border-light dark:border-border-dark"
               onClick={(e) => e.stopPropagation()}
               role="listbox"
               aria-label={label}

@@ -3,10 +3,11 @@ import { createPortal } from 'react-dom';
 
 interface TooltipProps {
   content: React.ReactNode;
-  children: React.ReactElement;
+  children: React.ReactElement<{ style?: React.CSSProperties }>;
   className?: string;
   delay?: number; // Delay in ms before appearing
   duration?: number; // Duration in ms to stay visible
+  isDisabled?: boolean; // If the trigger is disabled
 }
 
 export const Tooltip: React.FC<TooltipProps> = ({ 
@@ -14,7 +15,8 @@ export const Tooltip: React.FC<TooltipProps> = ({
   children, 
   className = "",
   delay = 0,
-  duration
+  duration,
+  isDisabled = false
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -28,7 +30,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
     transition: 'opacity 0.15s ease-in-out',
   });
   
-  const triggerRef = useRef<HTMLElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   const updatePosition = React.useCallback(() => {
@@ -130,33 +132,31 @@ export const Tooltip: React.FC<TooltipProps> = ({
     };
   }, []);
 
-  // Clonar el elemento hijo para añadirle los eventos de hover
-  const trigger = React.cloneElement(children as React.ReactElement, {
-    ref: triggerRef,
-    onMouseEnter: (e: React.MouseEvent<HTMLElement>) => {
-      (children.props as React.HTMLAttributes<HTMLElement>).onMouseEnter?.(e);
-      handleMouseEnter();
-    },
-    onMouseLeave: (e: React.MouseEvent<HTMLElement>) => {
-      (children.props as React.HTMLAttributes<HTMLElement>).onMouseLeave?.(e);
-      handleMouseLeave();
-    },
-  } as React.HTMLAttributes<HTMLElement> & React.RefAttributes<HTMLElement>);
-
   return (
-    <>
-      {trigger}
+    <div 
+      ref={triggerRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={`relative inline-block ${isDisabled ? "cursor-not-allowed" : ""} ${className}`}
+    >
+      {React.cloneElement(children, {
+        style: {
+          ...(children.props.style || {}),
+          pointerEvents: isDisabled ? 'none' : (children.props.style?.pointerEvents || 'auto')
+        }
+      })}
       {isVisible && createPortal(
         <div
           ref={tooltipRef}
           style={style}
-          className={`rounded-lg bg-bg-dark px-3 py-2 text-xs text-white shadow-2xl animate-fadeIn border border-white/10 max-w-xs ${className}`}
+          className="pointer-events-none fixed z-[9999]"
         >
-          {content}
-          {/* Triangulito (opcional, se podría ajustar dinámicamente) */}
+          <div className={`rounded-lg bg-bg-dark px-3 py-2 text-xs text-white shadow-2xl animate-fadeIn border border-white/10 max-w-xs ${className}`}>
+            {content}
+          </div>
         </div>,
         document.body
       )}
-    </>
+    </div>
   );
 };

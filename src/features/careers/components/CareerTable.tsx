@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useDbStatus } from "../../../context/db-status";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { ActionButton } from "../../../components/common/ActionButton";
+import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { CareerRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
@@ -45,6 +46,8 @@ interface ActionButtonsProps {
   inactiveMode: boolean;
   activeTab: "Activas" | "Inactivas";
   isMobile?: boolean;
+  isDisabled?: boolean;
+  disabledTooltip?: string;
 }
 
 const ActionButtons = ({
@@ -55,6 +58,8 @@ const ActionButtons = ({
   inactiveMode,
   activeTab,
   isMobile = false,
+  isDisabled = false,
+  disabledTooltip = "",
 }: ActionButtonsProps) => {
   const containerClasses = isMobile 
     ? "flex flex-col gap-3 pt-2" 
@@ -88,10 +93,11 @@ const ActionButtons = ({
         <ActionButton
           onClick={() => onToggleStatus()}
           icon={inactiveMode ? <RefreshIcon /> : <TrashIcon />}
-          tooltip={inactiveMode ? "Restaurar" : "Eliminar"}
+          tooltip={isDisabled && !inactiveMode ? disabledTooltip : (inactiveMode ? "Restaurar" : "Eliminar")}
           label={isMobile ? (inactiveMode ? "Restaurar" : "Eliminar") : undefined}
           variant={inactiveMode ? "success" : "danger"}
           fullWidth={isMobile}
+          disabled={isDisabled && !inactiveMode}
         />
       )}
 
@@ -99,10 +105,11 @@ const ActionButtons = ({
         <ActionButton
           onClick={() => onDelete()}
           icon={<TrashIcon />}
-          tooltip="Eliminar Carrera"
+          tooltip={isDisabled ? disabledTooltip : "Eliminar Carrera"}
           label={isMobile ? "Eliminar Carrera" : undefined}
           variant="danger"
           fullWidth={isMobile}
+          disabled={isDisabled}
         />
       )}
     </div>
@@ -128,6 +135,15 @@ export default function CareerTable({
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [expandedRows, setExpandedRows] = useState<Set<string | number>>(new Set());
   const { status: dbStatus } = useDbStatus();
+  const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
+
+  useEffect(() => {
+    const used = new Set<string | number>();
+    data.forEach(c => {
+      if (c.isInUse) used.add(c.careerId);
+    });
+    setInUseIds(used);
+  }, [data]);
 
   // Estados para selección y ordenamiento
   const [selectedIds, setSelectedIds] = useState<(string | number)[]>([]);
@@ -146,7 +162,8 @@ export default function CareerTable({
     const filtered = data.filter((c) => {
       const name = String(c.careerName ?? "").toLowerCase();
       const code = String(c.careerCode ?? "").toLowerCase();
-      const matchesSearch = name.includes(search) || code.includes(search);
+      const abbreviation = String(c.careerAbbreviation ?? "").toLowerCase();
+      const matchesSearch = name.includes(search) || code.includes(search) || abbreviation.includes(search);
       const matchesType =
         practiceTypeFilter === "" ||
         (Array.isArray(c.internshipTypeIds) &&
@@ -379,13 +396,19 @@ export default function CareerTable({
                   {selectedIds.length} seleccionados
                 </span>
                 {activeTab === "Activas" ? (
-                  <button
-                    onClick={() => onBulkDelete?.(selectedIds)}
-                    className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12"
+                  <Tooltip 
+                    content={selectedIds.some(id => inUseIds.has(id)) ? "Algunas de las carreras seleccionadas están en uso y no pueden ser eliminadas" : "Eliminar seleccionados"}
+                    isDisabled={selectedIds.some(id => inUseIds.has(id))}
                   >
-                    <TrashIcon className="icon-sm" />
-                    Eliminar
-                  </button>
+                    <button
+                      onClick={() => onBulkDelete?.(selectedIds)}
+                      disabled={selectedIds.some(id => inUseIds.has(id))}
+                      className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <TrashIcon className="icon-sm" />
+                      Eliminar
+                    </button>
+                  </Tooltip>
                 ) : (
                   <button
                     onClick={() => onBulkRestore?.(selectedIds)}
@@ -443,16 +466,6 @@ export default function CareerTable({
                   <SortIndicator column="minimumGrade" />
                 </div>
               </TableCell>
-              <TableCell
-                isHeader
-                className="table-header-cell cursor-pointer group"
-                onClick={() => handleSort("careerAbbreviation")}
-              >
-                <div className="flex items-center">
-                  Abreviatura
-                  <SortIndicator column="careerAbbreviation" />
-                </div>
-              </TableCell>
               <TableCell isHeader className="table-header-cell">Tipos de Prácticas</TableCell>
               <TableCell isHeader className="table-header-cell text-right">&nbsp;</TableCell>
             </TableRow>
@@ -478,7 +491,6 @@ export default function CareerTable({
                     </Badge>
                   </TableCell>
                   <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">{formatDecimal(Number(c.minimumGrade))}</TableCell>
-                  <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">{c.careerAbbreviation}</TableCell>
                   <TableCell className="table-cell">
                     <div className="flex flex-wrap gap-1">
                       {c.internshipTypeIds && c.internshipTypeIds.length > 0 ? (
@@ -506,13 +518,15 @@ export default function CareerTable({
                       onDelete={onDelete ? () => onDelete(c.careerId) : undefined}
                       inactiveMode={inactiveMode}
                       activeTab={activeTab}
+                      isDisabled={inUseIds.has(c.careerId)}
+                      disabledTooltip="Esta carrera está en uso y no puede ser editada o eliminada"
                     />
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell className="table-cell py-24 text-center" colSpan={7}>
+                <TableCell className="table-cell py-24 text-center" colSpan={6}>
                   <div className="flex flex-col items-center justify-center animate-fadeIn">
                     <div className="mb-4 rounded-full bg-bg-secondary p-4 dark:bg-white/5">
                       <svg className="h-8 w-8 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -554,7 +568,6 @@ export default function CareerTable({
                       <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8 uppercase">
                         {c.careerName}
                       </h3>
-                      <p className="text-xs text-text-secondary mt-1 truncate">{c.careerAbbreviation}</p>
                     </div>
                     <button
                       onClick={() => toggleRowExpansion(rowId)}
@@ -571,12 +584,11 @@ export default function CareerTable({
                   <div className="mt-4 space-y-6 animate-fadeIn border-t border-border-light dark:border-border-dark pt-6">
                     <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
                       <div className="flex flex-col items-center">
-                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Abreviatura</p>
-                        <p className="text-sm text-text-primary dark:text-text-emphasis font-medium">{c.careerAbbreviation}</p>
-                      </div>
-                      <div className="flex flex-col items-center">
                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Código</p>
                         <p className="text-sm text-text-primary dark:text-text-emphasis font-medium">{c.careerCode}</p>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        {/* Espacio para mantener el grid de 2 columnas si es necesario, o dejarlo así */}
                       </div>
                       <div className="flex flex-col items-center col-span-2">
                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Tipos de Prácticas</p>
@@ -598,48 +610,17 @@ export default function CareerTable({
                     </div>
 
                     <div className="flex flex-col gap-3 pt-2">
-                      {onView && (
-                        <ActionButton
-                          onClick={() => onView(c)}
-                          icon={<EyeIcon />}
-                          label="Ver"
-                          tooltip="Ver Detalles"
-                          variant="primary"
-                        />
-                      )}
-                      {onEdit && activeTab === "Activas" && (
-                        <ActionButton
-                          onClick={() => onEdit(c)}
-                          icon={<EditIcon />}
-                          label="Editar"
-                          tooltip="Editar Carrera"
-                          variant="primary"
-                        />
-                      )}
-                      {onToggleStatus && (
-                        <ActionButton
-                          onClick={() => {
-                            if (!inactiveMode && onDelete) {
-                              onDelete(c.careerId);
-                            } else {
-                              onToggleStatus(c.careerId);
-                            }
-                          }}
-                          icon={inactiveMode ? <RefreshIcon /> : <TrashIcon />}
-                          label={inactiveMode ? "Restaurar" : "Eliminar"}
-                          tooltip={inactiveMode ? "Restaurar Carrera" : "Eliminar Carrera"}
-                          variant={inactiveMode ? "success" : "danger"}
-                        />
-                      )}
-                      {onDelete && activeTab === "Activas" && !onToggleStatus && (
-                        <ActionButton
-                          onClick={() => onDelete(c.careerId)}
-                          icon={<TrashIcon />}
-                          label="Eliminar"
-                          tooltip="Eliminar Carrera"
-                          variant="danger"
-                        />
-                      )}
+                      <ActionButtons
+                        onView={onView ? () => onView(c) : undefined}
+                        onEdit={onEdit ? () => onEdit(c) : undefined}
+                        onToggleStatus={onToggleStatus ? () => onToggleStatus(c.careerId) : undefined}
+                        onDelete={onDelete ? () => onDelete(c.careerId) : undefined}
+                        inactiveMode={inactiveMode}
+                        activeTab={activeTab}
+                        isMobile={true}
+                        isDisabled={inUseIds.has(c.careerId)}
+                        disabledTooltip="Esta carrera está en uso y no puede ser eliminada o desactivada"
+                      />
                     </div>
                   </div>
                 )}

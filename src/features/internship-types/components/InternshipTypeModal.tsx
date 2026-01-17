@@ -20,12 +20,22 @@ interface InternshipTypeModalProps {
   isLoading?: boolean;
 }
 
-const internshipTypeSchema = z.object({
-  NAME: z.string().min(1, "El nombre es obligatorio"),
-  PRIORITY: z.string().min(1, "La prioridad es obligatoria"),
-});
+const createInternshipTypeSchema = (existingTypes: InternshipType[], editingItemId?: number) => 
+  z.object({
+    NAME: z.string()
+      .min(1, "El nombre es obligatorio")
+      .transform(val => val.toUpperCase())
+      .refine(val => {
+        const normalizedVal = val.trim().toUpperCase();
+        return !existingTypes.some(t => 
+          t.NAME.trim().toUpperCase() === normalizedVal && 
+          t.INTERNSHIP_TYPE_ID !== editingItemId
+        );
+      }, "Este tipo de práctica ya existe"),
+    PRIORITY: z.string().min(1, "La prioridad es obligatoria"),
+  });
 
-type InternshipTypeFormData = z.infer<typeof internshipTypeSchema>;
+type InternshipTypeFormData = z.infer<ReturnType<typeof createInternshipTypeSchema>>;
 
 const priorityOptions = [
   { value: "0", label: "0" },
@@ -43,14 +53,13 @@ export default function InternshipTypeModal({
   isLoading = false,
 }: InternshipTypeModalProps) {
   const {
-    register,
     handleSubmit,
     reset,
     control,
-    setError,
-    formState: { errors, isSubmitted, isDirty },
+    formState: { errors, isDirty },
   } = useForm<InternshipTypeFormData>({
-    resolver: zodResolver(internshipTypeSchema),
+    resolver: zodResolver(createInternshipTypeSchema(existingTypes, editingItem?.INTERNSHIP_TYPE_ID)),
+    mode: "onChange",
     defaultValues: {
       NAME: "",
       PRIORITY: "",
@@ -83,18 +92,6 @@ export default function InternshipTypeModal({
   }, [editingItem, isOpen, reset]);
 
   const onSubmit = (data: InternshipTypeFormData) => {
-    // Validar duplicados
-    const isDuplicate = existingTypes.some(
-      (t) => 
-        t.NAME.toLowerCase() === data.NAME.toLowerCase() && 
-        t.INTERNSHIP_TYPE_ID !== editingItem?.INTERNSHIP_TYPE_ID
-    );
-
-    if (isDuplicate) {
-      setError("NAME", { type: "manual", message: "Este tipo de práctica ya existe" });
-      return;
-    }
-
     onSave({
       NAME: data.NAME,
       ABBREVIATION: data.NAME.substring(0, 10).toUpperCase(), // Fallback para campo obligatorio en BD
@@ -122,12 +119,22 @@ export default function InternshipTypeModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
               <div>
                 <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nombre *</label>
-                <Input
-                  {...register("NAME")}
-                  type="text"
-                  placeholder="Ingrese el nombre"
-                  error={!!errors.NAME}
-                  hint={isSubmitted ? errors.NAME?.message : undefined}
+                <Controller
+                  name="NAME"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      onChange={(e) => {
+                        const val = e.target.value.toUpperCase();
+                        field.onChange(val);
+                      }}
+                      type="text"
+                      placeholder="Ingrese el nombre"
+                      error={!!errors.NAME}
+                      hint={errors.NAME?.message}
+                    />
+                  )}
                 />
               </div>
 
@@ -137,18 +144,20 @@ export default function InternshipTypeModal({
                   name="PRIORITY"
                   control={control}
                   render={({ field }) => (
-                    <Select
-                      options={priorityOptions}
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="Seleccione prioridad"
-                      disabled={isInUse}
-                    />
+                    <div className="space-y-1">
+                      <Select
+                         options={priorityOptions}
+                         value={field.value}
+                         onChange={field.onChange}
+                         placeholder="Seleccione prioridad"
+                         disabled={isInUse}
+                       />
+                      {errors.PRIORITY && (
+                        <p className="mt-1 text-xs text-error-500">{errors.PRIORITY.message}</p>
+                      )}
+                    </div>
                   )}
                 />
-                {isSubmitted && errors.PRIORITY && (
-                  <p className="mt-1 text-xs text-error-500">{errors.PRIORITY.message}</p>
-                )}
                 {isInUse && (
                   <p className="mt-1 text-xs text-text-tertiary italic">No se puede editar la prioridad porque está asignada a un registro activo</p>
                 )}

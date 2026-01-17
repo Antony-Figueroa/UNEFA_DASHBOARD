@@ -172,95 +172,97 @@ export default function InternshipTypeTable({
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border-light bg-white dark:border-white/5 dark:bg-bg-dark">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableCell className="w-10">
-                <Checkbox
-                  checked={paged.length > 0 && selectedIds.length === paged.length}
-                  onChange={(checked) => handleSelectAll(checked)}
-                />
-              </TableCell>
-              <TableCell className="cursor-pointer" onClick={() => setSortConfig({ key: "NAME", order: sortConfig.key === "NAME" && sortConfig.order === "asc" ? "desc" : "asc" })}>
-                Nombre {sortConfig.key === "NAME" && (sortConfig.order === "asc" ? "↑" : "↓")}
-              </TableCell>
-              <TableCell className="cursor-pointer" onClick={() => setSortConfig({ key: "PRIORITY", order: sortConfig.key === "PRIORITY" && sortConfig.order === "asc" ? "desc" : "asc" })}>
-                Prioridad {sortConfig.key === "PRIORITY" && (sortConfig.order === "asc" ? "↑" : "↓")}
-              </TableCell>
-              <TableCell>Estado</TableCell>
-              <TableCell className="text-right">Acciones</TableCell>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paged.length === 0 ? (
+        <div className="max-w-full overflow-x-auto table-scrollbar">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-text-secondary dark:text-text-tertiary">
-                  No se encontraron resultados
+                <TableCell className="w-10">
+                  <Checkbox
+                    checked={paged.length > 0 && selectedIds.length === paged.length}
+                    onChange={(checked) => handleSelectAll(checked)}
+                  />
                 </TableCell>
+                <TableCell className="cursor-pointer" onClick={() => setSortConfig({ key: "NAME", order: sortConfig.key === "NAME" && sortConfig.order === "asc" ? "desc" : "asc" })}>
+                  Nombre {sortConfig.key === "NAME" && (sortConfig.order === "asc" ? "↑" : "↓")}
+                </TableCell>
+                <TableCell className="cursor-pointer" onClick={() => setSortConfig({ key: "PRIORITY", order: sortConfig.key === "PRIORITY" && sortConfig.order === "asc" ? "desc" : "asc" })}>
+                  Prioridad {sortConfig.key === "PRIORITY" && (sortConfig.order === "asc" ? "↑" : "↓")}
+                </TableCell>
+                <TableCell>Estado</TableCell>
+                <TableCell className="text-right"> </TableCell>
               </TableRow>
-            ) : (
-              paged.map((item) => (
-                <TableRow key={item.INTERNSHIP_TYPE_ID}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedIds.includes(item.INTERNSHIP_TYPE_ID)}
-                      onChange={(checked) => handleSelectRow(item.INTERNSHIP_TYPE_ID, checked)}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium text-text-primary dark:text-white">
-                    {item.NAME}
-                  </TableCell>
-                  <TableCell>
-                    <Badge color="info">{item.PRIORITY}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge color={item.STATUS === 1 ? "success" : "error"}>
-                      {item.STATUS === 1 ? "Activo" : "Inactivo"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-2">
-                      <ActionButton
-                        onClick={() => onView?.(item)}
-                        icon={<EyeIcon />}
-                        tooltip="Ver Detalles"
-                        variant="primary"
-                      />
-                      {activeTab === "Activas" && (
-                        <ActionButton
-                          onClick={() => onEdit?.(item)}
-                          icon={<EditIcon />}
-                          tooltip="Editar"
-                          variant="primary"
-                        />
-                      )}
-                      {hasLinkedCareers(item.INTERNSHIP_TYPE_ID) && !inactiveMode ? (
-                        <Tooltip content="No se puede eliminar porque tiene carreras afiliadas">
-                          <div className="cursor-not-allowed opacity-50">
-                            <ActionButton
-                              disabled
-                              onClick={() => {}}
-                              icon={<TrashIcon />}
-                              tooltip="Eliminar (Bloqueado)"
-                              variant="danger"
-                            />
-                          </div>
-                        </Tooltip>
-                      ) : (
-                        <ActionButton
-                          onClick={() => onToggleStatus?.(item.INTERNSHIP_TYPE_ID)}
-                          icon={inactiveMode ? <RefreshIcon /> : <TrashIcon />}
-                          tooltip={inactiveMode ? "Restaurar" : "Eliminar"}
-                          variant={inactiveMode ? "success" : "danger"}
-                        />
-                      )}
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {paged.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-8 text-center text-text-secondary dark:text-text-tertiary">
+                    No se encontraron resultados
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                paged.map((item) => (
+                  <TableRow key={item.INTERNSHIP_TYPE_ID}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.includes(item.INTERNSHIP_TYPE_ID)}
+                        onChange={(checked) => handleSelectRow(item.INTERNSHIP_TYPE_ID, checked)}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium text-text-primary dark:text-white">
+                      {item.NAME}
+                    </TableCell>
+                    <TableCell>
+                      <Badge color="info">{item.PRIORITY}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge color={item.STATUS === 1 ? "success" : "error"}>
+                        {item.STATUS === 1 ? "Activo" : "Inactivo"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-2">
+                        <ActionButton
+                          onClick={() => onView?.(item)}
+                          icon={<EyeIcon />}
+                          tooltip="Ver Detalles"
+                          variant="primary"
+                        />
+                        {activeTab === "Activas" && (
+                          <ActionButton
+                            onClick={() => onEdit?.(item)}
+                            icon={<EditIcon />}
+                            tooltip="Editar"
+                            variant="primary"
+                          />
+                        )}
+                        {hasLinkedCareers(item.INTERNSHIP_TYPE_ID) && !inactiveMode ? (
+                          <Tooltip content="No se puede eliminar porque tiene carreras afiliadas">
+                            <div className="cursor-not-allowed opacity-50">
+                              <ActionButton
+                                disabled
+                                onClick={() => {}}
+                                icon={<TrashIcon />}
+                                tooltip="No se puede eliminar porque tiene carreras afiliadas"
+                                variant="danger"
+                              />
+                            </div>
+                          </Tooltip>
+                        ) : (
+                          <ActionButton
+                            onClick={() => onToggleStatus?.(item.INTERNSHIP_TYPE_ID)}
+                            icon={inactiveMode ? <RefreshIcon /> : <TrashIcon />}
+                            tooltip={inactiveMode ? "Restaurar" : "Eliminar"}
+                            variant={inactiveMode ? "success" : "danger"}
+                          />
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
         
         <div className="border-t border-border-light p-4 dark:border-white/5">
           <Pagination

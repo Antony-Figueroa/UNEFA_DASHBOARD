@@ -566,39 +566,66 @@ export default function CareerTable({
                 <div className="flex flex-col items-center gap-2">
                   <div className="flex items-center justify-between w-full">
                     <div className="flex-1 text-center">
-                      <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8 uppercase">
+                      <div className="flex justify-center mb-2">
+                        <Badge color={getCareerColor(c.careerName)} variant="light" size="sm" shape="rounded">
+                          {c.careerAbbreviation}
+                        </Badge>
+                      </div>
+                      <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-12 uppercase">
                         {c.careerName}
                       </h3>
+                      <div className="flex items-center justify-center gap-4 mt-2">
+                        <div className="text-[11px] text-text-secondary dark:text-text-tertiary">
+                          <span className="block font-medium uppercase tracking-wider opacity-60">Código</span>
+                          {c.careerCode}
+                        </div>
+                        <div className="text-[11px] text-text-secondary dark:text-text-tertiary">
+                          <span className="block font-medium uppercase tracking-wider opacity-60">Tipo</span>
+                          {c.careerType || "-"}
+                        </div>
+                      </div>
                     </div>
-                    <button
-                      onClick={() => toggleRowExpansion(rowId)}
-                      className="absolute right-2 top-2 p-2 text-text-tertiary hover:bg-bg-secondary dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
-                      style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
-                      aria-label={isExpanded ? "Contraer" : "Expandir"}
-                    >
-                      <ChevronDownIcon className="icon-sm" />
-                    </button>
+                    <div className="absolute right-2 top-2">
+                      <button
+                        onClick={() => toggleRowExpansion(rowId)}
+                        className="p-2 text-text-tertiary hover:bg-bg-secondary dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
+                        style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
+                        aria-label={isExpanded ? "Contraer" : "Expandir"}
+                      >
+                        <ChevronDownIcon className="h-5 w-5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 {isExpanded && (
-                  <div className="mt-4 space-y-6 animate-fadeIn border-t border-border-light dark:border-border-dark pt-6">
-                    <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
-                      <div className="flex flex-col items-center">
-                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Código</p>
-                        <p className="text-sm text-text-primary dark:text-text-emphasis font-medium">{c.careerCode}</p>
+                  <div className="mt-4 pt-4 border-t border-border-light dark:border-border-dark animate-fadeIn">
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-bg-secondary dark:bg-white/5 p-3 rounded-xl text-center">
+                          <p className="text-[9px] text-text-tertiary uppercase font-bold mb-1">Nota Mínima</p>
+                          <p className="text-xs font-bold dark:text-text-tertiary">{formatDecimal(Number(c.minimumGrade))}</p>
+                        </div>
+                        <div className="bg-bg-secondary dark:bg-white/5 p-3 rounded-xl text-center">
+                          <p className="text-[9px] text-text-tertiary uppercase font-bold mb-1">Estado</p>
+                          <Badge 
+                            size="sm" 
+                            color={c.status ? "success" : "error"} 
+                            variant="light"
+                          >
+                            {c.status ? "Activa" : "Inactiva"}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="flex flex-col items-center">
-                        {/* Espacio para mantener el grid de 2 columnas si es necesario, o dejarlo así */}
-                      </div>
-                      <div className="flex flex-col items-center col-span-2">
-                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Tipos de Prácticas</p>
-                        <div className="flex flex-wrap justify-center gap-1">
+
+                      <div className="bg-bg-secondary dark:bg-white/5 p-4 rounded-xl">
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-3 text-center">Tipos de Prácticas</p>
+                        <div className="flex flex-wrap justify-center gap-2">
                           {c.internshipTypeIds && c.internshipTypeIds.length > 0 ? (
                             c.internshipTypeIds.map((id, i) => {
-                              const opt = practiceOptions.find(o => Number(o.id) === Number(id));
+                              const opt = practiceOptions.find(o => String(o.id) === String(id));
                               return (
-                                <span key={i} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-brand-50 text-brand-600 border border-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:border-brand-500/20">
+                                <span key={i} className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-brand-50 text-brand-600 border border-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:border-brand-500/20 uppercase tracking-wide">
                                   {opt ? opt.label : id}
                                 </span>
                               );
@@ -608,9 +635,7 @@ export default function CareerTable({
                           )}
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex flex-col gap-3 pt-2">
                       <ActionButtons
                         onView={onView ? () => onView(c) : undefined}
                         onEdit={onEdit ? () => onEdit(c) : undefined}

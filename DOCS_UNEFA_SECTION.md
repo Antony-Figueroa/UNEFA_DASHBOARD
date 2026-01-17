@@ -54,7 +54,22 @@ El tiempo de actualización por defecto es de **1 hora (3,600,000 ms)**. Para ca
 ### Modificar Datos de Respaldo (Fallback)
 Para actualizar los avisos que se muestran cuando no hay conexión, edite la constante `FALLBACK_DATA` en `src/services/unefaInfoService.ts`.
 
-## 4. Reporte de Pruebas
+## 4. Mapa de Ubicación Institucional
+
+Se ha integrado un mapa interactivo para mostrar la ubicación exacta de la UNEFA Extensión Araure.
+
+### Componentes Utilizados
+- **MapLibre GL**: Biblioteca de mapas de alto rendimiento y código abierto.
+- **OpenFreeMap**: Proveedor de estilos de mapa gratuito y sin necesidad de API key.
+- **Map.tsx**: Componente base reutilizable ubicado en `src/components/ui/map/`.
+- **UnefaMapSection.tsx**: Sección específica para la página de inicio que incluye información de contacto y horarios.
+
+### Características del Mapa
+- **Interactivo**: Soporta zoom, rotación y desplazamiento.
+- **Marcadores**: Incluye un marcador personalizado para la sede de la universidad con un popup informativo.
+- **Acceso Directo**: Botón dedicado para abrir la ubicación directamente en Google Maps para navegación GPS.
+
+## 5. Reporte de Pruebas
 
 | Caso de Prueba | Resultado | Observaciones |
 | :--- | :--- | :--- |
@@ -63,4 +78,7 @@ Para actualizar los avisos que se muestran cuando no hay conexión, edite la con
 | Modo Offline / Error de API | **Exitoso** | Se cargan los datos de `FALLBACK_DATA` tras fallo de fetch. |
 | Persistencia en Cache | **Exitoso** | Al recargar la página, el contenido aparece instantáneamente desde `localStorage`. |
 | Responsividad | **Exitoso** | La imagen se posiciona debajo del texto en resoluciones < 768px. |
+| Carga del Mapa | **Exitoso** | El mapa carga correctamente con el estilo "Liberty" de OpenFreeMap. |
+| Marcador de Ubicación | **Exitoso** | El marcador aparece en las coordenadas correctas de Araure con su popup. |
+| Enlace externo Google Maps | **Exitoso** | Redirige correctamente a la ubicación en una nueva pestaña. |
 | Accesibilidad | **Exitoso** | Contraste adecuado y soporte para lectores de pantalla mediante HTML semántico. |

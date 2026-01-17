@@ -80,12 +80,21 @@ export const Tooltip: React.FC<TooltipProps> = ({
   }, [isVisible]);
 
   useLayoutEffect(() => {
+    let animationFrameId: number;
+
+    const tick = () => {
+      updatePosition();
+      animationFrameId = requestAnimationFrame(tick);
+    };
+
     if (isVisible) {
       updatePosition();
+      animationFrameId = requestAnimationFrame(tick);
       window.addEventListener('resize', updatePosition);
       window.addEventListener('scroll', updatePosition, true);
     }
     return () => {
+      cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition, true);
     };

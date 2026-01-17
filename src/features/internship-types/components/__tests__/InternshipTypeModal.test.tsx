@@ -53,22 +53,46 @@ describe("InternshipTypeModal", () => {
     );
 
     const nameInput = screen.getByPlaceholderText(/Ingrese el nombre/i);
-    const abbreviationInput = screen.getByPlaceholderText(/Ej: PP, SS, etc./i);
-    const priorityInput = screen.getByPlaceholderText(/Ingrese la prioridad/i);
     const saveButton = screen.getByRole("button", { name: /Guardar Tipo/i });
 
     await user.type(nameInput, "Nueva Pasantía");
-    await user.type(abbreviationInput, "NP");
-    await user.type(priorityInput, "10");
+    
+    // El select es nativo en el entorno de test
+    const select = screen.getByRole("combobox");
+    await user.selectOptions(select, "1");
+
     await user.click(saveButton);
 
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledWith({
-        NAME: "Nueva Pasantía",
-        ABBREVIATION: "NP",
-        PRIORITY: 10,
+        NAME: "NUEVA PASANTÍA",
+        ABBREVIATION: "NUEVA PASA", // substring(0, 10) de "NUEVA PASANTÍA"
+        PRIORITY: 1,
         STATUS: 1,
       });
+    });
+  });
+
+  it("muestra error si el nombre ya existe", async () => {
+    const onSave = vi.fn();
+    const user = userEvent.setup();
+    const existingTypes = [sampleType];
+    
+    render(
+      <InternshipTypeModal
+        isOpen={true}
+        onClose={() => {}}
+        onSave={onSave}
+        editingItem={null}
+        existingTypes={existingTypes}
+      />
+    );
+
+    const nameInput = screen.getByPlaceholderText(/Ingrese el nombre/i);
+    await user.type(nameInput, sampleType.NAME);
+    
+    await waitFor(() => {
+      expect(screen.getByText(/Este tipo de práctica ya existe/i)).toBeDefined();
     });
   });
 
@@ -90,7 +114,6 @@ describe("InternshipTypeModal", () => {
 
     await waitFor(() => {
       expect(screen.getByText(/El nombre es obligatorio/i)).toBeDefined();
-      expect(screen.getByText(/La abreviación es obligatoria/i)).toBeDefined();
       expect(screen.getByText(/La prioridad es obligatoria/i)).toBeDefined();
     });
     

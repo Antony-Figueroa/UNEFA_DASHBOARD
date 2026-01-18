@@ -26,6 +26,7 @@ interface PreEnrollmentModalProps {
   onSave: (data: Omit<PreEnrollment, "preEnrollmentId" | "preEnrollmentDate">) => void;
   editingEntry?: PreEnrollment | null;
   isLoading?: boolean;
+  initialCi?: string | null;
 }
 
 const preEnrollmentSchema = z.object({
@@ -50,6 +51,7 @@ export default function PreEnrollmentModal({
   onSave,
   editingEntry,
   isLoading = false,
+  initialCi = null,
 }: PreEnrollmentModalProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [periods, setPeriods] = useState<Periodo[]>([]);
@@ -247,6 +249,17 @@ export default function PreEnrollmentModal({
           practiceType: editingEntry.practiceType,
           enrollmentCode: editingEntry.enrollmentCode,
         });
+      } else if (initialCi) {
+        // Caso exportación desde Estudiantes
+        reset({
+          identificationPrefix: "V",
+          identificationNumber: initialCi,
+          studentName: "",
+          phone: "",
+          period: getValues("period"),
+          practiceType: "",
+          enrollmentCode: "",
+        });
       } else {
         reset({
           identificationPrefix: "V",
@@ -259,7 +272,7 @@ export default function PreEnrollmentModal({
         });
       }
     }
-  }, [editingEntry, reset, isOpen]);
+  }, [editingEntry, reset, isOpen, initialCi, getValues]);
 
   const onSubmit = (data: PreEnrollmentFormData) => {
     onSave({

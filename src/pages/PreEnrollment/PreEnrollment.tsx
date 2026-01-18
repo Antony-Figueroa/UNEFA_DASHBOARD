@@ -4,6 +4,7 @@
  */
 
 import { useMemo, useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -28,13 +29,25 @@ const formatPreEnrollmentToRow = (p: PreEnrollment): PreEnrollmentRowData => ({
 
 export default function PreEnrollmentPage() {
     const [pageLoading, setPageLoading] = useState(true);
+    const location = useLocation();
+    const navigate = useNavigate();
+    const [initialCi, setInitialCi] = useState<string | null>(null);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             setPageLoading(false);
         }, 500);
+
+        // Verificar si venimos de una exportación de estudiante
+        if (location.state?.exportStudentCi) {
+            setInitialCi(location.state.exportStudentCi);
+            setIsModalOpen(true);
+            // Limpiar el estado para que no se vuelva a abrir al recargar
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+
         return () => clearTimeout(timer);
-    }, []);
+    }, [location, navigate]);
 
     const {
         preEnrollments,
@@ -188,10 +201,14 @@ export default function PreEnrollmentPage() {
 
                     <PreEnrollmentModal
                         isOpen={isModalOpen}
-                        onClose={() => setIsModalOpen(false)}
+                        onClose={() => {
+                            setIsModalOpen(false);
+                            setInitialCi(null);
+                        }}
                         onSave={handleSave}
                         editingEntry={editingEntry}
                         isLoading={loadingAction}
+                        initialCi={initialCi}
                     />
 
                     <PreEnrollmentViewModal

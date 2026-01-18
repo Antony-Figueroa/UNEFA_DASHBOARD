@@ -14,6 +14,7 @@ interface SelectProps {
   defaultValue?: string;
   value?: string;
   disabled?: boolean;
+  onBlur?: () => void;
 }
 
 const Select: React.FC<SelectProps> = ({
@@ -25,11 +26,11 @@ const Select: React.FC<SelectProps> = ({
   defaultValue = "",
   value,
   disabled = false,
+  onBlur,
 }) => {
-  // Manage the selected value
+  // Sync state if value or defaultValue changes
   const [selectedValue, setSelectedValue] = useState<string>(value !== undefined ? value : defaultValue);
 
-  // Sync state if value or defaultValue changes
   useEffect(() => {
     if (value !== undefined) {
       setSelectedValue(value);
@@ -37,15 +38,15 @@ const Select: React.FC<SelectProps> = ({
   }, [value]);
 
   useEffect(() => {
-    if (value === undefined) {
+    if (value === undefined && defaultValue !== undefined) {
       setSelectedValue(defaultValue);
     }
   }, [defaultValue, value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    setSelectedValue(value);
-    onChange(value); // Trigger parent handler
+    const newValue = e.target.value;
+    setSelectedValue(newValue);
+    onChange(newValue);
   };
 
   return (
@@ -59,6 +60,7 @@ const Select: React.FC<SelectProps> = ({
           } ${className}`}
         value={selectedValue}
         onChange={handleChange}
+        onBlur={onBlur}
       >
         {/* Placeholder option */}
         <option

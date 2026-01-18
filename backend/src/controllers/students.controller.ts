@@ -5,8 +5,8 @@ import { cacheManager } from '../lib/cache-manager.js';
 const TABLE_NAME = 't_students';
 const CACHE_PREFIX = 'students:';
 
-// Columnas específicas para proyección para mejorar el rendimiento
-const STUDENT_COLUMNS = `
+// Columnas base sin relaciones
+const STUDENT_COLUMNS_BASE = `
   STUDENTS_ID, 
   STUDENTS_CI, 
   NAME, 
@@ -27,9 +27,11 @@ const STUDENT_COLUMNS = `
   MILITARY_RANK, 
   EMPLOYMENT, 
   REGISTRATION_DATE, 
-  STATUS,
-  t_career(CAREER_NAME)
+  STATUS
 `;
+
+// Columnas con relaciones para lectura
+const STUDENT_COLUMNS = `${STUDENT_COLUMNS_BASE}, t_career(CAREER_NAME)`;
 
 interface AppError extends Error {
   code?: string;
@@ -47,13 +49,15 @@ const handleDbError = (res: Response, error: unknown) => {
     userMessage = 'Error: Ya existe un registro con estos datos (duplicado)';
   } else if (dbError.code === 'PGRST205') {
     userMessage = 'Error: La tabla no existe en la base de datos';
+  } else if (dbError.code === 'PGRST116') {
+    userMessage = 'Error: Registro no encontrado';
   } else if (dbError.code === '404') {
     userMessage = dbError.message || 'Registro no encontrado';
     return res.status(404).json({ message: userMessage });
   }
 
   res.status(500).json({ 
-    message: userMessage, 
+    message: `${userMessage}: ${dbError.message || 'Unknown database error'} ${dbError.details || ''}`, 
     error: dbError.message || 'Unknown database error',
     details: dbError.details,
     code: dbError.code
@@ -84,6 +88,47 @@ interface DBStudent {
   REGISTRATION_DATE: string;
   STATUS: number;
 }
+
+export const checkAvailability = async (req: Request, res: Response) => {
+  try {
+    const { type, value, excludeId } = req.query;
+    
+    if (!type || !value) {
+      return res.status(400).json({ message: 'Faltan parámetros: type y value son requeridos' });
+    }
+
+    const result = await dbManager.withRetry(async (supabase) => {
+      let query = supabase
+        .from(TABLE_NAME)
+        .select('STUDENTS_ID, STATUS');
+
+      if (type === 'ci') {
+        query = query.eq('STUDENTS_CI', value as string);
+      } else if (type === 'email') {
+        query = query.ilike('EMAIL', value as string);
+      } else {
+        throw new Error('Tipo de validación no válido');
+      }
+
+      if (excludeId) {
+        query = query.neq('STUDENTS_ID', parseInt(excludeId as string));
+      }
+
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      
+      return data;
+    }, 'checkAvailability');
+
+    res.json({
+      available: !result,
+      status: result?.STATUS,
+      studentId: result?.STUDENTS_ID
+    });
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
 
 export const getStudents = async (req: Request, res: Response) => {
   const { 
@@ -155,35 +200,44 @@ export const getStudents = async (req: Request, res: Response) => {
   }
 };
 
-const mapDBToFrontend = (s: DBStudent) => ({
-  studentId: String(s.STUDENTS_ID),
-  identificationPrefix: s.STUDENTS_CI.split('-')[0],
-  identificationNumber: s.STUDENTS_CI.split('-')[1],
-  firstName: s.NAME,
-  middleName: s.SECOND_NAME || undefined,
-  lastName: s.SURNAME,
-  secondLastName: s.SECOND_SURNAME || undefined,
-  sex: s.GENDER,
-  birthDate: s.BIRTHDATE,
-  civilStatus: s.MARITAL_STATUS,
-  phone: s.CONTACT_PHONE,
-  email: s.EMAIL,
-  address: s.ADDRESS,
-  careerId: String(s.CAREER_ID),
-  careerName: Array.isArray(s.t_career) ? s.t_career[0]?.CAREER_NAME : s.t_career?.CAREER_NAME,
-  semester: String(s.SEMESTER),
-  section: s.SECTION,
-  regime: s.REGIME,
-  studentType: s.STUDENT_TYPE,
-  militaryRank: s.MILITARY_RANK,
-  works: s.EMPLOYMENT ? "SI" : "NO",
-  enrollmentDate: s.REGISTRATION_DATE,
-  status: s.STATUS === 1
-});
+const mapDBToFrontend = (s: DBStudent) => {
+  // Mapeo inverso para mostrar nombres completos en el frontend si el DB usa códigos
+  const genderMap: Record<string, string> = { 'M': 'MASCULINO', 'F': 'FEMENINO', 'O': 'OTRO' };
+  const maritalMap: Record<string, string> = { 'S': 'SOLTERO', 'C': 'CASADO', 'D': 'DIVORCIADO', 'V': 'VIUDO' };
+  const typeMap: Record<string, string> = { 'CIV': 'CIVIL', 'MIL': 'MILITAR' };
+  const regimeMap: Record<string, string> = { 'D1': 'DIURNO', 'N1': 'NOCTURNO', 'M1': 'MIXTO' };
+
+  return {
+    studentId: String(s.STUDENTS_ID),
+    identificationPrefix: s.STUDENTS_CI.split('-')[0],
+    identificationNumber: s.STUDENTS_CI.split('-')[1],
+    firstName: s.NAME,
+    middleName: s.SECOND_NAME || undefined,
+    lastName: s.SURNAME,
+    secondLastName: s.SECOND_SURNAME || undefined,
+    sex: genderMap[s.GENDER.trim()] || s.GENDER,
+    birthDate: s.BIRTHDATE,
+    civilStatus: maritalMap[s.MARITAL_STATUS.trim()] || s.MARITAL_STATUS,
+    phone: s.CONTACT_PHONE,
+    email: s.EMAIL,
+    address: s.ADDRESS,
+    careerId: String(s.CAREER_ID),
+    careerName: Array.isArray(s.t_career) ? s.t_career[0]?.CAREER_NAME : s.t_career?.CAREER_NAME,
+    semester: String(s.SEMESTER),
+    section: s.SECTION,
+    regime: regimeMap[s.REGIME.trim()] || s.REGIME,
+    studentType: typeMap[s.STUDENT_TYPE.trim()] || s.STUDENT_TYPE,
+    militaryRank: s.MILITARY_RANK,
+    works: s.EMPLOYMENT ? (String(s.EMPLOYMENT).toUpperCase() === 'SI' || s.EMPLOYMENT === true ? "SI" : "NO") : "NO",
+    enrollmentDate: s.REGISTRATION_DATE,
+    status: s.STATUS === 1
+  };
+};
 
 export const createStudent = async (req: Request, res: Response) => {
   try {
     const s = req.body;
+    console.log('[Students] Attempting to create student with data:', JSON.stringify(s, null, 2));
     
     // Validación básica de campos requeridos
     if (!s.identificationNumber || !s.firstName || !s.lastName || !s.careerId) {
@@ -193,43 +247,150 @@ export const createStudent = async (req: Request, res: Response) => {
     }
 
     const careerId = parseInt(s.careerId);
-    const semester = parseInt(s.semester);
-
     if (isNaN(careerId)) {
       return res.status(400).json({ message: 'Error: El ID de carrera debe ser un número válido' });
     }
 
+    const studentsCi = `${s.identificationPrefix || 'V'}-${s.identificationNumber}`;
+
+    // 1. Validar edad (Mínimo 16 años)
+    if (s.birthDate) {
+      const birth = new Date(s.birthDate);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+      if (age < 16) {
+        return res.status(400).json({ message: 'Error: El estudiante debe tener al menos 16 años' });
+      }
+    }
+
+    // 2. Validar formato de correo (opcional, ya que s.email puede ser null)
+    if (s.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(s.email)) {
+        return res.status(400).json({ 
+          message: 'Error: El formato del correo electrónico no es válido' 
+        });
+      }
+    }
+
+    // 3. Validar duplicados (Cédula y Email)
+    const duplicateCheck = await dbManager.withRetry(async (supabase) => {
+      // Verificar CI
+      const { data: existingStudentCi } = await supabase
+        .from(TABLE_NAME)
+        .select('STUDENTS_ID, STATUS, STUDENTS_CI, NAME, SURNAME')
+        .eq('STUDENTS_CI', studentsCi)
+        .maybeSingle();
+
+      if (existingStudentCi) {
+        console.warn(`[Students] Duplicate registration attempt (CI): ${studentsCi} from IP: ${req.ip} at ${new Date().toISOString()}`);
+        console.warn(`[Students] Attempt data: ${JSON.stringify(s)}`);
+        
+        if (existingStudentCi.STATUS === 0) {
+          return { 
+            field: 'Cédula', 
+            message: `La cédula ${studentsCi} ya está registrada pero el estudiante está INACTIVO. ¿Desea reactivarlo?`,
+            reactivable: true,
+            studentId: existingStudentCi.STUDENTS_ID
+          };
+        }
+        return { field: 'Cédula', message: `La cédula ${studentsCi} ya está registrada` };
+      }
+
+      // Verificar Email (case-insensitive)
+      if (s.email) {
+        const { data: existingStudentEmail } = await supabase
+          .from(TABLE_NAME)
+          .select('STUDENTS_ID, STATUS, EMAIL')
+          .ilike('EMAIL', s.email)
+          .maybeSingle();
+
+        if (existingStudentEmail) {
+          console.warn(`[Students] Duplicate registration attempt (Email): ${s.email} from IP: ${req.ip} at ${new Date().toISOString()}`);
+          console.warn(`[Students] Attempt data: ${JSON.stringify(s)}`);
+
+          if (existingStudentEmail.STATUS === 0) {
+            return { 
+              field: 'Email', 
+              message: `El correo ${s.email} ya está registrado pero el estudiante está INACTIVO. ¿Desea reactivarlo?`,
+              reactivable: true,
+              studentId: existingStudentEmail.STUDENTS_ID
+            };
+          }
+          return { field: 'Email', message: `El correo ${s.email} ya está registrado` };
+        }
+      }
+
+      return null;
+    }, 'checkStudentDuplicates');
+
+    if (duplicateCheck) {
+      return res.status(400).json({ 
+        message: duplicateCheck.message,
+        reactivable: duplicateCheck.reactivable,
+        studentId: duplicateCheck.studentId
+      });
+    }
+
+    // Mapeo de valores de frontend a códigos de base de datos
+    const genderMap: Record<string, string> = { 'MASCULINO': 'M', 'FEMENINO': 'F', 'OTRO': 'O' };
+    const maritalMap: Record<string, string> = { 'SOLTERO': 'S', 'CASADO': 'C', 'DIVORCIADO': 'D', 'VIUDO': 'V' };
+    const typeMap: Record<string, string> = { 'CIVIL': 'CIV', 'MILITAR': 'MIL' };
+    const regimeMap: Record<string, string> = { 'DIURNO': 'D1', 'NOCTURNO': 'N1', 'MIXTO': 'M1' };
+
     const dbData = {
-      STUDENTS_CI: `${s.identificationPrefix || 'V'}-${s.identificationNumber}`,
+      STUDENTS_CI: studentsCi,
       NAME: s.firstName,
       SECOND_NAME: s.middleName || null,
       SURNAME: s.lastName,
       SECOND_SURNAME: s.secondLastName || null,
-      GENDER: s.sex,
+      GENDER: genderMap[s.sex?.toUpperCase()] || 'O',
       BIRTHDATE: s.birthDate,
       CONTACT_PHONE: s.phone,
       EMAIL: s.email,
       ADDRESS: s.address,
-      MARITAL_STATUS: s.civilStatus,
+      MARITAL_STATUS: maritalMap[s.civilStatus?.toUpperCase()] || 'S',
       CAREER_ID: careerId,
-      SEMESTER: isNaN(semester) ? 1 : semester,
-      SECTION: s.section,
-      REGIME: s.regime,
-      STUDENT_TYPE: s.studentType,
-      MILITARY_RANK: s.militaryRank,
-      EMPLOYMENT: s.works === "SI",
+      SEMESTER: s.semester ? String(s.semester) : '1',
+      SECTION: s.section ? String(s.section) : '1',
+      REGIME: regimeMap[s.regime?.toUpperCase()] || 'D1',
+      STUDENT_TYPE: typeMap[s.studentType?.toUpperCase()] || 'CIV',
+      MILITARY_RANK: s.militaryRank || null,
+      EMPLOYMENT: s.works === "SI" ? "SI" : "NO",
       STATUS: s.status !== false ? 1 : 0,
       REGISTRATION_DATE: new Date().toISOString()
     };
 
+    console.log('[Students] Final DB data to insert:', JSON.stringify(dbData, null, 2));
+
     const data = await dbManager.withRetry(async (supabase) => {
-      const { data, error } = await supabase
+      // 1. Insertar el registro
+      const { data: insertedData, error: insertError } = await supabase
         .from(TABLE_NAME)
         .insert([dbData])
-        .select(STUDENT_COLUMNS)
+        .select('STUDENTS_ID')
         .single();
 
-      if (error) throw error;
+      if (insertError) {
+        console.error('[Students] Insert error:', insertError);
+        throw insertError;
+      }
+
+      // 2. Obtener el registro completo con la relación t_career
+      const { data, error: fetchError } = await supabase
+        .from(TABLE_NAME)
+        .select(STUDENT_COLUMNS)
+        .eq('STUDENTS_ID', insertedData.STUDENTS_ID)
+        .single();
+
+      if (fetchError) {
+        console.error('[Students] Fetch after insert error:', fetchError);
+        throw fetchError;
+      }
       return data as unknown as DBStudent;
     }, 'createStudent');
 
@@ -238,6 +399,7 @@ export const createStudent = async (req: Request, res: Response) => {
 
     res.status(201).json(mapDBToFrontend(data));
   } catch (error: unknown) {
+    console.error('[Students] Exception in createStudent:', error);
     handleDbError(res, error);
   }
 };
@@ -246,6 +408,7 @@ export const updateStudent = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const s = req.body;
+    console.log(`[Students] Attempting to update student ${id} with data:`, JSON.stringify(s, null, 2));
 
     // Validación básica de campos requeridos
     if (!s.identificationNumber || !s.firstName || !s.lastName || !s.careerId) {
@@ -255,43 +418,126 @@ export const updateStudent = async (req: Request, res: Response) => {
     }
 
     const careerId = parseInt(s.careerId);
-    const semester = parseInt(s.semester);
-
     if (isNaN(careerId)) {
       return res.status(400).json({ message: 'Error: El ID de carrera debe ser un número válido' });
     }
 
+    const studentsCi = `${s.identificationPrefix || 'V'}-${s.identificationNumber}`;
+
+    // 1. Validar edad (Mínimo 16 años)
+    if (s.birthDate) {
+      const birth = new Date(s.birthDate);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+      if (age < 16) {
+        return res.status(400).json({ message: 'Error: El estudiante debe tener al menos 16 años' });
+      }
+    }
+
+    // 2. Validar formato de correo (opcional, ya que s.email puede ser null)
+    if (s.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(s.email)) {
+        return res.status(400).json({ 
+          message: 'Error: El formato del correo electrónico no es válido' 
+        });
+      }
+    }
+
+    // 3. Validar duplicados (Cédula y Email) excluyendo al estudiante actual
+    const duplicateCheck = await dbManager.withRetry(async (supabase) => {
+      // Verificar CI
+      const { data: existingStudentCi } = await supabase
+        .from(TABLE_NAME)
+        .select('STUDENTS_ID, STATUS')
+        .eq('STUDENTS_CI', studentsCi)
+        .neq('STUDENTS_ID', parseInt(id))
+        .maybeSingle();
+
+      if (existingStudentCi) {
+        console.warn(`[Students] Duplicate update attempt (CI): ${studentsCi} by student ID: ${id} from IP: ${req.ip} at ${new Date().toISOString()}`);
+        return { field: 'Cédula', message: `La cédula ${studentsCi} ya está registrada por otro estudiante` };
+      }
+
+      // Verificar Email (case-insensitive)
+      if (s.email) {
+        const { data: existingStudentEmail } = await supabase
+          .from(TABLE_NAME)
+          .select('STUDENTS_ID, STATUS')
+          .ilike('EMAIL', s.email)
+          .neq('STUDENTS_ID', parseInt(id))
+          .maybeSingle();
+
+        if (existingStudentEmail) {
+          console.warn(`[Students] Duplicate update attempt (Email): ${s.email} by student ID: ${id} from IP: ${req.ip} at ${new Date().toISOString()}`);
+          return { field: 'Email', message: `El correo ${s.email} ya está registrado por otro estudiante` };
+        }
+      }
+
+      return null;
+    }, 'checkStudentDuplicatesUpdate');
+
+    if (duplicateCheck) {
+      return res.status(400).json({ message: duplicateCheck.message });
+    }
+
+    // Mapeo de valores de frontend a códigos de base de datos
+    const genderMap: Record<string, string> = { 'MASCULINO': 'M', 'FEMENINO': 'F', 'OTRO': 'O' };
+    const maritalMap: Record<string, string> = { 'SOLTERO': 'S', 'CASADO': 'C', 'DIVORCIADO': 'D', 'VIUDO': 'V' };
+    const typeMap: Record<string, string> = { 'CIVIL': 'CIV', 'MILITAR': 'MIL' };
+    const regimeMap: Record<string, string> = { 'DIURNO': 'D1', 'NOCTURNO': 'N1', 'MIXTO': 'M1' };
+
     const dbData = {
-      STUDENTS_CI: `${s.identificationPrefix || 'V'}-${s.identificationNumber}`,
+      STUDENTS_CI: studentsCi,
       NAME: s.firstName,
       SECOND_NAME: s.middleName || null,
       SURNAME: s.lastName,
       SECOND_SURNAME: s.secondLastName || null,
-      GENDER: s.sex,
+      GENDER: genderMap[s.sex?.toUpperCase()] || 'O',
       BIRTHDATE: s.birthDate,
       CONTACT_PHONE: s.phone,
       EMAIL: s.email,
       ADDRESS: s.address,
-      MARITAL_STATUS: s.civilStatus,
+      MARITAL_STATUS: maritalMap[s.civilStatus?.toUpperCase()] || 'S',
       CAREER_ID: careerId,
-      SEMESTER: isNaN(semester) ? 1 : semester,
-      SECTION: s.section,
-      REGIME: s.regime,
-      STUDENT_TYPE: s.studentType,
-      MILITARY_RANK: s.militaryRank,
-      EMPLOYMENT: s.works === "SI",
+      SEMESTER: s.semester ? String(s.semester) : '1',
+      SECTION: s.section ? String(s.section) : '1',
+      REGIME: regimeMap[s.regime?.toUpperCase()] || 'D1',
+      STUDENT_TYPE: typeMap[s.studentType?.toUpperCase()] || 'CIV',
+      MILITARY_RANK: s.militaryRank || null,
+      EMPLOYMENT: s.works === "SI" ? "SI" : "NO",
       STATUS: s.status !== false ? 1 : 0
     };
 
+    console.log('[Students] Final DB data to update:', JSON.stringify(dbData, null, 2));
+
     const data = await dbManager.withRetry(async (supabase) => {
-      const { data, error } = await supabase
+      // 1. Actualizar el registro
+      const { error: updateError } = await supabase
         .from(TABLE_NAME)
         .update(dbData)
-        .eq('STUDENTS_ID', parseInt(id))
+        .eq('STUDENTS_ID', parseInt(id));
+
+      if (updateError) {
+        console.error('[Students] Update error:', updateError);
+        throw updateError;
+      }
+
+      // 2. Obtener el registro actualizado con la relación t_career
+      const { data, error: fetchError } = await supabase
+        .from(TABLE_NAME)
         .select(STUDENT_COLUMNS)
+        .eq('STUDENTS_ID', parseInt(id))
         .single();
 
-      if (error) throw error;
+      if (fetchError) {
+        console.error('[Students] Fetch after update error:', fetchError);
+        throw fetchError;
+      }
       return data as unknown as DBStudent;
     }, 'updateStudent');
 
@@ -300,6 +546,7 @@ export const updateStudent = async (req: Request, res: Response) => {
 
     res.json(mapDBToFrontend(data));
   } catch (error: unknown) {
+    console.error('[Students] Exception in updateStudent:', error);
     handleDbError(res, error);
   }
 };

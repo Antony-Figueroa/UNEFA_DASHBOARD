@@ -6,7 +6,7 @@ import type { Toast } from "./toast";
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const addToast = useCallback((toast: Omit<Toast, "id" | "timestamp">) => {
+  const addToast = useCallback((toast: Omit<Toast, "id" | "timestamp">): string => {
     const id = Math.random().toString(36).substring(2, 9);
     const timestamp = new Date();
     const newToast = { ...toast, id, timestamp };
@@ -16,6 +16,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Logging integration
     const categoryInfo = toast.category ? ` [${toast.category}]` : "";
     console.log(`[Toast] [${timestamp.toISOString()}] [${toast.variant.toUpperCase()}]${categoryInfo} ${toast.title}`, toast.message);
+    
+    return id;
   }, []);
 
   const removeToast = useCallback((id: string) => {

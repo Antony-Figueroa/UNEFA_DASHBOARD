@@ -4,12 +4,14 @@ import {
   createStudent, 
   updateStudent, 
   deleteStudent,
-  toggleStudentStatus
+  toggleStudentStatus,
+  checkAvailability
 } from '../controllers/students.controller.js';
 
 const router = Router();
 
 router.get('/', getStudents);
+router.get('/check-availability', checkAvailability);
 router.post('/', createStudent);
 router.put('/:id', updateStudent);
 router.delete('/:id', deleteStudent);

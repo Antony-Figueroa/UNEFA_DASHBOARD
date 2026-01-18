@@ -54,7 +54,7 @@ const Button: React.FC<ButtonProps> = ({
       type={type}
       form={form}
       className={`inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 ${className} ${sizeClasses[size]
-        } ${variantClasses[variant]} ${isButtonDisabled ? "cursor-not-allowed pointer-events-none" : "cursor-pointer"
+        } ${variantClasses[variant]} ${isButtonDisabled ? "cursor-not-allowed pointer-events-none opacity-50" : "cursor-pointer"
         }`}
       onClick={onClick}
       disabled={isButtonDisabled}

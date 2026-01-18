@@ -22,6 +22,7 @@ interface StudentTableProps {
     error: Error | null;
     onEdit?: (student: StudentRowData) => void;
     onToggleStatus?: (studentId: string) => void;
+    onExportToPreEnrollment?: (student: StudentRowData) => void;
     onView?: (student: StudentRowData) => void;
     onBulkDelete?: (ids: string[]) => void;
     onBulkRestore?: (ids: string[]) => void;
@@ -33,12 +34,13 @@ interface StudentTableProps {
     loading?: boolean;
 }
 
-type SortKey = "identificationNumber" | "firstName" | "lastName" | "email" | "careerName" | "enrollmentDate";
+type SortKey = "identificationNumber" | "fullNames" | "email" | "careerName" | "enrollmentDate";
 type SortOrder = "asc" | "desc";
 
 interface ActionButtonsProps {
     onEdit?: () => void;
     onToggleStatus?: () => void;
+    onExportToPreEnrollment?: () => void;
     onView?: () => void;
     activeTab: "Activas" | "Inactivas";
     inactiveMode?: boolean;
@@ -46,9 +48,29 @@ interface ActionButtonsProps {
     status?: boolean;
 }
 
+const ExportIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        {...props}
+    >
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+        <polyline points="10 17 15 12 10 7" />
+        <line x1="15" y1="12" x2="3" y2="12" />
+    </svg>
+);
+
 const ActionButtons = ({
     onEdit,
     onToggleStatus,
+    onExportToPreEnrollment,
     onView,
     activeTab,
     inactiveMode = false,
@@ -78,6 +100,16 @@ const ActionButtons = ({
                     tooltip="Editar"
                     label={isMobile ? "Editar Estudiante" : undefined}
                     variant="primary"
+                    fullWidth={isMobile}
+                />
+            )}
+            {onExportToPreEnrollment && activeTab === "Activas" && (
+                <ActionButton
+                    onClick={() => onExportToPreEnrollment()}
+                    icon={<ExportIcon className="icon-sm" />}
+                    tooltip="Exportar a Pre-Inscripción"
+                    label={isMobile ? "Exportar a Pre-Inscripción" : undefined}
+                    variant="info"
                     fullWidth={isMobile}
                 />
             )}
@@ -111,6 +143,7 @@ export default function StudentTable({
     error,
     onEdit,
     onToggleStatus,
+    onExportToPreEnrollment,
     onView,
     onBulkDelete,
     onBulkRestore,
@@ -119,11 +152,10 @@ export default function StudentTable({
     inactiveMode = false,
     activeTab = "Activas",
     careerOptions = [],
-    // loading = false,
+    loading = false,
 }: StudentTableProps) {
     const [idFilter, setIdFilter] = useState("");
     const [nameFilter, setNameFilter] = useState("");
-    const [lastNameFilter, setLastNameFilter] = useState("");
     const [careerFilter, setCareerFilter] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
@@ -154,39 +186,30 @@ export default function StudentTable({
     }, [onSelectionChange]);
     const [expandedRows, setExpandedRows] = useState<Set<string | number>>(new Set());
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; order: SortOrder }>({
-        key: "lastName",
+        key: "fullNames",
         order: "asc",
     });
 
     const debouncedIdFilter = useDebounce(idFilter, 300);
     const debouncedNameFilter = useDebounce(nameFilter, 300);
-    const debouncedLastNameFilter = useDebounce(lastNameFilter, 300);
 
     useEffect(() => {
         setSelectedIds([]);
-        // Reset filters when changing tabs? User didn't specify, but usually good.
-        // For now let's keep them as requested.
     }, [activeTab, setSelectedIds]);
 
     const filteredData = useMemo(() => {
         const idSearch = debouncedIdFilter.trim().toLowerCase();
         const nameSearch = debouncedNameFilter.trim().toLowerCase();
-        const lastNameSearch = debouncedLastNameFilter.trim().toLowerCase();
         const careerSearch = careerFilter;
 
         const filtered = data.filter((s) => {
             const matchesId = !idSearch || s.identificationNumber.toLowerCase().includes(idSearch);
-            const matchesName = !nameSearch ||
-                s.firstName.toLowerCase().includes(nameSearch) ||
-                (s.middleName || "").toLowerCase().includes(nameSearch);
-            const matchesLastName = !lastNameSearch ||
-                s.lastName.toLowerCase().includes(lastNameSearch) ||
-                (s.secondLastName || "").toLowerCase().includes(lastNameSearch);
+            const matchesName = !nameSearch || (s.fullNames || "").toLowerCase().includes(nameSearch);
             const matchesCareer = !careerSearch || s.careerId === careerSearch;
 
             const matchesTab = activeTab === "Activas" ? s.status === true : s.status === false;
 
-            return matchesId && matchesName && matchesLastName && matchesCareer && matchesTab;
+            return matchesId && matchesName && matchesCareer && matchesTab;
         });
 
         filtered.sort((a, b) => {
@@ -218,12 +241,12 @@ export default function StudentTable({
         });
 
         return filtered;
-    }, [data, debouncedIdFilter, debouncedNameFilter, debouncedLastNameFilter, careerFilter, activeTab, sortConfig]);
+    }, [data, debouncedIdFilter, debouncedNameFilter, careerFilter, activeTab, sortConfig]);
 
     // Reset page when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedIdFilter, debouncedNameFilter, debouncedLastNameFilter, careerFilter]);
+    }, [debouncedIdFilter, debouncedNameFilter, careerFilter]);
 
     const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -280,7 +303,6 @@ export default function StudentTable({
     const clearFilters = () => {
         setIdFilter("");
         setNameFilter("");
-        setLastNameFilter("");
         setCareerFilter("");
     };
 
@@ -348,23 +370,14 @@ export default function StudentTable({
                     <div className="relative">
                         <input
                             type="text"
-                            placeholder="Buscar nombres"
+                            placeholder="Buscar por nombres o apellidos"
                             value={nameFilter}
                             onChange={(e) => setNameFilter(e.target.value)}
                             className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary"
                         />
                     </div>
 
-                    {/* Filtro por Apellidos */}
-                    <div className="relative">
-                        <input
-                            type="text"
-                            placeholder="Buscar apellidos"
-                            value={lastNameFilter}
-                            onChange={(e) => setLastNameFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary"
-                        />
-                    </div>
+
 
                     {/* Filtro por Carrera */}
                     <div className="relative">
@@ -393,7 +406,7 @@ export default function StudentTable({
                         <div className="text-xs text-text-secondary dark:text-text-tertiary">
                             Mostrando <span className="font-bold text-text-primary dark:text-text-emphasis">{filteredData.length}</span> resultados
                         </div>
-                        {(idFilter || nameFilter || lastNameFilter || careerFilter) && (
+                        {(idFilter || nameFilter || careerFilter) && (
                             <button
                                 onClick={clearFilters}
                                 className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
@@ -424,7 +437,7 @@ export default function StudentTable({
                             </button>
                         )}
 
-                        {selectedIds.length > 0 && (
+                        {selectedIds.length > 0 && !loading && (
                             <div className="flex items-center gap-2 animate-fadeIn">
                                 <span className="hidden sm:inline text-xs font-medium text-text-secondary dark:text-text-tertiary mr-2">
                                     {selectedIds.length} seleccionados
@@ -448,6 +461,13 @@ export default function StudentTable({
                                 )}
                             </div>
                         )}
+                        {loading && selectedIds.length > 0 && (
+                            <div className="flex items-center gap-2 animate-pulse">
+                                <span className="text-xs font-medium text-text-secondary dark:text-text-tertiary italic">
+                                    Procesando {selectedIds.length} registros...
+                                </span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -467,13 +487,9 @@ export default function StudentTable({
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("identificationNumber")}>
                                 <div className="flex items-center">Cédula <SortIndicator column="identificationNumber" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("firstName")}>
-                                <div className="flex items-center">Nombres <SortIndicator column="firstName" /></div>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("fullNames")}>
+                                <div className="flex items-center">Nombres y Apellidos <SortIndicator column="fullNames" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("lastName")}>
-                                <div className="flex items-center">Apellidos <SortIndicator column="lastName" /></div>
-                            </TableCell>
-                            <TableCell isHeader className="table-header-cell">Sexo</TableCell>
                             <TableCell isHeader className="table-header-cell">Teléfono</TableCell>
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("email")}>
                                 <div className="flex items-center">Correo Electrónico <SortIndicator column="email" /></div>
@@ -481,7 +497,7 @@ export default function StudentTable({
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("careerName")}>
                                 <div className="flex items-center">Carrera <SortIndicator column="careerName" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell text-right">&nbsp;</TableCell>
+                            <TableCell isHeader className="table-header-cell text-right"> </TableCell>
                         </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-border-light dark:divide-border-dark">
@@ -498,12 +514,8 @@ export default function StudentTable({
                                         {s.identificationPrefix}-{s.identificationNumber}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary font-semibold uppercase">
-                                        {s.firstName} {s.middleName}
+                                        {s.fullNames}
                                     </TableCell>
-                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary font-semibold uppercase">
-                                        {s.lastName} {s.secondLastName}
-                                    </TableCell>
-                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">{s.sex}</TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary whitespace-nowrap">{s.phone}</TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">{s.email}</TableCell>
                                     <TableCell className="table-cell">
@@ -520,6 +532,7 @@ export default function StudentTable({
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(s.studentId) : undefined}
+                                            onExportToPreEnrollment={onExportToPreEnrollment ? () => onExportToPreEnrollment(s) : undefined}
                                             activeTab={activeTab}
                                             inactiveMode={inactiveMode}
                                             status={s.status}
@@ -529,7 +542,7 @@ export default function StudentTable({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell className="table-cell py-24 text-center" colSpan={9}>
+                                <TableCell className="table-cell py-24 text-center" colSpan={7}>
                                     <div className="flex flex-col items-center justify-center animate-fadeIn">
                                         <div className="mb-4 rounded-full bg-bg-secondary p-4 dark:bg-white/5">
                                             <svg className="h-8 w-8 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -538,7 +551,7 @@ export default function StudentTable({
                                         </div>
                                         <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron estudiantes</h3>
                                         <p className="mt-1 text-xs text-text-secondary dark:text-text-tertiary">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                                        {(idFilter || nameFilter || lastNameFilter || careerFilter) && (
+                                        {(idFilter || nameFilter || careerFilter) && (
                                             <button
                                                 onClick={clearFilters}
                                                 className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
@@ -583,7 +596,7 @@ export default function StudentTable({
                                 {isExpanded && (
                                     <div className="mt-4 space-y-6 animate-fadeIn border-t border-border-light dark:border-border-dark pt-6">
                                         <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
-                                            <div className="flex flex-col items-center">
+                                            <div className="col-span-2 flex flex-col items-center">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Carrera</p>
                                                 <div className="flex justify-center w-full">
                                                     {s.careerName ? (
@@ -594,10 +607,6 @@ export default function StudentTable({
                                                         <span className="text-xs text-text-tertiary font-medium">N/A</span>
                                                     )}
                                                 </div>
-                                            </div>
-                                            <div className="flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Sexo</p>
-                                                <p className="text-sm text-text-secondary dark:text-text-tertiary font-medium">{s.sex}</p>
                                             </div>
                                             <div className="col-span-2 flex flex-col items-center">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Correo</p>
@@ -613,6 +622,7 @@ export default function StudentTable({
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(s.studentId) : undefined}
+                                            onExportToPreEnrollment={onExportToPreEnrollment ? () => onExportToPreEnrollment(s) : undefined}
                                             activeTab={activeTab}
                                             inactiveMode={inactiveMode}
                                             status={s.status}
@@ -632,7 +642,7 @@ export default function StudentTable({
                         </div>
                         <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron estudiantes</h3>
                         <p className="mt-1 text-xs text-text-secondary dark:text-text-tertiary max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                        {(idFilter || nameFilter || lastNameFilter || careerFilter) && (
+                        {(idFilter || nameFilter || careerFilter) && (
                             <button
                                 onClick={clearFilters}
                                 className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"

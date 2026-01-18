@@ -7,6 +7,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/
 import { Enrollment } from "../types";
 import Button from "../../../components/ui/button/Button";
 import Select from "../../../components/form/Select";
+import CustomSelect from "../../../components/form/CustomSelect";
 import { Student } from "../../students/types";
 import { getStudents } from "../../students/services/studentsService";
 import { getPeriods } from "../../periods/services/periodService";
@@ -316,16 +317,19 @@ export default function EnrollmentModal({
                     name="identificationPrefix"
                     control={control}
                     render={({ field }) => (
-                      <Select
+                      <CustomSelect
+                        id="identificationPrefix"
                         options={[
-                          { value: "V", label: "V-" },
-                          { value: "E", label: "E-" },
-                          { value: "J", label: "J-" },
-                          { value: "P", label: "P-" },
+                          { value: "V", label: "V" },
+                          { value: "E", label: "E" },
+                          { value: "P", label: "P", disabled: true, disabledReason: "Pasaportes no habilitados temporalmente" },
                         ]}
                         onChange={field.onChange}
-                        defaultValue={field.value}
-                        placeholder="Tipo ID"
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        placeholder="Tipo"
+                        disabled={!!editingEntry}
+                        error={!!errors.identificationPrefix}
                       />
                     )}
                   />

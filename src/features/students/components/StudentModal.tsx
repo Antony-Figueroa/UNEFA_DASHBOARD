@@ -9,6 +9,7 @@ import { Student } from "../types";
 import { ListValue } from "../../lists/types";
 import Button from "../../../components/ui/button/Button";
 import Select from "../../../components/form/Select";
+import CustomSelect from "../../../components/form/CustomSelect";
 import FlatpickrDatePicker from "../../../components/form/FlatpickrDatePicker";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
@@ -247,17 +248,19 @@ export default function StudentModal({
                     name="identificationPrefix"
                     control={control}
                     render={({ field }) => (
-                      <Select
+                      <CustomSelect
                         id="identificationPrefix"
                         options={[
                           { value: "V", label: "V" },
                           { value: "E", label: "E" },
+                          { value: "P", label: "P", disabled: true, disabledReason: "Pasaportes no habilitados temporalmente" },
                         ]}
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         value={field.value}
-                        placeholder="Seleccione campo"
+                        placeholder="Tipo"
                         disabled={!!editingStudent}
+                        error={!!errors.identificationPrefix}
                       />
                     )}
                   />
@@ -312,7 +315,7 @@ export default function StudentModal({
                 error={!!errors.firstName}
                 hint={errors.firstName?.message}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').toUpperCase();
+                  const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, '').toUpperCase();
                   setValue("firstName", val, { shouldValidate: true });
                 }}
               />
@@ -325,7 +328,7 @@ export default function StudentModal({
                 error={!!errors.middleName}
                 hint={errors.middleName?.message}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').toUpperCase();
+                  const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, '').toUpperCase();
                   setValue("middleName", val, { shouldValidate: true });
                 }}
               />
@@ -340,7 +343,7 @@ export default function StudentModal({
                 error={!!errors.lastName}
                 hint={errors.lastName?.message}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').toUpperCase();
+                  const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, '').toUpperCase();
                   setValue("lastName", val, { shouldValidate: true });
                 }}
               />
@@ -353,7 +356,7 @@ export default function StudentModal({
                 error={!!errors.secondLastName}
                 hint={errors.secondLastName?.message}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').toUpperCase();
+                  const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, '').toUpperCase();
                   setValue("secondLastName", val, { shouldValidate: true });
                 }}
               />

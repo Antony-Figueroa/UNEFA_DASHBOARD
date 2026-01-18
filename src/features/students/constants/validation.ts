@@ -3,8 +3,9 @@ import * as z from "zod";
 export const VENEZUELA_PHONE_PREFIXES = [
   { value: "0412", label: "0412" },
   { value: "0414", label: "0414" },
-  { value: "0424", label: "0424" },
   { value: "0416", label: "0416" },
+  { value: "0422", label: "0422" },
+  { value: "0424", label: "0424" },
   { value: "0426", label: "0426" },
   { value: "0212", label: "0212" },
 ];
@@ -21,19 +22,19 @@ export const studentSchema = z.object({
     .regex(/^\d+$/, "Solo se admiten números"),
   firstName: z.string()
     .min(1, "El primer nombre es obligatorio")
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "Solo se admiten letras y espacios")
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s']+$/, "Solo se admiten letras, espacios y apóstrofes")
     .transform(val => val.trim().replace(/\s+/g, ' ')),
   middleName: z.string()
     .transform(val => val ? val.trim().replace(/\s+/g, ' ') : "")
-    .refine(val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val), "Solo se admiten letras y espacios")
+    .refine(val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s']+$/.test(val), "Solo se admiten letras, espacios y apóstrofes")
     .default(""),
   lastName: z.string()
     .min(1, "El primer apellido es obligatorio")
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "Solo se admiten letras y espacios")
+    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s']+$/, "Solo se admiten letras, espacios y apóstrofes")
     .transform(val => val.trim().replace(/\s+/g, ' ')),
   secondLastName: z.string()
     .transform(val => val ? val.trim().replace(/\s+/g, ' ') : "")
-    .refine(val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val), "Solo se admiten letras y espacios")
+    .refine(val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s']+$/.test(val), "Solo se admiten letras, espacios y apóstrofes")
     .default(""),
   sex: z.string().min(1, "Seleccione el sexo"),
   birthDate: z.string()

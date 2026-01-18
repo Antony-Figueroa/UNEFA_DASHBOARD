@@ -149,6 +149,37 @@ export const usePreEnrollment = () => {
     }
   };
 
+  const bulkToggleStatus = async (ids: string[], newStatus: boolean) => {
+    setLoadingAction(true);
+    try {
+      await Promise.all(
+        ids.map(id => {
+          const item = preEnrollments.find(p => p.preEnrollmentId === id);
+          if (!item) return Promise.resolve();
+          return preEnrollmentService.updatePreEnrollment({ ...item, status: newStatus });
+        })
+      );
+
+      addToast({
+        variant: newStatus ? "success" : "warning",
+        title: newStatus ? "Registros Restaurados" : "Registros Desactivados",
+        message: `Se han ${newStatus ? "restaurado" : "desactivado"} ${ids.length} pre-inscripciones correctamente.`,
+      });
+
+      await refreshPreEnrollments();
+    } catch (error) {
+      console.error("Error bulk toggling pre-enrollment status:", error);
+      addToast({
+        variant: "error",
+        title: "Error en Acción Masiva",
+        message: "No se pudieron procesar todos los registros. Intente nuevamente.",
+      });
+      throw error;
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
 
   return {
     preEnrollments,
@@ -157,6 +188,7 @@ export const usePreEnrollment = () => {
     addPreEnrollment,
     editPreEnrollment,
     toggleStatus,
+    bulkToggleStatus,
     refreshPreEnrollments,
   };
 };

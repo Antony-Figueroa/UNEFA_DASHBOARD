@@ -20,13 +20,14 @@ interface SupabaseUser {
   STATUS: number;
   CREATION_DATE: string;
   t_user_roles: { ID_ROLES: number }[];
+  t_auth_log?: { LOG_ID: number }[];
 }
 
 export const getUsers = async (filters: { role?: number, status?: number, search?: string }, page: number, limit: number) => {
   return await dbManager.withRetry(async (supabase) => {
     let query = supabase
       .from('t_user')
-      .select('USER_ID, USER_CI, NAME, SURNAME, EMAIL, STATUS, CREATION_DATE, t_user_roles(ID_ROLES)', { count: 'exact' });
+      .select('USER_ID, USER_CI, NAME, SURNAME, EMAIL, STATUS, CREATION_DATE, t_user_roles(ID_ROLES), t_auth_log(LOG_ID)', { count: 'exact' });
 
     if (filters.role) {
       query = query.eq('t_user_roles.ID_ROLES', filters.role);
@@ -56,7 +57,8 @@ export const getUsers = async (filters: { role?: number, status?: number, search
         email: u.EMAIL,
         role: u.t_user_roles?.[0]?.ID_ROLES,
         status: u.STATUS,
-        creationDate: u.CREATION_DATE
+        creationDate: u.CREATION_DATE,
+        isInUse: Array.isArray(u.t_auth_log) && u.t_auth_log.length > 0
       })),
       total: count || 0,
       totalPages: Math.ceil((count || 0) / limit),

@@ -7,6 +7,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/
 import { PreEnrollment } from "../types";
 import Button from "../../../components/ui/button/Button";
 import Select from "../../../components/form/Select";
+import CustomSelect from "../../../components/form/CustomSelect";
 import { Student } from "../../students/types";
 import { getStudents } from "../../students/services/studentsService";
 import { getCareers } from "../../careers/services/careersService";
@@ -173,25 +174,36 @@ export default function PreEnrollmentModal({
           const approvedPreEnrollments = periodPreEnrollments.filter(p => p.status);
           const usedTypes = approvedPreEnrollments.map(p => p.practiceType);
 
-          const internshipTypes = await getInternshipTypesByCareer(student.careerId);
-          if (internshipTypes && internshipTypes.length > 0) {
-            const mappedOptions = mapToOptions(internshipTypes);
-            setPracticeOptions(mappedOptions);
-            
-            // Ordenar tipos por prioridad (menor PRIORITY primero)
-            const sortedTypes = internshipTypes.sort((a, b) => a.PRIORITY - b.PRIORITY);
-            
-            // Encontrar el siguiente tipo disponible que no haya sido usado
-            const nextType = sortedTypes.find(type => !usedTypes.includes(type.NAME));
-            
-            if (nextType) {
-              setValue("practiceType", nextType.NAME);
+          if (student.careerId) {
+            const internshipTypes = await getInternshipTypesByCareer(student.careerId);
+            if (internshipTypes && internshipTypes.length > 0) {
+              const mappedOptions = mapToOptions(internshipTypes);
+              setPracticeOptions(mappedOptions);
+              
+              // Ordenar tipos por prioridad (menor PRIORITY primero)
+              const sortedTypes = internshipTypes.sort((a, b) => a.PRIORITY - b.PRIORITY);
+              
+              // Encontrar el siguiente tipo disponible que no haya sido usado
+              const nextType = sortedTypes.find(type => !usedTypes.includes(type.NAME));
+              
+              if (nextType) {
+                setValue("practiceType", nextType.NAME);
+              } else {
+                // Si todos los tipos han sido usados, usar el de mayor prioridad
+                setValue("practiceType", sortedTypes[0].NAME);
+              }
             } else {
-              // Si todos los tipos han sido usados, usar el de mayor prioridad
-              setValue("practiceType", sortedTypes[0].NAME);
+              // Fallback a tipos globales
+              try {
+                const globalTypes = await getInternshipTypes();
+                setPracticeOptions(mapToOptions(globalTypes));
+              } catch (fallbackError) {
+                console.error("Error al cargar tipos globales:", fallbackError);
+              }
+              setValue("practiceType", "ÚNICA");
             }
           } else {
-            // Fallback a tipos globales
+            // Si no tiene carrera asociada, cargar tipos globales
             try {
               const globalTypes = await getInternshipTypes();
               setPracticeOptions(mapToOptions(globalTypes));
@@ -317,17 +329,19 @@ export default function PreEnrollmentModal({
                     name="identificationPrefix"
                     control={control}
                     render={({ field }) => (
-                      <Select
+                      <CustomSelect
+                        id="identificationPrefix"
                         options={[
-                          { value: "V", label: "V-" },
-                          { value: "E", label: "E-" },
-                          { value: "J", label: "J-" },
-                          { value: "P", label: "P-" },
+                          { value: "V", label: "V" },
+                          { value: "E", label: "E" },
+                          { value: "P", label: "P", disabled: true, disabledReason: "Pasaportes no habilitados temporalmente" },
                         ]}
                         onChange={field.onChange}
-                        defaultValue={field.value}
-                        placeholder="Tipo ID"
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        placeholder="Tipo"
                         disabled={!!editingEntry}
+                        error={!!errors.identificationPrefix}
                       />
                     )}
                   />

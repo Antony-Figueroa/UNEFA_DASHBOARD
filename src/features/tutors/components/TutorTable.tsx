@@ -7,6 +7,7 @@ import { TutorRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { useDebounce } from "../../../hooks/useDebounce";
 import Badge from "../../../components/ui/badge/Badge";
+import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 
 const getProfessionColor = (profession: string): "primary" | "success" | "error" | "warning" | "info" => {
     const colors: ("primary" | "success" | "error" | "warning" | "info")[] = ["primary", "success", "error", "warning", "info"];
@@ -221,8 +222,11 @@ export default function TutorTable({
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
-            const allIds = paged.map((t) => t.tutorId).filter(Boolean) as string[];
-            setSelectedIds(allIds);
+            const deletableIds = paged
+                .filter((t) => !t.isInUse)
+                .map((t) => t.tutorId)
+                .filter(Boolean) as string[];
+            setSelectedIds(deletableIds);
         } else {
             setSelectedIds([]);
         }
@@ -416,7 +420,11 @@ export default function TutorTable({
                         <TableRow>
                             <TableCell isHeader className="table-header-cell w-10">
                                 <Checkbox
-                                    checked={paged.length > 0 && selectedIds.length === paged.length}
+                                    checked={
+                                        paged.length > 0 &&
+                                        paged.filter((t) => !t.isInUse).length > 0 &&
+                                        paged.filter((t) => !t.isInUse).every((t) => selectedIds.includes(t.tutorId))
+                                    }
                                     onChange={handleSelectAll}
                                     ariaLabel="Seleccionar todos"
                                 />
@@ -449,7 +457,18 @@ export default function TutorTable({
                                     className={`table-row-hover ${index % 2 === 0 ? "bg-white dark:bg-transparent" : "bg-bg-secondary/50 dark:bg-white/2"} ${selectedIds.includes(t.tutorId) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
                                 >
                                     <TableCell className="table-cell">
-                                        <Checkbox checked={selectedIds.includes(t.tutorId)} onChange={(checked) => handleSelectRow(t.tutorId, checked)} />
+                                        <Tooltip 
+                                            content={t.isInUse ? "Este tutor tiene carreras asignadas y no puede ser seleccionado para eliminar" : ""}
+                                            isDisabled={!t.isInUse}
+                                        >
+                                            <div>
+                                                <Checkbox 
+                                                    checked={selectedIds.includes(t.tutorId)} 
+                                                    onChange={(checked) => handleSelectRow(t.tutorId, checked)} 
+                                                    disabled={t.isInUse}
+                                                />
+                                            </div>
+                                        </Tooltip>
                                     </TableCell>
                                     <TableCell className="table-cell font-medium text-text-primary dark:text-text-emphasis">
                                         {t.identificationPrefix}-{t.identificationNumber}

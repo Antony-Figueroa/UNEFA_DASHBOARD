@@ -31,6 +31,10 @@ interface Student {
   CONTACT_PHONE?: string;
 }
 
+interface ProfessionalPracticeTutor {
+  TUTOR_ID: number;
+}
+
 interface ProfessionalPractice {
   PROFESSIONAL_PRACTICE_ID: number;
   START_DATE?: string;
@@ -54,6 +58,7 @@ interface ProfessionalPractice {
   t_students?: Student;
   t_internships_period?: { DESCRIPTION: string };
   t_internship_type?: { NAME: string };
+  t_professional_practices_tutor?: ProfessionalPracticeTutor[];
 }
 
 export const getPreEnrollments = async (req: Request, res: Response) => {
@@ -70,7 +75,8 @@ export const getPreEnrollments = async (req: Request, res: Response) => {
             CONTACT_PHONE
           ),
           t_internships_period (DESCRIPTION),
-          t_internship_type (NAME)
+          t_internship_type (NAME),
+          t_professional_practices_tutor (TUTOR_ID)
         `)
         .eq('PRACTICES_STATUS', 1) // 1 para PRE-INSCRITO
         .order('REGISTRATION_DATE', { ascending: false });
@@ -92,7 +98,8 @@ export const getPreEnrollments = async (req: Request, res: Response) => {
         practiceType: item.t_internship_type?.NAME || '',
         enrollmentCode: item.ENROLLMENT || '',
         preEnrollmentDate: item.REGISTRATION_DATE,
-        status: item.STATUS === 1
+        status: item.STATUS === 1,
+        isInUse: Array.isArray(item.t_professional_practices_tutor) && item.t_professional_practices_tutor.length > 0
       };
     });
 

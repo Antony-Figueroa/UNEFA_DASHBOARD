@@ -26,7 +26,7 @@ export interface Student {
   address: string; // Dirección de Habitación
 
   // Datos Académicos
-  careerId: string; // ID de la carrera asociada
+  careerId?: string; // ID de la carrera asociada
   careerName?: string; // nombre de la carrera (para visualización)
   semester: string; // Semestre (ej: 04)
   section: string; // Sección (ej: 236)
@@ -40,6 +40,7 @@ export interface Student {
   // Metadatos
   enrollmentDate: Date; // fecha de inscripción
   status: boolean; // true: activo, false: inactivo/papelera
+  isInUse?: boolean; // indica si el estudiante tiene registros relacionados (ej: pre-inscripciones)
 }
 
 /**

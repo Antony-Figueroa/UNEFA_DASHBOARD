@@ -85,6 +85,8 @@ interface ActionButtonsProps {
     periodo: PeriodoRowData;
     canActivate: boolean;
     isMobile?: boolean;
+    isDisabled?: boolean;
+    disabledTooltip?: string;
 }
 
 // ============================================
@@ -100,6 +102,8 @@ const ActionButtons = ({
     periodo,
     canActivate,
     isMobile = false,
+    isDisabled = false,
+    disabledTooltip = "",
 }: ActionButtonsProps) => {
     const currentPeriodStatus = getSafePeriodStatus(periodo);
     const hasStatus = !!periodo.status;
@@ -164,10 +168,11 @@ const ActionButtons = ({
                 <ActionButton
                     onClick={() => onDelete()}
                     icon={<TrashIcon />}
-                    tooltip="Eliminar"
+                    tooltip={isDisabled ? disabledTooltip : "Eliminar"}
                     label={isMobile ? "Eliminar Período" : undefined}
                     variant="danger"
                     fullWidth={isMobile}
+                    disabled={isDisabled}
                 />
             )}
         </div>
@@ -201,6 +206,16 @@ const PeriodTable = ({
         key: "startDate",
         order: "asc",
     });
+
+    const [inUseIds, setInUseIds] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        const used = new Set<string>();
+        data.forEach(p => {
+            if (p.isInUse) used.add(p.periodId);
+        });
+        setInUseIds(used);
+    }, [data]);
 
     // Verificar si hay algún período "En Curso"
     const hasActivePeriod = useMemo(() => {
@@ -634,6 +649,8 @@ const PeriodTable = ({
                                                 }
                                                 periodo={periodo}
                                                 canActivate={periodId === nextActivatablePeriodId}
+                                                isDisabled={inUseIds.has(periodId)}
+                                                disabledTooltip="Este período está siendo usado en registros (pre-inscripción o inscripción) y no puede ser eliminado"
                                             />
                                         </TableCell>
                                     </TableRow>
@@ -772,6 +789,8 @@ const PeriodTable = ({
                                                 periodo={periodo}
                                                 canActivate={periodId === nextActivatablePeriodId}
                                                 isMobile={true}
+                                                isDisabled={inUseIds.has(periodId)}
+                                                disabledTooltip="Este período está siendo usado en registros (pre-inscripción o inscripción) y no puede ser eliminado"
                                             />
                                         </div>
                                     </div>

@@ -3,6 +3,7 @@ interface ComponentCardProps {
   children: React.ReactNode;
   className?: string; // Additional custom classes for styling
   desc?: string; // Description text
+  headerAction?: React.ReactNode; // Action element in the header
 }
 
 const ComponentCard: React.FC<ComponentCardProps> = ({
@@ -10,20 +11,28 @@ const ComponentCard: React.FC<ComponentCardProps> = ({
   children,
   className = "",
   desc = "",
+  headerAction,
 }) => {
   return (
     <div
       className={`rounded-2xl border border-border-light bg-white dark:bg-bg-dark transition-all duration-300 shadow-theme-md hover:shadow-theme-lg focus-within:ring-2 focus-within:ring-brand-500/20 ${className}`}
     >
       {/* Card Header */}
-      <div className="px-6 py-5">
-        <h3 className="text-base font-medium text-text-emphasis dark:text-text-emphasis">
-          {title}
-        </h3>
-        {desc && (
-          <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">
-            {desc}
-          </p>
+      <div className="px-6 py-5 flex items-center justify-between">
+        <div>
+          <h3 className="text-base font-medium text-text-emphasis dark:text-text-emphasis">
+            {title}
+          </h3>
+          {desc && (
+            <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">
+              {desc}
+            </p>
+          )}
+        </div>
+        {headerAction && (
+          <div className="flex items-center gap-2">
+            {headerAction}
+          </div>
         )}
       </div>
 

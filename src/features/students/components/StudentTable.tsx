@@ -32,6 +32,12 @@ interface StudentTableProps {
     inactiveMode?: boolean;
     activeTab?: "Activas" | "Inactivas";
     careerOptions?: { value: string | number; label: string }[];
+    sexOptions?: { value: string; label: string }[];
+    civilStatusOptions?: { value: string; label: string }[];
+    regimeOptions?: { value: string; label: string }[];
+    studentTypeOptions?: { value: string; label: string }[];
+    worksOptions?: { value: string; label: string }[];
+    militaryRankOptions?: { value: string; label: string }[];
     loading?: boolean;
 }
 
@@ -163,11 +169,23 @@ export default function StudentTable({
     inactiveMode = false,
     activeTab = "Activas",
     careerOptions = [],
+    sexOptions = [],
+    civilStatusOptions = [],
+    regimeOptions = [],
+    studentTypeOptions = [],
+    worksOptions = [],
+    militaryRankOptions = [],
     loading = false,
 }: StudentTableProps) {
     const [idFilter, setIdFilter] = useState("");
     const [nameFilter, setNameFilter] = useState("");
     const [careerFilter, setCareerFilter] = useState("");
+    const [sexFilter, setSexFilter] = useState("");
+    const [civilStatusFilter, setCivilStatusFilter] = useState("");
+    const [regimeFilter, setRegimeFilter] = useState("");
+    const [studentTypeFilter, setStudentTypeFilter] = useState("");
+    const [worksFilter, setWorksFilter] = useState("");
+    const [militaryRankFilter, setMilitaryRankFilter] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -217,10 +235,19 @@ export default function StudentTable({
             const matchesId = !idSearch || s.identificationNumber.toLowerCase().includes(idSearch);
             const matchesName = !nameSearch || (s.fullNames || "").toLowerCase().includes(nameSearch);
             const matchesCareer = !careerSearch || s.careerId === careerSearch;
+            const matchesSex = !sexFilter || s.sex === sexFilter;
+            const matchesCivilStatus = !civilStatusFilter || s.civilStatus === civilStatusFilter;
+            const matchesRegime = !regimeFilter || s.regime === regimeFilter;
+            const matchesStudentType = !studentTypeFilter || s.studentType === studentTypeFilter;
+            const matchesWorks = !worksFilter || s.works === worksFilter;
+            const matchesMilitaryRank = !militaryRankFilter || s.militaryRank === militaryRankFilter;
 
             const matchesTab = activeTab === "Activas" ? s.status === true : s.status === false;
 
-            return matchesId && matchesName && matchesCareer && matchesTab;
+            return matchesId && matchesName && matchesCareer && 
+                   matchesSex && matchesCivilStatus && matchesRegime && 
+                   matchesStudentType && matchesWorks && matchesMilitaryRank && 
+                   matchesTab;
         });
 
         filtered.sort((a, b) => {
@@ -252,12 +279,12 @@ export default function StudentTable({
         });
 
         return filtered;
-    }, [data, debouncedIdFilter, debouncedNameFilter, careerFilter, activeTab, sortConfig]);
+    }, [data, debouncedIdFilter, debouncedNameFilter, careerFilter, sexFilter, civilStatusFilter, regimeFilter, studentTypeFilter, worksFilter, militaryRankFilter, activeTab, sortConfig]);
 
     // Reset page when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedIdFilter, debouncedNameFilter, careerFilter]);
+    }, [debouncedIdFilter, debouncedNameFilter, careerFilter, sexFilter, civilStatusFilter, regimeFilter, studentTypeFilter, worksFilter, militaryRankFilter]);
 
     const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -322,6 +349,12 @@ export default function StudentTable({
         setIdFilter("");
         setNameFilter("");
         setCareerFilter("");
+        setSexFilter("");
+        setCivilStatusFilter("");
+        setRegimeFilter("");
+        setStudentTypeFilter("");
+        setWorksFilter("");
+        setMilitaryRankFilter("");
     };
 
     const SortIndicator = ({ column }: { column: SortKey }) => {
@@ -406,6 +439,132 @@ export default function StudentTable({
                         >
                             <option value="" className="dark:bg-bg-dark">Todas las Carreras</option>
                             {careerOptions.map((opt) => (
+                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {/* Filtro por Sexo */}
+                    <div className="relative">
+                        <select
+                            value={sexFilter}
+                            onChange={(e) => setSexFilter(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
+                        >
+                            <option value="" className="dark:bg-bg-dark">Todos los Sexos</option>
+                            {sexOptions.map((opt) => (
+                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {/* Filtro por Estado Civil */}
+                    <div className="relative">
+                        <select
+                            value={civilStatusFilter}
+                            onChange={(e) => setCivilStatusFilter(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
+                        >
+                            <option value="" className="dark:bg-bg-dark">Todos los Estados Civiles</option>
+                            {civilStatusOptions.map((opt) => (
+                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {/* Filtro por Régimen */}
+                    <div className="relative">
+                        <select
+                            value={regimeFilter}
+                            onChange={(e) => setRegimeFilter(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
+                        >
+                            <option value="" className="dark:bg-bg-dark">Todos los Regímenes</option>
+                            {regimeOptions.map((opt) => (
+                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {/* Filtro por Tipo de Estudiante */}
+                    <div className="relative">
+                        <select
+                            value={studentTypeFilter}
+                            onChange={(e) => setStudentTypeFilter(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
+                        >
+                            <option value="" className="dark:bg-bg-dark">Todos los Tipos</option>
+                            {studentTypeOptions.map((opt) => (
+                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {/* Filtro por Trabaja */}
+                    <div className="relative">
+                        <select
+                            value={worksFilter}
+                            onChange={(e) => setWorksFilter(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
+                        >
+                            <option value="" className="dark:bg-bg-dark">Todos (Trabaja)</option>
+                            {worksOptions.map((opt) => (
+                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {/* Filtro por Rango Militar */}
+                    <div className="relative">
+                        <select
+                            value={militaryRankFilter}
+                            onChange={(e) => setMilitaryRankFilter(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
+                        >
+                            <option value="" className="dark:bg-bg-dark">Todos los Rangos</option>
+                            {militaryRankOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                                     {opt.label}
                                 </option>
@@ -538,7 +697,7 @@ export default function StudentTable({
                                     <TableCell className="table-cell">
                                         <Tooltip 
                                             content={s.isInUse ? "Este estudiante tiene registros relacionados y no puede ser seleccionado para eliminar" : ""}
-                                            isDisabled={!s.isInUse}
+                                            isDisabled={s.isInUse}
                                         >
                                             <div>
                                                 <Checkbox

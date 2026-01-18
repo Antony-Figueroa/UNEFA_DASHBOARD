@@ -16,11 +16,39 @@ import Button from "../../components/ui/button/Button";
 import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { useTracking } from "../../features/tracking/hooks/useTracking";
+import { useLists } from "../../features/lists/hooks/useLists";
 import { Tracking, TrackingRowData } from "../../features/tracking/types";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
 
+const TRANSFER_OPTIONS = [
+    { value: 'false', label: 'No' },
+    { value: 'true', label: 'Sí' },
+];
+
 export default function TrackingPage() {
     const [pageLoading, setPageLoading] = useState(true);
+    const { fetchMultipleLists } = useLists();
+    const [lists, setLists] = useState<Record<string, { value: string; label: string }[]>>({});
+
+    // Cargar opciones dinámicas
+    useEffect(() => {
+        const loadOptions = async () => {
+            try {
+                const data = await fetchMultipleLists(['Traslado']);
+                if (data['Traslado']) {
+                    setLists({
+                        'Traslado': data['Traslado'].map(v => ({
+                            value: v.name.toLowerCase(),
+                            label: v.name.charAt(0).toUpperCase() + v.name.slice(1).toLowerCase()
+                        }))
+                    });
+                }
+            } catch (error) {
+                console.error("Error loading list options for TrackingPage:", error);
+            }
+        };
+        loadOptions();
+    }, [fetchMultipleLists]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -193,6 +221,7 @@ export default function TrackingPage() {
                                         onView={handleOpenViewModal}
                                         onDelete={handleDelete}
                                         onRestore={handleRestore}
+                                        transferOptions={lists['Traslado'] || TRANSFER_OPTIONS}
                                     />
                                 </SkeletonLoader>
                             </div>

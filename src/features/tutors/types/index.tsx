@@ -18,7 +18,7 @@ export interface Tutor {
   secondLastName?: string; // Segundo Apellido
 
   // Datos Personales
-  sex: "FEMENINO" | "MASCULINO" | "OTRO"; // Sexo
+  sex: "FEMENINO" | "MASCULINO"; // Sexo
   phone: string; // Teléfono (ej: 04261234567)
   email: string; // Correo Electrónico
 

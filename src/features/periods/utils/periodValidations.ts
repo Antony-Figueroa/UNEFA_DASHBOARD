@@ -2,19 +2,19 @@ import { z } from 'zod';
 import { Periodo } from '../types';
 
 /**
- * Convierte un lapso (ej: "I-2025") a un valor numérico comparable.
+ * Convierte un lapso (ej: "1-2025") a un valor numérico comparable.
  */
 export const getLapsoValue = (l: string) => {
     if (!l || !l.includes('-')) return 0;
     const [t, y] = l.split('-');
     const yearNum = parseInt(y);
     if (isNaN(yearNum)) return 0;
-    return yearNum * 10 + (t === 'I' ? 1 : 2);
+    return yearNum * 10 + (t === '1' ? 1 : 2);
 };
 
 export const getPeriodSchema = (existingPeriods: Periodo[], currentPeriodId?: string, isEditing: boolean = false) => z.object({
     year: z.string().min(1, { message: 'El año es obligatorio.' }),
-    periodoTipo: z.enum(['I', 'II']),
+    periodoTipo: z.enum(['1', '2']),
     startDate: z.date({
         message: 'La fecha de inicio es obligatoria.',
     }),
@@ -151,19 +151,19 @@ export const checkSequentiality = (newDescription: string, existingPeriods: Peri
         };
     }
 
-    // El siguiente valor debe ser exactamente +1 (ej: I-2025 -> II-2025, o II-2025 -> I-2026)
+    // El siguiente valor debe ser exactamente +1 (ej: 1-2025 -> 2-2025, o 2-2025 -> 1-2026)
     const [lastTipo, lastYearStr] = lastPeriod.description.split('-');
     const lastYearNum = parseInt(lastYearStr);
     
     let expectedYear: number;
     let expectedTipo: string;
 
-    if (lastTipo === 'I') {
+    if (lastTipo === '1') {
         expectedYear = lastYearNum;
-        expectedTipo = 'II';
+        expectedTipo = '2';
     } else {
         expectedYear = lastYearNum + 1;
-        expectedTipo = 'I';
+        expectedTipo = '1';
     }
 
     const expectedDescription = `${expectedTipo}-${expectedYear}`;

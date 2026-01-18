@@ -24,16 +24,16 @@ const CHECK_INTERVAL = 1000;
  */
 export const useSessionTimeout = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { addToast, removeToast } = useToast();
   
-  // Referencia para almacenar el tiempo de la última actividad (usando performance.now para precisión)
+  // Referencia para almacenar el tiempo de la última actividad
   const lastActivityRef = useRef<number>(performance.now());
   
   // Referencia para el ID del toast de advertencia
   const warningToastIdRef = useRef<string | null>(null);
   
-  // Estado para pausar el temporizador (ej: durante cargas asíncronas importantes)
+  // Estado para pausar el temporizador
   const [isPaused, setIsPaused] = useState(false);
   
   // Referencia al intervalo de verificación
@@ -43,32 +43,42 @@ export const useSessionTimeout = () => {
    * Ejecuta el cierre de sesión y redirige al login
    */
   const handleLogout = useCallback(async () => {
+    if (!user) return;
+
     try {
+      console.log('[SessionTimeout] Cerrando sesión por inactividad...');
       // Limpiar advertencia si existe
       if (warningToastIdRef.current) {
         removeToast(warningToastIdRef.current);
         warningToastIdRef.current = null;
       }
 
-      // Ejecutar procedimientos de limpieza y guardado (signOut ya maneja esto)
       await signOut();
       
-      // Redirigir con mensaje
       navigate('/signin', { 
         state: { message: 'Su sesión ha expirado por inactividad prolongada (15 minutos).' }, 
         replace: true 
       });
     } catch (error) {
-      console.error('Error durante el cierre automático de sesión:', error);
+      console.error('[SessionTimeout] Error durante el cierre automático:', error);
       navigate('/signin', { replace: true });
     }
-  }, [navigate, signOut, removeToast]);
+  }, [navigate, signOut, removeToast, user]);
 
   /**
-   * Reinicia el contador de inactividad
+   * Reinicia el contador de inactividad.
+   * Se usa un ref para evitar que mousemove dispare demasiados procesos.
    */
+  const lastResetRef = useRef<number>(0);
   const resetTimeout = useCallback(() => {
-    lastActivityRef.current = performance.now();
+    const now = performance.now();
+    
+    // Solo procesar si han pasado al menos 100ms desde el último reset
+    // Esto evita sobrecarga en eventos de alta frecuencia como mousemove
+    if (now - lastResetRef.current < 100) return;
+    
+    lastResetRef.current = now;
+    lastActivityRef.current = now;
     
     // Si había una advertencia activa, la removemos al detectar actividad
     if (warningToastIdRef.current) {

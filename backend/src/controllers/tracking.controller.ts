@@ -17,7 +17,7 @@ interface DBProfessionalPractice {
 
 interface DBTrackingResponse extends DBProfessionalPractice {
   t_students?: {
-    STUDENT_CI: string;
+    STUDENTS_CI: string;
     NAME: string;
     SURNAME: string;
   }
@@ -43,7 +43,7 @@ export const getTrackings = async (_req: Request, res: Response) => {
       .select(`
         *,
         t_students:STUDENTS_ID (
-          STUDENT_CI,
+          STUDENTS_CI,
           NAME,
           SURNAME
         )
@@ -54,7 +54,7 @@ export const getTrackings = async (_req: Request, res: Response) => {
 
     const formattedData = (data as unknown as DBTrackingResponse[]).map(p => ({
       ...p,
-      STUDENT_CI: p.t_students?.STUDENT_CI || "",
+      STUDENT_CI: p.t_students?.STUDENTS_CI || "",
       STUDENT_NAME: p.t_students?.NAME || "",
       STUDENT_SURNAME: p.t_students?.SURNAME || ""
     })).map(mapDBToFrontend);
@@ -75,8 +75,8 @@ export const createTracking = async (req: Request, res: Response) => {
     // First find student ID by CI
     const { data: student, error: studentError } = await db.getConnection()
       .from('t_students')
-      .select('STUDENT_ID')
-      .eq('STUDENT_CI', studentIdNumber)
+      .select('STUDENTS_ID')
+      .eq('STUDENTS_CI', studentIdNumber)
       .single();
 
     if (studentError || !student) {
@@ -84,7 +84,7 @@ export const createTracking = async (req: Request, res: Response) => {
     }
 
     const newPractice = {
-      STUDENTS_ID: student.STUDENT_ID,
+      STUDENTS_ID: student.STUDENTS_ID,
       REPORT_TITLE: reportTitle,
       TRANSFER: transfer ? 1 : 0,
       TOUR: route,
@@ -110,7 +110,7 @@ export const createTracking = async (req: Request, res: Response) => {
       .select(`
         *,
         t_students:STUDENTS_ID (
-          STUDENT_CI,
+          STUDENTS_CI,
           NAME,
           SURNAME
         )
@@ -122,7 +122,7 @@ export const createTracking = async (req: Request, res: Response) => {
     const p = data as unknown as DBTrackingResponse;
     const formatted = mapDBToFrontend({
       ...p,
-      STUDENT_CI: p.t_students?.STUDENT_CI || "",
+      STUDENT_CI: p.t_students?.STUDENTS_CI || "",
       STUDENT_NAME: p.t_students?.NAME || "",
       STUDENT_SURNAME: p.t_students?.SURNAME || ""
     });
@@ -156,7 +156,7 @@ export const updateTracking = async (req: Request, res: Response) => {
       .select(`
         *,
         t_students:STUDENTS_ID (
-          STUDENT_CI,
+          STUDENTS_CI,
           NAME,
           SURNAME
         )
@@ -168,7 +168,7 @@ export const updateTracking = async (req: Request, res: Response) => {
     const p = data as unknown as DBTrackingResponse;
     const formatted = mapDBToFrontend({
       ...p,
-      STUDENT_CI: p.t_students?.STUDENT_CI || "",
+      STUDENT_CI: p.t_students?.STUDENTS_CI || "",
       STUDENT_NAME: p.t_students?.NAME || "",
       STUDENT_SURNAME: p.t_students?.SURNAME || ""
     });

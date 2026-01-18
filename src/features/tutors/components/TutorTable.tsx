@@ -30,6 +30,10 @@ interface TutorTableProps {
     inactiveMode?: boolean;
     activeTab?: "Activas" | "Inactivas";
     professionOptions?: { value: string; label: string }[];
+    sexOptions?: { value: string; label: string }[];
+    conditionOptions?: { value: string; label: string }[];
+    dedicationOptions?: { value: string; label: string }[];
+    categoryOptions?: { value: string; label: string }[];
     loading?: boolean;
 }
 
@@ -42,6 +46,7 @@ interface ActionButtonsProps {
     onView?: () => void;
     activeTab: "Activas" | "Inactivas";
     isMobile?: boolean;
+    isInUse?: boolean;
 }
 
 const ActionButtons = ({
@@ -50,10 +55,27 @@ const ActionButtons = ({
     onView,
     activeTab,
     isMobile = false,
+    isInUse = false,
 }: ActionButtonsProps) => {
     const containerClasses = isMobile 
         ? "flex flex-col gap-3 pt-2" 
         : "flex justify-end gap-3";
+
+    const deleteButton = (
+        <ActionButton
+            onClick={() => !isInUse && onToggleStatus?.()}
+            icon={activeTab === "Activas" ? <TrashIcon /> : <RefreshIcon />}
+            tooltip={
+                activeTab === "Activas" 
+                    ? (isInUse ? "No se puede eliminar: el tutor tiene registros asociados (estudiantes o prácticas)" : "Eliminar") 
+                    : "Restaurar"
+            }
+            label={isMobile ? (activeTab === "Activas" ? "Eliminar Tutor" : "Restaurar Tutor") : undefined}
+            variant={activeTab === "Activas" ? "danger" : "success"}
+            fullWidth={isMobile}
+            disabled={activeTab === "Activas" && isInUse}
+        />
+    );
 
     return (
         <div className={containerClasses}>
@@ -78,14 +100,13 @@ const ActionButtons = ({
                 />
             )}
             {onToggleStatus && (
-                <ActionButton
-                    onClick={() => onToggleStatus()}
-                    icon={activeTab === "Activas" ? <TrashIcon /> : <RefreshIcon />}
-                    tooltip={activeTab === "Activas" ? "Eliminar" : "Restaurar"}
-                    label={isMobile ? (activeTab === "Activas" ? "Eliminar Tutor" : "Restaurar Tutor") : undefined}
-                    variant={activeTab === "Activas" ? "danger" : "success"}
-                    fullWidth={isMobile}
-                />
+                isInUse && activeTab === "Activas" ? (
+                    <Tooltip content="No se puede eliminar: el tutor tiene registros asociados (estudiantes o prácticas)">
+                        <div className="inline-block">
+                            {deleteButton}
+                        </div>
+                    </Tooltip>
+                ) : deleteButton
             )}
         </div>
     );
@@ -103,12 +124,19 @@ export default function TutorTable({
     // inactiveMode = false,
     activeTab = "Activas",
     professionOptions = [],
+    sexOptions = [],
+    conditionOptions = [],
+    dedicationOptions = [],
+    categoryOptions = [],
     // loading = false,
 }: TutorTableProps) {
     const [idFilter, setIdFilter] = useState("");
     const [nameFilter, setNameFilter] = useState("");
-    const [lastNameFilter, setLastNameFilter] = useState("");
     const [professionFilter, setProfessionFilter] = useState("");
+    const [sexFilter, setSexFilter] = useState("");
+    const [conditionFilter, setConditionFilter] = useState("");
+    const [dedicationFilter, setDedicationFilter] = useState("");
+    const [categoryFilter, setCategoryFilter] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -122,7 +150,6 @@ export default function TutorTable({
 
     const debouncedIdFilter = useDebounce(idFilter, 300);
     const debouncedNameFilter = useDebounce(nameFilter, 300);
-    const debouncedLastNameFilter = useDebounce(lastNameFilter, 300);
 
     useEffect(() => {
         setSelectedIds([]);
@@ -131,22 +158,27 @@ export default function TutorTable({
     const filteredData = useMemo(() => {
         const idSearch = debouncedIdFilter.trim().toLowerCase();
         const nameSearch = debouncedNameFilter.trim().toLowerCase();
-        const lastNameSearch = debouncedLastNameFilter.trim().toLowerCase();
         const professionSearch = professionFilter.trim().toLowerCase();
+        const sexSearch = sexFilter.trim().toLowerCase();
+        const conditionSearch = conditionFilter.trim().toLowerCase();
+        const dedicationSearch = dedicationFilter.trim().toLowerCase();
+        const categorySearch = categoryFilter.trim().toLowerCase();
 
         const filtered = data.filter((t) => {
             const matchesId = !idSearch || (t.identificationNumber || "").toLowerCase().includes(idSearch);
-            const matchesName = !nameSearch ||
-                (t.firstName || "").toLowerCase().includes(nameSearch) ||
-                (t.middleName || "").toLowerCase().includes(nameSearch);
-            const matchesLastName = !lastNameSearch ||
-                (t.lastName || "").toLowerCase().includes(lastNameSearch) ||
-                (t.secondLastName || "").toLowerCase().includes(lastNameSearch);
+            
+            const fullName = `${t.firstName} ${t.middleName || ""} ${t.lastName} ${t.secondLastName || ""}`.toLowerCase();
+            const matchesName = !nameSearch || fullName.includes(nameSearch);
+
             const matchesProfession = !professionSearch || (t.profession || "").toLowerCase() === professionSearch;
+            const matchesSex = !sexSearch || (t.sex || "").toLowerCase() === sexSearch;
+            const matchesCondition = !conditionSearch || (t.condition || "").toLowerCase() === conditionSearch;
+            const matchesDedication = !dedicationSearch || (t.dedication || "").toLowerCase() === dedicationSearch;
+            const matchesCategory = !categorySearch || (t.category || "").toLowerCase() === categorySearch;
 
             const matchesTab = activeTab === "Activas" ? !!t.status : !t.status;
 
-            return matchesId && matchesName && matchesLastName && matchesProfession && matchesTab;
+            return matchesId && matchesName && matchesProfession && matchesSex && matchesCondition && matchesDedication && matchesCategory && matchesTab;
         });
 
         filtered.sort((a, b) => {
@@ -177,11 +209,11 @@ export default function TutorTable({
         });
 
         return filtered;
-    }, [data, debouncedIdFilter, debouncedNameFilter, debouncedLastNameFilter, professionFilter, activeTab, sortConfig]);
+    }, [data, debouncedIdFilter, debouncedNameFilter, professionFilter, sexFilter, conditionFilter, dedicationFilter, categoryFilter, activeTab, sortConfig]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedIdFilter, debouncedNameFilter, debouncedLastNameFilter, professionFilter]);
+    }, [debouncedIdFilter, debouncedNameFilter, professionFilter, sexFilter, conditionFilter, dedicationFilter, categoryFilter]);
 
     if (status === "error") {
         return (
@@ -262,8 +294,11 @@ export default function TutorTable({
     const clearFilters = () => {
         setIdFilter("");
         setNameFilter("");
-        setLastNameFilter("");
         setProfessionFilter("");
+        setSexFilter("");
+        setConditionFilter("");
+        setDedicationFilter("");
+        setCategoryFilter("");
     };
 
     const SortIndicator = ({ column }: { column: SortKey }) => {
@@ -305,24 +340,13 @@ export default function TutorTable({
                         </span>
                     </div>
 
-                    {/* Filtro por Nombres */}
+                    {/* Filtro por Nombres y Apellidos */}
                     <div className="relative">
                         <input
                             type="text"
-                            placeholder="Buscar nombres"
+                            placeholder="Buscar por nombres y apellidos"
                             value={nameFilter}
                             onChange={(e) => setNameFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary"
-                        />
-                    </div>
-
-                    {/* Filtro por Apellidos */}
-                    <div className="relative">
-                        <input
-                            type="text"
-                            placeholder="Buscar apellidos"
-                            value={lastNameFilter}
-                            onChange={(e) => setLastNameFilter(e.target.value)}
                             className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary"
                         />
                     </div>
@@ -332,11 +356,95 @@ export default function TutorTable({
                         <select
                             value={professionFilter}
                             onChange={(e) => setProfessionFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-4 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                         >
-                            <option value="">Todas las Profesiones</option>
+                            <option value="" className="dark:bg-bg-dark">Todas las Profesiones</option>
                             {professionOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
+                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {/* Filtro por Sexo */}
+                    <div className="relative">
+                        <select
+                            value={sexFilter}
+                            onChange={(e) => setSexFilter(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
+                        >
+                            <option value="" className="dark:bg-bg-dark">Todos los Sexos</option>
+                            {sexOptions.map((opt) => (
+                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {/* Filtro por Condición */}
+                    <div className="relative">
+                        <select
+                            value={conditionFilter}
+                            onChange={(e) => setConditionFilter(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
+                        >
+                            <option value="" className="dark:bg-bg-dark">Todas las Condic.</option>
+                            {conditionOptions.map((opt) => (
+                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {/* Filtro por Dedicación */}
+                    <div className="relative">
+                        <select
+                            value={dedicationFilter}
+                            onChange={(e) => setDedicationFilter(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
+                        >
+                            <option value="" className="dark:bg-bg-dark">Todas las Dedic.</option>
+                            {dedicationOptions.map((opt) => (
+                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {/* Filtro por Categoría */}
+                    <div className="relative">
+                        <select
+                            value={categoryFilter}
+                            onChange={(e) => setCategoryFilter(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
+                        >
+                            <option value="" className="dark:bg-bg-dark">Todas las Categ.</option>
+                            {categoryOptions.map((opt) => (
+                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                                     {opt.label}
                                 </option>
                             ))}
@@ -354,7 +462,7 @@ export default function TutorTable({
                         <div className="text-xs text-text-tertiary dark:text-text-tertiary">
                             Mostrando <span className="font-bold text-text-secondary dark:text-text-emphasis">{filteredData.length}</span> resultados
                         </div>
-                        {(idFilter || nameFilter || lastNameFilter || professionFilter) && (
+                        {(idFilter || nameFilter || professionFilter) && (
                             <button
                                 onClick={clearFilters}
                                 className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
@@ -433,18 +541,15 @@ export default function TutorTable({
                                 <div className="flex items-center">Cédula <SortIndicator column="identificationNumber" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("firstName")}>
-                                <div className="flex items-center">Nombres <SortIndicator column="firstName" /></div>
+                                <div className="flex items-center uppercase">Nombres y Apellidos <SortIndicator column="firstName" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("lastName")}>
-                                <div className="flex items-center">Apellidos <SortIndicator column="lastName" /></div>
-                            </TableCell>
-                            <TableCell isHeader className="table-header-cell">Sexo</TableCell>
-                            <TableCell isHeader className="table-header-cell">Teléfono</TableCell>
+                            <TableCell isHeader className="table-header-cell uppercase">Sexo</TableCell>
+                            <TableCell isHeader className="table-header-cell uppercase">Teléfono</TableCell>
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("email")}>
-                                <div className="flex items-center">Correo Electrónico <SortIndicator column="email" /></div>
+                                <div className="flex items-center uppercase">Correo Electrónico <SortIndicator column="email" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("profession")}>
-                                <div className="flex items-center">Profesión <SortIndicator column="profession" /></div>
+                                <div className="flex items-center uppercase">Profesión <SortIndicator column="profession" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell text-right">&nbsp;</TableCell>
                         </TableRow>
@@ -458,8 +563,8 @@ export default function TutorTable({
                                 >
                                     <TableCell className="table-cell">
                                         <Tooltip 
-                                            content={t.isInUse ? "Este tutor tiene carreras asignadas y no puede ser seleccionado para eliminar" : ""}
-                                            isDisabled={!t.isInUse}
+                                            content={t.isInUse ? "Este tutor tiene carreras asignadas y no puede ser seleccionada para eliminar" : ""}
+                                            isDisabled={t.isInUse}
                                         >
                                             <div>
                                                 <Checkbox 
@@ -470,31 +575,26 @@ export default function TutorTable({
                                             </div>
                                         </Tooltip>
                                     </TableCell>
-                                    <TableCell className="table-cell font-medium text-text-primary dark:text-text-emphasis">
+                                    <TableCell className="table-cell font-medium text-text-primary dark:text-text-emphasis uppercase">
                                         {t.identificationPrefix}-{t.identificationNumber}
                                     </TableCell>
                                     <TableCell className="table-cell">
-                                        <span className="text-sm font-medium text-text-secondary dark:text-text-secondary">
-                                            {t.firstName} {t.middleName || ""}
+                                        <span className="text-sm font-medium text-text-secondary dark:text-text-secondary uppercase">
+                                            {t.firstName} {t.middleName || ""} {t.lastName} {t.secondLastName || ""}
                                         </span>
                                     </TableCell>
-                                    <TableCell className="table-cell">
-                                        <span className="text-sm font-medium text-text-secondary dark:text-text-secondary">
-                                            {t.lastName} {t.secondLastName || ""}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell className="table-cell text-sm text-text-secondary dark:text-text-tertiary capitalize">
-                                        {(t.sex || "N/A").toLowerCase()}
+                                    <TableCell className="table-cell text-sm text-text-secondary dark:text-text-tertiary uppercase">
+                                        {t.sex || "N/A"}
                                     </TableCell>
                                     <TableCell className="table-cell text-sm text-text-secondary dark:text-text-tertiary">
                                         {t.phone}
                                     </TableCell>
-                                    <TableCell className="table-cell text-sm text-text-secondary dark:text-text-tertiary">
+                                    <TableCell className="table-cell text-sm text-text-secondary dark:text-text-tertiary uppercase">
                                         {t.email}
                                     </TableCell>
-                                    <TableCell className="table-cell">
+                                    <TableCell className="table-cell uppercase">
                                         {t.profession ? (
-                                            <Badge color={getProfessionColor(t.profession)} variant="light" size="sm" shape="rounded">
+                                            <Badge color={getProfessionColor(t.profession)} variant="light" size="sm" shape="rounded" className="uppercase">
                                                 {t.profession}
                                             </Badge>
                                         ) : (
@@ -507,6 +607,7 @@ export default function TutorTable({
                                             onEdit={onEdit ? () => onEdit(t) : undefined}
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(t.tutorId) : undefined}
                                             activeTab={activeTab}
+                                            isInUse={t.isInUse}
                                         />
                                     </TableCell>
                                 </TableRow>
@@ -522,7 +623,7 @@ export default function TutorTable({
                                         </div>
                                         <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron tutores</h3>
                                         <p className="mt-1 text-xs text-text-tertiary dark:text-text-tertiary">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                                        {(idFilter || nameFilter || lastNameFilter || professionFilter) && (
+                                        {(idFilter || nameFilter || professionFilter) && (
                                             <button
                                                 onClick={clearFilters}
                                                 className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
@@ -548,11 +649,11 @@ export default function TutorTable({
                             <div key={rowId} className="relative p-4 bg-white dark:bg-transparent transition-colors overflow-hidden">
                                 <div className="flex flex-col items-center gap-2">
                                     <div className="flex items-center justify-between w-full">
-                                        <div className="flex-1 text-center">
-                                            <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8">
-                                                {t.firstName} {t.lastName}
+                                        <div className="flex-1 text-center uppercase">
+                                            <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8 uppercase">
+                                                {t.firstName} {t.middleName || ""} {t.lastName} {t.secondLastName || ""}
                                             </h3>
-                                            <p className="text-xs text-text-tertiary mt-1 truncate">{t.identificationPrefix}-{t.identificationNumber}</p>
+                                            <p className="text-xs text-text-tertiary mt-1 truncate uppercase">{t.identificationPrefix}-{t.identificationNumber}</p>
                                         </div>
                                         <button
                                             onClick={() => toggleRowExpansion(rowId)}
@@ -567,11 +668,11 @@ export default function TutorTable({
                                 {isExpanded && (
                                     <div className="mt-4 space-y-6 animate-fadeIn border-t border-border-light dark:border-border-dark pt-6">
                                         <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
-                                            <div className="flex flex-col items-center">
+                                            <div className="flex flex-col items-center uppercase">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Profesión</p>
-                                                <div className="flex justify-center w-full">
+                                                <div className="flex justify-center w-full uppercase">
                                                     {t.profession ? (
-                                                        <Badge color={getProfessionColor(t.profession)} variant="light" size="sm">
+                                                        <Badge color={getProfessionColor(t.profession)} variant="light" size="sm" className="uppercase">
                                                             {t.profession}
                                                         </Badge>
                                                     ) : (
@@ -579,13 +680,13 @@ export default function TutorTable({
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="flex flex-col items-center">
+                                            <div className="flex flex-col items-center uppercase">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Sexo</p>
-                                                <p className="text-sm text-text-secondary dark:text-text-secondary font-medium capitalize">{(t.sex || "N/A").toLowerCase()}</p>
+                                                <p className="text-sm text-text-secondary dark:text-text-secondary font-medium uppercase">{t.sex || "N/A"}</p>
                                             </div>
-                                            <div className="col-span-2 flex flex-col items-center">
+                                            <div className="col-span-2 flex flex-col items-center uppercase">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Correo</p>
-                                                <p className="text-sm text-text-secondary dark:text-text-secondary font-medium truncate w-full max-w-62.5">{t.email}</p>
+                                                <p className="text-sm text-text-secondary dark:text-text-secondary font-medium truncate w-full max-w-62.5 uppercase">{t.email}</p>
                                             </div>
                                             <div className="col-span-2 flex flex-col items-center">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Teléfono</p>
@@ -598,7 +699,8 @@ export default function TutorTable({
                                             onEdit={onEdit ? () => onEdit(t) : undefined}
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(t.tutorId) : undefined}
                                             activeTab={activeTab}
-                                            isMobile={true}
+                                            isMobile
+                                            isInUse={t.isInUse}
                                         />
                                     </div>
                                 )}
@@ -614,7 +716,7 @@ export default function TutorTable({
                         </div>
                         <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron tutores</h3>
                         <p className="mt-1 text-xs text-text-tertiary dark:text-text-tertiary max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                        {(idFilter || nameFilter || lastNameFilter || professionFilter) && (
+                        {(idFilter || nameFilter || professionFilter) && (
                             <button
                                 onClick={clearFilters}
                                 className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"

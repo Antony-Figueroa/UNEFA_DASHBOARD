@@ -9,14 +9,14 @@ describe('PeriodTable acciones', () => {
     const data: PeriodoRowData[] = [
       {
         periodId: 'p1',
-        description: '2025-I',
+        description: '1-2025',
         startDate: '01/01/2025',
         endDate: '04/23/2025',
         rawStartDate: new Date('2025-01-01'),
         rawEndDate: new Date('2025-04-23'),
         periodStatus: 1,
         status: true,
-        code: '2025I',
+        code: '1-2025',
         progress: null,
         daysPassed: 0,
         daysRemaining: 0,

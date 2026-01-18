@@ -24,7 +24,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   const [style, setStyle] = useState<React.CSSProperties>({
     position: 'absolute',
     visibility: 'hidden',
-    zIndex: 9999,
+    zIndex: 1000001,
     pointerEvents: 'none',
     opacity: 0,
     transition: 'opacity 0.15s ease-in-out',
@@ -74,7 +74,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
       position: 'absolute',
       top,
       left,
-      zIndex: 9999,
+      zIndex: 1000001,
       visibility: 'visible',
       pointerEvents: 'none',
       opacity: 1,
@@ -149,7 +149,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
         <div
           ref={tooltipRef}
           style={style}
-          className="pointer-events-none fixed z-9999"
+          className="pointer-events-none fixed"
         >
           <div className={`rounded-lg bg-bg-dark px-3 py-2 text-xs text-white shadow-2xl animate-fadeIn border border-white/10 max-w-xs ${className}`}>
             {content}

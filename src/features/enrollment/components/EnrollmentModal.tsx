@@ -26,6 +26,7 @@ import { InternshipTypeOption } from "../../internship-types/types";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import * as enrollmentService from "../services/enrollmentService";
+import { useLists } from "../../lists/hooks/useLists";
 
 interface EnrollmentModalProps {
   isOpen: boolean;
@@ -69,8 +70,15 @@ export default function EnrollmentModal({
   const [practiceOptions, setPracticeOptions] = useState<InternshipTypeOption[]>([]);
   const [isLoadingPeriods, setIsLoadingPeriods] = useState(false);
   const [preEnrollmentError, setPreEnrollmentError] = useState<string | null>(null);
+  const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
 
   const { responsibles } = useInstitutionalResponsibles();
+  const { fetchMultipleLists } = useLists();
+
+  const NATIONALITY_OPTIONS = options["Nacionalidad"] || [
+    { value: "V", label: "V" },
+    { value: "E", label: "E" },
+  ];
 
   const { 
     register,
@@ -108,6 +116,31 @@ export default function EnrollmentModal({
 
   // Filtrar responsables por institución seleccionada
   const filteredResponsibles = responsibles.filter(r => r.institutionId === selectedInstitutionId);
+
+  // Cargar opciones dinámicas
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const data = await fetchMultipleLists(["Nacionalidad"]);
+        const mappedOptions: Record<string, { value: string; label: string }[]> = {};
+        
+        Object.entries(data).forEach(([key, values]) => {
+          mappedOptions[key] = values.map(v => ({
+            value: v.name.toUpperCase(),
+            label: v.name.toUpperCase()
+          }));
+        });
+        
+        setOptions(mappedOptions);
+      } catch (error) {
+        console.error("Error loading list options:", error);
+      }
+    };
+
+    if (isOpen) {
+      loadOptions();
+    }
+  }, [isOpen, fetchMultipleLists]);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -319,11 +352,7 @@ export default function EnrollmentModal({
                     render={({ field }) => (
                       <CustomSelect
                         id="identificationPrefix"
-                        options={[
-                          { value: "V", label: "V" },
-                          { value: "E", label: "E" },
-                          { value: "P", label: "P", disabled: true, disabledReason: "Pasaportes no habilitados temporalmente" },
-                        ]}
+                        options={NATIONALITY_OPTIONS}
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         value={field.value}

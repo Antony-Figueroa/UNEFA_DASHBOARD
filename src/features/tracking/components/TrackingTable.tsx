@@ -3,7 +3,7 @@
  * @description Tabla para visualizar y gestionar los seguimientos de estudiantes.
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
     Table,
     TableBody,
@@ -16,6 +16,8 @@ import { ActionButton } from "../../../components/common/ActionButton";
 import Badge from "../../../components/ui/badge/Badge";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
+import InputField from "../../../components/form/input/InputField";
+import Select from "../../../components/form/Select";
 import {
     EditIcon,
     TrashIcon,
@@ -32,6 +34,7 @@ interface TrackingTableProps {
     onDelete?: (id: string) => void;
     onRestore?: (tracking: TrackingRowData) => void;
     onView?: (tracking: TrackingRowData) => void;
+    transferOptions?: { value: string; label: string }[];
 }
 
 interface ActionButtonsProps {
@@ -112,16 +115,36 @@ export default function TrackingTable({
     onDelete,
     onRestore,
     onView,
+    transferOptions = [],
 }: TrackingTableProps) {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [idFilter, setIdFilter] = useState("");
+    const [nameFilter, setNameFilter] = useState("");
+    const [transferFilter, setTransferFilter] = useState("");
+
+    // Filtrado de datos
+    const filteredData = useMemo(() => {
+        return data.filter(item => {
+            const matchesId = item.studentIdNumber.toLowerCase().includes(idFilter.toLowerCase());
+            const matchesName = item.studentName.toLowerCase().includes(nameFilter.toLowerCase());
+            const matchesTransfer = transferFilter === "" || String(item.transfer) === transferFilter;
+
+            return matchesId && matchesName && matchesTransfer;
+        });
+    }, [data, idFilter, nameFilter, transferFilter]);
 
     // Lógica de paginación
-    const totalPages = Math.ceil(data.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
     const paginatedData = useMemo(() => {
         const start = (currentPage - 1) * itemsPerPage;
-        return data.slice(start, start + itemsPerPage);
-    }, [data, currentPage, itemsPerPage]);
+        return filteredData.slice(start, start + itemsPerPage);
+    }, [filteredData, currentPage, itemsPerPage]);
+
+    // Resetear a la primera página cuando cambian los filtros
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [idFilter, nameFilter, transferFilter]);
 
     if (status === "loading") {
         return <TableSkeleton rows={5} />;
@@ -142,6 +165,43 @@ export default function TrackingTable({
 
     return (
         <div className="space-y-4">
+            {/* Filtros */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">
+                <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-text-secondary dark:text-text-tertiary px-1">
+                        Cédula
+                    </label>
+                    <InputField
+                        placeholder="Filtrar por cédula..."
+                        value={idFilter}
+                        onChange={(e) => setIdFilter(e.target.value)}
+                        className="bg-white dark:bg-white/5"
+                    />
+                </div>
+                <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-text-secondary dark:text-text-tertiary px-1">
+                        Nombre
+                    </label>
+                    <InputField
+                        placeholder="Filtrar por nombre..."
+                        value={nameFilter}
+                        onChange={(e) => setNameFilter(e.target.value)}
+                        className="bg-white dark:bg-white/5"
+                    />
+                </div>
+                <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-text-secondary dark:text-text-tertiary px-1">
+                        Traslado
+                    </label>
+                    <Select
+                        options={[{ value: "", label: "Todos" }, ...transferOptions]}
+                        value={transferFilter}
+                        onChange={(value) => setTransferFilter(value)}
+                        className="bg-white dark:bg-white/5"
+                    />
+                </div>
+            </div>
+
             <div className="overflow-x-auto rounded-xl border border-border-light dark:border-white/5 bg-white dark:bg-white/3">
                 <Table>
                     <TableHeader>
@@ -195,7 +255,7 @@ export default function TrackingTable({
                 <Pagination
                     currentPage={currentPage}
                     totalPages={totalPages}
-                    totalItems={data.length}
+                    totalItems={filteredData.length}
                     itemsPerPage={itemsPerPage}
                     onPageChange={setCurrentPage}
                     onItemsPerPageChange={setItemsPerPage}

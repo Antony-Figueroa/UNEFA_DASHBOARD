@@ -6,6 +6,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Tutor } from "../types";
 import * as tutorsService from "../services/tutorsService";
+import { getCareers } from "../../careers/services/careersService";
+import { Career } from "../../careers/types";
 import { useToast } from "../../../context/toast";
 import { ChangeComparison, RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
 
@@ -22,10 +24,12 @@ const TUTOR_LABELS: Record<string, string> = {
   condition: "Condición",
   dedication: "Dedicación",
   category: "Categoría",
+  carreras: "Carreras que atiende",
 };
 
 export const useTutors = () => {
   const [tutors, setTutors] = useState<Tutor[]>([]);
+  const [careers, setCareers] = useState<Career[]>([]);
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState<Error | null>(null);
   const [loadingAction, setLoadingAction] = useState(false);
@@ -34,14 +38,18 @@ export const useTutors = () => {
   const refreshTutors = useCallback(async () => {
     setStatus("loading");
     try {
-      const data = await tutorsService.getTutors();
-      setTutors(data);
+      const [tutorsData, careersData] = await Promise.all([
+        tutorsService.getTutors(),
+        getCareers()
+      ]);
+      setTutors(tutorsData);
+      setCareers(careersData);
       setStatus("success");
       setError(null);
     } catch (e) {
-      console.error("Error loading tutors:", e);
+      console.error("Error loading data:", e);
       setStatus("error");
-      const err = e instanceof Error ? e : new Error("Error al cargar tutores");
+      const err = e instanceof Error ? e : new Error("Error al cargar datos");
       setError(err);
       addToast({
         variant: "error",
@@ -51,15 +59,41 @@ export const useTutors = () => {
     }
   }, [addToast]);
 
+  const getCareerNames = useCallback((careerIds: (string | number)[]) => {
+    return careerIds
+      .map(id => {
+        const career = careers.find(c => String(c.careerId) === String(id));
+        return career ? career.careerName : `ID: ${id}`;
+      })
+      .join(", ");
+  }, [careers]);
+
   useEffect(() => {
     refreshTutors();
   }, [refreshTutors]);
 
   const addTutor = async (tutorData: Omit<Tutor, "tutorId" | "registrationDate">) => {
+    // Validar duplicidad de cédula
+    const isDuplicate = tutors.some(
+      t => t.identificationNumber === tutorData.identificationNumber && 
+           t.identificationPrefix === tutorData.identificationPrefix
+    );
+
+    if (isDuplicate) {
+      addToast({
+        variant: "error",
+        title: "Cédula Duplicada",
+        message: `Ya existe un tutor registrado con la cédula ${tutorData.identificationPrefix}-${tutorData.identificationNumber}.`,
+      });
+      return;
+    }
+
     setLoadingAction(true);
     try {
       const newTutor = await tutorsService.createTutor(tutorData);
       setTutors(prev => [newTutor, ...prev]);
+
+      const careerNames = getCareerNames(newTutor.carreras || []);
 
       addToast({
         variant: "success",
@@ -68,9 +102,12 @@ export const useTutors = () => {
           <>
             <p>El tutor <strong>{newTutor.firstName} {newTutor.lastName}</strong> ha sido registrado correctamente.</p>
             <RecordDetails
-              data={newTutor as unknown as Record<string, unknown>}
+              data={{
+                ...newTutor,
+                carreras: careerNames
+              } as unknown as Record<string, unknown>}
               labels={TUTOR_LABELS}
-              fields={['identificationNumber', 'profession', 'condition']}
+              fields={['identificationNumber', 'profession', 'carreras']}
             />
           </>
         )
@@ -88,6 +125,22 @@ export const useTutors = () => {
   };
 
   const editTutor = async (tutorData: Tutor) => {
+    // Validar duplicidad de cédula (excluyendo al tutor actual)
+    const isDuplicate = tutors.some(
+      t => t.tutorId !== tutorData.tutorId && 
+           t.identificationNumber === tutorData.identificationNumber && 
+           t.identificationPrefix === tutorData.identificationPrefix
+    );
+
+    if (isDuplicate) {
+      addToast({
+        variant: "error",
+        title: "Cédula Duplicada",
+        message: `Ya existe otro tutor registrado con la cédula ${tutorData.identificationPrefix}-${tutorData.identificationNumber}.`,
+      });
+      return;
+    }
+
     setLoadingAction(true);
     try {
       const updatedTutor = await tutorsService.updateTutor(tutorData.tutorId, tutorData);
@@ -95,16 +148,26 @@ export const useTutors = () => {
 
       setTutors(prev => prev.map(t => t.tutorId === tutorData.tutorId ? updatedTutor : t));
 
+      const oldTutorWithNames = oldTutor ? {
+        ...oldTutor,
+        carreras: getCareerNames(oldTutor.carreras || [])
+      } : null;
+
+      const updatedTutorWithNames = {
+        ...updatedTutor,
+        carreras: getCareerNames(updatedTutor.carreras || [])
+      };
+
       addToast({
         variant: "success",
         title: "Actualización Exitosa",
         message: (
           <>
             <p>Se han guardado los cambios para <strong>{updatedTutor.firstName} {updatedTutor.lastName}</strong>.</p>
-            {oldTutor && (
+            {oldTutorWithNames && (
               <ChangeComparison
-                oldData={oldTutor as unknown as Record<string, unknown>}
-                newData={updatedTutor as unknown as Record<string, unknown>}
+                oldData={oldTutorWithNames as unknown as Record<string, unknown>}
+                newData={updatedTutorWithNames as unknown as Record<string, unknown>}
                 labels={TUTOR_LABELS}
               />
             )}

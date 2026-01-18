@@ -3,7 +3,7 @@
  * @description Modal para crear y editar responsables institucionales.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -15,6 +15,7 @@ import CustomSelect from "../../../components/form/CustomSelect";
 import { InstitutionalResponsible } from "../types";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { useLists } from "../../lists/hooks/useLists";
 
 const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
 
@@ -68,6 +69,23 @@ export default function InstitutionalResponsibleModal({
   institutionOptions,
   isLoading = false,
 }: InstitutionalResponsibleModalProps) {
+  const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
+  const { fetchMultipleLists } = useLists();
+
+  const NATIONALITY_OPTIONS = options["Nacionalidad"] || [
+    { value: "V", label: "V" },
+    { value: "E", label: "E" },
+  ];
+
+  const PHONE_PREFIX_OPTIONS = options["CODIGOS_AREA"] || [
+    { value: "0412", label: "0412" },
+    { value: "0414", label: "0414" },
+    { value: "0424", label: "0424" },
+    { value: "0416", label: "0416" },
+    { value: "0426", label: "0426" },
+    { value: "0212", label: "0212" },
+  ];
+
   const {
     register,
     handleSubmit,
@@ -77,7 +95,7 @@ export default function InstitutionalResponsibleModal({
   } = useForm<RespFormData>({
     resolver: zodResolver(respSchema),
     defaultValues: {
-      identificationPrefix: "V-",
+      identificationPrefix: "V",
       identificationNumber: "",
       firstName: "",
       middleName: "",
@@ -96,6 +114,31 @@ export default function InstitutionalResponsibleModal({
     confirmClose,
     cancelClose,
   } = useUnsavedChanges(isDirty, onClose);
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const listNames = ["Nacionalidad", "CODIGOS_AREA"];
+        const data = await fetchMultipleLists(listNames);
+        const mappedOptions: Record<string, { value: string; label: string }[]> = {};
+        
+        Object.entries(data).forEach(([key, values]) => {
+          mappedOptions[key] = values.map(v => ({
+            value: v.name.toUpperCase(),
+            label: v.name.toUpperCase()
+          }));
+        });
+        
+        setOptions(mappedOptions);
+      } catch (error) {
+        console.error("Error loading list options:", error);
+      }
+    };
+
+    if (isOpen) {
+      loadOptions();
+    }
+  }, [isOpen, fetchMultipleLists]);
 
   useEffect(() => {
     if (isOpen) {
@@ -126,7 +169,7 @@ export default function InstitutionalResponsibleModal({
         });
       } else {
         reset({
-          identificationPrefix: "V-",
+          identificationPrefix: "V",
           identificationNumber: "",
           firstName: "",
           middleName: "",
@@ -173,11 +216,7 @@ export default function InstitutionalResponsibleModal({
                     render={({ field }) => (
                       <CustomSelect
                         id="identificationPrefix"
-                        options={[
-                          { value: "V", label: "V" },
-                          { value: "E", label: "E" },
-                          { value: "P", label: "P", disabled: true, disabledReason: "Pasaportes no habilitados temporalmente" },
-                        ]}
+                        options={NATIONALITY_OPTIONS}
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         value={field.value}
@@ -275,14 +314,7 @@ export default function InstitutionalResponsibleModal({
                     control={control}
                     render={({ field }) => (
                       <Select
-                        options={[
-                          { value: "0412", label: "0412" },
-                          { value: "0414", label: "0414" },
-                          { value: "0424", label: "0424" },
-                          { value: "0416", label: "0416" },
-                          { value: "0426", label: "0426" },
-                          { value: "0243", label: "0243" },
-                        ]}
+                        options={PHONE_PREFIX_OPTIONS}
                         onChange={field.onChange}
                         defaultValue={field.value}
                       />

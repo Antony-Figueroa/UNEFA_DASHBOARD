@@ -100,7 +100,7 @@ export const createTracking = async (req: Request, res: Response) => {
       INSTITUTION_ID: 1,
       MANAGER_ID: 1,
       ENROLLMENT: 'N/A',
-      INTERSHIP_STATUS: 1,
+      INTERNSHIP_STATUS: 1,
       INTERNSHIP_TYPE_ID: 1
     };
 

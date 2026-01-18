@@ -39,7 +39,7 @@ interface ProfessionalPractice {
   REGISTRATION_DATE: string;
   CREATION_DATE?: string;
   GRADE?: number;
-  PRACTICES_STATUS?: string;
+  PRACTICES_STATUS?: number;
   TRANSFER?: number;
   TOUR?: string;
   PERIOD_ID?: number;
@@ -49,7 +49,7 @@ interface ProfessionalPractice {
   MANAGER_ID: number;
   OBSERVATION?: string;
   ENROLLMENT: string;
-  INTERSHIP_STATUS?: number;
+  INTERNSHIP_STATUS?: number;
   INTERNSHIP_TYPE_ID?: number;
   t_students?: Student;
   t_internships_period?: { DESCRIPTION: string };
@@ -72,7 +72,7 @@ export const getPreEnrollments = async (req: Request, res: Response) => {
           t_internships_period (DESCRIPTION),
           t_internship_type (NAME)
         `)
-        .eq('PRACTICES_STATUS', 'PRE-INSCRITO')
+        .eq('PRACTICES_STATUS', 1) // 1 para PRE-INSCRITO
         .order('REGISTRATION_DATE', { ascending: false });
 
       if (error) throw error;
@@ -154,7 +154,7 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
           REGISTRATION_DATE: now,
           CREATION_DATE: now,
           GRADE: 0,
-          PRACTICES_STATUS: 'PRE-INSCRITO',
+          PRACTICES_STATUS: 1, // 1 para PRE-INSCRITO
           TRANSFER: 0,
           TOUR: '',
           PERIOD_ID: periodData.PERIOD_ID,
@@ -164,7 +164,7 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
           MANAGER_ID: 1, // Placeholder
           OBSERVATION: '',
           ENROLLMENT: enrollmentCode,
-          INTERSHIP_STATUS: 0, // 0 para pre-inscripción
+          INTERNSHIP_STATUS: 1, // 1 para En Curso
           INTERNSHIP_TYPE_ID: typeData.INTERNSHIP_TYPE_ID
         }])
         .select()

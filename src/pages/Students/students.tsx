@@ -76,7 +76,7 @@ export default function StudentsPage() {
     const { careers } = useCareers();
 
     const careerOptions = useMemo(() =>
-        careers.map(c => ({ value: c.careerId, label: c.careerName })),
+        careers.map(c => ({ value: c.careerId, label: c.careerName.toUpperCase() })),
         [careers]);
 
     const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
@@ -200,6 +200,24 @@ export default function StudentsPage() {
         });
     };
 
+    const handleExportToPreEnrollment = (student: StudentRowData) => {
+        // Esta función solo simula llevar los datos a la ventana/modal de pre-inscripción
+        console.log("Exportando datos a Pre-Inscripción:", student);
+        
+        setConfirmation({
+            isOpen: true,
+            title: "Exportar Datos",
+            message: `¿Desea llevar los datos de ${student.fullNames} a la ventana de Pre-Inscripción? (Solo se transferirán los datos, no se creará el registro aún)`,
+            confirmText: "Exportar",
+            variant: "info",
+            onConfirm: () => {
+                setConfirmation(null);
+                // Aquí iría la lógica de navegación o apertura del modal de pre-inscripción con los datos
+                alert(`Datos de ${student.fullNames} preparados para Pre-Inscripción`);
+            }
+        });
+    };
+
     return (
         <>
             <PageMeta title="Gestión de Estudiantes" description="Administración de estudiantes" />
@@ -260,6 +278,7 @@ export default function StudentsPage() {
                                 activeTab={activeTab}
                                 onEdit={handleEdit}
                                 onToggleStatus={handleToggleStatus}
+                                onExportToPreEnrollment={handleExportToPreEnrollment}
                                 onView={setViewStudent}
                                 onBulkDelete={handleBulkDelete}
                                 onBulkRestore={handleBulkRestore}

@@ -25,6 +25,16 @@ export const getStudents = async (): Promise<PaginatedResponse<Student>> => {
 };
 
 /**
+ * Verifica la disponibilidad de una cédula o email.
+ */
+export const checkAvailability = async (type: 'ci' | 'email', value: string, excludeId?: string): Promise<{ available: boolean; status?: number; studentId?: number }> => {
+  const response = await apiClient.get(`${API_URL}/check-availability`, {
+    params: { type, value, excludeId }
+  });
+  return response.data;
+};
+
+/**
  * Crea un estudiante en la API.
  */
 export const createStudent = async (student: Omit<Student, "studentId" | "enrollmentDate">): Promise<Student> => {

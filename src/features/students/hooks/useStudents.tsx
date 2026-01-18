@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { AxiosError } from "axios";
 import { Student } from "../types";
 import * as studentsService from "../services/studentsService";
 import { useToast } from "../../../context/toast";
@@ -32,22 +33,29 @@ export const useStudents = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [status, setStatus] = useState<Status>("loading");
   const [loadingAction, setLoadingAction] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const { addToast } = useToast();
 
   const refreshStudents = useCallback(async () => {
     setStatus("loading");
+    setError(null);
     try {
       const response = await studentsService.getStudents();
-      // Validamos que response.data sea un array antes de asignarlo
       const studentsArray = Array.isArray(response.data) ? response.data : [];
       setStudents(studentsArray);
       setStatus("success");
     } catch (e) {
-      console.error("Error loading students:", e);
+      const err = e instanceof Error ? e : new Error("Error desconocido al cargar estudiantes");
+      setError(err);
       setStatus("error");
-      setStudents([]); // Aseguramos que sea un array en caso de error
+      setStudents([]);
+      addToast({
+        variant: "error",
+        title: "Error de Conexión",
+        message: "No se pudieron cargar los estudiantes. Verifique su conexión.",
+      });
     }
-  }, []);
+  }, [addToast]);
 
   useEffect(() => {
     refreshStudents();
@@ -57,7 +65,7 @@ export const useStudents = () => {
     setLoadingAction(true);
     try {
       const newStudent = await studentsService.createStudent(studentData);
-      setStudents(prev => [newStudent, ...prev]);
+      await refreshStudents();
       
       addToast({
         variant: "success",
@@ -73,13 +81,15 @@ export const useStudents = () => {
           </>
         ),
       });
-    } catch (error) {
-      console.error("Error adding student:", error);
+    } catch (e) {
+      const axiosError = e as AxiosError<{ message: string }>;
+      const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error al registrar el estudiante";
       addToast({
         variant: "error",
-        title: "Error",
-        message: "No se pudo registrar el estudiante.",
+        title: "Error de Registro",
+        message: errorMessage,
       });
+      throw e;
     } finally {
       setLoadingAction(false);
     }
@@ -90,8 +100,7 @@ export const useStudents = () => {
     try {
       const oldStudent = students.find(s => s.studentId === studentData.studentId);
       const updatedStudent = await studentsService.updateStudent(studentData.studentId, studentData);
-      
-      setStudents(prev => prev.map(s => s.studentId === studentData.studentId ? updatedStudent : s));
+      await refreshStudents();
       
       addToast({
         variant: "success",
@@ -107,13 +116,15 @@ export const useStudents = () => {
           </>
         ),
       });
-    } catch (error) {
-      console.error("Error editing student:", error);
+    } catch (e) {
+      const axiosError = e as AxiosError<{ message: string }>;
+      const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error al actualizar el estudiante";
       addToast({
         variant: "error",
-        title: "Error",
-        message: "No se pudo actualizar el estudiante.",
+        title: "Error de Actualización",
+        message: errorMessage,
       });
+      throw e;
     } finally {
       setLoadingAction(false);
     }
@@ -123,21 +134,21 @@ export const useStudents = () => {
     setLoadingAction(true);
     try {
       const newStatus = !student.status;
-      const updatedStudent = await studentsService.toggleStudentStatus(student.studentId, newStatus);
-      
-      setStudents(prev => prev.map(s => s.studentId === student.studentId ? updatedStudent : s));
+      await studentsService.toggleStudentStatus(student.studentId, newStatus);
+      await refreshStudents();
 
       addToast({
         variant: newStatus ? "success" : "warning",
         title: newStatus ? "Estudiante Restaurado" : "Estudiante Inactivado",
         message: `El estudiante ${student.firstName} ${student.lastName} ahora está ${newStatus ? 'activo' : 'inactivo'}.`,
       });
-    } catch (error) {
-      console.error("Error toggling student status:", error);
+    } catch (e) {
+      const axiosError = e as AxiosError<{ message: string }>;
+      const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error al cambiar el estado";
       addToast({
         variant: "error",
         title: "Error",
-        message: "No se pudo cambiar el estado del estudiante.",
+        message: errorMessage,
       });
     } finally {
       setLoadingAction(false);
@@ -147,20 +158,22 @@ export const useStudents = () => {
   const bulkRemoveStudents = async (ids: string[]) => {
     setLoadingAction(true);
     try {
+      // Por ahora usamos Promise.all hasta tener un endpoint masivo si es necesario
       await Promise.all(ids.map(id => studentsService.toggleStudentStatus(id, false)));
-      setStudents(prev => prev.map(s => ids.includes(s.studentId) ? { ...s, status: false } : s));
+      await refreshStudents();
       
       addToast({
         variant: "warning",
-        title: "Eliminación Masiva",
+        title: "Inactivación Masiva",
         message: `Se han inactivado ${ids.length} estudiantes correctamente.`,
       });
-    } catch (error) {
-      console.error("Error in bulk remove:", error);
+    } catch (e) {
+      const axiosError = e as AxiosError<{ message: string }>;
+      const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error en inactivación masiva";
       addToast({
         variant: "error",
-        title: "Error",
-        message: "Ocurrió un error al inactivar los estudiantes.",
+        title: "Error Masivo",
+        message: errorMessage,
       });
     } finally {
       setLoadingAction(false);
@@ -171,19 +184,20 @@ export const useStudents = () => {
     setLoadingAction(true);
     try {
       await Promise.all(ids.map(id => studentsService.toggleStudentStatus(id, true)));
-      setStudents(prev => prev.map(s => ids.includes(s.studentId) ? { ...s, status: true } : s));
+      await refreshStudents();
       
       addToast({
         variant: "success",
         title: "Restauración Masiva",
         message: `Se han restaurado ${ids.length} estudiantes exitosamente.`,
       });
-    } catch (error) {
-      console.error("Error in bulk restore:", error);
+    } catch (e) {
+      const axiosError = e as AxiosError<{ message: string }>;
+      const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error en restauración masiva";
       addToast({
         variant: "error",
-        title: "Error",
-        message: "Ocurrió un error al restaurar los estudiantes.",
+        title: "Error Masivo",
+        message: errorMessage,
       });
     } finally {
       setLoadingAction(false);
@@ -194,7 +208,7 @@ export const useStudents = () => {
     students,
     status,
     loadingAction,
-    error: null,
+    error,
     addStudent,
     editStudent,
     toggleStatus,

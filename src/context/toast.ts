@@ -19,7 +19,7 @@ export interface Toast {
 
 export interface ToastContextType {
   toasts: Toast[];
-  addToast: (toast: Omit<Toast, "id" | "timestamp">) => void;
+  addToast: (toast: Omit<Toast, "id" | "timestamp">) => string;
   removeToast: (id: string) => void;
 }
 

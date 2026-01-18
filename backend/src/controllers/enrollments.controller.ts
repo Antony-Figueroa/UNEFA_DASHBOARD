@@ -5,7 +5,7 @@ import { cacheManager } from '../lib/cache-manager.js';
 const TABLE_NAME = 't_professional_practices';
 const CACHE_PREFIX = 'enrollments:';
 const CACHE_TTL = 300000; // 5 minutes for enrollments
-const ENROLLMENT_COLUMNS = 'PROFESSIONAL_PRACTICE_ID, START_DATE, END_DATE, REPORT_TITLE, REGISTRATION_DATE, GRADE, PRACTICES_STATUS, TRANSFER, TOUR, PERIOD_ID, INSTITUTION_ID, STUDENTS_ID, STATUS, MANAGER_ID, OBSERVATION, ENROLLMENT, INTERSHIP_STATUS, INTERNSHIP_TYPE_ID';
+const ENROLLMENT_COLUMNS = 'PROFESSIONAL_PRACTICE_ID, START_DATE, END_DATE, REPORT_TITLE, REGISTRATION_DATE, GRADE, PRACTICES_STATUS, TRANSFER, TOUR, PERIOD_ID, INSTITUTION_ID, STUDENTS_ID, STATUS, MANAGER_ID, OBSERVATION, ENROLLMENT, INTERNSHIP_STATUS, INTERNSHIP_TYPE_ID';
 
 const handleDbError = (res: Response, error: unknown) => {
   console.error('Database Error:', error);
@@ -56,7 +56,7 @@ interface ProfessionalPractice {
   REGISTRATION_DATE: string;
   CREATION_DATE?: string;
   GRADE?: number;
-  PRACTICES_STATUS?: string;
+  PRACTICES_STATUS?: number;
   TRANSFER?: number;
   TOUR?: string;
   PERIOD_ID?: number;
@@ -66,7 +66,7 @@ interface ProfessionalPractice {
   MANAGER_ID: number;
   OBSERVATION?: string;
   ENROLLMENT: string;
-  INTERSHIP_STATUS?: number;
+  INTERNSHIP_STATUS?: number;
   INTERNSHIP_TYPE_ID?: number;
   t_students?: Student;
   t_internships_period?: { DESCRIPTION: string };
@@ -203,7 +203,7 @@ export const createEnrollment = async (req: Request, res: Response) => {
           REGISTRATION_DATE: now,
           CREATION_DATE: now,
           GRADE: 0,
-          PRACTICES_STATUS: 'ACTIVA',
+          PRACTICES_STATUS: 2, // 2 para INSCRITO
           TRANSFER: 0,
           TOUR: '',
           PERIOD_ID: periodData.PERIOD_ID,
@@ -213,7 +213,7 @@ export const createEnrollment = async (req: Request, res: Response) => {
           MANAGER_ID: parseInt(institutionResponsibleId),
           OBSERVATION: '',
           ENROLLMENT: '', // Se podría generar un código si fuera necesario
-          INTERSHIP_STATUS: 1,
+          INTERNSHIP_STATUS: 1,
           INTERNSHIP_TYPE_ID: typeData.INTERNSHIP_TYPE_ID
         }])
         .select()

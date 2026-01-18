@@ -3,7 +3,7 @@ export interface InternshipType {
   NAME: string;
   ABBREVIATION: string;
   PRIORITY: number;
-  STATUS: number;
+  STATUS: number; // 1=activo, 0=inactivo
   CREATION_DATE: string;
 }
 

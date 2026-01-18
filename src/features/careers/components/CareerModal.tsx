@@ -29,7 +29,7 @@ const createCareerSchema = (existingCareers: Career[], editingCareerId?: string 
   z.object({
     careerName: z.string()
       .min(1, "El nombre de la carrera es obligatorio")
-      .regex(/^[A-ZÁÉÍÓÚÑ\s]+$/, "El nombre solo permite letras mayúsculas y acentos")
+      .regex(/^[A-ZÁÉÍÓÚÑ\s]+$/, "El nombre solo permite letras y acentos (sin números)")
       .transform(val => val.toUpperCase())
       .refine(val => {
         const normalizedVal = val.trim().toUpperCase();
@@ -40,7 +40,7 @@ const createCareerSchema = (existingCareers: Career[], editingCareerId?: string 
       }, "Ya existe una carrera con este nombre"),
     careerCode: z.string()
       .min(1, "El código es obligatorio")
-      .max(4, "El código no puede tener más de 4 números")
+      .max(8, "El código no puede tener más de 8 números")
       .regex(/^\d+$/, "El código solo permite números")
       .refine(val => {
         const normalizedVal = val.trim();
@@ -52,7 +52,7 @@ const createCareerSchema = (existingCareers: Career[], editingCareerId?: string 
     minimumGrade: z.string().min(1, "Debe seleccionar una nota mínima"),
     careerAbbreviation: z.string()
       .min(1, "La abreviatura es obligatoria")
-      .regex(/^[A-ZÁÉÍÓÚÑ\d\W\s]+$/, "La abreviatura solo permite letras, números y caracteres especiales")
+      .regex(/^[A-ZÁÉÍÓÚÑ\W\s]+$/, "La abreviatura no permite números")
       .transform(val => val.toUpperCase()),
     careerType: z.enum(['CORTA', 'LARGA'], {
       message: "Debe seleccionar un tipo de carrera"
@@ -222,7 +222,7 @@ export default function CareerModal({
                 error={!!errors.careerName}
                 hint={errors.careerName?.message}
                 onChange={(e) => {
-                  e.target.value = e.target.value.toUpperCase();
+                  e.target.value = e.target.value.replace(/[0-9]/g, '').toUpperCase();
                   register("careerName").onChange(e);
                 }}
               />
@@ -238,6 +238,10 @@ export default function CareerModal({
                 error={!!errors.careerCode}
                 hint={errors.careerCode?.message}
                 disabled={!!editingCareer}
+                onChange={(e) => {
+                  e.target.value = e.target.value.replace(/\D/g, '');
+                  register("careerCode").onChange(e);
+                }}
               />
               {editingCareer && (
                 <p className="mt-1 text-[10px] text-text-tertiary italic">El código no es editable.</p>
@@ -300,7 +304,7 @@ export default function CareerModal({
                 error={!!errors.careerAbbreviation}
                 hint={errors.careerAbbreviation?.message}
                 onChange={(e) => {
-                  e.target.value = e.target.value.toUpperCase();
+                  e.target.value = e.target.value.replace(/[0-9]/g, '').toUpperCase();
                   register("careerAbbreviation").onChange(e);
                 }}
               />

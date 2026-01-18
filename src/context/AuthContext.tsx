@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import * as authService from "../features/auth/services/authService";
 import { AuthContext, type AuthUser } from "./auth";
 
@@ -6,7 +6,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const data = await authService.getMe();
       if (data.success && data.user) {
@@ -19,7 +19,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     // Evitar verificaciones de autenticación en páginas públicas
@@ -32,9 +32,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     try {
       await authService.logout();
     } catch (error) {
@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setUser(null);
     }
-  };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, loading, signOut, checkAuth }}>

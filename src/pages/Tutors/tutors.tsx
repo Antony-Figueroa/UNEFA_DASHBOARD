@@ -22,6 +22,7 @@ import TutorViewModal from "../../features/tutors/components/TutorViewModal";
 import { useTutors } from "../../features/tutors/hooks/useTutors";
 import { Tutor, TutorRowData } from "../../features/tutors/types";
 import { formatDateTime } from "../../utils/date";
+import { useLists } from "../../features/lists/hooks/useLists";
 
 /**
  * Transforma un objeto de tipo Tutor (dominio) a TutorRowData (vista).
@@ -34,6 +35,68 @@ const formatTutorToRow = (t: Tutor): TutorRowData => ({
 
 export default function TutorsPage() {
     const [pageLoading, setPageLoading] = useState(true);
+    const { fetchMultipleLists } = useLists();
+    const [dynamicLists, setDynamicLists] = useState<Record<string, { value: string; label: string }[]>>({});
+
+    useEffect(() => {
+        const loadDynamicLists = async () => {
+            try {
+                const listNames = ["Profesión", "Sexo", "Condición", "Dedicación", "Categoría"];
+                const data = await fetchMultipleLists(listNames);
+                
+                const mapped: Record<string, { value: string; label: string }[]> = {};
+                
+                // Fallbacks for critical lists
+                const fallbacks: Record<string, { value: string; label: string }[]> = {
+                    "Profesión": [
+                        { value: "INGENIERO", label: "INGENIERO" },
+                        { value: "LICENCIADO", label: "LICENCIADO" },
+                        { value: "ABOGADO", label: "ABOGADO" },
+                        { value: "MÉDICO", label: "MÉDICO" },
+                    ],
+                    "Sexo": [
+                        { value: "FEMENINO", label: "FEMENINO" },
+                        { value: "MASCULINO", label: "MASCULINO" },
+                    ],
+                    "Condición": [
+                        { value: "ORDINARIO", label: "ORDINARIO" },
+                        { value: "CONTRATADO", label: "CONTRATADO" },
+                    ],
+                    "Dedicación": [
+                        { value: "TIEMPO COMPLETO", label: "TIEMPO COMPLETO" },
+                        { value: "MEDIO TIEMPO", label: "MEDIO TIEMPO" },
+                        { value: "TIEMPO CONVENCIONAL", label: "TIEMPO CONVENCIONAL" },
+                        { value: "DEDICACIÓN EXCLUSIVA", label: "DEDICACIÓN EXCLUSIVA" },
+                    ],
+                    "Categoría": [
+                        { value: "INSTRUCTOR", label: "INSTRUCTOR" },
+                        { value: "ASISTENTE", label: "ASISTENTE" },
+                        { value: "AGREGADO", label: "AGREGADO" },
+                        { value: "ASOCIADO", label: "ASOCIADO" },
+                        { value: "TITULAR", label: "TITULAR" },
+                    ]
+                };
+
+                listNames.forEach(name => {
+                    if (data[name] && data[name].length > 0) {
+                        mapped[name] = data[name].map(v => ({
+                            value: v.name.toUpperCase(),
+                            label: v.name.toUpperCase()
+                        }));
+                    } else {
+                        mapped[name] = fallbacks[name] || [];
+                    }
+                });
+
+                setDynamicLists(mapped);
+            } catch (error) {
+                console.error("Error loading dynamic lists for tutors:", error);
+            } finally {
+                setPageLoading(false);
+            }
+        };
+        loadDynamicLists();
+    }, [fetchMultipleLists]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -53,14 +116,6 @@ export default function TutorsPage() {
         bulkRemoveTutors,
         bulkRestoreTutors,
     } = useTutors();
-
-    // Profesiones predefinidas (pueden venir de un hook en el futuro)
-    const professionOptions = [
-        { value: "INGENIERO EN SISTEMAS", label: "INGENIERO EN SISTEMAS" },
-        { value: "INGENIERO INDUSTRIAL", label: "INGENIERO INDUSTRIAL" },
-        { value: "LICENCIADO EN ADMINISTRACIÓN", label: "LICENCIADO EN ADMINISTRACIÓN" },
-        { value: "ABOGADO", label: "ABOGADO" },
-    ];
 
     const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -231,7 +286,11 @@ export default function TutorsPage() {
                                 onBulkDelete={handleBulkDelete}
                                 onBulkRestore={handleBulkRestore}
                                 inactiveMode={activeTab === "Inactivas"}
-                                professionOptions={professionOptions}
+                                professionOptions={dynamicLists["Profesión"] || []}
+                                sexOptions={dynamicLists["Sexo"] || []}
+                                conditionOptions={dynamicLists["Condición"] || []}
+                                dedicationOptions={dynamicLists["Dedicación"] || []}
+                                categoryOptions={dynamicLists["Categoría"] || []}
                                 loading={loadingAction}
                             />
                         </SkeletonLoader>
@@ -243,6 +302,7 @@ export default function TutorsPage() {
                         onSave={handleSave}
                         editingTutor={editingTutor}
                         isLoading={loadingAction}
+                        tutors={tutors}
                     />
 
                     <TutorViewModal

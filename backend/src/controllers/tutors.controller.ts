@@ -50,16 +50,32 @@ interface DBTutor {
   STATUS: number;
 }
 
+interface DBVisit {
+  VISIT_ID: number;
+}
+
+interface DBProfessionalPracticesTutor {
+  PROFESSIONAL_PRACTICES_TUTOR_ID: number;
+}
+
+interface DBTutorCareer {
+  CAREER_ID: number;
+}
+
 export const getTutors = async (_req: Request, res: Response) => {
   try {
     const data = await dbManager.withRetry(async (supabase) => {
       const { data, error } = await supabase
         .from(TABLE_NAME)
-        .select('*, t_tutors_carrers(TUTOR_ID)')
+        .select('*, t_visit(VISIT_ID), t_professional_practices_tutor(PROFESSIONAL_PRACTICES_TUTOR_ID), t_tutor_career(CAREER_ID)')
         .order('NAME', { ascending: true });
 
       if (error) throw error;
-      return data as (DBTutor & { t_tutors_carrers: any[] })[];
+      return data as (DBTutor & { 
+        t_visit: DBVisit[], 
+        t_professional_practices_tutor: DBProfessionalPracticesTutor[],
+        t_tutor_career: DBTutorCareer[]
+      })[];
     });
 
     // Mapear de DB a Frontend
@@ -67,6 +83,13 @@ export const getTutors = async (_req: Request, res: Response) => {
       const ciParts = (t.TUTOR_CI || '').split('-');
       const prefix = ciParts.length > 1 ? ciParts[0] : 'V';
       const number = ciParts.length > 1 ? ciParts[1] : ciParts[0];
+
+      const isInUse = (Array.isArray(t.t_visit) && t.t_visit.length > 0) || 
+                     (Array.isArray(t.t_professional_practices_tutor) && t.t_professional_practices_tutor.length > 0);
+
+      const careers = Array.isArray(t.t_tutor_career) 
+        ? t.t_tutor_career.map(tc => String(tc.CAREER_ID)) 
+        : [];
 
       return {
         tutorId: String(t.TUTOR_ID),
@@ -85,8 +108,8 @@ export const getTutors = async (_req: Request, res: Response) => {
         category: t.CATEGORY,
         registrationDate: t.CREATION_DATE,
         status: t.STATUS === 1,
-        carreras: [],
-        isInUse: Array.isArray(t.t_tutors_carrers) && t.t_tutors_carrers.length > 0
+        carreras: careers,
+        isInUse
       };
     });
 
@@ -96,10 +119,14 @@ export const getTutors = async (_req: Request, res: Response) => {
   }
 };
 
-const mapDBToFrontend = (t: DBTutor) => {
+const mapDBToFrontend = (t: DBTutor & { t_tutor_career?: DBTutorCareer[] }) => {
   const ciParts = (t.TUTOR_CI || '').split('-');
   const prefix = ciParts.length > 1 ? ciParts[0] : 'V';
   const number = ciParts.length > 1 ? ciParts[1] : ciParts[0];
+
+  const careers = Array.isArray(t.t_tutor_career) 
+    ? t.t_tutor_career.map(tc => String(tc.CAREER_ID)) 
+    : [];
 
   return {
     tutorId: String(t.TUTOR_ID),
@@ -118,7 +145,7 @@ const mapDBToFrontend = (t: DBTutor) => {
     category: t.CATEGORY,
     registrationDate: t.CREATION_DATE,
     status: t.STATUS === 1,
-    carreras: []
+    carreras: careers
   };
 };
 
@@ -143,14 +170,41 @@ export const createTutor = async (req: Request, res: Response) => {
     };
 
     const data = await dbManager.withRetry(async (supabase) => {
-      const { data, error } = await supabase
+      // 1. Insertar tutor
+      const { data: tutorData, error: tutorError } = await supabase
         .from(TABLE_NAME)
         .insert([dbData])
         .select()
         .single();
 
-      if (error) throw error;
-      return data as DBTutor;
+      if (tutorError) throw tutorError;
+      const newTutor = tutorData as DBTutor;
+
+      // 2. Insertar carreras si existen
+      if (Array.isArray(t.carreras) && t.carreras.length > 0) {
+        const careerData = t.carreras.map((careerId: string | number) => ({
+          TUTOR_ID: newTutor.TUTOR_ID,
+          CAREER_ID: Number(careerId)
+        }));
+
+        const { error: careerError } = await supabase
+          .from('t_tutor_career')
+          .insert(careerData);
+
+        if (careerError) throw careerError;
+        
+        // Volver a obtener el tutor con las carreras para el retorno
+        const { data: finalData, error: finalError } = await supabase
+          .from(TABLE_NAME)
+          .select('*, t_tutor_career(CAREER_ID)')
+          .eq('TUTOR_ID', newTutor.TUTOR_ID)
+          .single();
+          
+        if (finalError) throw finalError;
+        return finalData as (DBTutor & { t_tutor_career: DBTutorCareer[] });
+      }
+
+      return newTutor;
     });
 
     res.status(201).json(mapDBToFrontend(data));
@@ -180,15 +234,46 @@ export const updateTutor = async (req: Request, res: Response) => {
     };
 
     const data = await dbManager.withRetry(async (supabase) => {
-      const { data, error } = await supabase
+      // 1. Actualizar tutor
+      const { error: tutorError } = await supabase
         .from(TABLE_NAME)
         .update(dbData)
-        .eq('TUTOR_ID', id)
-        .select()
-        .single();
+        .eq('TUTOR_ID', id);
 
-      if (error) throw error;
-      return data as DBTutor;
+      if (tutorError) throw tutorError;
+
+      // 2. Actualizar carreras (Borrar y reinsertar)
+      // Primero borramos todas las asociaciones actuales
+      const { error: deleteError } = await supabase
+        .from('t_tutor_career')
+        .delete()
+        .eq('TUTOR_ID', id);
+
+      if (deleteError) throw deleteError;
+
+      // Luego insertamos las nuevas si existen
+      if (Array.isArray(t.carreras) && t.carreras.length > 0) {
+        const careerData = t.carreras.map((careerId: string | number) => ({
+          TUTOR_ID: id,
+          CAREER_ID: Number(careerId)
+        }));
+
+        const { error: careerError } = await supabase
+          .from('t_tutor_career')
+          .insert(careerData);
+
+        if (careerError) throw careerError;
+      }
+
+      // Volver a obtener el tutor con las carreras para el retorno
+      const { data: finalData, error: finalError } = await supabase
+        .from(TABLE_NAME)
+        .select('*, t_tutor_career(CAREER_ID)')
+        .eq('TUTOR_ID', id)
+        .single();
+        
+      if (finalError) throw finalError;
+      return finalData as (DBTutor & { t_tutor_career: DBTutorCareer[] });
     });
 
     res.json(mapDBToFrontend(data));

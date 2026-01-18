@@ -15,6 +15,7 @@ interface SelectProps {
   value?: string;
   disabled?: boolean;
   onBlur?: () => void;
+  error?: boolean;
 }
 
 const Select: React.FC<SelectProps> = ({
@@ -27,6 +28,7 @@ const Select: React.FC<SelectProps> = ({
   value,
   disabled = false,
   onBlur,
+  error = false,
 }) => {
   // Sync state if value or defaultValue changes
   const [selectedValue, setSelectedValue] = useState<string>(value !== undefined ? value : defaultValue);
@@ -54,7 +56,11 @@ const Select: React.FC<SelectProps> = ({
       <select
         id={id}
         disabled={disabled}
-        className={`h-11 w-full appearance-none rounded-lg border border-border-medium bg-transparent px-4 py-2.5 pr-11 text-sm shadow-theme-xs placeholder:text-text-tertiary focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary dark:focus:border-brand-800 ${selectedValue
+        className={`h-11 w-full appearance-none rounded-lg border bg-transparent px-4 py-2.5 pr-11 text-sm shadow-theme-xs placeholder:text-text-tertiary focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:bg-gray-100 disabled:opacity-70 disabled:cursor-not-allowed dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary dark:disabled:bg-white/5 ${
+          error 
+            ? "border-error-500 focus:border-error-500 focus:ring-error-500/10 dark:border-error-800" 
+            : "border-border-medium focus:border-brand-300 dark:border-border-dark dark:focus:border-brand-800"
+        } ${selectedValue
             ? "text-text-primary dark:text-text-emphasis"
             : "text-text-tertiary dark:text-text-tertiary"
           } ${className}`}

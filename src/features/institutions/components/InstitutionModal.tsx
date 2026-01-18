@@ -3,7 +3,7 @@
  * @description Modal con formulario para crear y editar instituciones.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -16,6 +16,7 @@ import Button from "../../../components/ui/button/Button";
 import { useInternshipTypes } from "../../internship-types/hooks/useInternshipTypes";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { useLists } from "../../lists/hooks/useLists";
 
 interface InstitutionModalProps {
   isOpen: boolean;
@@ -53,6 +54,9 @@ export default function InstitutionModal({
   careerOptions,
   isLoading = false,
 }: InstitutionModalProps) {
+  const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
+  const { fetchMultipleLists } = useLists();
+
   const {
     register,
     handleSubmit,
@@ -85,6 +89,65 @@ export default function InstitutionModal({
 
   const { options: practiceOptions, fetchByCareer } = useInternshipTypes();
   const watchedCareerId = useWatch({ control, name: "careerId" });
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const listNames = [
+          "CODIGOS_AREA",
+          "Región",
+          "Núcleo",
+          "Extensión",
+          "Tipo Institución"
+        ];
+        const data = await fetchMultipleLists(listNames);
+        const mappedOptions: Record<string, { value: string; label: string }[]> = {};
+        
+        Object.entries(data).forEach(([key, values]) => {
+          mappedOptions[key] = values.map(v => ({
+            value: v.name.toUpperCase(),
+            label: v.name.toUpperCase()
+          }));
+        });
+        
+        setOptions(mappedOptions);
+      } catch (error) {
+        console.error("Error loading list options:", error);
+      }
+    };
+
+    if (isOpen) {
+      loadOptions();
+    }
+  }, [isOpen, fetchMultipleLists]);
+
+  const VENEZUELA_PHONE_PREFIXES = options.CODIGOS_AREA || [
+    { value: "0412", label: "0412" },
+    { value: "0414", label: "0414" },
+    { value: "0424", label: "0424" },
+    { value: "0416", label: "0416" },
+    { value: "0426", label: "0426" },
+    { value: "0212", label: "0212" },
+  ];
+
+  const REGION_OPTIONS = options["Región"] || [
+    { value: "LOS LLANOS", label: "LOS LLANOS" },
+  ];
+
+  const NUCLEUS_OPTIONS = options["Núcleo"] || [
+    { value: "PORTUGUESA", label: "PORTUGUESA" },
+  ];
+
+  const EXTENSION_OPTIONS = options["Extensión"] || [
+    { value: "ACARIGUA", label: "ACARIGUA" },
+    { value: "TURÉN", label: "TURÉN" },
+    { value: "GUANARE", label: "GUANARE" },
+  ];
+
+  const INSTITUTION_TYPE_OPTIONS = options["Tipo Institución"] || [
+    { value: "PUB", label: "PÚBLICA" },
+    { value: "PRI", label: "PRIVADA" },
+  ];
 
   useEffect(() => {
     if (watchedCareerId) {
@@ -199,16 +262,7 @@ export default function InstitutionModal({
                   control={control}
                   render={({ field }) => (
                     <Select
-                      options={[
-                        { value: "0412", label: "0412" },
-                        { value: "0414", label: "0414" },
-                        { value: "0424", label: "0424" },
-                        { value: "0416", label: "0416" },
-                        { value: "0426", label: "0426" },
-                        { value: "0243", label: "0243" },
-                        { value: "0244", label: "0244" },
-                        { value: "0245", label: "0245" },
-                      ]}
+                      options={VENEZUELA_PHONE_PREFIXES}
                       onChange={field.onChange}
                       defaultValue={field.value}
                       placeholder="Prefijo"
@@ -228,26 +282,6 @@ export default function InstitutionModal({
               <p className="mt-1 text-xs text-red-500">
                 {errors.phonePrefix?.message || errors.phoneNumber?.message}
               </p>
-            )}
-          </div>
-          
-          <div>
-            <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Tipo Práctica *</label>
-            <Controller
-              name="practiceType"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  options={practiceOptions}
-                  onChange={field.onChange}
-                  defaultValue={field.value}
-                  disabled={!watchedCareerId || practiceOptions.length === 0}
-                  placeholder={!watchedCareerId ? "Seleccione carrera primero" : "Seleccione tipo"}
-                />
-              )}
-            />
-            {isSubmitted && errors.practiceType && (
-              <p className="mt-1 text-xs text-red-500">{errors.practiceType.message}</p>
             )}
           </div>
 
@@ -271,15 +305,36 @@ export default function InstitutionModal({
           </div>
 
           <div>
+            <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Tipo Práctica *</label>
+            <Controller
+              name="practiceType"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  options={practiceOptions}
+                  onChange={field.onChange}
+                  defaultValue={field.value}
+                  disabled={!watchedCareerId || practiceOptions.length === 0}
+                  placeholder={!watchedCareerId ? "Seleccione carrera primero" : "Seleccione tipo"}
+                />
+              )}
+            />
+            {isSubmitted && errors.practiceType && (
+              <p className="mt-1 text-xs text-red-500">{errors.practiceType.message}</p>
+            )}
+          </div>
+
+          <div>
             <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Región *</label>
             <Controller
               name="region"
               control={control}
               render={({ field }) => (
                 <Select
-                  options={[{ value: "Central", label: "Central" }, { value: "Capital", label: "Capital" }]}
+                  options={REGION_OPTIONS}
                   onChange={field.onChange}
                   defaultValue={field.value}
+                  placeholder="Seleccione región"
                 />
               )}
             />
@@ -295,9 +350,10 @@ export default function InstitutionModal({
               control={control}
               render={({ field }) => (
                 <Select
-                  options={[{ value: "Aragua", label: "Aragua" }, { value: "Carabobo", label: "Carabobo" }]}
+                  options={NUCLEUS_OPTIONS}
                   onChange={field.onChange}
                   defaultValue={field.value}
+                  placeholder="Seleccione núcleo"
                 />
               )}
             />
@@ -313,9 +369,10 @@ export default function InstitutionModal({
               control={control}
               render={({ field }) => (
                 <Select
-                  options={[{ value: "Maracay", label: "Maracay" }, { value: "Valencia", label: "Valencia" }]}
+                  options={EXTENSION_OPTIONS}
                   onChange={field.onChange}
                   defaultValue={field.value}
+                  placeholder="Seleccione extensión"
                 />
               )}
             />
@@ -331,9 +388,10 @@ export default function InstitutionModal({
               control={control}
               render={({ field }) => (
                 <Select
-                  options={[{ value: "Pública", label: "Pública" }, { value: "Privada", label: "Privada" }]}
+                  options={INSTITUTION_TYPE_OPTIONS}
                   onChange={field.onChange}
                   defaultValue={field.value}
+                  placeholder="Seleccione tipo"
                 />
               )}
             />

@@ -69,6 +69,7 @@ const fromApi = (dto: PeriodoApiDTO): Periodo => {
   const periodStatusRaw = dto.PERIOD_STATUS ?? dto.periodStatus ?? dto.estadoPeriodo ?? dto.period_status ?? 1;
   const statusRaw = dto.STATUS ?? dto.status ?? dto.activo ?? dto.enabled ?? true;
   const code = dto.T_INTERNSHIPS_CODE ?? dto.code ?? dto.codigo ?? "";
+  const isInUseRaw = dto.isInUse ?? dto.IS_IN_USE ?? dto.is_in_use ?? false;
 
   return {
     periodId: String(periodId),
@@ -79,6 +80,7 @@ const fromApi = (dto: PeriodoApiDTO): Periodo => {
     periodStatus: (Number(periodStatusRaw) || 1) as 1 | 2 | 3,
     status: typeof statusRaw === 'number' ? statusRaw === 1 : !!statusRaw,
     code: String(code),
+    isInUse: !!isInUseRaw,
   };
 };
 

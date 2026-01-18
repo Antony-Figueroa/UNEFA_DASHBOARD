@@ -22,6 +22,8 @@ import Checkbox from "../../../components/form/input/Checkbox";
 import SecurePasswordCell from "./SecurePasswordCell";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 
+import { useLists } from "../../lists/hooks/useLists";
+
 interface User {
   id: number;
   userCi: string;
@@ -38,7 +40,7 @@ interface UserManagementTableProps {
   activeTab?: "Activos" | "Inactivos";
 }
 
-const ROLES_MAP: Record<number, string> = {
+const DEFAULT_ROLES_MAP: Record<number, string> = {
   0: "MAESTRO",
   1: "ADMIN",
   2: "ASISTENTE"
@@ -154,10 +156,46 @@ const ActionButtons = ({
 const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTableProps) => {
   const { addToast } = useToast();
   const { user: currentUser } = useAuth();
+  const { fetchMultipleLists } = useLists();
   
   // Estados de datos y filtrado
   const [users, setUsers] = useState<User[]>([]);
   const [activeTab, setActiveTab] = useState<"Activos" | "Inactivos">("Activos");
+  const [rolesMap, setRolesMap] = useState<Record<number, string>>(DEFAULT_ROLES_MAP);
+  const [rolesOptions, setRolesOptions] = useState<{ value: string; label: string }[]>([]);
+
+  // Cargar opciones de roles desde t_list
+  useEffect(() => {
+    const loadRoles = async () => {
+      try {
+        const data = await fetchMultipleLists(["Roles"]);
+        if (data["Roles"] && data["Roles"].length > 0) {
+          const options = data["Roles"].map(v => ({
+            value: v.id,
+            label: v.name.toUpperCase()
+          }));
+          setRolesOptions(options);
+          
+          const newMap: Record<number, string> = {};
+          data["Roles"].forEach(v => {
+            // Mapeo dinámico basado en el nombre para mantener compatibilidad con IDs 0, 1, 2
+            const name = v.name.toUpperCase();
+            if (name === "MAESTRO") newMap[0] = "MAESTRO";
+            else if (name === "ADMIN") newMap[1] = "ADMIN";
+            else if (name === "ASISTENTE") newMap[2] = "ASISTENTE";
+            // Si hay otros roles en la lista, se podrían agregar aquí usando su v.id si el backend lo soporta
+          });
+          
+          if (Object.keys(newMap).length > 0) {
+            setRolesMap(prev => ({ ...prev, ...newMap }));
+          }
+        }
+      } catch (error) {
+        console.error("Error loading roles from t_list:", error);
+      }
+    };
+    loadRoles();
+  }, [fetchMultipleLists]);
 
   // Estado para visualización de credenciales (Maestro)
   const [revealedPasswords, setRevealedPasswords] = useState<Record<number, string>>({});
@@ -563,9 +601,17 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
               className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
             >
               <option value="" className="dark:bg-bg-dark">Todos los roles</option>
-              <option value="0" className="dark:bg-bg-dark">MAESTRO</option>
-              <option value="1" className="dark:bg-bg-dark">ADMIN</option>
-              <option value="2" className="dark:bg-bg-dark">ASISTENTE</option>
+              {rolesOptions.length > 0 ? (
+                rolesOptions.map(opt => (
+                  <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">{opt.label}</option>
+                ))
+              ) : (
+                <>
+                  <option value="0" className="dark:bg-bg-dark">MAESTRO</option>
+                  <option value="1" className="dark:bg-bg-dark">ADMIN</option>
+                  <option value="2" className="dark:bg-bg-dark">ASISTENTE</option>
+                </>
+              )}
             </select>
             <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
               <ChevronDownIcon className="h-4 w-4" />
@@ -719,7 +765,7 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
                       variant="light"
                       className="font-bold text-[10px] px-2 py-0.5 rounded-lg"
                     >
-                      {ROLES_MAP[user.role]}
+                      {rolesMap[user.role] || `ROL ${user.role}`}
                     </Badge>
                   </TableCell>
                   {isPrivilegedAdmin && (
@@ -867,11 +913,15 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
                     value={editingUser?.role?.toString() || "2"}
                     onChange={(val) => setEditingUser({ ...editingUser, role: Number(val) })}
                     className="h-11 rounded-lg border-gray-200 dark:border-gray-700"
-                    options={[
+                    options={rolesOptions.length > 0 ? (
+                      isMasterAdmin 
+                        ? rolesOptions 
+                        : rolesOptions.filter(opt => opt.label !== "MAESTRO")
+                    ) : ([
                       ...(isMasterAdmin ? [{ value: "0", label: "MAESTRO (Administrador de Sistema)" }] : []),
                       { value: "1", label: "ADMIN (Gestión de Usuarios)" },
                       { value: "2", label: "ASISTENTE (Visualización y Registro)" }
-                    ]}
+                    ])}
                   />
                 </div>
               </div>

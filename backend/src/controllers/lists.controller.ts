@@ -69,3 +69,89 @@ export const getMultipleListsByNames = async (req: Request, res: Response) => {
     handleDbError(res, error);
   }
 };
+
+/**
+ * Create a new list
+ */
+export const createList = async (req: Request, res: Response) => {
+  try {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ message: 'El nombre de la lista es requerido' });
+    const data = await listsService.createList(name);
+    res.status(201).json(data);
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+/**
+ * Update a list
+ */
+export const updateList = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ message: 'El nombre de la lista es requerido' });
+    const data = await listsService.updateList(id, name);
+    res.json(data);
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+/**
+ * Toggle list status
+ */
+export const toggleListStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    await listsService.toggleListStatus(id, status);
+    res.json({ message: 'Estado de la lista actualizado correctamente' });
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+/**
+ * Create a new value for a list
+ */
+export const createValue = async (req: Request, res: Response) => {
+  try {
+    const { listId, name, abbreviation } = req.body;
+    if (!listId || !name) return res.status(400).json({ message: 'listId y name son requeridos' });
+    const data = await listsService.createValue(listId, name, abbreviation);
+    res.status(201).json(data);
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+/**
+ * Update a value
+ */
+export const updateValue = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, abbreviation } = req.body;
+    if (!name) return res.status(400).json({ message: 'El nombre del valor es requerido' });
+    const data = await listsService.updateValue(id, name, abbreviation);
+    res.json(data);
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+/**
+ * Toggle value status
+ */
+export const toggleValueStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    await listsService.toggleValueStatus(id, status);
+    res.json({ message: 'Estado del valor actualizado correctamente' });
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};

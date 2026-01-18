@@ -16,6 +16,8 @@ interface EnrollmentTableProps {
     onView?: (item: EnrollmentRowData) => void;
     activeTab?: "Activas" | "Inactivas";
     loading?: boolean;
+    periodOptions?: { value: string; label: string }[];
+    practiceTypeOptions?: { value: string; label: string }[];
 }
 
 type SortKey = "studentName" | "careerName" | "academicTutorName" | "methodologicalTutorName" | "institutionName" | "practiceType" | "enrollmentDate";
@@ -85,9 +87,12 @@ export default function EnrollmentTable({
     onView,
     activeTab = "Activas",
     loading: externalLoading,
+    periodOptions = [],
+    practiceTypeOptions = [],
 }: EnrollmentTableProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [periodFilter, setPeriodFilter] = useState("");
+    const [practiceTypeFilter, setPracticeTypeFilter] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -103,16 +108,18 @@ export default function EnrollmentTable({
     const filteredData = useMemo(() => {
         const search = debouncedSearch.trim().toLowerCase();
         const periodSearch = periodFilter.trim().toLowerCase();
+        const practiceTypeSearch = practiceTypeFilter.trim().toLowerCase();
 
         const filtered = data.filter((s) => {
             const matchesSearch = !search || 
                 s.identificationNumber.toLowerCase().includes(search) || 
                 s.studentName.toLowerCase().includes(search) ||
                 (s.careerName && s.careerName.toLowerCase().includes(search));
-            const matchesPeriod = !periodSearch || s.period.toLowerCase().includes(periodSearch);
+            const matchesPeriod = !periodSearch || s.period.toLowerCase() === periodSearch;
+            const matchesPracticeType = !practiceTypeSearch || s.practiceType.toLowerCase() === practiceTypeSearch;
             const matchesTab = activeTab === "Activas" ? s.status === true : s.status === false;
 
-            return matchesSearch && matchesPeriod && matchesTab;
+            return matchesSearch && matchesPeriod && matchesPracticeType && matchesTab;
         });
 
         filtered.sort((a, b) => {
@@ -127,11 +134,11 @@ export default function EnrollmentTable({
         });
 
         return filtered;
-    }, [data, debouncedSearch, periodFilter, activeTab, sortConfig]);
+    }, [data, debouncedSearch, periodFilter, practiceTypeFilter, activeTab, sortConfig]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, periodFilter]);
+    }, [debouncedSearch, periodFilter, practiceTypeFilter]);
 
     const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -140,7 +147,7 @@ export default function EnrollmentTable({
     const handlePageChange = (page: number) => {
         setCurrentPage(Math.max(1, Math.min(page, totalPages)));
     };
-
+ 
     const handleSort = (key: SortKey) => {
         setSortConfig((prev) => ({
             key,
@@ -170,6 +177,7 @@ export default function EnrollmentTable({
     const clearFilters = () => {
         setSearchTerm("");
         setPeriodFilter("");
+        setPracticeTypeFilter("");
     };
 
     const SortIndicator = ({ column }: { column: SortKey }) => {
@@ -190,6 +198,13 @@ export default function EnrollmentTable({
             </svg>
         );
     };
+
+    const uniquePeriods = useMemo(() => {
+        if (periodOptions.length > 0) return periodOptions;
+        
+        const fromData = Array.from(new Set(data.map(item => item.period).filter(Boolean))).sort();
+        return fromData.map(p => ({ value: p, label: p }));
+    }, [data, periodOptions]);
 
     if ((status === "loading" || externalLoading) && data.length === 0) {
         return (
@@ -220,36 +235,60 @@ export default function EnrollmentTable({
         );
     }
 
-    const uniquePeriods = Array.from(new Set(data.map(item => item.period))).sort();
-
     return (
         <div className="table-container">
             {/* Search and Filter Bar */}
-            <div className="p-4 border-b border-border-light dark:border-border-dark flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                    <div className="relative max-w-xs w-full">
+            <div className="p-4 border-b border-border-light dark:border-border-dark space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Buscador General */}
+                    <div className="relative">
                         <input
                             type="text"
-                            placeholder="Buscar por cédula o estudiante..."
+                            placeholder="Buscar por cédula, nombre o carrera"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full rounded-lg border border-border-medium bg-transparent py-2 pl-10 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary"
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-10 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary"
                         />
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="icon-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                             </svg>
                         </span>
                     </div>
-                    <div className="relative w-full sm:w-auto">
+
+                    {/* Filtro por Periodo */}
+                    <div className="relative">
                         <select
                             value={periodFilter}
                             onChange={(e) => setPeriodFilter(e.target.value)}
-                            className="w-full rounded-lg border border-border-medium bg-transparent py-2 px-4 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                         >
-                            <option value="" className="dark:bg-bg-dark">Seleccione Período</option>
-                            {uniquePeriods.map(period => (
-                                <option key={period} value={period} className="dark:bg-bg-dark">{period}</option>
+                            <option value="" className="dark:bg-bg-dark">Todos los Periodos</option>
+                            {uniquePeriods.map((opt) => (
+                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {/* Filtro por Tipo de Práctica */}
+                    <div className="relative">
+                        <select
+                            value={practiceTypeFilter}
+                            onChange={(e) => setPracticeTypeFilter(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
+                        >
+                            <option value="" className="dark:bg-bg-dark">Todos los Tipos</option>
+                            {practiceTypeOptions.map((opt) => (
+                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
+                                    {opt.label}
+                                </option>
                             ))}
                         </select>
                         <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
@@ -261,7 +300,7 @@ export default function EnrollmentTable({
                 </div>
 
                 <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
-                    {(searchTerm || periodFilter) && (
+                    {(searchTerm || periodFilter || practiceTypeFilter) && (
                         <button
                             onClick={clearFilters}
                             className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"

@@ -150,7 +150,21 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
       
       if (typeError || !typeData) throw new Error('Tipo de práctica no encontrado');
 
-      // 4. Insertar en t_professional_practices como PRE-INSCRITO
+      // 4. Validar duplicados (mismo estudiante, mismo periodo, mismo tipo de práctica)
+      const { data: existingEntry, error: checkError } = await supabase
+        .from(TABLE_NAME)
+        .select('PROFESSIONAL_PRACTICE_ID')
+        .eq('STUDENTS_ID', student.STUDENTS_ID)
+        .eq('PERIOD_ID', periodData.PERIOD_ID)
+        .eq('INTERNSHIP_TYPE_ID', typeData.INTERNSHIP_TYPE_ID)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+      if (existingEntry) {
+        throw new Error('Ya existe un registro para este estudiante en el mismo período y tipo de práctica');
+      }
+
+      // 5. Insertar en t_professional_practices como PRE-INSCRITO
       // Nota: Usamos INSTITUTION_ID=1 y MANAGER_ID=1 como placeholders obligatorios
       const { data, error } = await supabase
         .from(TABLE_NAME)

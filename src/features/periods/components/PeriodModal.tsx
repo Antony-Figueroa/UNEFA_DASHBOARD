@@ -30,7 +30,7 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
         mode: 'onChange',
         defaultValues: {
             year: '',
-            periodoTipo: 'I',
+            periodoTipo: '1',
         },
     });
 
@@ -144,20 +144,20 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
     useEffect(() => {
         if (isOpen) {
             if (periodo) {
-                // Dividir el lapso existente (ej: "I-2025") en año y tipo
+                // Dividir el lapso existente (ej: "1-2025") en año y tipo
                 const [tipo, year] = periodo.description.split('-');
                 const inicio = periodo.startDate; // Ya es un objeto Date gracias al servicio
                 const fin = periodo.endDate;     // Ya es un objeto Date gracias al servicio
                 reset({
                     year: year,
-                    periodoTipo: tipo as 'I' | 'II',
+                    periodoTipo: tipo as '1' | '2',
                     startDate: !isNaN(inicio.getTime()) ? inicio : undefined,
                     endDate: !isNaN(fin.getTime()) ? fin : undefined,
                 });
             } else {
                 // --- Autocompletado para un nuevo periodo ---
                 let nextYear = new Date().getFullYear().toString();
-                let nextPeriodoTipo: 'I' | 'II' = 'I';
+                let nextPeriodoTipo: '1' | '2' = '1';
                 let autoStartDate: Date | undefined = undefined;
 
                 if (existingPeriods.length > 0) {
@@ -166,12 +166,12 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                     const lastYearNum = parseInt(lastYearStr);
 
                     if (!isNaN(lastYearNum)) {
-                        if (lastTipo === 'I') {
+                        if (lastTipo === '1') {
                             nextYear = lastYearStr;
-                            nextPeriodoTipo = 'II';
+                            nextPeriodoTipo = '2';
                         } else {
                             nextYear = (lastYearNum + 1).toString();
-                            nextPeriodoTipo = 'I';
+                            nextPeriodoTipo = '1';
                         }
                     }
 
@@ -241,8 +241,8 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                                         disabled={isCulminado || isInCurso}
                                         className="w-full appearance-none bg-transparent py-2.5 pl-4 pr-10 text-sm text-text-primary outline-none dark:text-white font-medium"
                                     >
-                                        <option value="I" className="bg-white dark:bg-bg-dark text-black dark:text-white font-medium">I</option>
-                                        <option value="II" className="bg-white dark:bg-bg-dark text-black dark:text-white font-medium">II</option>
+                                        <option value="1" className="bg-white dark:bg-bg-dark text-black dark:text-white font-medium">1</option>
+                                        <option value="2" className="bg-white dark:bg-bg-dark text-black dark:text-white font-medium">2</option>
                                     </select>
                                     <span className="absolute top-1/2 right-3 -translate-y-1/2 pointer-events-none text-text-secondary dark:text-text-tertiary">
                                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -271,7 +271,7 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                             </div>
                             {(errors.year || errors.periodoTipo) && <p className="mt-1 text-xs text-red-500">{errors.year?.message || errors.periodoTipo?.message}</p>}
                             <p className="mt-1.5 text-[11px] text-text-tertiary dark:text-gray-400 italic">
-                                Ejemplo: I-2025 (Primer semestre), II-2025 (Segundo semestre).
+                                Ejemplo: 1-2025 (Primer semestre), 2-2025 (Segundo semestre).
                             </p>
                         </div>
 

@@ -55,6 +55,108 @@ export const getAllLists = async (): Promise<AppList[]> => {
   return result;
 };
 
+export const createList = async (name: string): Promise<AppList> => {
+  const data = await dbManager.withRetry(async (supabase) => {
+    const { data, error } = await supabase
+      .from(LISTS_TABLE)
+      .insert([{ NAME: name, STATUS: 1 }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }, 'createList');
+
+  const list = data as ListDB;
+  cacheManager.delete(`${CACHE_PREFIX}all`);
+  return {
+    id: String(list.LIST_ID),
+    name: list.NAME,
+    status: list.STATUS === 1,
+    values: []
+  };
+};
+
+export const updateList = async (id: string, name: string): Promise<AppList> => {
+  const data = await dbManager.withRetry(async (supabase) => {
+    const { data, error } = await supabase
+      .from(LISTS_TABLE)
+      .update({ NAME: name })
+      .eq('LIST_ID', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }, 'updateList');
+
+  const list = data as ListDB;
+  cacheManager.delete(`${CACHE_PREFIX}all`);
+  return {
+    id: String(list.LIST_ID),
+    name: list.NAME,
+    status: list.STATUS === 1,
+    values: []
+  };
+};
+
+export const toggleListStatus = async (id: string, status: boolean): Promise<void> => {
+  await dbManager.withRetry(async (supabase) => {
+    const { error } = await supabase
+      .from(LISTS_TABLE)
+      .update({ STATUS: status ? 1 : 0 })
+      .eq('LIST_ID', id);
+
+    if (error) throw error;
+  }, 'toggleListStatus');
+  cacheManager.delete(`${CACHE_PREFIX}all`);
+};
+
+export const createValue = async (listId: string, name: string, abbreviation?: string): Promise<AppList['values'][0]> => {
+  const data = await dbManager.withRetry(async (supabase) => {
+    const { data, error } = await supabase
+      .from(VALUES_TABLE)
+      .insert([{ LIST_ID: listId, NAME: name, ABBREVIATION: abbreviation, STATUS: 1 }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }, 'createValue');
+
+  cacheManager.delete(`${CACHE_PREFIX}all`);
+  return mapValue(data as ValueListDB);
+};
+
+export const updateValue = async (valueId: string, name: string, abbreviation?: string): Promise<AppList['values'][0]> => {
+  const data = await dbManager.withRetry(async (supabase) => {
+    const { data, error } = await supabase
+      .from(VALUES_TABLE)
+      .update({ NAME: name, ABBREVIATION: abbreviation })
+      .eq('VALUE_LIST_ID', valueId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }, 'updateValue');
+
+  cacheManager.delete(`${CACHE_PREFIX}all`);
+  return mapValue(data as ValueListDB);
+};
+
+export const toggleValueStatus = async (valueId: string, status: boolean): Promise<void> => {
+  await dbManager.withRetry(async (supabase) => {
+    const { error } = await supabase
+      .from(VALUES_TABLE)
+      .update({ STATUS: status ? 1 : 0 })
+      .eq('VALUE_LIST_ID', valueId);
+
+    if (error) throw error;
+  }, 'toggleValueStatus');
+  cacheManager.delete(`${CACHE_PREFIX}all`);
+};
+
 export const getListByName = async (name: string) => {
   const data = await dbManager.withRetry(async (supabase) => {
     const { data: list, error: listError } = await supabase

@@ -70,6 +70,7 @@ const navItems: NavItem[] = [
     roles: [1], // Solo Admin
     subItems: [
       { name: "Usuarios", path: "/configure/users" },
+      { name: "Configuración de Combos", path: "/configure/lists" },
       { name: "Configuración", path: "/blank" },
       { name: "Roles y Permisos", path: "/blank" },
       { name: "Logs de Actividad", path: "/blank" },

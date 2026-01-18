@@ -14,6 +14,7 @@ import InputField from '../../../components/form/input/InputField';
 import TextArea from '../../../components/form/input/TextArea';
 import Select from '../../../components/form/Select';
 import { useStudents } from '../../students/hooks/useStudents';
+import { useLists } from '../../lists/hooks/useLists';
 import { useNavigate } from 'react-router';
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
@@ -37,10 +38,40 @@ const trackingSchema = z.object({
 
 type TrackingFormData = z.infer<typeof trackingSchema>;
 
+const TRANSFER_OPTIONS = [
+    { value: 'false', label: 'No' },
+    { value: 'true', label: 'Sí' },
+];
+
 export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoading = false }: TrackingModalProps) {
     const navigate = useNavigate();
     const { students } = useStudents();
+    const { fetchMultipleLists } = useLists();
     const [isEditing, setIsEditing] = useState(false);
+    const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
+
+    // Cargar opciones dinámicas
+    useEffect(() => {
+        const loadOptions = async () => {
+            try {
+                const data = await fetchMultipleLists(['Traslado']);
+                if (data['Traslado']) {
+                    setOptions({
+                        'Traslado': data['Traslado'].map(v => ({
+                            value: v.name.toLowerCase(), // 'true'/'false'
+                            label: v.name.charAt(0).toUpperCase() + v.name.slice(1).toLowerCase() // 'Sí'/'No'
+                        }))
+                    });
+                }
+            } catch (error) {
+                console.error("Error loading list options for TrackingModal:", error);
+            }
+        };
+
+        if (isOpen) {
+            loadOptions();
+        }
+    }, [isOpen, fetchMultipleLists]);
     
     const { register, handleSubmit, formState: { errors, isDirty }, reset, watch, setValue, control } = useForm<TrackingFormData>({
         resolver: zodResolver(trackingSchema),
@@ -183,10 +214,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                                 render={({ field }) => (
                                     <Select
                                         disabled={isDisabled}
-                                        options={[
-                                            { value: 'false', label: 'No' },
-                                            { value: 'true', label: 'Sí' },
-                                        ]}
+                                        options={options['Traslado'] || TRANSFER_OPTIONS}
                                         onChange={field.onChange}
                                         defaultValue={field.value}
                                     />

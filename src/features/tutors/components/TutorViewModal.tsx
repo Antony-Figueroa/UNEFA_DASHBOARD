@@ -4,9 +4,12 @@
  * Mantiene la consistencia visual con el estándar del sistema.
  */
 
+import { useState, useEffect } from "react";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
 import { TutorRowData } from "../types";
+import { getCareers } from "../../careers/services/careersService";
+import { Career } from "../../careers/types";
 
 interface TutorViewModalProps {
     isOpen: boolean;
@@ -21,7 +24,22 @@ export default function TutorViewModal({
     onEdit,
     tutor,
 }: TutorViewModalProps) {
+    const [careers, setCareers] = useState<Career[]>([]);
+
+    useEffect(() => {
+        if (isOpen) {
+            getCareers().then(setCareers).catch(console.error);
+        }
+    }, [isOpen]);
+
     if (!tutor) return null;
+
+    const careerNames = tutor.carreras?.length 
+        ? tutor.carreras.map(id => {
+            const career = careers.find(c => String(c.careerId) === String(id));
+            return career ? career.careerName : `ID: ${id}`;
+        }).join(", ")
+        : "Ninguna";
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} isFullscreen={true} showCloseButton>
@@ -37,27 +55,27 @@ export default function TutorViewModal({
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Primer Nombre</label>
-                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{tutor.firstName}</p>
+                                <p className="text-sm font-semibold text-text-primary dark:text-white/90 uppercase">{tutor.firstName}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Segundo Nombre</label>
-                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{tutor.middleName || "-"}</p>
+                                <p className="text-sm font-semibold text-text-primary dark:text-white/90 uppercase">{tutor.middleName || "-"}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Primer Apellido</label>
-                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{tutor.lastName}</p>
+                                <p className="text-sm font-semibold text-text-primary dark:text-white/90 uppercase">{tutor.lastName}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Segundo Apellido</label>
-                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{tutor.secondLastName || "-"}</p>
+                                <p className="text-sm font-semibold text-text-primary dark:text-white/90 uppercase">{tutor.secondLastName || "-"}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Cédula / ID</label>
-                                <p className="text-sm font-bold text-blue-600 dark:text-blue-400">{tutor.identificationPrefix}-{tutor.identificationNumber}</p>
+                                <p className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase">{tutor.identificationPrefix}-{tutor.identificationNumber}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Sexo</label>
-                                <p className="text-sm text-text-primary dark:text-white/90">{tutor.sex}</p>
+                                <p className="text-sm text-text-primary dark:text-white/90 uppercase">{tutor.sex}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Teléfono</label>
@@ -65,7 +83,7 @@ export default function TutorViewModal({
                             </div>
                             <div className="sm:col-span-2 md:col-span-1">
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Email</label>
-                                <p className="text-sm text-text-primary dark:text-white/90 break-all">{tutor.email}</p>
+                                <p className="text-sm text-text-primary dark:text-white/90 break-all uppercase">{tutor.email}</p>
                             </div>
                         </div>
                     </div>
@@ -83,15 +101,19 @@ export default function TutorViewModal({
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Condición</label>
-                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{tutor.condition}</p>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">{tutor.condition}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Dedicación</label>
-                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{tutor.dedication}</p>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">{tutor.dedication}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Categoría</label>
-                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{tutor.category}</p>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">{tutor.category}</p>
+                            </div>
+                            <div className="sm:col-span-2">
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Carreras que Atiende</label>
+                                <p className="text-sm font-bold text-brand-600 dark:text-brand-400 uppercase">{careerNames}</p>
                             </div>
                         </div>
                     </div>

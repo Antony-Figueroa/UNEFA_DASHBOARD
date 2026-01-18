@@ -6,16 +6,15 @@ import Input from "../../../components/form/input/InputField";
 import TextArea from "../../../components/form/input/TextArea";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Student } from "../types";
-import { ListValue } from "../../lists/types";
 import Button from "../../../components/ui/button/Button";
 import Select from "../../../components/form/Select";
 import CustomSelect from "../../../components/form/CustomSelect";
 import FlatpickrDatePicker from "../../../components/form/FlatpickrDatePicker";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { useLists } from "../../lists/hooks/useLists";
+import { ListValue } from "../../lists/types";
 import { 
-  VENEZUELA_PHONE_PREFIXES, 
-  MILITARY_RANKS, 
   studentSchema, 
   StudentFormInput,
   StudentFormOutput
@@ -37,11 +36,105 @@ export default function StudentModal({
   onSave,
   editingStudent,
   careerOptions,
-  dynamicLists = {},
+  dynamicLists,
   isLoading = false,
 }: StudentModalProps) {
   const [isCheckingCi, setIsCheckingCi] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const { fetchMultipleLists } = useLists();
+  const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      // Si ya tenemos las listas por prop, las usamos y evitamos la petición
+      if (dynamicLists && Object.keys(dynamicLists).length > 0) {
+        const mappedOptions: Record<string, { value: string; label: string }[]> = {};
+        Object.entries(dynamicLists).forEach(([key, values]) => {
+          mappedOptions[key] = values.map(v => ({
+            value: v.name.toUpperCase(),
+            label: v.name.toUpperCase()
+          }));
+        });
+        setOptions(mappedOptions);
+        return;
+      }
+
+      try {
+        const listNames = [
+          "Nacionalidad",
+          "Sexo",
+          "CODIGOS_AREA",
+          "Registro Civil",
+          "Regimen/Turno",
+          "Tipo de estudiante",
+          "Rango Militar",
+          "Trabajo"
+        ];
+        const data = await fetchMultipleLists(listNames);
+        const mappedOptions: Record<string, { value: string; label: string }[]> = {};
+        
+        Object.entries(data).forEach(([key, values]) => {
+          mappedOptions[key] = values.map(v => ({
+            value: v.name.toUpperCase(),
+            label: v.name.toUpperCase()
+          }));
+        });
+        
+        setOptions(mappedOptions);
+      } catch (error) {
+        console.error("Error loading list options for StudentModal:", error);
+      }
+    };
+
+    if (isOpen) {
+      loadOptions();
+    }
+  }, [isOpen, fetchMultipleLists, dynamicLists]);
+
+  const NATIONALITY_OPTIONS = options["Nacionalidad"] || [
+    { value: "V", label: "V" },
+    { value: "E", label: "E" },
+  ];
+
+  const SEX_OPTIONS = options["Sexo"] || [
+    { value: "FEMENINO", label: "FEMENINO" },
+    { value: "MASCULINO", label: "MASCULINO" },
+  ];
+
+  const CIVIL_STATUS_OPTIONS = options["Registro Civil"] || [
+    { value: "SOLTERO/A", label: "SOLTERO/A" },
+    { value: "CASADO/A", label: "CASADO/A" },
+    { value: "DIVORCIADO/A", label: "DIVORCIADO/A" },
+    { value: "VIUDO/A", label: "VIUDO/A" },
+  ];
+
+  const VENEZUELA_PHONE_PREFIXES = options.CODIGOS_AREA || [
+    { value: "0412", label: "0412" },
+    { value: "0414", label: "0414" },
+    { value: "0424", label: "0424" },
+    { value: "0416", label: "0416" },
+    { value: "0426", label: "0426" },
+    { value: "0212", label: "0212" },
+  ];
+
+  const REGIME_OPTIONS = options["Regimen/Turno"] || [
+    { value: "DIURNO", label: "DIURNO" },
+    { value: "NOCTURNO", label: "NOCTURNO" },
+  ];
+
+  const STUDENT_TYPE_OPTIONS = options["Tipo de estudiante"] || [
+    { value: "REGULAR", label: "REGULAR" },
+    { value: "NUEVO INGRESO", label: "NUEVO INGRESO" },
+  ];
+
+  const MILITARY_RANKS = options["Rango Militar"] || [
+    { value: "NO APLICA", label: "NO APLICA" },
+  ];
+
+  const WORKS_OPTIONS = options["Trabajo"] || [
+    { value: "SI", label: "SI" },
+    { value: "NO", label: "NO" },
+  ];
 
   const {
     register,
@@ -250,11 +343,7 @@ export default function StudentModal({
                     render={({ field }) => (
                       <CustomSelect
                         id="identificationPrefix"
-                        options={[
-                          { value: "V", label: "V" },
-                          { value: "E", label: "E" },
-                          { value: "P", label: "P", disabled: true, disabledReason: "Pasaportes no habilitados temporalmente" },
-                        ]}
+                        options={NATIONALITY_OPTIONS}
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         value={field.value}
@@ -366,26 +455,17 @@ export default function StudentModal({
               <Controller
                 name="sex"
                 control={control}
-                render={({ field }) => {
-                  const options = (dynamicLists["Sexo"] && dynamicLists["Sexo"].length > 0)
-                    ? dynamicLists["Sexo"].map(v => ({ value: v.name.toUpperCase(), label: v.name.toUpperCase() }))
-                    : [
-                      { value: "FEMENINO", label: "FEMENINO" },
-                      { value: "MASCULINO", label: "MASCULINO" },
-                    ];
-
-                  return (
-                    <Select
-                      id="sex"
-                      options={options}
-                      placeholder="Seleccione Sexo"
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      value={field.value}
-                      className={errors.sex ? "border-error-500" : ""}
-                    />
-                  );
-                }}
+                render={({ field }) => (
+                  <Select
+                    id="sex"
+                    options={SEX_OPTIONS}
+                    placeholder="Seleccione Sexo"
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    value={field.value}
+                    className={errors.sex ? "border-error-500" : ""}
+                  />
+                )}
               />
               {errors.sex && (
                 <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
@@ -439,28 +519,17 @@ export default function StudentModal({
               <Controller
                 name="civilStatus"
                 control={control}
-                render={({ field }) => {
-                  const options = (dynamicLists["Registro Civil"] && dynamicLists["Registro Civil"].length > 0)
-                    ? dynamicLists["Registro Civil"].map(v => ({ value: v.name.toUpperCase(), label: v.name.toUpperCase() }))
-                    : [
-                      { value: "SOLTERO", label: "SOLTERO" },
-                      { value: "CASADO", label: "CASADO" },
-                      { value: "DIVORCIADO", label: "DIVORCIADO" },
-                      { value: "VIUDO", label: "VIUDO" },
-                    ];
-
-                  return (
-                    <Select
-                      id="civilStatus"
-                      options={options}
-                      placeholder="Seleccione Estado Civil"
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      value={field.value}
-                      className={errors.civilStatus ? "border-error-500" : ""}
-                    />
-                  );
-                }}
+                render={({ field }) => (
+                  <Select
+                    id="civilStatus"
+                    options={CIVIL_STATUS_OPTIONS}
+                    placeholder="Seleccione Estado Civil"
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    value={field.value}
+                    className={errors.civilStatus ? "border-error-500" : ""}
+                  />
+                )}
               />
               {errors.civilStatus && (
                 <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
@@ -472,19 +541,19 @@ export default function StudentModal({
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Teléfono *</label>
               <div className="flex gap-2">
-                <div className="w-28">
+                <div className="w-32">
                   <Controller
                     name="phonePrefix"
                     control={control}
                     render={({ field }) => (
-                      <Select
+                      <CustomSelect
                         id="phonePrefix"
                         options={VENEZUELA_PHONE_PREFIXES}
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         value={field.value}
-                        placeholder="Seleccione campo"
-                        className={errors.phonePrefix ? "border-error-500" : ""}
+                        placeholder="0412"
+                        error={!!errors.phonePrefix}
                       />
                     )}
                   />
@@ -612,27 +681,17 @@ export default function StudentModal({
               <Controller
                 name="regime"
                 control={control}
-                render={({ field }) => {
-                  const options = (dynamicLists["Regimen/Turno"] && dynamicLists["Regimen/Turno"].length > 0)
-                    ? dynamicLists["Regimen/Turno"].map(v => ({ value: v.name.toUpperCase(), label: v.name.toUpperCase() }))
-                    : [
-                      { value: "DIURNO", label: "DIURNO" },
-                      { value: "NOCTURNO", label: "NOCTURNO" },
-                      { value: "MIXTO", label: "MIXTO" },
-                    ];
-
-                  return (
-                    <Select
-                      id="regime"
-                      options={options}
-                      placeholder="Seleccione Régimen"
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      value={field.value}
-                      className={errors.regime ? "border-error-500" : ""}
-                    />
-                  );
-                }}
+                render={({ field }) => (
+                  <Select
+                    id="regime"
+                    options={REGIME_OPTIONS}
+                    placeholder="Seleccione Régimen"
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    value={field.value}
+                    className={errors.regime ? "border-error-500" : ""}
+                  />
+                )}
               />
               {errors.regime && (
                 <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
@@ -646,26 +705,17 @@ export default function StudentModal({
               <Controller
                 name="studentType"
                 control={control}
-                render={({ field }) => {
-                  const options = (dynamicLists["Tipo de estudiante"] && dynamicLists["Tipo de estudiante"].length > 0)
-                    ? dynamicLists["Tipo de estudiante"].map(v => ({ value: v.name.toUpperCase(), label: v.name.toUpperCase() }))
-                    : [
-                      { value: "CIVIL", label: "CIVIL" },
-                      { value: "MILITAR", label: "MILITAR" },
-                    ];
-
-                  return (
-                    <Select
-                      id="studentType"
-                      options={options}
-                      placeholder="Seleccione campo"
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      value={field.value}
-                      className={errors.studentType ? "border-error-500" : ""}
-                    />
-                  );
-                }}
+                render={({ field }) => (
+                  <Select
+                    id="studentType"
+                    options={STUDENT_TYPE_OPTIONS}
+                    placeholder="Seleccione campo"
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    value={field.value}
+                    className={errors.studentType ? "border-error-500" : ""}
+                  />
+                )}
               />
               {errors.studentType && (
                 <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
@@ -680,20 +730,19 @@ export default function StudentModal({
                 name="militaryRank"
                 control={control}
                 render={({ field }) => {
-                  const options = studentType === "CIVIL" 
+                  const currentOptions = studentType === "CIVIL" 
                     ? [{ value: "NO APLICA", label: "NO APLICA" }]
                     : MILITARY_RANKS;
 
                   return (
                     <Select
                       id="militaryRank"
-                      options={options}
+                      options={currentOptions}
                       placeholder="Seleccione Rango"
                       onChange={field.onChange}
                       onBlur={field.onBlur}
                       value={field.value}
-                      disabled={!studentType || studentType === "CIVIL"}
-                      className={`${(!studentType || studentType === "CIVIL") ? "bg-bg-secondary opacity-70" : ""} ${errors.militaryRank ? "border-error-500" : ""}`}
+                      className={errors.militaryRank ? "border-error-500" : ""}
                     />
                   );
                 }}
@@ -707,30 +756,21 @@ export default function StudentModal({
             </div>
             
             <div className="md:col-span-2 lg:col-span-1">
-              <label htmlFor="works" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Trabaja *</label>
+              <label htmlFor="works" className="mb-2.5 block text-black dark:text-white font-medium text-sm">¿Trabaja? *</label>
               <Controller
                 name="works"
                 control={control}
-                render={({ field }) => {
-                  const options = (dynamicLists["Trabajo"] && dynamicLists["Trabajo"].length > 0)
-                    ? dynamicLists["Trabajo"].map(v => ({ value: v.name.toUpperCase(), label: v.name.toUpperCase() }))
-                    : [
-                      { value: "SI", label: "SI" },
-                      { value: "NO", label: "NO" },
-                    ];
-
-                  return (
-                    <Select
-                      id="works"
-                      options={options}
-                      placeholder="Seleccione si trabaja"
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      value={field.value}
-                      className={errors.works ? "border-error-500" : ""}
-                    />
-                  );
-                }}
+                render={({ field }) => (
+                  <Select
+                    id="works"
+                    options={WORKS_OPTIONS}
+                    placeholder="Seleccione"
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    value={field.value}
+                    className={errors.works ? "border-error-500" : ""}
+                  />
+                )}
               />
               {errors.works && (
                 <p className="mt-1 text-xs text-error-500 flex items-center gap-1">

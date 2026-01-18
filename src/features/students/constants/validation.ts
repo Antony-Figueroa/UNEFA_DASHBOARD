@@ -1,19 +1,5 @@
 import * as z from "zod";
 
-export const VENEZUELA_PHONE_PREFIXES = [
-  { value: "0412", label: "0412" },
-  { value: "0414", label: "0414" },
-  { value: "0416", label: "0416" },
-  { value: "0422", label: "0422" },
-  { value: "0424", label: "0424" },
-  { value: "0426", label: "0426" },
-  { value: "0212", label: "0212" },
-];
-
-export const MILITARY_RANKS = [
-  "Soldado", "Cabo", "Sargento", "Teniente", "Capitán", "Mayor", "Teniente Coronel", "Coronel", "General"
-].map(rank => ({ value: rank.toUpperCase(), label: rank.toUpperCase() }));
-
 export const studentSchema = z.object({
   identificationPrefix: z.string().min(1, "Seleccione un prefijo"),
   identificationNumber: z.string()

@@ -58,7 +58,7 @@ La página está estructurada siguiendo un patrón de contenedor-contenido, dond
 
 ### Requisitos de Contenido
 - **Dinámico**: El progreso se calcula en tiempo real comparando la fecha actual con el rango `[startDate, endDate]`.
-- **Estático**: Catálogo de tipos de periodo ('I', 'II').
+- **Estático**: Catálogo de tipos de periodo ('1', '2').
 
 ---
 
@@ -78,13 +78,13 @@ Implementado mediante la función `getPeriodSchema(existingPeriods, currentPerio
 | **Orden de Fechas** | Fin > Inicio | `data.endDate <= data.startDate` | "La fecha de fin debe ser posterior a la de inicio." |
 | **Duración Mínima** | Mínimo 16 semanas | `duration < minDuration` | "El período debe tener una duración mínima de 16 semanas." |
 | **Año de Inicio** | Debe coincidir con Año seleccionado | `startYear !== yearNum` | "La fecha de inicio debe corresponder estrictamente al año seleccionado." |
-| **Año de Fin (I)** | Periodo I debe terminar en mismo año | `endYear !== yearNum && tipo === 'I'` | "Para el período I, la fecha de fin debe corresponder al año seleccionado." |
+| **Año de Fin (1)** | Periodo 1 debe terminar en mismo año | `endYear !== yearNum && tipo === '1'` | "Para el período 1, la fecha de fin debe corresponder al año seleccionado." |
 
 ### Reglas de Negocio (Integradas en el Esquema)
 Todas las reglas de negocio complejas han sido integradas en el `superRefine` de Zod para permitir su validación en tiempo real:
 
 1. **Formato de Lapso Académico**:
-    - **Regla**: Debe seguir el formato `Lapso-Año` (ej: `I-2025`).
+    - **Regla**: Debe seguir el formato `Lapso-Año` (ej: `1-2025`).
     - **Implementación**: El modal concatena automáticamente el tipo y el año seleccionado.
 
 2. **Duración Mínima**:
@@ -100,11 +100,11 @@ Todas las reglas de negocio complejas han sido integradas en el `superRefine` de
     - **Mensaje**: "El rango de fechas se solapa con un periodo existente."
 
 5. **Orden Cronológico y Secuencialidad**:
-    - **Regla**: Deben seguir el orden `I-AAAA` -> `II-AAAA` -> `I-(AAAA+1)`. No se pueden saltar lapsos.
+    - **Regla**: Deben seguir el orden `1-AAAA` -> `2-AAAA` -> `1-(AAAA+1)`. No se pueden saltar lapsos.
     - **Mensaje**: "Secuencia incorrecta. El siguiente lapso obligatorio es XXXX-X."
 
 6. **Unicidad Estricta**:
-    - **Regla**: No pueden existir dos periodos con el mismo lapso (ej: no puede haber dos `I-2025`).
+    - **Regla**: No pueden existir dos periodos con el mismo lapso (ej: no puede haber dos `1-2025`).
     - **Mensaje**: "El periodo X-XXXX ya existe en el sistema."
 
 ### Reglas de Gestión (Tabla y Edición)

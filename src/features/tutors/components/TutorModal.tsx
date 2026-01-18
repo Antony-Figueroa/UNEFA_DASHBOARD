@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from "react";
-import { useForm, Controller, useWatch } from "react-hook-form";
+import { useEffect, useState, useMemo } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
@@ -7,10 +7,12 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/
 import { Tutor } from "../types";
 import Button from "../../../components/ui/button/Button";
 import Select from "../../../components/form/Select";
-import CustomSelect from "../../../components/form/CustomSelect";
 import MultiSelect from "../../../components/form/MultiSelect";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { getCareers } from "../../careers/services/careersService";
+import { Career } from "../../careers/types";
+import { useLists } from "../../lists/hooks/useLists";
 
 interface TutorModalProps {
   isOpen: boolean;
@@ -18,93 +20,8 @@ interface TutorModalProps {
   onSave: (tutor: Omit<Tutor, "tutorId" | "registrationDate">) => void;
   editingTutor?: Tutor | null;
   isLoading?: boolean;
+  tutors?: Tutor[];
 }
-
-const tutorSchema = z.object({
-  identificationPrefix: z.string().min(1, "Seleccione un prefijo"),
-  identificationNumber: z.string()
-    .min(1, "La cédula es obligatoria")
-    .regex(/^\d+$/, "Solo se admiten números"),
-  firstName: z.string()
-    .min(1, "El primer nombre es obligatorio")
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "Solo se admiten letras"),
-  middleName: z.string()
-    .optional()
-    .refine(val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val), "Solo se admiten letras"),
-  lastName: z.string()
-    .min(1, "El primer apellido es obligatorio")
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "Solo se admiten letras"),
-  secondLastName: z.string()
-    .optional()
-    .refine(val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val), "Solo se admiten letras"),
-  sex: z.string().min(1, "Seleccione el sexo"),
-  phoneAreaCode: z.string().min(1, "El código de área es obligatorio"),
-  phoneNumber: z.string()
-    .min(1, "El teléfono es obligatorio")
-    .regex(/^\d+$/, "Solo se admiten números"),
-  email: z.string().email("Email inválido").min(1, "El email es obligatorio"),
-  condition: z.string().min(1, "La condición es obligatoria"),
-  dedication: z.string().min(1, "La dedicación es obligatoria"),
-  category: z.string().min(1, "La categoría es obligatoria"),
-  profession: z.string().min(1, "La profesión es obligatoria"),
-  carreras: z.array(z.string()).min(1, "Debe seleccionar al menos una carrera"),
-}).refine((data) => {
-  const selectedOptions = CARRERA_OPTIONS.filter(opt => data.carreras.includes(opt.value));
-  const types = new Set(selectedOptions.map(opt => opt.type));
-  return types.size <= 1;
-}, {
-  message: "No se pueden mezclar carreras de Ingeniería y Enfermería",
-  path: ["carreras"],
-});
-
-type TutorFormData = z.infer<typeof tutorSchema>;
-
-const CARRERA_OPTIONS = [
-  { value: "ING_SISTEMAS", label: "Ingeniería en Sistemas", type: "ingenieria" },
-  { value: "ING_CIVIL", label: "Ingeniería Civil", type: "ingenieria" },
-  { value: "ING_ELECTRICA", label: "Ingeniería Eléctrica", type: "ingenieria" },
-  { value: "ENF_GENERAL", label: "Enfermería General", type: "enfermeria" },
-  { value: "ENF_OBSTETRICA", label: "Enfermería Obstétrica", type: "enfermeria" },
-  { value: "ENF_PEDIATRICA", label: "Enfermería Pediátrica", type: "enfermeria" },
-];
-
-const PROFESSION_OPTIONS = [
-  { value: "INGENIERO EN SISTEMAS", label: "INGENIERO EN SISTEMAS" },
-  { value: "LICENCIADO EN EDUCACIÓN", label: "LICENCIADO EN EDUCACIÓN" },
-  { value: "ABOGADO", label: "ABOGADO" },
-  { value: "MÉDICO", label: "MÉDICO" },
-  { value: "CONTADOR PÚBLICO", label: "CONTADOR PÚBLICO" },
-];
-
-const CONDITION_OPTIONS = [
-  { value: "CONTRATADO", label: "CONTRATADO" },
-  { value: "ORDINARIO", label: "ORDINARIO" },
-  { value: "JUBILADO", label: "JUBILADO" },
-];
-
-const DEDICATION_OPTIONS = [
-  { value: "TIEMPO COMPLETO", label: "TIEMPO COMPLETO" },
-  { value: "MEDIO TIEMPO", label: "MEDIO TIEMPO" },
-  { value: "TIEMPO PARCIAL", label: "TIEMPO PARCIAL" },
-  { value: "DEDICACIÓN EXCLUSIVA", label: "DEDICACIÓN EXCLUSIVA" },
-];
-
-const CATEGORY_OPTIONS = [
-  { value: "INSTRUCTOR", label: "INSTRUCTOR" },
-  { value: "ASISTENTE", label: "ASISTENTE" },
-  { value: "AGREGADO", label: "AGREGADO" },
-  { value: "ASOCIADO", label: "ASOCIADO" },
-  { value: "TITULAR", label: "TITULAR" },
-];
-
-const PHONE_AREA_CODES = [
-  { value: "0412", label: "0412" },
-  { value: "0414", label: "0414" },
-  { value: "0424", label: "0424" },
-  { value: "0416", label: "0416" },
-  { value: "0426", label: "0426" },
-  { value: "0212", label: "0212" },
-];
 
 export default function TutorModal({
   isOpen,
@@ -112,13 +29,165 @@ export default function TutorModal({
   onSave,
   editingTutor,
   isLoading = false,
+  tutors = [],
 }: TutorModalProps) {
+  const [careers, setCareers] = useState<Career[]>([]);
+  const [careersLoading, setCareersLoading] = useState(false);
+  const { fetchMultipleLists } = useLists();
+  const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
+
+  // Fallbacks for when t_list data is not available
+  const NATIONALITY_OPTIONS = options["Nacionalidad"] || [
+    { value: "V", label: "V" },
+    { value: "E", label: "E" },
+  ];
+
+  const SEX_OPTIONS = options["Sexo"] || [
+    { value: "FEMENINO", label: "FEMENINO" },
+    { value: "MASCULINO", label: "MASCULINO" },
+  ];
+
+  const PHONE_AREA_OPTIONS = options["CODIGOS_AREA"] || [
+    { value: "0412", label: "0412" },
+    { value: "0414", label: "0414" },
+    { value: "0424", label: "0424" },
+    { value: "0416", label: "0416" },
+    { value: "0426", label: "0426" },
+    { value: "0212", label: "0212" },
+  ];
+
+  const CONDITION_OPTIONS = options["Condición"] || [
+    { value: "ORDINARIO", label: "ORDINARIO" },
+    { value: "CONTRATADO", label: "CONTRATADO" },
+  ];
+
+  const DEDICATION_OPTIONS = options["Dedicación"] || [
+    { value: "TIEMPO COMPLETO", label: "TIEMPO COMPLETO" },
+    { value: "MEDIO TIEMPO", label: "MEDIO TIEMPO" },
+    { value: "TIEMPO CONVENCIONAL", label: "TIEMPO CONVENCIONAL" },
+    { value: "DEDICACIÓN EXCLUSIVA", label: "DEDICACIÓN EXCLUSIVA" },
+  ];
+
+  const CATEGORY_OPTIONS = options["Categoría"] || [
+    { value: "INSTRUCTOR", label: "INSTRUCTOR" },
+    { value: "ASISTENTE", label: "ASISTENTE" },
+    { value: "AGREGADO", label: "AGREGADO" },
+    { value: "ASOCIADO", label: "ASOCIADO" },
+    { value: "TITULAR", label: "TITULAR" },
+  ];
+
+  const PROFESSION_OPTIONS = options["Profesión"] || [
+    { value: "INGENIERO", label: "INGENIERO" },
+    { value: "LICENCIADO", label: "LICENCIADO" },
+    { value: "ABOGADO", label: "ABOGADO" },
+    { value: "MÉDICO", label: "MÉDICO" },
+  ];
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const listNames = [
+          "Nacionalidad",
+          "Sexo",
+          "CODIGOS_AREA",
+          "Condición",
+          "Dedicación",
+          "Categoría",
+          "Profesión"
+        ];
+        const data = await fetchMultipleLists(listNames);
+        const mappedOptions: Record<string, { value: string; label: string }[]> = {};
+        
+        Object.entries(data).forEach(([key, values]) => {
+          mappedOptions[key] = values.map(v => ({
+            value: v.name.toUpperCase(),
+            label: v.name.toUpperCase()
+          }));
+        });
+        
+        setOptions(mappedOptions);
+      } catch (error) {
+        console.error("Error loading list options:", error);
+      }
+    };
+
+    if (isOpen) {
+      loadOptions();
+    }
+  }, [isOpen, fetchMultipleLists]);
+
+  const tutorSchema = useMemo(() => z.object({
+    identificationPrefix: z.string().min(1, "Seleccione el tipo"),
+    identificationNumber: z.string()
+      .min(6, "La cédula debe tener al menos 6 dígitos")
+      .max(8, "La cédula no puede exceder los 8 dígitos")
+      .regex(/^\d+$/, "Solo se admiten números"),
+    firstName: z.string()
+      .min(1, "El primer nombre es obligatorio")
+      .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "Solo se admiten letras y signos diacríticos")
+      .transform(val => val.toUpperCase()),
+    middleName: z.string()
+      .transform(val => val.toUpperCase())
+      .refine(val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val), "Solo se admiten letras y signos diacríticos")
+      .optional(),
+    lastName: z.string()
+      .min(1, "El primer apellido es obligatorio")
+      .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "Solo se admiten letras y signos diacríticos")
+      .transform(val => val.toUpperCase()),
+    secondLastName: z.string()
+      .transform(val => val.toUpperCase())
+      .refine(val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val), "Solo se admiten letras y signos diacríticos")
+      .optional(),
+    sex: z.string().min(1, "Seleccione el sexo"),
+    phoneAreaCode: z.string().min(1, "El código de área es obligatorio"),
+    phoneNumber: z.string()
+      .length(7, "El número de teléfono debe tener exactamente 7 dígitos")
+      .regex(/^\d+$/, "Solo se admiten números"),
+    email: z.string().email("Formato de correo electrónico inválido").min(1, "El correo es obligatorio").transform(val => val.toUpperCase()),
+    condition: z.string().min(1, "La condición es obligatoria").transform(val => val.toUpperCase()),
+    dedication: z.string().min(1, "La dedicación es obligatoria").transform(val => val.toUpperCase()),
+    category: z.string().min(1, "La categoría es obligatoria").transform(val => val.toUpperCase()),
+    profession: z.string().min(1, "La profesión es obligatoria").transform(val => val.toUpperCase()),
+    carreras: z.array(z.string()).min(1, "Debe seleccionar al menos una carrera"),
+  }).superRefine((data, ctx) => {
+    // Validar duplicidad de cédula
+    const isIdDuplicate = tutors.some(
+      t => t.tutorId !== editingTutor?.tutorId && 
+           t.identificationNumber === data.identificationNumber && 
+           t.identificationPrefix === data.identificationPrefix
+    );
+
+    if (isIdDuplicate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Esta cédula ya se encuentra registrada",
+        path: ["identificationNumber"],
+      });
+    }
+
+    // Validar duplicidad de correo
+    const isEmailDuplicate = tutors.some(
+      t => t.tutorId !== editingTutor?.tutorId && 
+           t.email.toLowerCase() === data.email.toLowerCase()
+    );
+
+    if (isEmailDuplicate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Este correo electrónico ya está en uso",
+        path: ["email"],
+      });
+    }
+  }), [tutors, editingTutor]);
+
+  type TutorFormData = z.infer<typeof tutorSchema>;
+
   const {
     register,
     handleSubmit,
     control,
     reset,
-    formState: { errors, isSubmitted, isDirty },
+    formState: { errors, isDirty },
   } = useForm<TutorFormData>({
     resolver: zodResolver(tutorSchema),
     mode: "onChange",
@@ -148,32 +217,29 @@ export default function TutorModal({
     cancelClose,
   } = useUnsavedChanges(isDirty, onClose);
 
-  const watchedCarreras = useWatch({ control, name: "carreras" });
-
-  const filteredCarreraOptions = useMemo(() => {
-    const selectedCarreras = watchedCarreras || [];
-    // Si no hay nada seleccionado, mostramos todas
-    if (selectedCarreras.length === 0) {
-      return CARRERA_OPTIONS.map((opt) => ({
-        value: opt.value,
-        text: opt.label,
-      }));
+  useEffect(() => {
+    const fetchCareers = async () => {
+      setCareersLoading(true);
+      try {
+        const data = await getCareers();
+        setCareers(data.filter(c => c.status));
+      } catch (error) {
+        console.error("Error fetching careers:", error);
+      } finally {
+        setCareersLoading(false);
+      }
+    };
+    if (isOpen) {
+      fetchCareers();
     }
+  }, [isOpen]);
 
-    // Identificar el tipo del primer elemento seleccionado
-    const firstSelected = CARRERA_OPTIONS.find(
-      (opt) => opt.value === selectedCarreras[0]
-    );
-    const selectedType = firstSelected?.type;
-
-    // Filtrar opciones que coincidan con el tipo seleccionado
-    return CARRERA_OPTIONS.filter((opt) => opt.type === selectedType).map(
-      (opt) => ({
-        value: opt.value,
-        text: opt.label,
-      })
-    );
-  }, [watchedCarreras]);
+  const careerOptions = useMemo(() => {
+    return careers.map(c => ({
+      value: String(c.careerId),
+      text: `${c.careerCode} - ${c.careerName}`
+    }));
+  }, [careers]);
 
   useEffect(() => {
     if (isOpen) {
@@ -223,13 +289,14 @@ export default function TutorModal({
     onSave({
       ...data,
       identificationPrefix: data.identificationPrefix as "V" | "E",
-      sex: data.sex as "FEMENINO" | "MASCULINO" | "OTRO",
+      sex: data.sex as "FEMENINO" | "MASCULINO",
       phone: `${data.phoneAreaCode}${data.phoneNumber}`,
       status: editingTutor?.status ?? true,
       carreras: data.carreras,
     });
-    onClose();
   };
+
+  const isInUse = editingTutor?.isInUse;
 
   return (
     <>
@@ -245,12 +312,18 @@ export default function TutorModal({
             {editingTutor ? "Editar Tutor" : "Registrar Tutor"}
           </h5>
           <p className="text-sm text-text-secondary">Complete la información del tutor académico.</p>
+          {isInUse && (
+            <div className="mt-2 text-xs font-medium text-warning-700 dark:text-warning-400 bg-warning-50 dark:bg-warning-900/20 p-2.5 rounded-md border border-warning-200 dark:border-warning-800/50 flex items-start gap-2">
+              <span className="mt-0.5">⚠️</span>
+              <span>Nota: Algunos campos están restringidos porque el tutor tiene registros asociados en el sistema.</span>
+            </div>
+          )}
         </ModalHeader>
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
-        <form id="tutor-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto">
+        <form id="tutor-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto py-2">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
-            {/* Fila 1 */}
+            {/* Cédula */}
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Cédula *</label>
               <div className="flex gap-2">
@@ -259,18 +332,11 @@ export default function TutorModal({
                     name="identificationPrefix"
                     control={control}
                     render={({ field }) => (
-                      <CustomSelect
-                        id="identificationPrefix"
-                        options={[
-                          { value: "V", label: "V" },
-                          { value: "E", label: "E" },
-                          { value: "P", label: "P", disabled: true, disabledReason: "Pasaportes no habilitados temporalmente" },
-                        ]}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        value={field.value}
+                      <Select
+                        {...field}
+                        options={NATIONALITY_OPTIONS}
                         placeholder="Tipo"
-                        disabled={!!editingTutor}
+                        disabled={isInUse}
                         error={!!errors.identificationPrefix}
                       />
                     )}
@@ -279,49 +345,89 @@ export default function TutorModal({
                 <div className="flex-1">
                   <Input
                     {...register("identificationNumber")}
-                    placeholder="Número de cédula"
+                    placeholder="INGRESE CÉDULA"
                     error={!!errors.identificationNumber}
+                    disabled={isInUse}
+                    maxLength={8}
                   />
                 </div>
               </div>
-              {isSubmitted && errors.identificationNumber && (
-                <p className="mt-1 text-xs text-red-500">{errors.identificationNumber.message}</p>
+              {(errors.identificationPrefix || errors.identificationNumber) && (
+                <p className="mt-1 text-xs text-red-500">
+                  {errors.identificationPrefix?.message || errors.identificationNumber?.message}
+                </p>
               )}
             </div>
+
+            {/* Primer Nombre */}
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Primer Nombre *</label>
               <Input
                 {...register("firstName")}
-                placeholder="Ingrese el primer nombre del tutor"
+                placeholder="INGRESE PRIMER NOMBRE"
                 error={!!errors.firstName}
-                hint={isSubmitted ? errors.firstName?.message : undefined}
+                onChange={(e) => {
+                  e.target.value = e.target.value.toUpperCase();
+                  register("firstName").onChange(e);
+                }}
               />
+              {errors.firstName && (
+                <p className="mt-1 text-xs text-red-500">{errors.firstName.message}</p>
+              )}
             </div>
+
+            {/* Segundo Nombre */}
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Segundo Nombre</label>
               <Input
                 {...register("middleName")}
-                placeholder="Ingrese el segundo nombre del tutor (si posee)"
+                placeholder="INGRESE SEGUNDO NOMBRE"
+                error={!!errors.middleName}
+                onChange={(e) => {
+                  e.target.value = e.target.value.toUpperCase();
+                  register("middleName").onChange(e);
+                }}
               />
+              {errors.middleName && (
+                <p className="mt-1 text-xs text-red-500">{errors.middleName.message}</p>
+              )}
             </div>
 
-            {/* Fila 2 */}
+            {/* Primer Apellido */}
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Primer Apellido *</label>
               <Input
                 {...register("lastName")}
-                placeholder="Ingrese el primer apellido del tutor"
+                placeholder="INGRESE PRIMER APELLIDO"
                 error={!!errors.lastName}
-                hint={isSubmitted ? errors.lastName?.message : undefined}
+                onChange={(e) => {
+                  e.target.value = e.target.value.toUpperCase();
+                  register("lastName").onChange(e);
+                }}
               />
+              {errors.lastName && (
+                <p className="mt-1 text-xs text-red-500">{errors.lastName.message}</p>
+              )}
             </div>
+
+            {/* Segundo Apellido */}
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Segundo Apellido</label>
               <Input
                 {...register("secondLastName")}
-                placeholder="Ingrese el segundo apellido del tutor (si posee)"
+                placeholder="INGRESE SEGUNDO APELLIDO"
+                error={!!errors.secondLastName}
+                onChange={(e) => {
+                  e.target.value = e.target.value.toUpperCase();
+                  register("secondLastName").onChange(e);
+                }}
               />
+              {errors.secondLastName && (
+                <p className="mt-1 text-xs text-red-500">{errors.secondLastName.message}</p>
+              )}
             </div>
+
+            {/* Sexo */}
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Sexo *</label>
               <Controller
@@ -329,23 +435,19 @@ export default function TutorModal({
                 control={control}
                 render={({ field }) => (
                   <Select
-                    options={[
-                      { value: "FEMENINO", label: "FEMENINO" },
-                      { value: "MASCULINO", label: "MASCULINO" },
-                      { value: "OTRO", label: "OTRO" },
-                    ]}
-                    onChange={field.onChange}
-                    defaultValue={field.value}
+                    {...field}
+                    options={SEX_OPTIONS}
                     placeholder="Seleccione Sexo"
+                    error={!!errors.sex}
                   />
                 )}
               />
-              {isSubmitted && errors.sex && (
+              {errors.sex && (
                 <p className="mt-1 text-xs text-red-500">{errors.sex.message}</p>
               )}
             </div>
 
-            {/* Fila 3 */}
+            {/* Teléfono */}
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Teléfono *</label>
               <div className="flex gap-2">
@@ -355,10 +457,10 @@ export default function TutorModal({
                     control={control}
                     render={({ field }) => (
                       <Select
-                        options={PHONE_AREA_CODES}
-                        onChange={field.onChange}
-                        defaultValue={field.value}
-                        placeholder="Seleccione Código"
+                        {...field}
+                        options={PHONE_AREA_OPTIONS}
+                        placeholder="Código"
+                        error={!!errors.phoneAreaCode}
                       />
                     )}
                   />
@@ -366,28 +468,34 @@ export default function TutorModal({
                 <div className="flex-1">
                   <Input
                     {...register("phoneNumber")}
-                    placeholder="Ingrese el número"
+                    placeholder="INGRESE TELÉFONO"
                     error={!!errors.phoneNumber}
+                    maxLength={7}
                   />
                 </div>
               </div>
-              {isSubmitted && (errors.phoneAreaCode || errors.phoneNumber) && (
+              {(errors.phoneAreaCode || errors.phoneNumber) && (
                 <p className="mt-1 text-xs text-red-500">
                   {errors.phoneAreaCode?.message || errors.phoneNumber?.message}
                 </p>
               )}
             </div>
+
+            {/* Correo */}
             <div className="lg:col-span-2">
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Correo Electrónico *</label>
               <Input
                 {...register("email")}
-                placeholder="Ingrese el correo institucional o personal"
+                placeholder="INGRESE CORREO ELECTRÓNICO"
+                type="email"
                 error={!!errors.email}
-                hint={isSubmitted ? errors.email?.message : undefined}
               />
+              {errors.email && (
+                <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
+              )}
             </div>
 
-            {/* Fila 4 */}
+            {/* Condición */}
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Condición *</label>
               <Controller
@@ -395,17 +503,19 @@ export default function TutorModal({
                 control={control}
                 render={({ field }) => (
                   <Select
+                    {...field}
                     options={CONDITION_OPTIONS}
-                    onChange={field.onChange}
-                    defaultValue={field.value}
                     placeholder="Seleccione Condición"
+                    error={!!errors.condition}
                   />
                 )}
               />
-              {isSubmitted && errors.condition && (
+              {errors.condition && (
                 <p className="mt-1 text-xs text-red-500">{errors.condition.message}</p>
               )}
             </div>
+
+            {/* Dedicación */}
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Dedicación *</label>
               <Controller
@@ -413,17 +523,19 @@ export default function TutorModal({
                 control={control}
                 render={({ field }) => (
                   <Select
+                    {...field}
                     options={DEDICATION_OPTIONS}
-                    onChange={field.onChange}
-                    defaultValue={field.value}
                     placeholder="Seleccione Dedicación"
+                    error={!!errors.dedication}
                   />
                 )}
               />
-              {isSubmitted && errors.dedication && (
+              {errors.dedication && (
                 <p className="mt-1 text-xs text-red-500">{errors.dedication.message}</p>
               )}
             </div>
+
+            {/* Categoría */}
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Categoría *</label>
               <Controller
@@ -431,19 +543,19 @@ export default function TutorModal({
                 control={control}
                 render={({ field }) => (
                   <Select
+                    {...field}
                     options={CATEGORY_OPTIONS}
-                    onChange={field.onChange}
-                    defaultValue={field.value}
                     placeholder="Seleccione Categoría"
+                    error={!!errors.category}
                   />
                 )}
               />
-              {isSubmitted && errors.category && (
+              {errors.category && (
                 <p className="mt-1 text-xs text-red-500">{errors.category.message}</p>
               )}
             </div>
 
-            {/* Fila 5 */}
+            {/* Profesión */}
             <div className="lg:col-span-1">
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Profesión *</label>
               <Controller
@@ -451,33 +563,34 @@ export default function TutorModal({
                 control={control}
                 render={({ field }) => (
                   <Select
+                    {...field}
                     options={PROFESSION_OPTIONS}
-                    onChange={field.onChange}
-                    defaultValue={field.value}
                     placeholder="Seleccione Profesión"
+                    error={!!errors.profession}
                   />
                 )}
               />
-              {isSubmitted && errors.profession && (
+              {errors.profession && (
                 <p className="mt-1 text-xs text-red-500">{errors.profession.message}</p>
               )}
             </div>
+
+            {/* Carreras */}
             <div className="lg:col-span-2">
-              {/* <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Carreras que Atiende *</label> */}
               <Controller
                 name="carreras"
                 control={control}
                 render={({ field }) => (
                   <MultiSelect
+                    {...field}
                     label="Carreras que Atiende *"
-                    options={filteredCarreraOptions}
-                    onChange={field.onChange}
-                    value={field.value}
-                    placeholder="Seleccione las carreras..."
+                    placeholder={careersLoading ? "Cargando carreras..." : (isInUse ? "Carreras asignadas (no editable)" : "Seleccione las carreras...")}
+                    options={careerOptions}
+                    disabled={careersLoading || isInUse}
                   />
                 )}
               />
-              {isSubmitted && errors.carreras && (
+              {errors.carreras && (
                 <p className="mt-1 text-xs text-red-500">{errors.carreras.message}</p>
               )}
             </div>
@@ -513,5 +626,5 @@ export default function TutorModal({
       cancelLabel="Continuar editando"
     />
   </>
-);
+  );
 }

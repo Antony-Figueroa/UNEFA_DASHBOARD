@@ -458,7 +458,7 @@ CREATE TABLE "t_professional_practices" (
   "MANAGER_ID" int NOT NULL,
   "OBSERVATION" varchar(255) NOT NULL,
   "ENROLLMENT" varchar(255) NOT NULL ,
-  "INTERSHIP_STATUS" int NOT NULL,
+  "INTERNSHIP_STATUS" int NOT NULL,
   "INTERNSHIP_TYPE_ID" int NOT NULL
 );
 

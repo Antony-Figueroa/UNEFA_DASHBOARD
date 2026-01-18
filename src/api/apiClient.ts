@@ -48,6 +48,16 @@ apiClient.interceptors.response.use(
       console.error(`[API] Error: ${error.message} en ${error.config?.url}`);
     }
     
+    // Si recibimos un 401 Unauthorized y no estamos en una página pública, 
+    // significa que la sesión expiró o es inválida.
+    if (error.response?.status === 401 && !isPublicPage) {
+      console.warn('[API] Sesión expirada o no autorizada. Redirigiendo al login...');
+      // Limpiar cualquier estado local si fuera necesario (aunque withCredentials usa cookies)
+      // Redirigir al login
+      window.location.href = '/signin';
+      return Promise.reject(error);
+    }
+
     // Si no hay config (ej: error de red extremo) o ya excedimos los reintentos
     if (!config || (config._retryCount ?? 0) >= 3) {
       if (error.code === 'ERR_NETWORK' && !isPublicPage) {

@@ -20,6 +20,7 @@ import EnrollmentViewModal from "../../features/enrollment/components/Enrollment
 import { useEnrollment } from "../../features/enrollment/hooks/useEnrollment";
 import { Enrollment, EnrollmentRowData } from "../../features/enrollment/types";
 import { formatDateTime } from "../../utils/date";
+import { useLists } from "../../features/lists/hooks/useLists";
 
 const formatEnrollmentToRow = (e: Enrollment): EnrollmentRowData => ({
     ...e,
@@ -28,6 +29,50 @@ const formatEnrollmentToRow = (e: Enrollment): EnrollmentRowData => ({
 
 export default function EnrollmentPage() {
     const [pageLoading, setPageLoading] = useState(true);
+    const { fetchMultipleLists } = useLists();
+    const [periodOptions, setPeriodOptions] = useState<{ value: string; label: string }[]>([]);
+    const [practiceTypeOptions, setPracticeTypeOptions] = useState<{ value: string; label: string }[]>([]);
+
+    useEffect(() => {
+        const loadFilterOptions = async () => {
+            try {
+                const data = await fetchMultipleLists(["Periodo", "Tipo de Práctica"]);
+                
+                // Process Period options
+                const periodList = data["Periodo"] || [];
+                const mappedPeriods = periodList.length > 0 
+                    ? periodList.map(v => ({
+                        value: v.name.toUpperCase(),
+                        label: v.name.toUpperCase()
+                    }))
+                    : [
+                        { value: "2024-I", label: "2024-I" },
+                        { value: "2024-II", label: "2024-II" },
+                        { value: "2025-I", label: "2025-I" },
+                        { value: "2025-II", label: "2025-II" },
+                        { value: "2026-I", label: "2026-I" },
+                        { value: "2026-II", label: "2026-II" },
+                    ];
+                setPeriodOptions(mappedPeriods);
+
+                // Process Practice Type options
+                const practiceList = data["Tipo de Práctica"] || [];
+                const mappedPractice = practiceList.length > 0
+                    ? practiceList.map(v => ({
+                        value: v.name.toUpperCase(),
+                        label: v.name.toUpperCase()
+                    }))
+                    : [
+                        { value: "ORDINARIA", label: "ORDINARIA" },
+                        { value: "ESPECIAL", label: "ESPECIAL" },
+                    ];
+                setPracticeTypeOptions(mappedPractice);
+            } catch (error) {
+                console.error("Error loading filter options:", error);
+            }
+        };
+        loadFilterOptions();
+    }, [fetchMultipleLists]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -181,6 +226,8 @@ export default function EnrollmentPage() {
                                 onToggleStatus={handleToggleStatus}
                                 onView={setViewItem}
                                 loading={loadingAction}
+                                periodOptions={periodOptions}
+                                practiceTypeOptions={practiceTypeOptions}
                             />
                         </SkeletonLoader>
                     </ComponentCard>

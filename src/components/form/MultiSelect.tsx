@@ -126,7 +126,7 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
         )}
       </div>
 
-      <div className="relative z-50 inline-block w-full">
+      <div className="relative z-[1000000] inline-block w-full">
         <div className="relative flex flex-col items-center">
           <div
             onClick={toggleDropdown}

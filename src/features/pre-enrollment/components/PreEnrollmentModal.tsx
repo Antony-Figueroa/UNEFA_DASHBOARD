@@ -6,20 +6,16 @@ import Input from "../../../components/form/input/InputField";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { PreEnrollment } from "../types";
 import Button from "../../../components/ui/button/Button";
-import Select from "../../../components/form/Select";
 import CustomSelect from "../../../components/form/CustomSelect";
 import { Student } from "../../students/types";
 import { getStudents } from "../../students/services/studentsService";
-import { getCareers } from "../../careers/services/careersService";
 import { getPeriods } from "../../periods/services/periodService";
 import { Periodo } from "../../periods/types";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
-import { getInternshipTypesByCareer, getInternshipTypes, mapToOptions } from "../../internship-types/services/internshipTypesService";
-import { getPreEnrollments } from "../services/preEnrollmentService";
-import { InternshipTypeOption } from "../../internship-types/types";
+import { getInternshipTypesByCareer, getInternshipTypes } from "../../internship-types/services/internshipTypesService";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
-import { InfoIcon } from "../../../icons";
+import { useLists } from "../../lists/hooks/useLists";
 
 interface PreEnrollmentModalProps {
   isOpen: boolean;
@@ -56,8 +52,16 @@ export default function PreEnrollmentModal({
 }: PreEnrollmentModalProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [periods, setPeriods] = useState<Periodo[]>([]);
-  const [practiceOptions, setPracticeOptions] = useState<InternshipTypeOption[]>([]);
-  const [isLoadingPeriods, setIsLoadingPeriods] = useState(false);
+  const [suggestions, setSuggestions] = useState<Student[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
+  const { fetchMultipleLists } = useLists();
+
+  const NATIONALITY_OPTIONS = options["Nacionalidad"] || [
+    { value: "V", label: "V" },
+    { value: "E", label: "E" },
+  ];
 
   const { 
     register,
@@ -80,6 +84,39 @@ export default function PreEnrollmentModal({
     },
   });
 
+  const idNumber = useWatch({ control, name: "identificationNumber" });
+  const idPrefix = useWatch({ control, name: "identificationPrefix" });
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const response = await getStudents();
+        // Filtrar estudiantes que NO están en uso (sin registros en prácticas)
+        const availableStudents = response.data.filter(s => !s.isInUse && s.status);
+        setAllStudents(availableStudents);
+      } catch (error) {
+        console.error("Error fetching students:", error);
+      }
+    };
+    if (isOpen && !editingEntry) {
+      fetchStudents();
+    }
+  }, [isOpen, editingEntry]);
+
+  useEffect(() => {
+    if (idNumber && idNumber.length >= 3 && !editingEntry) {
+      const filtered = allStudents.filter(s => 
+        s.identificationNumber.startsWith(idNumber) && 
+        s.identificationPrefix === idPrefix
+      );
+      setSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [idNumber, idPrefix, allStudents, editingEntry]);
+
   const {
     showConfirmation,
     handleCloseAttempt,
@@ -87,72 +124,80 @@ export default function PreEnrollmentModal({
     cancelClose,
   } = useUnsavedChanges(isDirty, onClose);
 
-  const idNumber = useWatch({ control, name: "identificationNumber" });
-  const idPrefix = useWatch({ control, name: "identificationPrefix" });
-
   // Cargar periodos y tipos de práctica
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoadingPeriods(true);
       try {
-        const [periodData, practiceData] = await Promise.all([
+        const [periodData] = await Promise.all([
           getPeriods(),
           getInternshipTypes()
         ]);
         
-        setPracticeOptions(mapToOptions(practiceData));
+        // Filtrar solo periodos pendientes (status 1) y encontrar el más cercano
+        const pendingPeriods = periodData
+          .filter(p => p.periodStatus === 1 && p.status)
+          .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
         
-        // Filtrar periodos según requerimientos:
-        // 1. Mostrar periodo en curso (status 2)
-        // 2. Si no hay en curso, mostrar el primer pendiente (status 1)
-        // 3. No mostrar culminados (status 3) para nuevas preinscripciones
+        const closestPeriod = pendingPeriods.length > 0 ? [pendingPeriods[0]] : [];
         
-        const currentPeriod = periodData.find(p => p.periodStatus === 2);
-        const pendingPeriods = periodData.filter(p => p.periodStatus === 1).sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
-        
-        let filteredPeriods: Periodo[] = [];
-        if (currentPeriod) {
-          filteredPeriods = [currentPeriod];
-        } else if (pendingPeriods.length > 0) {
-          filteredPeriods = [pendingPeriods[0]];
-        }
-
         // Si estamos editando, asegurar que el periodo de la entrada esté en la lista
         if (editingEntry) {
-          const exists = filteredPeriods.some(p => p.description === editingEntry.period);
+          const exists = closestPeriod.some(p => p.description === editingEntry.period);
           if (!exists) {
             const originalPeriod = periodData.find(p => p.description === editingEntry.period);
             if (originalPeriod) {
-              filteredPeriods.push(originalPeriod);
+              closestPeriod.push(originalPeriod);
             }
           }
         }
-        
-        setPeriods(filteredPeriods);
 
-        // Si es una nueva preinscripción y hay un periodo sugerido, seleccionarlo
-        if (!editingEntry && filteredPeriods.length > 0) {
-          setValue("period", filteredPeriods[0].description);
+        setPeriods(closestPeriod);
+        
+        if (closestPeriod.length > 0 && !editingEntry && !getValues("period")) {
+          setValue("period", closestPeriod[0].description);
         }
       } catch (error) {
-        console.error("Error al cargar periodos:", error);
-      } finally {
-        setIsLoadingPeriods(false);
+        console.error("Error al cargar datos iniciales:", error);
       }
     };
 
     if (isOpen) {
       fetchData();
     }
-  }, [isOpen, editingEntry, setValue]);
+  }, [isOpen, editingEntry, setValue, getValues]);
+
+  // Cargar opciones dinámicas
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const data = await fetchMultipleLists(["Nacionalidad"]);
+        const mappedOptions: Record<string, { value: string; label: string }[]> = {};
+        
+        Object.entries(data).forEach(([key, values]) => {
+          mappedOptions[key] = values.map(v => ({
+            value: v.name.toUpperCase(),
+            label: v.name.toUpperCase()
+          }));
+        });
+        
+        setOptions(mappedOptions);
+      } catch (error) {
+        console.error("Error loading list options:", error);
+      }
+    };
+
+    if (isOpen) {
+      loadOptions();
+    }
+  }, [isOpen, fetchMultipleLists]);
 
   const lookupStudent = useCallback(async (prefix: string, number: string) => {
     if (number.length < 5) return;
     
     setIsSearching(true);
     try {
-      const students = await getStudents();
-      const student = students.data.find(
+      const response = await getStudents();
+      const student = response.data.find(
         (s: Student) => s.identificationPrefix === prefix && s.identificationNumber === number
       );
 
@@ -160,85 +205,27 @@ export default function PreEnrollmentModal({
         setValue("studentName", `${student.firstName} ${student.lastName}`);
         setValue("phone", student.phone || "");
         
-        // Autocompletar Tipo de Práctica desde la BD
-        try {
-          const currentPeriod = getValues('period');
-          const allPreEnrollments = await getPreEnrollments();
-          
-          // Filtrar pre-inscripciones del estudiante en el período actual
-          const studentPreEnrollments = allPreEnrollments.filter(p => 
-            p.identificationNumber === number && 
-            p.identificationPrefix === prefix
-          );
-          const periodPreEnrollments = studentPreEnrollments.filter(p => p.period === currentPeriod);
-          const approvedPreEnrollments = periodPreEnrollments.filter(p => p.status);
-          const usedTypes = approvedPreEnrollments.map(p => p.practiceType);
-
-          if (student.careerId) {
-            const internshipTypes = await getInternshipTypesByCareer(student.careerId);
-            if (internshipTypes && internshipTypes.length > 0) {
-              const mappedOptions = mapToOptions(internshipTypes);
-              setPracticeOptions(mappedOptions);
-              
-              // Ordenar tipos por prioridad (menor PRIORITY primero)
-              const sortedTypes = internshipTypes.sort((a, b) => a.PRIORITY - b.PRIORITY);
-              
-              // Encontrar el siguiente tipo disponible que no haya sido usado
-              const nextType = sortedTypes.find(type => !usedTypes.includes(type.NAME));
-              
-              if (nextType) {
-                setValue("practiceType", nextType.NAME);
-              } else {
-                // Si todos los tipos han sido usados, usar el de mayor prioridad
-                setValue("practiceType", sortedTypes[0].NAME);
-              }
-            } else {
-              // Fallback a tipos globales
-              try {
-                const globalTypes = await getInternshipTypes();
-                setPracticeOptions(mapToOptions(globalTypes));
-              } catch (fallbackError) {
-                console.error("Error al cargar tipos globales:", fallbackError);
-              }
-              setValue("practiceType", "ÚNICA");
-            }
+        // Autocompletar Tipo de Práctica basado en la carrera del estudiante
+        if (student.careerId) {
+          const types = await getInternshipTypesByCareer(student.careerId);
+          if (types.length > 0) {
+            setValue("practiceType", types[0].NAME);
           } else {
-            // Si no tiene carrera asociada, cargar tipos globales
-            try {
-              const globalTypes = await getInternshipTypes();
-              setPracticeOptions(mapToOptions(globalTypes));
-            } catch (fallbackError) {
-              console.error("Error al cargar tipos globales:", fallbackError);
-            }
-            setValue("practiceType", "ÚNICA");
+            setValue("practiceType", "");
           }
-        } catch (error) {
-          console.error("Error al obtener tipos de pasantía para el estudiante:", error);
-          // Fallback
-          try {
-            const globalTypes = await getInternshipTypes();
-            setPracticeOptions(mapToOptions(globalTypes));
-          } catch (fallbackError) {
-            console.error("Error al cargar tipos globales:", fallbackError);
-          }
-          setValue("practiceType", "ÚNICA");
         }
 
-        // Generar Matrícula Automática
-        // Formato: ${abreviación_carrera} - ${semestre_estudiante} - ${sección_estudiante} - ${jornada}
-        const careers = await getCareers();
-        const career = careers.find(c => c.careerId === student.careerId);
-        const abbr = career?.careerAbbreviation || student.careerName?.substring(0, 3).toUpperCase() || "GEN";
-        
-        const enrollmentCode = `${abbr}-${student.semester}-${student.section}-${student.regime}`.toUpperCase();
+        // Matrícula automática
+        const abbr = student.careerName?.substring(0, 3).toUpperCase() || "GEN";
+        const enrollmentCode = `${student.identificationPrefix}-${student.identificationNumber}-${abbr}-${student.semester}`.toUpperCase();
         setValue("enrollmentCode", enrollmentCode);
       }
     } catch (error) {
-      console.error("Error buscando estudiante:", error);
+      console.error("Error al buscar estudiante:", error);
     } finally {
       setIsSearching(false);
     }
-  }, [setValue, getValues]);
+  }, [setValue]);
 
   useEffect(() => {
     if (!editingEntry && idNumber) {
@@ -331,11 +318,7 @@ export default function PreEnrollmentModal({
                     render={({ field }) => (
                       <CustomSelect
                         id="identificationPrefix"
-                        options={[
-                          { value: "V", label: "V" },
-                          { value: "E", label: "E" },
-                          { value: "P", label: "P", disabled: true, disabledReason: "Pasaportes no habilitados temporalmente" },
-                        ]}
+                        options={NATIONALITY_OPTIONS}
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         value={field.value}
@@ -358,10 +341,51 @@ export default function PreEnrollmentModal({
                         e.preventDefault();
                       }
                     }}
+                    onBlur={() => {
+                      // Pequeño delay para permitir el click en la sugerencia
+                      setTimeout(() => setShowSuggestions(false), 200);
+                    }}
+                    autoComplete="off"
                   />
                   {isSearching && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-500 border-t-transparent"></div>
+                    </div>
+                  )}
+
+                  {/* Sugerencias de Cédula */}
+                  {showSuggestions && !editingEntry && (
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-bg-dark border border-border-light dark:border-white/10 rounded-lg shadow-lg max-h-48 overflow-y-auto custom-scrollbar">
+                      {suggestions.map((student) => (
+                        <button
+                          key={student.studentId}
+                          type="button"
+                          className="w-full px-4 py-2 text-left hover:bg-bg-secondary dark:hover:bg-white/5 text-sm text-text-primary dark:text-white/90 border-b border-border-light dark:border-white/5 last:border-0"
+                          onClick={async () => {
+                            setValue("identificationNumber", student.identificationNumber);
+                            setValue("identificationPrefix", student.identificationPrefix);
+                            setValue("studentName", `${student.firstName} ${student.lastName}`);
+                            setValue("phone", student.phone || "");
+                            
+                            if (student.careerId) {
+                              const types = await getInternshipTypesByCareer(student.careerId);
+                              if (types.length > 0) {
+                                setValue("practiceType", types[0].NAME);
+                              }
+                            }
+                            
+                            // Matrícula automática
+                            const abbr = student.careerName?.substring(0, 3).toUpperCase() || "GEN";
+                            const enrollmentCode = `${student.identificationPrefix}-${student.identificationNumber}-${abbr}-${student.semester}`.toUpperCase();
+                            setValue("enrollmentCode", enrollmentCode);
+                            
+                            setShowSuggestions(false);
+                          }}
+                        >
+                          <div className="font-medium">{student.identificationPrefix}-{student.identificationNumber}</div>
+                          <div className="text-xs text-text-tertiary">{student.firstName} {student.lastName}</div>
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -382,8 +406,8 @@ export default function PreEnrollmentModal({
                 placeholder="Nombre automático"
                 error={!!errors.studentName}
                 hint={isSubmitted ? errors.studentName?.message : undefined}
-                readOnly={!!editingEntry}
-                className={editingEntry ? "bg-bg-secondary dark:bg-white/5 cursor-not-allowed" : ""}
+                readOnly={true}
+                className="bg-bg-secondary dark:bg-white/5 cursor-not-allowed"
               />
             </div>
 
@@ -398,83 +422,67 @@ export default function PreEnrollmentModal({
                 placeholder="Teléfono automático"
                 error={!!errors.phone}
                 hint={isSubmitted ? errors.phone?.message : undefined}
-                readOnly={!!editingEntry}
-                className={editingEntry ? "bg-bg-secondary dark:bg-white/5 cursor-not-allowed" : ""}
+                readOnly={true}
+                className="bg-bg-secondary dark:bg-white/5 cursor-not-allowed"
               />
             </div>
 
             {/* Período */}
             <div>
-              <label className="mb-2 sm:mb-2.5 block text-black dark:text-white font-medium text-sm">Período *</label>
+              <div className="flex items-center mb-2 sm:mb-2.5">
+                <label className="block text-black dark:text-white font-medium text-sm">Período *</label>
+                {!editingEntry && <AutoGeneratedBadge tooltip="Se selecciona automáticamente el periodo pendiente más cercano." />}
+              </div>
               <Controller
                 name="period"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    options={periods.map(p => ({
-                      value: p.description,
-                      label: p.description
-                    }))}
-                    placeholder={isLoadingPeriods ? "Cargando períodos..." : "Seleccione el período"}
+                  <CustomSelect
+                    id="period"
+                    options={periods.map((p) => ({ value: p.description, label: p.description }))}
                     onChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={isLoadingPeriods || periods.length === 0}
+                    onBlur={field.onBlur}
+                    value={field.value}
+                    placeholder="Seleccione el período"
+                    disabled={true}
+                    error={!!errors.period}
                   />
                 )}
               />
-              {periods.length > 0 && (
-                <p className="mt-1.5 text-[11px] text-text-tertiary dark:text-text-tertiary flex items-center gap-1">
-                  <InfoIcon className="w-3 h-3 text-blue-light-500" />
-                  Vigentes o próximos.
-                </p>
-              )}
               {isSubmitted && errors.period && (
                 <p className="mt-1 text-xs text-error-500">{errors.period.message}</p>
               )}
-              {periods.length === 0 && !isLoadingPeriods && (
-                <p className="mt-1 text-xs text-warning-600 dark:text-warning-400">
-                  No hay períodos disponibles.
-                </p>
-              )}
             </div>
 
-            {/* Tipo Práctica */}
+            {/* Tipo de Práctica */}
             <div>
               <div className="flex items-center mb-2 sm:mb-2.5">
-                <label className="block text-black dark:text-white font-medium text-sm">Tipo Práctica *</label>
-                {!editingEntry && <AutoGeneratedBadge tooltip="Determinado automáticamente según la carrera del estudiante." />}
+                <label className="block text-black dark:text-white font-medium text-sm">Tipo de Práctica *</label>
+                {!editingEntry && <AutoGeneratedBadge tooltip="Se asigna automáticamente según la carrera del estudiante." />}
               </div>
-              <Controller
-                name="practiceType"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    options={practiceOptions}
-                    placeholder="Selecciona el tipo"
-                    onChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={!!editingEntry}
-                  />
-                )}
+              <Input
+                {...register("practiceType")}
+                placeholder="Tipo automático"
+                error={!!errors.practiceType}
+                hint={isSubmitted ? errors.practiceType?.message : undefined}
+                readOnly={true}
+                className="bg-bg-secondary dark:bg-white/5 cursor-not-allowed"
               />
-              {isSubmitted && errors.practiceType && (
-                <p className="mt-1 text-xs text-red-500">{errors.practiceType.message}</p>
-              )}
             </div>
 
             {/* Matrícula */}
             <div>
               <div className="flex items-center mb-2 sm:mb-2.5">
                 <label className="block text-black dark:text-white font-medium text-sm">Matrícula *</label>
-                {!editingEntry && <AutoGeneratedBadge tooltip="Generada automáticamente: ABREVIACIÓN-SEMESTRE-SECCIÓN-JORNADA." />}
+                {!editingEntry && <AutoGeneratedBadge tooltip="Se genera automáticamente basándose en los datos académicos del estudiante." />}
               </div>
               <Input
                 {...register("enrollmentCode")}
-                placeholder="Generación automática"
+                placeholder="Matrícula automática"
                 error={!!errors.enrollmentCode}
                 hint={isSubmitted ? errors.enrollmentCode?.message : undefined}
-                readOnly={!!editingEntry}
-                className={editingEntry ? "bg-bg-secondary dark:bg-white/5 cursor-not-allowed" : ""}
+                readOnly={true}
+                className="bg-bg-secondary dark:bg-white/5 cursor-not-allowed"
               />
             </div>
           </div>

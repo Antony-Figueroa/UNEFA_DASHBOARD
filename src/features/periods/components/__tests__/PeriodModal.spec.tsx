@@ -11,8 +11,8 @@ describe('PeriodModal Reglas de Negocio y UI', () => {
   it('En Curso: solo endDate editable; otros campos deshabilitados', () => {
     const periodoEnCurso: Periodo = {
       periodId: 'p1',
-      code: '2025-I',
-      description: '2025-I',
+      code: '1-2025',
+      description: '1-2025',
       startDate: new Date('2025-01-01'),
       endDate: new Date('2025-04-23'),
       creationDate: new Date(),
@@ -58,14 +58,14 @@ describe('PeriodModal Reglas de Negocio y UI', () => {
     );
 
     expect(screen.queryByLabelText(/Código del Periodo/i)).toBeNull();
-    expect(screen.queryByPlaceholderText(/Ej: 2025-I/i)).toBeNull();
+    expect(screen.queryByPlaceholderText(/Ej: 1-2025/i)).toBeNull();
   });
 
   it('Autocompletado: sugiere el siguiente periodo correctamente', async () => {
     const existingPeriods: Periodo[] = [{
       periodId: 'p1',
-      code: '2025-I',
-      description: '2025-I',
+      code: '1-2025',
+      description: '1-2025',
       startDate: new Date('2025-01-01'),
       endDate: new Date('2025-04-23'),
       creationDate: new Date(),
@@ -95,6 +95,6 @@ describe('PeriodModal Reglas de Negocio y UI', () => {
 
     const selects = screen.getAllByRole('combobox');
     const typeSelectElement = selects[1] as HTMLSelectElement;
-    expect(typeSelectElement.value).toBe('II');
+    expect(typeSelectElement.value).toBe('2');
   });
 });

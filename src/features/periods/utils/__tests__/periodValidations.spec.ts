@@ -6,8 +6,8 @@ describe('Period Validations', () => {
     const existingPeriods: Periodo[] = [
         {
             periodId: '1',
-            code: '2026-I',
-            description: 'I-2026',
+            code: '2026-1',
+            description: '1-2026',
             startDate: new Date('2026-01-01'),
             endDate: new Date('2026-05-31'),
             periodStatus: 3,
@@ -16,8 +16,8 @@ describe('Period Validations', () => {
         },
         {
             periodId: '2',
-            code: '2026-II',
-            description: 'II-2026',
+            code: '2026-2',
+            description: '2-2026',
             startDate: new Date('2026-06-01'),
             endDate: new Date('2026-10-31'),
             periodStatus: 2,
@@ -53,28 +53,28 @@ describe('Period Validations', () => {
     });
 
     describe('checkSequentiality', () => {
-        it('should validate correctly for the next immediate period (I -> II)', () => {
-            const result = checkSequentiality('I-2027', existingPeriods);
+        it('should validate correctly for the next immediate period (1 -> 2)', () => {
+            const result = checkSequentiality('1-2027', existingPeriods);
             expect(result.isValid).toBe(true);
         });
 
         it('should fail if the period is not sequential (skipping a semester)', () => {
-            const result = checkSequentiality('II-2027', existingPeriods);
+            const result = checkSequentiality('2-2027', existingPeriods);
             expect(result.isValid).toBe(false);
-            expect(result.message).toContain('El siguiente lapso obligatorio es I-2027');
+            expect(result.message).toContain('El siguiente lapso obligatorio es 1-2027');
         });
 
         it('should fail if the period is in the past', () => {
-            const result = checkSequentiality('II-2025', existingPeriods);
+            const result = checkSequentiality('2-2025', existingPeriods);
             expect(result.isValid).toBe(false);
-            expect(result.message).toContain('El lapso debe ser posterior al último período registrado (II-2026)');
+            expect(result.message).toContain('El lapso debe ser posterior al último período registrado (2-2026)');
         });
     });
 
     describe('getLapsoValue', () => {
-        it('should convert I to 1 and II to 2 with year prefix', () => {
-            expect(getLapsoValue('I-2025')).toBe(20251);
-            expect(getLapsoValue('II-2025')).toBe(20252);
+        it('should convert 1 to 1 and 2 to 2 with year prefix', () => {
+            expect(getLapsoValue('1-2025')).toBe(20251);
+            expect(getLapsoValue('2-2025')).toBe(20252);
         });
     });
 
@@ -84,7 +84,7 @@ describe('Period Validations', () => {
         it('should fail if endDate is before startDate', () => {
             const data = {
                 year: '2027',
-                periodoTipo: 'I' as const,
+                periodoTipo: '1' as const,
                 startDate: new Date('2027-05-01'),
                 endDate: new Date('2027-04-01')
             };
@@ -97,7 +97,7 @@ describe('Period Validations', () => {
             const endDate = new Date(startDate.getTime() + (15 * 7 * 24 * 60 * 60 * 1000)); // 15 weeks
             const data = {
                 year: '2027',
-                periodoTipo: 'I' as const,
+                periodoTipo: '1' as const,
                 startDate,
                 endDate
             };
@@ -108,7 +108,7 @@ describe('Period Validations', () => {
         it('should fail if year does not match startDate year', () => {
             const data = {
                 year: '2027',
-                periodoTipo: 'I' as const,
+                periodoTipo: '1' as const,
                 startDate: new Date(2026, 0, 1), // Jan 2026 is still in the past if today is 2026-01-17, but I'll use 2028
                 endDate: new Date(2026, 5, 1)
             };
@@ -127,7 +127,7 @@ describe('Period Validations', () => {
         it('should fail if startDate year is after selected year', () => {
             const data = {
                 year: '2027',
-                periodoTipo: 'I' as const,
+                periodoTipo: '1' as const,
                 startDate: new Date(2028, 0, 1),
                 endDate: new Date(2028, 5, 1)
             };
@@ -141,7 +141,7 @@ describe('Period Validations', () => {
         it('should pass if year matches startDate year', () => {
             const data = {
                 year: '2027',
-                periodoTipo: 'I' as const,
+                periodoTipo: '1' as const,
                 startDate: new Date(2027, 0, 15),
                 endDate: new Date(2027, 5, 15)
             };
@@ -152,7 +152,7 @@ describe('Period Validations', () => {
         it('should pass if endDate is in the next year', () => {
             const data = {
                 year: '2027',
-                periodoTipo: 'I' as const,
+                periodoTipo: '1' as const,
                 startDate: new Date(2027, 8, 1), // Sept 2027 (as an example of late start)
                 endDate: new Date(2028, 0, 15)   // Jan 2028
             };
@@ -163,7 +163,7 @@ describe('Period Validations', () => {
         it('should fail if endDate is 2 years after selected year', () => {
             const data = {
                 year: '2027',
-                periodoTipo: 'I' as const,
+                periodoTipo: '1' as const,
                 startDate: new Date(2027, 0, 1),
                 endDate: new Date(2029, 0, 1)
             };

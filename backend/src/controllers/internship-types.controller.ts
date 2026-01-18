@@ -43,13 +43,11 @@ export const getAllInternshipTypes = async (req: Request, res: Response) => {
 export const getInternshipTypesByCareer = async (req: Request, res: Response) => {
   try {
     const { careerId } = req.params;
-    
-    const flattened = await dbManager.withRetry(async (supabase) => {
+
+    const result = await dbManager.withRetry(async (supabase) => {
       const { data, error } = await supabase
         .from(JOIN_TABLE)
         .select(`
-          ID_CAREER_INTERNSHIP_TYPE_ID,
-          CAREER_ID,
           INTERNSHIP_TYPE_ID,
           t_internship_type (
             INTERNSHIP_TYPE_ID,
@@ -61,21 +59,39 @@ export const getInternshipTypesByCareer = async (req: Request, res: Response) =>
         `)
         .eq('CAREER_ID', careerId);
 
-      if (error) throw error;
-
-      interface InternshipType {
-        STATUS: number;
+      if (!error && data) {
+        const items = (data || [])
+          .map(item => item.t_internship_type)
+        if (items.length || data.length) {
+          return items;
+        }
       }
 
-      return (data || [])
-        .filter(item => {
-          const type = item.t_internship_type as unknown as InternshipType;
-          return type?.STATUS === 1;
-        })
-        .map(item => item.t_internship_type);
-    });
+      const { data: rel, error: relErr } = await supabase
+        .from(JOIN_TABLE)
+        .select('INTERNSHIP_TYPE_ID')
+        .eq('CAREER_ID', careerId);
 
-    res.json(flattened);
+      if (relErr || !rel || rel.length === 0) {
+        return [];
+      }
+
+      const ids = rel.map((r: { INTERNSHIP_TYPE_ID: number }) => r.INTERNSHIP_TYPE_ID);
+      const { data: types, error: typesErr } = await supabase
+        .from(LOOKUP_TABLE)
+        .select('INTERNSHIP_TYPE_ID, NAME, ABBREVIATION, PRIORITY, STATUS')
+        .in('INTERNSHIP_TYPE_ID', ids)
+        .eq('STATUS', 1)
+        .order('PRIORITY', { ascending: true });
+
+      if (typesErr) {
+        return [];
+      }
+
+      return types || [];
+    }, 'getInternshipTypesByCareer');
+
+    res.json(result);
   } catch (error: unknown) {
     handleDbError(res, error);
   }

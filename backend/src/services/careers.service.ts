@@ -76,7 +76,7 @@ export const getCareers = async () => {
       .from('t_professional_practices')
       .select('CAREER_ID')
       .eq('STATUS', 1)
-      .eq('INTERSHIP_STATUS', 1); // Asumimos 1 como pendiente de evaluación
+      .eq('INTERNSHIP_STATUS', 1); // Asumimos 1 como pendiente de evaluación
 
     const usedIds = new Set([
       ...(studentUsage || []).map(s => s.CAREER_ID),
@@ -261,7 +261,7 @@ export const updateCareer = async (id: string, payload: Record<string, unknown>,
           .from('t_professional_practices')
           .select('PROFESSIONAL_PRACTICE_ID')
           .eq('STATUS', 1)
-          .eq('INTERSHIP_STATUS', 1) // Asumimos 1 como cursando/pendiente de evaluación
+          .eq('INTERNSHIP_STATUS', 1) // Asumimos 1 como cursando/pendiente de evaluación
           .in('STUDENTS_ID', studentIds)
           .limit(1);
 

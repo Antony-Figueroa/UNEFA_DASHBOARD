@@ -11,6 +11,7 @@ interface FlatpickrDatePickerProps {
   placeholder?: string;
   error?: boolean;
   disabled?: boolean;
+  onBlur?: () => void;
   options?: Record<string, unknown>;
   className?: string;
 }
@@ -18,6 +19,7 @@ interface FlatpickrDatePickerProps {
 const FlatpickrDatePicker: React.FC<FlatpickrDatePickerProps> = ({
   value,
   onChange,
+  onBlur,
   placeholder = "Selecciona fecha",
   error = false,
   disabled = false,
@@ -28,10 +30,10 @@ const FlatpickrDatePicker: React.FC<FlatpickrDatePickerProps> = ({
 
   const defaultOptions: Record<string, unknown> = {
     locale: Spanish,
-    dateFormat: 'd/m/Y',
+    dateFormat: 'Y-m-d',
     altInput: true,
     altFormat: 'd/m/Y',
-    static: false, // Cambiado a false para que el calendario se renderice en el body (portal)
+    static: false,
     monthSelectorType: 'static',
     position: 'above auto', // Forzar posición arriba si hay espacio, sino auto
     onOpen: (_selectedDates: Date[], _dateStr: string, instance: { calendarContainer: HTMLElement }) => {
@@ -57,6 +59,7 @@ const FlatpickrDatePicker: React.FC<FlatpickrDatePickerProps> = ({
       <Flatpickr
         value={value}
         onChange={onChange}
+        onBlur={onBlur}
         disabled={disabled}
         options={defaultOptions}
         placeholder={placeholder}

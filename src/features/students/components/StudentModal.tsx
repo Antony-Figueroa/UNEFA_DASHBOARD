@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { checkAvailability } from "../services/studentsService";
 import Input from "../../../components/form/input/InputField";
+import TextArea from "../../../components/form/input/TextArea";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Student } from "../types";
 import { ListValue } from "../../lists/types";
@@ -11,6 +12,13 @@ import Select from "../../../components/form/Select";
 import FlatpickrDatePicker from "../../../components/form/FlatpickrDatePicker";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { 
+  VENEZUELA_PHONE_PREFIXES, 
+  MILITARY_RANKS, 
+  studentSchema, 
+  StudentFormInput,
+  StudentFormOutput
+} from "../constants/validation";
 
 interface StudentModalProps {
   isOpen: boolean;
@@ -22,46 +30,6 @@ interface StudentModalProps {
   isLoading?: boolean;
 }
 
-const studentSchema = z.object({
-  identificationPrefix: z.string().min(1, "Seleccione un prefijo"),
-  identificationNumber: z.string()
-    .min(1, "La identificación es obligatoria")
-    .regex(/^\d+$/, "Solo se admiten números"),
-  firstName: z.string()
-    .min(1, "El primer nombre es obligatorio")
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "Solo se admiten letras"),
-  middleName: z.string()
-    .optional()
-    .refine(val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val), "Solo se admiten letras"),
-  lastName: z.string()
-    .min(1, "El primer apellido es obligatorio")
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "Solo se admiten letras"),
-  secondLastName: z.string()
-    .optional()
-    .refine(val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val), "Solo se admiten letras"),
-  sex: z.string().min(1, "Seleccione el sexo"),
-  birthDate: z.string().min(1, "La fecha de nacimiento es obligatoria"),
-  civilStatus: z.string().min(1, "Seleccione el estado civil"),
-  phone: z.string()
-    .min(1, "El teléfono es obligatorio")
-    .regex(/^\d+$/, "Solo se admiten números"),
-  email: z.string().email("Email inválido").min(1, "El email es obligatorio"),
-  address: z.string().min(1, "La dirección es obligatoria"),
-  careerId: z.union([z.string(), z.number()]).refine(val => String(val).length > 0, "La carrera es obligatoria"),
-  semester: z.string()
-    .min(1, "El semestre es obligatorio")
-    .regex(/^\d+$/, "Solo se admiten números"),
-  section: z.string()
-    .min(1, "La sección es obligatoria")
-    .regex(/^\d+$/, "Solo se admiten números"),
-  regime: z.string().min(1, "Seleccione el régimen"),
-  studentType: z.string().min(1, "Seleccione el tipo de estudiante"),
-  militaryRank: z.string().min(1, "El rango militar es obligatorio"),
-  works: z.string().min(1, "Seleccione si trabaja"),
-});
-
-type StudentFormData = z.infer<typeof studentSchema>;
-
 export default function StudentModal({
   isOpen,
   onClose,
@@ -71,6 +39,9 @@ export default function StudentModal({
   dynamicLists = {},
   isLoading = false,
 }: StudentModalProps) {
+  const [isCheckingCi, setIsCheckingCi] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -78,10 +49,13 @@ export default function StudentModal({
     reset,
     watch,
     setValue,
-    formState: { errors, isSubmitted, isDirty },
-  } = useForm<StudentFormData>({
+    setError,
+    clearErrors,
+    formState: { errors, isDirty, isValid },
+  } = useForm<StudentFormInput>({
     resolver: zodResolver(studentSchema),
-    defaultValues: {
+    mode: "all",
+    defaultValues: editingStudent ? { ...editingStudent } : {
       identificationPrefix: "",
       identificationNumber: "",
       firstName: "",
@@ -91,7 +65,8 @@ export default function StudentModal({
       sex: "",
       birthDate: "",
       civilStatus: "",
-      phone: "",
+      phonePrefix: "",
+      phoneNumber: "",
       email: "",
       address: "",
       careerId: "",
@@ -99,7 +74,7 @@ export default function StudentModal({
       section: "",
       regime: "",
       studentType: "",
-      militaryRank: "NO APLICA",
+      militaryRank: "",
       works: "",
     },
   });
@@ -112,41 +87,77 @@ export default function StudentModal({
   } = useUnsavedChanges(isDirty, onClose);
 
   const studentType = watch("studentType");
+  const birthDate = watch("birthDate");
+
+  // Calcular edad basada en birthDate
+  const age = useMemo(() => {
+    if (!birthDate || birthDate.trim() === "") return null;
+    // Usar T12:00:00 para evitar problemas de zona horaria con strings YYYY-MM-DD
+    const birth = new Date(birthDate.includes('T') ? birthDate : `${birthDate}T12:00:00`);
+    if (isNaN(birth.getTime())) return null;
+    
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  }, [birthDate]);
+
+  // Restricción de fecha: 16 años atrás desde hoy
+  const maxDate = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 16);
+    return d;
+  }, []);
 
   useEffect(() => {
     if (studentType === "CIVIL") {
-      setValue("militaryRank", "NO APLICA");
-    } else if (studentType === "MILITAR") {
-      // Si cambia a militar y estaba en "NO APLICA", limpiamos para que el usuario elija un rango
-      if (watch("militaryRank") === "NO APLICA") {
-        setValue("militaryRank", "");
-      }
+      setValue("militaryRank", "NO APLICA", { shouldValidate: true });
+    } else if (studentType === "MILITAR" && watch("militaryRank") === "NO APLICA") {
+      setValue("militaryRank", "", { shouldValidate: true });
     }
   }, [studentType, setValue, watch]);
 
   useEffect(() => {
     if (isOpen) {
       if (editingStudent) {
+        // Separar prefijo y número de teléfono (ej: 04121234567)
+        let phonePrefix = "";
+        let phoneNumber = "";
+        
+        if (editingStudent.phone) {
+          const cleanPhone = editingStudent.phone.replace(/[-\s]/g, '');
+          if (cleanPhone.length >= 4) {
+            phonePrefix = cleanPhone.substring(0, 4);
+            phoneNumber = cleanPhone.substring(4);
+          } else {
+            phoneNumber = cleanPhone;
+          }
+        }
+        
         reset({
-          identificationPrefix: editingStudent.identificationPrefix,
-          identificationNumber: editingStudent.identificationNumber,
-          firstName: editingStudent.firstName,
-          middleName: editingStudent.middleName || "",
-          lastName: editingStudent.lastName,
-          secondLastName: editingStudent.secondLastName || "",
-          sex: editingStudent.sex,
-          birthDate: editingStudent.birthDate,
-          civilStatus: editingStudent.civilStatus,
-          phone: editingStudent.phone,
-          email: editingStudent.email,
-          address: editingStudent.address,
-          careerId: editingStudent.careerId,
-          semester: editingStudent.semester,
-          section: editingStudent.section,
-          regime: editingStudent.regime,
-          studentType: editingStudent.studentType,
-          militaryRank: editingStudent.militaryRank,
-          works: editingStudent.works,
+          identificationPrefix: (editingStudent.identificationPrefix || "V").toUpperCase(),
+          identificationNumber: editingStudent.identificationNumber || "",
+          firstName: (editingStudent.firstName || "").toUpperCase(),
+          middleName: (editingStudent.middleName || "").toUpperCase(),
+          lastName: (editingStudent.lastName || "").toUpperCase(),
+          secondLastName: (editingStudent.secondLastName || "").toUpperCase(),
+          sex: (editingStudent.sex || "").toUpperCase(),
+          birthDate: editingStudent.birthDate || "",
+          civilStatus: (editingStudent.civilStatus || "").toUpperCase(),
+          phonePrefix: phonePrefix,
+          phoneNumber: phoneNumber,
+          email: (editingStudent.email || "").toUpperCase(),
+          address: (editingStudent.address || "").toUpperCase(),
+          careerId: String(editingStudent.careerId || ""),
+          semester: editingStudent.semester || "",
+          section: editingStudent.section || "",
+          regime: (editingStudent.regime || "").toUpperCase(),
+          studentType: (editingStudent.studentType || "").toUpperCase(),
+          militaryRank: (editingStudent.militaryRank || "").toUpperCase(),
+          works: (editingStudent.works || "").toUpperCase(),
         });
       } else {
         reset({
@@ -159,7 +170,8 @@ export default function StudentModal({
           sex: "",
           birthDate: "",
           civilStatus: "",
-          phone: "",
+          phonePrefix: "",
+          phoneNumber: "",
           email: "",
           address: "",
           careerId: "",
@@ -167,25 +179,46 @@ export default function StudentModal({
           section: "",
           regime: "",
           studentType: "",
-          militaryRank: "NO APLICA",
+          militaryRank: "",
           works: "",
         });
       }
     }
   }, [isOpen, editingStudent, reset]);
 
-  const onSubmit = (data: StudentFormData) => {
-    onSave({
-      ...data,
-      identificationPrefix: data.identificationPrefix as "V" | "E" | "J" | "P",
-      sex: data.sex as "FEMENINO" | "MASCULINO" | "OTRO",
-      civilStatus: data.civilStatus as "SOLTERO" | "CASADO" | "DIVORCIADO" | "VIUDO",
-      regime: data.regime as "DIURNO" | "NOCTURNO" | "MIXTO",
-      studentType: data.studentType as "CIVIL" | "MILITAR",
-      works: data.works as "SI" | "NO",
-      careerId: String(data.careerId),
-      status: editingStudent?.status ?? true,
-    });
+  const onSubmit = async (data: StudentFormInput) => {
+    try {
+      // data ya ha sido validado y transformado por zodResolver, 
+      // pero TS lo ve como StudentFormInput. Lo tratamos como el output validado.
+      const validatedData = data as StudentFormOutput;
+
+      const studentData: Omit<Student, "studentId" | "enrollmentDate"> = {
+        identificationPrefix: validatedData.identificationPrefix.toUpperCase() as Student["identificationPrefix"],
+        identificationNumber: validatedData.identificationNumber,
+        firstName: validatedData.firstName.toUpperCase(),
+        middleName: validatedData.middleName?.toUpperCase() || "",
+        lastName: validatedData.lastName.toUpperCase(),
+        secondLastName: validatedData.secondLastName?.toUpperCase() || "",
+        sex: validatedData.sex.toUpperCase() as Student["sex"],
+        birthDate: validatedData.birthDate,
+        civilStatus: validatedData.civilStatus.toUpperCase() as Student["civilStatus"],
+        phone: `${validatedData.phonePrefix}${validatedData.phoneNumber}`,
+        email: validatedData.email.toUpperCase(),
+        address: validatedData.address.toUpperCase(),
+        careerId: String(validatedData.careerId),
+        semester: validatedData.semester,
+        section: validatedData.section,
+        regime: validatedData.regime.toUpperCase() as Student["regime"],
+        studentType: validatedData.studentType.toUpperCase() as Student["studentType"],
+        militaryRank: validatedData.militaryRank.toUpperCase(),
+        works: validatedData.works.toUpperCase() as Student["works"],
+        status: editingStudent?.status ?? true,
+      };
+      
+      onSave(studentData);
+    } catch (error) {
+      console.error("Error en validación:", error);
+    }
   };
 
   return (
@@ -217,44 +250,84 @@ export default function StudentModal({
                       <Select
                         id="identificationPrefix"
                         options={[
-                          { value: "V", label: "V-" },
-                          { value: "E", label: "E-" },
-                          { value: "J", label: "J-" },
-                          { value: "P", label: "P-" },
+                          { value: "V", label: "V" },
+                          { value: "E", label: "E" },
                         ]}
                         onChange={field.onChange}
-                        defaultValue={field.value}
-                        placeholder="Seleccione Prefijo"
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        placeholder="Seleccione campo"
+                        disabled={!!editingStudent}
                       />
                     )}
                   />
                 </div>
                 <div className="flex-1">
                   <Input
-                    {...register("identificationNumber")}
-                    placeholder="Ingrese el número de cédula"
-                    error={!!errors.identificationNumber}
+                      {...register("identificationNumber")}
+                      placeholder="Número de cédula"
+                      error={!!errors.identificationNumber}
+                      hint={isCheckingCi ? "Verificando disponibilidad..." : errors.identificationNumber?.message}
+                      disabled={!!editingStudent || isCheckingCi}
+                    maxLength={8}
+                    autoComplete="off"
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').substring(0, 8);
+                      setValue("identificationNumber", val, { shouldValidate: true });
+                    }}
+                    onBlur={async (e) => {
+                      const value = e.target.value;
+                      if (value.length >= 6) {
+                        setIsCheckingCi(true);
+                        const prefix = watch("identificationPrefix") || 'V';
+                        const fullCi = `${prefix}-${value}`;
+                        try {
+                          const res = await checkAvailability('ci', fullCi, editingStudent?.studentId);
+                          if (!res.available) {
+                            setError("identificationNumber", { 
+                              type: "manual", 
+                              message: res.status === 0 
+                                ? "Cédula registrada (INACTIVO). Contacte a administración para reactivar." 
+                                : "Esta cédula ya está registrada." 
+                            });
+                          } else {
+                            clearErrors("identificationNumber");
+                          }
+                        } catch (err) {
+                          console.error("Error checking CI availability:", err);
+                        } finally {
+                          setIsCheckingCi(false);
+                        }
+                      }
+                    }}
                   />
                 </div>
               </div>
-              {isSubmitted && errors.identificationNumber && (
-                <p className="mt-1 text-xs text-red-500">{errors.identificationNumber.message}</p>
-              )}
             </div>
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Primer Nombre *</label>
               <Input
                 {...register("firstName")}
-                placeholder="Ingrese el primer nombre del estudiante"
+                placeholder="Primer nombre"
                 error={!!errors.firstName}
-                hint={isSubmitted ? errors.firstName?.message : undefined}
+                hint={errors.firstName?.message}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').toUpperCase();
+                  setValue("firstName", val, { shouldValidate: true });
+                }}
               />
             </div>
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Segundo Nombre</label>
               <Input
                 {...register("middleName")}
-                placeholder="Ingrese el segundo nombre del estudiante (si posee)"
+                placeholder="Segundo nombre"
+                error={!!errors.middleName}
+                hint={errors.middleName?.message}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').toUpperCase();
+                  setValue("middleName", val, { shouldValidate: true });
+                }}
               />
             </div>
 
@@ -263,16 +336,26 @@ export default function StudentModal({
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Primer Apellido *</label>
               <Input
                 {...register("lastName")}
-                placeholder="Ingrese el primer apellido del estudiante"
+                placeholder="Primer apellido"
                 error={!!errors.lastName}
-                hint={isSubmitted ? errors.lastName?.message : undefined}
+                hint={errors.lastName?.message}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').toUpperCase();
+                  setValue("lastName", val, { shouldValidate: true });
+                }}
               />
             </div>
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Segundo Apellido</label>
               <Input
                 {...register("secondLastName")}
-                placeholder="Ingrese el segundo apellido del estudiante (si posee)"
+                placeholder="Segundo apellido"
+                error={!!errors.secondLastName}
+                hint={errors.secondLastName?.message}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').toUpperCase();
+                  setValue("secondLastName", val, { shouldValidate: true });
+                }}
               />
             </div>
             <div>
@@ -280,28 +363,40 @@ export default function StudentModal({
               <Controller
                 name="sex"
                 control={control}
-                render={({ field }) => (
-                  <Select
-                    id="sex"
-                    options={dynamicLists["Sexo"]?.map(v => ({ value: v.name, label: v.name })) || [
+                render={({ field }) => {
+                  const options = (dynamicLists["Sexo"] && dynamicLists["Sexo"].length > 0)
+                    ? dynamicLists["Sexo"].map(v => ({ value: v.name.toUpperCase(), label: v.name.toUpperCase() }))
+                    : [
                       { value: "FEMENINO", label: "FEMENINO" },
                       { value: "MASCULINO", label: "MASCULINO" },
-                      { value: "OTRO", label: "OTRO" },
-                    ]}
-                    placeholder="Seleccione Sexo"
-                    onChange={field.onChange}
-                    defaultValue={field.value}
-                  />
-                )}
+                    ];
+
+                  return (
+                    <Select
+                      id="sex"
+                      options={options}
+                      placeholder="Seleccione Sexo"
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={field.value}
+                      className={errors.sex ? "border-error-500" : ""}
+                    />
+                  );
+                }}
               />
-              {isSubmitted && errors.sex && (
-                <p className="mt-1 text-xs text-red-500">{errors.sex.message}</p>
+              {errors.sex && (
+                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
+                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
+                  {errors.sex.message}
+                </p>
               )}
             </div>
 
             {/* Fila 3 */}
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Fecha de Nacimiento *</label>
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">
+                Fecha de Nacimiento * {age !== null && <span className="text-brand-500 ml-1">({age} años)</span>}
+              </label>
               <Controller
                 control={control}
                 name="birthDate"
@@ -311,7 +406,6 @@ export default function StudentModal({
                     onChange={(dates) => {
                       const date = dates[0];
                       if (date) {
-                        // Format to YYYY-MM-DD
                         const year = date.getFullYear();
                         const month = String(date.getMonth() + 1).padStart(2, '0');
                         const day = String(date.getDate()).padStart(2, '0');
@@ -320,13 +414,21 @@ export default function StudentModal({
                         field.onChange("");
                       }
                     }}
+                    onBlur={field.onBlur}
                     error={!!errors.birthDate}
-                    placeholder="Seleccione fecha de nacimiento"
+                    placeholder="Seleccione fecha"
+                    options={{
+                      maxDate: maxDate,
+                      showMonths: 1,
+                    }}
                   />
                 )}
               />
-              {isSubmitted && errors.birthDate && (
-                <p className="mt-1 text-xs text-red-500">{errors.birthDate.message}</p>
+              {errors.birthDate && (
+                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
+                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
+                  {errors.birthDate.message}
+                </p>
               )}
             </div>
             <div>
@@ -334,46 +436,119 @@ export default function StudentModal({
               <Controller
                 name="civilStatus"
                 control={control}
-                render={({ field }) => (
-                  <Select
-                    id="civilStatus"
-                    options={dynamicLists["Registro Civil"]?.map(v => ({ value: v.name, label: v.name })) || [
+                render={({ field }) => {
+                  const options = (dynamicLists["Registro Civil"] && dynamicLists["Registro Civil"].length > 0)
+                    ? dynamicLists["Registro Civil"].map(v => ({ value: v.name.toUpperCase(), label: v.name.toUpperCase() }))
+                    : [
                       { value: "SOLTERO", label: "SOLTERO" },
                       { value: "CASADO", label: "CASADO" },
                       { value: "DIVORCIADO", label: "DIVORCIADO" },
                       { value: "VIUDO", label: "VIUDO" },
-                    ]}
-                    placeholder="Seleccione Estado Civil"
-                    onChange={field.onChange}
-                    defaultValue={field.value}
-                  />
-                )}
+                    ];
+
+                  return (
+                    <Select
+                      id="civilStatus"
+                      options={options}
+                      placeholder="Seleccione Estado Civil"
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={field.value}
+                      className={errors.civilStatus ? "border-error-500" : ""}
+                    />
+                  );
+                }}
               />
-              {isSubmitted && errors.civilStatus && (
-                <p className="mt-1 text-xs text-red-500">{errors.civilStatus.message}</p>
+              {errors.civilStatus && (
+                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
+                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
+                  {errors.civilStatus.message}
+                </p>
               )}
             </div>
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Teléfono *</label>
-              <Input
-                {...register("phone")}
-                placeholder="Ingrese el número telefónico (ej: 04261234567)"
-                error={!!errors.phone}
-                hint={isSubmitted ? errors.phone?.message : undefined}
-              />
+              <div className="flex gap-2">
+                <div className="w-28">
+                  <Controller
+                    name="phonePrefix"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        id="phonePrefix"
+                        options={VENEZUELA_PHONE_PREFIXES}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        placeholder="Seleccione campo"
+                        className={errors.phonePrefix ? "border-error-500" : ""}
+                      />
+                    )}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Input
+                    {...register("phoneNumber")}
+                    placeholder="Número de teléfono"
+                    error={!!errors.phoneNumber}
+                    maxLength={7}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').substring(0, 7);
+                      setValue("phoneNumber", val, { shouldValidate: true });
+                    }}
+                  />
+                </div>
+              </div>
+              {(errors.phonePrefix || errors.phoneNumber) && (
+                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
+                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
+                  {errors.phoneNumber?.message || errors.phonePrefix?.message}
+                </p>
+              )}
             </div>
 
             {/* Fila 4 */}
-            <div>
+            <div className="md:col-span-2">
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Correo Electrónico *</label>
               <Input
                 {...register("email")}
                 type="email"
-                placeholder="Ingrese el correo institucional o personal (ej: usuario@correo.com)"
+                placeholder="Ingresa correo electrónico"
                 error={!!errors.email}
-                hint={isSubmitted ? errors.email?.message : undefined}
+                hint={isCheckingEmail ? "Verificando disponibilidad..." : (errors.email?.message || " ")}
+                disabled={isCheckingEmail}
+                autoComplete="off"
+                onChange={(e) => {
+                  setValue("email", e.target.value.toUpperCase(), { shouldValidate: true });
+                }}
+                onBlur={async (e) => {
+                  const value = e.target.value;
+                  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                  if (value && emailRegex.test(value)) {
+                    setIsCheckingEmail(true);
+                    try {
+                      const res = await checkAvailability('email', value, editingStudent?.studentId);
+                      if (!res.available) {
+                        setError("email", { 
+                          type: "manual", 
+                          message: res.status === 0 
+                            ? "Email registrado (INACTIVO). Contacte a administración para reactivar." 
+                            : "Este correo electrónico ya está registrado." 
+                        });
+                      } else {
+                        clearErrors("email");
+                      }
+                    } catch (err) {
+                      console.error("Error checking email availability:", err);
+                    } finally {
+                      setIsCheckingEmail(false);
+                    }
+                  }
+                }}
               />
             </div>
+
+            {/* Fila 5 Académica */}
             <div>
               <label htmlFor="careerId" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Carrera *</label>
               <Controller
@@ -382,59 +557,85 @@ export default function StudentModal({
                 render={({ field }) => (
                   <Select
                     id="careerId"
-                    options={careerOptions.map((opt) => ({ ...opt, value: String(opt.value) }))}
+                    options={careerOptions.map((opt) => ({ value: String(opt.value), label: opt.label.toUpperCase() }))}
                     placeholder="Seleccione Carrera"
                     onChange={field.onChange}
-                    defaultValue={String(field.value)}
+                    onBlur={field.onBlur}
+                    value={String(field.value)}
                     disabled={isLoading}
+                    className={errors.careerId ? "border-error-500" : ""}
                   />
                 )}
               />
-              {isSubmitted && errors.careerId && (
-                <p className="mt-1 text-xs text-red-500">{errors.careerId.message}</p>
+              {errors.careerId && (
+                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
+                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
+                  {errors.careerId.message}
+                </p>
               )}
             </div>
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Semestre *</label>
               <Input
                 {...register("semester")}
-                placeholder="Ingrese el semestre actual (ej: 04)"
+                placeholder="Semestre"
                 error={!!errors.semester}
-                hint={isSubmitted ? errors.semester?.message : undefined}
+                hint={errors.semester?.message}
+                maxLength={2}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').substring(0, 2);
+                  setValue("semester", val, { shouldValidate: true });
+                }}
               />
             </div>
-
-            {/* Fila 5 */}
             <div>
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Sección *</label>
               <Input
                 {...register("section")}
-                placeholder="Ingrese el código de sección (ej: 236)"
+                placeholder="Sección"
                 error={!!errors.section}
-                hint={isSubmitted ? errors.section?.message : undefined}
+                hint={errors.section?.message}
+                maxLength={5}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '').substring(0, 5);
+                  setValue("section", val, { shouldValidate: true });
+                }}
               />
             </div>
+
+            {/* Fila 6 Clasificación */}
             <div>
               <label htmlFor="regime" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Régimen *</label>
               <Controller
                 name="regime"
                 control={control}
-                render={({ field }) => (
-                  <Select
-                    id="regime"
-                    options={dynamicLists["Regimen/Turno"]?.map(v => ({ value: v.name, label: v.name })) || [
+                render={({ field }) => {
+                  const options = (dynamicLists["Regimen/Turno"] && dynamicLists["Regimen/Turno"].length > 0)
+                    ? dynamicLists["Regimen/Turno"].map(v => ({ value: v.name.toUpperCase(), label: v.name.toUpperCase() }))
+                    : [
                       { value: "DIURNO", label: "DIURNO" },
                       { value: "NOCTURNO", label: "NOCTURNO" },
                       { value: "MIXTO", label: "MIXTO" },
-                    ]}
-                    placeholder="Seleccione Régimen"
-                    onChange={field.onChange}
-                    defaultValue={field.value}
-                  />
-                )}
+                    ];
+
+                  return (
+                    <Select
+                      id="regime"
+                      options={options}
+                      placeholder="Seleccione Régimen"
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={field.value}
+                      className={errors.regime ? "border-error-500" : ""}
+                    />
+                  );
+                }}
               />
-              {isSubmitted && errors.regime && (
-                <p className="mt-1 text-xs text-red-500">{errors.regime.message}</p>
+              {errors.regime && (
+                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
+                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
+                  {errors.regime.message}
+                </p>
               )}
             </div>
             <div>
@@ -442,92 +643,113 @@ export default function StudentModal({
               <Controller
                 name="studentType"
                 control={control}
-                render={({ field }) => (
-                  <Select
-                    id="studentType"
-                    options={dynamicLists["Tipo de estudiante"]?.map(v => ({ value: v.name, label: v.name })) || [
+                render={({ field }) => {
+                  const options = (dynamicLists["Tipo de estudiante"] && dynamicLists["Tipo de estudiante"].length > 0)
+                    ? dynamicLists["Tipo de estudiante"].map(v => ({ value: v.name.toUpperCase(), label: v.name.toUpperCase() }))
+                    : [
                       { value: "CIVIL", label: "CIVIL" },
                       { value: "MILITAR", label: "MILITAR" },
-                    ]}
-                    placeholder="Seleccione Tipo de Estudiante"
-                    onChange={field.onChange}
-                    defaultValue={field.value}
-                  />
-                )}
+                    ];
+
+                  return (
+                    <Select
+                      id="studentType"
+                      options={options}
+                      placeholder="Seleccione campo"
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={field.value}
+                      className={errors.studentType ? "border-error-500" : ""}
+                    />
+                  );
+                }}
               />
-              {isSubmitted && errors.studentType && (
-                <p className="mt-1 text-xs text-red-500">{errors.studentType.message}</p>
+              {errors.studentType && (
+                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
+                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
+                  {errors.studentType.message}
+                </p>
               )}
             </div>
-
-            {/* Fila 6 */}
             <div>
               <label htmlFor="militaryRank" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Rango Militar *</label>
               <Controller
                 name="militaryRank"
                 control={control}
                 render={({ field }) => {
-                  const allOptions = dynamicLists["Rango Militar"]?.map(v => ({ value: v.name, label: v.name })) || [
-                    { value: "NO APLICA", label: "NO APLICA" },
-                    { value: "SOLDADO", label: "SOLDADO" },
-                    { value: "CABO", label: "CABO" },
-                    { value: "SARGENTO", label: "SARGENTO" },
-                  ];
-
-                  const filteredOptions = allOptions.filter(opt => {
-                    if (studentType === "CIVIL") return opt.value === "NO APLICA";
-                    if (studentType === "MILITAR") return opt.value !== "NO APLICA";
-                    return true;
-                  });
+                  const options = studentType === "CIVIL" 
+                    ? [{ value: "NO APLICA", label: "NO APLICA" }]
+                    : MILITARY_RANKS;
 
                   return (
                     <Select
                       id="militaryRank"
-                      options={filteredOptions}
-                      placeholder="Seleccione Rango Militar"
+                      options={options}
+                      placeholder="Seleccione Rango"
                       onChange={field.onChange}
-                      defaultValue={field.value}
-                      disabled={studentType === "CIVIL"}
-                      className={studentType === "CIVIL" ? "bg-bg-secondary cursor-not-allowed opacity-70" : ""}
+                      onBlur={field.onBlur}
+                      value={field.value}
+                      disabled={!studentType || studentType === "CIVIL"}
+                      className={`${(!studentType || studentType === "CIVIL") ? "bg-bg-secondary opacity-70" : ""} ${errors.militaryRank ? "border-error-500" : ""}`}
                     />
                   );
                 }}
               />
-              {isSubmitted && errors.militaryRank && (
-                <p className="mt-1 text-xs text-red-500">{errors.militaryRank.message}</p>
+              {errors.militaryRank && (
+                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
+                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
+                  {errors.militaryRank.message}
+                </p>
               )}
             </div>
-            <div>
+            
+            <div className="md:col-span-2 lg:col-span-1">
               <label htmlFor="works" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Trabaja *</label>
               <Controller
                 name="works"
                 control={control}
-                render={({ field }) => (
-                  <Select
-                    id="works"
-                    options={dynamicLists["Trabajo"]?.map(v => ({ value: v.name, label: v.name })) || [
+                render={({ field }) => {
+                  const options = (dynamicLists["Trabajo"] && dynamicLists["Trabajo"].length > 0)
+                    ? dynamicLists["Trabajo"].map(v => ({ value: v.name.toUpperCase(), label: v.name.toUpperCase() }))
+                    : [
                       { value: "SI", label: "SI" },
                       { value: "NO", label: "NO" },
-                    ]}
-                    placeholder="Seleccione si trabaja"
-                    onChange={field.onChange}
-                    defaultValue={field.value}
-                  />
-                )}
+                    ];
+
+                  return (
+                    <Select
+                      id="works"
+                      options={options}
+                      placeholder="Seleccione si trabaja"
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={field.value}
+                      className={errors.works ? "border-error-500" : ""}
+                    />
+                  );
+                }}
               />
-              {isSubmitted && errors.works && (
-                <p className="mt-1 text-xs text-red-500">{errors.works.message}</p>
+              {errors.works && (
+                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
+                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
+                  {errors.works.message}
+                </p>
               )}
             </div>
 
-            {/* Fila 7 */}
-            <div className="col-span-2">
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Dirección *</label>
-              <Input
+            <div className="md:col-span-2 lg:col-span-3">
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Dirección de Residencia *</label>
+              <TextArea
                 {...register("address")}
-                placeholder="Ingrese la dirección completa de habitación"
+                placeholder="Ingrese dirección de residencia completa"
                 error={!!errors.address}
-                hint={isSubmitted ? errors.address?.message : undefined}
+                hint={errors.address?.message}
+                autoComplete="off"
+                rows={2}
+                className="w-full"
+                onChange={(e) => {
+                  setValue("address", e.target.value.toUpperCase(), { shouldValidate: true });
+                }}
               />
             </div>
           </div>
@@ -539,7 +761,13 @@ export default function StudentModal({
           <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
-          <Button type="submit" form="student-form" loading={isLoading} className="w-full sm:w-auto min-h-12">
+          <Button 
+            type="submit" 
+            form="student-form" 
+            loading={isLoading} 
+            disabled={!isValid}
+            className="w-full sm:w-auto min-h-12"
+          >
             {editingStudent ? "Actualizar Registro" : "Guardar Estudiante"}
           </Button>
         </div>

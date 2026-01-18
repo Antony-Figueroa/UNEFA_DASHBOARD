@@ -5,7 +5,7 @@ import { cacheManager } from '../lib/cache-manager.js';
 const TABLE_NAME = 't_institution';
 const CACHE_PREFIX = 'institutions:';
 const CACHE_TTL = 3600000; // 1 hour for institutions
-const INSTITUTION_COLUMNS = 'INSTITUTION_ID, INSTITUTION_NAME, INSTITUTION_ADDRESS, INSTITUTION_CONTACT, PRACTICE_TYPE, REGION, NUCLEUS, EXTENSION, CREATION_DATE, INSTITUTION_TYPE, STATUS, RIF, CAREER_ID';
+const INSTITUTION_COLUMNS = 'INSTITUTION_ID, INSTITUTION_NAME, INSTITUTION_ADDRESS, INSTITUTION_CONTACT, PRACTICE_TYPE, REGION, NUCLEUS, EXTENSION, CREATION_DATE, INSTITUTION_TYPE, STATUS, RIF, CAREER_ID, t_professional_practices(INSTITUTION_ID)';
 
 interface AppError extends Error {
   code?: string;
@@ -53,6 +53,7 @@ interface DBInstitution {
   t_career?: {
     NAME: string;
   };
+  t_professional_practices?: { INSTITUTION_ID: number }[];
   responsibleCount?: number;
 }
 
@@ -71,7 +72,8 @@ const mapDBToFrontend = (i: DBInstitution) => ({
   institutionType: i.INSTITUTION_TYPE,
   status: i.STATUS === 1,
   registrationDate: i.CREATION_DATE,
-  responsibleCount: i.responsibleCount || 0
+  responsibleCount: i.responsibleCount || 0,
+  isInUse: Array.isArray(i.t_professional_practices) && i.t_professional_practices.length > 0
 });
 
 export const getInstitutions = async (_req: Request, res: Response) => {

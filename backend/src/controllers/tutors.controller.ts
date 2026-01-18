@@ -55,11 +55,11 @@ export const getTutors = async (_req: Request, res: Response) => {
     const data = await dbManager.withRetry(async (supabase) => {
       const { data, error } = await supabase
         .from(TABLE_NAME)
-        .select('*')
+        .select('*, t_tutors_carrers(TUTOR_ID)')
         .order('NAME', { ascending: true });
 
       if (error) throw error;
-      return data as DBTutor[];
+      return data as (DBTutor & { t_tutors_carrers: any[] })[];
     });
 
     // Mapear de DB a Frontend
@@ -85,7 +85,8 @@ export const getTutors = async (_req: Request, res: Response) => {
         category: t.CATEGORY,
         registrationDate: t.CREATION_DATE,
         status: t.STATUS === 1,
-        carreras: []
+        carreras: [],
+        isInUse: Array.isArray(t.t_tutors_carrers) && t.t_tutors_carrers.length > 0
       };
     });
 

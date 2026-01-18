@@ -56,6 +56,7 @@ export default function PreEnrollmentPage() {
         addPreEnrollment,
         editPreEnrollment,
         toggleStatus,
+        bulkToggleStatus,
     } = usePreEnrollment();
 
     const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
@@ -135,6 +136,44 @@ export default function PreEnrollmentPage() {
         });
     };
 
+    const handleBulkDelete = (ids: string[]) => {
+        setConfirmation({
+            isOpen: true,
+            title: "Confirmar Desactivación Masiva",
+            message: `¿Estás seguro de que deseas desactivar ${ids.length} pre-inscripciones seleccionadas?`,
+            onConfirm: async () => {
+                try {
+                    await bulkToggleStatus(ids, false);
+                } catch (e) {
+                    console.error(e);
+                } finally {
+                    setConfirmation(null);
+                }
+            },
+            confirmText: "Confirmar",
+            variant: "error",
+        });
+    };
+
+    const handleBulkRestore = (ids: string[]) => {
+        setConfirmation({
+            isOpen: true,
+            title: "Confirmar Restauración Masiva",
+            message: `¿Estás seguro de que deseas restaurar ${ids.length} pre-inscripciones seleccionadas?`,
+            onConfirm: async () => {
+                try {
+                    await bulkToggleStatus(ids, true);
+                } catch (e) {
+                    console.error(e);
+                } finally {
+                    setConfirmation(null);
+                }
+            },
+            confirmText: "Restaurar",
+            variant: "success",
+        });
+    };
+
 
     return (
         <>
@@ -193,6 +232,8 @@ export default function PreEnrollmentPage() {
                                 activeTab={activeTab}
                                 onEdit={handleEdit}
                                 onToggleStatus={handleToggleStatus}
+                                onBulkDelete={handleBulkDelete}
+                                onBulkRestore={handleBulkRestore}
                                 onView={setViewItem}
                                 loading={loadingAction}
                             />

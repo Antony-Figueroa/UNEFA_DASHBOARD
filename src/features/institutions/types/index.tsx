@@ -19,6 +19,7 @@ export interface Institution {
   status: boolean;
   registrationDate: Date;
   responsibleCount?: number;
+  isInUse?: boolean;
 }
 
 /**

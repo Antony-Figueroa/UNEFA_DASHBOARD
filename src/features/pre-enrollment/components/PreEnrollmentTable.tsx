@@ -7,6 +7,8 @@ import { useDebounce } from "../../../hooks/useDebounce";
 import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import Button from "../../../components/ui/button/Button";
+import Checkbox from "../../../components/form/input/Checkbox";
+import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 
 interface PreEnrollmentTableProps {
     data: PreEnrollmentRowData[];
@@ -15,6 +17,8 @@ interface PreEnrollmentTableProps {
     onEdit?: (item: PreEnrollmentRowData) => void;
     onToggleStatus?: (id: string) => void;
     onView?: (item: PreEnrollmentRowData) => void;
+    onBulkDelete?: (ids: string[]) => void;
+    onBulkRestore?: (ids: string[]) => void;
     activeTab?: "Activas" | "Inactivas";
     loading?: boolean;
 }
@@ -84,6 +88,8 @@ export default function PreEnrollmentTable({
     onEdit,
     onToggleStatus,
     onView,
+    onBulkDelete,
+    onBulkRestore,
     activeTab = "Activas",
     loading: externalLoading,
 }: PreEnrollmentTableProps) {
@@ -93,6 +99,7 @@ export default function PreEnrollmentTable({
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
 
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; order: SortOrder }>({
         key: "studentName",
@@ -100,6 +107,10 @@ export default function PreEnrollmentTable({
     });
 
     const debouncedSearch = useDebounce(searchTerm, 300);
+
+    useEffect(() => {
+        setSelectedIds([]);
+    }, [activeTab]);
 
     const filteredData = useMemo(() => {
         const search = debouncedSearch.trim().toLowerCase();
@@ -146,6 +157,26 @@ export default function PreEnrollmentTable({
             key,
             order: prev.key === key && prev.order === "asc" ? "desc" : "asc",
         }));
+    };
+
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            const deletableIds = paged
+                .filter((p) => !p.isInUse)
+                .map((p) => p.preEnrollmentId)
+                .filter(Boolean) as string[];
+            setSelectedIds(deletableIds);
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const handleSelectRow = (id: string, checked: boolean) => {
+        if (checked) {
+            setSelectedIds((prev) => [...prev, id]);
+        } else {
+            setSelectedIds((prev) => prev.filter((item) => item !== id));
+        }
     };
 
     const toggleRowExpansion = (id: string) => {
@@ -301,15 +332,51 @@ export default function PreEnrollmentTable({
                                 )}
                             </button>
                         )}
+
+                        {selectedIds.length > 0 && (
+                            <div className="flex items-center gap-2 animate-fadeIn">
+                                <span className="hidden sm:inline text-xs font-medium text-text-secondary dark:text-text-tertiary mr-2">
+                                    {selectedIds.length} seleccionados
+                                </span>
+                                {activeTab === "Activas" ? (
+                                    <button
+                                        onClick={() => onBulkDelete?.(selectedIds)}
+                                        className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12"
+                                    >
+                                        <TrashIcon className="icon-sm" />
+                                        Eliminar
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => onBulkRestore?.(selectedIds)}
+                                        className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-600 hover:bg-brand-100 dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400/20 transition-colors min-h-12"
+                                    >
+                                        <RefreshIcon className="icon-sm" />
+                                        Restaurar
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Desktop View (Table) */}
+            {/* Vista de Escritorio (Tabla) */}
             <div className="hidden md:block max-w-full overflow-x-auto table-scrollbar">
                 <Table className="table-root">
-                    <TableHeader className="table-header-row">
+                    <TableHeader className="table-header-row bg-bg-secondary dark:bg-bg-dark/50">
                         <TableRow>
+                            <TableCell isHeader className="table-header-cell w-10">
+                                <Checkbox
+                                    checked={
+                                        paged.length > 0 &&
+                                        paged.filter((p) => !p.isInUse).length > 0 &&
+                                        paged.filter((p) => !p.isInUse).every((p) => selectedIds.includes(p.preEnrollmentId))
+                                    }
+                                    onChange={handleSelectAll}
+                                    ariaLabel="Seleccionar todos"
+                                />
+                            </TableCell>
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("identificationNumber")}>
                                 <div className="flex items-center">Cédula <SortIndicator column="identificationNumber" /></div>
                             </TableCell>
@@ -332,11 +399,25 @@ export default function PreEnrollmentTable({
                     </TableHeader>
                     <TableBody className="divide-y divide-border-light dark:divide-border-dark">
                         {paged.length > 0 ? (
-                            paged.map((s: PreEnrollmentRowData) => (
+                            paged.map((s: PreEnrollmentRowData, index: number) => (
                                 <TableRow 
                                     key={s.preEnrollmentId}
-                                    className="table-row-hover"
+                                    className={`table-row-hover ${index % 2 === 0 ? "bg-white dark:bg-transparent" : "bg-bg-secondary/50 dark:bg-white/2"} ${selectedIds.includes(s.preEnrollmentId) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
                                 >
+                                    <TableCell className="table-cell">
+                                        <Tooltip 
+                                            content={s.isInUse ? "Esta pre-inscripción ya tiene tutores asignados y no puede ser seleccionada para eliminar" : ""}
+                                            isDisabled={!s.isInUse}
+                                        >
+                                            <div>
+                                                <Checkbox 
+                                                    checked={selectedIds.includes(s.preEnrollmentId)}
+                                                    onChange={(checked) => handleSelectRow(s.preEnrollmentId, checked)}
+                                                    disabled={s.isInUse}
+                                                />
+                                            </div>
+                                        </Tooltip>
+                                    </TableCell>
                                     <TableCell className="table-cell font-medium text-text-primary dark:text-text-emphasis">
                                         {s.identificationPrefix}-{s.identificationNumber}
                                     </TableCell>

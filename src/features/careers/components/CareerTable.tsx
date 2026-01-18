@@ -237,7 +237,11 @@ export default function CareerTable({
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const allIds = paged.map((c) => c.careerId).filter(Boolean) as string[];
+      // Solo seleccionar IDs que no estén en uso
+      const allIds = paged
+        .filter((c) => !inUseIds.has(c.careerId))
+        .map((c) => c.careerId)
+        .filter(Boolean) as string[];
       setSelectedIds(allIds);
     } else {
       setSelectedIds([]);
@@ -245,6 +249,7 @@ export default function CareerTable({
   };
 
   const handleSelectRow = (id: string | number, checked: boolean) => {
+    if (inUseIds.has(id)) return; // No permitir seleccionar si está en uso
     if (checked) {
       setSelectedIds((prev) => [...prev, id]);
     } else {
@@ -432,7 +437,11 @@ export default function CareerTable({
             <TableRow>
               <TableCell isHeader className="table-header-cell w-10">
                 <Checkbox
-                  checked={paged.length > 0 && selectedIds.length === paged.length}
+                  checked={
+                    paged.length > 0 && 
+                    paged.filter(c => !inUseIds.has(c.careerId)).length > 0 &&
+                    paged.filter(c => !inUseIds.has(c.careerId)).every(c => selectedIds.includes(c.careerId))
+                  }
                   onChange={handleSelectAll}
                   ariaLabel="Seleccionar todos los elementos de la página actual"
                 />
@@ -479,11 +488,19 @@ export default function CareerTable({
                   className={`table-row-hover hover:bg-bg-secondary dark:hover:bg-white/2 odd:bg-bg-secondary/50 dark:odd:bg-white/1 ${selectedIds.includes(c.careerId) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
                 >
                   <TableCell className="table-cell">
-                    <Checkbox
-                      checked={selectedIds.includes(c.careerId)}
-                      onChange={(checked) => handleSelectRow(c.careerId, checked)}
-                      ariaLabel={`Seleccionar carrera ${c.careerName}`}
-                    />
+                    <Tooltip 
+                      content={inUseIds.has(c.careerId) ? "Esta carrera está en uso y no puede ser seleccionada para eliminar" : ""}
+                      isDisabled={!inUseIds.has(c.careerId)}
+                    >
+                      <div>
+                        <Checkbox
+                          checked={selectedIds.includes(c.careerId)}
+                          onChange={(checked) => handleSelectRow(c.careerId, checked)}
+                          disabled={inUseIds.has(c.careerId)}
+                          ariaLabel={`Seleccionar carrera ${c.careerName}`}
+                        />
+                      </div>
+                    </Tooltip>
                   </TableCell>
                   <TableCell className="table-cell font-medium text-text-primary dark:text-text-emphasis">{c.careerCode}</TableCell>
                   <TableCell className="table-cell">

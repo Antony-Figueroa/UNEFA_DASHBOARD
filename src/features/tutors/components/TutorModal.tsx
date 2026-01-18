@@ -7,6 +7,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/
 import { Tutor } from "../types";
 import Button from "../../../components/ui/button/Button";
 import Select from "../../../components/form/Select";
+import CustomSelect from "../../../components/form/CustomSelect";
 import MultiSelect from "../../../components/form/MultiSelect";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
@@ -258,14 +259,19 @@ export default function TutorModal({
                     name="identificationPrefix"
                     control={control}
                     render={({ field }) => (
-                      <Select
+                      <CustomSelect
+                        id="identificationPrefix"
                         options={[
-                          { value: "V", label: "V-" },
-                          { value: "E", label: "E-" },
+                          { value: "V", label: "V" },
+                          { value: "E", label: "E" },
+                          { value: "P", label: "P", disabled: true, disabledReason: "Pasaportes no habilitados temporalmente" },
                         ]}
                         onChange={field.onChange}
-                        defaultValue={field.value}
-                        placeholder="Seleccione Prefijo"
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        placeholder="Tipo"
+                        disabled={!!editingTutor}
+                        error={!!errors.identificationPrefix}
                       />
                     )}
                   />

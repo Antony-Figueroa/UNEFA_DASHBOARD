@@ -22,6 +22,7 @@ export interface PreEnrollment {
   // Metadatos
   preEnrollmentDate: Date;
   status: boolean; // true: activa, false: inactiva
+  isInUse?: boolean;
 }
 
 /**

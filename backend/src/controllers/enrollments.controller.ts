@@ -376,6 +376,7 @@ export const updateEnrollment = async (req: Request, res: Response) => {
 
     // Invalidar caché
     cacheManager.deleteByPrefix(CACHE_PREFIX);
+    cacheManager.deleteByPrefix('students:');
 
     res.json(result);
   } catch (error) {
@@ -397,7 +398,7 @@ export const deleteEnrollment = async (req: Request, res: Response) => {
 
     // Invalidar caché
     cacheManager.deleteByPrefix(CACHE_PREFIX);
-
+    cacheManager.deleteByPrefix('students:');
     res.status(204).send();
   } catch (error) {
     handleDbError(res, error);

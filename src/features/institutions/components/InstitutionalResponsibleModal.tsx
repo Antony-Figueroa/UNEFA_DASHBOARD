@@ -9,8 +9,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "../../../components/ui/modal";
 import Input from "../../../components/form/input/InputField";
-import Select from "../../../components/form/Select";
 import Button from "../../../components/ui/button/Button";
+import Select from "../../../components/form/Select";
+import CustomSelect from "../../../components/form/CustomSelect";
 import { InstitutionalResponsible } from "../types";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
@@ -170,15 +171,19 @@ export default function InstitutionalResponsibleModal({
                     name="identificationPrefix"
                     control={control}
                     render={({ field }) => (
-                      <Select
+                      <CustomSelect
+                        id="identificationPrefix"
                         options={[
-                          { value: "V-", label: "V-" },
-                          { value: "E-", label: "E-" },
-                          { value: "J-", label: "J-" },
-                          { value: "G-", label: "G-" },
+                          { value: "V", label: "V" },
+                          { value: "E", label: "E" },
+                          { value: "P", label: "P", disabled: true, disabledReason: "Pasaportes no habilitados temporalmente" },
                         ]}
                         onChange={field.onChange}
-                        defaultValue={field.value}
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        placeholder="Tipo"
+                        disabled={!!editingResp}
+                        error={!!errors.identificationPrefix}
                       />
                     )}
                   />

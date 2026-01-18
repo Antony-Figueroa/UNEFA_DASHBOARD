@@ -520,7 +520,7 @@ export default function CareerTable({
                       inactiveMode={inactiveMode}
                       activeTab={activeTab}
                       isDisabled={inUseIds.has(c.careerId)}
-                      disabledTooltip="Esta carrera está en uso y no puede ser editada o eliminada"
+                      disabledTooltip="Esta carrera está en uso y no puede ser eliminada"
                     />
                   </TableCell>
                 </TableRow>
@@ -645,7 +645,7 @@ export default function CareerTable({
                         activeTab={activeTab}
                         isMobile={true}
                         isDisabled={inUseIds.has(c.careerId)}
-                        disabledTooltip="Esta carrera está en uso y no puede ser eliminada o desactivada"
+                        disabledTooltip="Esta carrera está en uso y no puede ser eliminada"
                       />
                     </div>
                   </div>

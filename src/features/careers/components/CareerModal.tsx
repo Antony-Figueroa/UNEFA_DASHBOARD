@@ -204,7 +204,6 @@ export default function CareerModal({
                     <ul className="mt-1 list-disc list-inside space-y-0.5 font-medium">
                       <li>Nombre de la carrera</li>
                       <li>Abreviatura</li>
-                      <li>Tipos de prácticas</li>
                       <li>Nota mínima (solo si no hay estudiantes en evaluación)</li>
                     </ul>
                   </div>
@@ -353,9 +352,13 @@ export default function CareerModal({
                       field.onChange(selectedIds);
                     }}
                     placeholder="Seleccione los tipos"
+                    disabled={isInUse}
                   />
                 )}
               />
+              {isInUse && (
+                <p className="mt-1 text-[10px] text-text-tertiary italic uppercase font-bold tracking-tighter opacity-70">Bloqueado por uso</p>
+              )}
               {errors.internshipTypeIds && (
                 <p className="mt-1 text-xs text-error-500">{errors.internshipTypeIds.message}</p>
               )}

@@ -6,6 +6,7 @@
  */
 
 import { useMemo, useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -37,6 +38,7 @@ const formatStudentToRow = (s: Student): StudentRowData => ({
 
 export default function StudentsPage() {
     const [pageLoading, setPageLoading] = useState(true);
+    const navigate = useNavigate();
     const { fetchMultipleLists } = useLists();
     const [dynamicLists, setDynamicLists] = useState<Record<string, ListValue[]>>({});
 
@@ -201,19 +203,18 @@ export default function StudentsPage() {
     };
 
     const handleExportToPreEnrollment = (student: StudentRowData) => {
-        // Esta función solo simula llevar los datos a la ventana/modal de pre-inscripción
-        console.log("Exportando datos a Pre-Inscripción:", student);
-        
         setConfirmation({
             isOpen: true,
-            title: "Exportar Datos",
-            message: `¿Desea llevar los datos de ${student.fullNames} a la ventana de Pre-Inscripción? (Solo se transferirán los datos, no se creará el registro aún)`,
+            title: "Exportar a Pre-Inscripción",
+            message: `¿Desea llevar los datos de ${student.fullNames} a la ventana de Pre-Inscripción?`,
             confirmText: "Exportar",
             variant: "info",
             onConfirm: () => {
                 setConfirmation(null);
-                // Aquí iría la lógica de navegación o apertura del modal de pre-inscripción con los datos
-                alert(`Datos de ${student.fullNames} preparados para Pre-Inscripción`);
+                // Navegar a la página de pre-inscripción pasando la cédula en el estado
+                navigate("/pre-enrollment", { 
+                    state: { exportStudentCi: student.identificationNumber } 
+                });
             }
         });
     };

@@ -108,6 +108,7 @@ export const getEnrollments = async (req: Request, res: Response) => {
           )
         `)
         .eq('STATUS', 1)
+        .eq('PRACTICES_STATUS', 2)
         .order('REGISTRATION_DATE', { ascending: false });
 
       if (error) throw error;
@@ -154,8 +155,6 @@ export const createEnrollment = async (req: Request, res: Response) => {
     const {
       identificationPrefix,
       identificationNumber,
-      period, // Descripción del periodo
-      practiceType, // Nombre del tipo de práctica
       institutionId,
       institutionResponsibleId,
       academicTutorId,
@@ -165,7 +164,6 @@ export const createEnrollment = async (req: Request, res: Response) => {
     const now = new Date().toISOString();
 
     const result = await dbManager.withRetry(async (supabase) => {
-      // 1. Buscar Estudiante
       const fullCI = `${identificationPrefix}-${identificationNumber}`;
       const { data: student, error: studentError } = await supabase
         .from('t_students')
@@ -175,53 +173,50 @@ export const createEnrollment = async (req: Request, res: Response) => {
       
       if (studentError || !student) throw new Error('Estudiante no encontrado');
 
-      // 2. Buscar Periodo
-      const { data: periodData, error: periodError } = await supabase
-        .from('t_internships_period')
-        .select('PERIOD_ID, START_DATE, END_DATE')
-        .eq('DESCRIPTION', period)
-        .single();
-      
-      if (periodError || !periodData) throw new Error('Período no encontrado');
+      const { data: existingEnrollment } = await supabase
+        .from(TABLE_NAME)
+        .select('PROFESSIONAL_PRACTICE_ID')
+        .eq('STUDENTS_ID', student.STUDENTS_ID)
+        .eq('PRACTICES_STATUS', 2)
+        .eq('STATUS', 1)
+        .limit(1);
 
-      // 3. Buscar Tipo de Práctica
-      const { data: typeData, error: typeError } = await supabase
-        .from('t_internship_type')
-        .select('INTERNSHIP_TYPE_ID')
-        .eq('NAME', practiceType)
-        .single();
-      
-      if (typeError || !typeData) throw new Error('Tipo de práctica no encontrado');
+      if (existingEnrollment && existingEnrollment.length > 0) {
+        throw new Error('El estudiante ya posee una inscripción activa');
+      }
 
-      // 4. Insertar en t_professional_practices
+      const { data: preEnrollmentsData, error: preError } = await supabase
+        .from(TABLE_NAME)
+        .select('PROFESSIONAL_PRACTICE_ID, PERIOD_ID, INTERNSHIP_TYPE_ID')
+        .eq('STUDENTS_ID', student.STUDENTS_ID)
+        .eq('PRACTICES_STATUS', 1)
+        .eq('STATUS', 1)
+        .order('REGISTRATION_DATE', { ascending: false });
+
+      if (preError) throw preError;
+      const preEnrollmentRow = (preEnrollmentsData || [])[0];
+      if (!preEnrollmentRow) {
+        throw new Error('No existe una pre-inscripción activa para el estudiante');
+      }
+
+      const updateData: Partial<ProfessionalPractice> = {
+        REGISTRATION_DATE: now,
+        PRACTICES_STATUS: 2,
+        INSTITUTION_ID: parseInt(institutionId),
+        MANAGER_ID: parseInt(institutionResponsibleId),
+        STATUS: 1,
+        INTERNSHIP_STATUS: 1
+      };
+
       const { data: practice, error: practiceError } = await supabase
         .from(TABLE_NAME)
-        .insert([{
-          START_DATE: periodData.START_DATE,
-          END_DATE: periodData.END_DATE,
-          REPORT_TITLE: '',
-          REGISTRATION_DATE: now,
-          CREATION_DATE: now,
-          GRADE: 0,
-          PRACTICES_STATUS: 2, // 2 para INSCRITO
-          TRANSFER: 0,
-          TOUR: '',
-          PERIOD_ID: periodData.PERIOD_ID,
-          INSTITUTION_ID: parseInt(institutionId),
-          STUDENTS_ID: student.STUDENTS_ID,
-          STATUS: 1,
-          MANAGER_ID: parseInt(institutionResponsibleId),
-          OBSERVATION: '',
-          ENROLLMENT: '', // Se podría generar un código si fuera necesario
-          INTERNSHIP_STATUS: 1,
-          INTERNSHIP_TYPE_ID: typeData.INTERNSHIP_TYPE_ID
-        }])
+        .update(updateData)
+        .eq('PROFESSIONAL_PRACTICE_ID', preEnrollmentRow.PROFESSIONAL_PRACTICE_ID)
         .select()
         .single();
 
       if (practiceError) throw practiceError;
 
-      // 5. Insertar Tutores
       const tutorsToInsert = [
         {
           TUTOR_ID: parseInt(academicTutorId),
@@ -241,7 +236,57 @@ export const createEnrollment = async (req: Request, res: Response) => {
 
       if (tutorsError) throw tutorsError;
 
-      return practice;
+      const { data: fullData, error: fetchError } = await supabase
+        .from(TABLE_NAME)
+        .select(`
+          ${ENROLLMENT_COLUMNS},
+          t_students (
+            STUDENTS_CI,
+            NAME,
+            SECOND_NAME,
+            SURNAME,
+            SECOND_SURNAME,
+            t_career (CAREER_NAME)
+          ),
+          t_internships_period (DESCRIPTION),
+          t_internship_type (NAME),
+          t_institution (INSTITUTION_NAME),
+          t_institution_manager (NAME, SURNAME),
+          t_professional_practices_tutor (
+            TUTOR_ID,
+            TUTOR_TYPE,
+            t_tutors (NAME, SURNAME)
+          )
+        `)
+        .eq('PROFESSIONAL_PRACTICE_ID', practice.PROFESSIONAL_PRACTICE_ID)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const item = fullData as unknown as ProfessionalPractice;
+      const ciParts = item.t_students?.STUDENTS_CI?.split('-') || ['', ''];
+      const academicTutor = item.t_professional_practices_tutor?.find((t: TutorAssociation) => t.TUTOR_TYPE === 'ACADEMICO');
+      const methodologicalTutor = item.t_professional_practices_tutor?.find((t: TutorAssociation) => t.TUTOR_TYPE === 'METODOLOGICO');
+
+      return {
+        enrollmentId: item.PROFESSIONAL_PRACTICE_ID?.toString() || '',
+        identificationPrefix: ciParts[0] || 'V',
+        identificationNumber: ciParts[1] || '',
+        studentName: `${item.t_students?.NAME || ''} ${item.t_students?.SURNAME || ''}`.trim(),
+        careerName: item.t_students?.t_career?.CAREER_NAME || '',
+        academicTutorId: academicTutor?.TUTOR_ID?.toString() || '',
+        academicTutorName: academicTutor ? `${academicTutor.t_tutors?.NAME || ''} ${academicTutor.t_tutors?.SURNAME || ''}`.trim() : '',
+        methodologicalTutorId: methodologicalTutor?.TUTOR_ID?.toString() || '',
+        methodologicalTutorName: methodologicalTutor ? `${methodologicalTutor.t_tutors?.NAME || ''} ${methodologicalTutor.t_tutors?.SURNAME || ''}`.trim() : '',
+        institutionId: item.INSTITUTION_ID?.toString() || '',
+        institutionName: item.t_institution?.INSTITUTION_NAME || '',
+        institutionResponsibleId: item.MANAGER_ID?.toString() || '',
+        institutionResponsibleName: item.t_institution_manager ? `${item.t_institution_manager.NAME || ''} ${item.t_institution_manager.SURNAME || ''}`.trim() : '',
+        practiceType: item.t_internship_type?.NAME || '',
+        period: item.t_internships_period?.DESCRIPTION || '',
+        enrollmentDate: item.REGISTRATION_DATE || '',
+        status: item.STATUS === 1
+      };
     }, 'createEnrollment');
 
     // Invalidar caché

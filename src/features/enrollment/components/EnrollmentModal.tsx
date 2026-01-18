@@ -20,10 +20,11 @@ import { Tutor } from "../../tutors/types";
 import { Institution } from "../../institutions/types";
 import { PreEnrollment } from "../../pre-enrollment/types";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
-import { getInternshipTypesByCareer, getInternshipTypes, mapToOptions } from "../../internship-types/services/internshipTypesService";
+import { getInternshipTypes, mapToOptions } from "../../internship-types/services/internshipTypesService";
 import { InternshipTypeOption } from "../../internship-types/types";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import * as enrollmentService from "../services/enrollmentService";
 
 interface EnrollmentModalProps {
   isOpen: boolean;
@@ -166,10 +167,11 @@ export default function EnrollmentModal({
     setIsSearching(true);
     setPreEnrollmentError(null);
     try {
-      const [students, preEnrollments, careerData] = await Promise.all([
+      const [students, preEnrollments, careerData, enrollments] = await Promise.all([
         getStudents(),
         getPreEnrollments(),
         getCareers(),
+        enrollmentService.getEnrollments(),
       ]);
 
       const student = students.data.find(
@@ -187,6 +189,15 @@ export default function EnrollmentModal({
         return;
       }
 
+      const alreadyEnrolled = enrollments.find(
+        (e) => e.identificationPrefix === prefix && e.identificationNumber === number && e.status
+      );
+
+      if (alreadyEnrolled) {
+        setPreEnrollmentError("El estudiante ya posee una inscripción activa. No puede proceder.");
+        return;
+      }
+
       if (student) {
         setValue("studentName", `${student.firstName} ${student.lastName}`);
         
@@ -198,20 +209,8 @@ export default function EnrollmentModal({
           setValue("careerName", "No encontrada");
         }
         
-        // Autocompletar Tipo de Práctica desde la BD
-        try {
-          const internshipTypes = await getInternshipTypesByCareer(student.careerId);
-          if (internshipTypes && internshipTypes.length > 0) {
-            // Seleccionamos el primero o el que tenga mayor prioridad
-            const mainType = internshipTypes.sort((a, b) => a.PRIORITY - b.PRIORITY)[0];
-            setValue("practiceType", mainType.NAME);
-          } else {
-            setValue("practiceType", "ÚNICA"); // Fallback
-          }
-        } catch (error) {
-          console.error("Error al obtener tipos de pasantía para el estudiante:", error);
-          setValue("practiceType", "ÚNICA");
-        }
+        setValue("period", preEnrollment.period);
+        setValue("practiceType", preEnrollment.practiceType);
       }
     } catch (error) {
       console.error("Error buscando estudiante:", error);

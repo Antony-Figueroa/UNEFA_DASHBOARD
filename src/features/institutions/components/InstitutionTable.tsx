@@ -12,6 +12,7 @@ import { InstitutionRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import Badge from "../../../components/ui/badge/Badge";
 import { useDebounce } from "../../../hooks/useDebounce";
+import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 
 interface InstitutionTableProps {
   data: InstitutionRowData[];
@@ -178,7 +179,10 @@ export default function InstitutionTable({
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(paged.map(i => i.institutionId));
+      const deletableIds = paged
+        .filter(i => !i.isInUse)
+        .map(i => i.institutionId);
+      setSelectedIds(deletableIds);
     } else {
       setSelectedIds([]);
     }
@@ -384,9 +388,13 @@ export default function InstitutionTable({
             <TableRow>
               <TableCell isHeader className="w-10">
                 <Checkbox
-                  checked={paged.length > 0 && selectedIds.length === paged.length}
+                  checked={
+                    paged.length > 0 && 
+                    paged.filter(i => !i.isInUse).length > 0 &&
+                    paged.filter(i => !i.isInUse).every(i => selectedIds.includes(i.institutionId))
+                  }
                   onChange={handleSelectAll}
-                  ariaLabel="Seleccionar todos"
+                  ariaLabel="Seleccionar todas las instituciones"
                 />
               </TableCell>
               <TableCell isHeader className="cursor-pointer group" onClick={() => handleSort("rif")}>
@@ -413,7 +421,18 @@ export default function InstitutionTable({
                         className={`${index % 2 === 0 ? "bg-white dark:bg-transparent" : "bg-bg-secondary/50 dark:bg-white/2"} ${selectedIds.includes(i.institutionId) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
                     >
                         <TableCell>
-                            <Checkbox checked={selectedIds.includes(i.institutionId)} onChange={(checked) => handleSelectRow(i.institutionId, checked)} />
+                            <Tooltip 
+                                content={i.isInUse ? "Esta institución tiene registros relacionados y no puede ser seleccionada para eliminar" : ""}
+                                isDisabled={!i.isInUse}
+                            >
+                                <div>
+                                    <Checkbox
+                                        checked={selectedIds.includes(i.institutionId)}
+                                        onChange={(checked) => handleSelectRow(i.institutionId, checked)}
+                                        disabled={i.isInUse}
+                                    />
+                                </div>
+                            </Tooltip>
                         </TableCell>
                         <TableCell className="font-medium text-text-primary dark:text-white/90">
                             {i.rif}

@@ -20,6 +20,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import Checkbox from "../../../components/form/input/Checkbox";
 import SecurePasswordCell from "./SecurePasswordCell";
+import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 
 interface User {
   id: number;
@@ -30,6 +31,7 @@ interface User {
   role: number;
   status: number;
   creationDate: string;
+  isInUse?: boolean;
 }
 
 interface UserManagementTableProps {
@@ -466,7 +468,8 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(users.map(u => u.id));
+      const selectableUsers = users.filter(u => !u.isInUse);
+      setSelectedIds(selectableUsers.map(u => u.id));
     } else {
       setSelectedIds([]);
     }
@@ -643,7 +646,11 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
             <TableRow>
               <TableCell isHeader className="table-header-cell w-12">
                 <Checkbox
-                  checked={users.length > 0 && selectedIds.length === users.length}
+                  checked={
+                    users.length > 0 &&
+                    users.filter(u => !u.isInUse).length > 0 &&
+                    users.filter(u => !u.isInUse).every(u => selectedIds.includes(u.id))
+                  }
                   onChange={handleSelectAll}
                 />
               </TableCell>
@@ -681,10 +688,18 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
                   } ${selectedIds.includes(user.id) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
                 >
                   <TableCell className="table-cell">
-                    <Checkbox 
-                      checked={selectedIds.includes(user.id)} 
-                      onChange={(checked) => handleSelectRow(user.id, checked)} 
-                    />
+                    <Tooltip 
+                      content={user.isInUse ? "Este usuario tiene actividad registrada y no puede ser seleccionado para acciones masivas" : ""}
+                      isDisabled={!user.isInUse}
+                    >
+                      <div>
+                        <Checkbox 
+                          checked={selectedIds.includes(user.id)} 
+                          onChange={(checked) => handleSelectRow(user.id, checked)} 
+                          disabled={user.isInUse}
+                        />
+                      </div>
+                    </Tooltip>
                   </TableCell>
                   <TableCell className="table-cell font-medium">
                     {user.userCi}

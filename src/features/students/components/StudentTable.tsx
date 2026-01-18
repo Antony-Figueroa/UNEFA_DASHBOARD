@@ -6,6 +6,7 @@ import { StudentRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { useDebounce } from "../../../hooks/useDebounce";
 import Badge from "../../../components/ui/badge/Badge";
+import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 
 const getCareerColor = (careerName: string): "primary" | "success" | "error" | "warning" | "info" => {
     const colors: ("primary" | "success" | "error" | "warning" | "info")[] = ["primary", "success", "error", "warning", "info"];
@@ -46,6 +47,10 @@ interface ActionButtonsProps {
     inactiveMode?: boolean;
     isMobile?: boolean;
     status?: boolean;
+    isDisabled?: boolean;
+    disabledTooltip?: string;
+    isExportDisabled?: boolean;
+    exportDisabledTooltip?: string;
 }
 
 const ExportIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -76,6 +81,10 @@ const ActionButtons = ({
     inactiveMode = false,
     isMobile = false,
     status,
+    isDisabled = false,
+    disabledTooltip = "",
+    isExportDisabled = false,
+    exportDisabledTooltip = "",
 }: ActionButtonsProps) => {
     const containerClasses = isMobile 
         ? "flex flex-col gap-3 pt-2" 
@@ -107,10 +116,11 @@ const ActionButtons = ({
                 <ActionButton
                     onClick={() => onExportToPreEnrollment()}
                     icon={<ExportIcon className="icon-sm" />}
-                    tooltip="Exportar a Pre-Inscripción"
+                    tooltip={isExportDisabled ? exportDisabledTooltip : "Exportar a Pre-Inscripción"}
                     label={isMobile ? "Exportar a Pre-Inscripción" : undefined}
                     variant="info"
                     fullWidth={isMobile}
+                    disabled={isExportDisabled}
                 />
             )}
             {onToggleStatus && (inactiveMode || status === false) && (
@@ -127,10 +137,11 @@ const ActionButtons = ({
                 <ActionButton
                     onClick={() => onToggleStatus()}
                     icon={<TrashIcon />}
-                    tooltip="Eliminar"
+                    tooltip={isDisabled ? disabledTooltip : "Eliminar"}
                     label={isMobile ? "Eliminar Estudiante" : undefined}
                     variant="danger"
                     fullWidth={isMobile}
+                    disabled={isDisabled}
                 />
             )}
         </div>
@@ -266,14 +277,21 @@ export default function StudentTable({
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
-            const allIds = paged.map((s) => s.studentId).filter(Boolean) as string[];
-            setSelectedIds(allIds);
+            // Solo seleccionar IDs de estudiantes que no estén en uso
+            const selectableIds = paged
+                .filter((s) => !s.isInUse)
+                .map((s) => s.studentId)
+                .filter(Boolean) as string[];
+            setSelectedIds(selectableIds);
         } else {
             setSelectedIds([]);
         }
     };
 
     const handleSelectRow = (id: string, checked: boolean) => {
+        const student = paged.find(s => s.studentId === id);
+        if (student?.isInUse) return; // No permitir seleccionar si está en uso
+
         if (checked) {
             setSelectedIds((prev) => [...prev, id]);
         } else {
@@ -443,13 +461,19 @@ export default function StudentTable({
                                     {selectedIds.length} seleccionados
                                 </span>
                                 {activeTab === "Activas" ? (
-                                    <button
-                                        onClick={() => onBulkDelete?.(selectedIds)}
-                                        className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12"
+                                    <Tooltip 
+                                        content={paged.filter(s => selectedIds.includes(s.studentId)).some(s => s.isInUse) ? "Algunos estudiantes seleccionados están en uso y no pueden ser eliminados" : "Eliminar seleccionados"}
+                                        isDisabled={!paged.filter(s => selectedIds.includes(s.studentId)).some(s => s.isInUse)}
                                     >
-                                        <TrashIcon className="icon-sm" />
-                                        Eliminar
-                                    </button>
+                                        <button
+                                            onClick={() => onBulkDelete?.(selectedIds)}
+                                            disabled={paged.filter(s => selectedIds.includes(s.studentId)).some(s => s.isInUse)}
+                                            className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <TrashIcon className="icon-sm" />
+                                            Eliminar
+                                        </button>
+                                    </Tooltip>
                                 ) : (
                                     <button
                                         onClick={() => onBulkRestore?.(selectedIds)}
@@ -479,9 +503,13 @@ export default function StudentTable({
                         <TableRow>
                             <TableCell isHeader className="table-header-cell w-10">
                                 <Checkbox
-                                    checked={paged.length > 0 && selectedIds.length === paged.length}
+                                    checked={
+                                        paged.length > 0 && 
+                                        paged.filter(s => !s.isInUse).length > 0 &&
+                                        paged.filter(s => !s.isInUse).every(s => selectedIds.includes(s.studentId))
+                                    }
                                     onChange={handleSelectAll}
-                                    ariaLabel="Seleccionar todos"
+                                    ariaLabel="Seleccionar todos los estudiantes"
                                 />
                             </TableCell>
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("identificationNumber")}>
@@ -508,7 +536,18 @@ export default function StudentTable({
                                     className={`table-row-hover ${index % 2 === 0 ? "bg-white dark:bg-transparent" : "bg-bg-secondary/50 dark:bg-white/2"} ${selectedIds.includes(s.studentId) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
                                 >
                                     <TableCell className="table-cell">
-                                        <Checkbox checked={selectedIds.includes(s.studentId)} onChange={(checked) => handleSelectRow(s.studentId, checked)} />
+                                        <Tooltip 
+                                            content={s.isInUse ? "Este estudiante tiene registros relacionados y no puede ser seleccionado para eliminar" : ""}
+                                            isDisabled={!s.isInUse}
+                                        >
+                                            <div>
+                                                <Checkbox
+                                                    checked={selectedIds.includes(s.studentId)}
+                                                    onChange={(checked) => handleSelectRow(s.studentId, checked)}
+                                                    disabled={s.isInUse}
+                                                />
+                                            </div>
+                                        </Tooltip>
                                     </TableCell>
                                     <TableCell className="table-cell font-medium text-text-primary dark:text-text-emphasis">
                                         {s.identificationPrefix}-{s.identificationNumber}
@@ -536,6 +575,10 @@ export default function StudentTable({
                                             activeTab={activeTab}
                                             inactiveMode={inactiveMode}
                                             status={s.status}
+                                            isDisabled={s.isInUse}
+                                            disabledTooltip="Este estudiante tiene registros relacionados y no puede ser eliminado"
+                                            isExportDisabled={s.isInUse}
+                                            exportDisabledTooltip="El estudiante ya tiene un registro en prácticas profesionales"
                                         />
                                     </TableCell>
                                 </TableRow>
@@ -627,6 +670,10 @@ export default function StudentTable({
                                             inactiveMode={inactiveMode}
                                             status={s.status}
                                             isMobile={true}
+                                            isDisabled={s.isInUse}
+                                            disabledTooltip="Este estudiante tiene registros relacionados y no puede ser eliminado"
+                                            isExportDisabled={s.isInUse}
+                                            exportDisabledTooltip="El estudiante ya tiene un registro en prácticas profesionales"
                                         />
                                     </div>
                                 )}

@@ -31,7 +31,7 @@ const STUDENT_COLUMNS_BASE = `
 `;
 
 // Columnas con relaciones para lectura
-const STUDENT_COLUMNS = `${STUDENT_COLUMNS_BASE}, t_career(CAREER_NAME)`;
+const STUDENT_COLUMNS = `${STUDENT_COLUMNS_BASE}, t_career(CAREER_NAME), t_professional_practices(INTERNSHIP_STATUS, PRACTICES_STATUS)`;
 
 interface AppError extends Error {
   code?: string;
@@ -79,6 +79,7 @@ interface DBStudent {
   ADDRESS: string;
   CAREER_ID: number;
   t_career?: { CAREER_NAME: string } | { CAREER_NAME: string }[];
+  t_professional_practices?: { INTERNSHIP_STATUS: number, PRACTICES_STATUS: number }[];
   SEMESTER: number;
   SECTION: string;
   REGIME: string;
@@ -154,9 +155,23 @@ export const getStudents = async (req: Request, res: Response) => {
 
   try {
     const result = await dbManager.withRetry(async (supabase) => {
+      // 1. Obtener IDs de estudiantes que tienen prácticas culminadas y aprobadas para excluirlos
+      const { data: excludedPractices } = await supabase
+        .from('t_professional_practices')
+        .select('STUDENTS_ID')
+        .eq('INTERNSHIP_STATUS', 2)
+        .eq('PRACTICES_STATUS', 3);
+
+      const excludedIds = (excludedPractices || []).map(p => p.STUDENTS_ID);
+
       let query = supabase
         .from(TABLE_NAME)
         .select(STUDENT_COLUMNS, { count: 'exact' });
+
+      // Excluir los IDs encontrados
+      if (excludedIds.length > 0) {
+        query = query.not('STUDENTS_ID', 'in', `(${excludedIds.join(',')})`);
+      }
 
       // Filtrado por estado
       if (status !== undefined) {
@@ -177,6 +192,7 @@ export const getStudents = async (req: Request, res: Response) => {
       const { data, error, count } = await query;
 
       if (error) throw error;
+      
       return { data: data as unknown as DBStudent[], count };
     }, 'getStudents');
 
@@ -230,7 +246,8 @@ const mapDBToFrontend = (s: DBStudent) => {
     militaryRank: s.MILITARY_RANK,
     works: s.EMPLOYMENT ? (String(s.EMPLOYMENT).toUpperCase() === 'SI' || s.EMPLOYMENT === true ? "SI" : "NO") : "NO",
     enrollmentDate: s.REGISTRATION_DATE,
-    status: s.STATUS === 1
+    status: s.STATUS === 1,
+    isInUse: (Array.isArray(s.t_professional_practices) && s.t_professional_practices.length > 0)
   };
 };
 

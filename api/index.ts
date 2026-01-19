@@ -129,31 +129,12 @@ app.get('/api/periodos', async (req: Request, res: Response) => {
     const cachedData = apiCache.get('periodos');
     if (cachedData) return res.json(cachedData);
 
-    const data = await withRetry(async (supabase) => {
-      // 1. Obtener periodos
-      const { data: periods, error: periodsError } = await supabase
+    const data = await withRetry(async (supabase) => 
+      await supabase
         .from('t_period')
         .select('*')
-        .order('DESCRIPTION', { ascending: true });
-
-      if (periodsError) throw periodsError;
-
-      // 2. Verificar uso en t_professional_practices
-      const { data: usage, error: usageError } = await supabase
-        .from('t_professional_practices')
-        .select('PERIOD_ID');
-
-      if (usageError) throw usageError;
-
-      const usedIds = new Set(usage?.map(u => u.PERIOD_ID).filter(id => id !== null));
-
-      const result = periods?.map(p => ({
-        ...p,
-        IS_IN_USE: usedIds.has(p.PERIOD_ID)
-      }));
-
-      return { data: result, error: null };
-    });
+        .order('DESCRIPTION', { ascending: true })
+    );
     
     apiCache.set('periodos', data);
     res.json(data);
@@ -199,25 +180,6 @@ app.put('/api/periodos/:id', validate(periodSchema), async (req: Request, res: R
 app.delete('/api/periodos/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-
-    // Verificar si el periodo está en uso antes de eliminar
-    const isUsed = await withRetry(async (supabase) => {
-      const { data, error } = await supabase
-        .from('t_professional_practices')
-        .select('PERIOD_ID')
-        .eq('PERIOD_ID', id)
-        .limit(1);
-      
-      if (error) throw error;
-      return { data: data && data.length > 0, error: null };
-    });
-
-    if (isUsed) {
-      return res.status(400).json({
-        message: 'No se puede eliminar el periodo porque está siendo utilizado en registros de prácticas profesionales.'
-      });
-    }
-
     await withRetry(async (supabase) => 
       await supabase
         .from('t_period')

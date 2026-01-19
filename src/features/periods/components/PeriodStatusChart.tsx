@@ -1,8 +1,11 @@
 import { useMemo } from 'react';
+import ReactApexChart from 'react-apexcharts';
+import { ApexOptions } from 'apexcharts';
+import { useTheme } from '../../../context/theme';
 import { usePeriods } from '../hooks/usePeriods';
-import DonutChartOne from '../../../components/charts/donut/DonutChartOne';
 
 const PeriodStatusChart = () => {
+    const { colorMode } = useTheme();
     const { periodos, status } = usePeriods();
 
     const chartData = useMemo(() => {
@@ -33,18 +36,50 @@ const PeriodStatusChart = () => {
         };
     }, [periodos, status]);
 
-    if (status !== 'success') {
-        return <div className="h-80 bg-gray-100 dark:bg-white/5 animate-pulse rounded-2xl" />;
-    }
+    const options: ApexOptions = {
+        chart: {
+            type: 'donut',
+        },
+        colors: ['#FBBF24', '#10B981', '#EF4444'], // Amarillo, Verde, Rojo
+        labels: chartData.labels,
+        legend: {
+            show: true,
+            position: 'bottom',
+            labels: {
+                colors: colorMode === 'dark' ? '#fff' : '#000',
+            },
+        },
+        plotOptions: {
+            pie: {
+                donut: {
+                    size: '65%',
+                    background: 'transparent',
+                },
+            },
+        },
+        dataLabels: {
+            enabled: false,
+        },
+    };
 
     return (
-        <DonutChartOne 
-            title="Distribución de Períodos Activos"
-            series={chartData.series}
-            labels={chartData.labels}
-            colors={['#FBBF24', '#10B981', '#EF4444']} // Amarillo, Verde, Rojo
-            height={320}
-        />
+        <div className="rounded-sm border border-stroke bg-white px-5 pt-7.5 pb-5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5">
+            <h5 className="text-xl font-semibold text-black dark:text-white mb-4">
+                Distribución de Períodos Activos
+            </h5>
+
+            <div className="mb-2">
+                <div id="chartDonut" className="mx-auto flex justify-center">
+                    {status === 'success' && (
+                        <ReactApexChart
+                            options={options}
+                            series={chartData.series}
+                            type="donut"
+                        />
+                    )}
+                </div>
+            </div>
+        </div>
     );
 };
 

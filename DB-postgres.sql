@@ -1420,6 +1420,76 @@ ALTER TABLE "t_user_roles"
 ALTER TABLE "t_visit"
   ADD CONSTRAINT "PROFESSIONAL_PRACTICE_ID" FOREIGN KEY ("PROFESSIONAL_PRACTICE_ID") REFERENCES "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID") ON DELETE NO ACTION ON UPDATE NO ACTION,
   ADD CONSTRAINT "TUTOR_ID" FOREIGN KEY ("TUTOR_ID") REFERENCES "t_tutors" ("TUTOR_ID") ON DELETE NO ACTION ON UPDATE NO ACTION;
+--
+-- Estructura de tabla para la tabla "t_institution_career"
+--
+CREATE TABLE "t_institution_career" (
+  "INSTITUTION_CAREER_ID" BIGINT NOT NULL,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+  "INSTITUTION_ID" INTEGER NOT NULL,
+  "CAREER_ID" INTEGER NOT NULL
+);
+--
+-- Indices y constraints para la tabla "t_institution_career"
+--
+ALTER TABLE "t_institution_career"
+  ADD CONSTRAINT "t_institution_career_pkey" PRIMARY KEY ("INSTITUTION_CAREER_ID");
+ALTER TABLE "t_institution_career"
+  ADD CONSTRAINT "t_institution_career_INSTITUTION_ID_fkey" FOREIGN KEY ("INSTITUTION_ID") REFERENCES "t_institution" ("INSTITUTION_ID"),
+  ADD CONSTRAINT "t_institution_career_CAREER_ID_fkey" FOREIGN KEY ("CAREER_ID") REFERENCES "t_career" ("CAREER_ID");
+-- --------------------------------------------------------
+--
+-- Estructura de tabla para la tabla "t_tutor_career"
+--
+CREATE TABLE "t_tutor_career" (
+  "TUTOR_CAREER_ID" BIGINT NOT NULL,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+  "TUTOR_ID" INTEGER NOT NULL,
+  "CAREER_ID" INTEGER NOT NULL
+);
+--
+-- Indices y constraints para la tabla "t_tutor_career"
+--
+ALTER TABLE "t_tutor_career"
+  ADD CONSTRAINT "T_TUTOR_CAREER_pkey" PRIMARY KEY ("TUTOR_CAREER_ID");
+ALTER TABLE "t_tutor_career"
+  ADD CONSTRAINT "T_TUTOR_CAREER_TUTOR_ID_fkey" FOREIGN KEY ("TUTOR_ID") REFERENCES "t_tutors" ("TUTOR_ID"),
+  ADD CONSTRAINT "T_TUTOR_CAREER_CAREER_ID_fkey" FOREIGN KEY ("CAREER_ID") REFERENCES "t_career" ("CAREER_ID");
+-- --------------------------------------------------------
+--
+-- Estructura de tabla para la tabla "t_institution_internship_type"
+--
+CREATE TABLE "t_institution_internship_type" (
+  "INSTITUTION_INTERNSHIP_TYPE_ID" BIGINT NOT NULL,
+  "created_at" TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+  "INSTITUTION_ID" INTEGER NOT NULL,
+  "INTERNSHIP_TYPE_ID" INTEGER NOT NULL
+);
+--
+-- Indices y constraints para la tabla "t_institution_internship_type"
+--
+ALTER TABLE "t_institution_internship_type"
+  ADD CONSTRAINT "T_INSTITUTION_INTERNSHIP_TYPE_pkey" PRIMARY KEY ("INSTITUTION_INTERNSHIP_TYPE_ID");
+ALTER TABLE "t_institution_internship_type"
+  ADD CONSTRAINT "T_INSTITUTION_INTERNSHIP_TYPE_INSTITUTION_ID_fkey" FOREIGN KEY ("INSTITUTION_ID") REFERENCES "t_institution" ("INSTITUTION_ID"),
+  ADD CONSTRAINT "T_INSTITUTION_INTERNSHIP_TYPE_INTERNSHIP_TYPE_ID_fkey" FOREIGN KEY ("INTERNSHIP_TYPE_ID") REFERENCES "t_internship_type" ("INTERNSHIP_TYPE_ID");
+-- --------------------------------------------------------
+--
+-- Estructura de tabla para la tabla "t_password_history"
+--
+CREATE TABLE "t_password_history" (
+  "HISTORY_ID" INTEGER NOT NULL,
+  "USER_ID" INTEGER NOT NULL,
+  "KEY" TEXT NOT NULL,
+  "CREATION_DATE" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+--
+-- Indices y constraints para la tabla "t_password_history"
+--
+ALTER TABLE "t_password_history"
+  ADD CONSTRAINT "t_password_history_pkey" PRIMARY KEY ("HISTORY_ID");
+ALTER TABLE "t_password_history"
+  ADD CONSTRAINT "fk_history_user" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID");
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

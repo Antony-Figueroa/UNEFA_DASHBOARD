@@ -28,8 +28,7 @@ interface InstitutionModalProps {
 }
 
 const instSchema = z.object({
-  rifPrefix: z.string().min(1, "Seleccione un prefijo"),
-  rifNumber: z.string().min(8, "El número debe tener entre 8 y 9 dígitos").max(9, "El número debe tener entre 8 y 9 dígitos"),
+  rif: z.string().min(1, "El RIF es obligatorio").regex(/^[VEJPG]-[0-9]{8,9}$/, "Formato inválido (Ej: J-12345678)"),
   name: z.string().min(1, "El nombre es obligatorio"),
   fiscalAddress: z.string().min(1, "La dirección fiscal es obligatoria"),
   phonePrefix: z.string().min(1, "Seleccione un prefijo"),
@@ -63,13 +62,11 @@ export default function InstitutionModal({
     handleSubmit,
     control,
     reset,
-    setValue,
     formState: { errors, isSubmitted, isDirty },
   } = useForm<InstFormData>({
     resolver: zodResolver(instSchema),
     defaultValues: {
-      rifPrefix: "",
-      rifNumber: "",
+      rif: "",
       name: "",
       fiscalAddress: "",
       phonePrefix: "",
@@ -101,29 +98,16 @@ export default function InstitutionModal({
           "Región",
           "Núcleo",
           "Extensión",
-          "Tipo de empresa",
-          "Rif"
+          "Tipo Institución"
         ];
         const data = await fetchMultipleLists(listNames);
         const mappedOptions: Record<string, { value: string; label: string }[]> = {};
         
         Object.entries(data).forEach(([key, values]) => {
-          if (key === 'Rif') {
-            mappedOptions[key] = values.map(v => ({
-              value: v.abbreviation,
-              label: v.abbreviation
-            }));
-          } else if (key === 'Tipo de empresa') {
-            mappedOptions[key] = values.map(v => ({
-              value: v.abbreviation,
-              label: v.name.toUpperCase()
-            }));
-          } else {
-            mappedOptions[key] = values.map(v => ({
-              value: v.name.toUpperCase(),
-              label: v.name.toUpperCase()
-            }));
-          }
+          mappedOptions[key] = values.map(v => ({
+            value: v.name.toUpperCase(),
+            label: v.name.toUpperCase()
+          }));
         });
         
         setOptions(mappedOptions);
@@ -146,12 +130,6 @@ export default function InstitutionModal({
     { value: "0212", label: "0212" },
   ];
 
-  const RIF_PREFIX_OPTIONS = options["Rif"] || [
-    { value: "J", label: "J" },
-    { value: "G", label: "G" },
-    { value: "C", label: "C" },
-  ];
-
   const REGION_OPTIONS = options["Región"] || [
     { value: "LOS LLANOS", label: "LOS LLANOS" },
   ];
@@ -166,25 +144,16 @@ export default function InstitutionModal({
     { value: "GUANARE", label: "GUANARE" },
   ];
 
-  const INSTITUTION_TYPE_OPTIONS = options["Tipo de empresa"] || [
+  const INSTITUTION_TYPE_OPTIONS = options["Tipo Institución"] || [
     { value: "PUB", label: "PÚBLICA" },
     { value: "PRI", label: "PRIVADA" },
-    { value: "MIX", label: "MIXTA" },
   ];
 
   useEffect(() => {
     if (watchedCareerId) {
-      const getPracticeTypes = async () => {
-        const types = await fetchByCareer(watchedCareerId);
-        if (types && types.length === 1) {
-          setValue("practiceType", String(types[0].INTERNSHIP_TYPE_ID), { shouldDirty: true });
-        } else {
-          setValue("practiceType", "", { shouldDirty: true });
-        }
-      };
-      getPracticeTypes();
+      fetchByCareer(watchedCareerId);
     }
-  }, [watchedCareerId, fetchByCareer, setValue]);
+  }, [watchedCareerId, fetchByCareer]);
 
   useEffect(() => {
     if (isOpen) {
@@ -203,19 +172,8 @@ export default function InstitutionModal({
           }
         }
 
-        let rifPrefix = "";
-        let rifNumber = "";
-        if (editingInst.rif) {
-          const parts = editingInst.rif.split('-');
-          if (parts.length === 2) {
-            rifPrefix = parts[0];
-            rifNumber = parts[1];
-          }
-        }
-
         reset({
-          rifPrefix: rifPrefix,
-          rifNumber: rifNumber,
+          rif: editingInst.rif,
           name: editingInst.name,
           fiscalAddress: editingInst.fiscalAddress,
           phonePrefix: prefix,
@@ -229,8 +187,7 @@ export default function InstitutionModal({
         });
       } else {
         reset({
-          rifPrefix: "",
-          rifNumber: "",
+          rif: "",
           name: "",
           fiscalAddress: "",
           phonePrefix: "",
@@ -247,11 +204,10 @@ export default function InstitutionModal({
   }, [editingInst, isOpen, reset]);
 
   const onSubmit = (data: InstFormData) => {
-    const { phonePrefix, phoneNumber, rifPrefix, rifNumber, ...rest } = data;
+    const { phonePrefix, phoneNumber, ...rest } = data;
     onSave({
       ...rest,
       phone: `${phonePrefix}${phoneNumber}`,
-      rif: `${rifPrefix}-${rifNumber}`,
       status: editingInst?.status ?? true,
       careerId: String(data.careerId),
       careerName: careerOptions.find(c => String(c.value) === String(data.careerId))?.label,
@@ -271,34 +227,12 @@ export default function InstitutionModal({
         <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">RIF *</label>
-            <div className="flex gap-2">
-              <div className="w-32">
-                <Controller
-                  name="rifPrefix"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      options={RIF_PREFIX_OPTIONS}
-                      onChange={field.onChange}
-                      defaultValue={field.value}
-                      placeholder="Prefijo"
-                    />
-                  )}
-                />
-              </div>
-              <div className="flex-1">
-                <Input
-                  placeholder="12345678"
-                  {...register("rifNumber")}
-                  error={!!errors.rifNumber}
-                />
-              </div>
-            </div>
-            {isSubmitted && (errors.rifPrefix || errors.rifNumber) && (
-              <p className="mt-1 text-xs text-red-500">
-                {errors.rifPrefix?.message || errors.rifNumber?.message}
-              </p>
-            )}
+            <Input 
+              placeholder="J-12345678" 
+              {...register("rif")} 
+              error={!!errors.rif} 
+              hint={isSubmitted ? errors.rif?.message : undefined} 
+            />
           </div>
           <div>
             <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nombre *</label>

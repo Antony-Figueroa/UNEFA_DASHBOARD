@@ -1,93 +1,87 @@
 import { useState, useEffect } from "react";
+import EcommerceMetrics from "../../components/ecommerce/EcommerceMetrics";
+import MonthlySalesChart from "../../components/ecommerce/MonthlySalesChart";
+import StatisticsChart from "../../components/ecommerce/StatisticsChart";
+import MonthlyTarget from "../../components/ecommerce/MonthlyTarget";
+import RecentOrders from "../../components/ecommerce/RecentOrders";
+import DemographicCard from "../../components/ecommerce/DemographicCard";
 import PageMeta from "../../components/common/PageMeta";
-import { SkeletonLoader } from "../../components/ui/skeleton";
-import WelcomeBanner from "../../features/dashboard/components/WelcomeBanner";
-import HeroBanner from "../../features/dashboard/components/HeroBanner";
-import StatsCards from "../../features/dashboard/components/StatsCards";
-import MiddleRow from "../../features/dashboard/components/MiddleRow";
-import CourseList from "../../features/dashboard/components/CourseList";
-import DashboardCharts from "../../features/dashboard/components/DashboardCharts";
+import { SkeletonLoader, MetricsSkeleton, ChartSkeleton, TableSkeleton } from "../../components/ui/skeleton";
 
-/**
- * Componente Home (Dashboard)
- * @description Vista principal del sistema con un diseño moderno y limpio (Clean Modern Dashboard).
- */
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulación de carga inicial para la estructura general
+    // Simulamos carga de datos del dashboard
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 800);
+    }, 1500); // 1.5s de carga para que se note el skeleton
     return () => clearTimeout(timer);
   }, []);
 
   return (
     <>
       <PageMeta
-        title="Dashboard | SIGP - UNEFA"
-        description="Panel principal del Sistema de Gestión de Prácticas Profesionales UNEFA"
+        title="SIGP - UNEFA DASHBOARD"
+        description="Sistema de Gestión de Pasantias de la Universidad Nacional Experimental Politécnica de la Fuerza Armada Nacional"
       />
+      <div className="grid grid-cols-12 gap-4 md:gap-6 stagger-delay">
+        <div className="col-span-12 space-y-6 xl:col-span-7">
+          <SkeletonLoader
+            isLoading={isLoading}
+            id="home-metrics"
+            skeleton={<MetricsSkeleton />}
+          >
+            <EcommerceMetrics />
+          </SkeletonLoader>
 
-      <div className="space-y-10 pb-10">
-        {/* 1. Header: Reloj y Periodo */}
-        <WelcomeBanner />
-
-        {/* 2. Hero Card: Go Premium */}
-        <SkeletonLoader
-          isLoading={isLoading}
-          id="home-hero"
-          skeleton={<div className="h-64 bg-white/50 dark:bg-slate-900/50 rounded-4xl animate-pulse" />}
-        >
-          <HeroBanner />
-        </SkeletonLoader>
-
-        {/* 3. Métricas Principales (StatsCards) */}
-        <StatsCards />
-
-        {/* 4. Middle Row: Gráfica de Progreso y Tareas */}
-        <SkeletonLoader
-          isLoading={isLoading}
-          id="home-middle"
-          skeleton={
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="lg:col-span-7 h-64 bg-white/50 dark:bg-slate-900/50 rounded-4xl animate-pulse" />
-              <div className="lg:col-span-5 flex flex-col gap-6">
-                <div className="h-28 bg-white/50 dark:bg-slate-900/50 rounded-4xl animate-pulse" />
-                <div className="h-28 bg-white/50 dark:bg-slate-900/50 rounded-4xl animate-pulse" />
-              </div>
-            </div>
-          }
-        >
-          <MiddleRow />
-        </SkeletonLoader>
-
-        {/* 5. Bottom Section: Course List */}
-        <SkeletonLoader
-          isLoading={isLoading}
-          id="home-bottom"
-          skeleton={
-            <div className="space-y-4">
-              <div className="h-8 w-48 bg-white/50 dark:bg-slate-900/50 rounded-lg animate-pulse" />
-              <div className="h-24 bg-white/50 dark:bg-slate-900/50 rounded-4xl animate-pulse" />
-              <div className="h-24 bg-white/50 dark:bg-slate-900/50 rounded-4xl animate-pulse" />
-            </div>
-          }
-        >
-          <CourseList />
-        </SkeletonLoader>
-
-        {/* 6. Gráficos Interactivos (Opcional, se mantiene por funcionalidad) */}
-        <div className="pt-10">
-          <DashboardCharts />
+          <SkeletonLoader
+            isLoading={isLoading}
+            id="home-monthly-sales"
+            skeleton={<ChartSkeleton height={300} />}
+          >
+            <MonthlySalesChart />
+          </SkeletonLoader>
         </div>
 
-        {/* Nota informativa al pie */}
-        <div className="flex items-center justify-center py-4">
-          <p className="text-[10px] text-text-tertiary uppercase tracking-[0.2em] font-medium opacity-50">
-            Sistema de Gestión de Prácticas Profesionales • UNEFA {new Date().getFullYear()}
-          </p>
+        <div className="col-span-12 xl:col-span-5">
+          <SkeletonLoader
+            isLoading={isLoading}
+            id="home-monthly-target"
+            skeleton={<ChartSkeleton height={420} />}
+          >
+            <MonthlyTarget />
+          </SkeletonLoader>
+        </div>
+
+        <div className="col-span-12">
+          <SkeletonLoader
+            isLoading={isLoading}
+            id="home-statistics"
+            skeleton={<ChartSkeleton height={400} />}
+          >
+            <StatisticsChart />
+          </SkeletonLoader>
+        </div>
+
+        <div className="col-span-12 xl:col-span-5">
+          <SkeletonLoader
+            isLoading={isLoading}
+            id="home-demographic"
+            skeleton={<ChartSkeleton height={400} />}
+          >
+            <DemographicCard />
+          </SkeletonLoader>
+        </div>
+
+        <div className="col-span-12 xl:col-span-7">
+          <SkeletonLoader
+            isLoading={isLoading}
+            id="home-recent-orders"
+            skeleton={<TableSkeleton rows={6} />}
+          >
+            <RecentOrders />
+          </SkeletonLoader>
         </div>
       </div>
     </>

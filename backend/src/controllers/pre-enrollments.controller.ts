@@ -29,9 +29,6 @@ interface Student {
   NAME: string;
   SURNAME: string;
   CONTACT_PHONE?: string;
-  t_career?: {
-    CAREER_NAME: string;
-  };
 }
 
 interface ProfessionalPracticeTutor {
@@ -75,8 +72,7 @@ export const getPreEnrollments = async (req: Request, res: Response) => {
             STUDENTS_CI,
             NAME,
             SURNAME,
-            CONTACT_PHONE,
-            t_career (CAREER_NAME)
+            CONTACT_PHONE
           ),
           t_internships_period (DESCRIPTION),
           t_internship_type (NAME),
@@ -97,7 +93,6 @@ export const getPreEnrollments = async (req: Request, res: Response) => {
         identificationPrefix: ciParts[0] || 'V',
         identificationNumber: ciParts[1] || '',
         studentName: `${item.t_students?.NAME || ''} ${item.t_students?.SURNAME || ''}`.trim(),
-        careerName: item.t_students?.t_career?.CAREER_NAME || '',
         phone: item.t_students?.CONTACT_PHONE || '',
         period: item.t_internships_period?.DESCRIPTION || '',
         practiceType: item.t_internship_type?.NAME || '',

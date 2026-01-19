@@ -23,7 +23,6 @@ import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import { getInternshipTypes, mapToOptions } from "../../features/internship-types/services/internshipTypesService";
 import { PreEnrollment, PreEnrollmentRowData } from "../../features/pre-enrollment/types";
 import { formatDateTime } from "../../utils/date";
-import { useLists } from "../../features/lists/hooks/useLists";
 
 const formatPreEnrollmentToRow = (p: PreEnrollment): PreEnrollmentRowData => ({
     ...p,
@@ -35,7 +34,6 @@ export default function PreEnrollmentPage() {
     const location = useLocation();
     const navigate = useNavigate();
     const [initialCi, setInitialCi] = useState<string | null>(null);
-    const { fetchMultipleLists } = useLists();
     const { periodos } = usePeriods();
     const [periodOptions, setPeriodOptions] = useState<{ value: string; label: string }[]>([]);
     const [practiceTypeOptions, setPracticeTypeOptions] = useState<{ value: string; label: string }[]>([]);

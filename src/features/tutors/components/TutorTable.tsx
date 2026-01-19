@@ -8,6 +8,7 @@ import Checkbox from "../../../components/form/input/Checkbox";
 import { useDebounce } from "../../../hooks/useDebounce";
 import Badge from "../../../components/ui/badge/Badge";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
+import { Career } from "../../careers/types";
 
 const getProfessionColor = (profession: string): "primary" | "success" | "error" | "warning" | "info" => {
     const colors: ("primary" | "success" | "error" | "warning" | "info")[] = ["primary", "success", "error", "warning", "info"];
@@ -29,15 +30,14 @@ interface TutorTableProps {
     onBulkRestore?: (ids: string[]) => void;
     inactiveMode?: boolean;
     activeTab?: "Activas" | "Inactivas";
-    professionOptions?: { value: string; label: string }[];
-    sexOptions?: { value: string; label: string }[];
+    practiceTypeOptions?: { value: string; label: string }[];
+    careerOptions?: { value: string; label: string }[];
+    careers?: Career[];
     conditionOptions?: { value: string; label: string }[];
-    dedicationOptions?: { value: string; label: string }[];
-    categoryOptions?: { value: string; label: string }[];
     loading?: boolean;
 }
 
-type SortKey = "identificationNumber" | "firstName" | "lastName" | "email" | "profession" | "registrationDate";
+type SortKey = "identificationNumber" | "firstName" | "lastName" | "email" | "practiceTypes" | "registrationDate";
 type SortOrder = "asc" | "desc";
 
 interface ActionButtonsProps {
@@ -123,20 +123,17 @@ export default function TutorTable({
     onBulkRestore,
     // inactiveMode = false,
     activeTab = "Activas",
-    professionOptions = [],
-    sexOptions = [],
+    practiceTypeOptions = [],
+    careerOptions = [],
+    careers = [],
     conditionOptions = [],
-    dedicationOptions = [],
-    categoryOptions = [],
     // loading = false,
 }: TutorTableProps) {
     const [idFilter, setIdFilter] = useState("");
     const [nameFilter, setNameFilter] = useState("");
-    const [professionFilter, setProfessionFilter] = useState("");
-    const [sexFilter, setSexFilter] = useState("");
+    const [practiceTypeFilter, setPracticeTypeFilter] = useState("");
+    const [careerFilter, setCareerFilter] = useState("");
     const [conditionFilter, setConditionFilter] = useState("");
-    const [dedicationFilter, setDedicationFilter] = useState("");
-    const [categoryFilter, setCategoryFilter] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -158,11 +155,9 @@ export default function TutorTable({
     const filteredData = useMemo(() => {
         const idSearch = debouncedIdFilter.trim().toLowerCase();
         const nameSearch = debouncedNameFilter.trim().toLowerCase();
-        const professionSearch = professionFilter.trim().toLowerCase();
-        const sexSearch = sexFilter.trim().toLowerCase();
+        const practiceTypeSearch = practiceTypeFilter.trim().toLowerCase();
+        const careerSearch = careerFilter.trim();
         const conditionSearch = conditionFilter.trim().toLowerCase();
-        const dedicationSearch = dedicationFilter.trim().toLowerCase();
-        const categorySearch = categoryFilter.trim().toLowerCase();
 
         const filtered = data.filter((t) => {
             const matchesId = !idSearch || (t.identificationNumber || "").toLowerCase().includes(idSearch);
@@ -170,15 +165,13 @@ export default function TutorTable({
             const fullName = `${t.firstName} ${t.middleName || ""} ${t.lastName} ${t.secondLastName || ""}`.toLowerCase();
             const matchesName = !nameSearch || fullName.includes(nameSearch);
 
-            const matchesProfession = !professionSearch || (t.profession || "").toLowerCase() === professionSearch;
-            const matchesSex = !sexSearch || (t.sex || "").toLowerCase() === sexSearch;
+            const matchesPracticeType = !practiceTypeSearch || (t.practiceTypes || []).some(pt => pt.toLowerCase().includes(practiceTypeSearch));
+            const matchesCareer = !careerSearch || (t.carreras || []).some(c => c === careerSearch);
             const matchesCondition = !conditionSearch || (t.condition || "").toLowerCase() === conditionSearch;
-            const matchesDedication = !dedicationSearch || (t.dedication || "").toLowerCase() === dedicationSearch;
-            const matchesCategory = !categorySearch || (t.category || "").toLowerCase() === categorySearch;
 
             const matchesTab = activeTab === "Activas" ? !!t.status : !t.status;
 
-            return matchesId && matchesName && matchesProfession && matchesSex && matchesCondition && matchesDedication && matchesCategory && matchesTab;
+            return matchesId && matchesName && matchesPracticeType && matchesCareer && matchesCondition && matchesTab;
         });
 
         filtered.sort((a, b) => {
@@ -198,8 +191,8 @@ export default function TutorTable({
                 if (relA !== relB) return relB - relA;
             }
 
-            const valA = a[sortConfig.key];
-            const valB = b[sortConfig.key];
+            const valA = sortConfig.key === "practiceTypes" ? (a.practiceTypes || []).join(", ") : a[sortConfig.key];
+            const valB = sortConfig.key === "practiceTypes" ? (b.practiceTypes || []).join(", ") : b[sortConfig.key];
             const strA = String(valA ?? "").toLowerCase();
             const strB = String(valB ?? "").toLowerCase();
 
@@ -209,11 +202,11 @@ export default function TutorTable({
         });
 
         return filtered;
-    }, [data, debouncedIdFilter, debouncedNameFilter, professionFilter, sexFilter, conditionFilter, dedicationFilter, categoryFilter, activeTab, sortConfig]);
+    }, [data, debouncedIdFilter, debouncedNameFilter, practiceTypeFilter, careerFilter, conditionFilter, activeTab, sortConfig]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedIdFilter, debouncedNameFilter, professionFilter, sexFilter, conditionFilter, dedicationFilter, categoryFilter]);
+    }, [debouncedIdFilter, debouncedNameFilter, practiceTypeFilter, careerFilter, conditionFilter]);
 
     if (status === "error") {
         return (
@@ -294,11 +287,9 @@ export default function TutorTable({
     const clearFilters = () => {
         setIdFilter("");
         setNameFilter("");
-        setProfessionFilter("");
-        setSexFilter("");
+        setPracticeTypeFilter("");
+        setCareerFilter("");
         setConditionFilter("");
-        setDedicationFilter("");
-        setCategoryFilter("");
     };
 
     const SortIndicator = ({ column }: { column: SortKey }) => {
@@ -318,6 +309,11 @@ export default function TutorTable({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
         );
+    };
+
+    const getCareerName = (id: string) => {
+        const career = careers.find(c => String(c.careerId) === String(id));
+        return career ? career.careerName : id;
     };
 
     return (
@@ -351,15 +347,15 @@ export default function TutorTable({
                         />
                     </div>
 
-                    {/* Filtro por Profesión */}
+                    {/* Filtro por Tipo de Practica */}
                     <div className="relative">
                         <select
-                            value={professionFilter}
-                            onChange={(e) => setProfessionFilter(e.target.value)}
+                            value={practiceTypeFilter}
+                            onChange={(e) => setPracticeTypeFilter(e.target.value)}
                             className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                         >
-                            <option value="" className="dark:bg-bg-dark">Todas las Profesiones</option>
-                            {professionOptions.map((opt) => (
+                            <option value="" className="dark:bg-bg-dark">Todos los Tipos</option>
+                            {practiceTypeOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                                     {opt.label}
                                 </option>
@@ -372,15 +368,15 @@ export default function TutorTable({
                         </div>
                     </div>
 
-                    {/* Filtro por Sexo */}
+                    {/* Filtro por Carrera */}
                     <div className="relative">
                         <select
-                            value={sexFilter}
-                            onChange={(e) => setSexFilter(e.target.value)}
+                            value={careerFilter}
+                            onChange={(e) => setCareerFilter(e.target.value)}
                             className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                         >
-                            <option value="" className="dark:bg-bg-dark">Todos los Sexos</option>
-                            {sexOptions.map((opt) => (
+                            <option value="" className="dark:bg-bg-dark">Todas las Carreras</option>
+                            {careerOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                                     {opt.label}
                                 </option>
@@ -413,48 +409,6 @@ export default function TutorTable({
                             </svg>
                         </div>
                     </div>
-
-                    {/* Filtro por Dedicación */}
-                    <div className="relative">
-                        <select
-                            value={dedicationFilter}
-                            onChange={(e) => setDedicationFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
-                        >
-                            <option value="" className="dark:bg-bg-dark">Todas las Dedic.</option>
-                            {dedicationOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    </div>
-
-                    {/* Filtro por Categoría */}
-                    <div className="relative">
-                        <select
-                            value={categoryFilter}
-                            onChange={(e) => setCategoryFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
-                        >
-                            <option value="" className="dark:bg-bg-dark">Todas las Categ.</option>
-                            {categoryOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-2 border-t border-bg-secondary dark:border-border-dark">
@@ -462,7 +416,7 @@ export default function TutorTable({
                         <div className="text-xs text-text-tertiary dark:text-text-tertiary">
                             Mostrando <span className="font-bold text-text-secondary dark:text-text-emphasis">{filteredData.length}</span> resultados
                         </div>
-                        {(idFilter || nameFilter || professionFilter) && (
+                        {(idFilter || nameFilter || practiceTypeFilter || careerFilter || conditionFilter) && (
                             <button
                                 onClick={clearFilters}
                                 className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
@@ -540,16 +494,16 @@ export default function TutorTable({
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("identificationNumber")}>
                                 <div className="flex items-center">Cédula <SortIndicator column="identificationNumber" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("firstName")}>
-                                <div className="flex items-center uppercase">Nombres y Apellidos <SortIndicator column="firstName" /></div>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("lastName")}>
+                                <div className="flex items-center uppercase">Nombres y Apellidos <SortIndicator column="lastName" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell uppercase">Sexo</TableCell>
+                            <TableCell isHeader className="table-header-cell uppercase">Carreras</TableCell>
                             <TableCell isHeader className="table-header-cell uppercase">Teléfono</TableCell>
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("email")}>
                                 <div className="flex items-center uppercase">Correo Electrónico <SortIndicator column="email" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("profession")}>
-                                <div className="flex items-center uppercase">Profesión <SortIndicator column="profession" /></div>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("practiceTypes")}>
+                                <div className="flex items-center uppercase">Tipo de Práctica <SortIndicator column="practiceTypes" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell text-right">&nbsp;</TableCell>
                         </TableRow>
@@ -583,8 +537,18 @@ export default function TutorTable({
                                             {t.firstName} {t.middleName || ""} {t.lastName} {t.secondLastName || ""}
                                         </span>
                                     </TableCell>
-                                    <TableCell className="table-cell text-sm text-text-secondary dark:text-text-tertiary uppercase">
-                                        {t.sex || "N/A"}
+                                    <TableCell className="table-cell">
+                                        <div className="flex flex-wrap gap-1 max-w-xs">
+                                            {t.carreras && t.carreras.length > 0 ? (
+                                                t.carreras.map((id, i) => (
+                                                    <Badge key={i} color="info" variant="light" size="sm" className="uppercase">
+                                                        {getCareerName(id)}
+                                                    </Badge>
+                                                ))
+                                            ) : (
+                                                <span className="text-xs text-text-tertiary">Ninguna</span>
+                                            )}
+                                        </div>
                                     </TableCell>
                                     <TableCell className="table-cell text-sm text-text-secondary dark:text-text-tertiary">
                                         {t.phone}
@@ -593,13 +557,17 @@ export default function TutorTable({
                                         {t.email}
                                     </TableCell>
                                     <TableCell className="table-cell uppercase">
-                                        {t.profession ? (
-                                            <Badge color={getProfessionColor(t.profession)} variant="light" size="sm" shape="rounded" className="uppercase">
-                                                {t.profession}
-                                            </Badge>
-                                        ) : (
-                                            <span className="text-text-tertiary">N/A</span>
-                                        )}
+                                        <div className="flex flex-wrap gap-1 max-w-xs">
+                                            {t.practiceTypes && t.practiceTypes.length > 0 ? (
+                                                t.practiceTypes.map((pt, i) => (
+                                                    <Badge key={i} color={getProfessionColor(pt)} variant="light" size="sm" shape="rounded" className="uppercase">
+                                                        {pt}
+                                                    </Badge>
+                                                ))
+                                            ) : (
+                                                <span className="text-text-tertiary">N/A</span>
+                                            )}
+                                        </div>
                                     </TableCell>
                                     <TableCell className="table-cell text-right">
                                         <ActionButtons
@@ -623,7 +591,7 @@ export default function TutorTable({
                                         </div>
                                         <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron tutores</h3>
                                         <p className="mt-1 text-xs text-text-tertiary dark:text-text-tertiary">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                                        {(idFilter || nameFilter || professionFilter) && (
+                                        {(idFilter || nameFilter || practiceTypeFilter) && (
                                             <button
                                                 onClick={clearFilters}
                                                 className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
@@ -669,20 +637,32 @@ export default function TutorTable({
                                     <div className="mt-4 space-y-6 animate-fadeIn border-t border-border-light dark:border-border-dark pt-6">
                                         <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
                                             <div className="flex flex-col items-center uppercase">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Profesión</p>
-                                                <div className="flex justify-center w-full uppercase">
-                                                    {t.profession ? (
-                                                        <Badge color={getProfessionColor(t.profession)} variant="light" size="sm" className="uppercase">
-                                                            {t.profession}
-                                                        </Badge>
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Tipo de Práctica</p>
+                                                <div className="flex flex-wrap justify-center gap-1 uppercase">
+                                                    {t.practiceTypes && t.practiceTypes.length > 0 ? (
+                                                        t.practiceTypes.map((pt, i) => (
+                                                            <Badge key={i} color={getProfessionColor(pt)} variant="light" size="sm" className="uppercase">
+                                                                {pt}
+                                                            </Badge>
+                                                        ))
                                                     ) : (
                                                         <span className="text-xs text-text-tertiary font-medium">N/A</span>
                                                     )}
                                                 </div>
                                             </div>
                                             <div className="flex flex-col items-center uppercase">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Sexo</p>
-                                                <p className="text-sm text-text-secondary dark:text-text-secondary font-medium uppercase">{t.sex || "N/A"}</p>
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Carreras</p>
+                                                <div className="flex flex-wrap justify-center gap-1 uppercase">
+                                                    {t.carreras && t.carreras.length > 0 ? (
+                                                        t.carreras.map((id, i) => (
+                                                            <Badge key={i} color="info" variant="light" size="sm" className="uppercase">
+                                                                {getCareerName(id)}
+                                                            </Badge>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-xs text-text-tertiary font-medium">N/A</span>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="col-span-2 flex flex-col items-center uppercase">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Correo</p>
@@ -716,7 +696,7 @@ export default function TutorTable({
                         </div>
                         <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron tutores</h3>
                         <p className="mt-1 text-xs text-text-tertiary dark:text-text-tertiary max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                        {(idFilter || nameFilter || professionFilter) && (
+                        {(idFilter || nameFilter || practiceTypeFilter) && (
                             <button
                                 onClick={clearFilters}
                                 className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"

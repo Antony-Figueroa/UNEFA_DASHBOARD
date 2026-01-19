@@ -287,30 +287,9 @@ export default function StudentsPage() {
                                 onSelectionChange={setSelectedIds}
                                 inactiveMode={activeTab === "Inactivas"}
                                 careerOptions={careerOptions}
-                                sexOptions={dynamicLists["Sexo"]?.map(v => ({ value: v.name.toUpperCase(), label: v.name.toUpperCase() })) || [
-                                    { value: "FEMENINO", label: "FEMENINO" },
-                                    { value: "MASCULINO", label: "MASCULINO" }
-                                ]}
-                                civilStatusOptions={dynamicLists["Registro Civil"]?.map(v => ({ value: v.name.toUpperCase(), label: v.name.toUpperCase() })) || [
-                                    { value: "SOLTERO/A", label: "SOLTERO/A" },
-                                    { value: "CASADO/A", label: "CASADO/A" },
-                                    { value: "DIVORCIADO/A", label: "DIVORCIADO/A" },
-                                    { value: "VIUDO/A", label: "VIUDO/A" }
-                                ]}
                                 regimeOptions={dynamicLists["Regimen/Turno"]?.map(v => ({ value: v.name.toUpperCase(), label: v.name.toUpperCase() })) || [
                                     { value: "DIURNO", label: "DIURNO" },
                                     { value: "NOCTURNO", label: "NOCTURNO" }
-                                ]}
-                                studentTypeOptions={dynamicLists["Tipo de estudiante"]?.map(v => ({ value: v.name.toUpperCase(), label: v.name.toUpperCase() })) || [
-                                    { value: "REGULAR", label: "REGULAR" },
-                                    { value: "NUEVO INGRESO", label: "NUEVO INGRESO" }
-                                ]}
-                                worksOptions={dynamicLists["Trabajo"]?.map(v => ({ value: v.name.toUpperCase(), label: v.name.toUpperCase() })) || [
-                                    { value: "SI", label: "SI" },
-                                    { value: "NO", label: "NO" }
-                                ]}
-                                militaryRankOptions={dynamicLists["Rango Militar"]?.map(v => ({ value: v.name.toUpperCase(), label: v.name.toUpperCase() })) || [
-                                    { value: "NO APLICA", label: "NO APLICA" }
                                 ]}
                                 loading={loadingAction}
                             />

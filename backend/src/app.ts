@@ -20,6 +20,7 @@ import institutionalResponsiblesRoutes from './routes/institutional-responsibles
 import listsRoutes from './routes/lists.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import usersRoutes from './routes/users.routes.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
 import { dbManager } from './lib/db-manager.js';
 import { performanceMiddleware } from './lib/performance-middleware.js';
 import { authenticateToken, restrictAsistente } from './middlewares/auth.middleware.js';
@@ -151,6 +152,7 @@ app.use('/api/tracking', trackingRoutes);
 app.use('/api/institutions', institutionsRoutes);
 app.use('/api/institutional-responsibles', institutionalResponsiblesRoutes);
 app.use('/api/lists', listsRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Servir archivos estáticos del frontend (Vite build)
 // Intentar encontrar la carpeta dist en lugares comunes

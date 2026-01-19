@@ -5,8 +5,14 @@ import {
   GroupIcon,
 } from "../../icons";
 import Badge from "../ui/badge/Badge";
+import { DashboardStats } from "../../features/dashboard/types";
 
-export default function EcommerceMetrics() {
+interface EcommerceMetricsProps {
+  stats: DashboardStats | null;
+  loading: boolean;
+}
+
+export default function EcommerceMetrics({ stats, loading }: EcommerceMetricsProps) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6">
       {/* <!-- Metric Item Start --> */}
@@ -18,11 +24,15 @@ export default function EcommerceMetrics() {
         <div className="flex items-end justify-between mt-5">
           <div>
             <span className="text-sm text-text-secondary dark:text-text-tertiary">
-              Customers
+              Estudiantes
             </span>
-            <h4 className="mt-2 font-bold text-text-emphasis text-title-sm dark:text-text-emphasis">
-              3,782
-            </h4>
+            {loading ? (
+              <div className="mt-2 h-7 w-20 animate-pulse rounded bg-gray-200 dark:bg-gray-700"></div>
+            ) : (
+              <h4 className="mt-2 font-bold text-text-emphasis text-title-sm dark:text-text-emphasis">
+                {stats?.totalStudents.toLocaleString() || "0"}
+              </h4>
+            )}
           </div>
           <Badge color="success">
             <ArrowUpIcon />
@@ -40,11 +50,15 @@ export default function EcommerceMetrics() {
         <div className="flex items-end justify-between mt-5">
           <div>
             <span className="text-sm text-text-secondary dark:text-text-tertiary">
-              Orders
+              Inscripciones
             </span>
-            <h4 className="mt-2 font-bold text-text-emphasis text-title-sm dark:text-text-emphasis">
-              5,359
-            </h4>
+            {loading ? (
+              <div className="mt-2 h-7 w-20 animate-pulse rounded bg-gray-200 dark:bg-gray-700"></div>
+            ) : (
+              <h4 className="mt-2 font-bold text-text-emphasis text-title-sm dark:text-text-emphasis">
+                {stats?.totalEnrollments.toLocaleString() || "0"}
+              </h4>
+            )}
           </div>
 
           <Badge color="error">

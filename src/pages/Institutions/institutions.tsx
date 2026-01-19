@@ -43,28 +43,30 @@ export default function InstitutionsPage() {
   const [pageLoading, setPageLoading] = useState(true);
   const { careers } = useCareers();
   const careerOptions = useMemo(() => careers.map(c => ({ value: c.careerId, label: c.careerName })), [careers]);
-  const { fetchAll: fetchInternshipTypes } = useInternshipTypes();
+  const { internshipTypes, fetchAll: fetchInternshipTypes } = useInternshipTypes();
   const { fetchMultipleLists } = useLists();
-  const [dynamicPracticeOptions, setDynamicPracticeOptions] = useState<{ value: string; label: string }[]>([]);
+  const [listOptions, setListOptions] = useState<Record<string, { value: string; label: string }[]>>({});
 
   useEffect(() => {
     fetchInternshipTypes();
     
     const loadDynamicOptions = async () => {
       try {
-        const data = await fetchMultipleLists(["Tipo de Práctica"]);
-        const practiceList = data["Tipo de Práctica"] || [];
+        const listNames = [
+          "Rif",
+          "Tipo de empresa"
+        ];
+        const data = await fetchMultipleLists(listNames);
+        const mappedOptions: Record<string, { value: string; label: string }[]> = {};
         
-        const mapped = practiceList.length > 0
-          ? practiceList.map(v => ({
-              value: v.name.toUpperCase(),
-              label: v.name.toUpperCase()
-            }))
-          : [
-              { value: "ORDINARIA", label: "ORDINARIA" },
-              { value: "ESPECIAL", label: "ESPECIAL" },
-            ];
-        setDynamicPracticeOptions(mapped);
+        Object.entries(data).forEach(([key, values]) => {
+          mappedOptions[key] = values.map(v => ({
+            value: v.abbreviation || v.name,
+            label: v.name
+          }));
+        });
+        
+        setListOptions(mappedOptions);
       } catch (error) {
         console.error("Error loading dynamic options for institutions:", error);
       } finally {
@@ -74,6 +76,8 @@ export default function InstitutionsPage() {
 
     loadDynamicOptions();
   }, [fetchInternshipTypes, fetchMultipleLists]);
+
+  const institutionTypeOptions = useMemo(() => (listOptions["Tipo de empresa"] || []).sort((a, b) => a.label.localeCompare(b.label)), [listOptions]);
 
   const {
     institutions,
@@ -294,12 +298,13 @@ export default function InstitutionsPage() {
                   status={instStatus}
                   activeTab={activeTab}
                   careerOptions={careerOptions}
-                  practiceOptions={dynamicPracticeOptions}
+                  internshipTypes={internshipTypes}
                   onEdit={handleOpenEditModal}
                   onView={setViewInst}
                   onToggleStatus={handleToggleInstStatus}
                   onBulkDelete={(ids) => handleBulkInstAction(ids, "inactivate")}
                   onBulkRestore={(ids) => handleBulkInstAction(ids, "restore")}
+                  institutionTypeOptions={institutionTypeOptions}
                 />
               ) : (
                 <InstitutionalResponsibleTable
@@ -337,6 +342,7 @@ export default function InstitutionsPage() {
         editingInst={editingInst}
         careerOptions={careerOptions}
         isLoading={loadingAction}
+        existingInstitutions={institutions}
       />
 
       <InstitutionalResponsibleModal

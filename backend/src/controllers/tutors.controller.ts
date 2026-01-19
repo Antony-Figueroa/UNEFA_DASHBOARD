@@ -60,6 +60,13 @@ interface DBProfessionalPracticesTutor {
 
 interface DBTutorCareer {
   CAREER_ID: number;
+  t_career?: {
+    t_career_internship_type?: {
+      t_internship_type?: {
+        NAME: string;
+      };
+    }[];
+  };
 }
 
 export const getTutors = async (_req: Request, res: Response) => {
@@ -67,7 +74,19 @@ export const getTutors = async (_req: Request, res: Response) => {
     const data = await dbManager.withRetry(async (supabase) => {
       const { data, error } = await supabase
         .from(TABLE_NAME)
-        .select('*, t_visit(VISIT_ID), t_professional_practices_tutor(PROFESSIONAL_PRACTICES_TUTOR_ID), t_tutor_career(CAREER_ID)')
+        .select(`
+          *, 
+          t_visit(VISIT_ID), 
+          t_professional_practices_tutor(PROFESSIONAL_PRACTICES_TUTOR_ID), 
+          t_tutor_career(
+            CAREER_ID, 
+            t_career(
+              t_career_internship_type(
+                t_internship_type(NAME)
+              )
+            )
+          )
+        `)
         .order('NAME', { ascending: true });
 
       if (error) throw error;
@@ -91,6 +110,21 @@ export const getTutors = async (_req: Request, res: Response) => {
         ? t.t_tutor_career.map(tc => String(tc.CAREER_ID)) 
         : [];
 
+      // Extraer tipos de práctica de las carreras asignadas
+      const practiceTypesSet = new Set<string>();
+      if (Array.isArray(t.t_tutor_career)) {
+        t.t_tutor_career.forEach(tc => {
+          if (tc.t_career?.t_career_internship_type) {
+            tc.t_career.t_career_internship_type.forEach(cit => {
+              if (cit.t_internship_type?.NAME) {
+                practiceTypesSet.add(cit.t_internship_type.NAME);
+              }
+            });
+          }
+        });
+      }
+      const practiceTypes = Array.from(practiceTypesSet);
+
       return {
         tutorId: String(t.TUTOR_ID),
         identificationPrefix: prefix,
@@ -109,6 +143,7 @@ export const getTutors = async (_req: Request, res: Response) => {
         registrationDate: t.CREATION_DATE,
         status: t.STATUS === 1,
         carreras: careers,
+        practiceTypes, // Nuevo campo con datos reales de la DB
         isInUse
       };
     });
@@ -128,6 +163,21 @@ const mapDBToFrontend = (t: DBTutor & { t_tutor_career?: DBTutorCareer[] }) => {
     ? t.t_tutor_career.map(tc => String(tc.CAREER_ID)) 
     : [];
 
+  // Extraer tipos de práctica de las carreras asignadas
+  const practiceTypesSet = new Set<string>();
+  if (Array.isArray(t.t_tutor_career)) {
+    t.t_tutor_career.forEach(tc => {
+      if (tc.t_career?.t_career_internship_type) {
+        tc.t_career.t_career_internship_type.forEach(cit => {
+          if (cit.t_internship_type?.NAME) {
+            practiceTypesSet.add(cit.t_internship_type.NAME);
+          }
+        });
+      }
+    });
+  }
+  const practiceTypes = Array.from(practiceTypesSet);
+
   return {
     tutorId: String(t.TUTOR_ID),
     identificationPrefix: prefix,
@@ -145,7 +195,8 @@ const mapDBToFrontend = (t: DBTutor & { t_tutor_career?: DBTutorCareer[] }) => {
     category: t.CATEGORY,
     registrationDate: t.CREATION_DATE,
     status: t.STATUS === 1,
-    carreras: careers
+    carreras: careers,
+    practiceTypes
   };
 };
 
@@ -196,7 +247,17 @@ export const createTutor = async (req: Request, res: Response) => {
         // Volver a obtener el tutor con las carreras para el retorno
         const { data: finalData, error: finalError } = await supabase
           .from(TABLE_NAME)
-          .select('*, t_tutor_career(CAREER_ID)')
+          .select(`
+            *, 
+            t_tutor_career(
+              CAREER_ID, 
+              t_career(
+                t_career_internship_type(
+                  t_internship_type(NAME)
+                )
+              )
+            )
+          `)
           .eq('TUTOR_ID', newTutor.TUTOR_ID)
           .single();
           
@@ -268,7 +329,17 @@ export const updateTutor = async (req: Request, res: Response) => {
       // Volver a obtener el tutor con las carreras para el retorno
       const { data: finalData, error: finalError } = await supabase
         .from(TABLE_NAME)
-        .select('*, t_tutor_career(CAREER_ID)')
+        .select(`
+          *, 
+          t_tutor_career(
+            CAREER_ID, 
+            t_career(
+              t_career_internship_type(
+                t_internship_type(NAME)
+              )
+            )
+          )
+        `)
         .eq('TUTOR_ID', id)
         .single();
         
@@ -305,15 +376,32 @@ export const toggleTutorStatus = async (req: Request, res: Response) => {
     const { status } = req.body;
 
     const data = await dbManager.withRetry(async (supabase) => {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from(TABLE_NAME)
         .update({ STATUS: status ? 1 : 0 })
-        .eq('TUTOR_ID', id)
-        .select()
-        .single();
+        .eq('TUTOR_ID', id);
 
       if (error) throw error;
-      return data as DBTutor;
+
+      // Obtener datos completos para el retorno
+      const { data: finalData, error: finalError } = await supabase
+        .from(TABLE_NAME)
+        .select(`
+          *, 
+          t_tutor_career(
+            CAREER_ID, 
+            t_career(
+              t_career_internship_type(
+                t_internship_type(NAME)
+              )
+            )
+          )
+        `)
+        .eq('TUTOR_ID', id)
+        .single();
+
+      if (finalError) throw finalError;
+      return finalData as (DBTutor & { t_tutor_career: DBTutorCareer[] });
     });
 
     res.json(mapDBToFrontend(data));

@@ -32,6 +32,7 @@ export interface Tutor {
   registrationDate: Date; // fecha de registro
   status: boolean; // true: activo, false: inactivo/papelera
   carreras: string[];
+  practiceTypes?: string[]; // Tipos de prácticas asignadas
   isInUse?: boolean;
 }
 

@@ -4,8 +4,22 @@ import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { MoreDotIcon } from "../../icons";
 import { useState } from "react";
+import { DashboardStats } from "../../features/dashboard/types";
 
-export default function MonthlySalesChart() {
+interface MonthlySalesChartProps {
+  stats: DashboardStats | null;
+  loading: boolean;
+}
+
+export default function MonthlySalesChart({ stats }: MonthlySalesChartProps) {
+  const categories = stats?.monthlyEnrollments.map((m) => m.month) || [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ];
+
+  const data = stats?.monthlyEnrollments.map((m) => m.count) || [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  ];
+
   const options: ApexOptions = {
     colors: ["#007fff"],
     chart: {
@@ -33,20 +47,7 @@ export default function MonthlySalesChart() {
       colors: ["transparent"],
     },
     xaxis: {
-      categories: [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ],
+      categories,
       axisBorder: {
         show: false,
       },
@@ -85,10 +86,11 @@ export default function MonthlySalesChart() {
       },
     },
   };
+
   const series = [
     {
-      name: "Sales",
-      data: [168, 385, 201, 298, 187, 195, 291, 110, 215, 390, 280, 112],
+      name: "Inscripciones",
+      data,
     },
   ];
   const [isOpen, setIsOpen] = useState(false);
@@ -104,7 +106,7 @@ export default function MonthlySalesChart() {
     <div className="overflow-hidden rounded-2xl border border-border-light bg-bg-main px-5 pt-5 dark:border-border-dark dark:bg-white/3 sm:px-6 sm:pt-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-text-primary dark:text-white/90">
-          Monthly Sales
+          Inscripciones Mensuales
         </h3>
         <div className="relative inline-block">
           <button className="dropdown-toggle" onClick={toggleDropdown}>

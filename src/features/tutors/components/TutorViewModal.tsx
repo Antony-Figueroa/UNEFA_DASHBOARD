@@ -7,6 +7,7 @@
 import { useState, useEffect } from "react";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
+import Badge from "../../../components/ui/badge/Badge";
 import { TutorRowData } from "../types";
 import { getCareers } from "../../careers/services/careersService";
 import { Career } from "../../careers/types";
@@ -17,6 +18,15 @@ interface TutorViewModalProps {
     onEdit?: (tutor: TutorRowData) => void;
     tutor: TutorRowData | null;
 }
+
+const getProfessionColor = (profession: string): "primary" | "success" | "error" | "warning" | "info" => {
+    const colors: ("primary" | "success" | "error" | "warning" | "info")[] = ["primary", "success", "error", "warning", "info"];
+    let hash = 0;
+    for (let i = 0; i < (profession || "").length; i++) {
+        hash = (profession || "").charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+};
 
 export default function TutorViewModal({
     isOpen,
@@ -33,13 +43,6 @@ export default function TutorViewModal({
     }, [isOpen]);
 
     if (!tutor) return null;
-
-    const careerNames = tutor.carreras?.length 
-        ? tutor.carreras.map(id => {
-            const career = careers.find(c => String(c.careerId) === String(id));
-            return career ? career.careerName : `ID: ${id}`;
-        }).join(", ")
-        : "Ninguna";
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} isFullscreen={true} showCloseButton>
@@ -111,9 +114,36 @@ export default function TutorViewModal({
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Categoría</label>
                                 <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">{tutor.category}</p>
                             </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipo de Práctica</label>
+                                <div className="flex flex-wrap gap-1">
+                                    {tutor.practiceTypes && tutor.practiceTypes.length > 0 ? (
+                                        tutor.practiceTypes.map((pt, i) => (
+                                            <Badge key={i} color={getProfessionColor(pt)} variant="light" size="sm" className="uppercase">
+                                                {pt}
+                                            </Badge>
+                                        ))
+                                    ) : (
+                                        <span className="text-xs text-text-tertiary font-medium">N/A</span>
+                                    )}
+                                </div>
+                            </div>
                             <div className="sm:col-span-2">
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Carreras que Atiende</label>
-                                <p className="text-sm font-bold text-brand-600 dark:text-brand-400 uppercase">{careerNames}</p>
+                                <div className="flex flex-wrap gap-1">
+                                    {tutor.carreras && tutor.carreras.length > 0 ? (
+                                        tutor.carreras.map((id, i) => {
+                                            const career = careers.find(c => String(c.careerId) === String(id));
+                                            return (
+                                                <Badge key={i} color="info" variant="light" size="sm" className="uppercase">
+                                                    {career ? career.careerName : `ID: ${id}`}
+                                                </Badge>
+                                            );
+                                        })
+                                    ) : (
+                                        <span className="text-xs text-text-tertiary font-medium">N/A</span>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -13,6 +13,7 @@ import Checkbox from "../../../components/form/input/Checkbox";
 import Badge from "../../../components/ui/badge/Badge";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
+import { InternshipType } from "../../internship-types/types";
 
 interface InstitutionTableProps {
   data: InstitutionRowData[];
@@ -24,7 +25,8 @@ interface InstitutionTableProps {
   onBulkRestore?: (ids: string[]) => void;
   activeTab?: "Activas" | "Inactivas";
   careerOptions?: { value: string | number; label: string }[];
-  practiceOptions?: { value: string; label: string }[];
+  internshipTypes?: InternshipType[];
+  institutionTypeOptions?: { value: string; label: string }[];
 }
 
 type SortKey = "rif" | "name" | "practiceType" | "careerName";
@@ -36,6 +38,7 @@ interface ActionButtonsProps {
     onView?: () => void;
     activeTab: "Activas" | "Inactivas";
     isMobile?: boolean;
+    isInUse?: boolean;
 }
 
 const ActionButtons = ({
@@ -44,6 +47,7 @@ const ActionButtons = ({
     onView,
     activeTab,
     isMobile = false,
+    isInUse = false,
 }: ActionButtonsProps) => {
     const containerClasses = isMobile 
         ? "flex flex-col gap-3 pt-2" 
@@ -75,10 +79,11 @@ const ActionButtons = ({
                 <ActionButton
                     onClick={() => onToggleStatus()}
                     icon={activeTab === "Inactivas" ? <RefreshIcon /> : <TrashIcon />}
-                    tooltip={activeTab === "Inactivas" ? "Restaurar" : "Eliminar"}
+                    tooltip={activeTab === "Inactivas" ? "Restaurar" : (isInUse ? "Esta institución está en uso y no se puede eliminar" : "Eliminar")}
                     label={isMobile ? (activeTab === "Inactivas" ? "Restaurar Institución" : "Eliminar Institución") : undefined}
                     variant={activeTab === "Inactivas" ? "success" : "danger"}
                     fullWidth={isMobile}
+                    disabled={isInUse && activeTab === "Activas"}
                 />
             )}
         </div>
@@ -95,12 +100,18 @@ export default function InstitutionTable({
   onBulkRestore,
   activeTab = "Activas",
   careerOptions = [],
-  practiceOptions = [],
+  internshipTypes = [],
+  institutionTypeOptions = [],
 }: InstitutionTableProps) {
   const [rifFilter, setRifFilter] = useState("");
   const [nameFilter, setNameFilter] = useState("");
-  const [practiceTypeFilter, setPracticeTypeFilter] = useState("");
   const [careerFilter, setCareerFilter] = useState("");
+  const [institutionTypeFilter, setInstitutionTypeFilter] = useState("");
+
+  const getPracticeName = (id: string | number) => {
+    const type = internshipTypes.find(t => String(t.INTERNSHIP_TYPE_ID) === String(id));
+    return type ? type.NAME : String(id);
+  };
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -121,16 +132,19 @@ export default function InstitutionTable({
   const filteredData = useMemo(() => {
     const rifSearch = debouncedRifFilter.trim().toLowerCase();
     const nameSearch = debouncedNameFilter.trim().toLowerCase();
-    const typeSearch = practiceTypeFilter;
     const careerSearch = careerFilter;
+    const institutionTypeSearch = institutionTypeFilter;
 
     const filtered = data.filter((i) => {
       const matchesRif = !rifSearch || i.rif.toLowerCase().includes(rifSearch);
       const matchesName = !nameSearch || i.name.toLowerCase().includes(nameSearch);
-      const matchesType = !typeSearch || i.practiceType === typeSearch;
       const matchesCareer = !careerSearch || i.careerId === careerSearch;
+      const matchesInstitutionType = !institutionTypeSearch || i.institutionType === institutionTypeSearch;
+      
       const matchesTab = activeTab === "Activas" ? i.status === true : i.status === false;
-      return matchesRif && matchesName && matchesType && matchesCareer && matchesTab;
+      
+      return matchesRif && matchesName && matchesCareer && 
+             matchesInstitutionType && matchesTab;
     });
 
     filtered.sort((a, b) => {
@@ -143,12 +157,26 @@ export default function InstitutionTable({
     });
 
     return filtered;
-  }, [data, debouncedRifFilter, debouncedNameFilter, practiceTypeFilter, careerFilter, activeTab, sortConfig]);
+  }, [
+    data, 
+    debouncedRifFilter, 
+    debouncedNameFilter, 
+    careerFilter, 
+    institutionTypeFilter,
+    activeTab, 
+    sortConfig
+  ]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedRifFilter, debouncedNameFilter, practiceTypeFilter, careerFilter]);
+  }, [
+    debouncedRifFilter, 
+    debouncedNameFilter, 
+    careerFilter, 
+    institutionTypeFilter,
+    activeTab
+  ]);
 
   if (status === "error") {
     return (
@@ -215,13 +243,6 @@ export default function InstitutionTable({
       }
   };
 
-  const clearFilters = () => {
-    setRifFilter("");
-    setNameFilter("");
-    setPracticeTypeFilter("");
-    setCareerFilter("");
-  };
-
   const SortIndicator = ({ column }: { column: SortKey }) => {
       if (sortConfig.key !== column) {
           return (
@@ -248,8 +269,9 @@ export default function InstitutionTable({
   return (
     <div className="table-container">
       <div className="p-4 border-b border-border-light dark:border-white/5 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="relative">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {/* RIF Filter */}
+            <div className="relative flex-1">
                 <input
                     type="text"
                     placeholder="Buscar por RIF"
@@ -264,7 +286,7 @@ export default function InstitutionTable({
                 </span>
             </div>
 
-            <div className="relative">
+            <div className="relative flex-1">
                 <input
                     type="text"
                     placeholder="Buscar por nombre"
@@ -272,27 +294,6 @@ export default function InstitutionTable({
                     onChange={(e) => setNameFilter(e.target.value)}
                     className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-4 text-sm text-text-primary placeholder-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 dark:placeholder-text-tertiary"
                 />
-            </div>
-
-            {/* Filtro por Tipo de Práctica */}
-            <div className="relative">
-                <select
-                    value={practiceTypeFilter}
-                    onChange={(e) => setPracticeTypeFilter(e.target.value)}
-                    className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 appearance-none"
-                >
-                    <option value="" className="dark:bg-bg-dark">Todos los tipos</option>
-                    {practiceOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
-                            {opt.label}
-                        </option>
-                    ))}
-                </select>
-                <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                </div>
             </div>
 
             {/* Filtro por Carrera */}
@@ -315,6 +316,28 @@ export default function InstitutionTable({
                     </svg>
                 </div>
             </div>
+
+            {/* Filtro por Tipo de Institución */}
+            <div className="relative">
+                <select
+                    value={institutionTypeFilter}
+                    onChange={(e) => setInstitutionTypeFilter(e.target.value)}
+                    className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 appearance-none"
+                >
+                    <option value="" className="dark:bg-bg-dark">Todos los Tipos</option>
+                    {institutionTypeOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
+                            {opt.label}
+                        </option>
+                    ))}
+                </select>
+                <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+
         </div>
 
         <div className="flex items-center justify-between pt-2 border-t border-border-light dark:border-white/5">
@@ -322,15 +345,6 @@ export default function InstitutionTable({
                 <div className="text-xs text-text-secondary dark:text-text-tertiary">
                     Mostrando <span className="font-bold text-text-primary dark:text-white">{filteredData.length}</span> resultados
                 </div>
-                {(rifFilter || nameFilter || practiceTypeFilter || careerFilter) && (
-                    <button
-                        onClick={clearFilters}
-                        className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
-                    >
-                        <RefreshIcon className="icon-xs" />
-                        Limpiar filtros
-                    </button>
-                )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -379,7 +393,7 @@ export default function InstitutionTable({
                 )}
             </div>
         </div>
-      </div>
+    </div>
 
       {/* Vista de Escritorio (Tabla) */}
       <div className="hidden md:block max-w-full overflow-x-auto table-scrollbar">
@@ -440,10 +454,19 @@ export default function InstitutionTable({
                         <TableCell className="text-text-secondary dark:text-text-tertiary font-semibold">{i.name}</TableCell>
                         <TableCell className="text-text-secondary dark:text-text-tertiary whitespace-nowrap">{i.phone}</TableCell>
                         <TableCell>
-                            <Badge color={i.practiceType === "HOSPITALARIA" ? "error" : i.practiceType === "COMUNITARIA" ? "warning" : "success"} variant="light" size="sm" shape="rounded">
-                                {i.practiceType}
-                            </Badge>
-                        </TableCell>
+                    <Badge 
+                        color={
+                            getPracticeName(i.practiceType) === "HOSPITALARIA" ? "error" : 
+                            getPracticeName(i.practiceType) === "COMUNITARIA" ? "warning" : 
+                            "success"
+                        } 
+                        variant="light" 
+                        size="sm" 
+                        shape="rounded"
+                    >
+                        {getPracticeName(i.practiceType)}
+                    </Badge>
+                </TableCell>
                         <TableCell className="text-text-secondary dark:text-text-tertiary">{i.careerName}</TableCell>
                         <TableCell className="table-cell text-right">
                             <ActionButtons
@@ -451,6 +474,7 @@ export default function InstitutionTable({
                                 onEdit={onEdit ? () => onEdit(i) : undefined}
                                 onToggleStatus={onToggleStatus ? () => onToggleStatus(i) : undefined}
                                 activeTab={activeTab}
+                                isInUse={i.isInUse}
                             />
                         </TableCell>
                     </TableRow>
@@ -460,7 +484,7 @@ export default function InstitutionTable({
                     <TableCell colSpan={7} className="p-0">
                         <EmptyState
                             title="No se encontraron instituciones"
-                            description={rifFilter || nameFilter || practiceTypeFilter || careerFilter
+                            description={rifFilter || nameFilter || careerFilter
                                 ? "Intenta ajustar los filtros para encontrar lo que buscas."
                                 : "Aún no hay instituciones registradas en esta categoría."}
                         />
@@ -503,8 +527,16 @@ export default function InstitutionTable({
                                     <div className="flex flex-col items-center">
                                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Tipo Práctica</p>
                                         <div className="flex justify-center w-full">
-                                            <Badge color={i.practiceType === "HOSPITALARIA" ? "error" : i.practiceType === "COMUNITARIA" ? "warning" : "success"} variant="light" size="sm">
-                                                {i.practiceType}
+                                            <Badge 
+                                                color={
+                                                    getPracticeName(i.practiceType) === "HOSPITALARIA" ? "error" : 
+                                                    getPracticeName(i.practiceType) === "COMUNITARIA" ? "warning" : 
+                                                    "success"
+                                                } 
+                                                variant="light" 
+                                                size="sm"
+                                            >
+                                                {getPracticeName(i.practiceType)}
                                             </Badge>
                                         </div>
                                     </div>
@@ -524,6 +556,7 @@ export default function InstitutionTable({
                                     onToggleStatus={onToggleStatus ? () => onToggleStatus(i) : undefined}
                                     activeTab={activeTab}
                                     isMobile={true}
+                                    isInUse={i.isInUse}
                                 />
                             </div>
                         )}
@@ -533,7 +566,7 @@ export default function InstitutionTable({
         ) : (
             <EmptyState
                 title="No se encontraron instituciones"
-                description={rifFilter || nameFilter || practiceTypeFilter || careerFilter
+                description={rifFilter || nameFilter || careerFilter
                     ? "Intenta ajustar los filtros para encontrar lo que buscas."
                     : "Aún no hay instituciones registradas en esta categoría."}
             />

@@ -17,10 +17,10 @@ interface EnrollmentTableProps {
     activeTab?: "Activas" | "Inactivas";
     loading?: boolean;
     periodOptions?: { value: string; label: string }[];
-    practiceTypeOptions?: { value: string; label: string }[];
+    careerOptions?: { value: string; label: string }[];
 }
 
-type SortKey = "studentName" | "careerName" | "academicTutorName" | "methodologicalTutorName" | "institutionName" | "practiceType" | "enrollmentDate";
+type SortKey = "studentName" | "careerName" | "academicTutorName" | "methodologicalTutorName" | "institutionName" | "practiceType" | "period";
 type SortOrder = "asc" | "desc";
 
 interface ActionButtonsProps {
@@ -88,11 +88,11 @@ export default function EnrollmentTable({
     activeTab = "Activas",
     loading: externalLoading,
     periodOptions = [],
-    practiceTypeOptions = [],
+    careerOptions = [],
 }: EnrollmentTableProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [periodFilter, setPeriodFilter] = useState("");
-    const [practiceTypeFilter, setPracticeTypeFilter] = useState("");
+    const [careerFilter, setCareerFilter] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -108,7 +108,7 @@ export default function EnrollmentTable({
     const filteredData = useMemo(() => {
         const search = debouncedSearch.trim().toLowerCase();
         const periodSearch = periodFilter.trim().toLowerCase();
-        const practiceTypeSearch = practiceTypeFilter.trim().toLowerCase();
+        const careerSearch = careerFilter.trim().toLowerCase();
 
         const filtered = data.filter((s) => {
             const matchesSearch = !search || 
@@ -116,10 +116,10 @@ export default function EnrollmentTable({
                 s.studentName.toLowerCase().includes(search) ||
                 (s.careerName && s.careerName.toLowerCase().includes(search));
             const matchesPeriod = !periodSearch || s.period.toLowerCase() === periodSearch;
-            const matchesPracticeType = !practiceTypeSearch || s.practiceType.toLowerCase() === practiceTypeSearch;
+            const matchesCareer = !careerSearch || (s.careerName && s.careerName.toLowerCase() === careerSearch);
             const matchesTab = activeTab === "Activas" ? s.status === true : s.status === false;
 
-            return matchesSearch && matchesPeriod && matchesPracticeType && matchesTab;
+            return matchesSearch && matchesPeriod && matchesCareer && matchesTab;
         });
 
         filtered.sort((a, b) => {
@@ -134,11 +134,11 @@ export default function EnrollmentTable({
         });
 
         return filtered;
-    }, [data, debouncedSearch, periodFilter, practiceTypeFilter, activeTab, sortConfig]);
+    }, [data, debouncedSearch, periodFilter, careerFilter, activeTab, sortConfig]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, periodFilter, practiceTypeFilter]);
+    }, [debouncedSearch, periodFilter, careerFilter]);
 
     const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -177,7 +177,7 @@ export default function EnrollmentTable({
     const clearFilters = () => {
         setSearchTerm("");
         setPeriodFilter("");
-        setPracticeTypeFilter("");
+        setCareerFilter("");
     };
 
     const SortIndicator = ({ column }: { column: SortKey }) => {
@@ -277,15 +277,15 @@ export default function EnrollmentTable({
                         </div>
                     </div>
 
-                    {/* Filtro por Tipo de Práctica */}
+                    {/* Filtro por Carrera */}
                     <div className="relative">
                         <select
-                            value={practiceTypeFilter}
-                            onChange={(e) => setPracticeTypeFilter(e.target.value)}
+                            value={careerFilter}
+                            onChange={(e) => setCareerFilter(e.target.value)}
                             className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                         >
-                            <option value="" className="dark:bg-bg-dark">Todos los Tipos</option>
-                            {practiceTypeOptions.map((opt) => (
+                            <option value="" className="dark:bg-bg-dark">Todas las Carreras</option>
+                            {careerOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                                     {opt.label}
                                 </option>
@@ -300,7 +300,7 @@ export default function EnrollmentTable({
                 </div>
 
                 <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
-                    {(searchTerm || periodFilter || practiceTypeFilter) && (
+                    {(searchTerm || periodFilter || careerFilter) && (
                         <button
                             onClick={clearFilters}
                             className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
@@ -357,8 +357,8 @@ export default function EnrollmentTable({
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("practiceType")}>
                                 <div className="flex items-center">Tipo Práctica <SortIndicator column="practiceType" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("enrollmentDate")}>
-                                <div className="flex items-center">Fecha Inscripción <SortIndicator column="enrollmentDate" /></div>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("period")}>
+                                <div className="flex items-center">Período <SortIndicator column="period" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell text-right">&nbsp;</TableCell>
                         </TableRow>
@@ -395,7 +395,7 @@ export default function EnrollmentTable({
                                         {s.practiceType}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
-                                        {s.enrollmentDate}
+                                        {s.period}
                                     </TableCell>
                                     <TableCell className="table-cell text-right">
                                         <ActionButtons
@@ -470,10 +470,6 @@ export default function EnrollmentTable({
                                             <div className="flex flex-col items-center">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Período</p>
                                                 <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{s.period}</p>
-                                            </div>
-                                            <div className="flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Fecha</p>
-                                                <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{s.enrollmentDate}</p>
                                             </div>
                                         </div>
 

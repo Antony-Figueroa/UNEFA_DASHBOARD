@@ -12,6 +12,7 @@ export interface PreEnrollment {
   
   // Datos del Estudiante
   studentName: string;
+  careerName: string;
   phone: string;
   
   // Datos de la Pre-Inscripción

@@ -14,7 +14,7 @@ const LayoutContent: React.FC = () => {
 
   return (
     <div 
-      className="min-h-screen xl:flex bg-[#F8F9FA] dark:bg-slate-950"
+      className="min-h-screen xl:flex"
       style={{ paddingTop: 'var(--banner-height, 0px)' }}
     >
       <TopBanner />

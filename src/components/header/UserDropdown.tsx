@@ -180,10 +180,10 @@ export default function UserDropdown() {
 
       {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
-        <div className="fixed inset-0 z-9999999999 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="w-full max-w-sm p-6 shadow-xl bg-bg-main dark:bg-bg-dark rounded-2xl animate-fadeIn">
-            <h3 className="text-center text-lg font-bold text-text-emphasis dark:text-text-emphasis">Confirmar Cierre de Sesión</h3>
-            <p className="text-center mt-2 text-sm text-text-secondary dark:text-text-tertiary">¿Estás seguro de que deseas cerrar tu sesión?</p>
+            <h3 className="text-lg font-bold text-text-emphasis dark:text-text-emphasis">Confirmar Cierre de Sesión</h3>
+            <p className="mt-2 text-sm text-text-secondary dark:text-text-tertiary">¿Estás seguro de que deseas cerrar tu sesión?</p>
             <div className="mt-6 flex gap-3">
               <button
                 onClick={() => setShowLogoutConfirm(false)}

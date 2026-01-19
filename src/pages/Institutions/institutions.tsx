@@ -27,6 +27,7 @@ import { Institution, InstitutionRowData, InstitutionalResponsible, Institutiona
 import { useCareers } from "../../features/careers/hooks/useCareers";
 import { formatDateTime } from "../../utils/date";
 import { useInternshipTypes } from "../../features/internship-types/hooks/useInternshipTypes";
+import { useLists } from "../../features/lists/hooks/useLists";
 
 const formatInstToRow = (i: Institution): InstitutionRowData => ({
   ...i,
@@ -42,21 +43,37 @@ export default function InstitutionsPage() {
   const [pageLoading, setPageLoading] = useState(true);
   const { careers } = useCareers();
   const careerOptions = useMemo(() => careers.map(c => ({ value: c.careerId, label: c.careerName })), [careers]);
-  const { options: practiceOptions, fetchAll: fetchInternshipTypes } = useInternshipTypes();
+  const { fetchAll: fetchInternshipTypes } = useInternshipTypes();
+  const { fetchMultipleLists } = useLists();
+  const [dynamicPracticeOptions, setDynamicPracticeOptions] = useState<{ value: string; label: string }[]>([]);
 
   useEffect(() => {
-    const loadData = async () => {
-      setPageLoading(true);
+    fetchInternshipTypes();
+    
+    const loadDynamicOptions = async () => {
       try {
-        await fetchInternshipTypes();
+        const data = await fetchMultipleLists(["Tipo de Práctica"]);
+        const practiceList = data["Tipo de Práctica"] || [];
+        
+        const mapped = practiceList.length > 0
+          ? practiceList.map(v => ({
+              value: v.name.toUpperCase(),
+              label: v.name.toUpperCase()
+            }))
+          : [
+              { value: "ORDINARIA", label: "ORDINARIA" },
+              { value: "ESPECIAL", label: "ESPECIAL" },
+            ];
+        setDynamicPracticeOptions(mapped);
       } catch (error) {
-        console.error("Error loading initial data:", error);
+        console.error("Error loading dynamic options for institutions:", error);
       } finally {
         setPageLoading(false);
       }
     };
-    loadData();
-  }, [fetchInternshipTypes]);
+
+    loadDynamicOptions();
+  }, [fetchInternshipTypes, fetchMultipleLists]);
 
   const {
     institutions,
@@ -277,7 +294,7 @@ export default function InstitutionsPage() {
                   status={instStatus}
                   activeTab={activeTab}
                   careerOptions={careerOptions}
-                  practiceOptions={practiceOptions}
+                  practiceOptions={dynamicPracticeOptions}
                   onEdit={handleOpenEditModal}
                   onView={setViewInst}
                   onToggleStatus={handleToggleInstStatus}

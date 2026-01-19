@@ -114,6 +114,13 @@ export default function InstitutionTable({
   const debouncedRifFilter = useDebounce(rifFilter, 300);
   const debouncedNameFilter = useDebounce(nameFilter, 300);
 
+  const practiceTypeMap = useMemo(() => {
+    return practiceOptions.reduce((acc, opt) => {
+        acc[opt.value] = opt.label;
+        return acc;
+    }, {} as Record<string, string>);
+  }, [practiceOptions]);
+
   useEffect(() => {
     setSelectedIds([]);
   }, [activeTab]);
@@ -134,8 +141,14 @@ export default function InstitutionTable({
     });
 
     filtered.sort((a, b) => {
-      const valA = String(a[sortConfig.key] || "").toLowerCase();
-      const valB = String(b[sortConfig.key] || "").toLowerCase();
+      let valA, valB;
+      if (sortConfig.key === 'practiceType') {
+        valA = String(practiceTypeMap[a.practiceType] || a.practiceType).toLowerCase();
+        valB = String(practiceTypeMap[b.practiceType] || b.practiceType).toLowerCase();
+      } else {
+        valA = String(a[sortConfig.key] || "").toLowerCase();
+        valB = String(b[sortConfig.key] || "").toLowerCase();
+      }
       
       if (valA < valB) return sortConfig.order === "asc" ? -1 : 1;
       if (valA > valB) return sortConfig.order === "asc" ? 1 : -1;
@@ -440,8 +453,8 @@ export default function InstitutionTable({
                         <TableCell className="text-text-secondary dark:text-text-tertiary font-semibold">{i.name}</TableCell>
                         <TableCell className="text-text-secondary dark:text-text-tertiary whitespace-nowrap">{i.phone}</TableCell>
                         <TableCell>
-                            <Badge color={i.practiceType === "HOSPITALARIA" ? "error" : i.practiceType === "COMUNITARIA" ? "warning" : "success"} variant="light" size="sm" shape="rounded">
-                                {i.practiceType}
+                            <Badge color={practiceTypeMap[i.practiceType] === "HOSPITALARIA" ? "error" : practiceTypeMap[i.practiceType] === "COMUNITARIA" ? "warning" : "success"} variant="light" size="sm" shape="rounded">
+                                {practiceTypeMap[i.practiceType] || i.practiceType}
                             </Badge>
                         </TableCell>
                         <TableCell className="text-text-secondary dark:text-text-tertiary">{i.careerName}</TableCell>
@@ -503,8 +516,8 @@ export default function InstitutionTable({
                                     <div className="flex flex-col items-center">
                                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Tipo Práctica</p>
                                         <div className="flex justify-center w-full">
-                                            <Badge color={i.practiceType === "HOSPITALARIA" ? "error" : i.practiceType === "COMUNITARIA" ? "warning" : "success"} variant="light" size="sm">
-                                                {i.practiceType}
+                                            <Badge color={practiceTypeMap[i.practiceType] === "HOSPITALARIA" ? "error" : practiceTypeMap[i.practiceType] === "COMUNITARIA" ? "warning" : "success"} variant="light" size="sm">
+                                                {practiceTypeMap[i.practiceType] || i.practiceType}
                                             </Badge>
                                         </div>
                                     </div>

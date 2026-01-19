@@ -7,7 +7,7 @@ export interface Enrollment {
   enrollmentId: string;
   
   // Datos de Identificación (vinculados a Pre-Inscripción)
-  identificationPrefix: "V" | "E" | "J" | "P";
+  identificationPrefix: "V" | "E";
   identificationNumber: string;
   
   // Datos del Estudiante

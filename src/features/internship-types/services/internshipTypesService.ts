@@ -83,9 +83,9 @@ export const mapToOptions = (types: InternshipType[]): InternshipTypeOption[] =>
   return types.map((t) => {
     return {
       id: t.INTERNSHIP_TYPE_ID,
-      value: t.NAME,
-      label: t.NAME,
-      text: t.NAME, // Para MultiSelect
+      value: t.NAME.toUpperCase(),
+      label: t.NAME.toUpperCase(),
+      text: t.NAME.toUpperCase(), // Para MultiSelect
     };
   });
 };

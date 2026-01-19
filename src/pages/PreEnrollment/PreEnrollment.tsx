@@ -19,6 +19,8 @@ import PreEnrollmentTable from "../../features/pre-enrollment/components/PreEnro
 import PreEnrollmentModal from "../../features/pre-enrollment/components/PreEnrollmentModal";
 import PreEnrollmentViewModal from "../../features/pre-enrollment/components/PreEnrollmentViewModal";
 import { usePreEnrollment } from "../../features/pre-enrollment/hooks/usePreEnrollment";
+import { usePeriods } from "../../features/periods/hooks/usePeriods";
+import { getInternshipTypes, mapToOptions } from "../../features/internship-types/services/internshipTypesService";
 import { PreEnrollment, PreEnrollmentRowData } from "../../features/pre-enrollment/types";
 import { formatDateTime } from "../../utils/date";
 import { useLists } from "../../features/lists/hooks/useLists";
@@ -34,49 +36,50 @@ export default function PreEnrollmentPage() {
     const navigate = useNavigate();
     const [initialCi, setInitialCi] = useState<string | null>(null);
     const { fetchMultipleLists } = useLists();
+    const { periodos } = usePeriods();
     const [periodOptions, setPeriodOptions] = useState<{ value: string; label: string }[]>([]);
     const [practiceTypeOptions, setPracticeTypeOptions] = useState<{ value: string; label: string }[]>([]);
 
     useEffect(() => {
+        if (periodos.length > 0) {
+            const mappedPeriods = periodos.map(p => ({
+                value: p.description.toUpperCase(),
+                label: p.description.toUpperCase()
+            }));
+            setPeriodOptions(mappedPeriods);
+        }
+    }, [periodos]);
+
+    useEffect(() => {
         const loadFilterOptions = async () => {
             try {
-                const data = await fetchMultipleLists(["Periodo", "Tipo de Práctica"]);
-                
-                // Process Period options
-                const periodList = data["Periodo"] || [];
-                const mappedPeriods = periodList.length > 0 
-                    ? periodList.map(v => ({
-                        value: v.name.toUpperCase(),
-                        label: v.name.toUpperCase()
-                    }))
-                    : [
-                        { value: "2024-I", label: "2024-I" },
-                        { value: "2024-II", label: "2024-II" },
-                        { value: "2025-I", label: "2025-I" },
-                        { value: "2025-II", label: "2025-II" },
-                        { value: "2026-I", label: "2026-I" },
-                        { value: "2026-II", label: "2026-II" },
-                    ];
-                setPeriodOptions(mappedPeriods);
+                // Cargar tipos de práctica desde el servicio especializado
+                const practiceData = await getInternshipTypes();
+                const mappedPractice = mapToOptions(practiceData).map(opt => ({
+                    value: opt.value,
+                    label: opt.label
+                }));
 
-                // Process Practice Type options
-                const practiceList = data["Tipo de Práctica"] || [];
-                const mappedPractice = practiceList.length > 0
-                    ? practiceList.map(v => ({
-                        value: v.name.toUpperCase(),
-                        label: v.name.toUpperCase()
-                    }))
-                    : [
+                if (mappedPractice.length > 0) {
+                    setPracticeTypeOptions(mappedPractice);
+                } else {
+                    // Fallback si no hay datos en la BD
+                    setPracticeTypeOptions([
                         { value: "ORDINARIA", label: "ORDINARIA" },
                         { value: "ESPECIAL", label: "ESPECIAL" },
-                    ];
-                setPracticeTypeOptions(mappedPractice);
+                    ]);
+                }
             } catch (error) {
                 console.error("Error loading filter options:", error);
+                // Fallback en caso de error
+                setPracticeTypeOptions([
+                    { value: "ORDINARIA", label: "ORDINARIA" },
+                    { value: "ESPECIAL", label: "ESPECIAL" },
+                ]);
             }
         };
         loadFilterOptions();
-    }, [fetchMultipleLists]);
+    }, []);
 
     useEffect(() => {
         const timer = setTimeout(() => {

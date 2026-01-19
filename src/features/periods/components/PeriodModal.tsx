@@ -92,14 +92,14 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
 
         // Asegurar que el año del periodo que se está editando esté presente
         if (periodo) {
-            const [year] = periodo.description.split('-');
-            optionsSet.add(year);
+            const [, year] = periodo.description.split('-');
+            if (year) optionsSet.add(year);
         }
 
-        // Asegurar que los años de los periodos existentes estén presentes (opcional, pero útil para visualización)
+        // Asegurar que los años de los periodos existentes estén presentes
         existingPeriods.forEach(p => {
-            const [year] = p.description.split('-');
-            optionsSet.add(year);
+            const [, year] = p.description.split('-');
+            if (year) optionsSet.add(year);
         });
 
         return Array.from(optionsSet).sort((a, b) => parseInt(a) - parseInt(b));

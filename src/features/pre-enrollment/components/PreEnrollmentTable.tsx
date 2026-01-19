@@ -290,7 +290,7 @@ export default function PreEnrollmentTable({
                             onChange={(e) => setPeriodFilter(e.target.value)}
                             className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                         >
-                            <option value="" className="dark:bg-bg-dark">Todos los Periodos</option>
+                            <option value="" className="dark:bg-bg-dark">Período</option>
                             {uniquePeriods.map((opt) => (
                                 <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                                     {opt.label}
@@ -311,7 +311,7 @@ export default function PreEnrollmentTable({
                             onChange={(e) => setPracticeTypeFilter(e.target.value)}
                             className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                         >
-                            <option value="" className="dark:bg-bg-dark">Todos los Tipos</option>
+                            <option value="" className="dark:bg-bg-dark">Tipo de Práctica</option>
                             {practiceTypeOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                                     {opt.label}

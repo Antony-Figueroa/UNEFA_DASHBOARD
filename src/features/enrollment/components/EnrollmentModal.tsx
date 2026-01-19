@@ -113,6 +113,8 @@ export default function EnrollmentModal({
   const idNumber = useWatch({ control, name: "identificationNumber" });
   const idPrefix = useWatch({ control, name: "identificationPrefix" });
   const selectedInstitutionId = useWatch({ control, name: "institutionId" });
+  const selectedAcademicTutorId = useWatch({ control, name: "academicTutorId" });
+  const selectedMethodologicalTutorId = useWatch({ control, name: "methodologicalTutorId" });
 
   // Filtrar responsables por institución seleccionada
   const filteredResponsibles = responsibles.filter(r => r.institutionId === selectedInstitutionId);
@@ -126,8 +128,9 @@ export default function EnrollmentModal({
         
         Object.entries(data).forEach(([key, values]) => {
           mappedOptions[key] = values.map(v => ({
-            value: v.name.toUpperCase(),
-            label: v.name.toUpperCase()
+            // Para Nacionalidad usamos la abreviación (V, E)
+            value: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase(),
+            label: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase()
           }));
         });
         
@@ -304,7 +307,7 @@ export default function EnrollmentModal({
 
     onSave({
       ...data,
-      identificationPrefix: data.identificationPrefix as "V" | "E" | "J" | "P",
+      identificationPrefix: data.identificationPrefix as "V" | "E",
       academicTutorName: academicTutor ? `${academicTutor.firstName} ${academicTutor.lastName}` : undefined,
       methodologicalTutorName: methodologicalTutor ? `${methodologicalTutor.firstName} ${methodologicalTutor.lastName}` : undefined,
       institutionName: institution?.name,
@@ -467,10 +470,12 @@ export default function EnrollmentModal({
                 control={control}
                 render={({ field }) => (
                   <Select
-                    options={tutors.map(t => ({
-                      value: t.tutorId,
-                      label: `${t.firstName} ${t.lastName}`
-                    }))}
+                    options={tutors
+                      .filter(t => t.tutorId !== selectedMethodologicalTutorId)
+                      .map(t => ({
+                        value: t.tutorId,
+                        label: `${t.firstName} ${t.lastName}`
+                      }))}
                     placeholder="Seleccione el tutor"
                     onChange={field.onChange}
                     defaultValue={field.value}
@@ -492,10 +497,12 @@ export default function EnrollmentModal({
                 control={control}
                 render={({ field }) => (
                   <Select
-                    options={tutors.map(t => ({
-                      value: t.tutorId,
-                      label: `${t.firstName} ${t.lastName}`
-                    }))}
+                    options={tutors
+                      .filter(t => t.tutorId !== selectedAcademicTutorId)
+                      .map(t => ({
+                        value: t.tutorId,
+                        label: `${t.firstName} ${t.lastName}`
+                      }))}
                     placeholder="Seleccione el tutor"
                     onChange={field.onChange}
                     defaultValue={field.value}

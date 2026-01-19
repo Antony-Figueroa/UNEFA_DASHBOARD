@@ -124,8 +124,9 @@ export default function InstitutionalResponsibleModal({
         
         Object.entries(data).forEach(([key, values]) => {
           mappedOptions[key] = values.map(v => ({
-            value: v.name.toUpperCase(),
-            label: v.name.toUpperCase()
+            // Para Nacionalidad usamos la abreviación (V, E)
+            value: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase(),
+            label: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase()
           }));
         });
         

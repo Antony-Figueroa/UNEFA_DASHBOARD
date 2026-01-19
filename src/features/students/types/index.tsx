@@ -8,7 +8,7 @@ export interface Student {
   studentId: string; // identificador único
 
   // Datos de Identificación
-  identificationPrefix: "V" | "E" | "J" | "P"; // V, E, J, P
+  identificationPrefix: "V" | "E"; // V, E
   identificationNumber: string; // número de identificación
 
   // Nombres y Apellidos

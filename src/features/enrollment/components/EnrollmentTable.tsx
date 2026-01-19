@@ -20,7 +20,7 @@ interface EnrollmentTableProps {
     practiceTypeOptions?: { value: string; label: string }[];
 }
 
-type SortKey = "studentName" | "careerName" | "academicTutorName" | "methodologicalTutorName" | "institutionName" | "practiceType" | "enrollmentDate";
+type SortKey = "studentName" | "careerName" | "academicTutorName" | "methodologicalTutorName" | "institutionName" | "practiceType" | "period";
 type SortOrder = "asc" | "desc";
 
 interface ActionButtonsProps {
@@ -263,7 +263,7 @@ export default function EnrollmentTable({
                             onChange={(e) => setPeriodFilter(e.target.value)}
                             className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                         >
-                            <option value="" className="dark:bg-bg-dark">Todos los Periodos</option>
+                            <option value="" className="dark:bg-bg-dark">Período</option>
                             {uniquePeriods.map((opt) => (
                                 <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                                     {opt.label}
@@ -284,7 +284,7 @@ export default function EnrollmentTable({
                             onChange={(e) => setPracticeTypeFilter(e.target.value)}
                             className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                         >
-                            <option value="" className="dark:bg-bg-dark">Todos los Tipos</option>
+                            <option value="" className="dark:bg-bg-dark">Tipo de Práctica</option>
                             {practiceTypeOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                                     {opt.label}
@@ -357,8 +357,8 @@ export default function EnrollmentTable({
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("practiceType")}>
                                 <div className="flex items-center">Tipo Práctica <SortIndicator column="practiceType" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("enrollmentDate")}>
-                                <div className="flex items-center">Fecha Inscripción <SortIndicator column="enrollmentDate" /></div>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("period")}>
+                                <div className="flex items-center">Periodo <SortIndicator column="period" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell text-right">&nbsp;</TableCell>
                         </TableRow>
@@ -395,7 +395,7 @@ export default function EnrollmentTable({
                                         {s.practiceType}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
-                                        {s.enrollmentDate}
+                                        {s.period}
                                     </TableCell>
                                     <TableCell className="table-cell text-right">
                                         <ActionButtons
@@ -467,13 +467,9 @@ export default function EnrollmentTable({
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Tipo Práctica</p>
                                                 <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{s.practiceType}</p>
                                             </div>
-                                            <div className="flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Período</p>
+                                            <div className="flex flex-col items-center col-span-2">
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Periodo</p>
                                                 <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{s.period}</p>
-                                            </div>
-                                            <div className="flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Fecha</p>
-                                                <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{s.enrollmentDate}</p>
                                             </div>
                                         </div>
 

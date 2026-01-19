@@ -28,7 +28,7 @@ const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Inicio",
-    path: "/dashboard",
+    path: "/IntershipHome",
   },
   {
     name: "Gestión",

@@ -7,6 +7,11 @@ const VALUES_TABLE = 't_value_list';
 const CACHE_PREFIX = 'lists:';
 const CACHE_TTL = 3600000;
 
+/**
+ * Mapea un objeto de valor de la base de datos al formato de la aplicación.
+ * @param v Objeto de valor de la base de datos (ValueListDB).
+ * @returns Objeto de valor formateado para la aplicación.
+ */
 const mapValue = (v: ValueListDB) => ({
   id: String(v.VALUE_LIST_ID),
   name: v.NAME,
@@ -15,6 +20,11 @@ const mapValue = (v: ValueListDB) => ({
   status: v.STATUS === 1
 });
 
+/**
+ * Obtiene todas las listas activas junto con sus valores.
+ * Utiliza caché para mejorar el rendimiento.
+ * @returns Promesa que resuelve a un array de AppList.
+ */
 export const getAllLists = async (): Promise<AppList[]> => {
   const cacheKey = `${CACHE_PREFIX}all`;
   const cached = cacheManager.get<AppList[]>(cacheKey);
@@ -55,6 +65,12 @@ export const getAllLists = async (): Promise<AppList[]> => {
   return result;
 };
 
+/**
+ * Crea una nueva lista en la base de datos.
+ * Invalida el caché global de listas.
+ * @param name Nombre de la nueva lista.
+ * @returns Promesa que resuelve a la lista creada.
+ */
 export const createList = async (name: string): Promise<AppList> => {
   const data = await dbManager.withRetry(async (supabase) => {
     const { data, error } = await supabase
@@ -77,6 +93,13 @@ export const createList = async (name: string): Promise<AppList> => {
   };
 };
 
+/**
+ * Actualiza el nombre de una lista existente.
+ * Invalida el caché global de listas.
+ * @param id ID de la lista a actualizar.
+ * @param name Nuevo nombre para la lista.
+ * @returns Promesa que resuelve a la lista actualizada.
+ */
 export const updateList = async (id: string, name: string): Promise<AppList> => {
   const data = await dbManager.withRetry(async (supabase) => {
     const { data, error } = await supabase
@@ -100,6 +123,12 @@ export const updateList = async (id: string, name: string): Promise<AppList> => 
   };
 };
 
+/**
+ * Cambia el estado (activo/inactivo) de una lista.
+ * Invalida el caché global de listas.
+ * @param id ID de la lista.
+ * @param status Nuevo estado de la lista.
+ */
 export const toggleListStatus = async (id: string, status: boolean): Promise<void> => {
   await dbManager.withRetry(async (supabase) => {
     const { error } = await supabase
@@ -112,6 +141,14 @@ export const toggleListStatus = async (id: string, status: boolean): Promise<voi
   cacheManager.delete(`${CACHE_PREFIX}all`);
 };
 
+/**
+ * Crea un nuevo valor dentro de una lista específica.
+ * Invalida el caché global de listas.
+ * @param listId ID de la lista a la que pertenecerá el valor.
+ * @param name Nombre del valor.
+ * @param abbreviation Abreviación opcional del valor.
+ * @returns Promesa que resuelve al valor creado.
+ */
 export const createValue = async (listId: string, name: string, abbreviation?: string): Promise<AppList['values'][0]> => {
   const data = await dbManager.withRetry(async (supabase) => {
     const { data, error } = await supabase
@@ -128,6 +165,14 @@ export const createValue = async (listId: string, name: string, abbreviation?: s
   return mapValue(data as ValueListDB);
 };
 
+/**
+ * Actualiza un valor existente en una lista.
+ * Invalida el caché global de listas.
+ * @param valueId ID del valor a actualizar.
+ * @param name Nuevo nombre para el valor.
+ * @param abbreviation Nueva abreviación opcional.
+ * @returns Promesa que resuelve al valor actualizado.
+ */
 export const updateValue = async (valueId: string, name: string, abbreviation?: string): Promise<AppList['values'][0]> => {
   const data = await dbManager.withRetry(async (supabase) => {
     const { data, error } = await supabase
@@ -145,6 +190,12 @@ export const updateValue = async (valueId: string, name: string, abbreviation?: 
   return mapValue(data as ValueListDB);
 };
 
+/**
+ * Cambia el estado (activo/inactivo) de un valor de lista.
+ * Invalida el caché global de listas.
+ * @param valueId ID del valor.
+ * @param status Nuevo estado del valor.
+ */
 export const toggleValueStatus = async (valueId: string, status: boolean): Promise<void> => {
   await dbManager.withRetry(async (supabase) => {
     const { error } = await supabase
@@ -157,6 +208,12 @@ export const toggleValueStatus = async (valueId: string, status: boolean): Promi
   cacheManager.delete(`${CACHE_PREFIX}all`);
 };
 
+/**
+ * Obtiene una lista y sus valores filtrando por el nombre de la lista.
+ * @param name Nombre de la lista a buscar.
+ * @returns Promesa que resuelve a la lista encontrada con sus valores.
+ * @throws Error 404 si la lista no existe.
+ */
 export const getListByName = async (name: string) => {
   const data = await dbManager.withRetry(async (supabase) => {
     const { data: list, error: listError } = await supabase
@@ -191,6 +248,13 @@ export const getListByName = async (name: string) => {
   };
 };
 
+/**
+ * Obtiene múltiples listas por sus nombres de forma eficiente.
+ * Utiliza caché basado en los nombres solicitados.
+ * @param names Array de nombres de listas a buscar.
+ * @returns Promesa que resuelve a un objeto con los nombres de las listas como llaves y sus valores como contenido.
+ */
+// Cache invalidation trigger - Fixed lists status in DB
 export const getMultipleListsByNames = async (names: string[]) => {
   const cacheKey = `${CACHE_PREFIX}multiple:${names.sort().join(',')}`;
   const cached = cacheManager.get<Record<string, AppList['values']> | null>(cacheKey);

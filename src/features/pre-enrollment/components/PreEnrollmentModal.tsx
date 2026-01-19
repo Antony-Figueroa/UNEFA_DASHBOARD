@@ -38,6 +38,7 @@ const preEnrollmentSchema = z.object({
   period: z.string().min(1, "Seleccione el período"),
   practiceType: z.string().min(1, "Seleccione el tipo de práctica"),
   enrollmentCode: z.string().min(1, "La matrícula es obligatoria"),
+  careerName: z.string().optional(),
 });
 
 type PreEnrollmentFormData = z.infer<typeof preEnrollmentSchema>;
@@ -81,6 +82,7 @@ export default function PreEnrollmentModal({
       period: "",
       practiceType: "",
       enrollmentCode: "",
+      careerName: "",
     },
   });
 
@@ -175,8 +177,9 @@ export default function PreEnrollmentModal({
         
         Object.entries(data).forEach(([key, values]) => {
           mappedOptions[key] = values.map(v => ({
-            value: v.name.toUpperCase(),
-            label: v.name.toUpperCase()
+            // Para Nacionalidad usamos la abreviación (V, E)
+            value: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase(),
+            label: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase()
           }));
         });
         
@@ -204,6 +207,7 @@ export default function PreEnrollmentModal({
       if (student) {
         setValue("studentName", `${student.firstName} ${student.lastName}`);
         setValue("phone", student.phone || "");
+        setValue("careerName", student.careerName || "");
         
         // Autocompletar Tipo de Práctica basado en la carrera del estudiante
         if (student.careerId) {
@@ -247,6 +251,7 @@ export default function PreEnrollmentModal({
           period: editingEntry.period,
           practiceType: editingEntry.practiceType,
           enrollmentCode: editingEntry.enrollmentCode,
+          careerName: editingEntry.careerName,
         });
       } else if (initialCi) {
         // Caso exportación desde Estudiantes
@@ -258,6 +263,7 @@ export default function PreEnrollmentModal({
           period: getValues("period"),
           practiceType: "",
           enrollmentCode: "",
+          careerName: "",
         });
       } else {
         reset({
@@ -268,6 +274,7 @@ export default function PreEnrollmentModal({
           period: "",
           practiceType: "",
           enrollmentCode: "",
+          careerName: "",
         });
       }
     }
@@ -276,7 +283,8 @@ export default function PreEnrollmentModal({
   const onSubmit = (data: PreEnrollmentFormData) => {
     onSave({
       ...data,
-      identificationPrefix: data.identificationPrefix as "V" | "E" | "J" | "P",
+      identificationPrefix: data.identificationPrefix as "V" | "E",
+      careerName: data.careerName || "",
       status: editingEntry ? editingEntry.status : true,
     });
   };
@@ -366,6 +374,7 @@ export default function PreEnrollmentModal({
                             setValue("identificationPrefix", student.identificationPrefix);
                             setValue("studentName", `${student.firstName} ${student.lastName}`);
                             setValue("phone", student.phone || "");
+                            setValue("careerName", student.careerName || "");
                             
                             if (student.careerId) {
                               const types = await getInternshipTypesByCareer(student.careerId);

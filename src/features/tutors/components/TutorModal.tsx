@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
@@ -93,15 +93,17 @@ export default function TutorModal({
           "Condición",
           "Dedicación",
           "Categoría",
-          "Profesión"
+          "Profesión",
+          "Tipo de Practica"
         ];
         const data = await fetchMultipleLists(listNames);
         const mappedOptions: Record<string, { value: string; label: string }[]> = {};
         
         Object.entries(data).forEach(([key, values]) => {
           mappedOptions[key] = values.map(v => ({
-            value: v.name.toUpperCase(),
-            label: v.name.toUpperCase()
+            // Para Nacionalidad usamos la abreviación (V, E) como valor y etiqueta
+            value: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase(),
+            label: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase()
           }));
         });
         
@@ -285,12 +287,21 @@ export default function TutorModal({
     }
   }, [isOpen, editingTutor, reset]);
 
-  const onSubmit = (data: TutorFormData) => {
+  const onSubmit: SubmitHandler<TutorFormData> = (data) => {
     onSave({
-      ...data,
       identificationPrefix: data.identificationPrefix as "V" | "E",
+      identificationNumber: data.identificationNumber,
+      firstName: data.firstName,
+      middleName: data.middleName,
+      lastName: data.lastName,
+      secondLastName: data.secondLastName,
       sex: data.sex as "FEMENINO" | "MASCULINO",
       phone: `${data.phoneAreaCode}${data.phoneNumber}`,
+      email: data.email,
+      condition: data.condition,
+      dedication: data.dedication,
+      category: data.category,
+      profession: data.profession,
       status: editingTutor?.status ?? true,
       carreras: data.carreras,
     });
@@ -576,7 +587,7 @@ export default function TutorModal({
             </div>
 
             {/* Carreras */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-3">
               <Controller
                 name="carreras"
                 control={control}

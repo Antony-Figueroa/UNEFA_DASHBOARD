@@ -17,10 +17,11 @@ import { PlusCircleIcon } from "../../icons/actions";
 import EnrollmentTable from "../../features/enrollment/components/EnrollmentTable";
 import EnrollmentModal from "../../features/enrollment/components/EnrollmentModal";
 import EnrollmentViewModal from "../../features/enrollment/components/EnrollmentViewModal";
+import { getInternshipTypes, mapToOptions } from "../../features/internship-types/services/internshipTypesService";
+import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import { useEnrollment } from "../../features/enrollment/hooks/useEnrollment";
 import { Enrollment, EnrollmentRowData } from "../../features/enrollment/types";
 import { formatDateTime } from "../../utils/date";
-import { useLists } from "../../features/lists/hooks/useLists";
 
 const formatEnrollmentToRow = (e: Enrollment): EnrollmentRowData => ({
     ...e,
@@ -29,50 +30,47 @@ const formatEnrollmentToRow = (e: Enrollment): EnrollmentRowData => ({
 
 export default function EnrollmentPage() {
     const [pageLoading, setPageLoading] = useState(true);
-    const { fetchMultipleLists } = useLists();
+    const { periodos } = usePeriods();
     const [periodOptions, setPeriodOptions] = useState<{ value: string; label: string }[]>([]);
     const [practiceTypeOptions, setPracticeTypeOptions] = useState<{ value: string; label: string }[]>([]);
 
     useEffect(() => {
+        if (periodos.length > 0) {
+            const mappedPeriods = periodos.map(p => ({
+                value: p.description.toUpperCase(),
+                label: p.description.toUpperCase()
+            }));
+            setPeriodOptions(mappedPeriods);
+        }
+    }, [periodos]);
+
+    useEffect(() => {
         const loadFilterOptions = async () => {
             try {
-                const data = await fetchMultipleLists(["Periodo", "Tipo de Práctica"]);
-                
-                // Process Period options
-                const periodList = data["Periodo"] || [];
-                const mappedPeriods = periodList.length > 0 
-                    ? periodList.map(v => ({
-                        value: v.name.toUpperCase(),
-                        label: v.name.toUpperCase()
-                    }))
-                    : [
-                        { value: "2024-I", label: "2024-I" },
-                        { value: "2024-II", label: "2024-II" },
-                        { value: "2025-I", label: "2025-I" },
-                        { value: "2025-II", label: "2025-II" },
-                        { value: "2026-I", label: "2026-I" },
-                        { value: "2026-II", label: "2026-II" },
-                    ];
-                setPeriodOptions(mappedPeriods);
+                const practiceData = await getInternshipTypes();
+                const mappedPractice = mapToOptions(practiceData).map(opt => ({
+                    value: opt.value,
+                    label: opt.label
+                }));
 
-                // Process Practice Type options
-                const practiceList = data["Tipo de Práctica"] || [];
-                const mappedPractice = practiceList.length > 0
-                    ? practiceList.map(v => ({
-                        value: v.name.toUpperCase(),
-                        label: v.name.toUpperCase()
-                    }))
-                    : [
+                if (mappedPractice.length > 0) {
+                    setPracticeTypeOptions(mappedPractice);
+                } else {
+                    setPracticeTypeOptions([
                         { value: "ORDINARIA", label: "ORDINARIA" },
                         { value: "ESPECIAL", label: "ESPECIAL" },
-                    ];
-                setPracticeTypeOptions(mappedPractice);
+                    ]);
+                }
             } catch (error) {
                 console.error("Error loading filter options:", error);
+                setPracticeTypeOptions([
+                    { value: "ORDINARIA", label: "ORDINARIA" },
+                    { value: "ESPECIAL", label: "ESPECIAL" },
+                ]);
             }
         };
         loadFilterOptions();
-    }, [fetchMultipleLists]);
+    }, []);
 
     useEffect(() => {
         const timer = setTimeout(() => {

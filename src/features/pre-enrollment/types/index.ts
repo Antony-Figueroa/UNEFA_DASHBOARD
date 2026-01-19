@@ -7,7 +7,7 @@ export interface PreEnrollment {
   preEnrollmentId: string;
   
   // Datos de Identificación
-  identificationPrefix: "V" | "E" | "J" | "P";
+  identificationPrefix: "V" | "E";
   identificationNumber: string;
   
   // Datos del Estudiante
@@ -17,6 +17,7 @@ export interface PreEnrollment {
   // Datos de la Pre-Inscripción
   period: string; // ej: 2026 - II
   practiceType: string; // ej: ORDINARIA
+  careerName: string; // ej: INGENIERIA AERONAUTICA
   enrollmentCode: string; // Matrícula, ej: ING-AI-111-336-S3
   
   // Metadatos

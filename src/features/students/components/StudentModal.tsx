@@ -75,8 +75,9 @@ export default function StudentModal({
         
         Object.entries(data).forEach(([key, values]) => {
           mappedOptions[key] = values.map(v => ({
-            value: v.name.toUpperCase(),
-            label: v.name.toUpperCase()
+            // Para Nacionalidad usamos la abreviación (V, E)
+            value: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase(),
+            label: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase()
           }));
         });
         
@@ -123,13 +124,11 @@ export default function StudentModal({
   ];
 
   const STUDENT_TYPE_OPTIONS = options["Tipo de estudiante"] || [
-    { value: "REGULAR", label: "REGULAR" },
-    { value: "NUEVO INGRESO", label: "NUEVO INGRESO" },
+    { value: "CIVIL", label: "CIVIL" },
+    { value: "MILITAR", label: "MILITAR" },
   ];
 
-  const MILITARY_RANKS = options["Rango Militar"] || [
-    { value: "NO APLICA", label: "NO APLICA" },
-  ];
+  const MILITARY_RANKS = options["Rango Militar"] || [];
 
   const WORKS_OPTIONS = options["Trabajo"] || [
     { value: "SI", label: "SI" },
@@ -207,9 +206,12 @@ export default function StudentModal({
   }, []);
 
   useEffect(() => {
+    const isMilitary = studentType === "MILITAR";
+    const currentRank = watch("militaryRank");
+
     if (studentType === "CIVIL") {
       setValue("militaryRank", "NO APLICA", { shouldValidate: true });
-    } else if (studentType === "MILITAR" && watch("militaryRank") === "NO APLICA") {
+    } else if (isMilitary && (currentRank === "NO APLICA" || !currentRank)) {
       setValue("militaryRank", "", { shouldValidate: true });
     }
   }, [studentType, setValue, watch]);
@@ -724,36 +726,36 @@ export default function StudentModal({
                 </p>
               )}
             </div>
-            <div>
-              <label htmlFor="militaryRank" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Rango Militar *</label>
-              <Controller
-                name="militaryRank"
-                control={control}
-                render={({ field }) => {
-                  const currentOptions = studentType === "CIVIL" 
-                    ? [{ value: "NO APLICA", label: "NO APLICA" }]
-                    : MILITARY_RANKS;
+            {studentType === "MILITAR" && (
+              <div>
+                <label htmlFor="militaryRank" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Rango Militar *</label>
+                <Controller
+                  name="militaryRank"
+                  control={control}
+                  render={({ field }) => {
+                    const currentOptions = MILITARY_RANKS.filter(opt => opt.value !== "NO APLICA");
 
-                  return (
-                    <Select
-                      id="militaryRank"
-                      options={currentOptions}
-                      placeholder="Seleccione Rango"
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      value={field.value}
-                      className={errors.militaryRank ? "border-error-500" : ""}
-                    />
-                  );
-                }}
-              />
-              {errors.militaryRank && (
-                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
-                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
-                  {errors.militaryRank.message}
-                </p>
-              )}
-            </div>
+                    return (
+                      <Select
+                        id="militaryRank"
+                        options={currentOptions}
+                        placeholder="Seleccione Rango"
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        className={errors.militaryRank ? "border-error-500" : ""}
+                      />
+                    );
+                  }}
+                />
+                {errors.militaryRank && (
+                  <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
+                    <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
+                    {errors.militaryRank.message}
+                  </p>
+                )}
+              </div>
+            )}
             
             <div className="md:col-span-2 lg:col-span-1">
               <label htmlFor="works" className="mb-2.5 block text-black dark:text-white font-medium text-sm">¿Trabaja? *</label>

@@ -46,13 +46,30 @@ interface Period {
 export const getPeriods = async (_req: Request, res: Response) => {
   try {
     const data = await dbManager.withRetry(async (supabase) => {
-      const { data, error } = await supabase
+      // 1. Obtener todos los periodos
+      const { data: periods, error: periodsError } = await supabase
         .from(TABLE_NAME)
         .select('*')
         .order('START_DATE', { ascending: false });
 
-      if (error) throw error;
-      return (data as unknown) as Period[];
+      if (periodsError) throw periodsError;
+
+      // 2. Obtener IDs de periodos en uso en t_professional_practices
+      const { data: usedPeriods, error: usedError } = await supabase
+        .from('t_professional_practices')
+        .select('PERIOD_ID');
+
+      if (usedError) throw usedError;
+
+      const usedPeriodIds = new Set(usedPeriods.map(p => p.PERIOD_ID));
+
+      // 3. Marcar periodos como en uso
+      const enrichedPeriods = (periods as Period[]).map(p => ({
+        ...p,
+        isInUse: usedPeriodIds.has(p.PERIOD_ID)
+      }));
+
+      return enrichedPeriods;
     });
     res.json(data);
   } catch (error: unknown) {

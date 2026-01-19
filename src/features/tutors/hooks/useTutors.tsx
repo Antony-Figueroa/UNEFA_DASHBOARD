@@ -24,6 +24,7 @@ const TUTOR_LABELS: Record<string, string> = {
   condition: "Condición",
   dedication: "Dedicación",
   category: "Categoría",
+  practiceTypes: "Tipos de práctica",
   carreras: "Carreras que atiende",
 };
 
@@ -107,7 +108,7 @@ export const useTutors = () => {
                 carreras: careerNames
               } as unknown as Record<string, unknown>}
               labels={TUTOR_LABELS}
-              fields={['identificationNumber', 'profession', 'carreras']}
+              fields={['identificationNumber', 'profession', 'practiceTypes', 'carreras']}
             />
           </>
         )

@@ -23,6 +23,7 @@ import { useTutors } from "../../features/tutors/hooks/useTutors";
 import { Tutor, TutorRowData } from "../../features/tutors/types";
 import { formatDateTime } from "../../utils/date";
 import { useLists } from "../../features/lists/hooks/useLists";
+import { useCareers } from "../../features/careers/hooks/useCareers";
 
 /**
  * Transforma un objeto de tipo Tutor (dominio) a TutorRowData (vista).
@@ -41,39 +42,21 @@ export default function TutorsPage() {
     useEffect(() => {
         const loadDynamicLists = async () => {
             try {
-                const listNames = ["Profesión", "Sexo", "Condición", "Dedicación", "Categoría"];
+                const listNames = ["Tipo de Practica", "Condición"];
                 const data = await fetchMultipleLists(listNames);
                 
                 const mapped: Record<string, { value: string; label: string }[]> = {};
                 
                 // Fallbacks for critical lists
                 const fallbacks: Record<string, { value: string; label: string }[]> = {
-                    "Profesión": [
-                        { value: "INGENIERO", label: "INGENIERO" },
-                        { value: "LICENCIADO", label: "LICENCIADO" },
-                        { value: "ABOGADO", label: "ABOGADO" },
-                        { value: "MÉDICO", label: "MÉDICO" },
-                    ],
-                    "Sexo": [
-                        { value: "FEMENINO", label: "FEMENINO" },
-                        { value: "MASCULINO", label: "MASCULINO" },
+                    "Tipo de Practica": [
+                        { value: "ÚNICA", label: "ÚNICA" },
+                        { value: "HOSPITALARIA", label: "HOSPITALARIA" },
+                        { value: "COMUNITARIA", label: "COMUNITARIA" },
                     ],
                     "Condición": [
                         { value: "ORDINARIO", label: "ORDINARIO" },
                         { value: "CONTRATADO", label: "CONTRATADO" },
-                    ],
-                    "Dedicación": [
-                        { value: "TIEMPO COMPLETO", label: "TIEMPO COMPLETO" },
-                        { value: "MEDIO TIEMPO", label: "MEDIO TIEMPO" },
-                        { value: "TIEMPO CONVENCIONAL", label: "TIEMPO CONVENCIONAL" },
-                        { value: "DEDICACIÓN EXCLUSIVA", label: "DEDICACIÓN EXCLUSIVA" },
-                    ],
-                    "Categoría": [
-                        { value: "INSTRUCTOR", label: "INSTRUCTOR" },
-                        { value: "ASISTENTE", label: "ASISTENTE" },
-                        { value: "AGREGADO", label: "AGREGADO" },
-                        { value: "ASOCIADO", label: "ASOCIADO" },
-                        { value: "TITULAR", label: "TITULAR" },
                     ]
                 };
 
@@ -116,6 +99,12 @@ export default function TutorsPage() {
         bulkRemoveTutors,
         bulkRestoreTutors,
     } = useTutors();
+
+    const { careers } = useCareers();
+
+    const careerOptions = useMemo(() =>
+        careers.map(c => ({ value: String(c.careerId), label: c.careerName.toUpperCase() })),
+        [careers]);
 
     const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -286,11 +275,10 @@ export default function TutorsPage() {
                                 onBulkDelete={handleBulkDelete}
                                 onBulkRestore={handleBulkRestore}
                                 inactiveMode={activeTab === "Inactivas"}
-                                professionOptions={dynamicLists["Profesión"] || []}
-                                sexOptions={dynamicLists["Sexo"] || []}
+                                practiceTypeOptions={dynamicLists["Tipo de Practica"] || []}
+                                careerOptions={careerOptions}
+                                careers={careers}
                                 conditionOptions={dynamicLists["Condición"] || []}
-                                dedicationOptions={dynamicLists["Dedicación"] || []}
-                                categoryOptions={dynamicLists["Categoría"] || []}
                                 loading={loadingAction}
                             />
                         </SkeletonLoader>

@@ -124,9 +124,6 @@ export default function TutorTable({
     // inactiveMode = false,
     activeTab = "Activas",
     professionOptions = [],
-    sexOptions = [],
-    conditionOptions = [],
-    dedicationOptions = [],
     categoryOptions = [],
     // loading = false,
 }: TutorTableProps) {
@@ -372,68 +369,6 @@ export default function TutorTable({
                         </div>
                     </div>
 
-                    {/* Filtro por Sexo */}
-                    <div className="relative">
-                        <select
-                            value={sexFilter}
-                            onChange={(e) => setSexFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
-                        >
-                            <option value="" className="dark:bg-bg-dark">Todos los Sexos</option>
-                            {sexOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    </div>
-
-                    {/* Filtro por Condición */}
-                    <div className="relative">
-                        <select
-                            value={conditionFilter}
-                            onChange={(e) => setConditionFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
-                        >
-                            <option value="" className="dark:bg-bg-dark">Todas las Condic.</option>
-                            {conditionOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    </div>
-
-                    {/* Filtro por Dedicación */}
-                    <div className="relative">
-                        <select
-                            value={dedicationFilter}
-                            onChange={(e) => setDedicationFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
-                        >
-                            <option value="" className="dark:bg-bg-dark">Todas las Dedic.</option>
-                            {dedicationOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    </div>
 
                     {/* Filtro por Categoría */}
                     <div className="relative">

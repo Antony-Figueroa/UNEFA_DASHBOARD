@@ -34,11 +34,11 @@ export const useInternshipTypes = () => {
     }
   }, []);
 
-  const fetchByCareer = useCallback(async (careerId: string | number) => {
+  const fetchByCareer = useCallback(async (careerId: string | number): Promise<InternshipType[]> => {
     if (!careerId) {
       setInternshipTypes([]);
       setOptions([]);
-      return;
+      return [];
     }
     setIsLoading(true);
     setError(null);
@@ -46,9 +46,11 @@ export const useInternshipTypes = () => {
       const data = await getInternshipTypesByCareer(careerId);
       setInternshipTypes(data);
       setOptions(mapToOptions(data));
+      return data;
     } catch (err) {
       setError(`Error al cargar tipos de prácticas profesionales para la carrera ${careerId}`);
       console.error(err);
+      return [];
     } finally {
       setIsLoading(false);
     }

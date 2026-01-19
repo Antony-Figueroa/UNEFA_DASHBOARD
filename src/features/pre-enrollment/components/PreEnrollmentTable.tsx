@@ -22,10 +22,10 @@ interface PreEnrollmentTableProps {
     activeTab?: "Activas" | "Inactivas";
     loading?: boolean;
     periodOptions?: { value: string; label: string }[];
-    careerOptions?: { value: string; label: string }[];
+    practiceTypeOptions?: { value: string; label: string }[];
 }
 
-type SortKey = "identificationNumber" | "studentName" | "period" | "enrollmentCode";
+type SortKey = "identificationNumber" | "studentName" | "period" | "preEnrollmentDate" | "enrollmentCode";
 type SortOrder = "asc" | "desc";
 
 interface ActionButtonsProps {
@@ -95,11 +95,11 @@ export default function PreEnrollmentTable({
     activeTab = "Activas",
     loading: externalLoading,
     periodOptions = [],
-    careerOptions = [],
+    practiceTypeOptions = [],
 }: PreEnrollmentTableProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [periodFilter, setPeriodFilter] = useState("");
-    const [careerFilter, setCareerFilter] = useState("");
+    const [practiceTypeFilter, setPracticeTypeFilter] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -120,17 +120,17 @@ export default function PreEnrollmentTable({
     const filteredData = useMemo(() => {
         const search = debouncedSearch.trim().toLowerCase();
         const periodSearch = periodFilter.trim().toLowerCase();
-        const careerSearch = careerFilter.trim().toLowerCase();
+        const practiceTypeSearch = practiceTypeFilter.trim().toLowerCase();
 
         const filtered = data.filter((s) => {
             const matchesSearch = !search || 
                 s.identificationNumber.toLowerCase().includes(search) || 
                 s.studentName.toLowerCase().includes(search);
             const matchesPeriod = !periodSearch || s.period.toLowerCase() === periodSearch;
-            const matchesCareer = !careerSearch || s.careerName.toLowerCase() === careerSearch;
+            const matchesPracticeType = !practiceTypeSearch || s.practiceType.toLowerCase() === practiceTypeSearch;
             const matchesTab = activeTab === "Activas" ? s.status === true : s.status === false;
 
-            return matchesSearch && matchesPeriod && matchesCareer && matchesTab;
+            return matchesSearch && matchesPeriod && matchesPracticeType && matchesTab;
         });
 
         filtered.sort((a, b) => {
@@ -145,11 +145,11 @@ export default function PreEnrollmentTable({
         });
 
         return filtered;
-    }, [data, debouncedSearch, periodFilter, careerFilter, activeTab, sortConfig]);
+    }, [data, debouncedSearch, periodFilter, practiceTypeFilter, activeTab, sortConfig]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, periodFilter, careerFilter]);
+    }, [debouncedSearch, periodFilter, practiceTypeFilter]);
 
     const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -208,7 +208,7 @@ export default function PreEnrollmentTable({
     const clearFilters = () => {
         setSearchTerm("");
         setPeriodFilter("");
-        setCareerFilter("");
+        setPracticeTypeFilter("");
     };
 
     const SortIndicator = ({ column }: { column: SortKey }) => {
@@ -304,15 +304,15 @@ export default function PreEnrollmentTable({
                         </div>
                     </div>
 
-                    {/* Filtro por Carrera */}
+                    {/* Filtro por Tipo de Práctica */}
                     <div className="relative">
                         <select
-                            value={careerFilter}
-                            onChange={(e) => setCareerFilter(e.target.value)}
+                            value={practiceTypeFilter}
+                            onChange={(e) => setPracticeTypeFilter(e.target.value)}
                             className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                         >
-                            <option value="" className="dark:bg-bg-dark">Todas las Carreras</option>
-                            {careerOptions.map((opt) => (
+                            <option value="" className="dark:bg-bg-dark">Todos los Tipos</option>
+                            {practiceTypeOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                                     {opt.label}
                                 </option>
@@ -327,7 +327,7 @@ export default function PreEnrollmentTable({
                 </div>
 
                 <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
-                    {(searchTerm || periodFilter || careerFilter) && (
+                    {(searchTerm || periodFilter || practiceTypeFilter) && (
                         <button
                             onClick={clearFilters}
                             className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
@@ -413,6 +413,9 @@ export default function PreEnrollmentTable({
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("enrollmentCode")}>
                                 <div className="flex items-center">Matrícula <SortIndicator column="enrollmentCode" /></div>
                             </TableCell>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("preEnrollmentDate")}>
+                                <div className="flex items-center">Fecha <SortIndicator column="preEnrollmentDate" /></div>
+                            </TableCell>
                             <TableCell isHeader className="table-header-cell text-right">
                                 &nbsp;
                             </TableCell>
@@ -450,6 +453,9 @@ export default function PreEnrollmentTable({
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                         {s.enrollmentCode}
+                                    </TableCell>
+                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
+                                        {s.preEnrollmentDate}
                                     </TableCell>
                                     <TableCell className="table-cell text-right">
                                         <ActionButtons
@@ -526,6 +532,10 @@ export default function PreEnrollmentTable({
                                             <div className="flex flex-col items-center">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Período</p>
                                                 <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{s.period}</p>
+                                            </div>
+                                            <div className="flex flex-col items-center">
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Fecha</p>
+                                                <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{s.preEnrollmentDate}</p>
                                             </div>
                                             <div className="flex flex-col items-center col-span-2">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Código de Matrícula</p>

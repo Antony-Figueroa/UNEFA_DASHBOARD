@@ -64,7 +64,7 @@ const TopBanner: React.FC = () => {
         cancelAnimationFrame(scrollRef.current);
       }
     };
-  }, []);
+  }, [sidebarContext]);
 
   useEffect(() => {
     updateBannerHeight();
@@ -83,8 +83,8 @@ const TopBanner: React.FC = () => {
     >
       <img
         src="/unefa-img/menbrete-nuevo.jpg"
-        alt="Membrete oficial del Gobierno Bolivariano de Venezuela y la UNEFA"
-        className="w-full h-full object-cover"
+        alt="Gobierno Bolivariano de Venezuela"
+        className="w-full h-auto block"
         onLoad={updateBannerHeight}
       />
     </div>

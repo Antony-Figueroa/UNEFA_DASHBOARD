@@ -259,42 +259,44 @@ export default function Period() {
                         )}
                     </div>
 
-                    <div className="animate-fadeIn">
-                        {/* Tabs Minimalistas */}
-                        <div className="mb-6 flex border-b border-border-light dark:border-white/5">
-                            <button
-                                onClick={() => setActiveTab('active')}
-                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === 'active' ? "text-brand-500" : "text-text-secondary hover:text-text-primary"}`}
-                            >
-                                Activos
-                                {activeTab === 'active' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('inactive')}
-                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === 'inactive' ? "text-brand-500" : "text-text-secondary hover:text-text-primary"}`}
-                            >
-                                Inactivos
-                                {activeTab === 'inactive' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-                            </button>
-                        </div>
+                    <div className="space-y-6">
+                        <ComponentCard title={activeTab === 'active' ? "Períodos Activos" : "Períodos Inactivos"}>
+                            {/* Tabs Minimalistas */}
+                            <div className="mb-6 flex border-b border-border-light dark:border-white/5">
+                                <button
+                                    onClick={() => setActiveTab('active')}
+                                    className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === 'active' ? "text-brand-500" : "text-text-secondary hover:text-text-primary"}`}
+                                >
+                                    Activos
+                                    {activeTab === 'active' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('inactive')}
+                                    className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === 'inactive' ? "text-brand-500" : "text-text-secondary hover:text-text-primary"}`}
+                                >
+                                    Inactivos
+                                    {activeTab === 'inactive' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
+                                </button>
+                            </div>
 
-                        <div className="animate-fadeIn">
-                            <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="periods-table">
-                                <PeriodTable
-                                    key={activeTab}
-                                    data={tableData}
-                                    status={status}
-                                    error={error}
-                                    onEdit={handleOpenEditModal}
-                                    onCulminate={handleCulminatePeriod}
-                                    onActivate={handleActivatePeriod}
-                                    onView={handleOpenViewModal}
-                                    onDelete={handleDelete}
-                                    onRestore={handleRestore}
-                                    loading={loadingAction}
-                                />
-                            </SkeletonLoader>
-                        </div>
+                            <div className="animate-fadeIn">
+                                <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="periods-table">
+                                    <PeriodTable
+                                        key={activeTab}
+                                        data={tableData}
+                                        status={status}
+                                        error={error}
+                                        onEdit={handleOpenEditModal}
+                                        onCulminate={handleCulminatePeriod}
+                                        onActivate={handleActivatePeriod}
+                                        onView={handleOpenViewModal}
+                                        onDelete={handleDelete}
+                                        onRestore={handleRestore}
+                                        loading={loadingAction}
+                                    />
+                                </SkeletonLoader>
+                            </div>
+                        </ComponentCard>
                     </div>
                 </div>
                 <PeriodModal

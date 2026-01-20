@@ -572,7 +572,7 @@ export default function EnrollmentModal({
                   <Select
                     options={institutions.map(i => ({
                       value: i.institutionId,
-                      label: i.name
+                      label: `${i.name}${i.region || i.nucleus ? ` (${[i.region, i.nucleus].filter(Boolean).join(' - ')})` : ''}`
                     }))}
                     placeholder="Seleccione la institución"
                     onChange={(val) => {

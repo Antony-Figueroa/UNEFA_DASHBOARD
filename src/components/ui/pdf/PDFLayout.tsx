@@ -6,6 +6,7 @@ interface PDFLayoutProps {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
+  orientation?: "portrait" | "landscape";
   metadata?: {
     author?: string;
     subject?: string;
@@ -17,7 +18,13 @@ interface PDFLayoutProps {
  * Componente base para todos los reportes PDF.
  * Proporciona el encabezado, pie de página y estructura común.
  */
-const PDFLayout: React.FC<PDFLayoutProps> = ({ title, subtitle, children, metadata }) => {
+const PDFLayout: React.FC<PDFLayoutProps> = ({ 
+  title, 
+  subtitle, 
+  children, 
+  orientation = "portrait",
+  metadata 
+}) => {
   const currentDate = new Date().toLocaleDateString("es-VE", {
     year: "numeric",
     month: "long",
@@ -33,7 +40,7 @@ const PDFLayout: React.FC<PDFLayoutProps> = ({ title, subtitle, children, metada
       subject={metadata?.subject || "Reporte del Sistema"}
       keywords={metadata?.keywords || "unefa, reporte, sistema"}
     >
-      <Page size="A4" style={pdfStyles.page}>
+      <Page size="A4" orientation={orientation} style={pdfStyles.page}>
         {/* Encabezado Institucional (Membrete) */}
         <View style={pdfStyles.institutionalHeader} fixed>
           <Image 

@@ -42,7 +42,7 @@ const PublicFooter: React.FC = () => {
               <span className="text-xl font-bold">UNEFA</span>
             </a>
             <p className="text-gray-400 text-sm leading-relaxed">
-              Sistema de Gestión de Infromación de la UNEFA. Transformando el futuro académico a través de la experiencia profesional.
+              Sistema de Información para la Gestión de Prácticas Profesionales de la UNEFA. Transformando el futuro académico a través de la experiencia profesional.
             </p>
           </div>
 

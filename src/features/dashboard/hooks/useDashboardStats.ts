@@ -7,22 +7,35 @@ export const useDashboardStats = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchStats = async () => {
+  const fetchStats = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const data = await getDashboardStats();
       setStats(data);
       setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Error desconocido al cargar estadísticas"));
+    } catch (err: any) {
+      console.error("Error fetching dashboard stats:", err);
+      // Extraer mensaje de error del backend si existe
+      const errorMessage = err.response?.data?.message || 
+                          err.message || 
+                          "Error de conexión con el servidor";
+      setError(errorMessage);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchStats();
+    
+    // Polling cada 30 segundos para "tiempo real"
+    const interval = setInterval(() => {
+      fetchStats(true);
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   return { stats, loading, error, refresh: fetchStats };
 };
+

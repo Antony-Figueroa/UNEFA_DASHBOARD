@@ -17,15 +17,15 @@ export const InstitutionPDF: React.FC<InstitutionPDFProps> = ({ data }) => {
     >
       <View style={pdfStyles.table}>
         <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
-          <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>RIF</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1 }]}>RIF</Text>
           <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Institución</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Ubicación</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Carrera / Tipo</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Ubicación</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>Carrera / Tipo</Text>
         </View>
 
         {data.map((institution, index) => (
           <View key={institution.institutionId || index} style={pdfStyles.tableRow} wrap={false}>
-            <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>{institution.rif}</Text>
+            <Text style={[pdfStyles.tableCell, { flex: 1 }]}>{institution.rif}</Text>
             <View style={[pdfStyles.tableCell, { flex: 2.5 }]}>
               <Text style={{ fontWeight: "bold" }}>{institution.name}</Text>
               <Text style={{ fontSize: 8, color: "#64748B", marginTop: 2 }}>
@@ -35,13 +35,13 @@ export const InstitutionPDF: React.FC<InstitutionPDFProps> = ({ data }) => {
                 Tel: {institution.phone}
               </Text>
             </View>
-            <View style={[pdfStyles.tableCell, { flex: 2 }]}>
+            <View style={[pdfStyles.tableCell, { flex: 2.5 }]}>
               <Text>{institution.region}</Text>
               <Text style={{ fontSize: 8, color: "#64748B", marginTop: 2 }}>
                 {institution.nucleus} - {institution.extension}
               </Text>
             </View>
-            <View style={[pdfStyles.tableCell, { flex: 1.5 }]}>
+            <View style={[pdfStyles.tableCell, { flex: 1.2 }]}>
               <Text>{institution.careerName || "N/A"}</Text>
               <Text style={{ fontSize: 8, color: "#64748B", marginTop: 2 }}>
                 {institution.practiceType}

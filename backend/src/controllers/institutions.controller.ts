@@ -123,7 +123,7 @@ export const getInstitutions = async (_req: Request, res: Response) => {
       return mappedInstitutions as DBInstitution[];
     }, 'getInstitutions');
 
-    // Obtener todas las listas para mapear nombres a abreviaturas
+    // Obtener todas las listas para mapear nombres completos
     const { data: listValues } = await dbManager.withRetry(async (supabase) => {
       return await supabase
         .from('t_value_list')
@@ -131,26 +131,32 @@ export const getInstitutions = async (_req: Request, res: Response) => {
         .eq('STATUS', 1);
     }, 'getListValuesForMapping');
 
-    const abbreviationMap: Record<string, string> = {};
+    const nameMap: Record<string, string> = {};
     if (listValues) {
       listValues.forEach((v: { NAME: string; ABBREVIATION: string }) => {
-        if (v.NAME) abbreviationMap[v.NAME.toUpperCase()] = v.ABBREVIATION;
-        if (v.ABBREVIATION) abbreviationMap[v.ABBREVIATION.toUpperCase()] = v.ABBREVIATION;
+        if (v.NAME) {
+          const upperName = v.NAME.toUpperCase();
+          nameMap[upperName] = v.NAME;
+        }
+        if (v.ABBREVIATION) {
+          const upperAbbr = v.ABBREVIATION.toUpperCase();
+          nameMap[upperAbbr] = v.NAME; // Mapear abreviatura al nombre completo
+        }
       });
     }
 
-    const getAbbreviation = (val: string | undefined) => {
+    const getFullName = (val: string | undefined) => {
       if (!val) return '';
       const upperVal = val.toUpperCase();
-      return abbreviationMap[upperVal] || val;
+      return nameMap[upperVal] || val;
     };
 
     const result = data.map(i => ({
       ...mapDBToFrontend(i),
-      region: getAbbreviation(i.REGION),
-      nucleus: getAbbreviation(i.NUCLEUS),
-      extension: getAbbreviation(i.EXTENSION),
-      institutionType: getAbbreviation(i.INSTITUTION_TYPE)
+      region: getFullName(i.REGION),
+      nucleus: getFullName(i.NUCLEUS),
+      extension: getFullName(i.EXTENSION),
+      institutionType: getFullName(i.INSTITUTION_TYPE)
     }));
     
     cacheManager.set(cacheKey, result, CACHE_TTL);

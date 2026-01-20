@@ -1,9 +1,20 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { Buffer } from "buffer";
 import "./index.css";
 import "swiper/swiper-bundle.css";
 import "flatpickr/dist/flatpickr.css";
 import App from "./App.tsx";
+
+declare global {
+  interface Window {
+    Buffer: typeof Buffer;
+  }
+}
+
+// Polyfill Buffer para el navegador (requerido por @react-pdf/renderer)
+window.Buffer = window.Buffer || Buffer;
+
 import { AppWrapper } from "./components/common/PageMeta.tsx";
 import { ThemeProvider } from "./context/ThemeContext.tsx";
 import { ToastProvider } from "./context/ToastContext.tsx";

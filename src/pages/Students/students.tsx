@@ -16,9 +16,12 @@ import Button from "../../components/ui/button/Button";
 import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
+import { DownloadIcon } from "../../icons";
 import StudentTable from "../../features/students/components/StudentTable";
 import StudentModal from "../../features/students/components/StudentModal";
 import StudentViewModal from "../../features/students/components/StudentViewModal";
+import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
+import { StudentPDF } from "../../components/ui/pdf/templates/StudentPDF";
 import { useStudents } from "../../features/students/hooks/useStudents";
 import { Student, StudentRowData } from "../../features/students/types";
 import { useCareers } from "../../features/careers/hooks/useCareers";
@@ -87,6 +90,7 @@ export default function StudentsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [viewStudent, setViewStudent] = useState<StudentRowData | null>(null);
+    const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
 
     type ConfirmationInfo = {
         isOpen: boolean;
@@ -243,9 +247,18 @@ export default function StudentsPage() {
                     </div>
 
                     {!pageLoading && (
-                        <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
-                            Nuevo Estudiante
-                        </Button>
+                        <div className="flex items-center gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsPDFModalOpen(true)}
+                                startIcon={<DownloadIcon className="h-5 w-5" />}
+                            >
+                                Reporte
+                            </Button>
+                            <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
+                                Nuevo Estudiante
+                            </Button>
+                        </div>
                     )}
                 </div>
                 {/* Contenido principal */}
@@ -311,6 +324,38 @@ export default function StudentsPage() {
                         onClose={() => setViewStudent(null)}
                         onEdit={handleEdit}
                         student={viewStudent}
+                    />
+
+                    {/* Modal de Previsualización PDF */}
+                    <PDFPreviewModal
+                        isOpen={isPDFModalOpen}
+                        onClose={() => setIsPDFModalOpen(false)}
+                        title="Listado de Estudiantes"
+                        data={(Array.isArray(students) ? students : []).filter(s => activeTab === "Activas" ? s.status : !s.status)}
+                        template={<StudentPDF data={[]} />}
+                        fileName={`estudiantes-${activeTab.toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`}
+                        columns={[
+                            { 
+                                header: "Cédula", 
+                                accessor: (s) => `${s.identificationPrefix}-${s.identificationNumber}` 
+                            },
+                            { 
+                                header: "Nombre Completo", 
+                                accessor: (s) => `${s.firstName} ${s.lastName}` 
+                            },
+                            { 
+                                header: "Carrera", 
+                                accessor: "careerName" 
+                            },
+                            { 
+                                header: "Sem/Sec", 
+                                accessor: (s) => `${s.semester}° - ${s.section}` 
+                            },
+                            { 
+                                header: "Estado", 
+                                accessor: (s) => s.status ? "ACTIVO" : "INACTIVO" 
+                            },
+                        ]}
                     />
 
                     {/* Modal de Confirmación Global */}

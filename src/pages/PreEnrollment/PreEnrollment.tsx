@@ -14,10 +14,13 @@ import Button from "../../components/ui/button/Button";
 import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
+import { DownloadIcon } from "../../icons";
 
 import PreEnrollmentTable from "../../features/pre-enrollment/components/PreEnrollmentTable";
 import PreEnrollmentModal from "../../features/pre-enrollment/components/PreEnrollmentModal";
 import PreEnrollmentViewModal from "../../features/pre-enrollment/components/PreEnrollmentViewModal";
+import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
+import { PreEnrollmentPDF } from "../../components/ui/pdf/templates/PreEnrollmentPDF";
 import { usePreEnrollment } from "../../features/pre-enrollment/hooks/usePreEnrollment";
 import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import { getInternshipTypes, mapToOptions } from "../../features/internship-types/services/internshipTypesService";
@@ -106,6 +109,7 @@ export default function PreEnrollmentPage() {
     } = usePreEnrollment();
 
     const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
+    const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingEntry, setEditingEntry] = useState<PreEnrollment | null>(null);
     const [viewItem, setViewItem] = useState<PreEnrollmentRowData | null>(null);
@@ -243,9 +247,18 @@ export default function PreEnrollmentPage() {
                     </div>
 
                     {!pageLoading && (
-                        <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
-                            Nueva Pre-Inscripción
-                        </Button>
+                        <div className="flex items-center gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsPDFModalOpen(true)}
+                                startIcon={<DownloadIcon className="h-5 w-5" />}
+                            >
+                                Reporte
+                            </Button>
+                            <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
+                                Nueva Pre-Inscripción
+                            </Button>
+                        </div>
                     )}
                 </div>
 
@@ -305,6 +318,21 @@ export default function PreEnrollmentPage() {
                         onClose={() => setViewItem(null)}
                         onEdit={handleEdit}
                         item={viewItem}
+                    />
+
+                    <PDFPreviewModal
+                        isOpen={isPDFModalOpen}
+                        onClose={() => setIsPDFModalOpen(false)}
+                        title="Reporte de Pre-Inscripciones"
+                        data={(Array.isArray(preEnrollments) ? preEnrollments : []).filter(p => activeTab === "Activas" ? p.status : !p.status)}
+                        template={<PreEnrollmentPDF data={[]} />}
+                        fileName={`reporte-pre-inscripciones-${new Date().toISOString().split('T')[0]}.pdf`}
+                        columns={[
+                            { header: "Cédula", accessor: "identificationNumber" },
+                            { header: "Estudiante", accessor: "studentName" },
+                            { header: "Carrera", accessor: "careerName" },
+                            { header: "Estado", accessor: (p) => p.status ? "ACTIVO" : "INACTIVO" },
+                        ]}
                     />
 
                     <UnifiedDialog

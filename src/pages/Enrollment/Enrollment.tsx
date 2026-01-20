@@ -13,10 +13,13 @@ import Button from "../../components/ui/button/Button";
 import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
+import { DownloadIcon } from "../../icons";
 
 import EnrollmentTable from "../../features/enrollment/components/EnrollmentTable";
 import EnrollmentModal from "../../features/enrollment/components/EnrollmentModal";
 import EnrollmentViewModal from "../../features/enrollment/components/EnrollmentViewModal";
+import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
+import { EnrollmentPDF } from "../../components/ui/pdf/templates/EnrollmentPDF";
 import { getInternshipTypes, mapToOptions } from "../../features/internship-types/services/internshipTypesService";
 import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import { useEnrollment } from "../../features/enrollment/hooks/useEnrollment";
@@ -89,6 +92,7 @@ export default function EnrollmentPage() {
     } = useEnrollment();
 
     const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
+    const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingEntry, setEditingEntry] = useState<Enrollment | null>(null);
     const [viewItem, setViewItem] = useState<EnrollmentRowData | null>(null);
@@ -187,9 +191,18 @@ export default function EnrollmentPage() {
                     </div>
 
                     {!pageLoading && (
-                        <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
-                            Nueva Inscripción
-                        </Button>
+                        <div className="flex items-center gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsPDFModalOpen(true)}
+                                startIcon={<DownloadIcon className="h-5 w-5" />}
+                            >
+                                Reporte
+                            </Button>
+                            <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
+                                Nueva Inscripción
+                            </Button>
+                        </div>
                     )}
                 </div>
 
@@ -243,6 +256,22 @@ export default function EnrollmentPage() {
                         onClose={() => setViewItem(null)}
                         onEdit={handleEdit}
                         item={viewItem}
+                    />
+
+                    <PDFPreviewModal
+                        isOpen={isPDFModalOpen}
+                        onClose={() => setIsPDFModalOpen(false)}
+                        title="Reporte de Inscripciones"
+                        data={(Array.isArray(enrollments) ? enrollments : []).filter(e => activeTab === "Activas" ? e.status : !e.status)}
+                        template={<EnrollmentPDF data={[]} />}
+                        fileName={`reporte-inscripciones-${new Date().toISOString().split('T')[0]}.pdf`}
+                        columns={[
+                            { header: "Cédula", accessor: "identificationNumber" },
+                            { header: "Estudiante", accessor: "studentName" },
+                            { header: "Carrera", accessor: "careerName" },
+                            { header: "Institución", accessor: "institutionName" },
+                            { header: "Estado", accessor: (e) => e.status ? "ACTIVO" : "INACTIVO" },
+                        ]}
                     />
 
                     <UnifiedDialog

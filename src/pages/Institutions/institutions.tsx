@@ -15,12 +15,16 @@ import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { Tabs } from "../../components/ui/tabs/Tabs";
 import { PlusCircleIcon } from "../../icons/actions";
+import { DownloadIcon } from "../../icons";
 import InstitutionTable from "../../features/institutions/components/InstitutionTable";
 import InstitutionModal from "../../features/institutions/components/InstitutionModal";
 import InstitutionViewModal from "../../features/institutions/components/InstitutionViewModal";
 import InstitutionalResponsibleTable from "../../features/institutions/components/InstitutionalResponsibleTable";
 import InstitutionalResponsibleModal from "../../features/institutions/components/InstitutionalResponsibleModal";
 import InstitutionalResponsibleViewModal from "../../features/institutions/components/InstitutionalResponsibleViewModal";
+import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
+import { InstitutionPDF } from "../../components/ui/pdf/templates/InstitutionPDF";
+import { InstitutionalResponsiblePDF } from "../../components/ui/pdf/templates/InstitutionalResponsiblePDF";
 import { useInstitutions } from "../../features/institutions/hooks/useInstitutions";
 import { useInstitutionalResponsibles } from "../../features/institutions/hooks/useInstitutionalResponsibles";
 import { Institution, InstitutionRowData, InstitutionalResponsible, InstitutionalResponsibleRowData } from "../../features/institutions/types";
@@ -113,6 +117,8 @@ export default function InstitutionsPage() {
   const [isRespModalOpen, setIsRespModalOpen] = useState(false);
   const [editingResp, setEditingResp] = useState<InstitutionalResponsible | null>(null);
   const [viewResp, setViewResp] = useState<InstitutionalResponsibleRowData | null>(null);
+  const [isInstPDFModalOpen, setIsInstPDFModalOpen] = useState(false);
+  const [isRespPDFModalOpen, setIsRespPDFModalOpen] = useState(false);
 
   const institutionOptions = useMemo(() => 
     institutions.filter(i => i.status).map(i => ({ value: i.institutionId, label: i.name })),
@@ -255,9 +261,21 @@ export default function InstitutionsPage() {
             </div>
 
             {!pageLoading && (
-                <Button onClick={handleOpenAddModal} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (mainTab === "Instituciones") setIsInstPDFModalOpen(true);
+                      else setIsRespPDFModalOpen(true);
+                    }}
+                    startIcon={<DownloadIcon className="h-5 w-5" />}
+                  >
+                    Reporte
+                  </Button>
+                  <Button onClick={handleOpenAddModal} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
                     {mainTab === "Instituciones" ? "Nueva Institución" : "Nuevo Responsable"}
-                </Button>
+                  </Button>
+                </div>
             )}
         </div>
 
@@ -377,6 +395,36 @@ export default function InstitutionsPage() {
         onClose={() => setViewResp(null)}
         onEdit={handleOpenEditRespModal}
         responsible={viewResp}
+      />
+
+      <PDFPreviewModal
+        isOpen={isInstPDFModalOpen}
+        onClose={() => setIsInstPDFModalOpen(false)}
+        title="Reporte de Instituciones"
+        data={(Array.isArray(institutions) ? institutions : []).filter(i => activeTab === "Activas" ? i.status : !i.status)}
+        template={<InstitutionPDF data={[]} />}
+        fileName={`reporte-instituciones-${new Date().toISOString().split('T')[0]}.pdf`}
+        columns={[
+          { header: "RIF", accessor: "rif" },
+          { header: "Nombre", accessor: "name" },
+          { header: "Tipo", accessor: "institutionType" },
+          { header: "Estado", accessor: (i) => i.status ? "ACTIVO" : "INACTIVO" },
+        ]}
+      />
+
+      <PDFPreviewModal
+        isOpen={isRespPDFModalOpen}
+        onClose={() => setIsRespPDFModalOpen(false)}
+        title="Reporte de Responsables Institucionales"
+        data={(Array.isArray(responsibles) ? responsibles : []).filter(r => activeTab === "Activas" ? r.status : !r.status)}
+        template={<InstitutionalResponsiblePDF data={[]} />}
+        fileName={`reporte-responsables-${new Date().toISOString().split('T')[0]}.pdf`}
+        columns={[
+          { header: "Cédula", accessor: (r) => `${r.identificationPrefix}-${r.identificationNumber}` },
+          { header: "Nombre", accessor: (r) => `${r.firstName} ${r.lastName}` },
+          { header: "Institución", accessor: "institutionName" },
+          { header: "Estado", accessor: (r) => r.status ? "ACTIVO" : "INACTIVO" },
+        ]}
       />
 
       {/* Modal de Confirmación Genérico */}

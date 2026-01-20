@@ -11,6 +11,7 @@ import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
 import PeriodTable from "../../features/periods/components/PeriodTable";
 import { PlusCircleIcon } from "../../icons/actions";
+import { DownloadIcon } from "../../icons";
 import PeriodModal from "../../features/periods/components/PeriodModal";
 import Alert from "../../components/ui/alert/Alert";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
@@ -20,6 +21,8 @@ import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import PeriodViewModal from "../../features/periods/components/PeriodViewModal";
+import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
+import PeriodoPDF from "../../components/ui/pdf/templates/PeriodoPDF";
 import { Periodo, PeriodoRowData } from "../../features/periods/types";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
 
@@ -61,6 +64,7 @@ export default function Period() {
     const [confirmation, setConfirmation] = useState<ConfirmationInfo | null>(null);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [viewingPeriod, setViewingPeriod] = useState<Periodo | null>(null);
+    const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
 
     // --- Manejadores de Eventos para Modales ---
@@ -252,10 +256,20 @@ export default function Period() {
                             </SkeletonLoader>
                         </div>
                         {!pageLoading && (
-                            <Button onClick={handleOpenCreateModal} className="sm:w-auto">
-                                <PlusCircleIcon className="w-5 h-5" />
-                                <span className="ml-2">Nuevo Período</span>
-                            </Button>
+                            <div className="flex items-center gap-3">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsPDFModalOpen(true)}
+                                    className="sm:w-auto"
+                                >
+                                    <DownloadIcon className="w-5 h-5" />
+                                    <span className="ml-2">Reporte</span>
+                                </Button>
+                                <Button onClick={handleOpenCreateModal} className="sm:w-auto">
+                                    <PlusCircleIcon className="w-5 h-5" />
+                                    <span className="ml-2">Nuevo Período</span>
+                                </Button>
+                            </div>
                         )}
                     </div>
 
@@ -311,6 +325,37 @@ export default function Period() {
                     isOpen={isViewModalOpen}
                     onClose={handleCloseViewModal}
                     periodo={viewingPeriod}
+                />
+                <PDFPreviewModal
+                    isOpen={isPDFModalOpen}
+                    onClose={() => setIsPDFModalOpen(false)}
+                    title="Reporte de Periodos Académicos"
+                    data={(Array.isArray(periodos) ? periodos : []).filter(p => activeTab === 'active' ? p.status : !p.status)}
+                    template={<PeriodoPDF data={[]} />}
+                    fileName={`reporte-periodos-${new Date().toISOString().split('T')[0]}.pdf`}
+                    columns={[
+                        { header: "Código", accessor: "code" },
+                        { header: "Descripción", accessor: "description" },
+                        { 
+                            header: "Fecha Inicio", 
+                            accessor: (p) => p.startDate.toLocaleDateString() 
+                        },
+                        { 
+                            header: "Fecha Fin", 
+                            accessor: (p) => p.endDate.toLocaleDateString() 
+                        },
+                        { 
+                            header: "Estado", 
+                            accessor: (p) => {
+                                switch(p.periodStatus) {
+                                    case 1: return "PENDIENTE";
+                                    case 2: return "EN CURSO";
+                                    case 3: return "CULMINADO";
+                                    default: return "DESCONOCIDO";
+                                }
+                            }
+                        },
+                    ]}
                 />
                 <UnifiedDialog
                      isOpen={confirmation?.isOpen || false}

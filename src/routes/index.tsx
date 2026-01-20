@@ -42,9 +42,11 @@ const BarChart = lazy(() => import("../pages/Charts/BarChart"));
 const NotFound = lazy(() => import("../pages/OtherPage/NotFound"));
 
 export const AppRoutes = () => {
+  const isRender = typeof window !== 'undefined' && window.location.hostname.includes('onrender.com');
+
   return (
     <>
-      <Analytics />
+      {!isRender && <Analytics />}
       <ScrollToTop />
       <Suspense fallback={<PageLoader />}>
         <Routes>

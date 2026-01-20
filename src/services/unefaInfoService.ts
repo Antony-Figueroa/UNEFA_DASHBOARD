@@ -28,7 +28,7 @@ const WIKIPEDIA_PAGES = [
   'Independencia_de_Venezuela',
   'Simón_Bolívar',
   'Andrés_Bello',
-  'Sistema_Educativo_de_Venezuela',
+  'Educación_en_Venezuela',
   'Ministerio_del_Poder_Popular_para_la_Educación_Universitaria'
 ];
 

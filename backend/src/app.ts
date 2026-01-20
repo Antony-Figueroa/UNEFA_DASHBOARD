@@ -57,6 +57,7 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       connectSrc: [
         "'self'", 
+        "data:",
         "https://*.onrender.com", 
         "http://localhost:*", 
         "ws://localhost:*", 
@@ -84,6 +85,8 @@ app.use(helmet({
         "https://*.tile.openstreetmap.org"
       ],
       fontSrc: ["'self'", "data:", "https://fonts.gstatic.com", "https://*"],
+      frameSrc: ["'self'", "blob:", "data:"],
+      objectSrc: ["'self'", "blob:", "data:"],
       upgradeInsecureRequests: null,
     },
   },

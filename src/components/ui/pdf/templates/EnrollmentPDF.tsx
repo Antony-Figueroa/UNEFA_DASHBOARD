@@ -34,46 +34,45 @@ export const EnrollmentPDF: React.FC<EnrollmentPDFProps> = ({ data, selectedPeri
 
   const title = `RESUMEN PASANTIAS ${currentPeriod}`;
 
-  // Estilos específicos para este reporte para coincidir con la imagen
+  // Estilos específicos para este reporte para coincidir con el estándar de la aplicación
   const localStyles = {
     headerCell: {
-      backgroundColor: '#92D050',
-      color: '#000',
+      backgroundColor: '#F8FAFC',
+      color: '#1C2434',
       fontWeight: 'bold' as const,
       borderRightWidth: 1,
-      borderRightColor: '#000',
+      borderRightColor: '#E2E8F0',
       borderBottomWidth: 1,
-      borderBottomColor: '#000',
+      borderBottomColor: '#E2E8F0',
       padding: 2,
       display: 'flex' as const,
       alignItems: 'center' as const,
       justifyContent: 'center' as const,
+      textAlign: 'center' as const,
     },
     tableHeader: {
-      backgroundColor: '#92D050',
+      backgroundColor: '#F8FAFC',
       flexDirection: 'row' as const,
       borderTopWidth: 1,
-      borderTopColor: '#000',
+      borderTopColor: '#E2E8F0',
       borderLeftWidth: 1,
-      borderLeftColor: '#000',
+      borderLeftColor: '#E2E8F0',
     },
     cell: {
       borderRightWidth: 1,
-      borderRightColor: '#000',
+      borderRightColor: '#E2E8F0',
       borderBottomWidth: 1,
-      borderBottomColor: '#000',
-      padding: 2,
+      borderBottomColor: '#E2E8F0',
+      padding: 3,
       display: 'flex' as const,
       justifyContent: 'center' as const,
+      minHeight: 20,
     },
-    titleContainer: {
-      marginBottom: 10,
-      alignItems: 'center' as const,
-    },
-    titleText: {
-      fontSize: 10,
-      fontWeight: 'bold' as const,
-      textDecoration: 'underline' as const,
+    row: {
+      flexDirection: 'row' as const,
+      borderLeftWidth: 1,
+      borderLeftColor: '#E2E8F0',
+      alignItems: 'stretch' as const,
     }
   };
 
@@ -82,7 +81,7 @@ export const EnrollmentPDF: React.FC<EnrollmentPDFProps> = ({ data, selectedPeri
       <PDFLayout title="ERROR DE REPORTE" subtitle="DATOS INSUFICIENTES">
         <View style={{ padding: 20 }}>
           <Text style={{ fontSize: 12, color: 'red' }}>
-            No se encontraron datos suficientes para generar el reporte ANEXO 2.
+            No se encontraron datos suficientes para generar el reporte.
             Asegúrese de que las inscripciones tengan asignados: Región, Núcleo y Carrera.
           </Text>
         </View>
@@ -92,15 +91,11 @@ export const EnrollmentPDF: React.FC<EnrollmentPDFProps> = ({ data, selectedPeri
 
   return (
     <PDFLayout
-      title=""
+      title={title}
       subtitle=""
       orientation="landscape"
     >
-      <View style={localStyles.titleContainer}>
-        <Text style={localStyles.titleText}>{title}</Text>
-      </View>
-
-      <View style={[pdfStyles.table, { borderTopWidth: 0 }]}>
+      <View style={[pdfStyles.table, { borderTopWidth: 0, marginTop: 10 }]}>
         {/* Encabezado Principal */}
         <View style={localStyles.tableHeader}>
           <Text style={[localStyles.headerCell, { width: '3%', fontSize: 5 }]}>N°</Text>
@@ -114,52 +109,52 @@ export const EnrollmentPDF: React.FC<EnrollmentPDFProps> = ({ data, selectedPeri
           {/* Grupo: Tutores Académicos */}
           <View style={{ width: '12%', flexDirection: 'column' }}>
             <View style={[localStyles.headerCell, { borderRightWidth: 0, width: '100%', height: 12 }]}>
-              <Text style={{ fontSize: 5, textAlign: 'center', fontWeight: 'bold' }}>TUTORES ACADEMICOS</Text>
+              <Text style={{ fontSize: 5, fontWeight: 'bold' }}>TUTORES ACADEMICOS</Text>
             </View>
             <View style={{ flexDirection: 'row', height: 18 }}>
-              <Text style={[localStyles.headerCell, { flex: 2, fontSize: 4 }]}>NOMBRE Y APELLIDO</Text>
-              <Text style={[localStyles.headerCell, { flex: 1, fontSize: 4, borderRightWidth: 0 }]}>TELÉFONO</Text>
+              <Text style={[localStyles.headerCell, { width: '66.66%', fontSize: 4 }]}>NOMBRE Y APELLIDO</Text>
+              <Text style={[localStyles.headerCell, { borderRightWidth: 0, width: '33.34%', fontSize: 4 }]}>TELÉFONO</Text>
             </View>
           </View>
 
           {/* Grupo: Tutores Metodológicos */}
           <View style={{ width: '12%', flexDirection: 'column' }}>
             <View style={[localStyles.headerCell, { borderRightWidth: 0, width: '100%', height: 12 }]}>
-              <Text style={{ fontSize: 5, textAlign: 'center', fontWeight: 'bold' }}>TUTORES METODOLÓGICOS</Text>
+              <Text style={{ fontSize: 5, fontWeight: 'bold' }}>TUTORES METODOLÓGICOS</Text>
             </View>
             <View style={{ flexDirection: 'row', height: 18 }}>
-              <Text style={[localStyles.headerCell, { flex: 2, fontSize: 4 }]}>NOMBRE Y APELLIDO</Text>
-              <Text style={[localStyles.headerCell, { flex: 1, fontSize: 4, borderRightWidth: 0 }]}>TELÉFONO</Text>
+              <Text style={[localStyles.headerCell, { width: '66.66%', fontSize: 4 }]}>NOMBRE Y APELLIDO</Text>
+              <Text style={[localStyles.headerCell, { borderRightWidth: 0, width: '33.34%', fontSize: 4 }]}>TELÉFONO</Text>
             </View>
           </View>
 
           {/* Grupo: Institución */}
           <View style={{ width: '18%', flexDirection: 'column' }}>
             <View style={[localStyles.headerCell, { borderRightWidth: 0, width: '100%', height: 12 }]}>
-              <Text style={{ fontSize: 5, textAlign: 'center', fontWeight: 'bold' }}>INSTITUCIÓN</Text>
+              <Text style={{ fontSize: 5, fontWeight: 'bold' }}>INSTITUCIÓN</Text>
             </View>
             <View style={{ flexDirection: 'row', height: 18 }}>
-              <Text style={[localStyles.headerCell, { flex: 1, fontSize: 4 }]}>NOMBRE</Text>
-              <Text style={[localStyles.headerCell, { flex: 1, fontSize: 4 }]}>DIRECCIÓN</Text>
-              <Text style={[localStyles.headerCell, { flex: 0.8, fontSize: 4, borderRightWidth: 0 }]}>TELÉFONO</Text>
+              <Text style={[localStyles.headerCell, { width: '33.33%', fontSize: 4 }]}>NOMBRE</Text>
+              <Text style={[localStyles.headerCell, { width: '44.44%', fontSize: 4 }]}>DIRECCIÓN</Text>
+              <Text style={[localStyles.headerCell, { borderRightWidth: 0, width: '22.23%', fontSize: 4 }]}>TELÉFONO</Text>
             </View>
           </View>
 
           {/* Grupo: Responsable Institución */}
           <View style={{ width: '12%', flexDirection: 'column', borderRightWidth: 0 }}>
             <View style={[localStyles.headerCell, { borderRightWidth: 0, width: '100%', height: 12 }]}>
-              <Text style={{ fontSize: 5, textAlign: 'center', fontWeight: 'bold' }}>RESPONSABLE DE LA INSTITUCIÓN</Text>
+              <Text style={{ fontSize: 5, fontWeight: 'bold' }}>RESPONSABLE DE LA INSTITUCIÓN</Text>
             </View>
             <View style={{ flexDirection: 'row', height: 18 }}>
-              <Text style={[localStyles.headerCell, { flex: 2, fontSize: 4 }]}>NOMBRE Y APELLIDO</Text>
-              <Text style={[localStyles.headerCell, { flex: 1, fontSize: 4, borderRightWidth: 0 }]}>TELÉFONO</Text>
+              <Text style={[localStyles.headerCell, { width: '66.66%', fontSize: 4 }]}>NOMBRE Y APELLIDO</Text>
+              <Text style={[localStyles.headerCell, { borderRightWidth: 0, width: '33.34%', fontSize: 4 }]}>TELÉFONO</Text>
             </View>
           </View>
         </View>
 
         {/* Filas de Datos */}
         {data.map((item, index) => (
-          <View key={index} style={[pdfStyles.tableRow, { borderTopWidth: 0, borderLeftWidth: 1, borderLeftColor: '#000' }]} wrap={false}>
+          <View key={index} style={localStyles.row} wrap={false}>
             <Text style={[localStyles.cell, { width: '3%', fontSize: 5, textAlign: 'center' }]}>{index + 1}</Text>
             <Text style={[localStyles.cell, { width: '6%', fontSize: 5 }]}>{item.region || '-'}</Text>
             <Text style={[localStyles.cell, { width: '6%', fontSize: 5 }]}>{item.nucleus || '-'}</Text>
@@ -171,29 +166,21 @@ export const EnrollmentPDF: React.FC<EnrollmentPDFProps> = ({ data, selectedPeri
             </Text>
             
             {/* Tutores Académicos */}
-            <View style={{ width: '12%', flexDirection: 'row' }}>
-              <Text style={[localStyles.cell, { flex: 2, fontSize: 5 }]}>{item.academicTutorName || '-'}</Text>
-              <Text style={[localStyles.cell, { flex: 1, fontSize: 5 }]}>{item.academicTutorPhone || '-'}</Text>
-            </View>
+            <Text style={[localStyles.cell, { width: '8%', fontSize: 5 }]}>{item.academicTutorName || '-'}</Text>
+            <Text style={[localStyles.cell, { width: '4%', fontSize: 5 }]}>{item.academicTutorPhone || '-'}</Text>
 
             {/* Tutores Metodológicos */}
-            <View style={{ width: '12%', flexDirection: 'row' }}>
-              <Text style={[localStyles.cell, { flex: 2, fontSize: 5 }]}>{item.methodologicalTutorName || '-'}</Text>
-              <Text style={[localStyles.cell, { flex: 1, fontSize: 5 }]}>{item.methodologicalTutorPhone || '-'}</Text>
-            </View>
+            <Text style={[localStyles.cell, { width: '8%', fontSize: 5 }]}>{item.methodologicalTutorName || '-'}</Text>
+            <Text style={[localStyles.cell, { width: '4%', fontSize: 5 }]}>{item.methodologicalTutorPhone || '-'}</Text>
 
             {/* Institución */}
-            <View style={{ width: '18%', flexDirection: 'row' }}>
-              <Text style={[localStyles.cell, { flex: 1, fontSize: 5 }]}>{item.institutionName || '-'}</Text>
-              <Text style={[localStyles.cell, { flex: 1, fontSize: 5 }]}>{item.institutionAddress || '-'}</Text>
-              <Text style={[localStyles.cell, { flex: 0.8, fontSize: 5 }]}>{item.institutionPhone || '-'}</Text>
-            </View>
+            <Text style={[localStyles.cell, { width: '6%', fontSize: 5 }]}>{item.institutionName || '-'}</Text>
+            <Text style={[localStyles.cell, { width: '8%', fontSize: 5 }]}>{item.institutionAddress || '-'}</Text>
+            <Text style={[localStyles.cell, { width: '4%', fontSize: 5 }]}>{item.institutionPhone || '-'}</Text>
 
             {/* Responsable */}
-            <View style={{ width: '12%', flexDirection: 'row', borderRightWidth: 0 }}>
-              <Text style={[localStyles.cell, { flex: 2, fontSize: 5 }]}>{item.institutionResponsibleName || '-'}</Text>
-              <Text style={[localStyles.cell, { flex: 1, fontSize: 5, borderRightWidth: 0 }]}>{item.institutionResponsiblePhone || '-'}</Text>
-            </View>
+            <Text style={[localStyles.cell, { width: '8%', fontSize: 5 }]}>{item.institutionResponsibleName || '-'}</Text>
+            <Text style={[localStyles.cell, { width: '4%', fontSize: 5, borderRightWidth: 0 }]}>{item.institutionResponsiblePhone || '-'}</Text>
           </View>
         ))}
       </View>

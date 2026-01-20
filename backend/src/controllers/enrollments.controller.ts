@@ -132,7 +132,7 @@ export const getEnrollments = async (req: Request, res: Response) => {
       return (data as unknown) as ProfessionalPractice[];
     }, 'getEnrollments');
 
-    // Obtener todas las listas para mapear nombres a abreviaturas
+    // Obtener todas las listas para mapear nombres completos
     const { data: listValues } = await dbManager.withRetry(async (supabase) => {
       return await supabase
         .from('t_value_list')
@@ -140,11 +140,17 @@ export const getEnrollments = async (req: Request, res: Response) => {
         .eq('STATUS', 1);
     }, 'getListValuesForMapping');
 
-    const abbreviationMap: Record<string, string> = {};
+    const nameMap: Record<string, string> = {};
     if (listValues) {
       listValues.forEach((v: { NAME: string; ABBREVIATION: string }) => {
-        if (v.NAME) abbreviationMap[v.NAME.toUpperCase()] = v.ABBREVIATION;
-        if (v.ABBREVIATION) abbreviationMap[v.ABBREVIATION.toUpperCase()] = v.ABBREVIATION;
+        if (v.NAME) {
+          const upperName = v.NAME.toUpperCase();
+          nameMap[upperName] = v.NAME;
+        }
+        if (v.ABBREVIATION) {
+          const upperAbbr = v.ABBREVIATION.toUpperCase();
+          nameMap[upperAbbr] = v.NAME; // Mapear abreviatura al nombre completo
+        }
       });
     }
 
@@ -155,10 +161,10 @@ export const getEnrollments = async (req: Request, res: Response) => {
       const academicTutor = item.t_professional_practices_tutor?.find((t: TutorAssociation) => t.TUTOR_TYPE === 'ACADEMICO');
       const methodologicalTutor = item.t_professional_practices_tutor?.find((t: TutorAssociation) => t.TUTOR_TYPE === 'METODOLOGICO');
 
-      const getAbbreviation = (val: string | undefined) => {
+      const getFullName = (val: string | undefined) => {
         if (!val) return '';
         const upperVal = val.toUpperCase();
-        return abbreviationMap[upperVal] || val;
+        return nameMap[upperVal] || val;
       };
 
       return {
@@ -177,10 +183,10 @@ export const getEnrollments = async (req: Request, res: Response) => {
         institutionName: item.t_institution?.INSTITUTION_NAME || '',
         institutionAddress: item.t_institution?.INSTITUTION_ADDRESS || '',
         institutionPhone: item.t_institution?.INSTITUTION_CONTACT || '',
-        region: getAbbreviation(item.t_institution?.REGION),
-        nucleus: getAbbreviation(item.t_institution?.NUCLEUS),
-        extension: getAbbreviation(item.t_institution?.EXTENSION),
-        institutionType: getAbbreviation(item.t_institution?.INSTITUTION_TYPE),
+        region: getFullName(item.t_institution?.REGION),
+        nucleus: getFullName(item.t_institution?.NUCLEUS),
+        extension: getFullName(item.t_institution?.EXTENSION),
+        institutionType: getFullName(item.t_institution?.INSTITUTION_TYPE),
         institutionResponsibleId: item.MANAGER_ID?.toString() || '',
         institutionResponsibleName: item.t_institution_manager ? `${item.t_institution_manager.NAME || ''} ${item.t_institution_manager.SURNAME || ''}`.trim() : '',
         institutionResponsiblePhone: item.t_institution_manager?.CONTACT_PHONE || '',

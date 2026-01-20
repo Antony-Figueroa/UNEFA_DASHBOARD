@@ -342,10 +342,10 @@ export default function Period() {
                 <PDFPreviewModal
                     isOpen={isPDFModalOpen}
                     onClose={() => setIsPDFModalOpen(false)}
-                    title="Reporte de Periodos Académicos"
+                    title="Reporte de Periodos Académicos Activos"
                     data={pdfFilteredData}
                     template={(data) => <PeriodoPDF data={data} />}
-                    fileName={`reporte-periodos-${new Date().toISOString().split('T')[0]}.pdf`}
+                    fileName={`reporte-periodos-activos-${new Date().toISOString().split('T')[0]}.pdf`}
                     searchTerm={pdfSearchTerm}
                     onSearchChange={setPdfSearchTerm}
                     defaultInverted={true}

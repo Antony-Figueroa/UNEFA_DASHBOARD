@@ -211,7 +211,21 @@ export default function InstitutionModal({
   }, [optionsCodigosArea]);
 
   const RIF_PREFIXES = useMemo(() => {
-    return (optionsRif || []).sort((a, b) => a.label.localeCompare(b.label));
+    const priority: { [key: string]: number } = { 'J': 1, 'G': 2 };
+    
+    return (optionsRif || []).sort((a, b) => {
+      const aVal = a.label.toUpperCase();
+      const bVal = b.label.toUpperCase();
+
+      const aPriority = priority[aVal] || 3;
+      const bPriority = priority[bVal] || 3;
+
+      if (aPriority !== bPriority) {
+        return aPriority - bPriority;
+      }
+
+      return aVal.localeCompare(bVal);
+    });
   }, [optionsRif]);
 
   const REGION_OPTIONS = useMemo(() => {

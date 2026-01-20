@@ -3,7 +3,6 @@ import { View, Text } from "@react-pdf/renderer";
 import PDFLayout from "../PDFLayout";
 import { pdfStyles } from "../PDFStyles";
 import { Tutor, TutorRowData } from "../../../../features/tutors/types";
-import { PDFService } from "../../../../services/pdf/PDFService";
 
 interface TutorPDFProps {
   data: Tutor[] | TutorRowData[];
@@ -21,7 +20,6 @@ export const TutorPDF: React.FC<TutorPDFProps> = ({ data }) => {
           <Text style={[pdfStyles.tableCell, { flex: 3 }]}>Nombre Completo</Text>
           <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Profesión / Categoría</Text>
           <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Correo / Teléfono</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.2, textAlign: "center" }]}>Estado</Text>
         </View>
 
         {data.map((tutor, index) => (
@@ -48,11 +46,6 @@ export const TutorPDF: React.FC<TutorPDFProps> = ({ data }) => {
               <Text style={{ fontSize: 8, color: "#64748B", marginTop: 2 }}>
                 {tutor.phone}
               </Text>
-            </View>
-            <View style={[pdfStyles.tableCell, { flex: 1.2, alignItems: "center" }]}>
-              <View style={[pdfStyles.badge, tutor.status ? pdfStyles.badgeSuccess : pdfStyles.badgeError]}>
-                <Text style={pdfStyles.badgeText}>{PDFService.formatStatus(tutor.status)}</Text>
-              </View>
             </View>
           </View>
         ))}

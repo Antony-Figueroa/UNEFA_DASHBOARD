@@ -1,7 +1,7 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Modal } from "../modal";
 import { DownloadIcon, FileIcon, EyeIcon, ListIcon } from "../../../icons";
-import { XIcon } from "../../../icons/actions";
+import { XIcon, SortIcon } from "../../../icons/actions";
 import { usePDF } from "../../../hooks/pdf/usePDF";
 import { PDFViewer, DocumentProps } from "@react-pdf/renderer";
 
@@ -15,6 +15,7 @@ interface PDFPreviewModalProps<T> {
   searchTerm?: string;
   onSearchChange?: (val: string) => void;
   renderFilters?: () => React.ReactNode;
+  defaultInverted?: boolean;
   columns?: Array<{
     header: string;
     accessor: keyof T | ((item: T) => React.ReactNode);
@@ -31,17 +32,24 @@ export const PDFPreviewModal = <T,>({
   searchTerm = "",
   onSearchChange,
   renderFilters,
+  defaultInverted = false,
 }: PDFPreviewModalProps<T>) => {
+  const [isInverted, setIsInverted] = useState(defaultInverted);
   const { generatePDF, previewPDF, isGenerating } = usePDF({ fileName });
 
-  const finalTemplate = useMemo(() => template(data), [template, data]);
+  const sortedData = useMemo(() => {
+    return isInverted ? [...data].reverse() : data;
+  }, [data, isInverted]);
+
+  const finalTemplate = useMemo(() => template(sortedData), [template, sortedData]);
 
   return (
     <Modal 
       isOpen={isOpen} 
       onClose={onClose} 
       isFullscreen={true}
-      className="p-0 rounded-none!"
+      showCloseButton={false}
+      className="p-0! rounded-none!"
     >
       <div className="flex flex-col h-screen bg-bg-secondary dark:bg-bg-dark">
         {/* Header */}
@@ -73,7 +81,13 @@ export const PDFPreviewModal = <T,>({
           {/* Left Side: Preview */}
           <div className="flex-1 bg-gray-500/10 dark:bg-black/20 p-4 sm:p-8 overflow-hidden flex flex-col items-center justify-center">
             <div className="w-full h-full max-w-5xl bg-white dark:bg-bg-primary shadow-2xl rounded-lg overflow-hidden border border-border-light dark:border-white/10">
-              <PDFViewer width="100%" height="100%" showToolbar={true} className="border-none">
+              <PDFViewer 
+                key={`${isInverted}-${data.length}`}
+                width="100%" 
+                height="100%" 
+                showToolbar={true} 
+                className="border-none"
+              >
                 {finalTemplate}
               </PDFViewer>
             </div>
@@ -82,9 +96,24 @@ export const PDFPreviewModal = <T,>({
           {/* Right Side: Filters & Actions */}
           <div className="w-full max-w-sm bg-white dark:bg-bg-primary border-l border-border-light dark:border-white/5 flex flex-col shadow-xl">
             <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
-              <div className="flex items-center gap-2 mb-6 text-brand-500">
-                <ListIcon className="h-5 w-5" />
-                <h4 className="font-bold uppercase tracking-wider text-xs">Filtros de Reporte</h4>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2 text-brand-500">
+                  <ListIcon className="h-5 w-5" />
+                  <h4 className="font-bold uppercase tracking-wider text-xs">Filtros de Reporte</h4>
+                </div>
+                
+                <button
+                  onClick={() => setIsInverted(!isInverted)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                    isInverted 
+                      ? "bg-brand-500 text-white border-brand-500 shadow-sm" 
+                      : "bg-transparent text-text-tertiary border-border-light dark:border-white/10 hover:bg-bg-secondary dark:hover:bg-white/5"
+                  }`}
+                  title={isInverted ? "Orden Inverso Activo" : "Cambiar a Orden Inverso"}
+                >
+                  <SortIcon className={`h-3.5 w-3.5 ${isInverted ? "rotate-180" : ""} transition-transform`} />
+                  {isInverted ? "Invertido" : "Invertir"}
+                </button>
               </div>
 
               <div className="space-y-6">

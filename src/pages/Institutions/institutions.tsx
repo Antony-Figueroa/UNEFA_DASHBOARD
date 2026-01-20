@@ -157,18 +157,18 @@ export default function InstitutionsPage() {
   const instPdfFilteredData = useMemo(() => {
     const search = instPdfSearchTerm.trim().toLowerCase();
     return (Array.isArray(institutions) ? institutions : [])
-      .filter(i => activeTab === "Activas" ? i.status : !i.status)
+      .filter(i => i.status === true)
       .filter(i => !search || 
         i.rif.toLowerCase().includes(search) || 
         i.name.toLowerCase().includes(search) ||
         i.institutionType.toLowerCase().includes(search)
       );
-  }, [institutions, instPdfSearchTerm, activeTab]);
+  }, [institutions, instPdfSearchTerm]);
 
   const respPdfFilteredData = useMemo(() => {
     const search = respPdfSearchTerm.trim().toLowerCase();
     return (Array.isArray(responsibles) ? responsibles : [])
-      .filter(r => activeTab === "Activas" ? r.status : !r.status)
+      .filter(r => r.status === true)
       .filter(r => {
         const fullName = `${r.firstName} ${r.lastName}`.toLowerCase();
         return !search || 
@@ -176,7 +176,7 @@ export default function InstitutionsPage() {
           fullName.includes(search) ||
           r.institutionName?.toLowerCase().includes(search);
       });
-  }, [responsibles, respPdfSearchTerm, activeTab]);
+  }, [responsibles, respPdfSearchTerm]);
 
   const handleOpenAddModal = () => {
     if (mainTab === "Instituciones") {
@@ -438,7 +438,6 @@ export default function InstitutionsPage() {
           { header: "RIF", accessor: "rif" },
           { header: "Nombre", accessor: "name" },
           { header: "Tipo", accessor: "institutionType" },
-          { header: "Estado", accessor: (i) => i.status ? "ACTIVA" : "INACTIVA" },
         ]}
       />
 
@@ -457,7 +456,6 @@ export default function InstitutionsPage() {
           { header: "Institución", accessor: "institutionName" },
           { header: "Correo", accessor: "email" },
           { header: "Teléfono", accessor: "phone" },
-          { header: "Estado", accessor: (r) => r.status ? "ACTIVO" : "INACTIVO" },
         ]}
       />
 

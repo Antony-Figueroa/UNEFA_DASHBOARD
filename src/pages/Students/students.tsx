@@ -129,11 +129,11 @@ export default function StudentsPage() {
                 
                 const matchesCareer = !careerSearch || String(s.careerId) === careerSearch;
                 const matchesRegime = !regimeSearch || (s.regime || "").toLowerCase() === regimeSearch;
-                const matchesTab = activeTab === "Activas" ? !!s.status : !s.status;
+                const matchesStatus = s.status === true;
 
-                return matchesSearch && matchesCareer && matchesRegime && matchesTab;
+                return matchesSearch && matchesCareer && matchesRegime && matchesStatus;
             });
-    }, [students, pdfSearchTerm, pdfCareerFilter, pdfRegimeFilter, activeTab]);
+    }, [students, pdfSearchTerm, pdfCareerFilter, pdfRegimeFilter]);
 
     const handleCreate = () => {
         setEditingStudent(null);
@@ -356,10 +356,10 @@ export default function StudentsPage() {
                     <PDFPreviewModal
                         isOpen={isPDFModalOpen}
                         onClose={() => setIsPDFModalOpen(false)}
-                        title={`Reporte de Estudiantes ${activeTab === "Activas" ? "Activos" : "Inactivos"}`}
+                        title="Reporte de Estudiantes Activos"
                         data={pdfFilteredData}
                         template={(data) => <StudentPDF data={data} />}
-                        fileName={`estudiantes-${activeTab.toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`}
+                        fileName={`estudiantes-activos-${new Date().toISOString().split('T')[0]}.pdf`}
                         searchTerm={pdfSearchTerm}
                         onSearchChange={setPdfSearchTerm}
                         renderFilters={() => (
@@ -407,7 +407,6 @@ export default function StudentsPage() {
                             { header: "Carrera", accessor: "careerName" },
                             { header: "Sem/Sec", accessor: (s) => `${s.semester}-${s.section}` },
                             { header: "Régimen", accessor: "regime" },
-                            { header: "Estado", accessor: (s) => s.status ? "ACTIVO" : "INACTIVO" },
                         ]}
                     />
 

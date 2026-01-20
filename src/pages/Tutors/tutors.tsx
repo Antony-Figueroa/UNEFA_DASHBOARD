@@ -154,11 +154,11 @@ export default function TutorsPage() {
                 const matchesPracticeType = !practiceTypeSearch || (t.practiceTypes || []).some(pt => pt.toLowerCase().includes(practiceTypeSearch));
                 const matchesCareer = !careerSearch || (t.carreras || []).some(c => c === careerSearch);
                 const matchesCondition = !conditionSearch || (t.condition || "").toLowerCase() === conditionSearch;
-                const matchesTab = activeTab === "Activas" ? !!t.status : !t.status;
+                const matchesStatus = t.status === true;
 
-                return matchesSearch && matchesPracticeType && matchesCareer && matchesCondition && matchesTab;
+                return matchesSearch && matchesPracticeType && matchesCareer && matchesCondition && matchesStatus;
             });
-    }, [tutors, pdfSearchTerm, pdfPracticeTypeFilter, pdfCareerFilter, pdfConditionFilter, activeTab]);
+    }, [tutors, pdfSearchTerm, pdfPracticeTypeFilter, pdfCareerFilter, pdfConditionFilter]);
 
     const handleCreate = () => {
         setEditingTutor(null);
@@ -345,10 +345,10 @@ export default function TutorsPage() {
                     <PDFPreviewModal
                         isOpen={isPDFModalOpen}
                         onClose={() => setIsPDFModalOpen(false)}
-                        title={`Reporte de Tutores ${activeTab === "Activas" ? "Activas" : "Inactivas"}`}
+                        title="Reporte de Tutores Activos"
                         data={pdfFilteredData}
                         template={(data) => <TutorPDF data={data} />}
-                        fileName={`reporte-tutores-${activeTab.toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`}
+                        fileName={`reporte-tutores-activos-${new Date().toISOString().split('T')[0]}.pdf`}
                         searchTerm={pdfSearchTerm}
                         onSearchChange={setPdfSearchTerm}
                         renderFilters={() => (
@@ -419,7 +419,6 @@ export default function TutorsPage() {
                             },
                             { header: "Tipo Práctica", accessor: (t) => (t.practiceTypes || []).join(", ") },
                             { header: "Condición", accessor: "condition" },
-                            { header: "Estado", accessor: (t) => t.status ? "ACTIVO" : "INACTIVO" },
                         ]}
                     />
 

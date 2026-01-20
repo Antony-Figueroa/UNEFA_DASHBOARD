@@ -3,7 +3,7 @@ import { View, Text } from "@react-pdf/renderer";
 import PDFLayout from "../PDFLayout";
 import { pdfStyles } from "../PDFStyles";
 import { Enrollment, EnrollmentRowData } from "../../../../features/enrollment/types";
-import { PDFService } from "../../../../services/pdf/PDFService";
+// import { PDFService } from "../../../../services/pdf/PDFService";
 
 interface EnrollmentPDFProps {
   data: Enrollment[] | EnrollmentRowData[];
@@ -22,7 +22,6 @@ export const EnrollmentPDF: React.FC<EnrollmentPDFProps> = ({ data }) => {
           <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Institución / Responsable</Text>
           <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Tutores (Acad/Met)</Text>
           <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Período / Tipo</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1, textAlign: "center" }]}>Estado</Text>
         </View>
 
         {data.map((item, index) => (
@@ -51,11 +50,6 @@ export const EnrollmentPDF: React.FC<EnrollmentPDFProps> = ({ data }) => {
               <Text style={{ fontSize: 8, color: "#64748B", marginTop: 2 }}>
                 {item.practiceType}
               </Text>
-            </View>
-            <View style={[pdfStyles.tableCell, { flex: 1, alignItems: "center" }]}>
-              <View style={[pdfStyles.badge, item.status ? pdfStyles.badgeSuccess : pdfStyles.badgeError]}>
-                <Text style={pdfStyles.badgeText}>{PDFService.formatStatus(item.status)}</Text>
-              </View>
             </View>
           </View>
         ))}

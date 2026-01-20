@@ -141,7 +141,7 @@ export default function PreEnrollmentPage() {
         const practiceType = pdfPracticeTypeFilter.trim().toLowerCase();
 
         return (Array.isArray(preEnrollments) ? preEnrollments : [])
-            .filter(p => activeTab === "Activas" ? p.status : !p.status)
+            .filter(p => p.status === true)
             .filter(p => {
                 const matchesSearch = !search || 
                     p.identificationNumber.toLowerCase().includes(search) || 
@@ -152,7 +152,7 @@ export default function PreEnrollmentPage() {
                 return matchesSearch && matchesPeriod && matchesPracticeType;
             })
             .map(formatPreEnrollmentToRow);
-    }, [preEnrollments, pdfSearchTerm, pdfPeriodFilter, pdfPracticeTypeFilter, activeTab]);
+    }, [preEnrollments, pdfSearchTerm, pdfPeriodFilter, pdfPracticeTypeFilter]);
 
     const handleCreate = () => {
         setEditingEntry(null);
@@ -353,10 +353,10 @@ export default function PreEnrollmentPage() {
                     <PDFPreviewModal
                         isOpen={isPDFModalOpen}
                         onClose={() => setIsPDFModalOpen(false)}
-                        title="Reporte de Pre-Inscripciones"
+                        title="Reporte de Pre-Inscripciones Activas"
                         data={pdfFilteredData}
                         template={(data) => <PreEnrollmentPDF data={data} />}
-                        fileName={`reporte-pre-inscripciones-${new Date().toISOString().split('T')[0]}.pdf`}
+                        fileName={`reporte-pre-inscripciones-activas-${new Date().toISOString().split('T')[0]}.pdf`}
                         searchTerm={pdfSearchTerm}
                         onSearchChange={setPdfSearchTerm}
                         renderFilters={() => (
@@ -434,7 +434,6 @@ export default function PreEnrollmentPage() {
                             { header: "Período", accessor: "period" },
                             { header: "Tipo Práctica", accessor: "practiceType" },
                             { header: "Fecha", accessor: "preEnrollmentDate" },
-                            { header: "Estado", accessor: (p) => p.status ? "ACTIVO" : "INACTIVO" },
                         ]}
                     />
 

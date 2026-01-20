@@ -113,17 +113,6 @@ const ActionButtons = ({
                     fullWidth={isMobile}
                 />
             )}
-            {onExportToPreEnrollment && activeTab === "Activas" && (
-                <ActionButton
-                    onClick={() => onExportToPreEnrollment()}
-                    icon={<ExportIcon className="icon-sm" />}
-                    tooltip={isExportDisabled ? exportDisabledTooltip : "Exportar a Pre-Inscripción"}
-                    label={isMobile ? "Exportar a Pre-Inscripción" : undefined}
-                    variant="info"
-                    fullWidth={isMobile}
-                    disabled={isExportDisabled}
-                />
-            )}
             {onToggleStatus && (inactiveMode || status === false) && (
                 <ActionButton
                     onClick={() => onToggleStatus()}
@@ -143,6 +132,17 @@ const ActionButtons = ({
                     variant="danger"
                     fullWidth={isMobile}
                     disabled={isDisabled}
+                />
+            )}
+            {onExportToPreEnrollment && activeTab === "Activas" && (
+                <ActionButton
+                    onClick={() => onExportToPreEnrollment()}
+                    icon={<ExportIcon className="icon-sm" />}
+                    tooltip={isExportDisabled ? exportDisabledTooltip : "Exportar a Pre-Inscripción"}
+                    label={isMobile ? "Exportar a Pre-Inscripción" : undefined}
+                    variant="info"
+                    fullWidth={isMobile}
+                    disabled={isExportDisabled}
                 />
             )}
         </div>

@@ -138,6 +138,7 @@ export const getEnrollments = async (req: Request, res: Response) => {
         institutionResponsibleName: item.t_institution_manager ? `${item.t_institution_manager.NAME || ''} ${item.t_institution_manager.SURNAME || ''}`.trim() : '',
         practiceType: item.t_internship_type?.NAME || '',
         period: item.t_internships_period?.DESCRIPTION || '',
+        enrollmentCode: item.ENROLLMENT || '',
         enrollmentDate: item.REGISTRATION_DATE || '',
         status: item.STATUS === 1
       };
@@ -185,16 +186,16 @@ export const createEnrollment = async (req: Request, res: Response) => {
         throw new Error('El estudiante ya posee una inscripción activa');
       }
 
-      const { data: preEnrollmentsData, error: preError } = await supabase
+      const { data: preEnrollmentRow, error: preError } = await supabase
         .from(TABLE_NAME)
         .select('PROFESSIONAL_PRACTICE_ID, PERIOD_ID, INTERNSHIP_TYPE_ID')
         .eq('STUDENTS_ID', student.STUDENTS_ID)
         .eq('PRACTICES_STATUS', 1)
         .eq('STATUS', 1)
-        .order('REGISTRATION_DATE', { ascending: false });
+        .order('REGISTRATION_DATE', { ascending: false })
+        .maybeSingle();
 
       if (preError) throw preError;
-      const preEnrollmentRow = (preEnrollmentsData || [])[0];
       if (!preEnrollmentRow) {
         throw new Error('No existe una pre-inscripción activa para el estudiante');
       }
@@ -207,6 +208,11 @@ export const createEnrollment = async (req: Request, res: Response) => {
         STATUS: 1,
         INTERNSHIP_STATUS: 1
       };
+      
+      const body: { enrollmentCode?: string } = req.body as { enrollmentCode?: string };
+      if (body.enrollmentCode) {
+        (updateData as unknown as { ENROLLMENT: string }).ENROLLMENT = body.enrollmentCode;
+      }
 
       const { data: practice, error: practiceError } = await supabase
         .from(TABLE_NAME)
@@ -284,6 +290,7 @@ export const createEnrollment = async (req: Request, res: Response) => {
         institutionResponsibleName: item.t_institution_manager ? `${item.t_institution_manager.NAME || ''} ${item.t_institution_manager.SURNAME || ''}`.trim() : '',
         practiceType: item.t_internship_type?.NAME || '',
         period: item.t_internships_period?.DESCRIPTION || '',
+        enrollmentCode: item.ENROLLMENT || '',
         enrollmentDate: item.REGISTRATION_DATE || '',
         status: item.STATUS === 1
       };

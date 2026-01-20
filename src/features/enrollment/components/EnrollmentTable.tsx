@@ -3,9 +3,13 @@ import { ActionButton } from "../../../components/common/ActionButton";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { EnrollmentRowData } from "../types";
+import { getStudents } from "../../students/services/studentsService";
+import { getCareers } from "../../careers/services/careersService";
+import { Student } from "../../students/types";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
+import { generateMatricula } from "../../../utils/matricula";
 
 interface EnrollmentTableProps {
     data: EnrollmentRowData[];
@@ -18,6 +22,7 @@ interface EnrollmentTableProps {
     loading?: boolean;
     periodOptions?: { value: string; label: string }[];
     practiceTypeOptions?: { value: string; label: string }[];
+    careerOptions?: { value: string; label: string }[];
 }
 
 type SortKey = "studentName" | "careerName" | "academicTutorName" | "methodologicalTutorName" | "institutionName" | "practiceType" | "period";
@@ -89,10 +94,12 @@ export default function EnrollmentTable({
     loading: externalLoading,
     periodOptions = [],
     practiceTypeOptions = [],
+    careerOptions = [],
 }: EnrollmentTableProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [periodFilter, setPeriodFilter] = useState("");
     const [practiceTypeFilter, setPracticeTypeFilter] = useState("");
+    const [careerFilter, setCareerFilter] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -104,11 +111,42 @@ export default function EnrollmentTable({
     });
 
     const debouncedSearch = useDebounce(searchTerm, 300);
+    const [students, setStudents] = useState<Student[]>([]);
+    const [careerAbbrById, setCareerAbbrById] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        const loadRefs = async () => {
+            try {
+                const [studentsResp, careers] = await Promise.all([getStudents(), getCareers()]);
+                setStudents(studentsResp.data);
+                const map: Record<string, string> = {};
+                careers.forEach(c => { map[String(c.careerId)] = (c.careerAbbreviation || "").toUpperCase(); });
+                setCareerAbbrById(map);
+            } catch {
+                // silencioso: si falla, simplemente no mostramos matrícula
+            }
+        };
+        loadRefs();
+    }, []);
+
+    const computeMatricula = (row: EnrollmentRowData): string => {
+        const ci = `${row.identificationPrefix}-${row.identificationNumber}`;
+        const student = students.find(s => `${s.identificationPrefix}-${s.identificationNumber}` === ci);
+        if (!student) return "";
+        const abbr = careerAbbrById[String(student.careerId ?? "")] || "GEN";
+        return generateMatricula({
+            careerAbbreviation: abbr,
+            regime: student.regime,
+            semester: student.semester,
+            section: student.section,
+        });
+    };
 
     const filteredData = useMemo(() => {
         const search = debouncedSearch.trim().toLowerCase();
         const periodSearch = periodFilter.trim().toLowerCase();
         const practiceTypeSearch = practiceTypeFilter.trim().toLowerCase();
+        const careerSearch = careerFilter.trim().toLowerCase();
 
         const filtered = data.filter((s) => {
             const matchesSearch = !search || 
@@ -117,9 +155,10 @@ export default function EnrollmentTable({
                 (s.careerName && s.careerName.toLowerCase().includes(search));
             const matchesPeriod = !periodSearch || s.period.toLowerCase() === periodSearch;
             const matchesPracticeType = !practiceTypeSearch || s.practiceType.toLowerCase() === practiceTypeSearch;
+            const matchesCareer = !careerSearch || (s.careerName || "").toLowerCase().includes(careerSearch);
             const matchesTab = activeTab === "Activas" ? s.status === true : s.status === false;
 
-            return matchesSearch && matchesPeriod && matchesPracticeType && matchesTab;
+            return matchesSearch && matchesPeriod && matchesPracticeType && matchesCareer && matchesTab;
         });
 
         filtered.sort((a, b) => {
@@ -134,11 +173,11 @@ export default function EnrollmentTable({
         });
 
         return filtered;
-    }, [data, debouncedSearch, periodFilter, practiceTypeFilter, activeTab, sortConfig]);
+    }, [data, debouncedSearch, periodFilter, practiceTypeFilter, careerFilter, activeTab, sortConfig]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, periodFilter, practiceTypeFilter]);
+    }, [debouncedSearch, periodFilter, practiceTypeFilter, careerFilter]);
 
     const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -178,6 +217,7 @@ export default function EnrollmentTable({
         setSearchTerm("");
         setPeriodFilter("");
         setPracticeTypeFilter("");
+        setCareerFilter("");
     };
 
     const SortIndicator = ({ column }: { column: SortKey }) => {
@@ -205,6 +245,18 @@ export default function EnrollmentTable({
         const fromData = Array.from(new Set(data.map(item => item.period).filter(Boolean))).sort();
         return fromData.map(p => ({ value: p, label: p }));
     }, [data, periodOptions]);
+
+    const uniqueCareers = useMemo<{ value: string; label: string }[]>(() => {
+        if (careerOptions && careerOptions.length > 0) return careerOptions;
+        const fromData = Array.from(
+            new Set(
+                data
+                    .map(item => item.careerName)
+                    .filter((c): c is string => !!c)
+            )
+        ).sort();
+        return fromData.map((c: string) => ({ value: c, label: c }));
+    }, [data, careerOptions]);
 
     if ((status === "loading" || externalLoading) && data.length === 0) {
         return (
@@ -239,7 +291,7 @@ export default function EnrollmentTable({
         <div className="table-container">
             {/* Search and Filter Bar */}
             <div className="p-4 border-b border-border-light dark:border-border-dark space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Buscador General */}
                     <div className="relative">
                         <input
@@ -297,10 +349,31 @@ export default function EnrollmentTable({
                             </svg>
                         </div>
                     </div>
+
+                    {/* Filtro por Carrera */}
+                    <div className="relative">
+                        <select
+                            value={careerFilter}
+                            onChange={(e) => setCareerFilter(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
+                        >
+                            <option value="" className="dark:bg-bg-dark">Carrera</option>
+                            {uniqueCareers.map((opt) => (
+                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
-                    {(searchTerm || periodFilter || practiceTypeFilter) && (
+                    {(searchTerm || periodFilter || practiceTypeFilter || careerFilter) && (
                         <button
                             onClick={clearFilters}
                             className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
@@ -344,6 +417,7 @@ export default function EnrollmentTable({
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("careerName")}>
                                 <div className="flex items-center">Carrera <SortIndicator column="careerName" /></div>
                             </TableCell>
+                            <TableCell isHeader className="table-header-cell">Matrícula</TableCell>
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("academicTutorName")}>
                                 <div className="flex items-center">Tutor Académico <SortIndicator column="academicTutorName" /></div>
                             </TableCell>
@@ -378,6 +452,9 @@ export default function EnrollmentTable({
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                         {s.careerName || "No asignada"}
+                                    </TableCell>
+                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
+                                        {computeMatricula(s) || "—"}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                         {s.academicTutorName}
@@ -470,6 +547,10 @@ export default function EnrollmentTable({
                                             <div className="flex flex-col items-center col-span-2">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Periodo</p>
                                                 <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{s.period}</p>
+                                            </div>
+                                            <div className="flex flex-col items-center col-span-2">
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Matrícula</p>
+                                                <p className="text-sm text-text-primary dark:text-text-secondary font-medium">{computeMatricula(s) || "—"}</p>
                                             </div>
                                         </div>
 

@@ -74,3 +74,18 @@ export const updateTracking = async (tracking: Tracking): Promise<Tracking> => {
 export const deleteTracking = async (id: string): Promise<void> => {
     await apiClient.delete(`${API_URL}/${id}`);
 };
+
+export interface TrackingStats {
+    historicalTrend: { label: string; count: number }[];
+    periodComparison: { label: string; count: number }[];
+}
+
+export const getTrackingStats = async (): Promise<TrackingStats> => {
+    try {
+        const response = await apiClient.get<TrackingStats>(`${API_URL}/stats`);
+        return response.data;
+    } catch (error) {
+        console.error("[trackingService] Error fetching tracking stats:", error);
+        throw error;
+    }
+};

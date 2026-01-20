@@ -90,47 +90,6 @@ interface DBStudent {
   STATUS: number;
 }
 
-export const checkAvailability = async (req: Request, res: Response) => {
-  try {
-    const { type, value, excludeId } = req.query;
-    
-    if (!type || !value) {
-      return res.status(400).json({ message: 'Faltan parámetros: type y value son requeridos' });
-    }
-
-    const result = await dbManager.withRetry(async (supabase) => {
-      let query = supabase
-        .from(TABLE_NAME)
-        .select('STUDENTS_ID, STATUS');
-
-      if (type === 'ci') {
-        query = query.eq('STUDENTS_CI', value as string);
-      } else if (type === 'email') {
-        query = query.ilike('EMAIL', value as string);
-      } else {
-        throw new Error('Tipo de validación no válido');
-      }
-
-      if (excludeId) {
-        query = query.neq('STUDENTS_ID', parseInt(excludeId as string));
-      }
-
-      const { data, error } = await query.maybeSingle();
-      if (error) throw error;
-      
-      return data;
-    }, 'checkAvailability');
-
-    res.json({
-      available: !result,
-      status: result?.STATUS,
-      studentId: result?.STUDENTS_ID
-    });
-  } catch (error: unknown) {
-    handleDbError(res, error);
-  }
-};
-
 export const getStudents = async (req: Request, res: Response) => {
   const { 
     page = '1', 
@@ -211,6 +170,40 @@ export const getStudents = async (req: Request, res: Response) => {
     cacheManager.set(cacheKey, response, 30000);
 
     res.json(response);
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+export const getStudentStats = async (req: Request, res: Response) => {
+  try {
+    const { institutionId, periodId } = req.query;
+
+    const stats = await dbManager.withRetry(async (supabase) => {
+      // 1. Total Students
+      let totalQuery = supabase.from(TABLE_NAME).select('*', { count: 'exact', head: true });
+      
+      // 2. Active Students
+      let activeQuery = supabase.from(TABLE_NAME).select('*', { count: 'exact', head: true }).eq('STATUS', 1);
+
+      // Filters (This is basic, might need joins depending on DB schema)
+      if (institutionId) {
+        // Assuming there is a relation or a field. Let's check the schema if needed.
+        // For now, let's stick to simple counts if fields are not obvious.
+      }
+
+      const [totalRes, activeRes] = await Promise.all([
+        totalQuery,
+        activeQuery
+      ]);
+
+      return {
+        total: totalRes.count || 0,
+        active: activeRes.count || 0
+      };
+    }, 'getStudentStats');
+
+    res.json(stats);
   } catch (error: unknown) {
     handleDbError(res, error);
   }
@@ -606,6 +599,67 @@ export const toggleStudentStatus = async (req: Request, res: Response) => {
     });
 
     res.json(data);
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+export const getStudentById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const data = await dbManager.withRetry(async (supabase) => {
+      const { data, error } = await supabase
+        .from(TABLE_NAME)
+        .select(STUDENT_COLUMNS)
+        .eq('STUDENTS_ID', parseInt(id))
+        .single();
+
+      if (error) throw error;
+      return data as unknown as DBStudent;
+    }, 'getStudentById');
+
+    res.json(mapDBToFrontend(data));
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+export const checkIdAvailability = async (req: Request, res: Response) => {
+  try {
+    const { type, value, excludeId } = req.query;
+    
+    if (!type || !value) {
+      return res.status(400).json({ message: 'Faltan parámetros: type y value son requeridos' });
+    }
+
+    const result = await dbManager.withRetry(async (supabase) => {
+      let query = supabase
+        .from(TABLE_NAME)
+        .select('STUDENTS_ID, STATUS');
+
+      if (type === 'ci') {
+        query = query.eq('STUDENTS_CI', value as string);
+      } else if (type === 'email') {
+        query = query.ilike('EMAIL', value as string);
+      } else {
+        throw new Error('Tipo de validación no válido');
+      }
+
+      if (excludeId) {
+        query = query.neq('STUDENTS_ID', parseInt(excludeId as string));
+      }
+
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      
+      return data;
+    }, 'checkAvailability');
+
+    res.json({
+      available: !result,
+      status: result?.STATUS,
+      studentId: result?.STUDENTS_ID
+    });
   } catch (error: unknown) {
     handleDbError(res, error);
   }

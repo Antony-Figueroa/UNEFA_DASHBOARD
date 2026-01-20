@@ -181,6 +181,66 @@ export const updateTracking = async (req: Request, res: Response) => {
   }
 };
 
+export const getTrackingStats = async (req: Request, res: Response) => {
+  try {
+    const db = DatabaseManager.getInstance();
+    const supabase = db.getConnection();
+
+    // 1. Historical trend (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const { data: trendData, error: trendError } = await supabase
+      .from('t_professional_practices')
+      .select('CREATION_DATE')
+      .gte('CREATION_DATE', sixMonthsAgo.toISOString())
+      .order('CREATION_DATE', { ascending: true });
+
+    if (trendError) throw trendError;
+
+    // Group by month
+    const monthsMap = new Map<string, number>();
+    trendData?.forEach(item => {
+      const date = new Date(item.CREATION_DATE);
+      const monthYear = date.toLocaleString('default', { month: 'short' });
+      monthsMap.set(monthYear, (monthsMap.get(monthYear) || 0) + 1);
+    });
+
+    const historicalTrend = Array.from(monthsMap.entries()).map(([label, count]) => ({
+      label,
+      count
+    }));
+
+    // 2. Comparison between periods
+    const { data: periodData, error: periodError } = await supabase
+      .from('t_professional_practices')
+      .select('PERIOD_ID, t_internships_period(DESCRIPTION)')
+      .limit(1000);
+
+    if (periodError) throw periodError;
+
+    const periodMap = new Map<string, number>();
+    periodData?.forEach((item: any) => {
+      const periodName = item.t_internships_period?.DESCRIPTION || `Periodo ${item.PERIOD_ID}`;
+      periodMap.set(periodName, (periodMap.get(periodName) || 0) + 1);
+    });
+
+    const periodComparison = Array.from(periodMap.entries()).map(([label, count]) => ({
+      label,
+      count
+    }));
+
+    res.json({
+      historicalTrend,
+      periodComparison
+    });
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error("[TrackingController] Error in getTrackingStats:", err);
+    res.status(500).json({ error: err.message || "Error al obtener estadísticas de seguimiento" });
+  }
+};
+
 export const deleteTracking = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

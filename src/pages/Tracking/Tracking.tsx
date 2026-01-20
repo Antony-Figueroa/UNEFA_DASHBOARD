@@ -19,6 +19,8 @@ import { useTracking } from "../../features/tracking/hooks/useTracking";
 import { useLists } from "../../features/lists/hooks/useLists";
 import { Tracking, TrackingRowData } from "../../features/tracking/types";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
+import TrackingStatsChart from "../../features/tracking/components/TrackingStatsChart";
+import { getTrackingStats, TrackingStats } from "../../features/tracking/services/trackingService";
 
 const TRANSFER_OPTIONS = [
     { value: 'false', label: 'No' },
@@ -29,6 +31,38 @@ export default function TrackingPage() {
     const [pageLoading, setPageLoading] = useState(true);
     const { fetchMultipleLists } = useLists();
     const [lists, setLists] = useState<Record<string, { value: string; label: string }[]>>({});
+    const [stats, setStats] = useState<TrackingStats | null>(null);
+    const [statsLoading, setStatsLoading] = useState(true);
+    const [statsError, setStatsError] = useState<string | null>(null);
+
+    // Cargar estadísticas
+    const loadStats = async (silent = false) => {
+        try {
+            if (!silent) setStatsLoading(true);
+            const data = await getTrackingStats();
+            setStats(data);
+            setStatsError(null);
+        } catch (error: any) {
+            console.error("Error loading tracking stats:", error);
+            const errorMessage = error.response?.data?.message || 
+                               error.message || 
+                               "Error al cargar las estadísticas de seguimiento";
+            setStatsError(errorMessage);
+        } finally {
+            if (!silent) setStatsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadStats();
+        
+        // Polling para tiempo real
+        const interval = setInterval(() => {
+            loadStats(true);
+        }, 30000);
+        
+        return () => clearInterval(interval);
+    }, []);
 
     // Cargar opciones dinámicas
     useEffect(() => {
@@ -193,6 +227,15 @@ export default function TrackingPage() {
                     </div>
 
                     <div className="space-y-6">
+                        {statsError && (
+                            <Alert 
+                                variant="error" 
+                                title="Error en Estadísticas"
+                                message={statsError}
+                            />
+                        )}
+
+                        <TrackingStatsChart stats={stats} loading={statsLoading} />
                         <ComponentCard title={activeTab === 'active' ? "Seguimientos Activos" : "Seguimientos Inactivos"}>
                             <div className="mb-6 flex border-b border-border-light dark:border-white/5">
                                 <button

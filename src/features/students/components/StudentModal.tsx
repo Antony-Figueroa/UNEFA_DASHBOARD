@@ -636,7 +636,7 @@ export default function StudentModal({
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     value={String(field.value)}
-                    disabled={isLoading}
+                    disabled={isLoading || (!!editingStudent && editingStudent.isInUse)}
                     className={errors.careerId ? "border-error-500" : ""}
                   />
                 )}
@@ -645,6 +645,11 @@ export default function StudentModal({
                 <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
                   <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
                   {errors.careerId.message}
+                </p>
+              )}
+              {editingStudent?.isInUse && (
+                <p className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
+                  Campo bloqueado: El estudiante tiene registros de pre-inscripción activos.
                 </p>
               )}
             </div>

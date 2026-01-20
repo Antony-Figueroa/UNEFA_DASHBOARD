@@ -1,8 +1,20 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 
-const LOOKUP_TABLE = 't_value_list';
-const LIST_NAME = 'Tipo de Practica';
+const TABLE_NAME = 't_internship_type';
+
+type InternshipTypeRecord = {
+  INTERNSHIP_TYPE_ID: number;
+  NAME: string;
+  PRIORITY: number;
+  STATUS: number;
+  CREATION_DATE: string;
+  ABBREVIATION?: string;
+};
+
+type CareerInternshipTypeRow = {
+  t_internship_type: InternshipTypeRecord[] | null;
+};
 
 const handleDbError = (res: Response, error: unknown) => {
   console.error('Database Error:', error);
@@ -26,36 +38,16 @@ const handleDbError = (res: Response, error: unknown) => {
 export const getAllInternshipTypes = async (req: Request, res: Response) => {
   try {
     const data = await dbManager.withRetry(async (supabase) => {
-      // Primero obtenemos el LIST_ID para 'Tipo de Practica'
-      const { data: listData, error: listError } = await supabase
-        .from('t_list')
-        .select('LIST_ID')
-        .eq('NAME', LIST_NAME)
-        .single();
-
-      if (listError) throw listError;
-
-      const { data: values, error: valuesError } = await supabase
-        .from(LOOKUP_TABLE)
-        .select(`
-          VALUE_LIST_ID,
-          NAME,
-          ABBREVIATION,
-          STATUS
-        `)
-        .eq('LIST_ID', listData.LIST_ID)
-        .eq('STATUS', 1)
+      const { data, error } = await supabase
+        .from(TABLE_NAME)
+        .select('*')
         .order('NAME', { ascending: true });
 
-      if (valuesError) throw valuesError;
+      if (error) throw error;
       
-      // Mapeamos para mantener compatibilidad con el frontend
-      return (values || []).map(v => ({
-        INTERNSHIP_TYPE_ID: v.VALUE_LIST_ID,
-        NAME: v.NAME,
-        ABBREVIATION: v.ABBREVIATION,
-        PRIORITY: 0,
-        STATUS: v.STATUS
+      return (data || []).map(v => ({
+        ...v,
+        ABBREVIATION: v.ABBREVIATION || ''
       }));
     });
     res.json(data);
@@ -73,59 +65,27 @@ export const getInternshipTypesByCareer = async (req: Request, res: Response) =>
     }
 
     const result = await dbManager.withRetry(async (supabase) => {
-      // 1. Obtenemos los nombres de los tipos de práctica asignados a la carrera
-      // a través de t_career_internship_type y t_internship_type
-      const { data: careerTypes, error: careerTypesError } = await supabase
+      const { data, error } = await supabase
         .from('t_career_internship_type')
         .select(`
           t_internship_type (
-            NAME
+            INTERNSHIP_TYPE_ID,
+            NAME,
+            PRIORITY,
+            STATUS,
+            CREATION_DATE
           )
         `)
         .eq('CAREER_ID', careerId);
 
-      if (careerTypesError) throw careerTypesError;
+      if (error) throw error;
 
-      const assignedNames = (careerTypes as unknown as { t_internship_type: { NAME: string } | null }[] || [])
-        .map((ct) => ct.t_internship_type?.NAME)
-        .filter(Boolean);
-
-      // 2. Obtenemos el LIST_ID para 'Tipo de Practica'
-      const { data: listData, error: listError } = await supabase
-        .from('t_list')
-        .select('LIST_ID')
-        .eq('NAME', LIST_NAME)
-        .single();
-
-      if (listError) throw listError;
-
-      // 3. Buscamos los valores en t_value_list que coincidan con los nombres asignados
-      let query = supabase
-        .from(LOOKUP_TABLE)
-        .select(`
-          VALUE_LIST_ID,
-          NAME,
-          ABBREVIATION,
-          STATUS
-        `)
-        .eq('LIST_ID', listData.LIST_ID)
-        .eq('STATUS', 1);
-
-      if (assignedNames.length > 0) {
-        query = query.in('NAME', assignedNames);
-      }
-
-      const { data: values, error: valuesError } = await query.order('NAME', { ascending: true });
-
-      if (valuesError) throw valuesError;
-
-      return (values || []).map(v => ({
-        INTERNSHIP_TYPE_ID: v.VALUE_LIST_ID,
-        NAME: v.NAME,
-        ABBREVIATION: v.ABBREVIATION,
-        PRIORITY: 0,
-        STATUS: v.STATUS
-      }));
+      return (data || [])
+        .flatMap((item: CareerInternshipTypeRow) => (item.t_internship_type ?? []))
+        .map((type: InternshipTypeRecord) => ({
+          ...type,
+          ABBREVIATION: type.ABBREVIATION ?? ''
+        }));
     }, 'getInternshipTypesByCareer');
 
     res.json(result);
@@ -139,11 +99,10 @@ export const createInternshipType = async (req: Request, res: Response) => {
     const { NAME, ABBREVIATION, PRIORITY, STATUS } = req.body;
     const data = await dbManager.withRetry(async (supabase) => {
       const { data, error } = await supabase
-        .from(LOOKUP_TABLE)
+        .from(TABLE_NAME)
         .insert([{
           NAME,
-          ABBREVIATION,
-          PRIORITY: Number(PRIORITY),
+          PRIORITY: Number(PRIORITY) || 0,
           STATUS: STATUS || 1,
           CREATION_DATE: new Date().toISOString()
         }])
@@ -151,7 +110,7 @@ export const createInternshipType = async (req: Request, res: Response) => {
         .single();
 
       if (error) throw error;
-      return data;
+      return { ...data, ABBREVIATION: ABBREVIATION || '' };
     });
     res.status(201).json(data);
   } catch (error) {
@@ -165,10 +124,9 @@ export const updateInternshipType = async (req: Request, res: Response) => {
     const { NAME, ABBREVIATION, PRIORITY, STATUS } = req.body;
     const data = await dbManager.withRetry(async (supabase) => {
       const { data, error } = await supabase
-        .from(LOOKUP_TABLE)
+        .from(TABLE_NAME)
         .update({
           NAME,
-          ABBREVIATION,
           PRIORITY: Number(PRIORITY),
           STATUS
         })
@@ -177,7 +135,7 @@ export const updateInternshipType = async (req: Request, res: Response) => {
         .single();
 
       if (error) throw error;
-      return data;
+      return { ...data, ABBREVIATION: ABBREVIATION || '' };
     });
     res.json(data);
   } catch (error) {
@@ -190,8 +148,8 @@ export const deleteInternshipType = async (req: Request, res: Response) => {
     const { id } = req.params;
     await dbManager.withRetry(async (supabase) => {
       const { error } = await supabase
-        .from(LOOKUP_TABLE)
-        .delete()
+        .from(TABLE_NAME)
+        .update({ STATUS: 0 })
         .eq('INTERNSHIP_TYPE_ID', id);
 
       if (error) throw error;
@@ -206,23 +164,24 @@ export const toggleInternshipTypeStatus = async (req: Request, res: Response) =>
   try {
     const { id } = req.params;
     await dbManager.withRetry(async (supabase) => {
-      // Primero obtener el estado actual
-      const { data: current, error: getError } = await supabase
-        .from(LOOKUP_TABLE)
+      const { data: current, error: readError } = await supabase
+        .from(TABLE_NAME)
         .select('STATUS')
         .eq('INTERNSHIP_TYPE_ID', id)
         .single();
+      
+      if (readError) throw readError;
 
-      if (getError) throw getError;
+      const newStatus = current.STATUS === 1 ? 0 : 1;
 
       const { error } = await supabase
-        .from(LOOKUP_TABLE)
-        .update({ STATUS: current.STATUS === 1 ? 0 : 1 })
+        .from(TABLE_NAME)
+        .update({ STATUS: newStatus })
         .eq('INTERNSHIP_TYPE_ID', id);
 
       if (error) throw error;
     });
-    res.status(204).send();
+    res.json({ message: 'Status updated' });
   } catch (error) {
     handleDbError(res, error);
   }
@@ -230,20 +189,20 @@ export const toggleInternshipTypeStatus = async (req: Request, res: Response) =>
 
 export const bulkDeleteInternshipTypes = async (req: Request, res: Response) => {
   try {
-    const { ids } = req.body;
+    const { ids } = req.body; // Expecting array of IDs
     if (!ids || !Array.isArray(ids)) {
-      return res.status(400).json({ message: 'Se requiere un array de IDs' });
+        return res.status(400).json({ message: 'IDs array is required' });
     }
-
+    
     await dbManager.withRetry(async (supabase) => {
       const { error } = await supabase
-        .from(LOOKUP_TABLE)
-        .delete()
+        .from(TABLE_NAME)
+        .update({ STATUS: 0 })
         .in('INTERNSHIP_TYPE_ID', ids);
 
       if (error) throw error;
     });
-    res.status(204).send();
+    res.json({ message: 'Internship types deactivated' });
   } catch (error) {
     handleDbError(res, error);
   }
@@ -253,18 +212,18 @@ export const bulkRestoreInternshipTypes = async (req: Request, res: Response) =>
   try {
     const { ids } = req.body;
     if (!ids || !Array.isArray(ids)) {
-      return res.status(400).json({ message: 'Se requiere un array de IDs' });
+        return res.status(400).json({ message: 'IDs array is required' });
     }
 
     await dbManager.withRetry(async (supabase) => {
       const { error } = await supabase
-        .from(LOOKUP_TABLE)
+        .from(TABLE_NAME)
         .update({ STATUS: 1 })
         .in('INTERNSHIP_TYPE_ID', ids);
 
       if (error) throw error;
     });
-    res.status(204).send();
+    res.json({ message: 'Internship types restored' });
   } catch (error) {
     handleDbError(res, error);
   }

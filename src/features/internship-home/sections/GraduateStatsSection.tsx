@@ -1,8 +1,27 @@
-import React from "react";
+import React, { useMemo } from "react";
 import ComponentCard from "../../../components/common/ComponentCard";
 import CountUp from "../components/CountUp";
+import { usePeriods } from "../../periods/hooks/usePeriods";
+import { useStudents } from "../../students/hooks/useStudents";
+import { useInstitutions } from "../../institutions/hooks/useInstitutions";
 
 const GraduateStatsSection: React.FC = () => {
+  const { periodos } = usePeriods();
+  const { students } = useStudents();
+  const { institutions } = useInstitutions();
+
+  const currentPeriod = useMemo(() => {
+    return periodos.find(p => p.periodStatus === 2)?.description || "N/A";
+  }, [periodos]);
+
+  const activeStudentsCount = useMemo(() => {
+    return students.filter(s => s.status === true).length;
+  }, [students]);
+
+  const activeInstitutionsCount = useMemo(() => {
+    return institutions.filter(i => i.status === true).length;
+  }, [institutions]);
+
   return (
     <section className="bg-white py-24 dark:bg-bg-dark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -13,41 +32,41 @@ const GraduateStatsSection: React.FC = () => {
           </h2>
           <div className="h-1.5 w-24 bg-[#2d90c4] mx-auto rounded-full mb-6" />
           <p className="max-w-3xl mx-auto text-lg text-text-secondary">
-            Análisis histórico del impacto de las prácticas profesionales en la Extensión Acarigua (2008 - 2025).
+            Información en tiempo real sobre el proceso de prácticas profesionales en la Extensión Acarigua.
           </p>
         </div>
 
-        {/* Global Stats - Focused on Acarigua */}
+        {/* Global Stats - Dynamic Data */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          <ComponentCard title="Pasantes Acarigua" className="bg-linear-to-br from-[#2d90c4]/10 to-transparent">
+          <ComponentCard title="Período Académico" className="bg-linear-to-br from-[#2d90c4]/10 to-transparent">
             <div className="text-center py-6">
-              <p className="text-5xl font-bold text-[#2d90c4] mb-2">
-                +<CountUp from={0} to={3500} duration={2} />
+              <p className="text-3xl font-bold text-[#2d90c4] mb-2 truncate px-2">
+                {currentPeriod}
               </p>
               <p className="text-sm font-medium text-text-secondary uppercase tracking-wider">
-                Total Acumulado (Est.)
+                Lapse Actual en Curso
               </p>
             </div>
           </ComponentCard>
 
-          <ComponentCard title="Promedio Anual" className="bg-linear-to-br from-[#2d90c4]/10 to-transparent">
+          <ComponentCard title="Estudiantes Activos" className="bg-linear-to-br from-[#2d90c4]/10 to-transparent">
             <div className="text-center py-6">
               <p className="text-5xl font-bold text-[#2d90c4] mb-2">
-                +<CountUp from={0} to={100} duration={2} />
+                +<CountUp from={0} to={activeStudentsCount} duration={2} />
               </p>
               <p className="text-sm font-medium text-text-secondary uppercase tracking-wider">
-                Pasantes por Ciclo
+                Pasantes Registrados
               </p>
             </div>
           </ComponentCard>
 
-          <ComponentCard title="Tasa de Cumplimiento" className="bg-linear-to-br from-[#2d90c4]/10 to-transparent">
+          <ComponentCard title="Instituciones Aliadas" className="bg-linear-to-br from-[#2d90c4]/10 to-transparent">
             <div className="text-center py-6">
               <p className="text-5xl font-bold text-[#2d90c4] mb-2">
-                98%
+                +<CountUp from={0} to={activeInstitutionsCount} duration={2} />
               </p>
               <p className="text-sm font-medium text-text-secondary uppercase tracking-wider">
-                Efectividad en Colocación
+                Empresas y Organizaciones
               </p>
             </div>
           </ComponentCard>
@@ -110,8 +129,8 @@ const GraduateStatsSection: React.FC = () => {
             <div className="mt-8 pt-8 border-t border-border-light dark:border-border-dark">
               <div className="p-4 bg-brand-500/10 rounded-xl border border-brand-500/20">
                 <p className="text-xs text-text-tertiary italic">
-                  <span className="font-bold text-text-secondary block mb-1">Nota de Proyección:</span>
-                  Datos basados en la matrícula histórica (ej. 1,366 activos en 2015) y registros de cohortes de la Extensión Acarigua.
+                  <span className="font-bold text-text-secondary block mb-1">Nota de Datos:</span>
+                  Información sincronizada en tiempo real con la base de datos de gestión de la Extensión Acarigua.
                 </p>
               </div>
             </div>

@@ -3,7 +3,7 @@ import { View, Text } from "@react-pdf/renderer";
 import PDFLayout from "../PDFLayout";
 import { pdfStyles } from "../PDFStyles";
 import { InstitutionalResponsible, InstitutionalResponsibleRowData } from "../../../../features/institutions/types";
-import { PDFService } from "../../../../services/pdf/PDFService";
+// import { PDFService } from "../../../../services/pdf/PDFService";
 
 interface InstitutionalResponsiblePDFProps {
   data: InstitutionalResponsible[] | InstitutionalResponsibleRowData[];
@@ -21,7 +21,6 @@ export const InstitutionalResponsiblePDF: React.FC<InstitutionalResponsiblePDFPr
           <Text style={[pdfStyles.tableCell, { flex: 3 }]}>Nombre Completo</Text>
           <Text style={[pdfStyles.tableCell, { flex: 3 }]}>Institución</Text>
           <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Contacto</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.2, textAlign: "center" }]}>Estado</Text>
         </View>
 
         {data.map((responsible, index) => (
@@ -40,11 +39,6 @@ export const InstitutionalResponsiblePDF: React.FC<InstitutionalResponsiblePDFPr
               <Text style={{ fontSize: 8, color: "#64748B", marginTop: 2 }}>
                 {responsible.phone}
               </Text>
-            </View>
-            <View style={[pdfStyles.tableCell, { flex: 1.2, alignItems: "center" }]}>
-              <View style={[pdfStyles.badge, responsible.status ? pdfStyles.badgeSuccess : pdfStyles.badgeError]}>
-                <Text style={pdfStyles.badgeText}>{PDFService.formatStatus(responsible.status)}</Text>
-              </View>
             </View>
           </View>
         ))}

@@ -73,12 +73,12 @@ export default function Period() {
     const pdfFilteredData = useMemo(() => {
         const search = pdfSearchTerm.trim().toLowerCase();
         return (Array.isArray(periodos) ? periodos : [])
-            .filter(p => p.status === (activeTab === 'active'))
+            .filter(p => p.status === true)
             .filter(p => !search || 
                 p.code.toLowerCase().includes(search) || 
                 p.description.toLowerCase().includes(search)
             );
-    }, [periodos, pdfSearchTerm, activeTab]);
+    }, [periodos, pdfSearchTerm]);
 
     // --- Manejadores de Eventos para Modales ---
     const handleOpenCreateModal = () => {
@@ -348,22 +348,12 @@ export default function Period() {
                     fileName={`reporte-periodos-${new Date().toISOString().split('T')[0]}.pdf`}
                     searchTerm={pdfSearchTerm}
                     onSearchChange={setPdfSearchTerm}
+                    defaultInverted={true}
                     columns={[
                         { header: "Código", accessor: "code" },
                         { header: "Descripción", accessor: "description" },
                         { header: "Fecha Inicio", accessor: (p) => new Date(p.startDate).toLocaleDateString("es-VE") },
                         { header: "Fecha Fin", accessor: (p) => new Date(p.endDate).toLocaleDateString("es-VE") },
-                        { 
-                            header: "Estado", 
-                            accessor: (p) => {
-                                switch (p.periodStatus) {
-                                    case 1: return "PENDIENTE";
-                                    case 2: return "EN CURSO";
-                                    case 3: return "CULMINADO";
-                                    default: return "DESCONOCIDO";
-                                }
-                            }
-                        },
                     ]}
                 />
                 <UnifiedDialog

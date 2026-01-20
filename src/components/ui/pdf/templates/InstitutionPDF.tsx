@@ -3,7 +3,7 @@ import { View, Text } from "@react-pdf/renderer";
 import PDFLayout from "../PDFLayout";
 import { pdfStyles } from "../PDFStyles";
 import { Institution, InstitutionRowData } from "../../../../features/institutions/types";
-import { PDFService } from "../../../../services/pdf/PDFService";
+// import { PDFService } from "../../../../services/pdf/PDFService";
 
 interface InstitutionPDFProps {
   data: Institution[] | InstitutionRowData[];
@@ -21,7 +21,6 @@ export const InstitutionPDF: React.FC<InstitutionPDFProps> = ({ data }) => {
           <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Institución</Text>
           <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Ubicación</Text>
           <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Carrera / Tipo</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1, textAlign: "center" }]}>Estado</Text>
         </View>
 
         {data.map((institution, index) => (
@@ -47,11 +46,6 @@ export const InstitutionPDF: React.FC<InstitutionPDFProps> = ({ data }) => {
               <Text style={{ fontSize: 8, color: "#64748B", marginTop: 2 }}>
                 {institution.practiceType}
               </Text>
-            </View>
-            <View style={[pdfStyles.tableCell, { flex: 1, alignItems: "center" }]}>
-              <View style={[pdfStyles.badge, institution.status ? pdfStyles.badgeSuccess : pdfStyles.badgeError]}>
-                <Text style={pdfStyles.badgeText}>{PDFService.formatStatus(institution.status)}</Text>
-              </View>
             </View>
           </View>
         ))}

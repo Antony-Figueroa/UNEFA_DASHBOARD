@@ -144,11 +144,11 @@ export default function EnrollmentPage() {
                     (e.careerName && e.careerName.toLowerCase().includes(search));
                 const matchesPeriod = !periodSearch || e.period.toLowerCase() === periodSearch;
                 const matchesPracticeType = !practiceTypeSearch || e.practiceType.toLowerCase() === practiceTypeSearch;
-                const matchesTab = activeTab === "Activas" ? e.status === true : e.status === false;
+                const matchesStatus = e.status === true;
 
-                return matchesSearch && matchesPeriod && matchesPracticeType && matchesTab;
+                return matchesSearch && matchesPeriod && matchesPracticeType && matchesStatus;
             });
-    }, [enrollments, pdfSearchTerm, pdfPeriodFilter, pdfPracticeTypeFilter, activeTab]);
+    }, [enrollments, pdfSearchTerm, pdfPeriodFilter, pdfPracticeTypeFilter]);
 
     const handleCreate = () => {
         setEditingEntry(null);
@@ -303,10 +303,10 @@ export default function EnrollmentPage() {
                     <PDFPreviewModal
                         isOpen={isPDFModalOpen}
                         onClose={() => setIsPDFModalOpen(false)}
-                        title={`Reporte de Inscripciones ${activeTab === "Activas" ? "Activas" : "Inactivas"}`}
+                        title="Reporte de Inscripciones Activas"
                         data={pdfFilteredData}
                         template={(data) => <EnrollmentPDF data={data} />}
-                        fileName={`reporte-inscripciones-${activeTab.toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`}
+                        fileName={`reporte-inscripciones-activas-${new Date().toISOString().split('T')[0]}.pdf`}
                         searchTerm={pdfSearchTerm}
                         onSearchChange={setPdfSearchTerm}
                         renderFilters={() => (
@@ -354,7 +354,6 @@ export default function EnrollmentPage() {
                             { header: "Carrera", accessor: "careerName" },
                             { header: "Período", accessor: "period" },
                             { header: "Tipo Práctica", accessor: "practiceType" },
-                            { header: "Estado", accessor: (e) => e.status ? "ACTIVO" : "INACTIVO" },
                         ]}
                     />
 

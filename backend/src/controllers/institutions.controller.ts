@@ -126,7 +126,53 @@ export const getInstitutions = async (_req: Request, res: Response) => {
     const result = data.map(mapDBToFrontend);
     cacheManager.set(cacheKey, result, CACHE_TTL);
 
-    res.json(result);
+    res.json(data);
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+export const getInstitutionStats = async (req: Request, res: Response) => {
+  try {
+    const stats = await dbManager.withRetry(async (supabase) => {
+      // 1. Total Institutions
+      const totalQuery = supabase.from(TABLE_NAME).select('*', { count: 'exact', head: true });
+      
+      // 2. Active Institutions
+      const activeQuery = supabase.from(TABLE_NAME).select('*', { count: 'exact', head: true }).eq('STATUS', 1);
+
+      const [totalRes, activeRes] = await Promise.all([
+        totalQuery,
+        activeQuery
+      ]);
+
+      return {
+        total: totalRes.count || 0,
+        active: activeRes.count || 0
+      };
+    }, 'getInstitutionStats');
+
+    res.json(stats);
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+export const getInstitutionById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const data = await dbManager.withRetry(async (supabase) => {
+      const { data, error } = await supabase
+        .from(TABLE_NAME)
+        .select(INSTITUTION_COLUMNS)
+        .eq('INSTITUTION_ID', parseInt(id))
+        .single();
+
+      if (error) throw error;
+      return data as DBInstitution;
+    }, 'getInstitutionById');
+
+    res.json(mapDBToFrontend(data));
   } catch (error: unknown) {
     handleDbError(res, error);
   }
@@ -396,3 +442,4 @@ export const toggleInstitutionStatus = async (req: Request, res: Response) => {
     handleDbError(res, error);
   }
 };
+

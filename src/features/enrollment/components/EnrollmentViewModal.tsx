@@ -64,6 +64,10 @@ export default function EnrollmentViewModal({
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipo de Práctica</label>
                                 <p className="text-sm font-bold text-text-primary dark:text-white/90">{item.practiceType}</p>
                             </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Código de Matrícula</label>
+                                <p className="text-sm font-bold text-brand-500">{item.enrollmentCode || "—"}</p>
+                            </div>
                         </div>
                     </div>
 

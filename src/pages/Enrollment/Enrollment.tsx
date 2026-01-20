@@ -4,6 +4,7 @@
  */
 
 import { useMemo, useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -24,6 +25,7 @@ import { getInternshipTypes, mapToOptions } from "../../features/internship-type
 import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import { useEnrollment } from "../../features/enrollment/hooks/useEnrollment";
 import { Enrollment, EnrollmentRowData } from "../../features/enrollment/types";
+import { PreEnrollmentRowData } from "../../features/pre-enrollment/types";
 import { formatDateTime } from "../../utils/date";
 
 const formatEnrollmentToRow = (e: Enrollment): EnrollmentRowData => ({
@@ -33,10 +35,21 @@ const formatEnrollmentToRow = (e: Enrollment): EnrollmentRowData => ({
 
 export default function EnrollmentPage() {
     const [pageLoading, setPageLoading] = useState(true);
+    const location = useLocation();
+    const navigate = useNavigate();
     const { periodos } = usePeriods();
     const [periodOptions, setPeriodOptions] = useState<{ value: string; label: string }[]>([]);
     const [practiceTypeOptions, setPracticeTypeOptions] = useState<{ value: string; label: string }[]>([]);
+    const [initialPreEnrollmentData, setInitialPreEnrollmentData] = useState<PreEnrollmentRowData | null>(null);
 
+    useEffect(() => {
+        if (location.state?.preEnrollmentData) {
+            setInitialPreEnrollmentData(location.state.preEnrollmentData);
+            setIsModalOpen(true);
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location, navigate]);
+    
     useEffect(() => {
         if (periodos.length > 0) {
             const mappedPeriods = periodos.map(p => ({
@@ -245,10 +258,14 @@ export default function EnrollmentPage() {
 
                     <EnrollmentModal
                         isOpen={isModalOpen}
-                        onClose={() => setIsModalOpen(false)}
+                        onClose={() => {
+                            setIsModalOpen(false);
+                            setInitialPreEnrollmentData(null);
+                        }}
                         onSave={handleSave}
                         editingEntry={editingEntry}
                         isLoading={loadingAction}
+                        initialData={initialPreEnrollmentData}
                     />
 
                     <EnrollmentViewModal

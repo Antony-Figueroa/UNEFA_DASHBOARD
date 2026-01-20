@@ -17,12 +17,14 @@ interface PreEnrollmentTableProps {
     onEdit?: (item: PreEnrollmentRowData) => void;
     onToggleStatus?: (id: string) => void;
     onView?: (item: PreEnrollmentRowData) => void;
+    onExportToEnrollment?: (item: PreEnrollmentRowData) => void;
     onBulkDelete?: (ids: string[]) => void;
     onBulkRestore?: (ids: string[]) => void;
     activeTab?: "Activas" | "Inactivas";
     loading?: boolean;
     periodOptions?: { value: string; label: string }[];
     practiceTypeOptions?: { value: string; label: string }[];
+    careerOptions?: { value: string; label: string }[];
 }
 
 type SortKey = "identificationNumber" | "studentName" | "period" | "preEnrollmentDate" | "enrollmentCode";
@@ -32,6 +34,7 @@ interface ActionButtonsProps {
     onEdit?: () => void;
     onToggleStatus?: () => void;
     onView?: () => void;
+    onExportToEnrollment?: () => void;
     status: boolean;
     isMobile?: boolean;
 }
@@ -40,12 +43,32 @@ const ActionButtons = ({
     onEdit,
     onToggleStatus,
     onView,
+    onExportToEnrollment,
     status,
     isMobile = false,
 }: ActionButtonsProps) => {
     const containerClasses = isMobile 
         ? "flex flex-col gap-3 pt-2" 
         : "flex justify-end gap-3";
+
+    const ExportIcon = (props: React.SVGProps<SVGSVGElement>) => (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            {...props}
+        >
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+            <polyline points="10 17 15 12 10 7" />
+            <line x1="15" y1="12" x2="3" y2="12" />
+        </svg>
+    );
 
     return (
         <div className={containerClasses}>
@@ -66,6 +89,16 @@ const ActionButtons = ({
                     tooltip="Editar"
                     label={isMobile ? "Editar Pre-inscripción" : undefined}
                     variant="primary"
+                    fullWidth={isMobile}
+                />
+            )}
+            {onExportToEnrollment && (
+                <ActionButton
+                    onClick={() => onExportToEnrollment()}
+                    icon={<ExportIcon />}
+                    tooltip="Exportar a Inscripción"
+                    label={isMobile ? "Exportar a Inscripción" : undefined}
+                    variant="info"
                     fullWidth={isMobile}
                 />
             )}
@@ -90,16 +123,19 @@ export default function PreEnrollmentTable({
     onEdit,
     onToggleStatus,
     onView,
+    onExportToEnrollment,
     onBulkDelete,
     onBulkRestore,
     activeTab = "Activas",
     loading: externalLoading,
     periodOptions = [],
     practiceTypeOptions = [],
+    careerOptions = [],
 }: PreEnrollmentTableProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [periodFilter, setPeriodFilter] = useState("");
     const [practiceTypeFilter, setPracticeTypeFilter] = useState("");
+    const [careerFilter, setCareerFilter] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -121,6 +157,7 @@ export default function PreEnrollmentTable({
         const search = debouncedSearch.trim().toLowerCase();
         const periodSearch = periodFilter.trim().toLowerCase();
         const practiceTypeSearch = practiceTypeFilter.trim().toLowerCase();
+        const careerSearch = careerFilter.trim().toLowerCase();
 
         const filtered = data.filter((s) => {
             const matchesSearch = !search || 
@@ -128,9 +165,10 @@ export default function PreEnrollmentTable({
                 s.studentName.toLowerCase().includes(search);
             const matchesPeriod = !periodSearch || s.period.toLowerCase() === periodSearch;
             const matchesPracticeType = !practiceTypeSearch || s.practiceType.toLowerCase() === practiceTypeSearch;
+            const matchesCareer = !careerSearch || (s.careerName || "").toLowerCase().includes(careerSearch);
             const matchesTab = activeTab === "Activas" ? s.status === true : s.status === false;
 
-            return matchesSearch && matchesPeriod && matchesPracticeType && matchesTab;
+            return matchesSearch && matchesPeriod && matchesPracticeType && matchesCareer && matchesTab;
         });
 
         filtered.sort((a, b) => {
@@ -145,11 +183,11 @@ export default function PreEnrollmentTable({
         });
 
         return filtered;
-    }, [data, debouncedSearch, periodFilter, practiceTypeFilter, activeTab, sortConfig]);
+    }, [data, debouncedSearch, periodFilter, practiceTypeFilter, careerFilter, activeTab, sortConfig]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, periodFilter, practiceTypeFilter]);
+    }, [debouncedSearch, periodFilter, practiceTypeFilter, careerFilter]);
 
     const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -209,6 +247,7 @@ export default function PreEnrollmentTable({
         setSearchTerm("");
         setPeriodFilter("");
         setPracticeTypeFilter("");
+        setCareerFilter("");
     };
 
     const SortIndicator = ({ column }: { column: SortKey }) => {
@@ -238,6 +277,12 @@ export default function PreEnrollmentTable({
         return fromData.map(p => ({ value: p, label: p }));
     }, [data, periodOptions]);
 
+    const uniqueCareers = useMemo<{ value: string; label: string }[]>(() => {
+        if (careerOptions && careerOptions.length > 0) return careerOptions;
+        const fromData = Array.from(new Set(data.map(item => item.careerName).filter(Boolean))).sort();
+        return fromData.map(c => ({ value: c, label: c }));
+    }, [data, careerOptions]);
+
     if (status === "loading" || externalLoading) {
         return (
             <div className="table-container">
@@ -266,7 +311,7 @@ export default function PreEnrollmentTable({
         <div className="table-container">
             {/* Search and Filter Bar */}
             <div className="p-4 border-b border-border-light dark:border-border-dark space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Buscador General */}
                     <div className="relative">
                         <input
@@ -324,10 +369,31 @@ export default function PreEnrollmentTable({
                             </svg>
                         </div>
                     </div>
+
+                    {/* Filtro por Carrera */}
+                    <div className="relative">
+                        <select
+                            value={careerFilter}
+                            onChange={(e) => setCareerFilter(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
+                        >
+                            <option value="" className="dark:bg-bg-dark">Carrera</option>
+                            {uniqueCareers.map((opt) => (
+                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
                 </div>
 
                 <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
-                    {(searchTerm || periodFilter || practiceTypeFilter) && (
+                    {(searchTerm || periodFilter || practiceTypeFilter || careerFilter) && (
                         <button
                             onClick={clearFilters}
                             className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
@@ -462,6 +528,7 @@ export default function PreEnrollmentTable({
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={activeTab === "Activas" && onEdit ? () => onEdit(s) : undefined}
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(s.preEnrollmentId) : undefined}
+                                            onExportToEnrollment={onExportToEnrollment ? () => onExportToEnrollment(s) : undefined}
                                             status={s.status}
                                         />
                                     </TableCell>
@@ -473,12 +540,12 @@ export default function PreEnrollmentTable({
                                     <EmptyState
                                         title="No se encontraron pre-inscripciones"
                                         description={
-                                            searchTerm || periodFilter
+                                            searchTerm || periodFilter || practiceTypeFilter || careerFilter
                                                 ? "No se encontraron pre-inscripciones con los filtros aplicados. Intenta con otros términos."
                                                 : "No hay pre-inscripciones registradas en el sistema actualmente."
                                         }
                                         action={
-                                            searchTerm || periodFilter ? (
+                                            searchTerm || periodFilter || practiceTypeFilter || careerFilter ? (
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -547,6 +614,7 @@ export default function PreEnrollmentTable({
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={activeTab === "Activas" && onEdit ? () => onEdit(s) : undefined}
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(s.preEnrollmentId) : undefined}
+                                            onExportToEnrollment={onExportToEnrollment ? () => onExportToEnrollment(s) : undefined}
                                             status={s.status}
                                             isMobile={true}
                                         />
@@ -560,12 +628,12 @@ export default function PreEnrollmentTable({
                         <EmptyState
                             title="No se encontraron pre-inscripciones"
                             description={
-                                searchTerm || periodFilter
+                                searchTerm || periodFilter || practiceTypeFilter || careerFilter
                                     ? "No se encontraron pre-inscripciones con los filtros aplicados. Intenta ajustar los términos."
                                     : "No hay pre-inscripciones registradas en el sistema actualmente."
                             }
                             action={
-                                (searchTerm || periodFilter) ? (
+                                (searchTerm || periodFilter || practiceTypeFilter || careerFilter) ? (
                                     <Button
                                         variant="outline"
                                         size="sm"

@@ -225,6 +225,10 @@ export default function PreEnrollmentPage() {
     };
 
 
+    const handleExportToEnrollment = (item: PreEnrollmentRowData) => {
+        navigate("/enrollment", { state: { preEnrollmentData: item } });
+    };
+
     return (
         <>
             <PageMeta title="Gestión de Pre-Inscripciones" description="Administración de pre-inscripciones" />
@@ -294,6 +298,7 @@ export default function PreEnrollmentPage() {
                                 onBulkDelete={handleBulkDelete}
                                 onBulkRestore={handleBulkRestore}
                                 onView={setViewItem}
+                                onExportToEnrollment={handleExportToEnrollment}
                                 loading={loadingAction}
                                 periodOptions={periodOptions}
                                 practiceTypeOptions={practiceTypeOptions}

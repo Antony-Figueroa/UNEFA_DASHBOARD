@@ -29,6 +29,7 @@ interface Student {
   NAME: string;
   SURNAME: string;
   CONTACT_PHONE?: string;
+  t_career?: { CAREER_NAME: string };
 }
 
 interface ProfessionalPracticeTutor {
@@ -72,7 +73,8 @@ export const getPreEnrollments = async (req: Request, res: Response) => {
             STUDENTS_CI,
             NAME,
             SURNAME,
-            CONTACT_PHONE
+            CONTACT_PHONE,
+            t_career (CAREER_NAME)
           ),
           t_internships_period (DESCRIPTION),
           t_internship_type (NAME),
@@ -94,6 +96,7 @@ export const getPreEnrollments = async (req: Request, res: Response) => {
         identificationNumber: ciParts[1] || '',
         studentName: `${item.t_students?.NAME || ''} ${item.t_students?.SURNAME || ''}`.trim(),
         phone: item.t_students?.CONTACT_PHONE || '',
+        careerName: item.t_students?.t_career?.CAREER_NAME || '',
         period: item.t_internships_period?.DESCRIPTION || '',
         practiceType: item.t_internship_type?.NAME || '',
         enrollmentCode: item.ENROLLMENT || '',
@@ -131,6 +134,34 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
         .single();
       
       if (studentError || !student) throw new Error('Estudiante no encontrado');
+
+      // 2.1. Validar que no tenga una pre-inscripción activa
+      const { data: activePreEnrollment, error: activePreError } = await supabase
+        .from(TABLE_NAME)
+        .select('PROFESSIONAL_PRACTICE_ID')
+        .eq('STUDENTS_ID', student.STUDENTS_ID)
+        .eq('PRACTICES_STATUS', 1)
+        .eq('STATUS', 1)
+        .maybeSingle();
+
+      if (activePreError) throw activePreError;
+      if (activePreEnrollment) {
+        throw new Error('El estudiante ya posee una pre-inscripción activa.');
+      }
+
+      // 2.2. Validar inscripción activa
+      const { data: activeEnrollment, error: activeEnrollmentError } = await supabase
+        .from(TABLE_NAME)
+        .select('PROFESSIONAL_PRACTICE_ID')
+        .eq('STUDENTS_ID', student.STUDENTS_ID)
+        .eq('PRACTICES_STATUS', 2) // 2 para INSCRITO/ACTIVO
+        .eq('STATUS', 1) // 1 para activo (no eliminado lógicamente)
+        .maybeSingle();
+
+      if (activeEnrollmentError) throw activeEnrollmentError;
+      if (activeEnrollment) {
+        throw new Error('El estudiante ya tiene una inscripción activa y no puede pre-inscribirse.');
+      }
 
       // 2. Buscar Periodo
       const { data: periodData, error: periodError } = await supabase

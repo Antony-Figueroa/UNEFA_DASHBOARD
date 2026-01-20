@@ -19,7 +19,7 @@ import { getPreEnrollments } from "../../pre-enrollment/services/preEnrollmentSe
 import { Periodo } from "../../periods/types";
 import { Tutor } from "../../tutors/types";
 import { Institution } from "../../institutions/types";
-import { PreEnrollment } from "../../pre-enrollment/types";
+import { PreEnrollment, PreEnrollmentRowData } from "../../pre-enrollment/types";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { getInternshipTypes, mapToOptions } from "../../internship-types/services/internshipTypesService";
 import { InternshipTypeOption } from "../../internship-types/types";
@@ -27,6 +27,7 @@ import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import * as enrollmentService from "../services/enrollmentService";
 import { useLists } from "../../lists/hooks/useLists";
+import { generateMatricula } from "../../../utils/matricula";
 
 interface EnrollmentModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ interface EnrollmentModalProps {
   onSave: (data: Omit<Enrollment, "enrollmentId" | "enrollmentDate">) => void;
   editingEntry?: Enrollment | null;
   isLoading?: boolean;
+  initialData?: PreEnrollmentRowData | null;
 }
 
 const enrollmentSchema = z.object({
@@ -46,6 +48,7 @@ const enrollmentSchema = z.object({
   period: z.string().min(1, "Seleccione el período"),
   practiceType: z.string().min(1, "Seleccione el tipo de práctica"),
   careerName: z.string().optional(),
+  enrollmentCode: z.string().optional(),
   academicTutorId: z.string().min(1, "Seleccione el tutor académico"),
   methodologicalTutorId: z.string().min(1, "Seleccione el tutor metodológico"),
   institutionId: z.string().min(1, "Seleccione la institución"),
@@ -63,6 +66,7 @@ export default function EnrollmentModal({
   onSave,
   editingEntry,
   isLoading = false,
+  initialData,
 }: EnrollmentModalProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [tutors, setTutors] = useState<Tutor[]>([]);
@@ -96,6 +100,7 @@ export default function EnrollmentModal({
       period: "",
       practiceType: "",
       careerName: "",
+      enrollmentCode: "",
       academicTutorId: "",
       methodologicalTutorId: "",
       institutionId: "",
@@ -248,6 +253,15 @@ export default function EnrollmentModal({
         
         setValue("period", preEnrollment.period);
         setValue("practiceType", preEnrollment.practiceType);
+
+        const abbr = (studentCareer?.careerAbbreviation || "GEN").toUpperCase();
+        const code = generateMatricula({
+          careerAbbreviation: abbr,
+          regime: student.regime,
+          semester: student.semester,
+          section: student.section,
+        });
+        setValue("enrollmentCode", code);
       }
     } catch (error) {
       console.error("Error buscando estudiante:", error);
@@ -266,6 +280,17 @@ export default function EnrollmentModal({
   }, [idNumber, idPrefix, lookupStudent, editingEntry]);
 
   useEffect(() => {
+    if (initialData && isOpen) {
+      setValue("identificationPrefix", initialData.identificationPrefix);
+      setValue("identificationNumber", initialData.identificationNumber);
+      setValue("studentName", initialData.studentName);
+      setValue("period", initialData.period);
+      setValue("practiceType", initialData.practiceType);
+      setValue("careerName", initialData.careerName);
+    }
+  }, [initialData, isOpen, setValue]);
+
+  useEffect(() => {
     if (isOpen) {
       if (editingEntry) {
         reset({
@@ -280,7 +305,7 @@ export default function EnrollmentModal({
           institutionId: editingEntry.institutionId,
           institutionResponsibleId: editingEntry.institutionResponsibleId,
         });
-      } else {
+      } else if (!initialData) {
         reset({
           identificationPrefix: "V",
           identificationNumber: "",
@@ -295,7 +320,7 @@ export default function EnrollmentModal({
         });
       }
     }
-  }, [editingEntry, reset, isOpen]);
+  }, [editingEntry, reset, isOpen, initialData]);
 
   const onSubmit = (data: EnrollmentFormData) => {
     if (preEnrollmentError) return;
@@ -312,6 +337,7 @@ export default function EnrollmentModal({
       methodologicalTutorName: methodologicalTutor ? `${methodologicalTutor.firstName} ${methodologicalTutor.lastName}` : undefined,
       institutionName: institution?.name,
       institutionResponsibleName: responsible ? `${responsible.firstName} ${responsible.lastName}` : undefined,
+      enrollmentCode: data.enrollmentCode,
       status: editingEntry ? editingEntry.status : true,
     });
   };
@@ -360,7 +386,7 @@ export default function EnrollmentModal({
                         onBlur={field.onBlur}
                         value={field.value}
                         placeholder="Tipo"
-                        disabled={!!editingEntry}
+                        disabled={!!editingEntry || !!initialData}
                         error={!!errors.identificationPrefix}
                       />
                     )}
@@ -373,6 +399,7 @@ export default function EnrollmentModal({
                     error={!!errors.identificationNumber || !!preEnrollmentError}
                     hint={errors.identificationNumber?.message || preEnrollmentError || undefined}
                     className={isSearching ? "animate-pulse" : ""}
+                    disabled={!!editingEntry || !!initialData}
                   />
                   {isSearching && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -457,6 +484,25 @@ export default function EnrollmentModal({
                 hint={isSubmitted ? errors.careerName?.message : undefined}
                 readOnly
                 className="bg-bg-secondary dark:bg-white/5 cursor-not-allowed"
+              />
+              {initialData && (
+                <p className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
+                  La carrera se carga automáticamente desde la pre-inscripción.
+                </p>
+              )}
+            </div>
+
+            {/* Matrícula */}
+            <div>
+              <div className="flex items-center mb-2 sm:mb-2.5">
+                <label className="block text-black dark:text-white font-medium text-sm">Matrícula</label>
+                <AutoGeneratedBadge tooltip="Se genera automáticamente a partir de los datos del estudiante." />
+              </div>
+              <Input
+                {...register("enrollmentCode")}
+                placeholder="Matrícula automática"
+                readOnly
+                className="bg-bg-secondary dark:bg-white/5 cursor-not-allowed font-mono"
               />
             </div>
 

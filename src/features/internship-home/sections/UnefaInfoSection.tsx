@@ -13,11 +13,9 @@ const UnefaInfoSection: React.FC<UnefaInfoSectionProps> = ({
 }) => {
   const [info, setInfo] = useState<UnefaInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const loadInfo = useCallback(async (force = false) => {
     setIsLoading(true);
-    setError(null);
     try {
       // Simular una pequeña latencia para que el usuario perciba la actualización
       if (force) await new Promise(resolve => setTimeout(resolve, 800));
@@ -25,8 +23,11 @@ const UnefaInfoSection: React.FC<UnefaInfoSectionProps> = ({
       const data = await unefaInfoService.getUnefaInfo(force);
       setInfo(data);
     } catch (err) {
-      setError("No se pudo cargar la información en este momento.");
-      console.error(err);
+      // Manejo silencioso del error: se registra en consola pero no se muestra al usuario
+      console.error("[UnefaInfoSection] Error al cargar información:", err);
+      // Intentar cargar desde fallback si el servicio no lo hizo automáticamente
+      const fallback = await unefaInfoService.getUnefaInfo(false);
+      if (fallback) setInfo(fallback);
     } finally {
       setIsLoading(false);
     }
@@ -69,15 +70,6 @@ const UnefaInfoSection: React.FC<UnefaInfoSectionProps> = ({
                   <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-full animate-pulse" />
                   <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-full animate-pulse" />
                   <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-2/3 animate-pulse" />
-                </motion.div>
-              ) : error ? (
-                <motion.div
-                  key="error"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg"
-                >
-                  {error}
                 </motion.div>
               ) : info ? (
                 <motion.div

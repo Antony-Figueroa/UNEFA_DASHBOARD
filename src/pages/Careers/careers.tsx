@@ -113,6 +113,7 @@ export default function CareersPage() {
   const [editingCareer, setEditingCareer] = useState<Career | null>(null);
   const [viewCareer, setViewCareer] = useState<CareerRowData | null>(null);
   const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
+  const [pdfSearchTerm, setPdfSearchTerm] = useState("");
 
   // Estados para Tipos de Prácticas
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
@@ -154,6 +155,25 @@ export default function CareersPage() {
     const byStatus = careers.filter((c) => (activeTab === "Activas" ? c.status : !c.status));
     return byStatus.map(formatCareerToRow);
   }, [careers, activeTab]);
+
+  /**
+   * Datos filtrados específicamente para el reporte PDF.
+   * Permite búsquedas independientes en el modal de previsualización.
+   */
+  const pdfFilteredData = useMemo(() => {
+    const search = pdfSearchTerm.trim().toLowerCase();
+    const byStatus = careers.filter((c) => (activeTab === "Activas" ? c.status : !c.status));
+    
+    return byStatus
+      .filter(c => {
+        if (!search) return true;
+        return (
+          c.careerCode.toLowerCase().includes(search) ||
+          c.careerName.toLowerCase().includes(search)
+        );
+      })
+      .map(formatCareerToRow);
+  }, [careers, pdfSearchTerm, activeTab]);
 
   /**
    * Prepara el estado para crear una nueva carrera o tipo de práctica y abre el modal.
@@ -567,18 +587,18 @@ export default function CareersPage() {
       <PDFPreviewModal
         isOpen={isPDFModalOpen}
         onClose={() => setIsPDFModalOpen(false)}
-        title="Reporte de Carreras"
-        data={(Array.isArray(careers) ? careers : []).filter(c => activeTab === "Activas" ? c.status : !c.status)}
-        template={<CarreraPDF data={[]} />}
-        fileName={`reporte-carreras-${new Date().toISOString().split('T')[0]}.pdf`}
+        title={`Reporte de Carreras ${activeTab === "Activas" ? "Activas" : "Inactivas"}`}
+        data={pdfFilteredData}
+        template={(data) => <CarreraPDF data={data} />}
+        fileName={`reporte-carreras-${activeTab.toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`}
+        searchTerm={pdfSearchTerm}
+        onSearchChange={setPdfSearchTerm}
         columns={[
           { header: "Código", accessor: "careerCode" },
-          { header: "Nombre", accessor: "careerName" },
-          { header: "Siglas", accessor: "careerAbbreviation" },
-          { 
-            header: "Estado", 
-            accessor: (c) => c.status ? "ACTIVO" : "INACTIVO" 
-          },
+          { header: "Carrera", accessor: "careerName" },
+          { header: "Tipo", accessor: "careerType" },
+          { header: "Nota Mín.", accessor: (c) => Number(c.minimumGrade).toFixed(2) },
+          { header: "Estado", accessor: (c) => (c.status === true || c.status === 1) ? "ACTIVO" : "INACTIVO" },
         ]}
       />
 

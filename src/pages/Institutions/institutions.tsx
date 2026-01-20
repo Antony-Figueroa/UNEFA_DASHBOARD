@@ -119,6 +119,10 @@ export default function InstitutionsPage() {
   const [viewResp, setViewResp] = useState<InstitutionalResponsibleRowData | null>(null);
   const [isInstPDFModalOpen, setIsInstPDFModalOpen] = useState(false);
   const [isRespPDFModalOpen, setIsRespPDFModalOpen] = useState(false);
+  
+  // Estados para búsqueda en los PDF
+  const [instPdfSearchTerm, setInstPdfSearchTerm] = useState("");
+  const [respPdfSearchTerm, setRespPdfSearchTerm] = useState("");
 
   const institutionOptions = useMemo(() => 
     institutions.filter(i => i.status).map(i => ({ value: i.institutionId, label: i.name })),
@@ -149,6 +153,30 @@ export default function InstitutionsPage() {
   const respTableData = useMemo(() => {
     return responsibles.map(formatRespToRow);
   }, [responsibles]);
+
+  const instPdfFilteredData = useMemo(() => {
+    const search = instPdfSearchTerm.trim().toLowerCase();
+    return (Array.isArray(institutions) ? institutions : [])
+      .filter(i => activeTab === "Activas" ? i.status : !i.status)
+      .filter(i => !search || 
+        i.rif.toLowerCase().includes(search) || 
+        i.name.toLowerCase().includes(search) ||
+        i.institutionType.toLowerCase().includes(search)
+      );
+  }, [institutions, instPdfSearchTerm, activeTab]);
+
+  const respPdfFilteredData = useMemo(() => {
+    const search = respPdfSearchTerm.trim().toLowerCase();
+    return (Array.isArray(responsibles) ? responsibles : [])
+      .filter(r => activeTab === "Activas" ? r.status : !r.status)
+      .filter(r => {
+        const fullName = `${r.firstName} ${r.lastName}`.toLowerCase();
+        return !search || 
+          r.identificationNumber.toLowerCase().includes(search) || 
+          fullName.includes(search) ||
+          r.institutionName?.toLowerCase().includes(search);
+      });
+  }, [responsibles, respPdfSearchTerm, activeTab]);
 
   const handleOpenAddModal = () => {
     if (mainTab === "Instituciones") {
@@ -401,14 +429,16 @@ export default function InstitutionsPage() {
         isOpen={isInstPDFModalOpen}
         onClose={() => setIsInstPDFModalOpen(false)}
         title="Reporte de Instituciones"
-        data={(Array.isArray(institutions) ? institutions : []).filter(i => activeTab === "Activas" ? i.status : !i.status)}
-        template={<InstitutionPDF data={[]} />}
+        data={instPdfFilteredData}
+        template={(data) => <InstitutionPDF data={data} />}
         fileName={`reporte-instituciones-${new Date().toISOString().split('T')[0]}.pdf`}
+        searchTerm={instPdfSearchTerm}
+        onSearchChange={setInstPdfSearchTerm}
         columns={[
           { header: "RIF", accessor: "rif" },
           { header: "Nombre", accessor: "name" },
           { header: "Tipo", accessor: "institutionType" },
-          { header: "Estado", accessor: (i) => i.status ? "ACTIVO" : "INACTIVO" },
+          { header: "Estado", accessor: (i) => i.status ? "ACTIVA" : "INACTIVA" },
         ]}
       />
 
@@ -416,13 +446,17 @@ export default function InstitutionsPage() {
         isOpen={isRespPDFModalOpen}
         onClose={() => setIsRespPDFModalOpen(false)}
         title="Reporte de Responsables Institucionales"
-        data={(Array.isArray(responsibles) ? responsibles : []).filter(r => activeTab === "Activas" ? r.status : !r.status)}
-        template={<InstitutionalResponsiblePDF data={[]} />}
+        data={respPdfFilteredData}
+        template={(data) => <InstitutionalResponsiblePDF data={data} />}
         fileName={`reporte-responsables-${new Date().toISOString().split('T')[0]}.pdf`}
+        searchTerm={respPdfSearchTerm}
+        onSearchChange={setRespPdfSearchTerm}
         columns={[
           { header: "Cédula", accessor: (r) => `${r.identificationPrefix}-${r.identificationNumber}` },
           { header: "Nombre", accessor: (r) => `${r.firstName} ${r.lastName}` },
           { header: "Institución", accessor: "institutionName" },
+          { header: "Correo", accessor: "email" },
+          { header: "Teléfono", accessor: "phone" },
           { header: "Estado", accessor: (r) => r.status ? "ACTIVO" : "INACTIVO" },
         ]}
       />

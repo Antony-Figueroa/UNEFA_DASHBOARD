@@ -2,11 +2,11 @@ import React from "react";
 import { View, Text } from "@react-pdf/renderer";
 import PDFLayout from "../PDFLayout";
 import { pdfStyles } from "../PDFStyles";
-import { InstitutionalResponsible } from "../../../../features/institutions/types";
+import { InstitutionalResponsible, InstitutionalResponsibleRowData } from "../../../../features/institutions/types";
 import { PDFService } from "../../../../services/pdf/PDFService";
 
 interface InstitutionalResponsiblePDFProps {
-  data: InstitutionalResponsible[];
+  data: InstitutionalResponsible[] | InstitutionalResponsibleRowData[];
 }
 
 export const InstitutionalResponsiblePDF: React.FC<InstitutionalResponsiblePDFProps> = ({ data }) => {

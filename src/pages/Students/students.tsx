@@ -91,6 +91,9 @@ export default function StudentsPage() {
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [viewStudent, setViewStudent] = useState<StudentRowData | null>(null);
     const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
+    const [pdfSearchTerm, setPdfSearchTerm] = useState("");
+    const [pdfCareerFilter, setPdfCareerFilter] = useState("");
+    const [pdfRegimeFilter, setPdfRegimeFilter] = useState("");
 
     type ConfirmationInfo = {
         isOpen: boolean;
@@ -108,6 +111,29 @@ export default function StudentsPage() {
         const byStatus = students.filter((s) => (activeTab === "Activas" ? s.status : !s.status));
         return byStatus.map(formatStudentToRow);
     }, [students, activeTab]);
+
+    /**
+     * Datos filtrados específicamente para el reporte PDF de Estudiantes.
+     */
+    const pdfFilteredData = useMemo(() => {
+        const search = pdfSearchTerm.trim().toLowerCase();
+        const careerSearch = pdfCareerFilter.trim();
+        const regimeSearch = pdfRegimeFilter.trim().toLowerCase();
+
+        return (Array.isArray(students) ? students : [])
+            .filter((s) => {
+                const fullName = `${s.firstName} ${s.middleName || ""} ${s.lastName} ${s.secondLastName || ""}`.toLowerCase();
+                const matchesSearch = !search || 
+                    (s.identificationNumber || "").toLowerCase().includes(search) || 
+                    fullName.includes(search);
+                
+                const matchesCareer = !careerSearch || String(s.careerId) === careerSearch;
+                const matchesRegime = !regimeSearch || (s.regime || "").toLowerCase() === regimeSearch;
+                const matchesTab = activeTab === "Activas" ? !!s.status : !s.status;
+
+                return matchesSearch && matchesCareer && matchesRegime && matchesTab;
+            });
+    }, [students, pdfSearchTerm, pdfCareerFilter, pdfRegimeFilter, activeTab]);
 
     const handleCreate = () => {
         setEditingStudent(null);
@@ -330,31 +356,58 @@ export default function StudentsPage() {
                     <PDFPreviewModal
                         isOpen={isPDFModalOpen}
                         onClose={() => setIsPDFModalOpen(false)}
-                        title="Listado de Estudiantes"
-                        data={(Array.isArray(students) ? students : []).filter(s => activeTab === "Activas" ? s.status : !s.status)}
-                        template={<StudentPDF data={[]} />}
+                        title={`Reporte de Estudiantes ${activeTab === "Activas" ? "Activos" : "Inactivos"}`}
+                        data={pdfFilteredData}
+                        template={(data) => <StudentPDF data={data} />}
                         fileName={`estudiantes-${activeTab.toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`}
+                        searchTerm={pdfSearchTerm}
+                        onSearchChange={setPdfSearchTerm}
+                        renderFilters={() => (
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
+                                        Carrera
+                                    </label>
+                                    <select
+                                        value={pdfCareerFilter}
+                                        onChange={(e) => setPdfCareerFilter(e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
+                                    >
+                                        <option value="">Todas las Carreras</option>
+                                        {careerOptions.map((opt) => (
+                                            <option key={opt.value} value={opt.value}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
+                                        Régimen
+                                    </label>
+                                    <select
+                                        value={pdfRegimeFilter}
+                                        onChange={(e) => setPdfRegimeFilter(e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
+                                    >
+                                        <option value="">Todos los Regímenes</option>
+                                        {dynamicLists["Regimen/Turno"]?.map((opt) => (
+                                            <option key={opt.id} value={opt.name.toUpperCase()}>
+                                                {opt.name.toUpperCase()}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        )}
                         columns={[
-                            { 
-                                header: "Cédula", 
-                                accessor: (s) => `${s.identificationPrefix}-${s.identificationNumber}` 
-                            },
-                            { 
-                                header: "Nombre Completo", 
-                                accessor: (s) => `${s.firstName} ${s.lastName}` 
-                            },
-                            { 
-                                header: "Carrera", 
-                                accessor: "careerName" 
-                            },
-                            { 
-                                header: "Sem/Sec", 
-                                accessor: (s) => `${s.semester}° - ${s.section}` 
-                            },
-                            { 
-                                header: "Estado", 
-                                accessor: (s) => s.status ? "ACTIVO" : "INACTIVO" 
-                            },
+                            { header: "Cédula", accessor: (s) => `${s.identificationPrefix}-${s.identificationNumber}` },
+                            { header: "Estudiante", accessor: (s) => `${s.firstName} ${s.lastName}` },
+                            { header: "Carrera", accessor: "careerName" },
+                            { header: "Sem/Sec", accessor: (s) => `${s.semester}-${s.section}` },
+                            { header: "Régimen", accessor: "regime" },
+                            { header: "Estado", accessor: (s) => s.status ? "ACTIVO" : "INACTIVO" },
                         ]}
                     />
 

@@ -4,12 +4,14 @@ import {
   getPeriodById, 
   createPeriod, 
   updatePeriod, 
-  deletePeriod 
+  deletePeriod,
+  getCurrentPeriod
 } from '../controllers/periods.controller.js';
 
 const router = Router();
 
 router.get('/', getPeriods);
+router.get('/current', getCurrentPeriod);
 router.get('/:id', getPeriodById);
 router.post('/', createPeriod);
 router.put('/:id', updatePeriod);

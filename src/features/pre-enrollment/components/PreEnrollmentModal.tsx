@@ -72,6 +72,8 @@ export default function PreEnrollmentModal({
     setValue,
     getValues,
     formState: { errors, isSubmitted, isDirty },
+    setError,
+    clearErrors,
   } = useForm<PreEnrollmentFormData>({
     resolver: zodResolver(preEnrollmentSchema),
     defaultValues: {
@@ -194,8 +196,20 @@ export default function PreEnrollmentModal({
     }
   }, [isOpen, fetchMultipleLists]);
 
+  const clearStudentFields = useCallback(() => {
+    setValue("studentName", "");
+    setValue("phone", "");
+    setValue("careerName", "");
+    setValue("practiceType", "");
+    setValue("enrollmentCode", "");
+    clearErrors("identificationNumber");
+  }, [setValue, clearErrors]);
+
   const lookupStudent = useCallback(async (prefix: string, number: string) => {
-    if (number.length < 5) return;
+    if (number.length < 5) {
+      clearStudentFields();
+      return;
+    }
     
     setIsSearching(true);
     try {
@@ -208,8 +222,8 @@ export default function PreEnrollmentModal({
         setValue("studentName", `${student.firstName} ${student.lastName}`);
         setValue("phone", student.phone || "");
         setValue("careerName", student.careerName || "");
+        clearErrors("identificationNumber");
         
-        // Autocompletar Tipo de Práctica basado en la carrera del estudiante
         if (student.careerId) {
           const types = await getInternshipTypesByCareer(student.careerId);
           if (types.length > 0) {
@@ -219,26 +233,36 @@ export default function PreEnrollmentModal({
           }
         }
 
-        // Matrícula automática
         const abbr = student.careerName?.substring(0, 3).toUpperCase() || "GEN";
         const enrollmentCode = `${student.identificationPrefix}-${student.identificationNumber}-${abbr}-${student.semester}`.toUpperCase();
         setValue("enrollmentCode", enrollmentCode);
+      } else {
+        clearStudentFields();
+        setError("identificationNumber", {
+          type: "manual",
+          message: "El estudiante no se encuentra registrado.",
+        });
       }
     } catch (error) {
       console.error("Error al buscar estudiante:", error);
+      clearStudentFields();
     } finally {
       setIsSearching(false);
     }
-  }, [setValue]);
+  }, [setValue, clearErrors, setError, clearStudentFields]);
 
   useEffect(() => {
-    if (!editingEntry && idNumber) {
-      const timer = setTimeout(() => {
-        lookupStudent(idPrefix, idNumber);
-      }, 500);
-      return () => clearTimeout(timer);
+    if (!editingEntry) {
+      if (idNumber) {
+        const timer = setTimeout(() => {
+          lookupStudent(idPrefix, idNumber);
+        }, 500);
+        return () => clearTimeout(timer);
+      } else {
+        clearStudentFields();
+      }
     }
-  }, [idNumber, idPrefix, lookupStudent, editingEntry]);
+  }, [idNumber, idPrefix, lookupStudent, editingEntry, clearStudentFields]);
 
   useEffect(() => {
     if (isOpen) {
@@ -399,7 +423,7 @@ export default function PreEnrollmentModal({
                   )}
                 </div>
               </div>
-              {isSubmitted && errors.identificationNumber && (
+              {errors.identificationNumber && (
                 <p className="mt-1 text-xs text-error-500">{errors.identificationNumber.message}</p>
               )}
             </div>

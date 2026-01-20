@@ -77,6 +77,30 @@ export const getPeriods = async (_req: Request, res: Response) => {
   }
 };
 
+export const getCurrentPeriod = async (_req: Request, res: Response) => {
+  try {
+    const data = await dbManager.withRetry(async (supabase) => {
+      const { data, error } = await supabase
+        .from(TABLE_NAME)
+        .select('*')
+        .eq('PERIOD_STATUS', '1')
+        .eq('STATUS', 1)
+        .order('START_DATE', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') return null;
+        throw error;
+      }
+      return data as Period;
+    });
+    res.json(data);
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
 export const getPeriodById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

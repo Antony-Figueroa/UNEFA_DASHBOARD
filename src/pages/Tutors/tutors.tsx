@@ -114,6 +114,10 @@ export default function TutorsPage() {
     const [editingTutor, setEditingTutor] = useState<Tutor | null>(null);
     const [viewTutor, setViewTutor] = useState<TutorRowData | null>(null);
     const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
+    const [pdfSearchTerm, setPdfSearchTerm] = useState("");
+    const [pdfPracticeTypeFilter, setPdfPracticeTypeFilter] = useState("");
+    const [pdfCareerFilter, setPdfCareerFilter] = useState("");
+    const [pdfConditionFilter, setPdfConditionFilter] = useState("");
 
     type ConfirmationInfo = {
         isOpen: boolean;
@@ -130,6 +134,31 @@ export default function TutorsPage() {
         const byStatus = tutors.filter((t) => (activeTab === "Activas" ? t.status : !t.status));
         return byStatus.map(formatTutorToRow);
     }, [tutors, activeTab]);
+
+    /**
+     * Datos filtrados específicamente para el reporte PDF de Tutores.
+     */
+    const pdfFilteredData = useMemo(() => {
+        const search = pdfSearchTerm.trim().toLowerCase();
+        const practiceTypeSearch = pdfPracticeTypeFilter.trim().toLowerCase();
+        const careerSearch = pdfCareerFilter.trim();
+        const conditionSearch = pdfConditionFilter.trim().toLowerCase();
+
+        return (Array.isArray(tutors) ? tutors : [])
+            .filter((t) => {
+                const fullName = `${t.firstName} ${t.middleName || ""} ${t.lastName} ${t.secondLastName || ""}`.toLowerCase();
+                const matchesSearch = !search || 
+                    (t.identificationNumber || "").toLowerCase().includes(search) || 
+                    fullName.includes(search);
+                
+                const matchesPracticeType = !practiceTypeSearch || (t.practiceTypes || []).some(pt => pt.toLowerCase().includes(practiceTypeSearch));
+                const matchesCareer = !careerSearch || (t.carreras || []).some(c => c === careerSearch);
+                const matchesCondition = !conditionSearch || (t.condition || "").toLowerCase() === conditionSearch;
+                const matchesTab = activeTab === "Activas" ? !!t.status : !t.status;
+
+                return matchesSearch && matchesPracticeType && matchesCareer && matchesCondition && matchesTab;
+            });
+    }, [tutors, pdfSearchTerm, pdfPracticeTypeFilter, pdfCareerFilter, pdfConditionFilter, activeTab]);
 
     const handleCreate = () => {
         setEditingTutor(null);
@@ -316,14 +345,79 @@ export default function TutorsPage() {
                     <PDFPreviewModal
                         isOpen={isPDFModalOpen}
                         onClose={() => setIsPDFModalOpen(false)}
-                        title="Reporte de Tutores"
-                        data={(Array.isArray(tutors) ? tutors : []).filter(t => activeTab === "Activas" ? t.status : !t.status)}
-                        template={<TutorPDF data={[]} />}
-                        fileName={`reporte-tutores-${new Date().toISOString().split('T')[0]}.pdf`}
+                        title={`Reporte de Tutores ${activeTab === "Activas" ? "Activas" : "Inactivas"}`}
+                        data={pdfFilteredData}
+                        template={(data) => <TutorPDF data={data} />}
+                        fileName={`reporte-tutores-${activeTab.toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`}
+                        searchTerm={pdfSearchTerm}
+                        onSearchChange={setPdfSearchTerm}
+                        renderFilters={() => (
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
+                                        Carrera
+                                    </label>
+                                    <select
+                                        value={pdfCareerFilter}
+                                        onChange={(e) => setPdfCareerFilter(e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
+                                    >
+                                        <option value="">Todas las Carreras</option>
+                                        {careerOptions.map((opt) => (
+                                            <option key={opt.value} value={opt.value}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
+                                        Tipo de Práctica
+                                    </label>
+                                    <select
+                                        value={pdfPracticeTypeFilter}
+                                        onChange={(e) => setPdfPracticeTypeFilter(e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
+                                    >
+                                        <option value="">Todos los Tipos</option>
+                                        {(dynamicLists["Tipo de Practica"] || []).map((opt) => (
+                                            <option key={opt.value} value={opt.value}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
+                                        Condición
+                                    </label>
+                                    <select
+                                        value={pdfConditionFilter}
+                                        onChange={(e) => setPdfConditionFilter(e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
+                                    >
+                                        <option value="">Todas las Condiciones</option>
+                                        {(dynamicLists["Condición"] || []).map((opt) => (
+                                            <option key={opt.value} value={opt.value}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        )}
                         columns={[
                             { header: "Cédula", accessor: (t) => `${t.identificationPrefix}-${t.identificationNumber}` },
-                            { header: "Nombre", accessor: (t) => `${t.firstName} ${t.lastName}` },
-                            { header: "Categoría", accessor: "category" },
+                            { header: "Tutor", accessor: (t) => `${t.firstName} ${t.lastName}` },
+                            { 
+                                header: "Carrera(s)", 
+                                accessor: (t) => t.carreras
+                                    .map(id => careers.find(c => String(c.careerId) === String(id))?.careerName || id)
+                                    .join(", ") 
+                            },
+                            { header: "Tipo Práctica", accessor: (t) => (t.practiceTypes || []).join(", ") },
                             { header: "Condición", accessor: "condition" },
                             { header: "Estado", accessor: (t) => t.status ? "ACTIVO" : "INACTIVO" },
                         ]}

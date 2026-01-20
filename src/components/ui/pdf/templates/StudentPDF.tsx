@@ -2,10 +2,10 @@ import React from "react";
 import { Text, View } from "@react-pdf/renderer";
 import PDFLayout from "../PDFLayout";
 import { pdfStyles } from "../PDFStyles";
-import { Student } from "../../../../features/students/types";
+import { Student, StudentRowData } from "../../../../features/students/types";
 
 interface StudentPDFProps {
-  data: Student[];
+  data: Student[] | StudentRowData[];
 }
 
 export const StudentPDF: React.FC<StudentPDFProps> = ({ data }) => {

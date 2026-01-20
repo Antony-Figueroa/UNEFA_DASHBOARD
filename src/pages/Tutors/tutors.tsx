@@ -15,10 +15,13 @@ import Button from "../../components/ui/button/Button";
 import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
+import { DownloadIcon } from "../../icons";
 
 import TutorTable from "../../features/tutors/components/TutorTable";
 import TutorModal from "../../features/tutors/components/TutorModal";
 import TutorViewModal from "../../features/tutors/components/TutorViewModal";
+import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
+import { TutorPDF } from "../../components/ui/pdf/templates/TutorPDF";
 import { useTutors } from "../../features/tutors/hooks/useTutors";
 import { Tutor, TutorRowData } from "../../features/tutors/types";
 import { formatDateTime } from "../../utils/date";
@@ -110,6 +113,7 @@ export default function TutorsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTutor, setEditingTutor] = useState<Tutor | null>(null);
     const [viewTutor, setViewTutor] = useState<TutorRowData | null>(null);
+    const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
 
     type ConfirmationInfo = {
         isOpen: boolean;
@@ -238,9 +242,18 @@ export default function TutorsPage() {
                     </div>
 
                     {!pageLoading && (
-                        <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
-                            Nuevo Tutor
-                        </Button>
+                        <div className="flex items-center gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsPDFModalOpen(true)}
+                                startIcon={<DownloadIcon className="h-5 w-5" />}
+                            >
+                                Reporte
+                            </Button>
+                            <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
+                                Nuevo Tutor
+                            </Button>
+                        </div>
                     )}
                 </div>
 
@@ -298,6 +311,22 @@ export default function TutorsPage() {
                         onClose={() => setViewTutor(null)}
                         onEdit={handleEdit}
                         tutor={viewTutor}
+                    />
+
+                    <PDFPreviewModal
+                        isOpen={isPDFModalOpen}
+                        onClose={() => setIsPDFModalOpen(false)}
+                        title="Reporte de Tutores"
+                        data={(Array.isArray(tutors) ? tutors : []).filter(t => activeTab === "Activas" ? t.status : !t.status)}
+                        template={<TutorPDF data={[]} />}
+                        fileName={`reporte-tutores-${new Date().toISOString().split('T')[0]}.pdf`}
+                        columns={[
+                            { header: "Cédula", accessor: (t) => `${t.identificationPrefix}-${t.identificationNumber}` },
+                            { header: "Nombre", accessor: (t) => `${t.firstName} ${t.lastName}` },
+                            { header: "Categoría", accessor: "category" },
+                            { header: "Condición", accessor: "condition" },
+                            { header: "Estado", accessor: (t) => t.status ? "ACTIVO" : "INACTIVO" },
+                        ]}
                     />
 
                     {/* Modal de Confirmación Global */}

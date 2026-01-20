@@ -18,10 +18,13 @@ import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { Tabs } from "../../components/ui/tabs/Tabs";
 import { PlusCircleIcon } from "../../icons/actions";
+import { DownloadIcon } from "../../icons";
 
 import CareerTable from "../../features/careers/components/CareerTable";
 import CareerModal from "../../features/careers/components/CareerModal";
 import CareerViewModal from "../../features/careers/components/CareerViewModal";
+import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
+import { CarreraPDF } from "../../components/ui/pdf/templates/CarreraPDF";
 import InternshipTypeTable from "../../features/internship-types/components/InternshipTypeTable";
 import InternshipTypeModal from "../../features/internship-types/components/InternshipTypeModal";
 import InternshipTypeViewModal from "../../features/internship-types/components/InternshipTypeViewModal";
@@ -109,6 +112,7 @@ export default function CareersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCareer, setEditingCareer] = useState<Career | null>(null);
   const [viewCareer, setViewCareer] = useState<CareerRowData | null>(null);
+  const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
 
   // Estados para Tipos de Prácticas
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
@@ -449,9 +453,20 @@ export default function CareersPage() {
             </SkeletonLoader>
           </div>
           {!pageLoading && (
-            <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
-              {mainTab === "Carreras" ? "Nueva Carrera" : "Nuevo Tipo"}
-            </Button>
+            <div className="flex items-center gap-3">
+              {mainTab === "Carreras" && (
+                <Button
+                  variant="outline"
+                  onClick={() => setIsPDFModalOpen(true)}
+                  startIcon={<DownloadIcon className="h-5 w-5" />}
+                >
+                  Reporte
+                </Button>
+              )}
+              <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
+                {mainTab === "Carreras" ? "Nueva Carrera" : "Nuevo Tipo"}
+              </Button>
+            </div>
           )}
         </div>
 
@@ -547,6 +562,24 @@ export default function CareersPage() {
         onEdit={handleEdit}
         career={viewCareer}
         internshipOptions={internshipOptions}
+      />
+
+      <PDFPreviewModal
+        isOpen={isPDFModalOpen}
+        onClose={() => setIsPDFModalOpen(false)}
+        title="Reporte de Carreras"
+        data={(Array.isArray(careers) ? careers : []).filter(c => activeTab === "Activas" ? c.status : !c.status)}
+        template={<CarreraPDF data={[]} />}
+        fileName={`reporte-carreras-${new Date().toISOString().split('T')[0]}.pdf`}
+        columns={[
+          { header: "Código", accessor: "careerCode" },
+          { header: "Nombre", accessor: "careerName" },
+          { header: "Siglas", accessor: "careerAbbreviation" },
+          { 
+            header: "Estado", 
+            accessor: (c) => c.status ? "ACTIVO" : "INACTIVO" 
+          },
+        ]}
       />
 
       {/* Modales de Tipos de Prácticas */}

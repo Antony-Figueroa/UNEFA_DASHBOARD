@@ -57,6 +57,12 @@ export default function EnrollmentPage() {
                 label: p.description.toUpperCase()
             }));
             setPeriodOptions(mappedPeriods);
+
+            // Establecer el periodo actual como filtro predeterminado para el PDF
+            const current = periodos.find(p => p.periodStatus === 2);
+            if (current) {
+                setPdfPeriodFilter(current.description.toUpperCase());
+            }
         }
     }, [periodos]);
 
@@ -109,6 +115,7 @@ export default function EnrollmentPage() {
     const [pdfSearchTerm, setPdfSearchTerm] = useState("");
     const [pdfPeriodFilter, setPdfPeriodFilter] = useState("");
     const [pdfPracticeTypeFilter, setPdfPracticeTypeFilter] = useState("");
+    const [pdfSelectedIds, setPdfSelectedIds] = useState<Set<string>>(new Set());
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingEntry, setEditingEntry] = useState<Enrollment | null>(null);
     const [viewItem, setViewItem] = useState<EnrollmentRowData | null>(null);
@@ -149,6 +156,18 @@ export default function EnrollmentPage() {
                 return matchesSearch && matchesPeriod && matchesPracticeType && matchesStatus;
             });
     }, [enrollments, pdfSearchTerm, pdfPeriodFilter, pdfPracticeTypeFilter]);
+
+    // Inicializar selección cuando cambian los datos filtrados
+    useEffect(() => {
+        if (isPDFModalOpen) {
+            setPdfSelectedIds(new Set(pdfFilteredData.map(e => e.enrollmentId)));
+        }
+    }, [pdfFilteredData, isPDFModalOpen]);
+
+    // Datos finales para el PDF (solo los seleccionados)
+    const pdfFinalData = useMemo(() => {
+        return pdfFilteredData.filter(e => pdfSelectedIds.has(e.enrollmentId));
+    }, [pdfFilteredData, pdfSelectedIds]);
 
     const handleCreate = () => {
         setEditingEntry(null);
@@ -304,8 +323,8 @@ export default function EnrollmentPage() {
                         isOpen={isPDFModalOpen}
                         onClose={() => setIsPDFModalOpen(false)}
                         title="Reporte de Inscripciones Activas"
-                        data={pdfFilteredData}
-                        template={(data) => <EnrollmentPDF data={data} />}
+                        data={pdfFinalData}
+                        template={(data) => <EnrollmentPDF data={data} selectedPeriod={pdfPeriodFilter} />}
                         fileName={`reporte-inscripciones-activas-${new Date().toISOString().split('T')[0]}.pdf`}
                         searchTerm={pdfSearchTerm}
                         onSearchChange={setPdfSearchTerm}
@@ -345,6 +364,51 @@ export default function EnrollmentPage() {
                                             </option>
                                         ))}
                                     </select>
+                                </div>
+
+                                <div className="pt-4 border-t border-border-light dark:border-white/5">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
+                                            Seleccionar Registros ({pdfSelectedIds.size})
+                                        </label>
+                                        <button 
+                                            onClick={() => {
+                                                if (pdfSelectedIds.size === pdfFilteredData.length) {
+                                                    setPdfSelectedIds(new Set());
+                                                } else {
+                                                    setPdfSelectedIds(new Set(pdfFilteredData.map(e => e.enrollmentId)));
+                                                }
+                                            }}
+                                            className="text-[10px] font-bold text-brand-500 hover:text-brand-600 uppercase tracking-tight"
+                                        >
+                                            {pdfSelectedIds.size === pdfFilteredData.length ? "Desmarcar Todos" : "Marcar Todos"}
+                                        </button>
+                                    </div>
+                                    <div className="max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                                        {pdfFilteredData.map((e) => (
+                                            <label key={e.enrollmentId} className="flex items-center gap-3 p-2 rounded-lg hover:bg-bg-secondary dark:hover:bg-white/5 cursor-pointer transition-colors group">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={pdfSelectedIds.has(e.enrollmentId)}
+                                                    onChange={() => {
+                                                        const next = new Set(pdfSelectedIds);
+                                                        if (next.has(e.enrollmentId)) next.delete(e.enrollmentId);
+                                                        else next.add(e.enrollmentId);
+                                                        setPdfSelectedIds(next);
+                                                    }}
+                                                    className="w-4 h-4 rounded border-border-light dark:border-white/10 text-brand-500 focus:ring-brand-500/20 transition-all"
+                                                />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-bold text-text-primary dark:text-white truncate group-hover:text-brand-500 transition-colors">
+                                                        {e.studentName}
+                                                    </p>
+                                                    <p className="text-[10px] text-text-tertiary truncate">
+                                                        {e.identificationNumber} • {e.careerName}
+                                                    </p>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         )}

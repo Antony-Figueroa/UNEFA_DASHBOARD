@@ -45,6 +45,7 @@ interface TutorAssociation {
   t_tutors?: {
     NAME: string;
     SURNAME: string;
+    CONTACT_PHONE?: string;
   };
 }
 
@@ -71,8 +72,16 @@ interface ProfessionalPractice {
   t_students?: Student;
   t_internships_period?: { DESCRIPTION: string };
   t_internship_type?: { NAME: string };
-  t_institution?: { INSTITUTION_NAME: string };
-  t_institution_manager?: { NAME: string; SURNAME: string };
+  t_institution?: { 
+    INSTITUTION_NAME: string;
+    INSTITUTION_ADDRESS: string;
+    INSTITUTION_CONTACT: string;
+    REGION: string;
+    NUCLEUS: string;
+    EXTENSION: string;
+    INSTITUTION_TYPE: string;
+  };
+  t_institution_manager?: { NAME: string; SURNAME: string; CONTACT_PHONE: string };
   t_professional_practices_tutor?: TutorAssociation[];
 }
 
@@ -99,12 +108,20 @@ export const getEnrollments = async (req: Request, res: Response) => {
           ),
           t_internships_period (DESCRIPTION),
           t_internship_type (NAME),
-          t_institution (INSTITUTION_NAME),
-          t_institution_manager (NAME, SURNAME),
+          t_institution (
+            INSTITUTION_NAME,
+            INSTITUTION_ADDRESS,
+            INSTITUTION_CONTACT,
+            REGION,
+            NUCLEUS,
+            EXTENSION,
+            INSTITUTION_TYPE
+          ),
+          t_institution_manager (NAME, SURNAME, CONTACT_PHONE),
           t_professional_practices_tutor (
             TUTOR_ID,
             TUTOR_TYPE,
-            t_tutors (NAME, SURNAME)
+            t_tutors (NAME, SURNAME, CONTACT_PHONE)
           )
         `)
         .eq('STATUS', 1)
@@ -115,12 +132,34 @@ export const getEnrollments = async (req: Request, res: Response) => {
       return (data as unknown) as ProfessionalPractice[];
     }, 'getEnrollments');
 
+    // Obtener todas las listas para mapear nombres a abreviaturas
+    const { data: listValues } = await dbManager.withRetry(async (supabase) => {
+      return await supabase
+        .from('t_value_list')
+        .select('NAME, ABBREVIATION')
+        .eq('STATUS', 1);
+    }, 'getListValuesForMapping');
+
+    const abbreviationMap: Record<string, string> = {};
+    if (listValues) {
+      listValues.forEach((v: { NAME: string; ABBREVIATION: string }) => {
+        if (v.NAME) abbreviationMap[v.NAME.toUpperCase()] = v.ABBREVIATION;
+        if (v.ABBREVIATION) abbreviationMap[v.ABBREVIATION.toUpperCase()] = v.ABBREVIATION;
+      });
+    }
+
     // Mapear datos al formato que espera el frontend
     const mappedData = (data || []).map((item: ProfessionalPractice) => {
       const ciParts = item.t_students?.STUDENTS_CI?.split('-') || ['', ''];
       
       const academicTutor = item.t_professional_practices_tutor?.find((t: TutorAssociation) => t.TUTOR_TYPE === 'ACADEMICO');
       const methodologicalTutor = item.t_professional_practices_tutor?.find((t: TutorAssociation) => t.TUTOR_TYPE === 'METODOLOGICO');
+
+      const getAbbreviation = (val: string | undefined) => {
+        if (!val) return '';
+        const upperVal = val.toUpperCase();
+        return abbreviationMap[upperVal] || val;
+      };
 
       return {
         enrollmentId: item.PROFESSIONAL_PRACTICE_ID?.toString() || '',
@@ -130,15 +169,25 @@ export const getEnrollments = async (req: Request, res: Response) => {
         careerName: item.t_students?.t_career?.CAREER_NAME || '',
         academicTutorId: academicTutor?.TUTOR_ID?.toString() || '',
         academicTutorName: academicTutor ? `${academicTutor.t_tutors?.NAME || ''} ${academicTutor.t_tutors?.SURNAME || ''}`.trim() : '',
+        academicTutorPhone: academicTutor?.t_tutors?.CONTACT_PHONE || '',
         methodologicalTutorId: methodologicalTutor?.TUTOR_ID?.toString() || '',
         methodologicalTutorName: methodologicalTutor ? `${methodologicalTutor.t_tutors?.NAME || ''} ${methodologicalTutor.t_tutors?.SURNAME || ''}`.trim() : '',
+        methodologicalTutorPhone: methodologicalTutor?.t_tutors?.CONTACT_PHONE || '',
         institutionId: item.INSTITUTION_ID?.toString() || '',
         institutionName: item.t_institution?.INSTITUTION_NAME || '',
+        institutionAddress: item.t_institution?.INSTITUTION_ADDRESS || '',
+        institutionPhone: item.t_institution?.INSTITUTION_CONTACT || '',
+        region: getAbbreviation(item.t_institution?.REGION),
+        nucleus: getAbbreviation(item.t_institution?.NUCLEUS),
+        extension: getAbbreviation(item.t_institution?.EXTENSION),
+        institutionType: getAbbreviation(item.t_institution?.INSTITUTION_TYPE),
         institutionResponsibleId: item.MANAGER_ID?.toString() || '',
         institutionResponsibleName: item.t_institution_manager ? `${item.t_institution_manager.NAME || ''} ${item.t_institution_manager.SURNAME || ''}`.trim() : '',
+        institutionResponsiblePhone: item.t_institution_manager?.CONTACT_PHONE || '',
         practiceType: item.t_internship_type?.NAME || '',
         period: item.t_internships_period?.DESCRIPTION || '',
         enrollmentCode: item.ENROLLMENT || '',
+        observation: item.OBSERVATION || '',
         enrollmentDate: item.REGISTRATION_DATE || '',
         status: item.STATUS === 1
       };

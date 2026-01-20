@@ -123,7 +123,36 @@ export const getInstitutions = async (_req: Request, res: Response) => {
       return mappedInstitutions as DBInstitution[];
     }, 'getInstitutions');
 
-    const result = data.map(mapDBToFrontend);
+    // Obtener todas las listas para mapear nombres a abreviaturas
+    const { data: listValues } = await dbManager.withRetry(async (supabase) => {
+      return await supabase
+        .from('t_value_list')
+        .select('NAME, ABBREVIATION')
+        .eq('STATUS', 1);
+    }, 'getListValuesForMapping');
+
+    const abbreviationMap: Record<string, string> = {};
+    if (listValues) {
+      listValues.forEach((v: { NAME: string; ABBREVIATION: string }) => {
+        if (v.NAME) abbreviationMap[v.NAME.toUpperCase()] = v.ABBREVIATION;
+        if (v.ABBREVIATION) abbreviationMap[v.ABBREVIATION.toUpperCase()] = v.ABBREVIATION;
+      });
+    }
+
+    const getAbbreviation = (val: string | undefined) => {
+      if (!val) return '';
+      const upperVal = val.toUpperCase();
+      return abbreviationMap[upperVal] || val;
+    };
+
+    const result = data.map(i => ({
+      ...mapDBToFrontend(i),
+      region: getAbbreviation(i.REGION),
+      nucleus: getAbbreviation(i.NUCLEUS),
+      extension: getAbbreviation(i.EXTENSION),
+      institutionType: getAbbreviation(i.INSTITUTION_TYPE)
+    }));
+    
     cacheManager.set(cacheKey, result, CACHE_TTL);
 
     res.json(data);

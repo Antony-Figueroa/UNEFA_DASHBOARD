@@ -25,7 +25,7 @@ export const pdfStyles = StyleSheet.create({
     paddingBottom: 60,
     paddingHorizontal: 40,
     fontFamily: "Nunito",
-    fontSize: 10,
+    fontSize: 11,
     color: "#1C2434", // text-primary
   },
   // Encabezado Institucional (Membrete)
@@ -39,8 +39,8 @@ export const pdfStyles = StyleSheet.create({
     paddingBottom: 10,
   },
   headerImages: {
-    width: 50,
-    height: 50,
+    width: 45,
+    height: 45,
     objectFit: "contain",
   },
   institutionalTextContainer: {
@@ -49,7 +49,7 @@ export const pdfStyles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   institutionalText: {
-    fontSize: 7,
+    fontSize: 8,
     fontFamily: "Nunito",
     fontWeight: "bold",
     color: "#000000",
@@ -138,8 +138,8 @@ export const pdfStyles = StyleSheet.create({
   },
   tableCell: {
     flex: 1,
-    padding: 5,
-    fontSize: 9,
+    padding: 6,
+    fontSize: 10,
     fontFamily: "Nunito",
   },
   footer: {
@@ -154,7 +154,7 @@ export const pdfStyles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     color: "#64748B",
-    fontSize: 8,
+    fontSize: 9,
     fontFamily: "Nunito",
   },
   footerLeft: {

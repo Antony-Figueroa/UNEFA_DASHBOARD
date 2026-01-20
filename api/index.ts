@@ -62,6 +62,7 @@ app.use(helmet({
       defaultSrc: ["'self'"],
       connectSrc: [
         "'self'", 
+        "data:",
         "https://*.vercel.app", 
         "https://*.onrender.com",
         supabaseUrl,
@@ -77,6 +78,8 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "blob:", "https://*"],
       fontSrc: ["'self'", "data:", "https://fonts.gstatic.com", "https://*"],
+      frameSrc: ["'self'", "blob:", "data:"],
+      objectSrc: ["'self'", "blob:", "data:"],
     },
   },
   crossOriginResourcePolicy: { policy: "cross-origin" }

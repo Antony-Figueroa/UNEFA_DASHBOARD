@@ -29,6 +29,7 @@ export interface Enrollment {
   // Datos de la Inscripción
   practiceType: string;
   period: string;
+  enrollmentCode?: string;
   
   // Metadatos
   enrollmentDate: Date;

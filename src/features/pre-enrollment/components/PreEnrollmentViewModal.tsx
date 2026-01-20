@@ -1,8 +1,3 @@
-/**
- * @file PreEnrollmentViewModal.tsx
- * @description Componente de modal para visualizar los detalles completos de una pre-inscripción.
- */
-
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
 import { PreEnrollmentRowData } from "../types";

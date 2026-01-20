@@ -13,9 +13,13 @@ import { getPeriods } from "../../periods/services/periodService";
 import { Periodo } from "../../periods/types";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { getInternshipTypesByCareer, getInternshipTypes } from "../../internship-types/services/internshipTypesService";
+import { getCareers } from "../../careers/services/careersService";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { useLists } from "../../lists/hooks/useLists";
+import * as enrollmentService from "../../enrollment/services/enrollmentService";
+import { getPreEnrollments } from "../services/preEnrollmentService";
+import { generateMatricula } from "../../../utils/matricula";
 
 interface PreEnrollmentModalProps {
   isOpen: boolean;
@@ -213,10 +217,41 @@ export default function PreEnrollmentModal({
     
     setIsSearching(true);
     try {
-      const response = await getStudents();
-      const student = response.data.find(
+      const [studentsResponse, careers, enrollments, preEnrollments] = await Promise.all([
+        getStudents(),
+        getCareers(),
+        enrollmentService.getEnrollments(),
+        getPreEnrollments(),
+      ]);
+      const student = studentsResponse.data.find(
         (s: Student) => s.identificationPrefix === prefix && s.identificationNumber === number
       );
+
+      const alreadyEnrolled = enrollments.find(
+        (e) => e.identificationPrefix === prefix && e.identificationNumber === number && e.status
+      );
+
+      if (alreadyEnrolled) {
+        clearStudentFields();
+        setError("identificationNumber", {
+          type: "manual",
+          message: "El estudiante ya posee una inscripción activa. No puede pre-inscribirse.",
+        });
+        return;
+      }
+
+      const hasActivePreEnrollment = preEnrollments.some(
+        (p) => p.identificationPrefix === prefix && p.identificationNumber === number && p.status
+      );
+
+      if (hasActivePreEnrollment) {
+        clearStudentFields();
+        setError("identificationNumber", {
+          type: "manual",
+          message: "El estudiante ya posee una pre-inscripción activa.",
+        });
+        return;
+      }
 
       if (student) {
         setValue("studentName", `${student.firstName} ${student.lastName}`);
@@ -233,8 +268,13 @@ export default function PreEnrollmentModal({
           }
         }
 
-        const abbr = student.careerName?.substring(0, 3).toUpperCase() || "GEN";
-        const enrollmentCode = `${student.identificationPrefix}-${student.identificationNumber}-${abbr}-${student.semester}`.toUpperCase();
+        const careerAbbr = careers.find(c => String(c.careerId) === String(student.careerId))?.careerAbbreviation || "GEN";
+        const enrollmentCode = generateMatricula({
+          careerAbbreviation: careerAbbr,
+          regime: student.regime,
+          semester: student.semester,
+          section: student.section,
+        });
         setValue("enrollmentCode", enrollmentCode);
       } else {
         clearStudentFields();
@@ -394,6 +434,18 @@ export default function PreEnrollmentModal({
                           type="button"
                           className="w-full px-4 py-2 text-left hover:bg-bg-secondary dark:hover:bg-white/5 text-sm text-text-primary dark:text-white/90 border-b border-border-light dark:border-white/5 last:border-0"
                           onClick={async () => {
+                        const enrollments = await enrollmentService.getEnrollments();
+                        const alreadyEnrolled = enrollments.find(
+                          (e) => e.identificationPrefix === student.identificationPrefix && e.identificationNumber === student.identificationNumber && e.status
+                        );
+                        if (alreadyEnrolled) {
+                          setError("identificationNumber", {
+                            type: "manual",
+                            message: "El estudiante ya posee una inscripción activa. No puede pre-inscribirse.",
+                          });
+                          setShowSuggestions(false);
+                          return;
+                        }
                             setValue("identificationNumber", student.identificationNumber);
                             setValue("identificationPrefix", student.identificationPrefix);
                             setValue("studentName", `${student.firstName} ${student.lastName}`);
@@ -407,9 +459,14 @@ export default function PreEnrollmentModal({
                               }
                             }
                             
-                            // Matrícula automática
-                            const abbr = student.careerName?.substring(0, 3).toUpperCase() || "GEN";
-                            const enrollmentCode = `${student.identificationPrefix}-${student.identificationNumber}-${abbr}-${student.semester}`.toUpperCase();
+                            const careers = await getCareers();
+                            const careerAbbr = careers.find(c => String(c.careerId) === String(student.careerId))?.careerAbbreviation || "GEN";
+                            const enrollmentCode = generateMatricula({
+                              careerAbbreviation: careerAbbr,
+                              regime: student.regime,
+                              semester: student.semester,
+                              section: student.section,
+                            });
                             setValue("enrollmentCode", enrollmentCode);
                             
                             setShowSuggestions(false);

@@ -127,10 +127,18 @@ app.use('/api/users', usersRoutes);
 // Public Health endpoints (Must be before authentication)
 app.get('/api/db-status', async (_req, res) => {
   const health = await dbManager.checkHealth();
-  res.status(health.status === 'healthy' ? 200 : 503).json({ 
+  
+  // Si hay error, lo registramos silenciosamente en la consola del servidor
+  if (health.status !== 'healthy') {
+    console.warn(`[Database] Health check failed: ${health.details?.error || 'Unknown error'}`);
+  }
+
+  // Siempre retornamos 200 para evitar que interceptores globales de error en el frontend 
+  // disparen alertas o mensajes técnicos al usuario en páginas públicas.
+  res.status(200).json({ 
     status: health.status === 'healthy' ? 'connected' : 'disconnected',
-    message: health.status === 'healthy' ? 'Conexión exitosa' : 'no hay conexion a la bd',
-    error: health.details?.error,
+    message: health.status === 'healthy' ? 'Conexión exitosa' : 'Servicio en modo informativo',
+    error: health.status === 'healthy' ? null : 'DB_CONNECTION_ERROR',
     timestamp: new Date().toISOString()
   });
 });
@@ -222,3 +230,4 @@ app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: 
 
 export { app, port };
 export default app;
+

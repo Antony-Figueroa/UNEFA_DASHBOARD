@@ -73,6 +73,18 @@ export default function InstitutionViewModal({
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipo de Institución</label>
                                 <p className="text-sm font-bold text-text-primary dark:text-white/90">{institution.institutionType}</p>
                             </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Región</label>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{institution.region || '-'}</p>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Núcleo</label>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{institution.nucleus || '-'}</p>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Extensión</label>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{institution.extension || '-'}</p>
+                            </div>
                         </div>
                     </div>
 

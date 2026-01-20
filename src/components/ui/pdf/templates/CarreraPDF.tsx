@@ -2,11 +2,11 @@ import React from "react";
 import { View, Text } from "@react-pdf/renderer";
 import PDFLayout from "../PDFLayout";
 import { pdfStyles } from "../PDFStyles";
-import { Career } from "../../../../features/careers/types";
+import { Career, CareerRowData } from "../../../../features/careers/types";
 import { PDFService } from "../../../../services/pdf/PDFService";
 
 interface CarreraPDFProps {
-  data: Career[];
+  data: Career[] | CareerRowData[];
 }
 
 export const CarreraPDF: React.FC<CarreraPDFProps> = ({ data }) => {

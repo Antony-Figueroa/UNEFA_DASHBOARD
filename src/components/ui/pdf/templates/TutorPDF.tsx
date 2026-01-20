@@ -2,11 +2,11 @@ import React from "react";
 import { View, Text } from "@react-pdf/renderer";
 import PDFLayout from "../PDFLayout";
 import { pdfStyles } from "../PDFStyles";
-import { Tutor } from "../../../../features/tutors/types";
+import { Tutor, TutorRowData } from "../../../../features/tutors/types";
 import { PDFService } from "../../../../services/pdf/PDFService";
 
 interface TutorPDFProps {
-  data: Tutor[];
+  data: Tutor[] | TutorRowData[];
 }
 
 export const TutorPDF: React.FC<TutorPDFProps> = ({ data }) => {

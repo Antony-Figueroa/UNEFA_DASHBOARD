@@ -2,11 +2,11 @@ import React from "react";
 import { View, Text } from "@react-pdf/renderer";
 import PDFLayout from "../PDFLayout";
 import { pdfStyles } from "../PDFStyles";
-import { Periodo } from "../../../../features/periods/types";
+import { Periodo, PeriodoRowData } from "../../../../features/periods/types";
 import { PDFService } from "../../../../services/pdf/PDFService";
 
 interface PeriodoPDFProps {
-  data: Periodo[];
+  data: Periodo[] | PeriodoRowData[];
 }
 
 const PeriodoPDF: React.FC<PeriodoPDFProps> = ({ data }) => {

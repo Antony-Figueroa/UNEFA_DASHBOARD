@@ -106,6 +106,9 @@ export default function EnrollmentPage() {
 
     const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
     const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
+    const [pdfSearchTerm, setPdfSearchTerm] = useState("");
+    const [pdfPeriodFilter, setPdfPeriodFilter] = useState("");
+    const [pdfPracticeTypeFilter, setPdfPracticeTypeFilter] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingEntry, setEditingEntry] = useState<Enrollment | null>(null);
     const [viewItem, setViewItem] = useState<EnrollmentRowData | null>(null);
@@ -124,6 +127,28 @@ export default function EnrollmentPage() {
     const filtered = useMemo(() => {
         return enrollments.map(formatEnrollmentToRow);
     }, [enrollments]);
+
+    /**
+     * Datos filtrados específicamente para el reporte PDF de Inscripciones.
+     */
+    const pdfFilteredData = useMemo(() => {
+        const search = pdfSearchTerm.trim().toLowerCase();
+        const periodSearch = pdfPeriodFilter.trim().toLowerCase();
+        const practiceTypeSearch = pdfPracticeTypeFilter.trim().toLowerCase();
+
+        return (Array.isArray(enrollments) ? enrollments : [])
+            .filter((e) => {
+                const matchesSearch = !search || 
+                    e.identificationNumber.toLowerCase().includes(search) || 
+                    e.studentName.toLowerCase().includes(search) ||
+                    (e.careerName && e.careerName.toLowerCase().includes(search));
+                const matchesPeriod = !periodSearch || e.period.toLowerCase() === periodSearch;
+                const matchesPracticeType = !practiceTypeSearch || e.practiceType.toLowerCase() === practiceTypeSearch;
+                const matchesTab = activeTab === "Activas" ? e.status === true : e.status === false;
+
+                return matchesSearch && matchesPeriod && matchesPracticeType && matchesTab;
+            });
+    }, [enrollments, pdfSearchTerm, pdfPeriodFilter, pdfPracticeTypeFilter, activeTab]);
 
     const handleCreate = () => {
         setEditingEntry(null);
@@ -278,15 +303,57 @@ export default function EnrollmentPage() {
                     <PDFPreviewModal
                         isOpen={isPDFModalOpen}
                         onClose={() => setIsPDFModalOpen(false)}
-                        title="Reporte de Inscripciones"
-                        data={(Array.isArray(enrollments) ? enrollments : []).filter(e => activeTab === "Activas" ? e.status : !e.status)}
-                        template={<EnrollmentPDF data={[]} />}
-                        fileName={`reporte-inscripciones-${new Date().toISOString().split('T')[0]}.pdf`}
+                        title={`Reporte de Inscripciones ${activeTab === "Activas" ? "Activas" : "Inactivas"}`}
+                        data={pdfFilteredData}
+                        template={(data) => <EnrollmentPDF data={data} />}
+                        fileName={`reporte-inscripciones-${activeTab.toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`}
+                        searchTerm={pdfSearchTerm}
+                        onSearchChange={setPdfSearchTerm}
+                        renderFilters={() => (
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
+                                        Filtrar por Período
+                                    </label>
+                                    <select
+                                        value={pdfPeriodFilter}
+                                        onChange={(e) => setPdfPeriodFilter(e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
+                                    >
+                                        <option value="">Todos los períodos</option>
+                                        {periodOptions.map((opt) => (
+                                            <option key={opt.value} value={opt.value}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
+                                        Tipo de Práctica
+                                    </label>
+                                    <select
+                                        value={pdfPracticeTypeFilter}
+                                        onChange={(e) => setPdfPracticeTypeFilter(e.target.value)}
+                                        className="w-full px-4 py-2.5 bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
+                                    >
+                                        <option value="">Todos los tipos</option>
+                                        {practiceTypeOptions.map((opt) => (
+                                            <option key={opt.value} value={opt.value}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        )}
                         columns={[
                             { header: "Cédula", accessor: "identificationNumber" },
                             { header: "Estudiante", accessor: "studentName" },
                             { header: "Carrera", accessor: "careerName" },
-                            { header: "Institución", accessor: "institutionName" },
+                            { header: "Período", accessor: "period" },
+                            { header: "Tipo Práctica", accessor: "practiceType" },
                             { header: "Estado", accessor: (e) => e.status ? "ACTIVO" : "INACTIVO" },
                         ]}
                     />

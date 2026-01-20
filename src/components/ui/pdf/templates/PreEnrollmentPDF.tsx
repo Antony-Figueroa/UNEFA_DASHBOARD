@@ -2,11 +2,11 @@ import React from "react";
 import { View, Text } from "@react-pdf/renderer";
 import PDFLayout from "../PDFLayout";
 import { pdfStyles } from "../PDFStyles";
-import { PreEnrollment } from "../../../../features/pre-enrollment/types";
+import { PreEnrollment, PreEnrollmentRowData } from "../../../../features/pre-enrollment/types";
 import { PDFService } from "../../../../services/pdf/PDFService";
 
 interface PreEnrollmentPDFProps {
-  data: PreEnrollment[];
+  data: PreEnrollment[] | PreEnrollmentRowData[];
 }
 
 export const PreEnrollmentPDF: React.FC<PreEnrollmentPDFProps> = ({ data }) => {

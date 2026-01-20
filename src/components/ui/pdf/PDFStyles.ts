@@ -5,11 +5,11 @@ Font.register({
   family: "Nunito",
   fonts: [
     {
-      src: "https://cdn.jsdelivr.net/npm/@fontsource/nunito/files/nunito-latin-400-normal.ttf",
+      src: "https://fonts.gstatic.com/s/nunito/v32/XRXI3I6Li01BKofiOc5wtlZ2di8HDLshRTM.ttf",
       fontWeight: "normal",
     },
     {
-      src: "https://cdn.jsdelivr.net/npm/@fontsource/nunito/files/nunito-latin-700-normal.ttf",
+      src: "https://fonts.gstatic.com/s/nunito/v32/XRXI3I6Li01BKofiOc5wtlZ2di8HDFwmRTM.ttf",
       fontWeight: "bold",
     },
   ],

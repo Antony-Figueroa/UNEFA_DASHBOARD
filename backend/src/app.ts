@@ -61,7 +61,7 @@ app.use(helmet({
         "http://localhost:*", 
         "ws://localhost:*", 
         "http://backend:3000",
-        "https://basemaps.cartocdn.com",
+        "https://*.basemaps.cartocdn.com",
         "https://server.arcgisonline.com",
         "https://*.tile.openstreetmap.org"
       ],
@@ -74,7 +74,7 @@ app.use(helmet({
         "data:", 
         "blob:", 
         "https://*",
-        "https://basemaps.cartocdn.com",
+        "https://*.basemaps.cartocdn.com",
         "https://server.arcgisonline.com",
         "https://*.tile.openstreetmap.org"
       ],

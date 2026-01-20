@@ -587,17 +587,17 @@ export default function CareersPage() {
       <PDFPreviewModal
         isOpen={isPDFModalOpen}
         onClose={() => setIsPDFModalOpen(false)}
-        title={`Reporte de Carreras ${activeTab === "Activas" ? "Activas" : "Inactivas"}`}
+        title="Reporte de Carreras Activas"
         data={pdfFilteredData}
         template={(data) => <CarreraPDF data={data} />}
-        fileName={`reporte-carreras-${activeTab.toLowerCase()}-${new Date().toISOString().split('T')[0]}.pdf`}
+        fileName={`reporte-carreras-activas-${new Date().toISOString().split('T')[0]}.pdf`}
         searchTerm={pdfSearchTerm}
         onSearchChange={setPdfSearchTerm}
         columns={[
           { header: "Código", accessor: "careerCode" },
           { header: "Carrera", accessor: "careerName" },
+          { header: "Acrónimo", accessor: "careerAbbreviation" },
           { header: "Tipo", accessor: "careerType" },
-          { header: "Nota Mín.", accessor: (c) => Number(c.minimumGrade).toFixed(2) },
         ]}
       />
 

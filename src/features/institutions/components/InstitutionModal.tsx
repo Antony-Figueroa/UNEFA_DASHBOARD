@@ -151,7 +151,7 @@ export default function InstitutionModal({
         Object.entries(data).forEach(([key, values]) => {
           mappedOptions[key] = values.map(v => ({
             value: v.abbreviation || v.name,
-            label: v.name
+            label: v.abbreviation || v.name
           }));
         });
         

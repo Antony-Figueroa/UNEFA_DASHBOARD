@@ -35,7 +35,7 @@ export default function AuthLayout({
               </Link>
               <h2 className="text-3xl font-bold text-white mb-4 text-center drop-shadow-md">SIGP - UNEFA</h2>
               <p className="text-center text-white font-medium text-lg drop-shadow-sm">
-                Sistema de Gestión de Prácticas Profesionales de la Universidad Nacional Experimental Politécnica de la Fuerza Armada
+                Sistema de Información para la Gestión de Prácticas Profesionales de la Universidad Nacional Experimental Politécnica de la Fuerza Armada
               </p>
             </div>
           </div>

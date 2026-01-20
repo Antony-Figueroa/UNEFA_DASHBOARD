@@ -162,7 +162,7 @@ export default function CareersPage() {
    */
   const pdfFilteredData = useMemo(() => {
     const search = pdfSearchTerm.trim().toLowerCase();
-    const byStatus = careers.filter((c) => (activeTab === "Activas" ? c.status : !c.status));
+    const byStatus = careers.filter((c) => c.status === true);
     
     return byStatus
       .filter(c => {
@@ -173,7 +173,7 @@ export default function CareersPage() {
         );
       })
       .map(formatCareerToRow);
-  }, [careers, pdfSearchTerm, activeTab]);
+  }, [careers, pdfSearchTerm]);
 
   /**
    * Prepara el estado para crear una nueva carrera o tipo de práctica y abre el modal.
@@ -598,7 +598,6 @@ export default function CareersPage() {
           { header: "Carrera", accessor: "careerName" },
           { header: "Tipo", accessor: "careerType" },
           { header: "Nota Mín.", accessor: (c) => Number(c.minimumGrade).toFixed(2) },
-          { header: "Estado", accessor: (c) => (c.status === true || c.status === 1) ? "ACTIVO" : "INACTIVO" },
         ]}
       />
 

@@ -81,11 +81,12 @@ export const bulkRestoreInternshipTypes = async (ids: number[]): Promise<void> =
 
 export const mapToOptions = (types: InternshipType[]): InternshipTypeOption[] => {
   return types.map((t) => {
+    const label = (t.ABBREVIATION || t.NAME).toUpperCase();
     return {
       id: t.INTERNSHIP_TYPE_ID,
-      value: t.NAME.toUpperCase(),
-      label: t.NAME.toUpperCase(),
-      text: t.NAME.toUpperCase(), // Para MultiSelect
+      value: label,
+      label: label,
+      text: label, // Para MultiSelect
     };
   });
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import maplibregl, { StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useTheme } from '../../../context/theme';
@@ -16,10 +16,39 @@ interface MapProps {
   mapStyle?: keyof typeof MAP_STYLES | MapStyleType;
 }
 
+export interface MapRef {
+  flyTo: (center: [number, number], zoom?: number) => void;
+  getMap: () => maplibregl.Map | null;
+}
+
 const MAP_STYLES = {
   light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
   dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
   voyager: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
+  osm: {
+    version: 8,
+    sources: {
+      'osm-tiles': {
+        type: 'raster',
+        tiles: [
+          'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+          'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+          'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+        ],
+        tileSize: 256,
+        attribution: '&copy; OpenStreetMap contributors'
+      }
+    },
+    layers: [
+      {
+        id: 'osm-tiles',
+        type: 'raster',
+        source: 'osm-tiles',
+        minzoom: 0,
+        maxzoom: 19
+      }
+    ]
+  } as StyleSpecification,
   satellite: {
     version: 8,
     sources: {
@@ -42,17 +71,31 @@ const MAP_STYLES = {
   } as StyleSpecification
 } as const;
 
-const Map: React.FC<MapProps> = ({
+const Map = forwardRef<MapRef, MapProps>(({
   center = [9.569627, -69.219552], // HQ9J+R7P, Calle 6, Araure 3303, Portuguesa, Venezuela
   zoom = 17,
   markers = [],
   className = "",
   mapStyle
-}) => {
+}, ref) => {
   const { theme } = useTheme();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const isInitializing = useRef(false);
+
+  useImperativeHandle(ref, () => ({
+    flyTo: (center: [number, number], zoomLevel?: number) => {
+      if (map.current) {
+        map.current.flyTo({
+          center,
+          zoom: zoomLevel || zoom,
+          essential: true,
+          duration: 2000
+        });
+      }
+    },
+    getMap: () => map.current
+  }));
 
   // Determine the actual style to use
   const getStyle = (): MapStyleType => {
@@ -75,10 +118,17 @@ const Map: React.FC<MapProps> = ({
       const newMap = new maplibregl.Map({
         container: mapContainer.current,
         style: currentStyle,
-        center: center,
+        center: center as [number, number],
         zoom: zoom,
         attributionControl: false,
-        trackResize: true
+        trackResize: true,
+        transformRequest: (url) => {
+          // Si el mapa se está desmontando o la URL es de CartoDB, 
+          // podemos interceptar fallos potenciales aquí si fuera necesario.
+          return {
+            url: url
+          };
+        }
       });
 
       map.current = newMap;
@@ -93,13 +143,23 @@ const Map: React.FC<MapProps> = ({
       });
 
       newMap.on('error', (e) => {
+        // Ignorar errores de cancelación de red (net::ERR_ABORTED) que son comunes y ruidosos
+        if (
+          !e.error || 
+          e.error.message?.includes('Aborted') || 
+          e.error.status === 0 || 
+          e.error.message?.includes('canceled')
+        ) {
+          return;
+        }
+
         console.warn('MapLibre error:', e.error);
         
-        // If a style fails to load, try a basic fallback
-        if (e.error?.message?.includes('style') || e.error?.status === 404) {
-          const fallback = (theme === 'dark' ? MAP_STYLES.dark : MAP_STYLES.light) as MapStyleType;
+        // If a style fails to load, try a basic fallback to OSM raster tiles
+        if (e.error?.message?.includes('style') || e.error?.status === 404 || e.error?.message?.includes('Failed to fetch')) {
+          const fallback = MAP_STYLES.osm;
           if (currentStyleRef.current !== fallback) {
-            console.log('Style load failed, falling back to stable style...');
+            console.log('Style load failed, falling back to stable OSM raster style...');
             newMap.setStyle(fallback);
             currentStyleRef.current = fallback;
           }
@@ -113,10 +173,10 @@ const Map: React.FC<MapProps> = ({
       
       // Use a safer comparison for center
       const currentCenter = m.getCenter();
-      const targetCenter = maplibregl.LngLat.convert(center);
+      const targetCenter = maplibregl.LngLat.convert(center as [number, number]);
       if (Math.abs(currentCenter.lng - targetCenter.lng) > 0.0001 || 
           Math.abs(currentCenter.lat - targetCenter.lat) > 0.0001) {
-        m.setCenter(center);
+        m.setCenter(center as [number, number]);
       }
       
       if (Math.abs(m.getZoom() - zoom) > 0.1) {
@@ -136,9 +196,9 @@ const Map: React.FC<MapProps> = ({
     const currentMarkers: maplibregl.Marker[] = [];
     
     if (map.current) {
-      markers.forEach(marker => {
+      (markers || []).forEach(marker => {
         const m = new maplibregl.Marker({ color: '#2d90c4' })
-          .setLngLat(marker.position)
+          .setLngLat(marker.position as [number, number])
           .addTo(map.current!);
 
         if (marker.popup) {
@@ -189,6 +249,6 @@ const Map: React.FC<MapProps> = ({
       className={`relative w-full h-full rounded-2xl overflow-hidden shadow-theme-lg border border-border-light dark:border-border-dark bg-gray-100 dark:bg-gray-800 ${className}`} 
     />
   );
-};
+});
 
 export default Map;

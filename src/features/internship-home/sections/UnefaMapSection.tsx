@@ -1,12 +1,13 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef } from "react";
 import { motion } from "framer-motion";
-import Map from "../../../components/ui/map/Map";
+import Map, { MapRef } from "../../../components/ui/map/Map";
 
 type MapThemeId = "light" | "dark" | "satellite" | "voyager";
 
 const UnefaMapSection: React.FC = () => {
   const [activeTheme, setActiveTheme] = useState<MapThemeId>("light");
   const unefaAraurePos = useMemo<[number, number]>(() => [-69.219552, 9.569627], []);
+  const mapRef = useRef<MapRef>(null);
   
   const markers = useMemo(() => [
     {
@@ -15,10 +16,8 @@ const UnefaMapSection: React.FC = () => {
     }
   ], [unefaAraurePos]);
 
-  const [mapKey, setMapKey] = useState(0);
-
   const handleLocate = () => {
-    setMapKey(prev => prev + 1);
+    mapRef.current?.flyTo(unefaAraurePos, 16);
   };
 
   const themes = [
@@ -157,7 +156,7 @@ const UnefaMapSection: React.FC = () => {
             transition={{ duration: 0.7 }}
           >
             <Map 
-              key={mapKey}
+              ref={mapRef}
               center={unefaAraurePos}
               zoom={14}
               markers={markers}
@@ -212,3 +211,4 @@ const UnefaMapSection: React.FC = () => {
 };
 
 export default UnefaMapSection;
+

@@ -34,8 +34,6 @@ export const pdfStyles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#21486e",
     paddingBottom: 10,
   },
   headerImages: {

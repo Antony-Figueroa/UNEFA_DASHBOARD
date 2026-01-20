@@ -61,9 +61,13 @@ app.use(helmet({
         "http://localhost:*", 
         "ws://localhost:*", 
         "http://backend:3000",
+        "https://basemaps.cartocdn.com",
         "https://*.basemaps.cartocdn.com",
         "https://server.arcgisonline.com",
-        "https://*.tile.openstreetmap.org"
+        "https://*.tile.openstreetmap.org",
+        "https://fonts.googleapis.com",
+        "https://fonts.gstatic.com",
+        "https://*"
       ],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "blob:"],
       workerSrc: ["'self'", "blob:"],
@@ -74,11 +78,12 @@ app.use(helmet({
         "data:", 
         "blob:", 
         "https://*",
+        "https://basemaps.cartocdn.com",
         "https://*.basemaps.cartocdn.com",
         "https://server.arcgisonline.com",
         "https://*.tile.openstreetmap.org"
       ],
-      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
+      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com", "https://*"],
       upgradeInsecureRequests: null,
     },
   },

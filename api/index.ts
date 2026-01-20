@@ -60,11 +60,23 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      connectSrc: ["'self'", "https://*.vercel.app", supabaseUrl],
+      connectSrc: [
+        "'self'", 
+        "https://*.vercel.app", 
+        "https://*.onrender.com",
+        supabaseUrl,
+        "https://basemaps.cartocdn.com",
+        "https://*.basemaps.cartocdn.com",
+        "https://server.arcgisonline.com",
+        "https://*.tile.openstreetmap.org",
+        "https://fonts.googleapis.com",
+        "https://fonts.gstatic.com",
+        "https://*"
+      ],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:", "blob:", "https://*"],
-      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
+      fontSrc: ["'self'", "data:", "https://fonts.gstatic.com", "https://*"],
     },
   },
   crossOriginResourcePolicy: { policy: "cross-origin" }

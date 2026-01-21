@@ -411,10 +411,10 @@ export default function TutorTable({
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-bg-secondary dark:border-border-dark">
+                <div className="flex items-center justify-between pt-2 border-t border-border-light dark:border-border-dark">
                     <div className="flex items-center gap-4">
-                        <div className="text-xs text-text-tertiary dark:text-text-tertiary">
-                            Mostrando <span className="font-bold text-text-secondary dark:text-text-emphasis">{filteredData.length}</span> resultados
+                        <div className="text-xs text-text-secondary dark:text-text-tertiary">
+                            Mostrando <span className="font-bold text-text-primary dark:text-text-emphasis">{filteredData.length}</span> resultados
                         </div>
                         {(idFilter || nameFilter || practiceTypeFilter || careerFilter || conditionFilter) && (
                             <button
@@ -520,7 +520,7 @@ export default function TutorTable({
                                             content={t.isInUse ? "Este tutor tiene carreras asignadas y no puede ser seleccionada para eliminar" : ""}
                                             isDisabled={t.isInUse}
                                         >
-                                            <div>
+                                            <div className="flex items-center justify-center">
                                                 <Checkbox 
                                                     checked={selectedIds.includes(t.tutorId)} 
                                                     onChange={(checked) => handleSelectRow(t.tutorId, checked)} 
@@ -538,15 +538,20 @@ export default function TutorTable({
                                         </span>
                                     </TableCell>
                                     <TableCell className="table-cell">
-                                        <div className="flex flex-wrap gap-1 max-w-xs">
+                                        <div className="flex flex-wrap items-center gap-1.5 max-w-xs">
                                             {t.carreras && t.carreras.length > 0 ? (
-                                                t.carreras.map((id, i) => (
-                                                    <Badge key={i} color="info" variant="light" size="sm" className="uppercase">
-                                                        {getCareerName(id)}
+                                                <>
+                                                    <Badge color="info" variant="light" size="sm" className="uppercase truncate max-w-80">
+                                                        {getCareerName(t.carreras[0])}
                                                     </Badge>
-                                                ))
+                                                    {t.carreras.length > 1 && (
+                                                        <Badge color="primary" variant="light" size="sm" className="font-bold">
+                                                            +{t.carreras.length - 1}
+                                                        </Badge>
+                                                    )}
+                                                </>
                                             ) : (
-                                                <span className="text-xs text-text-tertiary">Ninguna</span>
+                                                <span className="text-xs text-text-tertiary italic">Sin carreras</span>
                                             )}
                                         </div>
                                     </TableCell>
@@ -652,15 +657,20 @@ export default function TutorTable({
                                             </div>
                                             <div className="flex flex-col items-center uppercase">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Carreras</p>
-                                                <div className="flex flex-wrap justify-center gap-1 uppercase">
+                                                <div className="flex flex-wrap justify-center items-center gap-1.5 uppercase">
                                                     {t.carreras && t.carreras.length > 0 ? (
-                                                        t.carreras.map((id, i) => (
-                                                            <Badge key={i} color="info" variant="light" size="sm" className="uppercase">
-                                                                {getCareerName(id)}
+                                                        <>
+                                                            <Badge color="info" variant="light" size="sm" className="uppercase truncate 20">
+                                                                {getCareerName(t.carreras[0])}
                                                             </Badge>
-                                                        ))
+                                                            {t.carreras.length > 1 && (
+                                                                <Badge color="primary" variant="light" size="sm" className="font-bold">
+                                                                    +{t.carreras.length - 1}
+                                                                </Badge>
+                                                            )}
+                                                        </>
                                                     ) : (
-                                                        <span className="text-xs text-text-tertiary font-medium">N/A</span>
+                                                        <span className="text-xs text-text-tertiary font-medium italic">N/A</span>
                                                     )}
                                                 </div>
                                             </div>
@@ -691,11 +701,11 @@ export default function TutorTable({
                     <div className="py-20 text-center animate-fadeIn">
                         <div className="inline-flex mb-4 rounded-full bg-bg-secondary p-4 dark:bg-white/5">
                             <svg className="h-8 w-8 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0z20 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
                         </div>
                         <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron tutores</h3>
-                        <p className="mt-1 text-xs text-text-tertiary dark:text-text-tertiary max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
+                        <p className="mt-1 text-xs text-text-secondary dark:text-text-tertiary max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
                         {(idFilter || nameFilter || practiceTypeFilter) && (
                             <button
                                 onClick={clearFilters}
@@ -709,21 +719,18 @@ export default function TutorTable({
             </div>
 
             {/* Paginación */}
-            {totalPages > 1 && (
-                <div className="p-4 border-t border-border-light dark:border-border-dark">
-                    <Pagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        totalItems={filteredData.length}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={handlePageChange}
-                        onItemsPerPageChange={(newItemsPerPage) => {
-                            setItemsPerPage(newItemsPerPage);
-                            setCurrentPage(1);
-                        }}
-                    />
-                </div>
-            )}
+            <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredData.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={handlePageChange}
+                onItemsPerPageChange={(newItemsPerPage) => {
+                    setItemsPerPage(newItemsPerPage);
+                    setCurrentPage(1);
+                }}
+                itemsPerPageOptions={[5, 10, 25]}
+            />
         </div>
     );
 }

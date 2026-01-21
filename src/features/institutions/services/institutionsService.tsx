@@ -28,7 +28,7 @@ export const createInstitution = async (institution: Omit<Institution, "institut
  * Actualiza una institución existente.
  */
 export const updateInstitution = async (id: string, institution: Partial<Institution>): Promise<Institution> => {
-  const response = await apiClient.patch<Institution>(`${API_URL}/${id}`, institution);
+  const response = await apiClient.put<Institution>(`${API_URL}/${id}`, institution);
   return response.data;
 };
 

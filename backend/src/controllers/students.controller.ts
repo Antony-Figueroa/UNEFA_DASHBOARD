@@ -177,14 +177,14 @@ export const getStudents = async (req: Request, res: Response) => {
 
 export const getStudentStats = async (req: Request, res: Response) => {
   try {
-    const { institutionId, periodId } = req.query;
+    const { institutionId, } = req.query;
 
     const stats = await dbManager.withRetry(async (supabase) => {
       // 1. Total Students
-      let totalQuery = supabase.from(TABLE_NAME).select('*', { count: 'exact', head: true });
+      const totalQuery = supabase.from(TABLE_NAME).select('*', { count: 'exact', head: true });
       
       // 2. Active Students
-      let activeQuery = supabase.from(TABLE_NAME).select('*', { count: 'exact', head: true }).eq('STATUS', 1);
+      const activeQuery = supabase.from(TABLE_NAME).select('*', { count: 'exact', head: true }).eq('STATUS', 1);
 
       // Filters (This is basic, might need joins depending on DB schema)
       if (institutionId) {
@@ -597,6 +597,9 @@ export const toggleStudentStatus = async (req: Request, res: Response) => {
       if (error) throw error;
       return data;
     });
+
+    // Invalidar caché de estudiantes
+    cacheManager.deleteByPrefix(CACHE_PREFIX);
 
     res.json(data);
   } catch (error: unknown) {

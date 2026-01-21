@@ -42,7 +42,6 @@ export const login = async (req: Request, res: Response) => {
     // Establecer cookie para el token
     if (result.token) {
       console.log(`[Auth] Generando cookie de sesión para CI: ${userCi}`);
-      const isProd = process.env.NODE_ENV === 'production';
       
       res.cookie('auth_token', result.token, {
         httpOnly: true,

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
+import { Modal } from "../ui/modal";
 import { useAuth } from "../../context/auth";
 
 export default function UserDropdown() {
@@ -179,28 +180,35 @@ export default function UserDropdown() {
       </Dropdown>
 
       {/* Logout Confirmation Modal */}
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 z-99999 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-sm p-6 shadow-xl bg-bg-main dark:bg-bg-dark rounded-2xl animate-fadeIn">
-            <h3 className="text-lg font-bold text-text-emphasis dark:text-text-emphasis">Confirmar Cierre de Sesión</h3>
-            <p className="mt-2 text-sm text-text-secondary dark:text-text-tertiary">¿Estás seguro de que deseas cerrar tu sesión?</p>
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => setShowLogoutConfirm(false)}
-                className="flex-1 px-4 py-2 text-sm font-medium rounded-lg text-text-primary bg-bg-secondary hover:bg-bg-secondary-hover dark:bg-white/5 dark:text-text-tertiary dark:hover:bg-white/10"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmSignOut}
-                className="flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg bg-error-500 hover:bg-error-600"
-              >
-                Cerrar Sesión
-              </button>
-            </div>
+      <Modal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        className="max-w-sm"
+        showCloseButton={false}
+      >
+        <div className="p-6">
+          <h3 className="text-lg font-bold text-text-emphasis dark:text-text-emphasis">
+            Confirmar Cierre de Sesión
+          </h3>
+          <p className="mt-2 text-sm text-text-secondary dark:text-text-tertiary">
+            ¿Estás seguro de que deseas cerrar tu sesión?
+          </p>
+          <div className="mt-6 flex gap-3">
+            <button
+              onClick={() => setShowLogoutConfirm(false)}
+              className="flex-1 px-4 py-2 text-sm font-medium rounded-lg text-text-primary bg-bg-secondary hover:bg-bg-secondary-hover dark:bg-white/5 dark:text-text-tertiary dark:hover:bg-white/10"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={confirmSignOut}
+              className="flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg bg-error-500 hover:bg-error-600"
+            >
+              Cerrar Sesión
+            </button>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

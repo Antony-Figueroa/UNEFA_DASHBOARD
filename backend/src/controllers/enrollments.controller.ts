@@ -124,7 +124,6 @@ export const getEnrollments = async (req: Request, res: Response) => {
             t_tutors (NAME, SURNAME, CONTACT_PHONE)
           )
         `)
-        .eq('STATUS', 1)
         .eq('PRACTICES_STATUS', 2)
         .order('REGISTRATION_DATE', { ascending: false });
 

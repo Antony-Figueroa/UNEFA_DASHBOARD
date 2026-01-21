@@ -100,6 +100,36 @@ export const getCareers = async () => {
   return transformed;
 };
 
+export const getCareersByInternshipType = async (typeId: string | number) => {
+  const cacheKey = `${CACHE_PREFIX}type:${typeId}`;
+  const cached = cacheManager.get(cacheKey);
+  if (cached) return cached;
+
+  const transformed = await dbManager.withRetry(async (supabase) => {
+    const { data, error } = await supabase
+      .from(RELATION_TABLE)
+      .select(`
+        t_career (
+          ${CAREER_COLUMNS},
+          ${RELATION_TABLE} (
+            INTERNSHIP_TYPE_ID
+          )
+        )
+      `)
+      .eq('INTERNSHIP_TYPE_ID', typeId);
+
+    if (error) throw error;
+
+    return (data || [])
+      .map((item: any) => item.t_career)
+      .filter(Boolean)
+      .map((c: Record<string, unknown>) => mapRecord(c));
+  }, 'getCareersByInternshipType');
+
+  cacheManager.set(cacheKey, transformed, CACHE_TTL);
+  return transformed;
+};
+
 export const getCareerById = async (id: string) => {
   const career = await dbManager.withRetry(async (supabase) => {
     const { data, error } = await supabase

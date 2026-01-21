@@ -115,7 +115,7 @@ export default function InstitutionModal({
     cancelClose,
   } = useUnsavedChanges(isDirty, onClose);
 
-  const { options: practiceOptions, fetchByCareer } = useInternshipTypes();
+  const { options: practiceOptions, fetchByCareer, isLoading: isLoadingPractices } = useInternshipTypes();
   const watchedCareerId = useWatch({ control, name: "careerId" });
 
   useEffect(() => {
@@ -149,10 +149,16 @@ export default function InstitutionModal({
         const mappedOptions: Record<string, { value: string; label: string }[]> = {};
         
         Object.entries(data).forEach(([key, values]) => {
-          mappedOptions[key] = values.map(v => ({
-            value: v.abbreviation || v.name,
-            label: v.abbreviation || v.name
-          }));
+          mappedOptions[key] = values.map(v => {
+            // Para Rif y Nacionalidad usamos la abreviación si existe
+            const useAbbr = ["Rif", "Nacionalidad"].includes(key) && v.abbreviation;
+            const displayValue = useAbbr ? v.abbreviation : v.name;
+            
+            return {
+              value: displayValue.toUpperCase(),
+              label: displayValue.toUpperCase()
+            };
+          });
         });
         
         setOptions(mappedOptions);
@@ -467,6 +473,7 @@ export default function InstitutionModal({
                   onChange={field.onChange}
                   value={field.value}
                   disabled={hasProfessionalPractices}
+                  isLoading={isLoadingPractices}
                   placeholder="Seleccione tipo"
                 />
               )}

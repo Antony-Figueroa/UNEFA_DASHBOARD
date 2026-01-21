@@ -36,18 +36,18 @@ export const useStudents = () => {
   const [error, setError] = useState<Error | null>(null);
   const { addToast } = useToast();
 
-  const refreshStudents = useCallback(async () => {
-    setStatus("loading");
+  const refreshStudents = useCallback(async (showLoading = true) => {
+    if (showLoading) setStatus("loading");
     setError(null);
     try {
       const response = await studentsService.getStudents();
       const studentsArray = Array.isArray(response.data) ? response.data : [];
       setStudents(studentsArray);
-      setStatus("success");
+      if (showLoading) setStatus("success");
     } catch (e) {
       const err = e instanceof Error ? e : new Error("Error desconocido al cargar estudiantes");
       setError(err);
-      setStatus("error");
+      if (showLoading) setStatus("error");
       setStudents([]);
       addToast({
         variant: "error",
@@ -58,14 +58,14 @@ export const useStudents = () => {
   }, [addToast]);
 
   useEffect(() => {
-    refreshStudents();
+    refreshStudents(true);
   }, [refreshStudents]);
 
   const addStudent = async (studentData: Omit<Student, "studentId" | "enrollmentDate">) => {
     setLoadingAction(true);
     try {
       const newStudent = await studentsService.createStudent(studentData);
-      await refreshStudents();
+      await refreshStudents(false);
       
       addToast({
         variant: "success",
@@ -100,7 +100,7 @@ export const useStudents = () => {
     try {
       const oldStudent = students.find(s => s.studentId === studentData.studentId);
       const updatedStudent = await studentsService.updateStudent(studentData.studentId, studentData);
-      await refreshStudents();
+      await refreshStudents(false);
       
       addToast({
         variant: "success",
@@ -132,10 +132,17 @@ export const useStudents = () => {
 
   const toggleStatus = async (student: Student) => {
     setLoadingAction(true);
+    const oldStatus = student.status;
+    const newStatus = !oldStatus;
+
+    // Actualización optimista
+    setStudents(prev => prev.map(s => 
+      s.studentId === student.studentId ? { ...s, status: newStatus } : s
+    ));
+
     try {
-      const newStatus = !student.status;
       await studentsService.toggleStudentStatus(student.studentId, newStatus);
-      await refreshStudents();
+      await refreshStudents(false);
 
       addToast({
         variant: newStatus ? "success" : "warning",
@@ -143,6 +150,11 @@ export const useStudents = () => {
         message: `El estudiante ${student.firstName} ${student.lastName} ahora está ${newStatus ? 'activo' : 'inactivo'}.`,
       });
     } catch (e) {
+      // Revertir cambio optimista en caso de error
+      setStudents(prev => prev.map(s => 
+        s.studentId === student.studentId ? { ...s, status: oldStatus } : s
+      ));
+
       const axiosError = e as AxiosError<{ message: string }>;
       const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error al cambiar el estado";
       addToast({
@@ -157,10 +169,18 @@ export const useStudents = () => {
 
   const bulkRemoveStudents = async (ids: string[]) => {
     setLoadingAction(true);
+    
+    // Guardar estados anteriores para revertir si es necesario
+    const previousStudents = [...students];
+    
+    // Actualización optimista
+    setStudents(prev => prev.map(s => 
+      ids.includes(s.studentId) ? { ...s, status: false } : s
+    ));
+
     try {
-      // Por ahora usamos Promise.all hasta tener un endpoint masivo si es necesario
       await Promise.all(ids.map(id => studentsService.toggleStudentStatus(id, false)));
-      await refreshStudents();
+      await refreshStudents(false);
       
       addToast({
         variant: "warning",
@@ -168,6 +188,9 @@ export const useStudents = () => {
         message: `Se han inactivado ${ids.length} estudiantes correctamente.`,
       });
     } catch (e) {
+      // Revertir cambio optimista
+      setStudents(previousStudents);
+
       const axiosError = e as AxiosError<{ message: string }>;
       const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error en inactivación masiva";
       addToast({
@@ -182,9 +205,18 @@ export const useStudents = () => {
 
   const bulkRestoreStudents = async (ids: string[]) => {
     setLoadingAction(true);
+    
+    // Guardar estados anteriores
+    const previousStudents = [...students];
+
+    // Actualización optimista
+    setStudents(prev => prev.map(s => 
+      ids.includes(s.studentId) ? { ...s, status: true } : s
+    ));
+
     try {
       await Promise.all(ids.map(id => studentsService.toggleStudentStatus(id, true)));
-      await refreshStudents();
+      await refreshStudents(false);
       
       addToast({
         variant: "success",
@@ -192,6 +224,9 @@ export const useStudents = () => {
         message: `Se han restaurado ${ids.length} estudiantes exitosamente.`,
       });
     } catch (e) {
+      // Revertir cambio optimista
+      setStudents(previousStudents);
+
       const axiosError = e as AxiosError<{ message: string }>;
       const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error en restauración masiva";
       addToast({

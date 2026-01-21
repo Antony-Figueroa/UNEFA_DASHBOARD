@@ -222,7 +222,7 @@ export default function StudentTable({
             const matchesCareer = !careerSearch || s.careerId === careerSearch;
             const matchesRegime = !regimeFilter || s.regime === regimeFilter;
 
-            const matchesTab = activeTab === "Activas" ? s.status === true : s.status === false;
+            const matchesTab = activeTab === "Activas" ? !!s.status : !s.status;
 
             return matchesId && matchesName && matchesCareer && 
                    matchesRegime && 

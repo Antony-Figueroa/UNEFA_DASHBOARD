@@ -34,6 +34,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuth();
   }, [checkAuth]);
 
+  useEffect(() => {
+    // Escuchar cambios en storage para sincronizar logout entre pestañas
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'auth_logout') {
+        setUser(null);
+        window.location.replace('/signin');
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   const signOut = useCallback(async () => {
     try {
       await authService.logout();
@@ -41,6 +53,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Error signing out:", error);
     } finally {
       setUser(null);
+      // Limpiar datos sensibles de storage
+      localStorage.clear();
+      sessionStorage.clear();
+      // Notificar a otras pestañas
+      localStorage.setItem('auth_logout', Date.now().toString());
+      // Redirección forzada para limpiar el estado de React y prevenir navegación atrás
+      window.location.replace('/signin');
     }
   }, []);
 

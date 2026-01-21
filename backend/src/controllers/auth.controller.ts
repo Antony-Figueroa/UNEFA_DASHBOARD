@@ -42,11 +42,14 @@ export const login = async (req: Request, res: Response) => {
     // Establecer cookie para el token
     if (result.token) {
       console.log(`[Auth] Generando cookie de sesión para CI: ${userCi}`);
+      const isProd = process.env.NODE_ENV === 'production';
+      
       res.cookie('auth_token', result.token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 30 * 60 * 1000 // 30 minutos
+        secure: true, // Siempre true para permitir cross-site en HTTPS
+        sameSite: 'none', // Requerido para que Vercel pueda enviar la cookie a Render
+        maxAge: 30 * 60 * 1000, // 30 minutos
+        path: '/'
       });
     }
 

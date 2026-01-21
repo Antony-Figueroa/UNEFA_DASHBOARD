@@ -108,7 +108,7 @@ export default function StudentsPage() {
 
     const filtered = useMemo(() => {
         if (!Array.isArray(students)) return [];
-        const byStatus = students.filter((s) => (activeTab === "Activas" ? s.status : !s.status));
+        const byStatus = students.filter((s) => (activeTab === "Activas" ? !!s.status : !s.status));
         return byStatus.map(formatStudentToRow);
     }, [students, activeTab]);
 
@@ -129,7 +129,7 @@ export default function StudentsPage() {
                 
                 const matchesCareer = !careerSearch || String(s.careerId) === careerSearch;
                 const matchesRegime = !regimeSearch || (s.regime || "").toLowerCase() === regimeSearch;
-                const matchesStatus = s.status === true;
+                const matchesStatus = !!s.status;
 
                 return matchesSearch && matchesCareer && matchesRegime && matchesStatus;
             });
@@ -174,7 +174,7 @@ export default function StudentsPage() {
     const handleToggleStatus = (studentId: string) => {
         const original = Array.isArray(students) ? students.find((s) => s.studentId === studentId) : null;
         if (!original) return;
-        const goingInactive = original.status === true;
+        const goingInactive = !!original.status;
         setConfirmation({
             isOpen: true,
             title: goingInactive ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",

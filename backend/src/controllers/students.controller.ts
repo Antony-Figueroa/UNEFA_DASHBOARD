@@ -598,6 +598,9 @@ export const toggleStudentStatus = async (req: Request, res: Response) => {
       return data;
     });
 
+    // Invalidar caché de estudiantes
+    cacheManager.deleteByPrefix(CACHE_PREFIX);
+
     res.json(data);
   } catch (error: unknown) {
     handleDbError(res, error);

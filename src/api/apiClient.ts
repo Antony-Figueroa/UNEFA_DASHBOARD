@@ -54,7 +54,7 @@ apiClient.interceptors.response.use(
       console.warn('[API] Sesión expirada o no autorizada. Redirigiendo al login...');
       // Limpiar cualquier estado local si fuera necesario (aunque withCredentials usa cookies)
       // Redirigir al login
-      window.location.href = '/signin';
+      window.location.replace('/signin');
       return Promise.reject(error);
     }
 

@@ -102,12 +102,14 @@ app.use(cors({
       allowed.replace(/\/$/, '') === origin.replace(/\/$/, '')
     );
 
-    if (isAllowed || origin.endsWith('.onrender.com')) {
+    // Permitir si está en la lista, si es de render, o si es una preview de vercel
+    if (isAllowed || origin.endsWith('.onrender.com') || origin.endsWith('.vercel.app')) {
       return callback(null, true);
     }
     
     console.warn(`[CORS] Rejected origin: ${origin}`);
-    return callback(new Error('CORS policy: origin not allowed'), false);
+    // No devolvemos error, simplemente decimos que no está permitido
+    return callback(null, false);
   },
   credentials: true
 }));
@@ -195,26 +197,22 @@ if (frontendDistPath) {
   console.warn(`[Static] Frontend dist directory not found. SPA catch-all will be disabled.`);
 }
 
-// Catch-all para el frontend (SPA)
-app.get('*', (req, res, next) => {
-  // Si la ruta empieza por /api, no servir el index.html
-  if (req.url.startsWith('/api')) {
-    return next();
-  }
-  
-  if (frontendDistPath) {
-    const indexPath = path.join(frontendDistPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-      return res.sendFile(indexPath);
-    }
-  }
+// Rutas principales informativas
+app.get('/', (_req, res) => {
+  res.json({
+    message: 'UNEFA Dashboard API - Online',
+    version: '1.0.0',
+    documentation: 'https://github.com/Antony-Figueroa/UNEFA_DASHBOARD',
+    status: 'running'
+  });
+});
 
-  // En desarrollo, o si no se encontró el build, devolvemos un JSON informativo
+// Catch-all para rutas no encontradas (404)
+app.use((req, res) => {
   res.status(404).json({
-    message: 'Frontend build not found or route not handled',
-    hint: 'If you are in development, use the frontend dev server (localhost:5173).',
+    message: 'Ruta no encontrada',
     path: req.url,
-    distPath: frontendDistPath || 'not found'
+    hint: 'Verifica que el endpoint sea correcto o consulta la documentación.'
   });
 });
 
@@ -230,4 +228,4 @@ app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: 
 
 export { app, port };
 export default app;
-
+

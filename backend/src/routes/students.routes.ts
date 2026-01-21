@@ -14,7 +14,7 @@ const router = Router();
 
 router.get('/', getStudents);
 router.get('/stats', getStudentStats);
-router.get('/check-id/:id', checkIdAvailability);
+router.get('/check-availability', checkIdAvailability);
 router.get('/:id', getStudentById);
 router.post('/', createStudent);
 router.put('/:id', updateStudent);

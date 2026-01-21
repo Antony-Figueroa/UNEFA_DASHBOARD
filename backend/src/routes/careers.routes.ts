@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { 
   getCareers, 
+  getCareersByInternshipType,
   getCareerById, 
   createCareer, 
   updateCareer, 
@@ -12,6 +13,7 @@ import {
 const router = Router();
 
 router.get('/', getCareers);
+router.get('/by-type/:typeId', getCareersByInternshipType);
 router.get('/:id', getCareerById);
 router.post('/', createCareer);
 router.put('/:id', updateCareer);

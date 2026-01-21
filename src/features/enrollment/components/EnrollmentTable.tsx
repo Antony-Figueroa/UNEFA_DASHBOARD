@@ -6,10 +6,17 @@ import { EnrollmentRowData } from "../types";
 import { getStudents } from "../../students/services/studentsService";
 import { getCareers } from "../../careers/services/careersService";
 import { Student } from "../../students/types";
+import { Career } from "../../careers/types";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { generateMatricula } from "../../../utils/matricula";
+
+interface FilterOption {
+    value: string;
+    label: string;
+    id?: string | number;
+}
 
 interface EnrollmentTableProps {
     data: EnrollmentRowData[];
@@ -20,9 +27,10 @@ interface EnrollmentTableProps {
     onView?: (item: EnrollmentRowData) => void;
     activeTab?: "Activas" | "Inactivas";
     loading?: boolean;
-    periodOptions?: { value: string; label: string }[];
-    practiceTypeOptions?: { value: string; label: string }[];
-    careerOptions?: { value: string; label: string }[];
+    periodOptions?: FilterOption[];
+    practiceTypeOptions?: FilterOption[];
+    careerOptions?: FilterOption[];
+    onReport?: (data: EnrollmentRowData[]) => void;
 }
 
 type SortKey = "studentName" | "careerName" | "academicTutorName" | "methodologicalTutorName" | "institutionName" | "practiceType" | "period";
@@ -112,6 +120,7 @@ export default function EnrollmentTable({
 
     const debouncedSearch = useDebounce(searchTerm, 300);
     const [students, setStudents] = useState<Student[]>([]);
+    const [allCareers, setAllCareers] = useState<Career[]>([]);
     const [careerAbbrById, setCareerAbbrById] = useState<Record<string, string>>({});
 
     useEffect(() => {
@@ -119,6 +128,7 @@ export default function EnrollmentTable({
             try {
                 const [studentsResp, careers] = await Promise.all([getStudents(), getCareers()]);
                 setStudents(studentsResp.data);
+                setAllCareers(careers);
                 const map: Record<string, string> = {};
                 careers.forEach(c => { map[String(c.careerId)] = (c.careerAbbreviation || "").toUpperCase(); });
                 setCareerAbbrById(map);
@@ -128,6 +138,20 @@ export default function EnrollmentTable({
         };
         loadRefs();
     }, []);
+
+    // Limpiar filtro de carrera si ya no es válido para el tipo de práctica seleccionado
+    useEffect(() => {
+        if (practiceTypeFilter && careerFilter && practiceTypeOptions) {
+            const selectedType = practiceTypeOptions.find(opt => opt.value === practiceTypeFilter);
+            if (selectedType && selectedType.id) {
+                const typeId = String(selectedType.id);
+                const career = allCareers.find(c => c.careerName.toUpperCase() === careerFilter.toUpperCase());
+                if (career && career.internshipTypeIds && !career.internshipTypeIds.includes(typeId)) {
+                    setCareerFilter("");
+                }
+            }
+        }
+    }, [practiceTypeFilter, allCareers, careerFilter, practiceTypeOptions]);
 
     const computeMatricula = (row: EnrollmentRowData): string => {
         const ci = `${row.identificationPrefix}-${row.identificationNumber}`;
@@ -246,17 +270,37 @@ export default function EnrollmentTable({
         return fromData.map(p => ({ value: p, label: p }));
     }, [data, periodOptions]);
 
-    const uniqueCareers = useMemo<{ value: string; label: string }[]>(() => {
-        if (careerOptions && careerOptions.length > 0) return careerOptions;
-        const fromData = Array.from(
-            new Set(
-                data
-                    .map(item => item.careerName)
-                    .filter((c): c is string => !!c)
-            )
-        ).sort();
-        return fromData.map((c: string) => ({ value: c, label: c }));
-    }, [data, careerOptions]);
+    const uniqueCareers = useMemo(() => {
+        // Si hay un tipo de práctica seleccionado, filtrar carreras por ese tipo
+        let filteredCareers = allCareers;
+        if (practiceTypeFilter) {
+            const selectedType = practiceTypeOptions.find(opt => opt.value === practiceTypeFilter);
+            if (selectedType && selectedType.id) {
+                const typeId = String(selectedType.id);
+                filteredCareers = allCareers.filter(c => c.internshipTypeIds && c.internshipTypeIds.includes(typeId));
+            }
+        }
+
+        if (careerOptions && careerOptions.length > 0) {
+            // Si nos pasan opciones de carrera, las filtramos si es necesario
+            if (practiceTypeFilter) {
+                const validNames = new Set(filteredCareers.map(c => c.careerName.toUpperCase()));
+                return careerOptions.filter(opt => validNames.has(opt.value.toUpperCase()));
+            }
+            return careerOptions;
+        }
+
+        // De lo contrario, usamos las carreras del backend que coincidan con los datos actuales
+        const dataCareerNames = new Set(data.map(item => (item.careerName || "").toUpperCase()));
+        
+        return filteredCareers
+            .filter(c => dataCareerNames.has(c.careerName.toUpperCase()))
+            .map(c => ({ 
+                value: c.careerName.toUpperCase(), 
+                label: c.careerName.toUpperCase() 
+            }))
+            .sort((a, b) => a.label.localeCompare(b.label));
+    }, [data, careerOptions, allCareers, practiceTypeFilter, practiceTypeOptions]);
 
     if ((status === "loading" || externalLoading) && data.length === 0) {
         return (
@@ -315,7 +359,7 @@ export default function EnrollmentTable({
                             onChange={(e) => setPeriodFilter(e.target.value)}
                             className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                         >
-                            <option value="" className="dark:bg-bg-dark">Período</option>
+                            <option value="" className="dark:bg-bg-dark">Todos los Períodos</option>
                             {uniquePeriods.map((opt) => (
                                 <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                                     {opt.label}
@@ -336,7 +380,7 @@ export default function EnrollmentTable({
                             onChange={(e) => setPracticeTypeFilter(e.target.value)}
                             className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                         >
-                            <option value="" className="dark:bg-bg-dark">Tipo de Práctica</option>
+                            <option value="" className="dark:bg-bg-dark">Todos los Tipos de Prácticas</option>
                             {practiceTypeOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                                     {opt.label}
@@ -357,7 +401,7 @@ export default function EnrollmentTable({
                             onChange={(e) => setCareerFilter(e.target.value)}
                             className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                         >
-                            <option value="" className="dark:bg-bg-dark">Carrera</option>
+                            <option value="" className="dark:bg-bg-dark">Todas las Carreras</option>
                             {uniqueCareers.map((opt) => (
                                 <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
                                     {opt.label}

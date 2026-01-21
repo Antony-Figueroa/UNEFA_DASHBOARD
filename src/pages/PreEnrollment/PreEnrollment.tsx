@@ -58,7 +58,8 @@ export default function PreEnrollmentPage() {
                 const practiceData = await getInternshipTypes();
                 const mappedPractice = mapToOptions(practiceData).map(opt => ({
                     value: opt.value,
-                    label: opt.label
+                    label: opt.label,
+                    id: opt.id
                 }));
 
                 if (mappedPractice.length > 0) {
@@ -254,6 +255,14 @@ export default function PreEnrollmentPage() {
         navigate("/enrollment", { state: { preEnrollmentData: item } });
     };
 
+    const handleReport = () => {
+        // Al hacer clic en reporte desde la tabla, abrimos el modal
+        // En PreEnrollment, el modal de PDF usa pdfFilteredData, que ya está filtrado por pdfSearchTerm, etc.
+        // Pero para ser consistentes con Enrollment, podríamos querer que el botón de la tabla
+        // active el modal con los datos que ya están en la tabla.
+        setIsPDFModalOpen(true);
+    };
+
     return (
         <>
             <PageMeta title="Gestión de Pre-Inscripciones" description="Administración de pre-inscripciones" />
@@ -324,6 +333,7 @@ export default function PreEnrollmentPage() {
                                 onBulkRestore={handleBulkRestore}
                                 onView={setViewItem}
                                 onExportToEnrollment={handleExportToEnrollment}
+                                onReport={handleReport}
                                 loading={loadingAction}
                                 periodOptions={periodOptions}
                                 practiceTypeOptions={practiceTypeOptions}

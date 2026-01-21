@@ -72,7 +72,8 @@ export default function EnrollmentPage() {
                 const practiceData = await getInternshipTypes();
                 const mappedPractice = mapToOptions(practiceData).map(opt => ({
                     value: opt.value,
-                    label: opt.label
+                    label: opt.label,
+                    id: opt.id
                 }));
 
                 if (mappedPractice.length > 0) {

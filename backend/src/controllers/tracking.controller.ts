@@ -220,8 +220,17 @@ export const getTrackingStats = async (req: Request, res: Response) => {
     if (periodError) throw periodError;
 
     const periodMap = new Map<string, number>();
-    periodData?.forEach((item: any) => {
-      const periodName = item.t_internships_period?.DESCRIPTION || `Periodo ${item.PERIOD_ID}`;
+    
+    interface PeriodStatItem {
+      PERIOD_ID: number;
+      t_internships_period: { DESCRIPTION: string } | { DESCRIPTION: string }[] | null;
+    }
+
+    (periodData as unknown as PeriodStatItem[])?.forEach((item) => {
+      const periodInfo = Array.isArray(item.t_internships_period) 
+        ? item.t_internships_period[0] 
+        : item.t_internships_period;
+      const periodName = periodInfo?.DESCRIPTION || `Periodo ${item.PERIOD_ID}`;
       periodMap.set(periodName, (periodMap.get(periodName) || 0) + 1);
     });
 

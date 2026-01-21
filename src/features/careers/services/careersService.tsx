@@ -141,6 +141,14 @@ export const getCareers = async (): Promise<Career[]> => {
   return response.data.map(fromApi);
 };
 
+/**
+ * Obtiene la lista de carreras filtradas por tipo de práctica desde la API.
+ */
+export const getCareersByType = async (typeId: string | number): Promise<Career[]> => {
+  const response = await apiClient.get<CareerApiDTO[]>(`${API_URL}/by-type/${typeId}`);
+  return response.data.map(fromApi);
+};
+
 export const createCareer = async (
   careerData: Omit<Career, "careerId" | "creationDate">
 ): Promise<Career> => {

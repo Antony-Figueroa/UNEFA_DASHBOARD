@@ -161,7 +161,7 @@ export const getInstitutions = async (_req: Request, res: Response) => {
     
     cacheManager.set(cacheKey, result, CACHE_TTL);
 
-    res.json(data);
+    res.json(result);
   } catch (error: unknown) {
     handleDbError(res, error);
   }

@@ -27,8 +27,15 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       .eq('STATUS', 1);
 
     const careerMap = new Map<string, number>();
-    careerStats?.forEach((s: any) => {
-      const name = s.t_career?.CAREER_NAME || 'Desconocida';
+    
+    interface CareerStatItem {
+      CAREER_ID: number;
+      t_career: { CAREER_NAME: string } | { CAREER_NAME: string }[] | null;
+    }
+
+    (careerStats as unknown as CareerStatItem[])?.forEach((s) => {
+      const careerInfo = Array.isArray(s.t_career) ? s.t_career[0] : s.t_career;
+      const name = careerInfo?.CAREER_NAME || 'Desconocida';
       careerMap.set(name, (careerMap.get(name) || 0) + 1);
     });
 
@@ -51,7 +58,12 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       .order('REGISTRATION_DATE', { ascending: true });
 
     const regMap = new Map<string, number>();
-    registrationData?.forEach((s: any) => {
+    
+    interface RegStatItem {
+      REGISTRATION_DATE: string;
+    }
+
+    (registrationData as unknown as RegStatItem[])?.forEach((s) => {
       const date = new Date(s.REGISTRATION_DATE).toISOString().split('T')[0];
       regMap.set(date, (regMap.get(date) || 0) + 1);
     });

@@ -3,12 +3,20 @@ import { ActionButton } from "../../../components/common/ActionButton";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { PreEnrollmentRowData } from "../types";
+import { Career } from "../../careers/types";
+import { getCareers } from "../../careers/services/careersService";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import Button from "../../../components/ui/button/Button";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
+
+interface FilterOption {
+    value: string;
+    label: string;
+    id?: string | number;
+}
 
 interface PreEnrollmentTableProps {
     data: PreEnrollmentRowData[];
@@ -22,9 +30,10 @@ interface PreEnrollmentTableProps {
     onBulkRestore?: (ids: string[]) => void;
     activeTab?: "Activas" | "Inactivas";
     loading?: boolean;
-    periodOptions?: { value: string; label: string }[];
-    practiceTypeOptions?: { value: string; label: string }[];
-    careerOptions?: { value: string; label: string }[];
+    periodOptions?: FilterOption[];
+    practiceTypeOptions?: FilterOption[];
+    careerOptions?: FilterOption[];
+    onReport?: (data: PreEnrollmentRowData[]) => void;
 }
 
 type SortKey = "identificationNumber" | "studentName" | "period" | "preEnrollmentDate" | "enrollmentCode";
@@ -131,11 +140,40 @@ export default function PreEnrollmentTable({
     periodOptions = [],
     practiceTypeOptions = [],
     careerOptions = [],
+    onReport,
 }: PreEnrollmentTableProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [periodFilter, setPeriodFilter] = useState("");
     const [practiceTypeFilter, setPracticeTypeFilter] = useState("");
     const [careerFilter, setCareerFilter] = useState("");
+
+    const [allCareers, setAllCareers] = useState<Career[]>([]);
+
+    useEffect(() => {
+        const loadRefs = async () => {
+            try {
+                const careers = await getCareers();
+                setAllCareers(careers);
+            } catch {
+                // silencioso
+            }
+        };
+        loadRefs();
+    }, []);
+
+    // Limpiar filtro de carrera si ya no es válido para el tipo de práctica seleccionado
+    useEffect(() => {
+        if (practiceTypeFilter && careerFilter && practiceTypeOptions) {
+            const selectedType = practiceTypeOptions.find(opt => opt.value === practiceTypeFilter);
+            if (selectedType && selectedType.id) {
+                const typeId = String(selectedType.id);
+                const career = allCareers.find(c => c.careerName.toUpperCase() === careerFilter.toUpperCase());
+                if (career && career.internshipTypeIds && !career.internshipTypeIds.includes(typeId)) {
+                    setCareerFilter("");
+                }
+            }
+        }
+    }, [practiceTypeFilter, allCareers, careerFilter, practiceTypeOptions]);
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -277,11 +315,37 @@ export default function PreEnrollmentTable({
         return fromData.map(p => ({ value: p, label: p }));
     }, [data, periodOptions]);
 
-    const uniqueCareers = useMemo<{ value: string; label: string }[]>(() => {
-        if (careerOptions && careerOptions.length > 0) return careerOptions;
-        const fromData = Array.from(new Set(data.map(item => item.careerName).filter(Boolean))).sort();
-        return fromData.map(c => ({ value: c, label: c }));
-    }, [data, careerOptions]);
+    const uniqueCareers = useMemo(() => {
+        // Si hay un tipo de práctica seleccionado, filtrar carreras por ese tipo
+        let filteredCareers = allCareers;
+        if (practiceTypeFilter && practiceTypeOptions) {
+            const selectedType = practiceTypeOptions.find(opt => opt.value === practiceTypeFilter);
+            if (selectedType && selectedType.id) {
+                const typeId = String(selectedType.id);
+                filteredCareers = allCareers.filter(c => c.internshipTypeIds && c.internshipTypeIds.includes(typeId));
+            }
+        }
+
+        if (careerOptions && careerOptions.length > 0) {
+            // Si nos pasan opciones de carrera, las filtramos si es necesario
+            if (practiceTypeFilter) {
+                const validNames = new Set(filteredCareers.map(c => c.careerName.toUpperCase()));
+                return careerOptions.filter(opt => validNames.has(opt.value.toUpperCase()));
+            }
+            return careerOptions;
+        }
+
+        // De lo contrario, usamos las carreras del backend que coincidan con los datos actuales
+        const dataCareerNames = new Set(data.map(item => (item.careerName || "").toUpperCase()));
+        
+        return filteredCareers
+            .filter(c => dataCareerNames.has(c.careerName.toUpperCase()))
+            .map(c => ({ 
+                value: c.careerName.toUpperCase(), 
+                label: c.careerName.toUpperCase() 
+            }))
+            .sort((a, b) => a.label.localeCompare(b.label));
+    }, [data, careerOptions, allCareers, practiceTypeFilter, practiceTypeOptions]);
 
     if (status === "loading" || externalLoading) {
         return (
@@ -333,7 +397,7 @@ export default function PreEnrollmentTable({
                         <select
                             value={periodFilter}
                             onChange={(e) => setPeriodFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
+                            className="w-full h-11 min-h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
                         >
                             <option value="" className="dark:bg-bg-dark">Período</option>
                             {uniquePeriods.map((opt) => (
@@ -393,15 +457,30 @@ export default function PreEnrollmentTable({
                 </div>
 
                 <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
-                    {(searchTerm || periodFilter || practiceTypeFilter || careerFilter) && (
-                        <button
-                            onClick={clearFilters}
-                            className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
-                        >
-                            <RefreshIcon className="icon-xs" />
-                            Limpiar filtros
-                        </button>
-                    )}
+                    <div className="flex items-center gap-3">
+                        {onReport && filteredData.length > 0 && (
+                            <button
+                                onClick={() => onReport(filteredData)}
+                                className="flex items-center gap-2 rounded-lg bg-brand-500/10 px-3 py-2 text-xs font-semibold text-brand-600 hover:bg-brand-500 hover:text-white dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400 dark:hover:text-white transition-all min-h-11"
+                                title="Generar reporte con los filtros actuales"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                                </svg>
+                                <span>Reporte</span>
+                            </button>
+                        )}
+
+                        {(searchTerm || periodFilter || practiceTypeFilter || careerFilter) && (
+                            <button
+                                onClick={clearFilters}
+                                className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors min-h-11 px-2"
+                            >
+                                <RefreshIcon className="icon-xs" />
+                                Limpiar filtros
+                            </button>
+                        )}
+                    </div>
 
                     <div className="flex items-center gap-2">
                         {paged.length > 0 && (

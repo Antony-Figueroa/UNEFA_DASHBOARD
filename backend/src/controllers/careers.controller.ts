@@ -41,6 +41,19 @@ export const getCareers = async (_req: Request, res: Response) => {
   }
 };
 
+export const getCareersByInternshipType = async (req: Request, res: Response) => {
+  try {
+    const { typeId } = req.params;
+    if (!typeId) {
+      return res.status(400).json({ message: 'Se requiere el ID del tipo de práctica' });
+    }
+    const result = await careersService.getCareersByInternshipType(typeId);
+    res.json(result);
+  } catch (error) {
+    handleDbError(res, error);
+  }
+};
+
 export const getCareerById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

@@ -528,7 +528,7 @@ export default function PreEnrollmentTable({
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={activeTab === "Activas" && onEdit ? () => onEdit(s) : undefined}
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(s.preEnrollmentId) : undefined}
-                                            onExportToEnrollment={onExportToEnrollment ? () => onExportToEnrollment(s) : undefined}
+                                            onExportToEnrollment={activeTab === "Activas" && onExportToEnrollment ? () => onExportToEnrollment(s) : undefined}
                                             status={s.status}
                                         />
                                     </TableCell>
@@ -614,7 +614,7 @@ export default function PreEnrollmentTable({
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={activeTab === "Activas" && onEdit ? () => onEdit(s) : undefined}
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(s.preEnrollmentId) : undefined}
-                                            onExportToEnrollment={onExportToEnrollment ? () => onExportToEnrollment(s) : undefined}
+                                            onExportToEnrollment={activeTab === "Activas" && onExportToEnrollment ? () => onExportToEnrollment(s) : undefined}
                                             status={s.status}
                                             isMobile={true}
                                         />

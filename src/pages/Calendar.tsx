@@ -140,6 +140,9 @@ const Calendar: React.FC = () => {
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
               locale={esLocale}
+              handleWindowResize={true}
+              height="auto"
+              contentHeight="auto"
               headerToolbar={{
                 left: "prev,next addEventButton",
                 center: "title",

@@ -536,7 +536,7 @@ export default function PreEnrollmentTable({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="p-0">
+                                <TableCell colSpan={7} className="p-0">
                                     <EmptyState
                                         title="No se encontraron pre-inscripciones"
                                         description={

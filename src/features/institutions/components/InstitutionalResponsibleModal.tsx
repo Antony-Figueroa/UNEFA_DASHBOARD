@@ -101,7 +101,7 @@ export default function InstitutionalResponsibleModal({
       middleName: "",
       lastName: "",
       secondLastName: "",
-      phonePrefix: "0412",
+      phonePrefix: "",
       phoneNumber: "",
       email: "",
       institutionId: "",
@@ -176,7 +176,7 @@ export default function InstitutionalResponsibleModal({
           middleName: "",
           lastName: "",
           secondLastName: "",
-          phonePrefix: "0412",
+          phonePrefix: "",
           phoneNumber: "",
           email: "",
           institutionId: "",
@@ -317,7 +317,9 @@ export default function InstitutionalResponsibleModal({
                       <Select
                         options={PHONE_PREFIX_OPTIONS}
                         onChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
+                        placeholder="Prefijo"
+                        error={!!errors.phonePrefix}
                       />
                     )}
                   />

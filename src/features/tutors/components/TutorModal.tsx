@@ -470,7 +470,7 @@ export default function TutorModal({
                       <Select
                         {...field}
                         options={PHONE_AREA_OPTIONS}
-                        placeholder="Código"
+                        placeholder="Prefijo"
                         error={!!errors.phoneAreaCode}
                       />
                     )}

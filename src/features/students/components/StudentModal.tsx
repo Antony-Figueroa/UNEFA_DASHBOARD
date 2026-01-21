@@ -158,7 +158,7 @@ export default function StudentModal({
       sex: "",
       birthDate: "",
       civilStatus: "",
-      phonePrefix: "0412",
+      phonePrefix: "",
       phoneNumber: "",
       email: "",
       address: "",
@@ -266,7 +266,7 @@ export default function StudentModal({
           sex: "",
           birthDate: "",
           civilStatus: "",
-          phonePrefix: "0412",
+          phonePrefix: "",
           phoneNumber: "",
           email: "",
           address: "",
@@ -554,7 +554,7 @@ export default function StudentModal({
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         value={field.value}
-                        placeholder="0412"
+                        placeholder="Prefijo"
                         error={!!errors.phonePrefix}
                       />
                     )}

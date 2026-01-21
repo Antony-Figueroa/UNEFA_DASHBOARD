@@ -1,6 +1,5 @@
 import { dbManager } from '../lib/db-manager.js';
 import { hashPassword } from '../utils/auth.utils.js';
-import { encrypt } from '../utils/security.utils.js';
 
 interface UserData {
   userCi: string;
@@ -20,14 +19,13 @@ interface SupabaseUser {
   STATUS: number;
   CREATION_DATE: string;
   t_user_roles: { ID_ROLES: number }[];
-  t_auth_log?: { LOG_ID: number }[];
 }
 
-export const getUsers = async (filters: { role?: number, status?: number, search?: string }, page: number, limit: number) => {
+export const getUsers = async (filters: { role?: number, status?: number, search?: string, name?: string, surname?: string, userCi?: string }, page: number, limit: number) => {
   return await dbManager.withRetry(async (supabase) => {
     let query = supabase
       .from('t_user')
-      .select('USER_ID, USER_CI, NAME, SURNAME, EMAIL, STATUS, CREATION_DATE, t_user_roles(ID_ROLES), t_auth_log(LOG_ID)', { count: 'exact' });
+      .select('USER_ID, USER_CI, NAME, SURNAME, EMAIL, STATUS, CREATION_DATE, t_user_roles(ID_ROLES)', { count: 'exact' });
 
     if (filters.role) {
       query = query.eq('t_user_roles.ID_ROLES', filters.role);
@@ -38,6 +36,15 @@ export const getUsers = async (filters: { role?: number, status?: number, search
     if (filters.search) {
       query = query.or(`NAME.ilike.%${filters.search}%,SURNAME.ilike.%${filters.search}%,USER_CI.ilike.%${filters.search}%`);
     }
+    if (filters.name) {
+      query = query.ilike('NAME', `%${filters.name}%`);
+    }
+    if (filters.surname) {
+      query = query.ilike('SURNAME', `%${filters.surname}%`);
+    }
+    if (filters.userCi) {
+      query = query.ilike('USER_CI', `%${filters.userCi}%`);
+    }
 
     const from = (page - 1) * limit;
     const to = from + limit - 1;
@@ -46,7 +53,26 @@ export const getUsers = async (filters: { role?: number, status?: number, search
       .range(from, to)
       .order('USER_ID', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('[UserService] Error fetching users:', error);
+      throw error;
+    }
+
+    // Obtener IDs de usuarios con actividad en t_auth_log para marcar isInUse
+    // Hacemos una consulta separada para evitar problemas de joins sin foreign keys
+    const userIds = data?.map(u => u.USER_ID) || [];
+    let usersWithActivity: Set<number> = new Set();
+
+    if (userIds.length > 0) {
+      const { data: logData } = await supabase
+        .from('t_auth_log')
+        .select('USER_ID')
+        .in('USER_ID', userIds);
+      
+      if (logData) {
+        usersWithActivity = new Set(logData.map(l => l.USER_ID));
+      }
+    }
 
     return {
       users: (data as unknown as SupabaseUser[]).map((u) => ({
@@ -58,9 +84,9 @@ export const getUsers = async (filters: { role?: number, status?: number, search
         role: u.t_user_roles?.[0]?.ID_ROLES,
         status: u.STATUS,
         creationDate: u.CREATION_DATE,
-        isInUse: Array.isArray(u.t_auth_log) && u.t_auth_log.length > 0
+        isInUse: usersWithActivity.has(u.USER_ID)
       })),
-      total: count || 0,
+      totalCount: count || 0,
       totalPages: Math.ceil((count || 0) / limit),
       currentPage: page
     };
@@ -120,14 +146,12 @@ export const createUser = async (userData: UserData, tempPass: string) => {
 
     // 2. Crear clave temporal
     const hashedPassword = await hashPassword(tempPass);
-    const encryptedPassword = encrypt(tempPass); // Encriptación reversible para Admin Maestro
 
     const { error: keyError } = await supabase
       .from('t_user_key')
       .insert({
         USER_ID: newUser.USER_ID,
         KEY: hashedPassword,
-        ENCRYPTED_KEY: encryptedPassword, // Nuevo campo para visualización segura
         STATUS: 1,
         IS_TEMPORARY: true,
         START_DATE: new Date().toISOString(),
@@ -183,7 +207,7 @@ export const updateUser = async (userId: number, userData: UserData) => {
       const { error: roleError } = await supabase
         .from('t_user_roles')
         .update({ ID_ROLES: userData.role })
-        .eq('USER_ID', userId);
+        .eq('ID_USER', userId);
 
       if (roleError) throw roleError;
     }

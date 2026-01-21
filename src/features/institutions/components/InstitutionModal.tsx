@@ -408,6 +408,7 @@ export default function InstitutionModal({
                       onChange={field.onChange}
                       value={field.value}
                       placeholder="Prefijo"
+                      error={!!errors.phonePrefix}
                     />
                   )}
                 />

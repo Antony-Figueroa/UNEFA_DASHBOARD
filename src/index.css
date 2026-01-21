@@ -267,6 +267,7 @@
   --z-index-9999: 9999;
   --z-index-99999: 99999;
   --z-index-999999: 999999;
+  --z-index-9999999: 9999999;
 }
 
 @layer base {
@@ -1117,7 +1118,7 @@ span.flatpickr-weekday,
   z-index: 9999999 !important;
 }
 .fc.fc-media-screen {
-  @apply min-h-screen;
+  @apply min-h-150;
 }
 
 .simplebar-scrollbar::before {

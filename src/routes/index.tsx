@@ -79,7 +79,15 @@ export const AppRoutes = () => {
             }
           />
           <Route
-            path="/forgot-password"
+            path="/password-recovery"
+            element={
+              <PublicRoute>
+                <PasswordRecovery />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/reset-password"
             element={
               <PublicRoute>
                 <PasswordRecovery />
@@ -116,11 +124,11 @@ export const AppRoutes = () => {
             <Route path="/tracking" element={<TrackingPage />} />
             <Route path="/visit-registration" element={<VisitRegistration />} />
 
-            {/* Configuration - Only for Admin (Role 1) */}
+            {/* Configuration - Only for Admin (Role 1) and Master (Role 0) */}
             <Route 
               path="/configure/users" 
               element={
-                <ProtectedRoute allowedRoles={[1]}>
+                <ProtectedRoute allowedRoles={[0, 1]}>
                   <UserManagementPage />
                 </ProtectedRoute>
               } 
@@ -128,7 +136,7 @@ export const AppRoutes = () => {
             <Route 
               path="/configure/lists" 
               element={
-                <ProtectedRoute allowedRoles={[1]}>
+                <ProtectedRoute allowedRoles={[0, 1]}>
                   <ListsConfiguration />
                 </ProtectedRoute>
               } 

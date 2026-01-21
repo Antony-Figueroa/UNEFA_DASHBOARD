@@ -82,7 +82,7 @@ export const Modal: React.FC<ModalProps> = ({
 
   const modalContent = (
     <div
-      className={`fixed inset-0 flex items-center justify-center ${isFullscreen ? "p-0" : "p-4 sm:p-6 md:p-10"} z-999999 animate-fade-in overflow-hidden`}
+      className={`fixed inset-0 flex items-center justify-center ${isFullscreen ? "p-0" : "p-4 sm:p-6 md:p-10"} z-9999999 animate-fade-in overflow-hidden`}
       role="dialog"
       aria-modal="true"
     >

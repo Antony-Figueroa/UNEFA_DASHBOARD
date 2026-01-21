@@ -39,19 +39,6 @@ const DualCalendar: React.FC<DualCalendarProps> = ({ startDate, endDate }) => {
     return new Intl.DateTimeFormat('es-ES', options).format(date);
   };
 
-  const isSameDay = (d1: Date, d2: Date) => {
-    const date1 = new Date(d1.getFullYear(), d1.getMonth(), d1.getDate());
-    const date2 = new Date(d2.getFullYear(), d2.getMonth(), d2.getDate());
-    return date1.getTime() === date2.getTime();
-  };
-
-  const isWithinInterval = (date: Date, start: Date, end: Date) => {
-    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-    const s = new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
-    const e = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime();
-    return d >= s && d <= e;
-  };
-
   const renderMonth = (month: Date, isLeft: boolean) => {
     const year = month.getFullYear();
     const monthIdx = month.getMonth();
@@ -75,23 +62,25 @@ const DualCalendar: React.FC<DualCalendarProps> = ({ startDate, endDate }) => {
     const weekDays = ['LU', 'MA', 'MI', 'JU', 'VI', 'SÁ', 'DO'];
 
     return (
-      <div className="flex-1 min-w-62.5">
+      <div className="flex-1 min-w-70 sm:min-w-[320px]">
         <div className="flex items-center justify-between mb-5 px-1">
-          <h3 className="text-[17px] font-bold text-gray-900 dark:text-white capitalize">
+          <h3 className="text-base sm:text-[17px] font-bold text-gray-900 dark:text-white capitalize truncate">
             {formatDate(month, { month: 'long', year: 'numeric' })}
           </h3>
-          <div className="flex gap-1">
+          <div className="flex gap-1 shrink-0">
             {isLeft ? (
               <button 
                 onClick={handlePrev}
                 disabled={!canGoPrev}
                 className={`p-1.5 rounded-full transition-colors ${
                   canGoPrev 
-                    ? "hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400" 
-                    : "text-gray-200 dark:text-gray-700 cursor-not-allowed"
+                    ? "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5" 
+                    : "text-gray-300 dark:text-gray-700 cursor-not-allowed"
                 }`}
               >
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m15 18-6-6 6-6"/>
+                </svg>
               </button>
             ) : (
               <button 
@@ -99,41 +88,44 @@ const DualCalendar: React.FC<DualCalendarProps> = ({ startDate, endDate }) => {
                 disabled={!canGoNext}
                 className={`p-1.5 rounded-full transition-colors ${
                   canGoNext 
-                    ? "hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400" 
-                    : "text-gray-200 dark:text-gray-700 cursor-not-allowed"
+                    ? "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5" 
+                    : "text-gray-300 dark:text-gray-700 cursor-not-allowed"
                 }`}
               >
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m9 18 6-6-6-6"/>
+                </svg>
               </button>
             )}
           </div>
         </div>
-        <div className="grid grid-cols-7 mb-2">
+
+        <div className="grid grid-cols-7 mb-2 text-center">
           {weekDays.map((day) => (
-            <div key={day} className="text-center text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest py-2">
+            <div key={day} className="text-[10px] sm:text-xs font-bold text-gray-400 dark:text-gray-500 py-2 tracking-wider">
               {day}
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7">
-          {days.map((day, idx) => {
-            const isSelected = isWithinInterval(day, startDate, endDate);
-            const isStart = isSameDay(day, startDate);
-            const isEnd = isSameDay(day, endDate);
-            const isToday = isSameDay(day, new Date());
-            const isCurrentMonth = day.getMonth() === monthIdx;
-            const isMonday = idx % 7 === 0;
-            const isSunday = idx % 7 === 6;
 
-            // Range highlighting logic
-            const containerClasses = "relative h-11 flex items-center justify-center transition-all duration-200";
+        <div className="grid grid-cols-7 gap-y-1 relative">
+          {days.map((day, idx) => {
+            const isSelected = day >= startDate && day <= endDate;
+            const isStart = day.toDateString() === startDate.toDateString();
+            const isEnd = day.toDateString() === endDate.toDateString();
+            const isToday = day.toDateString() === new Date().toDateString();
+            const isCurrentMonth = day.getMonth() === monthIdx;
+            const isMonday = day.getDay() === 1;
+            const isSunday = day.getDay() === 0;
+
+            const containerClasses = "relative h-9 sm:h-11 flex items-center justify-center transition-all duration-200";
             let backgroundClasses = "";
             let textClasses = isCurrentMonth 
               ? (isSelected ? "text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300")
               : "text-gray-200 dark:text-gray-700";
             
             const indicatorClasses = "absolute inset-0 flex items-center justify-center pointer-events-none";
-            let dotClasses = "w-9 h-9 flex items-center justify-center rounded-full font-bold transition-all duration-300";
+            let dotClasses = "w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center rounded-full font-bold transition-all duration-300";
 
             // Highlight Today
             if (isToday && !isSelected) {
@@ -156,7 +148,7 @@ const DualCalendar: React.FC<DualCalendarProps> = ({ startDate, endDate }) => {
 
               if (isStart && isEnd) {
                 backgroundClasses = ""; // No background for single day range, just the dot
-                dotClasses = "w-9 h-9 flex items-center justify-center rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg shadow-black/10 font-bold scale-105";
+                dotClasses = "w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg shadow-black/10 font-bold scale-105";
               }
             }
 
@@ -165,10 +157,10 @@ const DualCalendar: React.FC<DualCalendarProps> = ({ startDate, endDate }) => {
                 <div className={indicatorClasses}>
                   <div className={(isStart || isEnd) ? dotClasses : ""}></div>
                   {isToday && !isStart && !isEnd && (
-                    <div className="w-9 h-9 rounded-full border-2 border-brand-600 dark:border-brand-400"></div>
+                    <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full border-2 border-brand-600 dark:border-brand-400"></div>
                   )}
                 </div>
-                <span className={`relative z-10 text-[13px] font-semibold ${(isStart || isEnd) ? 'text-white dark:text-gray-900' : textClasses}`}>
+                <span className={`relative z-10 text-[11px] sm:text-[13px] font-semibold ${(isStart || isEnd) ? 'text-white dark:text-gray-900' : textClasses}`}>
                   {day.getDate()}
                 </span>
               </div>
@@ -186,9 +178,9 @@ const DualCalendar: React.FC<DualCalendarProps> = ({ startDate, endDate }) => {
 
   return (
     <div className="w-full max-w-full overflow-hidden">
-      <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 bg-white dark:bg-white/3 p-5 sm:p-7 rounded-3xl border border-gray-100 dark:border-white/10 shadow-sm">
+      <div className="flex flex-col xl:flex-row gap-6 lg:gap-10 bg-white dark:bg-white/3 p-5 sm:p-7 rounded-3xl border border-gray-100 dark:border-white/10 shadow-sm overflow-x-auto">
         {renderMonth(month1, true)}
-        <div className="hidden lg:block w-px bg-gray-100 dark:bg-white/10 my-4"></div>
+        <div className="hidden xl:block w-px bg-gray-100 dark:bg-white/10 my-4"></div>
         {renderMonth(month2, false)}
       </div>
       

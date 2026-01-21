@@ -176,6 +176,46 @@ export const verifySecurityQuestions = async (req: Request, res: Response) => {
   }
 };
 
+export const requestPasswordReset = async (req: Request, res: Response) => {
+  const { email } = req.body;
+  const ip = req.ip || '';
+  const userAgent = req.headers['user-agent'] || '';
+
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'El correo electrónico es requerido' });
+  }
+
+  try {
+    const result = await authService.requestPasswordReset(email, ip, userAgent);
+    if (!result.success) {
+      return res.status(result.status || 400).json(result);
+    }
+    res.json(result);
+  } catch (error) {
+    handleAuthError(res, error);
+  }
+};
+
+export const resetPasswordWithToken = async (req: Request, res: Response) => {
+  const { token, newPassword } = req.body;
+  const ip = req.ip || '';
+  const userAgent = req.headers['user-agent'] || '';
+
+  if (!token || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Token y nueva contraseña son requeridos' });
+  }
+
+  try {
+    const result = await authService.resetPasswordWithToken(token, newPassword, ip, userAgent);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+    res.json(result);
+  } catch (error) {
+    handleAuthError(res, error);
+  }
+};
+
 export const logout = async (_req: Request, res: Response) => {
   res.clearCookie('auth_token');
   res.json({ message: 'Sesión cerrada correctamente' });

@@ -26,6 +26,20 @@ export default function FirstLogin() {
     { questionId: 0, answer: "" },
   ]);
 
+  const getPasswordStrength = (password: string) => {
+    let strength = 0;
+    if (password.length >= 12) strength += 1;
+    if (/[A-Z]/.test(password)) strength += 1;
+    if (/[a-z]/.test(password)) strength += 1;
+    if (/[0-9]/.test(password)) strength += 1;
+    if (/[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(password)) strength += 1;
+    return strength;
+  };
+
+  const strength = getPasswordStrength(newPassword);
+  const strengthColor = strength <= 2 ? "bg-red-500" : strength <= 4 ? "bg-yellow-500" : "bg-green-500";
+  const strengthText = strength <= 2 ? "Débil" : strength <= 4 ? "Media" : "Fuerte";
+
   useEffect(() => {
     if (location.state?.userId) {
       setUserId(location.state.userId);
@@ -65,16 +79,18 @@ export default function FirstLogin() {
       return;
     }
 
-    if (newPassword.length < 8) {
-      setError("La contraseña debe tener al menos 8 caracteres");
+    if (newPassword.length < 12) {
+      setError("La contraseña debe tener al menos 12 caracteres");
       return;
     }
 
     const hasUpperCase = /[A-Z]/.test(newPassword);
+    const hasLowerCase = /[a-z]/.test(newPassword);
     const hasNumber = /[0-9]/.test(newPassword);
+    const hasSpecial = /[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(newPassword);
 
-    if (!hasUpperCase || !hasNumber) {
-      setError("La contraseña debe contener al menos una mayúscula y un número");
+    if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecial) {
+      setError("La contraseña debe contener mayúsculas, minúsculas, números y caracteres especiales");
       return;
     }
 
@@ -129,7 +145,7 @@ export default function FirstLogin() {
                   <Input
                     id="newPassword"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Mínimo 8 caracteres"
+                    placeholder="Mínimo 12 caracteres"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
@@ -142,6 +158,38 @@ export default function FirstLogin() {
                     {showPassword ? <EyeIcon className="size-5" /> : <EyeCloseIcon className="size-5" />}
                   </button>
                 </div>
+
+                {newPassword && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-text-secondary">Fortaleza: {strengthText}</span>
+                      <span className="text-xs text-text-secondary">{Math.min(strength * 20, 100)}%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-gray-200 rounded-full dark:bg-gray-700 overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-300 ${strengthColor}`} 
+                        style={{ width: `${(strength / 5) * 100}%` }}
+                      ></div>
+                    </div>
+                    <ul className="mt-2 space-y-1">
+                      <li className={`text-[10px] flex items-center gap-1 ${newPassword.length >= 12 ? 'text-green-500' : 'text-text-tertiary'}`}>
+                        {newPassword.length >= 12 ? '✓' : '○'} Mínimo 12 caracteres
+                      </li>
+                      <li className={`text-[10px] flex items-center gap-1 ${/[A-Z]/.test(newPassword) ? 'text-green-500' : 'text-text-tertiary'}`}>
+                        {/[A-Z]/.test(newPassword) ? '✓' : '○'} Una mayúscula
+                      </li>
+                      <li className={`text-[10px] flex items-center gap-1 ${/[a-z]/.test(newPassword) ? 'text-green-500' : 'text-text-tertiary'}`}>
+                        {/[a-z]/.test(newPassword) ? '✓' : '○'} Una minúscula
+                      </li>
+                      <li className={`text-[10px] flex items-center gap-1 ${/[0-9]/.test(newPassword) ? 'text-green-500' : 'text-text-tertiary'}`}>
+                        {/[0-9]/.test(newPassword) ? '✓' : '○'} Un número
+                      </li>
+                      <li className={`text-[10px] flex items-center gap-1 ${/[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(newPassword) ? 'text-green-500' : 'text-text-tertiary'}`}>
+                        {/[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(newPassword) ? '✓' : '○'} Un carácter especial
+                      </li>
+                    </ul>
+                  </div>
+                )}
               </div>
 
               <div>

@@ -1,5 +1,7 @@
 import { dbManager } from '../lib/db-manager.js';
 import { comparePassword, hashPassword, generateToken } from '../utils/auth.utils.js';
+import { sendLoginNotification, sendSecurityAlert, sendPasswordRecoveryEmail, sendPasswordChangedNotification } from '../utils/email.utils.js';
+import crypto from 'crypto';
 
 export const logAuthAction = async (userId: number | null, userCi: string | null, action: string, ip: string, userAgent: string, details: string) => {
   try {
@@ -127,6 +129,10 @@ export const login = async (userCi: string, password: string, ip: string, userAg
           await supabase.from('t_user').update(updateData).eq('USER_ID', user.USER_ID);
           
           await logAuthAction(user.USER_ID, userCi, 'ACCOUNT_LOCKED', ip, userAgent, `Máximo de intentos alcanzado. Bloqueado hasta ${lockUntil}`);
+          
+          // Notificar bloqueo de cuenta
+          sendSecurityAlert(user.EMAIL, user.NAME, 'ACCOUNT_LOCKED', ip).catch(console.error);
+
           return { 
             success: false, 
             status: 403, 
@@ -137,6 +143,12 @@ export const login = async (userCi: string, password: string, ip: string, userAg
             await supabase.from('t_user').update({ FAILED_ATTEMPTS: newFailedAttempts }).eq('USER_ID', user.USER_ID);
           }
           await logAuthAction(user.USER_ID, userCi, 'LOGIN_FAILED', ip, userAgent, `Intento fallido ${newFailedAttempts}/${MAX_ATTEMPTS}`);
+          
+          // Notificar intento fallido (opcional, tal vez solo después de N intentos)
+          if (newFailedAttempts >= 3) {
+            sendSecurityAlert(user.EMAIL, user.NAME, 'FAILED_ATTEMPT', ip).catch(console.error);
+          }
+
           return { 
             success: false, 
             status: 401, 
@@ -182,6 +194,9 @@ export const login = async (userCi: string, password: string, ip: string, userAg
     });
 
     await logAuthAction(user.USER_ID, userCi, 'LOGIN_SUCCESS', ip, userAgent, 'Inicio de sesión exitoso');
+
+    // Notificar inicio de sesión exitoso
+    sendLoginNotification(user.EMAIL, user.NAME, ip, userAgent).catch(console.error);
 
     return { 
       success: true,
@@ -248,7 +263,31 @@ export const verifyMaster = async (userId: number, password: string, ip: string,
 
 export const changePassword = async (userId: number, newPassword: string, securityQuestions?: { questionId: number, answer: string }[]) => {
   return await dbManager.withRetry(async (supabase) => {
-    // 0. Registrar en historial de contraseñas (opcional pero recomendado)
+    // 1. Obtener claves anteriores para evitar reutilización
+    const { data: previousKeys } = await supabase
+      .from('t_user_key')
+      .select('KEY')
+      .eq('USER_ID', userId)
+      .order('START_DATE', { ascending: false })
+      .limit(5);
+
+    const { data: historyKeys } = await supabase
+      .from('t_password_history')
+      .select('KEY')
+      .eq('USER_ID', userId)
+      .order('CREATION_DATE', { ascending: false })
+      .limit(5);
+
+    const allPreviousKeys = [...(previousKeys || []), ...(historyKeys || [])];
+
+    for (const entry of allPreviousKeys) {
+      const isMatch = await comparePassword(newPassword, entry.KEY);
+      if (isMatch) {
+        throw new Error('No puede reutilizar ninguna de sus últimas 5 contraseñas por motivos de seguridad.');
+      }
+    }
+
+    // 2. Registrar la clave actual en el historial antes de cambiarla
     const { data: currentKey } = await supabase
       .from('t_user_key')
       .select('KEY')
@@ -257,19 +296,23 @@ export const changePassword = async (userId: number, newPassword: string, securi
       .single();
 
     if (currentKey) {
-      await supabase.from('t_password_history').insert({
-        USER_ID: userId,
-        KEY: currentKey.KEY,
-        CREATION_DATE: new Date().toISOString()
-      });
+      try {
+        await supabase.from('t_password_history').insert({
+          USER_ID: userId,
+          KEY: currentKey.KEY,
+          CREATION_DATE: new Date().toISOString()
+        });
+      } catch (e) {
+        console.warn('[Auth] No se pudo guardar en el historial (posiblemente la tabla no existe):', e);
+      }
     }
 
     const hashedPassword = await hashPassword(newPassword);
 
-    // 1. Desactivar clave anterior
+    // 3. Desactivar clave anterior
     await supabase.from('t_user_key').update({ STATUS: 0 }).eq('USER_ID', userId).eq('STATUS', 1);
 
-    // 2. Insertar nueva clave
+    // 4. Insertar nueva clave
     const now = new Date().toISOString();
     const expiry = new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString();
     
@@ -288,13 +331,13 @@ export const changePassword = async (userId: number, newPassword: string, securi
       REST_USER_DATE: '2025-01-01 00:00:00'
     });
 
-    // 3. Actualizar estado del usuario
+    // 5. Actualizar estado del usuario
     await supabase.from('t_user').update({ 
       FORCE_PASSWORD_CHANGE: false,
       LOGIN: 1 
     }).eq('USER_ID', userId);
 
-    // 4. Guardar preguntas de seguridad
+    // 6. Guardar preguntas de seguridad
     if (securityQuestions && Array.isArray(securityQuestions)) {
       // Primero eliminar anteriores si existen
       await supabase.from('t_security_questions').delete().eq('USER_ID', userId);
@@ -309,6 +352,111 @@ export const changePassword = async (userId: number, newPassword: string, securi
     }
 
     return { success: true, message: 'Contraseña actualizada correctamente' };
+  });
+};
+
+/**
+ * Solicita la recuperación de contraseña por email
+ */
+export const requestPasswordReset = async (email: string, ip: string, userAgent: string) => {
+  return await dbManager.withRetry(async (supabase) => {
+    // 1. Buscar usuario por email
+    const { data: user, error: userError } = await supabase
+      .from('t_user')
+      .select('USER_ID, NAME, EMAIL, USER_CI, STATUS')
+      .eq('EMAIL', email)
+      .single();
+
+    if (userError || !user) {
+      return { 
+        success: false, 
+        status: 404,
+        message: 'El correo electrónico no se encuentra registrado en el sistema.' 
+      };
+    }
+
+    // 2. Verificar si el usuario está bloqueado/inactivo
+    if (user.STATUS === 0) {
+      return { 
+        success: false, 
+        status: 403,
+        message: 'Esta cuenta se encuentra bloqueada o inactiva. Por favor, contacte al administrador.' 
+      };
+    }
+
+    // 3. Generar token único (no JWT para que sea opaco y se guarde en DB)
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 horas
+
+    // 3. Guardar token en t_recovery_tokens
+    const { error: tokenError } = await supabase
+      .from('t_recovery_tokens')
+      .insert({
+        USER_ID: user.USER_ID,
+        TOKEN: token,
+        EXPIRATION_DATE: expiry,
+        STATUS: 1 // 1: Activo
+      });
+
+    if (tokenError) {
+      console.error('[Auth] Error al guardar token de recuperación:', tokenError);
+      throw new Error('Error al procesar la solicitud de recuperación.');
+    }
+
+    // 4. Registrar auditoría
+    await logAuthAction(user.USER_ID, user.USER_CI, 'PASSWORD_RESET_REQUESTED', ip, userAgent, 'Solicitud de restablecimiento de contraseña vía email');
+
+    // 5. Enviar email
+    await sendPasswordRecoveryEmail(user.EMAIL, user.NAME, token);
+
+    return { success: true, message: 'Instrucciones enviadas al correo electrónico.' };
+  });
+};
+
+/**
+ * Restablece la contraseña usando un token válido
+ */
+export const resetPasswordWithToken = async (token: string, newPassword: string, ip: string, userAgent: string) => {
+  return await dbManager.withRetry(async (supabase) => {
+    // 1. Validar token
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('t_recovery_tokens')
+      .select('TOKEN_ID, USER_ID, EXPIRATION_DATE, STATUS, t_user(NAME, EMAIL, USER_CI)')
+      .eq('TOKEN', token)
+      .single();
+
+    if (tokenError || !tokenData) {
+      return { success: false, message: 'El enlace de recuperación no es válido o ha expirado.' };
+    }
+
+    if (tokenData.STATUS === 0) {
+      return { success: false, message: 'Este enlace ya ha sido utilizado.' };
+    }
+
+    if (new Date(tokenData.EXPIRATION_DATE) < new Date()) {
+      return { success: false, message: 'El enlace de recuperación ha expirado.' };
+    }
+
+    const userData = Array.isArray(tokenData.t_user) ? tokenData.t_user[0] : tokenData.t_user;
+    if (!userData) {
+      return { success: false, message: 'Usuario no encontrado.' };
+    }
+
+    // 2. Cambiar contraseña (reutilizamos la lógica de cambio con validaciones)
+    const changeResult = await changePassword(tokenData.USER_ID, newPassword);
+    
+    if (!changeResult.success) return changeResult;
+
+    // 3. Marcar token como usado
+    await supabase.from('t_recovery_tokens').update({ STATUS: 0 }).eq('TOKEN_ID', tokenData.TOKEN_ID);
+
+    // 4. Registrar auditoría
+    await logAuthAction(tokenData.USER_ID, userData.USER_CI, 'PASSWORD_RESET_COMPLETED', ip, userAgent, 'Restablecimiento de contraseña exitoso mediante token de email');
+
+    // 5. Notificar por email
+    await sendPasswordChangedNotification(userData.EMAIL, userData.NAME);
+
+    return { success: true, message: 'Tu contraseña ha sido restablecida exitosamente.' };
   });
 };
 

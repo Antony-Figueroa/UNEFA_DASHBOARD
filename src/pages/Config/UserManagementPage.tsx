@@ -31,7 +31,7 @@ const UserManagementPage = () => {
         id="users-page-header"
         skeleton={<BreadcrumbSkeleton />}
       >
-        <PageBreadcrumb pageTitle="Usuarios del Panel de Control" />
+        <PageBreadcrumb pageTitle="Gestión de Usuarios" />
       </SkeletonLoader>
 
       <div className="stagger-delay">

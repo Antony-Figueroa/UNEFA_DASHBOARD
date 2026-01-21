@@ -104,3 +104,13 @@ export const resetPassword = async (userId: number, newPassword: string): Promis
   const response = await apiClient.post<PasswordChangeResponse>("/auth/reset-password", { userId, newPassword });
   return response.data;
 };
+
+export const requestRecovery = async (email: string): Promise<{ success: boolean; message: string }> => {
+  const response = await apiClient.post<{ success: boolean; message: string }>("/auth/request-recovery", { email });
+  return response.data;
+};
+
+export const resetWithToken = async (token: string, newPassword: string): Promise<{ success: boolean; message: string }> => {
+  const response = await apiClient.post<{ success: boolean; message: string }>("/auth/reset-with-token", { token, newPassword });
+  return response.data;
+};

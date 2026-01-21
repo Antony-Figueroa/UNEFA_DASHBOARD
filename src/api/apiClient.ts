@@ -38,7 +38,7 @@ apiClient.interceptors.response.use(
   },
   async (error: AxiosError) => {
     const config = error.config as InternalAxiosRequestConfig & { _retryCount?: number };
-    const publicPaths = ['/', '/signin', '/signup', '/first-login', '/forgot-password'];
+    const publicPaths = ['/', '/signin', '/signup', '/first-login', '/password-recovery', '/reset-password'];
     const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
     const isPublicPage = publicPaths.includes(currentPath);
     

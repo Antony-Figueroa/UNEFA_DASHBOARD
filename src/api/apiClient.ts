@@ -11,7 +11,7 @@ console.log(`[API] Base URL: ${baseURL} (Mode: ${isProd ? 'Production' : 'Develo
  */
 const apiClient = axios.create({
   baseURL,
-  timeout: 20000, // Aumentado para dar margen a la BD
+  timeout: 40000, // Aumentado a 40s para dar tiempo a Render a "despertar"
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
@@ -38,13 +38,15 @@ apiClient.interceptors.response.use(
   },
   async (error: AxiosError) => {
     const config = error.config as InternalAxiosRequestConfig & { _retryCount?: number };
-    const publicPaths = ['/', '/signin', '/signup', '/first-login', '/forgot-password'];
+    const publicPaths = ['/', '/signin', '/signup', '/first-login', '/password-recovery', '/reset-password'];
     const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
     const isPublicPage = publicPaths.includes(currentPath);
     
     // No loguear errores 401 como "Error detectado" ya que son parte del flujo normal de auth
-    // Tampoco loguear si estamos en páginas públicas para evitar ruidos en consola
-    if (error.response?.status !== 401 && !isPublicPage) {
+    // Tampoco loguear errores de salud (health/db-status) para evitar ruido por cold-starts en Render
+    const isMonitoringPath = error.config?.url?.includes('/health') || error.config?.url?.includes('/db-status');
+    
+    if (error.response?.status !== 401 && !isPublicPage && !isMonitoringPath) {
       console.error(`[API] Error: ${error.message} en ${error.config?.url}`);
     }
     

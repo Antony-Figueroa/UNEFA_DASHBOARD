@@ -157,15 +157,14 @@ export default function SignInForm() {
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-
                   <Link
-                    to="/forgot-password"
-                    className="text-sm font-medium text-brand-500 hover:text-brand-600"
+                    to="/password-recovery"
+                    className="text-sm font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300"
                   >
                     ¿Olvidó su contraseña?
                   </Link>
                 </div>
-                <div>
+                <div className="mt-6">
                   <Button 
                     className="w-full" 
                     size="md" 

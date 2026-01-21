@@ -3,10 +3,9 @@ import {
   getUsers, 
   createUser, 
   updateUser, 
-  saveSecurityQuestions,
-  getUserCredentials 
+  saveSecurityQuestions
 } from '../controllers/users.controller.js';
-import { authenticateToken, authorizeRole, requireMaster2FA, ROLES } from '../middlewares/auth.middleware.js';
+import { authenticateToken, authorizeRole, ROLES } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
@@ -14,9 +13,6 @@ const router = Router();
 router.get('/', authenticateToken, authorizeRole([ROLES.MASTER_ADMIN, ROLES.ADMIN]), getUsers);
 router.post('/', authenticateToken, authorizeRole([ROLES.MASTER_ADMIN, ROLES.ADMIN]), createUser);
 router.put('/:id', authenticateToken, authorizeRole([ROLES.MASTER_ADMIN, ROLES.ADMIN]), updateUser);
-
-// Los Administradores (Maestro o Regular) pueden ver credenciales (Requiere verificación adicional de identidad)
-router.post('/:userId/credentials', authenticateToken, requireMaster2FA, getUserCredentials);
 
 // Cualquier usuario autenticado puede guardar sus propias preguntas de seguridad
 router.post('/security-questions', authenticateToken, saveSecurityQuestions);

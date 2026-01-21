@@ -8,18 +8,11 @@ import { useAuth } from "../../../context/auth";
 import ActionButton from "../../../components/common/ActionButton";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import Badge from "../../../components/ui/badge/Badge";
-import { 
-  EditIcon, 
-  TrashIcon, 
-  RefreshIcon, 
-  ChevronDownIcon 
-} from "../../../icons/actions";
-import { CopyIcon, CheckLineIcon, LockIcon, AlertIcon, InfoIcon } from "../../../icons";
+import { EditIcon, TrashIcon, RefreshIcon, ChevronDownIcon } from "../../../icons/actions";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import Checkbox from "../../../components/form/input/Checkbox";
-import SecurePasswordCell from "./SecurePasswordCell";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 
 import { useLists } from "../../lists/hooks/useLists";
@@ -46,68 +39,18 @@ const DEFAULT_ROLES_MAP: Record<number, string> = {
   2: "ASISTENTE"
 };
 
-const TempPasswordMessage = ({ tempPass }: { tempPass: string }) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(tempPass);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="mt-2 space-y-3">
-      <p>El nuevo usuario ha sido registrado correctamente.</p>
-      <div className="flex items-center justify-between p-3 rounded-lg bg-bg-secondary dark:bg-white/5 border border-border-light dark:border-border-dark shadow-sm">
-        <div className="flex flex-col">
-          <span className="text-[10px] uppercase text-text-tertiary font-bold tracking-wider mb-0.5">Contraseña Provisional</span>
-          <code className="text-sm font-mono font-bold text-brand-600 dark:text-brand-400">{tempPass}</code>
-        </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleCopy();
-          }}
-          className="p-2 rounded-md hover:bg-bg-main dark:hover:bg-white/10 transition-colors group relative"
-          title="Copiar al portapapeles"
-        >
-          {copied ? (
-            <CheckLineIcon className="w-4 h-4 text-success-500" />
-          ) : (
-            <CopyIcon className="w-4 h-4 text-text-secondary group-hover:text-text-primary" />
-          )}
-        </button>
-      </div>
-      <div className="flex items-start gap-2 p-2 rounded bg-warning-500/10 border border-warning-500/20">
-        <div className="text-warning-600 dark:text-warning-400 mt-0.5">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-          </svg>
-        </div>
-        <p className="text-[11px] text-warning-700 dark:text-warning-300 leading-tight">
-          Por favor, comparta esta contraseña con el usuario. Se le solicitará cambiarla en su primer inicio de sesión.
-        </p>
-      </div>
-    </div>
-  );
-};
-
 interface ActionButtonsProps {
   onEdit?: () => void;
   onToggleStatus?: () => void;
-  onViewCredentials?: () => void;
   status: number;
   isMobile?: boolean;
-  showCredentials?: boolean;
 }
 
 const ActionButtons = ({
   onEdit,
   onToggleStatus,
-  onViewCredentials,
   status,
   isMobile = false,
-  showCredentials = false,
 }: ActionButtonsProps) => {
   const containerClasses = isMobile 
     ? "flex flex-col gap-3 pt-2" 
@@ -115,16 +58,6 @@ const ActionButtons = ({
 
   return (
     <div className={containerClasses}>
-      {showCredentials && onViewCredentials && (
-        <ActionButton
-          onClick={() => onViewCredentials()}
-          icon={<LockIcon />}
-          tooltip="Ver credenciales (Admin)"
-          label={isMobile ? "Ver Credenciales" : undefined}
-          variant="warning"
-          fullWidth={isMobile}
-        />
-      )}
       {onEdit && (
         <ActionButton
           onClick={() => onEdit()}
@@ -197,31 +130,8 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
     loadRoles();
   }, [fetchMultipleLists]);
 
-  // Estado para visualización de credenciales (Maestro)
-  const [revealedPasswords, setRevealedPasswords] = useState<Record<number, string>>({});
-  const [credentialDialog, setCredentialDialog] = useState<{
-    isOpen: boolean;
-    userId: number | null;
-    userName: string;
-    reason: string;
-    masterPassword: string;
-    decryptedPass: string | null;
-    step: "reason" | "verify" | "display";
-    isLoading: boolean;
-  }>({
-    isOpen: false,
-    userId: null,
-    userName: "",
-    reason: "",
-    masterPassword: "",
-    decryptedPass: null,
-    step: "reason",
-    isLoading: false
-  });
-
   // Verificar si es Administrador Maestro o Admin
   const isMasterAdmin = currentUser?.role === 0;
-  const isPrivilegedAdmin = currentUser?.role === 0 || currentUser?.role === 1;
 
   // Sincronizar activeTab con prop si existe
   useEffect(() => {
@@ -243,6 +153,7 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
   const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<Partial<User> | null>(null);
+  const [hasConsent, setHasConsent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -318,6 +229,16 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
   const handleCreateOrUpdate = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     
+    // Validar consentimiento para nuevos usuarios
+    if (!editingUser?.id && !hasConsent) {
+      addToast({
+        variant: "warning",
+        title: "Consentimiento requerido",
+        message: "Debe confirmar el consentimiento del usuario para el tratamiento de datos."
+      });
+      return;
+    }
+
     setConfirmDialog({
       isOpen: true,
       title: editingUser?.id ? "Confirmar Actualización" : "Confirmar Registro",
@@ -329,8 +250,8 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
           if (editingUser?.id) {
             // Enviar solo los campos necesarios para evitar errores 500
             const updateData = {
-              name: editingUser.name,
-              surname: editingUser.surname,
+              name: editingUser.name?.toUpperCase(),
+              surname: editingUser.surname?.toUpperCase(),
               email: editingUser.email,
               role: editingUser.role,
               status: editingUser.status
@@ -342,23 +263,23 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
               message: `El usuario ${editingUser.name} ha sido actualizado correctamente.`
             });
           } else {
-            const response = await apiClient.post("/users", editingUser);
-            const { tempPass } = response.data;
+            const createData = {
+              ...editingUser,
+              name: editingUser?.name?.toUpperCase(),
+              surname: editingUser?.surname?.toUpperCase(),
+              userCi: editingUser?.userCi?.toUpperCase()
+            };
+            await apiClient.post("/users", createData);
             
             addToast({
               variant: "success",
               title: "Usuario creado",
-              message: tempPass ? (
-                <TempPasswordMessage tempPass={tempPass} />
-              ) : (
-                "El nuevo usuario ha sido registrado y se ha enviado la notificación."
-              ),
-              persistent: !!tempPass, // Mantener visible si hay contraseña para que el admin la vea
-              duration: tempPass ? 15000 : 5000 // Más tiempo si hay contraseña
+              message: "El nuevo usuario ha sido registrado y se ha enviado la notificación por correo con sus credenciales."
             });
           }
           setIsModalOpen(false);
           setEditingUser(null);
+          setHasConsent(false);
           fetchUsers();
         } catch (error: unknown) {
           console.error("Error saving user:", error);
@@ -414,96 +335,6 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
     });
   };
 
-  /**
-   * Maneja la visualización de credenciales para el Administrador Maestro.
-   */
-  const handleViewCredentials = (user: User) => {
-    setCredentialDialog({
-      isOpen: true,
-      userId: user.id,
-      userName: `${user.name} ${user.surname}`,
-      reason: "",
-      masterPassword: "",
-      decryptedPass: null,
-      step: "reason",
-      isLoading: false
-    });
-  };
-
-  const submitCredentialRequest = async () => {
-    // Paso 1: Validar razón
-    if (credentialDialog.step === "reason") {
-      if (!credentialDialog.reason.trim()) {
-        addToast({
-          variant: "warning",
-          title: "Razón requerida",
-          message: "Debe ingresar un motivo para acceder a esta información sensible."
-        });
-        return;
-      }
-      setCredentialDialog(prev => ({ ...prev, step: "verify" }));
-      return;
-    }
-
-    // Paso 2: Verificar identidad del Maestro
-    if (credentialDialog.step === "verify") {
-      if (!credentialDialog.masterPassword) {
-        addToast({
-          variant: "warning",
-          title: "Contraseña requerida",
-          message: "Debe ingresar su contraseña de administrador para verificar su identidad."
-        });
-        return;
-      }
-
-      setCredentialDialog(prev => ({ ...prev, isLoading: true }));
-      try {
-        // 1. Obtener token de verificación maestra
-        const verifyRes = await apiClient.post("/auth/verify-master", {
-          password: credentialDialog.masterPassword
-        });
-
-        const verificationToken = verifyRes.data.verificationToken;
-
-        // 2. Solicitar credenciales del usuario objetivo usando el token de verificación
-        const response = await apiClient.post(`/users/${credentialDialog.userId}/credentials`, 
-          { reason: credentialDialog.reason },
-          { headers: { 'X-Master-Verification': verificationToken } }
-        );
-        
-        setCredentialDialog(prev => ({
-          ...prev,
-          decryptedPass: response.data.password,
-          step: "display",
-          isLoading: false
-        }));
-
-        // También guardar en el estado de contraseñas reveladas de la tabla
-        if (credentialDialog.userId) {
-          setRevealedPasswords(prev => ({
-            ...prev,
-            [credentialDialog.userId!]: response.data.password
-          }));
-        }
-      } catch (error: unknown) {
-        console.error("Error in credential flow:", error);
-        let errorMessage = "No se pudo verificar su identidad o recuperar las credenciales.";
-        
-        if (error && typeof error === 'object' && 'response' in error) {
-          const axiosError = error as { response: { data: { message: string } } };
-          errorMessage = axiosError.response?.data?.message || errorMessage;
-        }
-
-        addToast({
-          variant: "error",
-          title: "Error de verificación",
-          message: errorMessage
-        });
-        setCredentialDialog(prev => ({ ...prev, isLoading: false }));
-      }
-    }
-  };
-
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       const selectableUsers = users.filter(u => !u.isInUse);
@@ -541,12 +372,14 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
         onConfirm: () => {
           setIsModalOpen(false);
           setEditingUser(null);
+          setHasConsent(false);
           setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         }
       });
     } else {
       setIsModalOpen(false);
       setEditingUser(null);
+      setHasConsent(false);
     }
   };
 
@@ -705,9 +538,6 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
               <TableCell isHeader className="table-header-cell">Apellidos</TableCell>
               <TableCell isHeader className="table-header-cell">Correo Electrónico</TableCell>
               <TableCell isHeader className="table-header-cell">Rol</TableCell>
-              {isPrivilegedAdmin && (
-                <TableCell isHeader className="table-header-cell">Contraseña</TableCell>
-              )}
               <TableCell isHeader className="table-header-cell text-right">&nbsp;</TableCell>
             </TableRow>
           </TableHeader>
@@ -716,7 +546,7 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
               [...Array(5)].map((_, i) => (
                 <TableRow key={i}>
                   <TableCell className="px-4 py-4"><div className="h-4 w-4 animate-pulse rounded bg-gray-100 dark:bg-gray-800" /></TableCell>
-                  {[...Array(isPrivilegedAdmin ? 7 : 6)].map((_, j) => (
+                  {[...Array(6)].map((_, j) => (
                     <TableCell key={j} className="px-4 py-4">
                       <div className="h-4 w-24 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
                     </TableCell>
@@ -768,23 +598,6 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
                       {rolesMap[user.role] || `ROL ${user.role}`}
                     </Badge>
                   </TableCell>
-                  {isPrivilegedAdmin && (
-                    <TableCell className="table-cell">
-                      <SecurePasswordCell
-                        password={revealedPasswords[user.id]}
-                        isRevealed={!!revealedPasswords[user.id]}
-                        onReveal={() => handleViewCredentials(user)}
-                        onHide={() => {
-                          setRevealedPasswords(prev => {
-                            const newState = { ...prev };
-                            delete newState[user.id];
-                            return newState;
-                          });
-                        }}
-                        isLoading={credentialDialog.isLoading && credentialDialog.userId === user.id}
-                      />
-                    </TableCell>
-                  )}
                   <TableCell className="table-cell text-right">
                     <ActionButtons
                       onEdit={() => {
@@ -792,16 +605,14 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
                         setIsModalOpen(true);
                       }}
                       onToggleStatus={() => handleToggleStatus(user)}
-                      onViewCredentials={() => handleViewCredentials(user)}
                       status={user.status}
-                      showCredentials={isPrivilegedAdmin}
                     />
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={isPrivilegedAdmin ? 8 : 7} className="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+                <TableCell colSpan={6} className="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
                   No se encontraron usuarios
                 </TableCell>
               </TableRow>
@@ -859,9 +670,9 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
                     required
                     disabled={!!editingUser?.id}
                     value={editingUser?.userCi || ""}
-                    onChange={(e) => setEditingUser({ ...editingUser, userCi: e.target.value })}
+                    onChange={(e) => setEditingUser({ ...editingUser, userCi: e.target.value.toUpperCase() })}
                     placeholder="Ej. 12345678"
-                    className="h-11 rounded-lg border-gray-200 dark:border-gray-700"
+                    className="h-11 rounded-lg border-gray-200 dark:border-gray-700 uppercase"
                   />
                 </div>
                 <div>
@@ -869,9 +680,9 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
                   <Input
                     required
                     value={editingUser?.name || ""}
-                    onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                    onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value.toUpperCase() })}
                     placeholder="Nombres del usuario"
-                    className="h-11 rounded-lg border-gray-200 dark:border-gray-700"
+                    className="h-11 rounded-lg border-gray-200 dark:border-gray-700 uppercase"
                   />
                 </div>
                 <div>
@@ -879,9 +690,9 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
                   <Input
                     required
                     value={editingUser?.surname || ""}
-                    onChange={(e) => setEditingUser({ ...editingUser, surname: e.target.value })}
+                    onChange={(e) => setEditingUser({ ...editingUser, surname: e.target.value.toUpperCase() })}
                     placeholder="Apellidos del usuario"
-                    className="h-11 rounded-lg border-gray-200 dark:border-gray-700"
+                    className="h-11 rounded-lg border-gray-200 dark:border-gray-700 uppercase"
                   />
                 </div>
               </div>
@@ -926,6 +737,30 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
                 </div>
               </div>
             </section>
+
+            {/* Consentimiento GDPR - Solo para nuevos usuarios */}
+            {!editingUser?.id && (
+              <section className="bg-brand-50/50 dark:bg-brand-500/5 p-4 rounded-xl border border-brand-200 dark:border-brand-500/20">
+                <div className="flex items-start gap-3">
+                  <div className="pt-0.5">
+                    <Checkbox
+                      checked={hasConsent}
+                      onChange={(checked) => setHasConsent(checked)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-semibold text-brand-900 dark:text-brand-400 cursor-pointer" onClick={() => setHasConsent(!hasConsent)}>
+                      Consentimiento para el tratamiento de datos personales
+                    </label>
+                    <p className="text-xs text-brand-700/80 dark:text-brand-400/60 leading-relaxed">
+                      Al marcar esta casilla, el administrador confirma que ha obtenido el consentimiento explícito del usuario 
+                      para registrar sus datos personales (nombre, cédula, correo institucional) en el sistema SIGP - UNEFA, 
+                      siguiendo las políticas de privacidad y seguridad vigentes.
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
           </form>
         </ModalBody>
         <ModalFooter>
@@ -962,126 +797,6 @@ const UserManagementTable = ({ activeTab: propActiveTab }: UserManagementTablePr
         confirmLabel="Confirmar"
       />
 
-      {/* Modal de Credenciales (Solo para Maestro) */}
-      <Modal 
-        isOpen={credentialDialog.isOpen} 
-        onClose={() => setCredentialDialog(prev => ({ ...prev, isOpen: false }))}
-        onCloseAttempt={() => setCredentialDialog(prev => ({ ...prev, isOpen: false }))}
-      >
-        <ModalHeader>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-warning-500/10 text-warning-600 dark:bg-warning-500/20 dark:text-warning-400">
-              <LockIcon className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-gray-800 dark:text-white/90">
-                Acceso a Credenciales
-              </h3>
-              <p className="text-xs text-text-tertiary">
-                Información sensible de {credentialDialog.userName}
-              </p>
-            </div>
-          </div>
-        </ModalHeader>
-        <ModalBody>
-          {credentialDialog.step === "reason" ? (
-            <div className="space-y-4 py-2">
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-warning-500/5 border border-warning-500/20">
-                <div className="text-warning-600 mt-0.5">
-                  <AlertIcon className="w-5 h-5" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-warning-800 dark:text-warning-400">Aviso de Seguridad</p>
-                  <p className="text-xs text-warning-700 dark:text-warning-300 leading-relaxed">
-                    Esta acción será registrada en el registro de auditoría del sistema. 
-                    Por favor, ingrese el motivo por el cual necesita visualizar esta contraseña.
-                  </p>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  Motivo de la consulta *
-                </label>
-                <textarea
-                  className="w-full min-h-25 p-3 rounded-lg border border-border-medium bg-transparent text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark"
-                  placeholder="Ej: El usuario olvidó su clave y no tiene preguntas de seguridad configuradas..."
-                  value={credentialDialog.reason}
-                  onChange={(e) => setCredentialDialog(prev => ({ ...prev, reason: e.target.value }))}
-                />
-              </div>
-            </div>
-          ) : credentialDialog.step === "verify" ? (
-            <div className="space-y-4 py-2">
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-brand-500/5 border border-brand-500/20">
-                <div className="text-brand-600 mt-0.5">
-                  <LockIcon className="w-5 h-5" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-brand-800 dark:text-brand-400">Verificación de Identidad</p>
-                  <p className="text-xs text-brand-700 dark:text-brand-300 leading-relaxed">
-                    Como medida de seguridad adicional para acceder a información sensible, 
-                    por favor ingrese su contraseña de administrador actual.
-                  </p>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  Su contraseña de Administrador *
-                </label>
-                <Input
-                  type="password"
-                  value={credentialDialog.masterPassword}
-                  onChange={(e) => setCredentialDialog(prev => ({ ...prev, masterPassword: e.target.value }))}
-                  placeholder="Ingrese su contraseña"
-                  className="h-11 rounded-lg border-gray-200 dark:border-gray-700"
-                  autoFocus
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6 py-4">
-              <div className="text-center space-y-2">
-                <p className="text-sm text-text-secondary">Contraseña actual para {credentialDialog.userName}:</p>
-                <div className="relative group">
-                  <div className="flex items-center justify-center p-6 rounded-xl bg-bg-secondary dark:bg-white/5 border-2 border-dashed border-border-medium dark:border-border-dark">
-                    <code className="text-3xl font-mono font-bold tracking-wider text-brand-600 dark:text-brand-400 select-all">
-                      {credentialDialog.decryptedPass}
-                    </code>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-info-500/5 border border-info-500/20">
-                <div className="text-info-600 mt-0.5">
-                  <InfoIcon className="w-5 h-5" />
-                </div>
-                <p className="text-xs text-info-700 dark:text-info-300 leading-relaxed">
-                  Recomiende al usuario cambiar esta contraseña lo antes posible por razones de seguridad.
-                </p>
-              </div>
-            </div>
-          )}
-        </ModalBody>
-        <ModalFooter>
-          <div className="flex justify-end gap-3 w-full">
-            <Button 
-              variant="outline" 
-              onClick={() => setCredentialDialog(prev => ({ ...prev, isOpen: false }))}
-              disabled={credentialDialog.isLoading}
-            >
-              {credentialDialog.step === "display" ? "Cerrar" : "Cancelar"}
-            </Button>
-            {credentialDialog.step !== "display" && (
-              <Button 
-                onClick={submitCredentialRequest}
-                loading={credentialDialog.isLoading}
-                disabled={credentialDialog.step === "reason" ? !credentialDialog.reason.trim() : !credentialDialog.masterPassword}
-              >
-                {credentialDialog.step === "reason" ? "Continuar" : "Verificar y Mostrar"}
-              </Button>
-            )}
-          </div>
-        </ModalFooter>
-      </Modal>
     </div>
   );
 };

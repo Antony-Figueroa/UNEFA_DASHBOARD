@@ -129,19 +129,25 @@ export default function TutorViewModal({
                                 </div>
                             </div>
                             <div className="sm:col-span-2">
-                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Carreras que Atiende</label>
-                                <div className="flex flex-wrap gap-1">
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-2">Carreras que Atiende</label>
+                                <div className="flex flex-col gap-2 max-w-md">
                                     {tutor.carreras && tutor.carreras.length > 0 ? (
                                         tutor.carreras.map((id, i) => {
                                             const career = careers.find(c => String(c.careerId) === String(id));
                                             return (
-                                                <Badge key={i} color="info" variant="light" size="sm" className="uppercase">
+                                                <Badge 
+                                                    key={i} 
+                                                    color="info" 
+                                                    variant="light" 
+                                                    size="md" 
+                                                    className="uppercase w-full justify-start py-2 px-4 h-auto text-left"
+                                                >
                                                     {career ? career.careerName : `ID: ${id}`}
                                                 </Badge>
                                             );
                                         })
                                     ) : (
-                                        <span className="text-xs text-text-tertiary font-medium">N/A</span>
+                                        <span className="text-xs text-text-tertiary font-medium italic">No hay carreras asignadas</span>
                                     )}
                                 </div>
                             </div>

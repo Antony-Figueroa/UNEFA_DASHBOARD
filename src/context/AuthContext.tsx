@@ -24,7 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Evitar verificaciones de autenticación en páginas públicas
     // para prevenir intentos de conexión a la base de datos innecesarios al cargar
-    const publicPaths = ['/', '/signin', '/signup', '/first-login', '/forgot-password'];
+    const publicPaths = ['/', '/signin', '/signup', '/first-login', '/password-recovery', '/reset-password'];
     const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
     
     if (publicPaths.includes(currentPath)) {

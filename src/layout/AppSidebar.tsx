@@ -67,7 +67,7 @@ const navItems: NavItem[] = [
   {
     name: "Configuración",
     icon: <PlugInIcon />,
-    roles: [1], // Solo Admin
+    roles: [0, 1], // Maestro y Admin
     subItems: [
       { name: "Usuarios", path: "/configure/users" },
       { name: "Configuración de Combos", path: "/configure/lists" },

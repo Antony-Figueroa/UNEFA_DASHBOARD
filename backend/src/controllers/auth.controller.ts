@@ -42,11 +42,13 @@ export const login = async (req: Request, res: Response) => {
     // Establecer cookie para el token
     if (result.token) {
       console.log(`[Auth] Generando cookie de sesión para CI: ${userCi}`);
+      
       res.cookie('auth_token', result.token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 30 * 60 * 1000 // 30 minutos
+        secure: true, // Siempre true para permitir cross-site en HTTPS
+        sameSite: 'none', // Requerido para que Vercel pueda enviar la cookie a Render
+        maxAge: 30 * 60 * 1000, // 30 minutos
+        path: '/'
       });
     }
 
@@ -168,6 +170,46 @@ export const verifySecurityQuestions = async (req: Request, res: Response) => {
   try {
     const result = await authService.verifySecurityQuestions(userId, answers);
     if (!result.success) return res.status(401).json(result);
+    res.json(result);
+  } catch (error) {
+    handleAuthError(res, error);
+  }
+};
+
+export const requestPasswordReset = async (req: Request, res: Response) => {
+  const { email } = req.body;
+  const ip = req.ip || '';
+  const userAgent = req.headers['user-agent'] || '';
+
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'El correo electrónico es requerido' });
+  }
+
+  try {
+    const result = await authService.requestPasswordReset(email, ip, userAgent);
+    if (!result.success) {
+      return res.status(result.status || 400).json(result);
+    }
+    res.json(result);
+  } catch (error) {
+    handleAuthError(res, error);
+  }
+};
+
+export const resetPasswordWithToken = async (req: Request, res: Response) => {
+  const { token, newPassword } = req.body;
+  const ip = req.ip || '';
+  const userAgent = req.headers['user-agent'] || '';
+
+  if (!token || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Token y nueva contraseña son requeridos' });
+  }
+
+  try {
+    const result = await authService.resetPasswordWithToken(token, newPassword, ip, userAgent);
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
     res.json(result);
   } catch (error) {
     handleAuthError(res, error);

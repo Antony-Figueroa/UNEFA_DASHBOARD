@@ -241,7 +241,7 @@ export default function UserMetaCard() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Correo Electrónico <span className="text-error">*</span></Label>
-              <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="ejemplo@unefa.edu.ve" />
+              <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="Correo" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phoneNumber">Teléfono</Label>

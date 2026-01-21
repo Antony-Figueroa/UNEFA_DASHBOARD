@@ -12,7 +12,7 @@ export const DbStatusProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const checkStatus = useCallback(async () => {
     // No realizar verificaciones de base de datos en páginas públicas
-    const publicPaths = ['/', '/signin', '/signup', '/first-login', '/forgot-password'];
+    const publicPaths = ['/', '/signin', '/signup', '/first-login', '/password-recovery', '/reset-password'];
     const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
     
     if (publicPaths.includes(currentPath)) {
@@ -51,7 +51,7 @@ export const DbStatusProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setError(data.error || null);
       setLastChecked(new Date());
     } catch (err: unknown) {
-      const publicPaths = ['/', '/signin', '/signup', '/first-login', '/forgot-password'];
+      const publicPaths = ['/', '/signin', '/signup', '/first-login', '/password-recovery', '/reset-password'];
       const isPublicPage = publicPaths.includes(window.location.pathname);
 
       if (!isPublicPage) {

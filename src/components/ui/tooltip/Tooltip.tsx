@@ -34,7 +34,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   const updatePosition = React.useCallback(() => {
-    if (!triggerRef.current || !tooltipRef.current || !isVisible) return;
+    if (!triggerRef.current || !tooltipRef.current || !isVisible || !content) return;
 
     const rect = triggerRef.current.getBoundingClientRect();
     const tooltipHeight = tooltipRef.current.offsetHeight;
@@ -79,7 +79,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
       pointerEvents: 'none',
       opacity: 1,
     });
-  }, [isVisible]);
+  }, [isVisible, content]);
 
   useLayoutEffect(() => {
     let animationFrameId: number;
@@ -89,7 +89,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
       animationFrameId = requestAnimationFrame(tick);
     };
 
-    if (isVisible) {
+    if (isVisible && content) {
       updatePosition();
       animationFrameId = requestAnimationFrame(tick);
       window.addEventListener('resize', updatePosition);
@@ -100,9 +100,10 @@ export const Tooltip: React.FC<TooltipProps> = ({
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition, true);
     };
-  }, [isVisible, updatePosition]);
+  }, [isVisible, updatePosition, content]);
 
   const handleMouseEnter = () => {
+    if (!content) return;
     // Clear any pending timeouts
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (durationTimeoutRef.current) clearTimeout(durationTimeoutRef.current);
@@ -132,12 +133,14 @@ export const Tooltip: React.FC<TooltipProps> = ({
     };
   }, []);
 
+  if (!content) return children;
+
   return (
     <div 
       ref={triggerRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`relative inline-block ${isDisabled ? "cursor-not-allowed" : ""} ${className}`}
+      className={`relative inline-block ${isDisabled ? "cursor-not-allowed" : "cursor-pointer"} ${className}`}
     >
       {React.cloneElement(children, {
         style: {

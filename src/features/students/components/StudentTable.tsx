@@ -568,7 +568,7 @@ export default function StudentTable({
                                             content={s.isInUse ? "Este estudiante tiene registros relacionados y no puede ser seleccionado para eliminar" : ""}
                                             isDisabled={s.isInUse}
                                         >
-                                            <div>
+                                            <div className="flex items-center justify-center">
                                                 <Checkbox
                                                     checked={selectedIds.includes(s.studentId)}
                                                     onChange={(checked) => handleSelectRow(s.studentId, checked)}

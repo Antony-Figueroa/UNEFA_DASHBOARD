@@ -41,7 +41,7 @@ const FlatpickrDatePicker: React.FC<FlatpickrDatePickerProps> = ({
         instance.calendarContainer.classList.add('dark');
       }
       if (instance.calendarContainer) {
-        instance.calendarContainer.style.zIndex = "9999999";
+        instance.calendarContainer.style.zIndex = "10000001";
       }
     },
     ...options,

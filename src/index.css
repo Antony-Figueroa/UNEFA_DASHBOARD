@@ -1107,15 +1107,15 @@ span.flatpickr-weekday,
 
 /* Fix for Flatpickr calendar in Modals */
 .flatpickr-calendar {
-  z-index: 9999999 !important;
+  z-index: 10000001 !important;
 }
 
 .flatpickr-calendar.static {
-  z-index: 9999999 !important;
+  z-index: 10000001 !important;
 }
 
 .flatpickr-calendar.open {
-  z-index: 9999999 !important;
+  z-index: 10000001 !important;
 }
 .fc.fc-media-screen {
   @apply min-h-150;

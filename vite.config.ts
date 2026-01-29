@@ -29,14 +29,7 @@ export default defineConfig(() => {
         .split(',')
         .map(h => h.trim())
         .filter(Boolean)
-        .concat(['localhost', '127.0.0.1', '.railway.app', '.onrender.com']),
-      proxy: {
-        '/n8n-proxy': {
-          target: 'https://antonysamuel0903.app.n8n.cloud',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/n8n-proxy/, ''),
-        },
-      },
+        .concat(['localhost', '127.0.0.1', '.railway.app', '.onrender.com'])
     },
     preview: {
       host: true,

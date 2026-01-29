@@ -11,7 +11,6 @@ import { BrowserRouter as Router } from "react-router";
 import { AppRoutes } from "./routes";
 import ToastContainer from "./components/ui/toast/ToastContainer";
 import ScrollToTop from "./components/common/ScrollToTop";
-import ChatBot from "./components/ui/chatbot/ChatBot";
 
 /**
  * Componente raíz de la aplicación React
@@ -26,7 +25,6 @@ export default function App() {
       <Router>
         <AppRoutes />
       </Router>
-      <ChatBot />
     </>
   );
 }

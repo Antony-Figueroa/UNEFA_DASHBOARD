@@ -1,53 +1,52 @@
 /**
- * @file institutionalResponsiblesService.tsx
- * @description Servicio para la gestión de responsables institucionales a través de la API.
+ * @fileoverview Institutional Responsibles service for API interaction.
+ * Handles data fetching, mapping, and persistence for institution personnel.
  */
 
-import { InstitutionalResponsible } from "../types";
-import apiClient from "../../../api/apiClient";
+import { InstitutionalResponsible, CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload } from "../types";
+import { createCrudService } from "../../../api/crudServiceFactory";
 
+/**
+ * Base URL for institutional responsibles endpoints.
+ */
 const API_URL = "/institutional-responsibles";
 
 /**
- * Obtiene la lista de responsables institucionales desde la API.
+ * Interface for InstitutionalResponsible Data Transfer Object (API Response).
  */
-export const getInstitutionalResponsibles = async (): Promise<InstitutionalResponsible[]> => {
-  const response = await apiClient.get<InstitutionalResponsible[]>(API_URL);
-  return response.data;
-};
+interface InstitutionalResponsibleDTO {
+  responsibleId: string;
+  identificationPrefix: string;
+  identificationNumber: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  secondLastName?: string;
+  fullName: string;
+  position: string;
+  phone: string;
+  email: string;
+  institutionId: string;
+  institutionName?: string;
+  status: boolean;
+  registrationDate: string | Date;
+}
 
 /**
- * Crea un nuevo responsable institucional.
+ * Maps an InstitutionalResponsibleDTO from the API to a domain object.
+ * @param dto - The data transfer object from the API.
+ * @returns A domain InstitutionalResponsible object with proper date formatting.
  */
-export const createInstitutionalResponsible = async (
-  responsible: Omit<InstitutionalResponsible, "responsibleId" | "registrationDate">
-): Promise<InstitutionalResponsible> => {
-  const response = await apiClient.post<InstitutionalResponsible>(API_URL, responsible);
-  return response.data;
-};
+const mapFromApi = (dto: InstitutionalResponsibleDTO): InstitutionalResponsible => ({
+  ...dto,
+  registrationDate: new Date(dto.registrationDate),
+});
 
 /**
- * Actualiza un responsable institucional existente.
+ * Institutional Responsibles service for API interaction.
+ * Handles data fetching, mapping, and persistence for institution personnel using the CRUD factory.
  */
-export const updateInstitutionalResponsible = async (
-  id: string,
-  responsible: Partial<InstitutionalResponsible>
-): Promise<InstitutionalResponsible> => {
-  const response = await apiClient.patch<InstitutionalResponsible>(`${API_URL}/${id}`, responsible);
-  return response.data;
-};
-
-/**
- * Elimina (inactiva) un responsable institucional.
- */
-export const deleteInstitutionalResponsible = async (id: string): Promise<void> => {
-  await apiClient.delete(`${API_URL}/${id}`);
-};
-
-/**
- * Cambia el estado de un responsable institucional.
- */
-export const toggleInstitutionalResponsibleStatus = async (id: string, status: boolean): Promise<InstitutionalResponsible> => {
-  const response = await apiClient.patch<InstitutionalResponsible>(`${API_URL}/${id}/status`, { status });
-  return response.data;
-};
+export const responsibleService = createCrudService<InstitutionalResponsible, CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload, InstitutionalResponsibleDTO>({
+  endpoint: API_URL,
+  mapFromApi
+});

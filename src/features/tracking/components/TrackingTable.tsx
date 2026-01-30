@@ -12,7 +12,7 @@ import {
     TableRow,
     Pagination,
 } from "../../../components/ui/table";
-import { ActionButton } from "../../../components/common/ActionButton";
+import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import Badge from "../../../components/ui/badge/Badge";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
@@ -26,26 +26,49 @@ import {
 } from "../../../icons/actions";
 import { TrackingRowData } from "../types";
 
+/**
+ * Propiedades del componente TrackingTable.
+ */
 interface TrackingTableProps {
+    /** Arreglo de datos de seguimiento para mostrar */
     data: TrackingRowData[];
+    /** Estado de carga de los datos */
     status: "loading" | "success" | "error";
+    /** Error capturado si el estado es 'error' */
     error: Error | null;
+    /** Función llamada al solicitar editar un registro */
     onEdit?: (tracking: TrackingRowData) => void;
-    onDelete?: (id: string) => void;
+    /** Función llamada al solicitar eliminar/inactivar un registro */
+    onDelete?: (tracking: TrackingRowData) => void;
+    /** Función llamada al solicitar restaurar un registro inactivo */
     onRestore?: (tracking: TrackingRowData) => void;
+    /** Función llamada al solicitar ver detalles de un registro */
     onView?: (tracking: TrackingRowData) => void;
+    /** Opciones para el filtro de traslado */
     transferOptions?: { value: string; label: string }[];
 }
 
+/**
+ * Propiedades del componente interno ActionButtons.
+ */
 interface ActionButtonsProps {
+    /** Callback para editar */
     onEdit?: () => void;
+    /** Callback para eliminar */
     onDelete?: () => void;
+    /** Callback para restaurar */
     onRestore?: () => void;
+    /** Callback para ver detalles */
     onView?: () => void;
+    /** Estado actual del registro (activo/inactivo) */
     status: boolean;
+    /** Indica si se debe renderizar en modo móvil */
     isMobile?: boolean;
 }
 
+/**
+ * Componente interno para renderizar los botones de acción de cada fila.
+ */
 const ActionButtons = ({
     onEdit,
     onDelete,
@@ -61,8 +84,8 @@ const ActionButtons = ({
     return (
         <div className={containerClasses}>
             {onView && (
-                <ActionButton
-                    onClick={() => onView()}
+                <AsyncActionButton
+                    onClick={async () => onView()}
                     icon={<EyeIcon />}
                     tooltip="Ver Detalles"
                     label={isMobile ? "Ver Detalles" : undefined}
@@ -71,8 +94,8 @@ const ActionButtons = ({
                 />
             )}
             {onEdit && (
-                <ActionButton
-                    onClick={() => onEdit()}
+                <AsyncActionButton
+                    onClick={async () => onEdit()}
                     icon={<EditIcon />}
                     tooltip="Editar"
                     label={isMobile ? "Editar Seguimiento" : undefined}
@@ -82,8 +105,8 @@ const ActionButtons = ({
             )}
             {status ? (
                 onDelete && (
-                    <ActionButton
-                        onClick={() => onDelete()}
+                    <AsyncActionButton
+                        onClick={async () => onDelete()}
                         icon={<TrashIcon />}
                         tooltip="Inactivar"
                         label={isMobile ? "Inactivar Seguimiento" : undefined}
@@ -93,8 +116,8 @@ const ActionButtons = ({
                 )
             ) : (
                 onRestore && (
-                    <ActionButton
-                        onClick={() => onRestore()}
+                    <AsyncActionButton
+                        onClick={async () => onRestore()}
                         icon={<RefreshIcon />}
                         tooltip="Restaurar"
                         label={isMobile ? "Restaurar Seguimiento" : undefined}
@@ -107,6 +130,12 @@ const ActionButtons = ({
     );
 };
 
+/**
+ * Componente TrackingTable.
+ * 
+ * Muestra una tabla paginada y filtrable de registros de seguimiento.
+ * Permite realizar acciones de edición, eliminación y visualización.
+ */
 export default function TrackingTable({
     data,
     status,
@@ -240,7 +269,7 @@ export default function TrackingTable({
                                     <ActionButtons
                                         onView={onView ? () => onView(item) : undefined}
                                         onEdit={onEdit ? () => onEdit(item) : undefined}
-                                        onDelete={onDelete ? () => onDelete(item.trackingId) : undefined}
+                                        onDelete={onDelete ? () => onDelete(item) : undefined}
                                         onRestore={onRestore ? () => onRestore(item) : undefined}
                                         status={item.status}
                                     />

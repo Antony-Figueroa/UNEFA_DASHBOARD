@@ -1,48 +1,51 @@
-/**
- * @file institutionsService.tsx
- * @description Servicio para la gestión de instituciones a través de la API.
- */
-
-import { Institution } from "../types";
-import apiClient from "../../../api/apiClient";
+import { Institution, CreateInstitutionPayload, UpdateInstitutionPayload } from "../types";
+import { createCrudService } from "../../../api/crudServiceFactory";
 
 const API_URL = "/institutions";
 
 /**
- * Obtiene la lista de instituciones desde la API.
+ * Interface for Institution Data Transfer Object (API Response).
  */
-export const getInstitutions = async (): Promise<Institution[]> => {
-  const response = await apiClient.get<Institution[]>(API_URL);
-  return response.data;
-};
+interface InstitutionDTO {
+  institutionId: string;
+  rif: string;
+  name: string;
+  fiscalAddress: string;
+  phone: string;
+  practiceType: string;
+  careerId: string;
+  careerName?: string;
+  region: string;
+  nucleus: string;
+  extension: string;
+  institutionType: string;
+  status: boolean;
+  registrationDate: string | Date;
+  responsibleCount?: number;
+  isInUse?: boolean;
+}
 
 /**
- * Crea una nueva institución.
+ * Maps an InstitutionDTO from the API to a domain Institution object.
+ * @param dto - The data transfer object from the API.
+ * @returns A domain Institution object with proper date formatting.
  */
-export const createInstitution = async (institution: Omit<Institution, "institutionId" | "registrationDate">): Promise<Institution> => {
-  const response = await apiClient.post<Institution>(API_URL, institution);
-  return response.data;
-};
+const mapFromApi = (dto: InstitutionDTO): Institution => ({
+  ...dto,
+  registrationDate: new Date(dto.registrationDate),
+});
 
 /**
- * Actualiza una institución existente.
+ * Servicio centralizado para la gestión de instituciones generado mediante la fábrica CRUD.
  */
-export const updateInstitution = async (id: string, institution: Partial<Institution>): Promise<Institution> => {
-  const response = await apiClient.put<Institution>(`${API_URL}/${id}`, institution);
-  return response.data;
-};
+export const institutionService = createCrudService<Institution, CreateInstitutionPayload, UpdateInstitutionPayload, InstitutionDTO>({
+  endpoint: API_URL,
+  mapFromApi
+});
 
-/**
- * Elimina (inactiva) una institución.
- */
-export const deleteInstitution = async (id: string): Promise<void> => {
-  await apiClient.delete(`${API_URL}/${id}`);
-};
-
-/**
- * Cambia el estado de una institución.
- */
-export const toggleInstitutionStatus = async (id: string, status: boolean): Promise<Institution> => {
-  const response = await apiClient.patch<Institution>(`${API_URL}/${id}/status`, { status });
-  return response.data;
-};
+// Exportaciones individuales para compatibilidad
+export const getInstitutions = institutionService.getAll;
+export const createInstitution = institutionService.create;
+export const updateInstitution = (id: string, institution: UpdateInstitutionPayload) => institutionService.update({ ...institution, institutionId: id } as any);
+export const deleteInstitution = institutionService.delete;
+export const toggleInstitutionStatus = institutionService.toggleStatus!;

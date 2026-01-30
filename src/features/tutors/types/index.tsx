@@ -4,41 +4,74 @@
  * Centraliza las interfaces para asegurar consistencia en el módulo de Tutores.
  */
 
+/**
+ * Representa un tutor en el sistema.
+ */
 export interface Tutor {
-  tutorId: string; // identificador único
+  /** Identificador único del tutor */
+  tutorId: string;
 
-  // Datos de Identificación
-  identificationPrefix: "V" | "E"; // V, E
-  identificationNumber: string; // número de identificación
+  /** Prefijo de identificación (V, E) */
+  identificationPrefix: "V" | "E";
+  /** Número de identificación (cédula) */
+  identificationNumber: string;
 
-  // Nombres y Apellidos
-  firstName: string; // Primer Nombre
-  middleName?: string; // Segundo Nombre
-  lastName: string; // Primer Apellido
-  secondLastName?: string; // Segundo Apellido
+  /** Primer nombre */
+  firstName: string;
+  /** Segundo nombre (opcional) */
+  middleName?: string;
+  /** Primer apellido */
+  lastName: string;
+  /** Segundo apellido (opcional) */
+  secondLastName?: string;
 
-  // Datos Personales
-  sex: "FEMENINO" | "MASCULINO"; // Sexo
-  phone: string; // Teléfono (ej: 04261234567)
-  email: string; // Correo Electrónico
+  /** Sexo del tutor */
+  sex: "FEMENINO" | "MASCULINO";
+  /** Teléfono de contacto */
+  phone: string;
+  /** Correo electrónico */
+  email: string;
 
-  // Datos Profesionales
-  profession: string; // Profesión
-  condition: string; // Condición
-  dedication: string; // Dedicación
-  category: string; // Categoría
+  /** Profesión del tutor */
+  profession: string;
+  /** Condición laboral */
+  condition: string;
+  /** Dedicación horaria */
+  dedication: string;
+  /** Categoría docente */
+  category: string;
 
-  // Metadatos
-  registrationDate: Date; // fecha de registro
-  status: boolean; // true: activo, false: inactivo/papelera
+  /** Fecha de registro en el sistema */
+  registrationDate: Date;
+  /** Estado de activación (activo/inactivo) */
+  status: boolean;
+  /** IDs de las carreras asociadas */
   carreras: string[];
-  practiceTypes?: string[]; // Tipos de prácticas asignadas
+  /** Tipos de prácticas asignadas (opcional) */
+  practiceTypes?: string[];
+  /** Indica si el tutor está en uso en alguna práctica (opcional) */
   isInUse?: boolean;
+}
+
+/**
+ * Payload para crear un nuevo tutor.
+ */
+export type CreateTutorPayload = Omit<Tutor, 'tutorId' | 'registrationDate' | 'status' | 'isInUse'>;
+
+/**
+ * Payload para actualizar un tutor existente.
+ */
+export interface UpdateTutorPayload extends Partial<CreateTutorPayload> {
+  /** Identificador único del tutor a actualizar */
+  tutorId: string;
+  /** Estado del tutor (opcional en actualización) */
+  status?: boolean;
 }
 
 /**
  * Tipo para mostrar en tabla (fechas formateadas).
  */
 export interface TutorRowData extends Omit<Tutor, "registrationDate"> {
-  registrationDate: string; // fecha formateada para visualización
+  /** Fecha formateada para visualización */
+  registrationDate: string;
 }

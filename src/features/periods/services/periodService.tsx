@@ -3,14 +3,20 @@
  * @description Encapsula la lógica de comunicación con la API para las operaciones CRUD.
  */
 
-import { Periodo } from "../types";
+import { Periodo, CreatePeriodPayload, UpdatePeriodPayload } from "../types";
 import apiClient from "../../../api/apiClient";
 
+/**
+ * URL base para el recurso de periodos.
+ */
 const API_URL = "/periodos";
 
 // --- API Data Transformation ---
 
-// DTO (Data Transfer Object) que representa la estructura de la API
+/**
+ * DTO (Data Transfer Object) que representa la estructura del periodo en la API.
+ * Incluye múltiples variantes de nombres para asegurar compatibilidad.
+ */
 interface PeriodoApiDTO {
   periodId?: string;
   PERIOD_ID?: string | number;
@@ -45,22 +51,35 @@ interface PeriodoApiDTO {
   T_INTERNSHIPS_CODE?: string;
   code?: string;
   codigo?: string;
+  isInUse?: boolean | number;
+  IS_IN_USE?: boolean | number;
+  is_in_use?: boolean | number;
   [key: string]: unknown;
 }
 
+/**
+ * Parsea un valor de fecha (string o timestamp) a un objeto Date.
+ * 
+ * @param value - Valor a parsear.
+ * @returns Objeto Date.
+ */
 const parseDate = (value: number | string | undefined): Date => {
   if (!value) return new Date();
   if (typeof value === "number") {
-    // Unix timestamp in ms or seconds
+    // Unix timestamp en ms o segundos
     const ms = value < 1e12 ? value * 1000 : value;
     return new Date(ms);
   }
   return new Date(value);
 };
 
-// Convierte el DTO de la API al modelo de dominio del Frontend (con objetos Date)
+/**
+ * Mapea un DTO de la API al modelo de dominio Periodo.
+ * 
+ * @param dto - Objeto proveniente de la API.
+ * @returns Objeto de tipo Periodo.
+ */
 const fromApi = (dto: PeriodoApiDTO): Periodo => {
-  // Flexibilidad total para nombres de campos comunes en la API
   const periodId = dto.PERIOD_ID ?? dto.periodId ?? dto.id ?? dto.ID ?? dto._id ?? "";
   const description = dto.DESCRIPTION ?? dto.description ?? dto.nombre ?? dto.name ?? dto.title ?? dto.periodo ?? "";
   const startDateRaw = dto.START_DATE ?? dto.startDate ?? dto.fechaInicio ?? dto.start_date;
@@ -80,11 +99,16 @@ const fromApi = (dto: PeriodoApiDTO): Periodo => {
     periodStatus: (Number(periodStatusRaw) || 1) as 1 | 2 | 3,
     status: typeof statusRaw === 'number' ? statusRaw === 1 : !!statusRaw,
     code: String(code),
-    isInUse: !!isInUseRaw,
+    isInUse: typeof isInUseRaw === 'number' ? isInUseRaw === 1 : !!isInUseRaw,
   };
 };
 
-// Convierte el modelo de dominio del Frontend al DTO para enviar a la API
+/**
+ * Mapea el modelo de dominio o payloads al formato esperado por la API.
+ * 
+ * @param periodo - Datos del periodo a enviar.
+ * @returns DTO parcial para la API.
+ */
 const toApi = (periodo: Partial<Periodo>): Partial<PeriodoApiDTO> => {
   const dto: Partial<PeriodoApiDTO> = {};
   if (periodo.description) dto.description = periodo.description;
@@ -97,42 +121,64 @@ const toApi = (periodo: Partial<Periodo>): Partial<PeriodoApiDTO> => {
   return dto;
 };
 
+/**
+ * Obtiene todos los periodos académicos.
+ * 
+ * @returns Promesa con la lista de periodos.
+ */
 export const getPeriods = async (): Promise<Periodo[]> => {
   try {
     const response = await apiClient.get<PeriodoApiDTO[]>(API_URL);
     return response.data.map(fromApi);
   } catch (error) {
-    console.error(`[periodService] Error fetching periods:`, error);
+    console.error(`[periodService] Error al obtener periodos:`, error);
     throw error;
   }
 };
 
-export const createPeriod = async (periodo: Omit<Periodo, "periodId" | "creationDate">): Promise<Periodo> => {
+/**
+ * Crea un nuevo periodo académico.
+ * 
+ * @param payload - Datos del nuevo periodo.
+ * @returns Promesa con el periodo creado.
+ */
+export const createPeriod = async (payload: CreatePeriodPayload): Promise<Periodo> => {
   try {
-    const response = await apiClient.post<PeriodoApiDTO>(API_URL, toApi(periodo));
+    const response = await apiClient.post<PeriodoApiDTO>(API_URL, toApi(payload));
     return fromApi(response.data);
   } catch (error) {
-    console.error(`[periodService] Error creating period:`, error);
+    console.error(`[periodService] Error al crear periodo:`, error);
     throw error;
   }
 };
 
-export const updatePeriod = async (periodo: Periodo): Promise<Periodo> => {
-  if (!periodo.periodId) throw new Error("ID de periodo requerido para actualizar");
+/**
+ * Actualiza un periodo académico existente.
+ * 
+ * @param payload - Datos actualizados del periodo.
+ * @returns Promesa con el periodo actualizado.
+ */
+export const updatePeriod = async (payload: UpdatePeriodPayload): Promise<Periodo> => {
+  if (!payload.periodId) throw new Error("ID de periodo requerido para actualizar");
   try {
-    const response = await apiClient.put<PeriodoApiDTO>(`${API_URL}/${periodo.periodId}`, toApi(periodo));
+    const response = await apiClient.put<PeriodoApiDTO>(`${API_URL}/${payload.periodId}`, toApi(payload));
     return fromApi(response.data);
   } catch (error) {
-    console.error(`[periodService] Error updating period:`, error);
+    console.error(`[periodService] Error al actualizar periodo:`, error);
     throw error;
   }
 };
 
+/**
+ * Elimina (físicamente) un periodo académico.
+ * 
+ * @param id - Identificador del periodo a eliminar.
+ */
 export const deletePeriod = async (id: string): Promise<void> => {
   try {
     await apiClient.delete(`${API_URL}/${id}`);
   } catch (error) {
-    console.error(`[periodService] Error deleting period:`, error);
+    console.error(`[periodService] Error al eliminar periodo:`, error);
     throw error;
   }
 };

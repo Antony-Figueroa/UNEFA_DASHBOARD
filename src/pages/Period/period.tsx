@@ -23,9 +23,12 @@ import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import PeriodViewModal from "../../features/periods/components/PeriodViewModal";
 import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
 import PeriodoPDF from "../../components/ui/pdf/templates/PeriodoPDF";
-import { Periodo, PeriodoRowData } from "../../features/periods/types";
+import { Periodo, PeriodoRowData, CreatePeriodPayload, UpdatePeriodPayload } from "../../features/periods/types";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
 
+/**
+ * Información para los diálogos de confirmación.
+ */
 type ConfirmationInfo = {
     isOpen: boolean;
     title: string;
@@ -35,6 +38,13 @@ type ConfirmationInfo = {
     variant: DialogVariant;
 };
 
+/**
+ * Página principal de gestión de Periodos Académicos.
+ * 
+ * Esta página orquestra la visualización de la lista de periodos (activos e inactivos),
+ * la creación, edición, culminación, activación y eliminación de los mismos.
+ * Utiliza el hook `usePeriods` para la lógica de negocio y comunicación con la API.
+ */
 export default function Period() {
     const [pageLoading, setPageLoading] = useState(true);
 
@@ -68,8 +78,9 @@ export default function Period() {
     const [pdfSearchTerm, setPdfSearchTerm] = useState("");
     const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
 
-    // ... handle events ...
-
+    /**
+     * Filtra los datos para el reporte PDF según el término de búsqueda.
+     */
     const pdfFilteredData = useMemo(() => {
         const search = pdfSearchTerm.trim().toLowerCase();
         return (Array.isArray(periodos) ? periodos : [])
@@ -81,39 +92,69 @@ export default function Period() {
     }, [periodos, pdfSearchTerm]);
 
     // --- Manejadores de Eventos para Modales ---
+    
+    /**
+     * Abre el modal para crear un nuevo periodo.
+     */
     const handleOpenCreateModal = () => {
         setEditingPeriodo(null);
         setIsModalOpen(true);
     };
 
+    /**
+     * Abre el modal para editar un periodo existente.
+     * 
+     * @param periodoRow - Datos de la fila seleccionada.
+     */
     const handleOpenEditModal = (periodoRow: PeriodoRowData) => {
-        // Se busca el periodo original con objetos Date, ya que la tabla puede tener fechas formateadas como string.
         const originalPeriodo = periodos.find(p => p.periodId === periodoRow.periodId);
-        // Si no se encuentra el periodo (no debería ocurrir), no se hace nada.
-        if (!originalPeriodo) return;
+        if (!originalPeriodo) {
+            console.error("[PeriodPage] No se encontró el periodo original para editar:", periodoRow.periodId);
+            return;
+        }
         setEditingPeriodo(originalPeriodo);
         setIsModalOpen(true);
     };
 
+    /**
+     * Cierra el modal de creación/edición.
+     */
     const handleCloseCreateEditModal = () => {
         setIsModalOpen(false);
         setEditingPeriodo(null);
     };
 
+    /**
+     * Abre el modal de visualización de detalles.
+     * 
+     * @param periodoRow - Datos de la fila seleccionada.
+     */
     const handleOpenViewModal = (periodoRow: PeriodoRowData) => {
         const originalPeriodo = periodos.find(p => p.periodId === periodoRow.periodId);
-        if (!originalPeriodo) return;
+        if (!originalPeriodo) {
+            console.error("[PeriodPage] No se encontró el periodo original para visualizar:", periodoRow.periodId);
+            return;
+        }
         setViewingPeriod(originalPeriodo);
         setIsViewModalOpen(true);
     };
 
+    /**
+     * Cierra el modal de visualización.
+     */
     const handleCloseViewModal = () => {
         setIsViewModalOpen(false);
     };
 
     // --- Lógica de Negocio ---
-    const handleSave = (periodoData: Omit<Periodo, "periodId" | "creationDate"> | Periodo) => {
-        const isEditing = 'periodId' in periodoData;
+
+    /**
+     * Maneja el guardado (creación o actualización) de un periodo con confirmación previa.
+     * 
+     * @param payload - Datos del periodo (CreatePeriodPayload o UpdatePeriodPayload).
+     */
+    const handleSave = (payload: CreatePeriodPayload | UpdatePeriodPayload) => {
+        const isEditing = 'periodId' in payload;
         setConfirmation({
             isOpen: true,
             title: isEditing ? 'Confirmar Modificación' : 'Confirmar Registro',
@@ -121,14 +162,14 @@ export default function Period() {
             onConfirm: async () => {
                 try {
                     if (isEditing) {
-                        await editPeriod(periodoData as Periodo);
+                        await editPeriod(payload as UpdatePeriodPayload);
                     } else {
-                        await addPeriod(periodoData);
+                        await addPeriod(payload as CreatePeriodPayload);
                     }
                     handleCloseCreateEditModal();
                     setConfirmation(null);
-                } catch {
-                    // El error ya se maneja en el hook
+                } catch (e) {
+                    console.error("[PeriodPage] Error al guardar periodo:", e);
                 }
             },
             confirmText: isEditing ? 'Guardar' : 'Registrar',
@@ -136,65 +177,111 @@ export default function Period() {
         });
     };
 
-
+    /**
+     * Maneja la culminación de un periodo académico.
+     * 
+     * @param periodoToCulminate - Datos de la fila del periodo a culminar.
+     */
     const handleCulminatePeriod = async (periodoToCulminate: PeriodoRowData) => {
         setConfirmation({
             isOpen: true,
             title: 'Confirmar Culminación',
             message: `¿Estás seguro de que deseas culminar el periodo "${periodoToCulminate.description}"? Los periodos culminados no se pueden editar.`,
             onConfirm: async () => {
-                const originalPeriodo = periodos.find(p => p.periodId === periodoToCulminate.periodId);
-                if (originalPeriodo) await editPeriod({ ...originalPeriodo, periodStatus: 3 });
-                setConfirmation(null);
+                try {
+                    const originalPeriodo = periodos.find(p => p.periodId === periodoToCulminate.periodId);
+                    if (originalPeriodo) {
+                        await editPeriod({ ...originalPeriodo, periodStatus: 3 });
+                    }
+                } catch (e) {
+                    console.error("[PeriodPage] Error al culminar periodo:", e);
+                } finally {
+                    setConfirmation(null);
+                }
             },
             confirmText: 'Culminar',
             variant: 'warning'
         });
     };
 
+    /**
+     * Maneja la activación de un periodo académico (cambio a "En Curso").
+     * 
+     * @param periodoToActivate - Datos de la fila del periodo a activar.
+     */
     const handleActivatePeriod = async (periodoToActivate: PeriodoRowData) => {
         setConfirmation({
             isOpen: true,
             title: 'Confirmar Activación',
             message: `¿Estás seguro de que deseas activar el periodo "${periodoToActivate.description}"? Esto lo pondrá "En Curso" y permitirá registrar actividades.`,
             onConfirm: async () => {
-                const originalPeriodo = periodos.find(p => p.periodId === periodoToActivate.periodId);
-                if (originalPeriodo) await editPeriod({ ...originalPeriodo, periodStatus: 2 });
-                setConfirmation(null);
+                try {
+                    const originalPeriodo = periodos.find(p => p.periodId === periodoToActivate.periodId);
+                    if (originalPeriodo) {
+                        await editPeriod({ ...originalPeriodo, periodStatus: 2 });
+                    }
+                } catch (e) {
+                    console.error("[PeriodPage] Error al activar periodo:", e);
+                } finally {
+                    setConfirmation(null);
+                }
             },
             confirmText: 'Activar',
             variant: 'success'
         });
     };
 
+    /**
+     * Maneja la restauración de un periodo inactivo/eliminado.
+     * 
+     * @param periodoRow - Datos de la fila del periodo a restaurar.
+     */
     const handleRestore = async (periodoRow: PeriodoRowData) => {
         setConfirmation({
             isOpen: true,
             title: 'Confirmar Restauración',
             message: `¿Estás seguro de que deseas restaurar el periodo "${periodoRow.description}"?`,
             onConfirm: async () => {
-                const originalPeriodo = periodos.find(p => p.periodId === periodoRow.periodId);
-                if (originalPeriodo) {
-                    await editPeriod({ ...originalPeriodo, status: true });
+                try {
+                    const originalPeriodo = periodos.find(p => p.periodId === periodoRow.periodId);
+                    if (originalPeriodo) {
+                        await editPeriod({ ...originalPeriodo, status: true });
+                    }
+                } catch (e) {
+                    console.error("[PeriodPage] Error al restaurar periodo:", e);
+                } finally {
+                    setConfirmation(null);
                 }
-                setConfirmation(null);
             },
             confirmText: 'Restaurar',
             variant: 'success'
         });
     };
 
-    const handleDelete = (id: string) => {
-        const periodoObject = periodos.find(p => p.periodId === id);
-        if (!periodoObject) return;
+    /**
+     * Maneja la desactivación (eliminación lógica) de un periodo.
+     * 
+     * @param periodoRow - Datos de la fila del periodo a desactivar.
+     */
+    const handleDelete = (periodoRow: PeriodoRowData) => {
+        const originalPeriodo = periodos.find(p => p.periodId === periodoRow.periodId);
+        if (!originalPeriodo) {
+            console.error("[PeriodPage] No se encontró el periodo original para eliminar:", periodoRow.periodId);
+            return;
+        }
 
         setConfirmation({
             isOpen: true,
             title: 'Confirmar Envío a Inactivos',
-            message: `¿Estás seguro de que deseas enviar el período "${periodoObject.description}" a Inactivos?`,
+            message: `¿Estás seguro de que deseas enviar el período "${originalPeriodo.description}" a Inactivos?`,
             onConfirm: async () => {
-                await removePeriod(periodoObject);
-                setConfirmation(null);
+                try {
+                    await removePeriod(originalPeriodo);
+                } catch (e) {
+                    console.error("[PeriodPage] Error al eliminar periodo:", e);
+                } finally {
+                    setConfirmation(null);
+                }
             },
             confirmText: 'Confirmar',
             variant: 'error'

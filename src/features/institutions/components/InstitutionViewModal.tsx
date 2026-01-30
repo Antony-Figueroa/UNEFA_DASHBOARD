@@ -6,15 +6,36 @@
 
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
-import { InstitutionRowData } from "../types";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
+import { Institution } from "../types";
 
+/**
+ * Props for the InstitutionViewModal component.
+ */
 interface InstitutionViewModalProps {
+    /** Whether the modal is visible */
     isOpen: boolean;
+    /** Callback to close the modal */
     onClose: () => void;
-    onEdit?: (inst: InstitutionRowData) => void;
-    institution: InstitutionRowData | null;
+    /** Optional callback fired when the edit button is clicked */
+    onEdit?: (inst: Institution) => void;
+    /** The institution record to display */
+    institution: Institution | null;
 }
 
+/**
+ * Component for viewing the full details of an institution.
+ * Presents information in a structured, read-only format.
+ * 
+ * @example
+ * ```tsx
+ * <InstitutionViewModal
+ *   isOpen={isViewOpen}
+ *   onClose={() => setViewOpen(false)}
+ *   institution={selectedInstitution}
+ * />
+ * ```
+ */
 export default function InstitutionViewModal({
     isOpen,
     onClose,
@@ -23,8 +44,16 @@ export default function InstitutionViewModal({
 }: InstitutionViewModalProps) {
     if (!institution) return null;
 
+    const formattedDate = new Date(institution.registrationDate).toLocaleDateString('es-VE', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
     return (
-        <Modal isOpen={isOpen} onClose={onClose} isFullscreen={true} showCloseButton>
+        <Modal isOpen={isOpen} onClose={onClose} size="5xl" showCloseButton>
             <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">Detalles de Institución</ModalHeader>
             <ModalBody className="overflow-y-auto custom-scrollbar grow px-6 sm:px-12 py-8">
                 <div className="space-y-12 max-w-5xl mx-auto py-2">
@@ -98,7 +127,7 @@ export default function InstitutionViewModal({
                         </div>
                         <div>
                             <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Fecha Registro</label>
-                            <p className="text-[11px] text-text-secondary dark:text-text-tertiary font-medium">{institution.registrationDate}</p>
+                            <p className="text-[11px] text-text-secondary dark:text-text-tertiary font-medium">{formattedDate}</p>
                         </div>
                     </div>
                 </div>
@@ -108,9 +137,9 @@ export default function InstitutionViewModal({
                     Cerrar
                 </Button>
                 {onEdit && (
-                    <Button onClick={() => { onEdit(institution); onClose(); }} className="flex-1 sm:flex-none">
+                    <AsyncButton onClick={async () => { onEdit(institution); onClose(); }} className="flex-1 sm:flex-none">
                         Editar Información
-                    </Button>
+                    </AsyncButton>
                 )}
             </ModalFooter>
         </Modal>

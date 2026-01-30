@@ -23,11 +23,11 @@ const LayoutContent: React.FC = () => {
         <Backdrop />
       </div>
       <div
-        className={`flex-1 transition-all duration-300 ease-in-out ${isExpanded || isHovered ? "lg:ml-72" : "lg:ml-22"
+        className={`flex-1 transition-all duration-300 ease-in-out ${isExpanded || isHovered ? "lg:ml-[290px]" : "lg:ml-[90px]"
           } ${isMobileOpen ? "ml-0" : ""}`}
       >
         <div 
-          className="sticky z-9999"
+          className="sticky z-40"
           style={{ top: 'var(--banner-height, 0px)' }}
         >
           <DatabaseStatusBanner />

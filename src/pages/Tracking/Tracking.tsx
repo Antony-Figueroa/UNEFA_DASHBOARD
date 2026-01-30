@@ -17,16 +17,19 @@ import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { useTracking } from "../../features/tracking/hooks/useTracking";
 import { useLists } from "../../features/lists/hooks/useLists";
-import { Tracking, TrackingRowData } from "../../features/tracking/types";
+import { Tracking, TrackingRowData, CreateTrackingPayload, UpdateTrackingPayload, TRANSFER_OPTIONS } from "../../features/tracking/types";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
 import TrackingStatsChart from "../../features/tracking/components/TrackingStatsChart";
 import { getTrackingStats, TrackingStats } from "../../features/tracking/services/trackingService";
 
-const TRANSFER_OPTIONS = [
-    { value: 'false', label: 'No' },
-    { value: 'true', label: 'Sí' },
-];
-
+/**
+ * Página de Seguimiento (Tracking).
+ * 
+ * Esta página gestiona la visualización, creación, edición y eliminación de registros
+ * de seguimiento de estudiantes. Incluye estadísticas visuales y una tabla interactiva.
+ * 
+ * @component
+ */
 export default function TrackingPage() {
     const [pageLoading, setPageLoading] = useState(true);
     const { fetchMultipleLists } = useLists();
@@ -35,18 +38,44 @@ export default function TrackingPage() {
     const [statsLoading, setStatsLoading] = useState(true);
     const [statsError, setStatsError] = useState<string | null>(null);
 
-    // Cargar estadísticas
+    const {
+        trackings,
+        status,
+        loadingAction,
+        error,
+        addTracking,
+        editTracking,
+        removeTracking,
+        restoreTracking
+    } = useTracking();
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingTracking, setEditingTracking] = useState<Tracking | null>(null);
+    const [confirmation, setConfirmation] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        variant: 'info' | 'error' | 'warning' | 'success';
+    } | null>(null);
+    const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
+
+    /**
+     * Carga las estadísticas de seguimiento desde el servidor.
+     * 
+     * @param silent - Si es true, evita mostrar el estado de carga inicial.
+     */
     const loadStats = async (silent = false) => {
         try {
             if (!silent) setStatsLoading(true);
             const data = await getTrackingStats();
             setStats(data);
             setStatsError(null);
-        } catch (error: any) {
-            console.error("Error loading tracking stats:", error);
-            const errorMessage = error.response?.data?.message || 
-                               error.message || 
-                               "Error al cargar las estadísticas de seguimiento";
+        } catch (error: unknown) {
+            console.error("[TrackingPage] Error al cargar estadísticas:", error);
+            const errorMessage = error instanceof Error 
+                               ? error.message 
+                               : "Error al cargar las estadísticas de seguimiento";
             setStatsError(errorMessage);
         } finally {
             if (!silent) setStatsLoading(false);
@@ -56,7 +85,7 @@ export default function TrackingPage() {
     useEffect(() => {
         loadStats();
         
-        // Polling para tiempo real
+        // Polling para mantener las estadísticas actualizadas cada 30 segundos
         const interval = setInterval(() => {
             loadStats(true);
         }, 30000);
@@ -64,7 +93,7 @@ export default function TrackingPage() {
         return () => clearInterval(interval);
     }, []);
 
-    // Cargar opciones dinámicas
+    // Carga de opciones dinámicas para filtros y formularios
     useEffect(() => {
         const loadOptions = async () => {
             try {
@@ -78,7 +107,7 @@ export default function TrackingPage() {
                     });
                 }
             } catch (error) {
-                console.error("Error loading list options for TrackingPage:", error);
+                console.error("[TrackingPage] Error al cargar listas dinámicas:", error);
             }
         };
         loadOptions();
@@ -90,27 +119,6 @@ export default function TrackingPage() {
         }, 500);
         return () => clearTimeout(timer);
     }, []);
-
-    const {
-        trackings,
-        status,
-        loadingAction,
-        error,
-        addTracking,
-        editTracking,
-        removeTracking,
-    } = useTracking();
-
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingTracking, setEditingTracking] = useState<Tracking | null>(null);
-    const [confirmation, setConfirmation] = useState<{
-        isOpen: boolean;
-        title: string;
-        message: string;
-        onConfirm: () => void;
-        variant: 'info' | 'error' | 'warning' | 'success';
-    } | null>(null);
-    const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
 
     const handleOpenCreateModal = () => {
         setEditingTracking(null);
@@ -131,24 +139,36 @@ export default function TrackingPage() {
         setIsModalOpen(true);
     };
 
-    const handleSave = async (trackingData: Omit<Tracking, "trackingId" | "creationDate"> | Tracking) => {
-        const isEditing = 'trackingId' in trackingData;
-        
+    /**
+     * Procesa el guardado de un registro (nuevo o existente).
+     * 
+     * @param trackingData - Datos provenientes del modal de seguimiento.
+     */
+    const handleSave = async (trackingData: CreateTrackingPayload | UpdateTrackingPayload) => {
         try {
-            if (isEditing) {
-                await editTracking(trackingData as Tracking);
+            if ('trackingId' in trackingData) {
+                await editTracking(trackingData as UpdateTrackingPayload);
             } else {
-                await addTracking(trackingData);
+                await addTracking(trackingData as CreateTrackingPayload);
             }
             setIsModalOpen(false);
             setEditingTracking(null);
-        } catch {
-            // Error handled in hook
+            // Refrescar estadísticas para reflejar el cambio
+            loadStats(true);
+        } catch (err) {
+            console.error("[TrackingPage] Error al procesar el guardado:", err);
         }
     };
 
-    const handleDelete = (id: string) => {
-        const tracking = trackings.find(t => t.trackingId === id);
+    /**
+     * Maneja la inactivación de un registro con confirmación previa.
+     * 
+     * @param item - Datos de la fila de seguimiento a inactivar.
+     */
+    const handleDelete = (item: TrackingRowData) => {
+        if (!item.trackingId) return;
+        
+        const tracking = trackings.find(t => t.trackingId === item.trackingId);
         if (!tracking) return;
 
         setConfirmation({
@@ -157,24 +177,36 @@ export default function TrackingPage() {
             message: `¿Estás seguro de que deseas inactivar el seguimiento de "${tracking.studentName}"?`,
             variant: 'error',
             onConfirm: async () => {
-                await removeTracking(id);
-                setConfirmation(null);
+                try {
+                    await removeTracking(item.trackingId!);
+                    loadStats(true);
+                } finally {
+                    setConfirmation(null);
+                }
             }
         });
     };
 
+    /**
+     * Maneja la restauración de un registro previamente inactivado.
+     * 
+     * @param trackingRow - Datos de la fila de seguimiento a restaurar.
+     */
     const handleRestore = (trackingRow: TrackingRowData) => {
-        const original = trackings.find(t => t.trackingId === trackingRow.trackingId);
-        if (!original) return;
+        if (!trackingRow.trackingId) return;
 
         setConfirmation({
             isOpen: true,
             title: 'Confirmar Restauración',
-            message: `¿Estás seguro de que deseas restaurar el seguimiento de "${original.studentName}"?`,
+            message: `¿Estás seguro de que deseas restaurar el seguimiento de "${trackingRow.studentName}"?`,
             variant: 'success',
             onConfirm: async () => {
-                await editTracking({ ...original, status: true });
-                setConfirmation(null);
+                try {
+                    await restoreTracking(trackingRow.trackingId);
+                    loadStats(true);
+                } finally {
+                    setConfirmation(null);
+                }
             }
         });
     };

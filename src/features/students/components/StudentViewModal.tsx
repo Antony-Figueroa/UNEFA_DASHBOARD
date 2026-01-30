@@ -6,15 +6,36 @@
 
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { StudentRowData } from "../types";
 
+/**
+ * Propiedades del componente StudentViewModal.
+ */
 interface StudentViewModalProps {
+    /** Indica si el modal está abierto */
     isOpen: boolean;
+    /** Función para cerrar el modal */
     onClose: () => void;
+    /** Función opcional para abrir el modal de edición desde la vista de detalles */
     onEdit?: (student: StudentRowData) => void;
+    /** Datos del estudiante a visualizar */
     student: StudentRowData | null;
 }
 
+/**
+ * Componente de modal para visualizar los detalles completos de un estudiante.
+ * Muestra información personal, académica y de contacto en un formato organizado.
+ * 
+ * @example
+ * ```tsx
+ * <StudentViewModal 
+ *   isOpen={isOpen} 
+ *   onClose={() => setIsOpen(false)} 
+ *   student={selectedStudent} 
+ * />
+ * ```
+ */
 export default function StudentViewModal({
     isOpen,
     onClose,
@@ -24,7 +45,7 @@ export default function StudentViewModal({
     if (!student) return null;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} isFullscreen={true} showCloseButton>
+        <Modal isOpen={isOpen} onClose={onClose} size="5xl" showCloseButton>
             <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">Detalles Completos del Estudiante</ModalHeader>
             <ModalBody className="overflow-y-auto custom-scrollbar grow px-6 sm:px-12 py-8">
                 <div className="space-y-12 max-w-5xl mx-auto py-2">
@@ -132,9 +153,9 @@ export default function StudentViewModal({
                     Cerrar
                 </Button>
                 {onEdit && (
-                    <Button onClick={() => { onEdit(student); onClose(); }} className="flex-1 sm:flex-none">
+                    <AsyncButton onClick={async () => { onEdit(student); onClose(); }} className="flex-1 sm:flex-none">
                         Editar Información
-                    </Button>
+                    </AsyncButton>
                 )}
             </ModalFooter>
         </Modal>

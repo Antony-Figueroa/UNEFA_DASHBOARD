@@ -1,15 +1,30 @@
+/**
+ * @file InternshipTypeViewModal.tsx
+ * @description Modal de solo lectura para visualizar los detalles de un Tipo de Pasantía.
+ * 
+ * @module features/internship-types/components
+ */
+
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { InternshipType } from "../types";
 import Badge from "../../../components/ui/badge/Badge";
 
 interface InternshipTypeViewModalProps {
+  /** Indica si el modal está visible */
   isOpen: boolean;
+  /** Callback para cerrar el modal */
   onClose: () => void;
+  /** Callback opcional para iniciar la edición desde la vista de detalles */
   onEdit?: (item: InternshipType) => void;
+  /** El elemento a visualizar */
   item: InternshipType | null;
 }
 
+/**
+ * Componente Modal para la visualización detallada de un Tipo de Pasantía.
+ */
 export default function InternshipTypeViewModal({
   isOpen,
   onClose,
@@ -34,19 +49,19 @@ export default function InternshipTypeViewModal({
               <div className="sm:col-span-2">
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Nombre</label>
                 <p className="text-sm font-semibold text-text-primary dark:text-white/90 uppercase">
-                  {item.NAME}
+                  {item.name}
                 </p>
               </div>
               <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Abreviación</label>
                 <p className="text-sm font-semibold text-text-primary dark:text-white/90 uppercase">
-                  {item.ABBREVIATION}
+                  {item.abbreviation}
                 </p>
               </div>
               <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Prioridad</label>
                 <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                  {item.PRIORITY}
+                  {item.priority}
                 </p>
               </div>
             </div>
@@ -55,13 +70,15 @@ export default function InternshipTypeViewModal({
           <div className="rounded-xl bg-bg-secondary dark:bg-white/3 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Estado</label>
-              <Badge color={item.STATUS === 1 ? "success" : "error"}>
-                {item.STATUS === 1 ? "Activo" : "Inactivo"}
+              <Badge color={item.status ? "success" : "error"}>
+                {item.status ? "Activo" : "Inactivo"}
               </Badge>
             </div>
             <div>
               <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Fecha Registro</label>
-              <p className="text-[11px] text-text-secondary dark:text-text-tertiary font-medium">{item.CREATION_DATE}</p>
+              <p className="text-[11px] text-text-secondary dark:text-text-tertiary font-medium">
+                {item.creationDate instanceof Date ? item.creationDate.toLocaleDateString() : String(item.creationDate)}
+              </p>
             </div>
           </div>
         </div>
@@ -72,9 +89,9 @@ export default function InternshipTypeViewModal({
           Cerrar
         </Button>
         {onEdit && (
-          <Button onClick={() => { onEdit(item); onClose(); }} className="flex-1 sm:flex-none">
+          <AsyncButton onClick={async () => { onEdit(item); onClose(); }} className="flex-1 sm:flex-none">
             Editar Tipo
-          </Button>
+          </AsyncButton>
         )}
       </ModalFooter>
     </Modal>

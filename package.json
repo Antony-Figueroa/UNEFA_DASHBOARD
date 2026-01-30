@@ -37,6 +37,7 @@
     "express": "^4.22.1",
     "flatpickr": "^4.6.13",
     "helmet": "^8.1.0",
+    "lucide-react": "^0.563.0",
     "maplibre-gl": "^5.16.0",
     "motion": "^12.26.2",
     "ogl": "^1.0.11",

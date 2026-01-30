@@ -1,17 +1,33 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from "axios";
+
+/**
+ * @file apiClient.ts
+ * @description Cliente de API centralizado basado en Axios para la aplicación UNEFA DASHBOARD.
+ * Implementa interceptores para manejo de autenticación, reintentos exponenciales y normalización de errores.
+ * 
+ * @module core/api
+ */
+
+/**
+ * Configuración de reintentos para peticiones fallidas.
+ */
+interface RetryConfig extends InternalAxiosRequestConfig {
+  _retryCount?: number;
+}
 
 const isProd = import.meta.env.PROD;
 const baseURL = import.meta.env.VITE_API_URL || (isProd ? "/api" : "http://localhost:3000/api");
 
-console.log(`[API] Base URL: ${baseURL} (Mode: ${isProd ? 'Production' : 'Development'})`);
-
 /**
- * Cliente de API centralizado para TailAdmin.
- * Configurado con timeouts, reintentos y manejo de errores robusto.
+ * Instancia central de Axios configurada con valores por defecto.
+ * 
+ * @example
+ * import apiClient from '@/api/apiClient';
+ * const data = await apiClient.get('/users');
  */
 const apiClient = axios.create({
   baseURL,
-  timeout: 40000, // Aumentado a 40s para dar tiempo a Render a "despertar"
+  timeout: 40000, // 40s para manejar cold-starts en entornos como Render
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
@@ -20,69 +36,77 @@ const apiClient = axios.create({
 });
 
 /**
- * Interceptor de solicitud para logging opcional.
+ * Interceptor de solicitud.
+ * Permite inyectar tokens o realizar transformaciones antes de enviar la petición.
  */
-apiClient.interceptors.request.use((config) => {
-  return config;
-}, (error) => {
-  console.error(`[API] Error en solicitud:`, error);
-  return Promise.reject(error);
-});
+apiClient.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    // Aquí se podrían añadir headers dinámicos si no se usan cookies (withCredentials)
+    return config;
+  },
+  (error: AxiosError) => {
+    console.error(`[API Request Error]:`, error);
+    return Promise.reject(error);
+  }
+);
 
 /**
- * Interceptor de respuesta para manejo de errores global y reintentos.
+ * Interceptor de respuesta.
+ * Maneja la lógica de reintentos, expiración de sesión (401) y normalización de errores.
  */
 apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response: AxiosResponse) => response,
   async (error: AxiosError) => {
-    const config = error.config as InternalAxiosRequestConfig & { _retryCount?: number };
+    const config = error.config as RetryConfig;
+    
+    // Rutas que no requieren redirección inmediata al login si fallan con 401
     const publicPaths = ['/', '/signin', '/signup', '/first-login', '/password-recovery', '/reset-password'];
     const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
     const isPublicPage = publicPaths.includes(currentPath);
     
-    // No loguear errores 401 como "Error detectado" ya que son parte del flujo normal de auth
-    // Tampoco loguear errores de salud (health/db-status) para evitar ruido por cold-starts en Render
-    const isMonitoringPath = error.config?.url?.includes('/health') || error.config?.url?.includes('/db-status');
+    // Rutas de monitoreo que no deben ensuciar el log de errores
+    const isMonitoringPath = config?.url?.includes('/health') || config?.url?.includes('/db-status');
     
-    if (error.response?.status !== 401 && !isPublicPage && !isMonitoringPath) {
-      console.error(`[API] Error: ${error.message} en ${error.config?.url}`);
-    }
-    
-    // Si recibimos un 401 Unauthorized y no estamos en una página pública, 
-    // significa que la sesión expiró o es inválida.
+    // 1. Manejo de Sesión Expirada (401)
     if (error.response?.status === 401 && !isPublicPage) {
       console.warn('[API] Sesión expirada o no autorizada. Redirigiendo al login...');
-      // Limpiar cualquier estado local si fuera necesario (aunque withCredentials usa cookies)
-      // Redirigir al login
+      // Redirección forzada al login para limpiar estado de la app
       window.location.replace('/signin');
       return Promise.reject(error);
     }
 
-    // Si no hay config (ej: error de red extremo) o ya excedimos los reintentos
-    if (!config || (config._retryCount ?? 0) >= 3) {
-      if (error.code === 'ERR_NETWORK' && !isPublicPage) {
-        console.error('[API] Error de red: Verifique su conexión o el estado del servidor.');
-      }
-      return Promise.reject(error);
+    // 2. Logging de errores no esperados
+    if (error.response?.status !== 401 && !isPublicPage && !isMonitoringPath) {
+      console.error(`[API Response Error]: ${error.message} en ${config?.url}`, {
+        status: error.response?.status,
+        data: error.response?.data
+      });
     }
 
-    config._retryCount = (config._retryCount ?? 0) + 1;
-
-    // Lógica de reintento para errores específicos (429, 503, o errores de red)
+    // 3. Lógica de Reintentos (Backoff Exponencial)
+    const MAX_RETRIES = 3;
     const shouldRetry = 
-      error.code === 'ECONNABORTED' || // Timeout
-      error.code === 'ERR_NETWORK' || // Error de red
-      !error.response || // Sin respuesta
-      error.response.status === 429 || // Too many requests
-      error.response.status === 503 || // Service unavailable
-      error.response.status >= 500;    // Server errors
+      !isPublicPage && 
+      (error.code === 'ECONNABORTED' || // Timeout
+       error.code === 'ERR_NETWORK' ||    // Error de red
+       !error.response ||                 // Sin respuesta del servidor
+       error.response.status === 429 ||    // Too many requests
+       error.response.status === 503 ||    // Service unavailable
+       error.response.status >= 500);      // Errores de servidor
 
-    if (shouldRetry) {
+    if (config && shouldRetry && (config._retryCount ?? 0) < MAX_RETRIES) {
+      config._retryCount = (config._retryCount ?? 0) + 1;
+      
       const delay = Math.pow(2, config._retryCount) * 1000;
+      console.warn(`[API] Reintentando petición (${config._retryCount}/${MAX_RETRIES}) en ${delay}ms: ${config.url}`);
+      
       await new Promise(resolve => setTimeout(resolve, delay));
       return apiClient(config);
+    }
+
+    // 4. Error final si fallan todos los reintentos o no es reintentable
+    if (error.code === 'ERR_NETWORK' && !isPublicPage) {
+      console.error('[API] Error crítico de red: Verifique su conexión.');
     }
 
     return Promise.reject(error);

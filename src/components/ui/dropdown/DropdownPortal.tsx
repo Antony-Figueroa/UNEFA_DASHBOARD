@@ -1,18 +1,35 @@
 import type React from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { cn } from "../../../utils/cn";
 
+/**
+ * Props for the DropdownPortal component.
+ */
 interface DropdownPortalProps {
+  /** Whether the dropdown is open. */
   isOpen: boolean;
+  /** Callback to close the dropdown. */
   onClose: () => void;
+  /** The element to anchor the dropdown to. */
   anchorEl: HTMLElement | null;
+  /** Content of the dropdown. */
   children: React.ReactNode;
+  /** Additional CSS classes. */
   className?: string;
 }
 
 /**
- * Renderiza el menú como portal en `document.body` para evitar clipping por overflow.
- * Posiciona el menú de forma absoluta respecto al elemento disparador (anchorEl).
+ * DropdownPortal component that renders the menu in a React portal.
+ * This avoids clipping issues when the dropdown is inside a container with `overflow: hidden`.
+ * It handles automatic positioning relative to the anchor element.
+ * 
+ * @example
+ * ```tsx
+ * <DropdownPortal isOpen={isOpen} onClose={close} anchorEl={buttonRef.current}>
+ *   <DropdownItem>Action</DropdownItem>
+ * </DropdownPortal>
+ * ```
  */
 export const DropdownPortal: React.FC<DropdownPortalProps> = ({
   isOpen,
@@ -25,13 +42,13 @@ export const DropdownPortal: React.FC<DropdownPortalProps> = ({
   const [style, setStyle] = useState<React.CSSProperties>({ 
     display: "none",
     position: "absolute",
-    zIndex: 9999, // Aumentar zIndex para asegurar que esté por encima de todo
+    zIndex: 9999,
     transform: "translateX(-100%)",
     opacity: 0,
-    transition: "opacity 0.2s ease-in-out, transform 0.2s ease-in-out" // Suavizar la aparición
+    transition: "opacity 0.2s ease-in-out, transform 0.2s ease-in-out"
   });
 
-  // Cerrar al hacer click fuera y con Escape
+  // Handle outside clicks and Escape key
   useEffect(() => {
     if (!isOpen) return;
 
@@ -46,18 +63,21 @@ export const DropdownPortal: React.FC<DropdownPortalProps> = ({
         onClose();
       }
     };
+
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     document.addEventListener("keydown", handleEsc);
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleEsc);
     };
   }, [onClose, anchorEl, isOpen]);
 
-  // Calcular posición cada vez que abre, y cuando se hace resize/scroll
+  // Calculate position when opening, resizing, or scrolling
   useLayoutEffect(() => {
     if (!isOpen || !anchorEl) {
       setStyle(prev => ({ ...prev, display: "none", opacity: 0 }));
@@ -71,50 +91,43 @@ export const DropdownPortal: React.FC<DropdownPortalProps> = ({
       const menuHeight = menuRef.current.offsetHeight;
       const menuWidth = menuRef.current.offsetWidth;
       const offset = 5; 
-      const threshold = 20; // Aumentar margen de seguridad para evitar solapamientos con footers/barras
+      const threshold = 20;
 
-      // 1. Espacio disponible
+      // 1. Available space
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
 
-      // 2. Determinar posición vertical
+      // 2. Determine vertical position
       let top: number;
-      let isTop = false;
 
-      // Si el espacio abajo es menor que el menú + threshold, intentamos ponerlo arriba
       if (spaceBelow < menuHeight + threshold) {
         if (spaceAbove > menuHeight + threshold) {
-          // Hay espacio arriba
           top = Math.round(rect.top + window.scrollY - menuHeight - offset);
-          isTop = true;
         } else {
-          // No hay espacio suficiente en ningún lado, forzar al que tenga más espacio
           if (spaceAbove > spaceBelow) {
             top = Math.round(rect.top + window.scrollY - menuHeight - offset);
-            isTop = true;
           } else {
             top = Math.round(rect.bottom + window.scrollY + offset);
           }
         }
       } else {
-        // Hay espacio abajo
         top = Math.round(rect.bottom + window.scrollY + offset);
       }
 
-      // 3. Determinar posición horizontal
+      // 3. Determine horizontal position
       let left = Math.round(rect.right + window.scrollX);
 
-      // Asegurar que el menú no se salga por la izquierda
+      // Ensure it doesn't overflow left
       if (left - menuWidth < window.scrollX + threshold) {
         left = Math.round(rect.left + window.scrollX + menuWidth);
       }
       
-      // Asegurar que no se salga por la derecha
+      // Ensure it doesn't overflow right
       if (left > window.innerWidth + window.scrollX - threshold) {
         left = Math.round(window.innerWidth + window.scrollX - threshold);
       }
 
-      // 4. Ajuste final de seguridad para el viewport
+      // 4. Final safety adjustment for viewport
       const absoluteTop = top - window.scrollY;
       if (absoluteTop < threshold) {
         top = window.scrollY + threshold;
@@ -128,17 +141,15 @@ export const DropdownPortal: React.FC<DropdownPortalProps> = ({
         opacity: 1,
         top,
         left,
-        transform: `translateX(-100%) translateY(${isTop ? '0' : '0'})`, // Podemos ajustar translateY para micro-animaciones si se desea
+        transform: `translateX(-100%)`,
       }));
     };
 
-    // Usar un pequeño timeout para asegurar que el menú se ha renderizado y tiene dimensiones
-    const timeoutId = setTimeout(updatePosition, 10); // Aumentar un poco el delay para asegurar layout estable
+    const timeoutId = setTimeout(updatePosition, 10);
 
     window.addEventListener("resize", updatePosition);
     window.addEventListener("scroll", updatePosition, true);
     
-    // Observar cambios en el contenido del menú (por si cargan datos asíncronos)
     const resizeObserver = new ResizeObserver(() => {
       updatePosition();
     });
@@ -163,7 +174,10 @@ export const DropdownPortal: React.FC<DropdownPortalProps> = ({
       role="menu"
       aria-hidden={!isOpen}
       style={style}
-      className={`min-w-44 rounded-xl border border-border-light bg-bg-main shadow-theme-lg dark:border-border-dark dark:bg-bg-dark ${className}`}
+      className={cn(
+        "min-w-[176px] rounded-xl border border-border-light bg-bg-main shadow-theme-lg dark:border-border-dark dark:bg-bg-dark overflow-hidden",
+        className
+      )}
     >
       {children}
     </div>,

@@ -6,15 +6,36 @@
 
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
-import { InstitutionalResponsibleRowData } from "../types";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
+import { InstitutionalResponsible } from "../types";
 
+/**
+ * Props for the InstitutionalResponsibleViewModal component.
+ */
 interface InstitutionalResponsibleViewModalProps {
+  /** Whether the modal is visible */
   isOpen: boolean;
+  /** Callback to close the modal */
   onClose: () => void;
-  onEdit?: (resp: InstitutionalResponsibleRowData) => void;
-  responsible: InstitutionalResponsibleRowData | null;
+  /** Optional callback fired when the edit button is clicked */
+  onEdit?: (resp: InstitutionalResponsible) => void;
+  /** The responsible record to display */
+  responsible: InstitutionalResponsible | null;
 }
 
+/**
+ * Component for viewing the full details of an institutional responsible.
+ * Presents information in a structured, read-only format.
+ * 
+ * @example
+ * ```tsx
+ * <InstitutionalResponsibleViewModal
+ *   isOpen={isViewOpen}
+ *   onClose={() => setViewOpen(false)}
+ *   responsible={selectedResponsible}
+ * />
+ * ```
+ */
 export default function InstitutionalResponsibleViewModal({
   isOpen,
   onClose,
@@ -23,8 +44,16 @@ export default function InstitutionalResponsibleViewModal({
 }: InstitutionalResponsibleViewModalProps) {
   if (!responsible) return null;
 
+  const formattedDate = new Date(responsible.registrationDate).toLocaleDateString('es-VE', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} isFullscreen={true} showCloseButton>
+    <Modal isOpen={isOpen} onClose={onClose} size="5xl" showCloseButton>
       <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">Detalles del Responsable</ModalHeader>
       
       <ModalBody className="overflow-y-auto custom-scrollbar grow px-6 sm:px-12 py-8">
@@ -91,7 +120,7 @@ export default function InstitutionalResponsibleViewModal({
             </div>
             <div>
               <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Fecha Registro</label>
-              <p className="text-[11px] text-text-secondary dark:text-text-tertiary font-medium">{responsible.registrationDate}</p>
+              <p className="text-[11px] text-text-secondary dark:text-text-tertiary font-medium">{formattedDate}</p>
             </div>
           </div>
         </div>
@@ -102,9 +131,9 @@ export default function InstitutionalResponsibleViewModal({
           Cerrar
         </Button>
         {onEdit && (
-          <Button onClick={() => { onEdit(responsible); onClose(); }} className="flex-1 sm:flex-none">
+          <AsyncButton onClick={async () => { onEdit(responsible); onClose(); }} className="flex-1 sm:flex-none">
             Editar Información
-          </Button>
+          </AsyncButton>
         )}
       </ModalFooter>
     </Modal>

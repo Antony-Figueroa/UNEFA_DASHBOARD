@@ -1,17 +1,38 @@
+/**
+ * @file DbStatusContext.tsx
+ * @description Proveedor de contexto para el monitoreo en tiempo real del estado de la base de datos.
+ * Realiza consultas periódicas al endpoint de salud y notifica cambios mediante toasts.
+ * 
+ * @module shared/context/DbStatusProvider
+ */
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import apiClient from '../api/apiClient';
 import { useToast } from './toast';
 import { DbStatusContext, type DbStatus } from './db-status';
 
+/**
+ * Proveedor que gestiona el estado de conexión con la base de datos.
+ * 
+ * @param {Object} props - Propiedades del componente.
+ * @param {React.ReactNode} props.children - Componentes hijos.
+ * @returns {JSX.Element} El proveedor del contexto de estado de DB.
+ */
 export const DbStatusProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [status, setStatus] = useState<DbStatus>('checking');
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { addToast } = useToast();
+  
+  // Ref para rastrear el estado anterior y evitar notificaciones duplicadas o innecesarias
   const previousStatus = useRef<DbStatus>('checking');
 
+  /**
+   * Realiza una petición al servidor para verificar la conectividad con la DB.
+   * Maneja la lógica de notificaciones (toasts) basada en la transición de estados.
+   */
   const checkStatus = useCallback(async () => {
-    // No realizar verificaciones de base de datos en páginas públicas
+    // Evitar chequeos innecesarios en rutas públicas
     const publicPaths = ['/', '/signin', '/signup', '/first-login', '/password-recovery', '/reset-password'];
     const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
     
@@ -24,9 +45,9 @@ export const DbStatusProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const response = await apiClient.get('/db-status');
       const data = response.data;
       
-      const newStatus = data.status === 'connected' ? 'connected' : 'disconnected';
+      const newStatus: DbStatus = data.status === 'connected' ? 'connected' : 'disconnected';
       
-      // Notificar cambios de estado
+      // Lógica de notificación ante cambios de estado
       if (newStatus !== previousStatus.current) {
         if (newStatus === 'connected' && previousStatus.current !== 'checking') {
           addToast({
@@ -40,9 +61,6 @@ export const DbStatusProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             title: 'Conexión Perdida',
             message: 'Se ha perdido la conexión con la base de datos. Algunos datos pueden estar desactualizados.',
           });
-          // Limpiar caché local si existiera (ej: localStorage de búsquedas recientes)
-          console.warn('[DbStatusContext] Limpiando cachés locales por desconexión');
-          // window.localStorage.removeItem('some_cache_key'); 
         }
         previousStatus.current = newStatus;
       }
@@ -51,34 +69,37 @@ export const DbStatusProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setError(data.error || null);
       setLastChecked(new Date());
     } catch (err: unknown) {
-      const publicPaths = ['/', '/signin', '/signup', '/first-login', '/password-recovery', '/reset-password'];
       const isPublicPage = publicPaths.includes(window.location.pathname);
 
       if (!isPublicPage) {
-        console.error('[DbStatusContext] Error al verificar estado:', err);
+        console.error('[DbStatusContext] Error crítico al verificar estado:', err);
       }
       
       const errorMessage = err instanceof Error ? err.message : 'Error de red';
       
-      if (previousStatus.current !== 'disconnected' && previousStatus.current !== 'checking' && !isPublicPage) {
+      // Notificar error de red solo si estábamos conectados previamente
+      if (previousStatus.current === 'connected' && !isPublicPage) {
         addToast({
           variant: 'error',
           title: 'Error de Red',
           message: 'No se pudo verificar el estado de la base de datos.',
         });
       }
-      previousStatus.current = 'disconnected';
       
+      previousStatus.current = 'disconnected';
       setStatus('disconnected');
       setError(errorMessage);
       setLastChecked(new Date());
     }
   }, [addToast]);
 
+  // Configuración del polling para monitoreo continuo
   useEffect(() => {
     checkStatus();
-    // Verificar cada 30 segundos
-    const interval = setInterval(checkStatus, 30000);
+    // Intervalo de 30 segundos para el chequeo de salud
+    const CHECK_INTERVAL = 30000;
+    const interval = setInterval(checkStatus, CHECK_INTERVAL);
+    
     return () => clearInterval(interval);
   }, [checkStatus]);
 

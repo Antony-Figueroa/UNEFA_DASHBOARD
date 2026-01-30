@@ -1,19 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import { Tooltip } from "../ui/tooltip/Tooltip";
 import { cn } from "../../utils/cn";
 
-/**
- * Props for the ActionButton component.
- */
-interface ActionButtonProps {
+interface AsyncActionButtonProps {
   /** Icon to be displayed inside the button. */
   icon: React.ReactNode;
   /** Tooltip text and default aria-label. */
   tooltip: string;
   /** Optional text label (often used for mobile or descriptive buttons). */
   label?: string;
-  /** Click handler function. */
-  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  /** Click handler function that can be async. */
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => Promise<void> | void;
   /** Visual variant of the button. */
   variant?: "primary" | "danger" | "success" | "warning" | "info";
   /** Additional CSS classes for the button. */
@@ -24,22 +21,25 @@ interface ActionButtonProps {
   "aria-label"?: string;
   /** If true, the button will take full width of its container. */
   fullWidth?: boolean;
+  /** External loading state. */
+  loading?: boolean;
 }
 
 /**
- * Standardized Action Button for tables and management views.
+ * Async Action Button for tables and management views.
+ * Combines ActionButton styling with async loading capabilities.
  * Includes built-in Tooltip, consistent theme styling, and accessibility support.
  * 
  * @example
  * ```tsx
- * <ActionButton 
+ * <AsyncActionButton 
  *   icon={<EditIcon />} 
  *   tooltip="Edit User" 
- *   onClick={() => handleEdit(user)} 
+ *   onClick={async () => await handleEdit(user)} 
  * />
  * ```
  */
-export const ActionButton = React.forwardRef<HTMLButtonElement, ActionButtonProps>(
+export const AsyncActionButton = React.forwardRef<HTMLButtonElement, AsyncActionButtonProps>(
   (
     {
       icon,
@@ -51,9 +51,29 @@ export const ActionButton = React.forwardRef<HTMLButtonElement, ActionButtonProp
       disabled = false,
       "aria-label": ariaLabel,
       fullWidth = false,
+      loading: externalLoading = false,
     },
     ref
   ) => {
+    const [internalLoading, setInternalLoading] = useState(false);
+    
+    const isLoading = externalLoading || internalLoading;
+    const isDisabled = disabled || isLoading;
+
+    const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (isLoading || !onClick) {
+        e.preventDefault();
+        return;
+      }
+
+      try {
+        setInternalLoading(true);
+        await onClick(e);
+      } finally {
+        setInternalLoading(false);
+      }
+    };
+
     const variantClasses = {
       primary: label 
         ? "bg-bg-secondary dark:bg-white/5 text-text-secondary dark:text-text-tertiary border-transparent hover:border-border-medium dark:hover:border-white/10"
@@ -77,8 +97,8 @@ export const ActionButton = React.forwardRef<HTMLButtonElement, ActionButtonProp
     const buttonElement = (
       <button
         ref={ref}
-        onClick={onClick}
-        disabled={disabled}
+        onClick={handleClick}
+        disabled={isDisabled}
         className={cn(
           "inline-flex items-center justify-center rounded-xl transition-all border disabled:opacity-50 disabled:cursor-not-allowed active:scale-95",
           variantClasses[variant],
@@ -86,10 +106,36 @@ export const ActionButton = React.forwardRef<HTMLButtonElement, ActionButtonProp
           className
         )}
         aria-label={ariaLabel || label || tooltip}
+        aria-busy={isLoading}
       >
-        {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<{ className?: string }>, {
-          className: `icon-sm ${(icon.props as { className?: string }).className || ""}`,
-        }) : icon}
+        {isLoading ? (
+          <svg
+            className="h-4 w-4 animate-spin text-current"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            role="img"
+            aria-label="Cargando"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+        ) : (
+          React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<{ className?: string }>, {
+            className: `icon-sm ${(icon.props as { className?: string }).className || ""}`,
+          }) : icon
+        )}
         {label && <span>{label}</span>}
       </button>
     );
@@ -102,6 +148,6 @@ export const ActionButton = React.forwardRef<HTMLButtonElement, ActionButtonProp
   }
 );
 
-ActionButton.displayName = "ActionButton";
+AsyncActionButton.displayName = "AsyncActionButton";
 
-export default ActionButton;
+export default AsyncActionButton;

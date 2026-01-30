@@ -1,11 +1,36 @@
+import { cn } from "../../utils/cn";
+
+/**
+ * Props for the ComponentCard component.
+ */
 interface ComponentCardProps {
+  /** The title of the card. */
   title: string;
+  /** The content to be displayed inside the card body. */
   children: React.ReactNode;
-  className?: string; // Additional custom classes for styling
-  desc?: string; // Description text
-  headerAction?: React.ReactNode; // Action element in the header
+  /** Additional CSS classes for the card container. */
+  className?: string;
+  /** Optional description text displayed below the title. */
+  desc?: string;
+  /** Optional action element (e.g., a button) displayed in the header. */
+  headerAction?: React.ReactNode;
 }
 
+/**
+ * A reusable card component for UI sections.
+ * Includes a header with title/description and a body for content.
+ * 
+ * @example
+ * ```tsx
+ * <ComponentCard 
+ *   title="User Profile" 
+ *   desc="Manage user settings"
+ *   headerAction={<Button>Edit</Button>}
+ * >
+ *   <p>Profile details...</p>
+ * </ComponentCard>
+ * ```
+ */
 const ComponentCard: React.FC<ComponentCardProps> = ({
   title,
   children,
@@ -15,7 +40,10 @@ const ComponentCard: React.FC<ComponentCardProps> = ({
 }) => {
   return (
     <div
-      className={`rounded-2xl border border-border-light bg-white dark:bg-bg-dark transition-all duration-300 shadow-theme-md hover:shadow-theme-lg focus-within:ring-2 focus-within:ring-brand-500/20 ${className}`}
+      className={cn(
+        "rounded-2xl border border-border-light bg-white dark:bg-bg-dark transition-all duration-300 shadow-theme-md hover:shadow-theme-lg focus-within:ring-2 focus-within:ring-brand-500/20",
+        className
+      )}
     >
       {/* Card Header */}
       <div className="px-6 py-5 flex items-center justify-between">

@@ -3,7 +3,7 @@ import ComponentCard from "../../../components/common/ComponentCard";
 import PageMeta from "../../../components/common/PageMeta";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
 import Alert from "../../../components/ui/alert/Alert";
-import Button from "../../../components/ui/button/Button";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { PlusCircleIcon, XIcon } from "../../../icons/actions";
 import { CrudConfirmDialog, CrudConfirmState } from "./CrudConfirmDialog";
 import type { CrudPageAlert } from "../types";
@@ -57,10 +57,9 @@ export function CrudLayout({
       <div className="flex items-center justify-between mb-6">
         <PageBreadcrumb pageTitle={breadcrumbLabel ?? title} />
         {primaryActionLabel && onPrimaryAction && (
-          <Button onClick={onPrimaryAction} className="sm:w-auto">
-            <PlusCircleIcon className="w-5 h-5" />
-            <span className="ml-2">{primaryActionLabel}</span>
-          </Button>
+          <AsyncButton onClick={onPrimaryAction} className="sm:w-auto" startIcon={<PlusCircleIcon className="w-5 h-5" />}>
+            {primaryActionLabel}
+          </AsyncButton>
         )}
       </div>
 

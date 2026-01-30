@@ -1,28 +1,64 @@
 /**
  * @file Define la estructura de datos para un periodo académico.
- * @description Este archivo centraliza las interfaces para asegurar consistencia.
+ * @description Este archivo centraliza las interfaces para asegurar consistencia en todo el módulo.
  */
 
+/**
+ * Representa un periodo académico en el sistema (Modelo de Dominio).
+ */
 export interface Periodo {
+    /** Identificador único del periodo */
     periodId: string;
+    /** Descripción o nombre del periodo (ej. 2024-I) */
     description: string;
+    /** Fecha de inicio del periodo */
     startDate: Date;
+    /** Fecha de culminación del periodo */
     endDate: Date;
+    /** Fecha de creación del registro */
     creationDate: Date;
-    periodStatus: 1 | 2 | 3; // 1: Pendiente, 2: En Curso, 3: Culminado
-    status: boolean;      // true: Activo, false: Eliminado
+    /** Estado del periodo (1: Pendiente, 2: En Curso, 3: Culminado) */
+    periodStatus: 1 | 2 | 3;
+    /** Estado lógico del registro (true: Activo, false: Inactivo/Eliminado) */
+    status: boolean;
+    /** Código único del periodo */
     code: string;
+    /** Indica si el periodo está siendo utilizado por otros registros */
     isInUse?: boolean;
 }
 
-// Tipo para los datos que se muestran en la tabla, con fechas formateadas y progreso
+/**
+ * Datos necesarios para crear un nuevo periodo académico.
+ */
+export interface CreatePeriodPayload extends Omit<Periodo, 'periodId' | 'creationDate' | 'isInUse'> {}
+
+/**
+ * Datos necesarios para actualizar un periodo académico existente.
+ */
+export interface UpdatePeriodPayload extends Partial<CreatePeriodPayload> {
+    /** Identificador único del periodo a actualizar (requerido) */
+    periodId: string;
+}
+
+/**
+ * Estructura de datos para la visualización en tablas y componentes de UI.
+ * Incluye campos pre-formateados y cálculos de progreso.
+ */
 export interface PeriodoRowData extends Omit<Periodo, 'startDate' | 'endDate' | 'creationDate'> {
-    startDate: string; // Formatted
-    endDate: string;   // Formatted
-    rawStartDate: Date; // For sorting
-    rawEndDate: Date;   // For sorting
+    /** Fecha de inicio formateada como string legible */
+    startDate: string;
+    /** Fecha de fin formateada como string legible */
+    endDate: string;
+    /** Fecha de inicio original para ordenamiento y cálculos */
+    rawStartDate: Date;
+    /** Fecha de fin original para ordenamiento y cálculos */
+    rawEndDate: Date;
+    /** Porcentaje de progreso del periodo (0-100) o null si no ha iniciado */
     progress: number | null;
+    /** Días transcurridos desde el inicio */
     daysPassed?: number;
+    /** Días restantes hasta el fin */
     daysRemaining?: number;
+    /** Semanas restantes hasta el fin */
     weeksRemaining?: number;
 }

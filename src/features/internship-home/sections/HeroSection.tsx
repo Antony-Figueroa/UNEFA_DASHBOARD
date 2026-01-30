@@ -4,6 +4,8 @@ import Button from "../../../components/ui/button/Button";
 import Badge from "../../../components/ui/badge/Badge";
 import RotatingText from "../components/RotatingText";
 import CountUp from "../components/CountUp";
+
+// Fix typos in the file
 import { smoothScrollTo } from "../../../utils/scrollUtils";
 
 const HeroSection: React.FC = () => {
@@ -101,7 +103,7 @@ const HeroSection: React.FC = () => {
               <h1 className="text-4xl font-extrabold tracking-tight text-text-emphasis sm:text-5xl lg:text-6xl flex flex-wrap items-center gap-x-3">
                 Impulsa tu carrera con
                 <RotatingText
-                  texts={['Creatividad', 'Excelencía', 'Valor', 'Éxito']}
+                  texts={['Creatividad', 'Excelencia', 'Valor', 'Éxito']}
                   mainClassName="px-2 sm:px-2 md:px-3 bg-[#2d90c4] text-white overflow-hidden py-0.5 sm:py-1 md:py-2 justify-center rounded-lg"
                   staggerFrom={"last"}
                   initial={{ y: "100%" }}
@@ -153,7 +155,7 @@ const HeroSection: React.FC = () => {
               <p className="text-sm text-text-secondary">
                 <span className="font-bold text-text-emphasis">
                   + de <CountUp from={0} to={3200} separator="," duration={1.5} />
-                </span> estudiantes han impulsado su carrera con nosotros a los largo de los años.
+                </span> estudiantes han impulsado su carrera con nosotros a lo largo de los años.
               </p>
             </div>
           </div>

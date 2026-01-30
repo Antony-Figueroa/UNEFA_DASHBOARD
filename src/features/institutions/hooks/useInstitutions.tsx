@@ -1,16 +1,12 @@
-/**
- * @file useInstitutions.tsx
- * @description Hook para la gestión de instituciones conectada a la API.
- */
-
-import { useState, useEffect, useCallback } from "react";
-import { Institution } from "../types";
-import * as institutionsService from "../services/institutionsService";
+import { Institution, CreateInstitutionPayload, UpdateInstitutionPayload } from "../types";
+import { institutionService } from "../services/institutionsService";
 import { useToast } from "../../../context/toast";
-import { ChangeComparison, RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
+import { RecordDetails, ChangeComparison } from "../../../components/ui/alert/AlertContextualContent";
+import { useCrud } from "../../../hooks/useCrud";
 
-type Status = "loading" | "success" | "error";
-
+/**
+ * Labels for institution fields used in toast notifications and comparisons.
+ */
 const INSTITUTION_LABELS: Record<string, string> = {
   rif: "RIF",
   name: "Nombre",
@@ -24,42 +20,36 @@ const INSTITUTION_LABELS: Record<string, string> = {
   institutionType: "Tipo de Institución",
 };
 
+/**
+ * Hook to manage institutions.
+ * 
+ * Refactorizado para utilizar useCrud como motor de estado base,
+ * manteniendo las notificaciones enriquecidas y acciones masivas.
+ * 
+ * @returns An object containing the institutions state and action functions.
+ */
 export const useInstitutions = () => {
-  const [institutions, setInstitutions] = useState<Institution[]>([]);
-  const [status, setStatus] = useState<Status>("loading");
-  const [error, setError] = useState<Error | null>(null);
-  const [loadingAction, setLoadingAction] = useState(false);
   const { addToast } = useToast();
 
-  const refreshInstitutions = useCallback(async () => {
-    setStatus("loading");
-    try {
-      const data = await institutionsService.getInstitutions();
-      setInstitutions(data);
-      setStatus("success");
-      setError(null);
-    } catch (e) {
-      console.error("Error loading institutions:", e);
-      setStatus("error");
-      const err = e instanceof Error ? e : new Error("Error al cargar instituciones");
-      setError(err);
-      addToast({
-        variant: "error",
-        title: "Error de conexión",
-        message: "No se pudo conectar con la base de datos o el servidor. Por favor, verifique su conexión.",
-      });
-    }
-  }, [addToast]);
+  const {
+    data: institutions,
+    status,
+    loadingAction,
+    error,
+    refresh: refreshInstitutions,
+    deleteItem: removeInstitution,
+  } = useCrud<Institution, CreateInstitutionPayload, UpdateInstitutionPayload>(institutionService, {
+    resourceName: "Institución",
+    idField: "institutionId",
+  });
 
-  useEffect(() => {
-    refreshInstitutions();
-  }, [refreshInstitutions]);
-
-  const addInstitution = async (instData: Omit<Institution, "institutionId" | "registrationDate">) => {
-    setLoadingAction(true);
+  /**
+   * Adds a new institution with enriched notifications.
+   */
+  const addInstitution = async (instData: CreateInstitutionPayload) => {
     try {
-      const newInst = await institutionsService.createInstitution(instData);
-      setInstitutions(prev => [newInst, ...prev]);
+      const newInst = await institutionService.create(instData);
+      await refreshInstitutions();
       
       addToast({
         variant: "success",
@@ -82,18 +72,18 @@ export const useInstitutions = () => {
         title: "Error al registrar",
         message: "No se pudo registrar la institución. Intente de nuevo.",
       });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
-  const editInstitution = async (instData: Institution) => {
-    setLoadingAction(true);
+  /**
+   * Updates an existing institution with change comparison.
+   */
+  const editInstitution = async (instData: UpdateInstitutionPayload) => {
     try {
-      const updatedInst = await institutionsService.updateInstitution(instData.institutionId, instData);
-      const oldInst = institutions.find(i => i.institutionId === instData.institutionId);
-      
-      setInstitutions(prev => prev.map(i => i.institutionId === instData.institutionId ? updatedInst : i));
+      const { institutionId } = instData;
+      const oldInst = institutions.find(i => i.institutionId === institutionId);
+      const updatedInst = await institutionService.update(instData);
+      await refreshInstitutions();
 
       addToast({
         variant: "success",
@@ -116,18 +106,17 @@ export const useInstitutions = () => {
         title: "Error al actualizar",
         message: "No se pudo actualizar la institución. Intente de nuevo.",
       });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
+  /**
+   * Toggles the active status of an institution.
+   */
   const toggleStatus = async (inst: Institution) => {
-    setLoadingAction(true);
     try {
       const newStatus = !inst.status;
-      const updatedInst = await institutionsService.toggleInstitutionStatus(inst.institutionId, newStatus);
-      
-      setInstitutions(prev => prev.map(i => i.institutionId === inst.institutionId ? updatedInst : i));
+      await institutionService.toggleStatus!(inst.institutionId, newStatus);
+      await refreshInstitutions();
 
       addToast({
         variant: newStatus ? "success" : "warning",
@@ -143,28 +132,29 @@ export const useInstitutions = () => {
         title: "Error de validación",
         message: errorMessage,
       });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
+  /**
+   * Inactivates multiple institutions in bulk.
+   */
   const bulkRemoveInstitutions = async (ids: string[]) => {
-    setLoadingAction(true);
     let successCount = 0;
     const failMessages: string[] = [];
 
     try {
       for (const id of ids) {
         try {
-          await institutionsService.toggleInstitutionStatus(id, false);
+          await institutionService.toggleStatus!(id, false);
           successCount++;
-          setInstitutions(prev => prev.map(i => i.institutionId === id ? { ...i, status: false } : i));
         } catch (innerError) {
           const error = innerError as { response?: { data?: { message?: string } } };
           const msg = error.response?.data?.message || `Error al inactivar ID ${id}`;
           if (!failMessages.includes(msg)) failMessages.push(msg);
         }
       }
+      
+      await refreshInstitutions();
       
       if (successCount > 0) {
         addToast({
@@ -183,17 +173,16 @@ export const useInstitutions = () => {
       }
     } catch (e) {
       console.error("Error in bulk remove:", e);
-    } finally {
-      setLoadingAction(false);
     }
   };
 
+  /**
+   * Restores multiple institutions in bulk.
+   */
   const bulkRestoreInstitutions = async (ids: string[]) => {
-    setLoadingAction(true);
     try {
-      await Promise.all(ids.map(id => institutionsService.toggleInstitutionStatus(id, true)));
-      
-      setInstitutions(prev => prev.map(i => ids.includes(i.institutionId) ? { ...i, status: true } : i));
+      await Promise.all(ids.map(id => institutionService.toggleStatus!(id, true)));
+      await refreshInstitutions();
       
       addToast({
         variant: "success",
@@ -207,21 +196,20 @@ export const useInstitutions = () => {
         title: "Error masivo",
         message: "No se pudieron restaurar todas las instituciones seleccionadas.",
       });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
   return {
     institutions,
     status,
-    error,
     loadingAction,
+    error,
+    refreshInstitutions,
     addInstitution,
     editInstitution,
+    removeInstitution,
     toggleStatus,
     bulkRemoveInstitutions,
-    bulkRestoreInstitutions,
-    refreshInstitutions,
+    bulkRestoreInstitutions
   };
 };

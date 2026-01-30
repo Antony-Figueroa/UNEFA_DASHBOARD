@@ -6,12 +6,12 @@ import InternshipTypeModal from "../InternshipTypeModal";
 import { InternshipType } from "../../types";
 
 const sampleType: InternshipType = {
-  INTERNSHIP_TYPE_ID: 1,
-  NAME: "Pasantía de Prueba",
-  ABBREVIATION: "PP",
-  PRIORITY: 5,
-  STATUS: 1,
-  CREATION_DATE: "2026-01-17",
+  id: 1,
+  name: "Pasantía de Prueba",
+  abbreviation: "PP",
+  priority: 5,
+  status: true,
+  creationDate: new Date("2026-01-17"),
 };
 
 describe("InternshipTypeModal", () => {
@@ -89,7 +89,7 @@ describe("InternshipTypeModal", () => {
     );
 
     const nameInput = screen.getByPlaceholderText(/Ingrese el nombre/i);
-    await user.type(nameInput, sampleType.NAME);
+    await user.type(nameInput, sampleType.name);
     
     await waitFor(() => {
       expect(screen.getByText(/Este tipo de práctica ya existe/i)).toBeDefined();

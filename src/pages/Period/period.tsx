@@ -10,6 +10,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
 import PeriodTable from "../../features/periods/components/PeriodTable";
+import CustomSelect from "../../components/form/CustomSelect";
 import { PlusCircleIcon } from "../../icons/actions";
 import { DownloadIcon } from "../../icons";
 import PeriodModal from "../../features/periods/components/PeriodModal";
@@ -76,20 +77,35 @@ export default function Period() {
     const [viewingPeriod, setViewingPeriod] = useState<Periodo | null>(null);
     const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
     const [pdfSearchTerm, setPdfSearchTerm] = useState("");
+    const [pdfStatusFilter, setPdfStatusFilter] = useState<string>("");
     const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
 
+    // Opciones para el filtro de estado en el PDF
+    const statusOptions = useMemo(() => [
+        { value: "", label: "Todos los Estados" },
+        { value: "1", label: "Pendiente" },
+        { value: "2", label: "En Curso" },
+        { value: "3", label: "Culminado" },
+    ], []);
+
     /**
-     * Filtra los datos para el reporte PDF según el término de búsqueda.
+     * Filtra los datos para el reporte PDF según el término de búsqueda y estatus.
      */
     const pdfFilteredData = useMemo(() => {
         const search = pdfSearchTerm.trim().toLowerCase();
         return (Array.isArray(periodos) ? periodos : [])
             .filter(p => p.status === true)
-            .filter(p => !search || 
-                p.code.toLowerCase().includes(search) || 
-                p.description.toLowerCase().includes(search)
-            );
-    }, [periodos, pdfSearchTerm]);
+            .filter(p => {
+                const matchesSearch = !search || 
+                    p.code.toLowerCase().includes(search) || 
+                    p.description.toLowerCase().includes(search);
+                
+                const matchesStatus = pdfStatusFilter === "" || 
+                    p.periodStatus.toString() === pdfStatusFilter;
+                
+                return matchesSearch && matchesStatus;
+            });
+    }, [periodos, pdfSearchTerm, pdfStatusFilter]);
 
     // --- Manejadores de Eventos para Modales ---
     
@@ -436,11 +452,34 @@ export default function Period() {
                     searchTerm={pdfSearchTerm}
                     onSearchChange={setPdfSearchTerm}
                     defaultInverted={true}
+                    renderFilters={() => (
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
+                                    Filtrar por Estado
+                                </label>
+                                <CustomSelect
+                                    options={statusOptions}
+                                    value={pdfStatusFilter}
+                                    onChange={setPdfStatusFilter}
+                                    placeholder="Estado"
+                                    className="w-full"
+                                />
+                            </div>
+                        </div>
+                    )}
                     columns={[
                         { header: "Código", accessor: "code" },
                         { header: "Descripción", accessor: "description" },
                         { header: "Fecha Inicio", accessor: (p) => new Date(p.startDate).toLocaleDateString("es-VE") },
                         { header: "Fecha Fin", accessor: (p) => new Date(p.endDate).toLocaleDateString("es-VE") },
+                        { 
+                            header: "Estado", 
+                            accessor: (p) => {
+                                const labels: Record<number, string> = { 1: "Pendiente", 2: "En Curso", 3: "Culminado" };
+                                return labels[p.periodStatus] || "Desconocido";
+                            }
+                        },
                     ]}
                 />
                 <UnifiedDialog

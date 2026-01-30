@@ -5,10 +5,10 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
-import { ActionButton } from "../../../components/common/ActionButton";
+import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
-import { InstitutionRowData } from "../types";
+import { Institution } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import Badge from "../../../components/ui/badge/Badge";
 import { useDebounce } from "../../../hooks/useDebounce";
@@ -16,11 +16,11 @@ import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { InternshipType } from "../../internship-types/types";
 
 interface InstitutionTableProps {
-  data: InstitutionRowData[];
+  data: Institution[];
   status: "loading" | "success" | "error";
-  onEdit?: (inst: InstitutionRowData) => void;
-  onToggleStatus?: (inst: InstitutionRowData) => void;
-  onView?: (inst: InstitutionRowData) => void;
+  onEdit?: (inst: Institution) => void;
+  onToggleStatus?: (inst: Institution) => void;
+  onView?: (inst: Institution) => void;
   onBulkDelete?: (ids: string[]) => void;
   onBulkRestore?: (ids: string[]) => void;
   activeTab?: "Activas" | "Inactivas";
@@ -56,8 +56,8 @@ const ActionButtons = ({
     return (
         <div className={containerClasses}>
             {onView && (
-                <ActionButton
-                    onClick={() => onView()}
+                <AsyncActionButton
+                    onClick={async () => onView()}
                     icon={<EyeIcon />}
                     tooltip="Ver Detalles"
                     label={isMobile ? "Ver Detalles" : undefined}
@@ -66,8 +66,8 @@ const ActionButtons = ({
                 />
             )}
             {onEdit && activeTab === "Activas" && (
-                <ActionButton
-                    onClick={() => onEdit()}
+                <AsyncActionButton
+                    onClick={async () => onEdit()}
                     icon={<EditIcon />}
                     tooltip="Editar"
                     label={isMobile ? "Editar Institución" : undefined}
@@ -76,8 +76,8 @@ const ActionButtons = ({
                 />
             )}
             {onToggleStatus && (
-                <ActionButton
-                    onClick={() => onToggleStatus()}
+                <AsyncActionButton
+                    onClick={async () => onToggleStatus()}
                     icon={activeTab === "Inactivas" ? <RefreshIcon /> : <TrashIcon />}
                     tooltip={activeTab === "Inactivas" ? "Restaurar" : (isInUse ? "Esta institución está en uso y no se puede eliminar" : "Eliminar")}
                     label={isMobile ? (activeTab === "Inactivas" ? "Restaurar Institución" : "Eliminar Institución") : undefined}
@@ -109,8 +109,8 @@ export default function InstitutionTable({
   const [institutionTypeFilter, setInstitutionTypeFilter] = useState("");
 
   const getPracticeName = (id: string | number) => {
-    const type = internshipTypes.find(t => String(t.INTERNSHIP_TYPE_ID) === String(id));
-    return type ? type.NAME : String(id);
+    const type = internshipTypes.find(t => String(t.id) === String(id));
+    return type ? type.name : String(id);
   };
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -374,7 +374,7 @@ export default function InstitutionTable({
                         </span>
                         {activeTab === "Activas" ? (
                             <button
-                                onClick={() => onBulkDelete?.(selectedIds)}
+                                onClick={async () => onBulkDelete?.(selectedIds)}
                                 className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12"
                             >
                                 <TrashIcon className="icon-sm" />
@@ -382,7 +382,7 @@ export default function InstitutionTable({
                             </button>
                         ) : (
                             <button
-                                onClick={() => onBulkRestore?.(selectedIds)}
+                                onClick={async () => onBulkRestore?.(selectedIds)}
                                 className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-600 hover:bg-brand-100 dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400/20 transition-colors min-h-12"
                             >
                                 <RefreshIcon className="icon-sm" />
@@ -411,17 +411,17 @@ export default function InstitutionTable({
                   ariaLabel="Seleccionar todas las instituciones"
                 />
               </TableCell>
-              <TableCell isHeader className="cursor-pointer group" onClick={() => handleSort("rif")}>
+              <TableCell isHeader className="cursor-pointer group" onClick={async () => handleSort("rif")}>
                   <div className="flex items-center">RIF <SortIndicator column="rif" /></div>
               </TableCell>
-              <TableCell isHeader className="cursor-pointer group" onClick={() => handleSort("name")}>
+              <TableCell isHeader className="cursor-pointer group" onClick={async () => handleSort("name")}>
                   <div className="flex items-center">Nombre <SortIndicator column="name" /></div>
               </TableCell>
               <TableCell isHeader>Teléfono</TableCell>
-              <TableCell isHeader className="cursor-pointer group" onClick={() => handleSort("practiceType")}>
+              <TableCell isHeader className="cursor-pointer group" onClick={async () => handleSort("practiceType")}>
                   <div className="flex items-center">Tipo Práctica <SortIndicator column="practiceType" /></div>
               </TableCell>
-              <TableCell isHeader className="cursor-pointer group" onClick={() => handleSort("careerName")}>
+              <TableCell isHeader className="cursor-pointer group" onClick={async () => handleSort("careerName")}>
                   <div className="flex items-center">Carrera <SortIndicator column="careerName" /></div>
               </TableCell>
               <TableCell isHeader className="text-right">&nbsp;</TableCell>
@@ -512,7 +512,7 @@ export default function InstitutionTable({
                                     <p className="text-xs text-text-secondary mt-1 truncate">{i.rif}</p>
                                 </div>
                                 <button
-                                    onClick={() => toggleRowExpansion(rowId)}
+                                    onClick={async () => toggleRowExpansion(rowId)}
                                     className="absolute right-2 top-2 p-2 text-text-tertiary hover:bg-bg-secondary dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
                                     style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
                                 >

@@ -2,25 +2,47 @@ import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import maplibregl, { StyleSpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useTheme } from '../../../context/theme';
+import { cn } from '../../../utils/cn';
 
+/**
+ * Tipo para la especificación de estilo del mapa.
+ */
 type MapStyleType = string | StyleSpecification;
 
-interface MapProps {
-  center?: [number, number]; // [longitude, latitude]
+/**
+ * Propiedades para el componente Map.
+ */
+export interface MapProps {
+  /** Coordenadas del centro del mapa [longitud, latitud]. Por defecto [-66.8792, 10.4806] (Caracas). */
+  center?: [number, number];
+  /** Nivel de zoom inicial. Por defecto 12. */
   zoom?: number;
+  /** Arreglo de marcadores a mostrar en el mapa. */
   markers?: {
+    /** Coordenadas del marcador [longitud, latitud]. */
     position: [number, number];
+    /** Contenido HTML o texto opcional para el popup. */
     popup?: string;
   }[];
+  /** Clases CSS adicionales para el contenedor del mapa. */
   className?: string;
+  /** Estilo específico del mapa (key de MAP_STYLES) o URL/objeto de estilo personalizado. */
   mapStyle?: keyof typeof MAP_STYLES | MapStyleType;
 }
 
+/**
+ * API pública expuesta vía ref para el componente Map.
+ */
 export interface MapRef {
+  /** Desplaza la cámara a una coordenada y zoom específicos con animación. */
   flyTo: (center: [number, number], zoom?: number) => void;
+  /** Obtiene la instancia subyacente de MapLibre GL. */
   getMap: () => maplibregl.Map | null;
 }
 
+/**
+ * Estilos de mapa predefinidos basados en CartoDB y OSM.
+ */
 const MAP_STYLES: Record<string, MapStyleType> = {
   light: {
     version: 8,
@@ -34,7 +56,7 @@ const MAP_STYLES: Record<string, MapStyleType> = {
           'https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
         ],
         tileSize: 256,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
       }
     },
     layers: [
@@ -59,7 +81,7 @@ const MAP_STYLES: Record<string, MapStyleType> = {
           'https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
         ],
         tileSize: 256,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
       }
     },
     layers: [
@@ -84,7 +106,7 @@ const MAP_STYLES: Record<string, MapStyleType> = {
           'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
         ],
         tileSize: 256,
-        attribution: '&copy; OpenStreetMap contributors'
+        attribution: '&copy; OpenStreetMap'
       }
     },
     layers: [
@@ -100,203 +122,156 @@ const MAP_STYLES: Record<string, MapStyleType> = {
   satellite: {
     version: 8,
     sources: {
-      'raster-tiles': {
+      'satellite-tiles': {
         type: 'raster',
-        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+        tiles: [
+          'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+        ],
         tileSize: 256,
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EBP, and the GIS User Community'
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
       }
     },
     layers: [
       {
-        id: 'simple-tiles',
+        id: 'satellite-tiles',
         type: 'raster',
-        source: 'raster-tiles',
+        source: 'satellite-tiles',
         minzoom: 0,
-        maxzoom: 22
+        maxzoom: 18
       }
     ]
   } as StyleSpecification
 };
 
-const Map = forwardRef<MapRef, MapProps>(({
-  center = [9.569627, -69.219552], // HQ9J+R7P, Calle 6, Araure 3303, Portuguesa, Venezuela
-  zoom = 17,
+/**
+ * Componente de Mapa Interactivo basado en MapLibre GL.
+ * Soporta marcadores, popups, temas claro/oscuro automáticos y control de cámara.
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * <Map 
+ *   center={[-66.8792, 10.4806]} 
+ *   markers={[{ position: [-66.8792, 10.4806], popup: "<b>UNEFA</b><br/>Sede Caracas" }]} 
+ * />
+ * ```
+ */
+export const Map = forwardRef<MapRef, MapProps>(({
+  center = [-66.8792, 10.4806],
+  zoom = 12,
   markers = [],
   className = "",
-  mapStyle
+  mapStyle,
 }, ref) => {
-  const { theme } = useTheme();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
-  const isInitializing = useRef(false);
+  const markersRef = useRef<maplibregl.Marker[]>([]);
+  const { theme } = useTheme();
+  const isDarkMode = theme === 'dark';
 
+  // Exponer API pública vía Ref
   useImperativeHandle(ref, () => ({
-    flyTo: (center: [number, number], zoomLevel?: number) => {
-      if (map.current) {
-        map.current.flyTo({
-          center,
-          zoom: zoomLevel || zoom,
-          essential: true,
-          duration: 2000
-        });
-      }
+    flyTo: (center: [number, number], zoom?: number) => {
+      map.current?.flyTo({ 
+        center, 
+        zoom: zoom || map.current.getZoom(), 
+        duration: 2000,
+        essential: true 
+      });
     },
-    getMap: () => map.current
+    getMap: () => map.current,
   }));
 
-  // Determine the actual style to use
-  const getStyle = (): MapStyleType => {
-    if (typeof mapStyle === 'string' && mapStyle in MAP_STYLES) {
-      return MAP_STYLES[mapStyle as keyof typeof MAP_STYLES] as MapStyleType;
-    }
-    return (mapStyle as MapStyleType) || (theme === 'dark' ? MAP_STYLES.dark : MAP_STYLES.light);
-  };
-
-  const currentStyle = getStyle();
-  const currentStyleRef = useRef<MapStyleType>(currentStyle);
-
+  // Inicialización del mapa
   useEffect(() => {
-    if (!mapContainer.current) return;
+    if (map.current || !mapContainer.current) return;
 
-    // Initialize map if it doesn't exist and not currently initializing
-    if (!map.current && !isInitializing.current) {
-      isInitializing.current = true;
-      
-      const newMap = new maplibregl.Map({
-        container: mapContainer.current,
-        style: currentStyle,
-        center: center as [number, number],
-        zoom: zoom,
-        attributionControl: false,
-        trackResize: true,
-        transformRequest: (url) => {
-          // Si el mapa se está desmontando o la URL es de CartoDB, 
-          // podemos interceptar fallos potenciales aquí si fuera necesario.
-          return {
-            url: url
-          };
-        }
-      });
-
-      map.current = newMap;
-      newMap.addControl(new maplibregl.NavigationControl(), 'top-right');
-      
-      newMap.on('load', () => {
-        isInitializing.current = false;
-        currentStyleRef.current = currentStyle;
-        setTimeout(() => {
-          newMap.resize();
-        }, 100);
-      });
-
-      newMap.on('error', (e) => {
-        // Ignorar errores de cancelación de red (net::ERR_ABORTED) que son comunes y ruidosos
-        if (
-          !e.error || 
-          e.error.message?.includes('Aborted') || 
-          e.error.status === 0 || 
-          e.error.message?.includes('canceled')
-        ) {
-          return;
-        }
-
-        console.warn('MapLibre error:', e.error);
-        
-        // If a style fails to load, try a basic fallback to OSM raster tiles
-        if (e.error?.message?.includes('style') || e.error?.status === 404 || e.error?.message?.includes('Failed to fetch')) {
-          const fallback = MAP_STYLES.osm;
-          if (currentStyleRef.current !== fallback) {
-            console.log('Style load failed, falling back to stable OSM raster style...');
-            newMap.setStyle(fallback);
-            currentStyleRef.current = fallback;
-          }
-        }
-        
-        if (!map.current) isInitializing.current = false;
-      });
-    } else if (map.current) {
-      // Update existing map properties only if they changed
-      const m = map.current;
-      
-      // Use a safer comparison for center
-      const currentCenter = m.getCenter();
-      const targetCenter = maplibregl.LngLat.convert(center as [number, number]);
-      if (Math.abs(currentCenter.lng - targetCenter.lng) > 0.0001 || 
-          Math.abs(currentCenter.lat - targetCenter.lat) > 0.0001) {
-        m.setCenter(center as [number, number]);
-      }
-      
-      if (Math.abs(m.getZoom() - zoom) > 0.1) {
-        m.setZoom(zoom);
-      }
-
-      if (JSON.stringify(currentStyleRef.current) !== JSON.stringify(currentStyle)) {
-        m.setStyle(currentStyle);
-        currentStyleRef.current = currentStyle;
-      }
-
-      // Explicitly trigger resize when style or props change
-      setTimeout(() => m.resize(), 100);
+    // Determinar estilo inicial
+    let initialStyle: MapStyleType;
+    if (mapStyle) {
+      initialStyle = typeof mapStyle === 'string' && MAP_STYLES[mapStyle] 
+        ? MAP_STYLES[mapStyle] 
+        : mapStyle as MapStyleType;
+    } else {
+      initialStyle = isDarkMode ? MAP_STYLES.dark : MAP_STYLES.light;
     }
 
-    // Clean up markers and re-add them - only if map exists
-    const currentMarkers: maplibregl.Marker[] = [];
+    map.current = new maplibregl.Map({
+      container: mapContainer.current,
+      style: initialStyle,
+      center: center,
+      zoom: zoom,
+      attributionControl: false
+    });
+
+    // Controles estándar
+    map.current.addControl(new maplibregl.NavigationControl({
+      showCompass: false
+    }), 'top-right');
     
-    if (map.current) {
-      (markers || []).forEach(marker => {
-        const m = new maplibregl.Marker({ color: '#2d90c4' })
-          .setLngLat(marker.position as [number, number])
-          .addTo(map.current!);
-
-        if (marker.popup) {
-          m.setPopup(new maplibregl.Popup({ offset: 25, maxWidth: '280px' }).setHTML(`
-            <div class="m-1 p-1 text-xs font-medium ${theme === 'dark' ? 'text-white bg-bg-dark' : 'text-gray-900'}">
-              ${marker.popup}
-            </div>
-          `));
-        }
-        currentMarkers.push(m);
-      });
-    }
-
-    // Ensure map resizes to container after initialization or update
-    const resizeTimeout = setTimeout(() => {
-      map.current?.resize();
-    }, 1000); // Increased timeout to ensure Framer Motion animation (0.7s) is complete
-
-    const handleResize = () => {
-      map.current?.resize();
-    };
-
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleResize);
+    map.current.addControl(new maplibregl.AttributionControl({
+      compact: true
+    }), 'bottom-right');
 
     return () => {
-      clearTimeout(resizeTimeout);
-      currentMarkers.forEach(m => m.remove());
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
-    };
-  }, [center, zoom, markers, currentStyle, theme]);
-
-  // Clean up map on unmount
-  useEffect(() => {
-    return () => {
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
-        isInitializing.current = false;
-      }
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current = [];
+      map.current?.remove();
+      map.current = null;
     };
   }, []);
+
+  // Sincronización de tema (Claro/Oscuro)
+  useEffect(() => {
+    if (!map.current || mapStyle) return;
+    map.current.setStyle(isDarkMode ? MAP_STYLES.dark : MAP_STYLES.light);
+  }, [isDarkMode, mapStyle]);
+
+  // Sincronización de marcadores
+  useEffect(() => {
+    if (!map.current) return;
+
+    // Limpiar marcadores existentes
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+
+    // Añadir nuevos marcadores
+    markers.forEach(({ position, popup }) => {
+      const marker = new maplibregl.Marker({ 
+        color: isDarkMode ? '#fb923c' : '#f97316', // Orange-400 / Orange-500
+        scale: 0.8
+      })
+        .setLngLat(position)
+        .addTo(map.current!);
+
+      if (popup) {
+        const popupInstance = new maplibregl.Popup({ 
+          offset: 30,
+          closeButton: false,
+          className: 'custom-map-popup'
+        }).setHTML(`
+          <div class="p-2 text-xs font-semibold leading-tight text-slate-900 dark:text-white">
+            ${popup}
+          </div>
+        `);
+        marker.setPopup(popupInstance);
+      }
+
+      markersRef.current.push(marker);
+    });
+  }, [markers, isDarkMode]);
 
   return (
     <div 
       ref={mapContainer} 
-      className={`relative w-full h-full rounded-2xl overflow-hidden shadow-theme-lg border border-border-light dark:border-border-dark bg-gray-100 dark:bg-gray-800 ${className}`} 
+      className={cn(
+        "w-full h-full rounded-2xl overflow-hidden shadow-sm border border-border-light dark:border-border-dark bg-bg-secondary",
+        className
+      )} 
     />
   );
 });
+
+Map.displayName = 'Map';
 
 export default Map;

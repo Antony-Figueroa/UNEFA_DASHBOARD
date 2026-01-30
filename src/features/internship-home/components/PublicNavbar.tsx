@@ -5,23 +5,34 @@ import { ThemeToggleButton } from "../../../components/common/ThemeToggleButton"
 import { motion, AnimatePresence } from "motion/react";
 import { smoothScrollTo } from "../../../utils/scrollUtils";
 
+/**
+ * Componente de navegación principal para la landing page pública.
+ * Incluye barra de progreso de scroll, menú responsive, cambio de tema
+ * y enlaces de navegación suave (smooth scroll).
+ * 
+ * @component
+ */
 const PublicNavbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
 
-  // Update scroll progress
+  /**
+   * Actualiza la barra de progreso de scroll basada en la posición actual de la página.
+   */
   useEffect(() => {
     const handleScroll = () => {
       const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = (window.pageYOffset / totalHeight) * 100;
+      const progress = totalHeight > 0 ? (window.pageYOffset / totalHeight) * 100 : 0;
       setScrollProgress(progress);
     };
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close menu when resizing to desktop
+  /**
+   * Cierra el menú móvil automáticamente si se redimensiona a pantalla de escritorio.
+   */
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
@@ -32,13 +43,19 @@ const PublicNavbar: React.FC = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Prevent scroll when menu is open
+  /**
+   * Bloquea el scroll del cuerpo del documento cuando el menú móvil está abierto
+   * para mejorar la experiencia de usuario.
+   */
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
     }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
   }, [isOpen]);
 
   const navLinks = [
@@ -48,6 +65,12 @@ const PublicNavbar: React.FC = () => {
     { name: "Contacto e Información", href: "#contacto" },
   ];
 
+  /**
+   * Maneja el scroll suave hacia una sección específica.
+   * 
+   * @param e - Evento de click del ratón.
+   * @param href - El identificador de la sección (ej. '#inicio').
+   */
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (href.startsWith("#")) {
       e.preventDefault();
@@ -57,17 +80,18 @@ const PublicNavbar: React.FC = () => {
   };
 
   return (
-    <nav className="w-full bg-bg-main/80 backdrop-blur-md border-b border-border-light dark:bg-bg-dark/80 dark:border-border-dark sticky top-0 z-9999">
-      {/* Scroll Progress Bar */}
+    <nav className="w-full bg-bg-main/80 backdrop-blur-md border-b border-border-light dark:bg-bg-dark/80 dark:border-border-dark sticky top-0 z-9999" role="navigation" aria-label="Navegación principal">
+      {/* Barra de Progreso de Scroll */}
       <div 
         className="absolute bottom-0 left-0 h-0.5 bg-brand-500 transition-all duration-150 ease-out z-10"
         style={{ width: `${scrollProgress}%` }}
+        aria-hidden="true"
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <div className="shrink-0 flex items-center">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2" aria-label="Volver al inicio">
               <img
                 className="h-12 w-auto"
                 src="/logo-nuevo.png"
@@ -79,7 +103,7 @@ const PublicNavbar: React.FC = () => {
             </Link>
           </div>
 
-          {/* Navigation Links - Desktop */}
+          {/* Enlaces de Navegación - Escritorio */}
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
               <a
@@ -93,7 +117,7 @@ const PublicNavbar: React.FC = () => {
             ))}
           </div>
 
-          {/* Actions */}
+          {/* Acciones */}
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="hidden sm:flex items-center gap-3">
               <Link to="/signin">
@@ -104,18 +128,20 @@ const PublicNavbar: React.FC = () => {
             </div>
             <ThemeToggleButton />
             
-            {/* Mobile Menu Button */}
+            {/* Botón de Menú Móvil */}
             <button 
               className="md:hidden p-2 text-text-secondary hover:bg-bg-secondary rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500"
               onClick={() => setIsOpen(!isOpen)}
               aria-expanded={isOpen}
-              aria-label="Menú principal"
+              aria-controls="mobile-menu"
+              aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
             >
               <svg
                 className="h-6 w-6"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                aria-hidden="true"
               >
                 {isOpen ? (
                   <path
@@ -138,10 +164,11 @@ const PublicNavbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
+      {/* Menú Móvil */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            id="mobile-menu"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}

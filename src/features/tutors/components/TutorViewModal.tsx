@@ -7,15 +7,23 @@
 import { useState, useEffect } from "react";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
 import Badge from "../../../components/ui/badge/Badge";
 import { TutorRowData } from "../types";
 import { getCareers } from "../../careers/services/careersService";
 import { Career } from "../../careers/types";
 
+/**
+ * Props for the TutorViewModal component.
+ */
 interface TutorViewModalProps {
+    /** Whether the modal is open */
     isOpen: boolean;
+    /** Function to call when closing the modal */
     onClose: () => void;
+    /** Function to call when editing the tutor */
     onEdit?: (tutor: TutorRowData) => void;
+    /** The tutor object to display */
     tutor: TutorRowData | null;
 }
 
@@ -28,6 +36,12 @@ const getProfessionColor = (profession: string): "primary" | "success" | "error"
     return colors[Math.abs(hash) % colors.length];
 };
 
+/**
+ * Modal component for viewing complete tutor details.
+ * 
+ * @param props - Component props.
+ * @returns The TutorViewModal component.
+ */
 export default function TutorViewModal({
     isOpen,
     onClose,
@@ -174,9 +188,9 @@ export default function TutorViewModal({
                     Cerrar
                 </Button>
                 {onEdit && (
-                    <Button onClick={() => { onEdit(tutor); onClose(); }} className="flex-1 sm:flex-none">
+                    <AsyncButton onClick={async () => { onEdit(tutor); onClose(); }} className="flex-1 sm:flex-none">
                         Editar Información
-                    </Button>
+                    </AsyncButton>
                 )}
             </ModalFooter>
         </Modal>

@@ -1,77 +1,60 @@
-/**
- * @file Button.tsx
- * @description Componente de botón reutilizable con soporte para variantes, tamaños y estados.
- */
-
-import { ReactNode } from "react";
+import { useState, ReactNode } from "react";
 import { cn } from "../../../utils/cn";
 
-/**
- * Properties for the Button component.
- */
-interface ButtonProps {
-  /** Content of the button (text or elements) */
+interface AsyncButtonProps {
   children: ReactNode;
-  /** Button size variant */
-  size?: "sm" | "md" | "lg";
-  /** Visual variant of the button */
-  variant?: "primary" | "outline" | "error" | "success" | "warning" | "ghost";
-  /** Optional icon to display before the text */
-  startIcon?: ReactNode;
-  /** Optional icon to display after the text */
-  endIcon?: ReactNode;
-  /** Function to execute on click */
-  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
-  /** Indicates if the button is disabled */
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => Promise<void> | void;
   disabled?: boolean;
-  /** Indicates if the button is in a loading state */
   loading?: boolean;
-  /** Additional CSS classes */
+  size?: "sm" | "md" | "lg";
+  variant?: "primary" | "outline" | "error" | "success" | "warning" | "ghost";
+  startIcon?: ReactNode;
+  endIcon?: ReactNode;
   className?: string;
-  /** Native HTML button type */
   type?: "button" | "submit" | "reset";
-  /** ID of the form associated with the button */
   form?: string;
-  /** Accessibility label for the button */
   "aria-label"?: string;
 }
 
-/**
- * Standardized Button component for the application.
- * Follows SOLID principles and provides a consistent UI across the platform.
- * 
- * @param props - Component properties
- * @returns A styled HTML button element
- * 
- * @example
- * ```tsx
- * <Button variant="primary" onClick={() => console.log('Clicked')}>
- *   Save Changes
- * </Button>
- * ```
- */
-const Button: React.FC<ButtonProps> = ({
+const AsyncButton: React.FC<AsyncButtonProps> = ({
   children,
+  onClick,
+  disabled = false,
+  loading: externalLoading = false,
   size = "md",
   variant = "primary",
   startIcon,
   endIcon,
-  onClick,
   className = "",
-  disabled = false,
-  loading = false,
   type = "button",
   form,
   "aria-label": ariaLabel,
 }) => {
-  // Size Classes
+  const [internalLoading, setInternalLoading] = useState(false);
+  
+  const isLoading = externalLoading || internalLoading;
+  const isDisabled = disabled || isLoading;
+
+  const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (isLoading || !onClick) {
+      e.preventDefault();
+      return;
+    }
+
+    try {
+      setInternalLoading(true);
+      await onClick(e);
+    } finally {
+      setInternalLoading(false);
+    }
+  };
+
   const sizeClasses = {
     sm: "px-3 py-1.5 text-xs",
     md: "px-5 py-3 text-sm",
     lg: "px-6 py-3.5 text-base",
   };
 
-  // Variant Classes
   const variantClasses = {
     primary:
       "bg-btn-primary-bg text-btn-primary-text shadow-theme-xs hover:bg-btn-primary-hover active:bg-btn-primary-active disabled:bg-bg-secondary dark:disabled:bg-white/3",
@@ -87,16 +70,14 @@ const Button: React.FC<ButtonProps> = ({
       "bg-transparent text-text-primary hover:bg-bg-secondary dark:text-text-tertiary dark:hover:bg-white/5 disabled:opacity-50",
   };
 
-  const isButtonDisabled = disabled || loading;
-
   return (
     <button
       type={type}
       form={form}
-      disabled={isButtonDisabled}
-      onClick={onClick}
+      disabled={isDisabled}
+      onClick={handleClick}
       aria-label={ariaLabel}
-      aria-busy={loading}
+      aria-busy={isLoading}
       className={cn(
         "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:cursor-not-allowed",
         sizeClasses[size],
@@ -104,7 +85,7 @@ const Button: React.FC<ButtonProps> = ({
         className
       )}
     >
-      {loading ? (
+      {isLoading ? (
         <svg
           className="h-4 w-4 animate-spin text-current"
           xmlns="http://www.w3.org/2000/svg"
@@ -138,4 +119,4 @@ const Button: React.FC<ButtonProps> = ({
   );
 };
 
-export default Button;
+export default AsyncButton;

@@ -1,15 +1,43 @@
-import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import React, { useState, useRef, useLayoutEffect, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { cn } from '../../../utils/cn';
 
+/**
+ * Props for the Tooltip component.
+ */
 interface TooltipProps {
+  /** The content to show inside the tooltip. */
   content: React.ReactNode;
-  children: React.ReactElement<{ style?: React.CSSProperties }>;
+  /** The element that triggers the tooltip. */
+  children: React.ReactElement<{ 
+    style?: React.CSSProperties;
+    onMouseEnter?: React.MouseEventHandler;
+    onMouseLeave?: React.MouseEventHandler;
+    onFocus?: React.FocusEventHandler;
+    onBlur?: React.FocusEventHandler;
+    'aria-describedby'?: string;
+  }>;
+  /** Additional CSS classes for the tooltip container. */
   className?: string;
-  delay?: number; // Delay in ms before appearing
-  duration?: number; // Duration in ms to stay visible
-  isDisabled?: boolean; // If the trigger is disabled
+  /** Delay in ms before appearing. Defaults to 0. */
+  delay?: number;
+  /** Duration in ms to stay visible before automatically hiding. */
+  duration?: number;
+  /** Whether the tooltip is disabled. */
+  isDisabled?: boolean;
 }
 
+/**
+ * A accessible tooltip component that appears on hover or focus.
+ * Uses React Portal for positioning to avoid clipping.
+ * 
+ * @example
+ * ```tsx
+ * <Tooltip content="Eliminar registro">
+ *   <button onClick={handleDelete}><TrashIcon /></button>
+ * </Tooltip>
+ * ```
+ */
 export const Tooltip: React.FC<TooltipProps> = ({ 
   content, 
   children, 
@@ -32,15 +60,16 @@ export const Tooltip: React.FC<TooltipProps> = ({
   
   const triggerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const tooltipId = React.useId();
 
-  const updatePosition = React.useCallback(() => {
+  const updatePosition = useCallback(() => {
     if (!triggerRef.current || !tooltipRef.current || !isVisible || !content) return;
 
     const rect = triggerRef.current.getBoundingClientRect();
     const tooltipHeight = tooltipRef.current.offsetHeight;
     const tooltipWidth = tooltipRef.current.offsetWidth;
-    const offset = 5;
-    const threshold = 20;
+    const offset = 8;
+    const threshold = 16;
 
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
@@ -48,22 +77,19 @@ export const Tooltip: React.FC<TooltipProps> = ({
     let top: number;
     let left: number;
 
-    // Posicionamiento Vertical
+    // Vertical positioning
     if (spaceAbove > tooltipHeight + offset) {
-      // Por defecto arriba para tooltips si hay espacio
       top = rect.top + window.scrollY - tooltipHeight - offset;
     } else if (spaceBelow > tooltipHeight + offset) {
-      // Abajo si no hay espacio arriba
       top = rect.bottom + window.scrollY + offset;
     } else {
-      // Ajuste forzado al viewport
       top = Math.max(window.scrollY + threshold, rect.top + window.scrollY - tooltipHeight - offset);
     }
 
-    // Posicionamiento Horizontal (Centrado)
+    // Horizontal positioning (Centered)
     left = rect.left + window.scrollX + rect.width / 2 - tooltipWidth / 2;
 
-    // Ajustar si se sale por los lados
+    // Adjust for side overflows
     if (left < window.scrollX + threshold) {
       left = window.scrollX + threshold;
     } else if (left + tooltipWidth > window.scrollX + window.innerWidth - threshold) {
@@ -100,19 +126,18 @@ export const Tooltip: React.FC<TooltipProps> = ({
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', updatePosition, true);
     };
-  }, [isVisible, updatePosition, content]);
+  }, [isVisible, content, updatePosition]);
 
-  const handleMouseEnter = () => {
-    if (!content) return;
-    // Clear any pending timeouts
+  const showTooltip = () => {
+    if (isDisabled || !content) return;
+    
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (durationTimeoutRef.current) clearTimeout(durationTimeoutRef.current);
-
+    
     timeoutRef.current = setTimeout(() => {
       setIsVisible(true);
       
-      // If duration is set, auto-hide after that time
       if (duration) {
+        if (durationTimeoutRef.current) clearTimeout(durationTimeoutRef.current);
         durationTimeoutRef.current = setTimeout(() => {
           setIsVisible(false);
         }, duration);
@@ -120,7 +145,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
     }, delay);
   };
 
-  const handleMouseLeave = () => {
+  const hideTooltip = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (durationTimeoutRef.current) clearTimeout(durationTimeoutRef.current);
     setIsVisible(false);
@@ -133,33 +158,47 @@ export const Tooltip: React.FC<TooltipProps> = ({
     };
   }, []);
 
-  if (!content) return children;
+  // Clone child to attach event handlers and aria attributes
+  const trigger = React.cloneElement(children, {
+    onMouseEnter: (e: React.MouseEvent) => {
+      children.props.onMouseEnter?.(e);
+      showTooltip();
+    },
+    onMouseLeave: (e: React.MouseEvent) => {
+      children.props.onMouseLeave?.(e);
+      hideTooltip();
+    },
+    onFocus: (e: React.FocusEvent) => {
+      children.props.onFocus?.(e);
+      showTooltip();
+    },
+    onBlur: (e: React.FocusEvent) => {
+      children.props.onBlur?.(e);
+      hideTooltip();
+    },
+    'aria-describedby': isVisible ? tooltipId : undefined,
+  });
 
   return (
-    <div 
-      ref={triggerRef}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      className={`relative inline-block ${isDisabled ? "cursor-not-allowed" : "cursor-pointer"} ${className}`}
-    >
-      {React.cloneElement(children, {
-        style: {
-          ...(children.props.style || {}),
-          pointerEvents: isDisabled ? 'none' : (children.props.style?.pointerEvents || 'auto')
-        }
-      })}
-      {isVisible && createPortal(
+    <>
+      <div ref={triggerRef} className="inline-block">
+        {trigger}
+      </div>
+      {isVisible && content && createPortal(
         <div
+          id={tooltipId}
           ref={tooltipRef}
+          role="tooltip"
           style={style}
-          className="pointer-events-none fixed"
+          className={cn(
+            "pointer-events-none px-2 py-1 text-xs font-medium text-white bg-gray-900/90 dark:bg-gray-700/95 backdrop-blur-sm rounded shadow-lg max-w-xs wrap-break-word",
+            className
+          )}
         >
-          <div className={`rounded-lg bg-bg-dark px-3 py-2 text-xs text-white shadow-2xl animate-fadeIn border border-white/10 max-w-xs ${className}`}>
-            {content}
-          </div>
+          {content}
         </div>,
         document.body
       )}
-    </div>
+    </>
   );
 };

@@ -33,7 +33,7 @@ export default function DefaultInputs() {
           <Select
             options={options}
             placeholder="Select an option"
-            onChange={handleSelectChange}
+            onChangeValue={handleSelectChange}
             className="dark:bg-dark-900"
           />
         </div>
@@ -62,9 +62,9 @@ export default function DefaultInputs() {
             id="date-picker"
             label="Date Picker Input"
             placeholder="Select a date"
-            onChange={(dates, currentDateString) => {
+            onChange={(e) => {
               // Handle your logic
-              console.log({ dates, currentDateString });
+              console.log(e.target.value);
             }}
           />
         </div>

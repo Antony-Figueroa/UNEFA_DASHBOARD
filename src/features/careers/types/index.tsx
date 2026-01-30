@@ -51,5 +51,5 @@ export type CreateCareerPayload = Omit<Career, 'careerId' | 'creationDate' | 'is
 /**
  * Payload necesario para actualizar una carrera existente.
  */
-export type UpdateCareerPayload = Partial<CreateCareerPayload>;
+export type UpdateCareerPayload = Partial<CreateCareerPayload> & { careerId: string | number };
 

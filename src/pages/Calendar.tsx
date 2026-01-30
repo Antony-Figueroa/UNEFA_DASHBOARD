@@ -9,6 +9,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../components/ui/mod
 import { useModal } from "../hooks/useModal";
 import PageMeta from "../components/common/PageMeta";
 import { SkeletonLoader, ChartSkeleton } from "../components/ui/skeleton";
+import FlatpickrDatePicker from "../components/form/FlatpickrDatePicker";
 
 interface CalendarEvent extends EventInput {
   extendedProps: {
@@ -238,12 +239,14 @@ const Calendar: React.FC = () => {
                   Fecha de Inicio
                 </label>
                 <div className="relative">
-                  <input
-                    id="event-start-date"
-                    type="date"
+                  <FlatpickrDatePicker
                     value={eventStartDate}
-                    onChange={(e) => setEventStartDate(e.target.value)}
-                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-border-medium bg-transparent bg-none px-4 py-2.5 text-sm text-text-primary shadow-theme-xs placeholder:text-text-tertiary focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-border-dark dark:bg-bg-dark dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                    onChange={(dateStr) => {
+                      if (dateStr) {
+                        setEventStartDate(dateStr);
+                      }
+                    }}
+                    placeholder="Selecciona fecha de inicio"
                   />
                 </div>
               </div>
@@ -253,12 +256,14 @@ const Calendar: React.FC = () => {
                   Fecha de Fin
                 </label>
                 <div className="relative">
-                  <input
-                    id="event-end-date"
-                    type="date"
+                  <FlatpickrDatePicker
                     value={eventEndDate}
-                    onChange={(e) => setEventEndDate(e.target.value)}
-                    className="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-border-medium bg-transparent bg-none px-4 py-2.5 text-sm text-text-primary shadow-theme-xs placeholder:text-text-tertiary focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-border-dark dark:bg-bg-dark dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                    onChange={(dateStr) => {
+                      if (dateStr) {
+                        setEventEndDate(dateStr);
+                      }
+                    }}
+                    placeholder="Selecciona fecha de fin"
                   />
                 </div>
               </div>

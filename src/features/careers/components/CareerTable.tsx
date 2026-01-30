@@ -14,6 +14,7 @@ import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { CareerRowData } from "../types";
 import { InternshipTypeOption } from "../../internship-types/types";
+import { CrudStatus } from "../../../hooks/useCrud";
 import Checkbox from "../../../components/form/input/Checkbox";
 import Badge from "../../../components/ui/badge/Badge";
 
@@ -38,8 +39,8 @@ interface CareerTableProps {
   /** Datos de las carreras a mostrar */
   data: CareerRowData[];
   /** Estado de la carga de datos */
-  status: "loading" | "success" | "error";
-  /** Error en caso de fallo en la carga */
+  status: CrudStatus;
+  /** Error en caso de falla en la carga */
   error: Error | null;
   /** Callback al editar una carrera */
   onEdit?: (career: CareerRowData) => void;

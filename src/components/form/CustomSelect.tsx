@@ -131,7 +131,9 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
             ? "cursor-not-allowed bg-gray-100 opacity-50 border-border-medium dark:bg-bg-dark/50 dark:text-text-tertiary" 
             : error
               ? "border-error-500 focus:ring-error-500/10 dark:border-error-800"
-              : "border-border-medium bg-transparent hover:border-brand-300 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/10 dark:border-border-dark dark:bg-bg-dark",
+              : isOpen 
+                ? "border-brand-500 ring-4 ring-brand-500/10 dark:border-brand-400" 
+                : "border-border-medium bg-transparent hover:border-brand-300 focus:border-brand-300 focus:ring-4 focus:ring-brand-500/10 dark:border-border-dark dark:bg-bg-dark",
           selectedValue ? "text-text-primary dark:text-text-emphasis" : "text-text-tertiary"
         )}
       >
@@ -140,8 +142,8 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
         </span>
         <ChevronDown 
           className={cn(
-            "h-4 w-4 text-text-tertiary transition-transform duration-200",
-            isOpen && "rotate-180"
+            "h-4 w-4 text-text-tertiary transition-transform duration-300 ease-in-out",
+            isOpen && "rotate-180 text-brand-500"
           )} 
         />
       </button>
@@ -149,7 +151,7 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
       {/* Menú Desplegable */}
       {isOpen && !disabled && (
         <ul
-          className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-border-light bg-white py-1 shadow-lg outline-none dark:border-border-dark dark:bg-bg-dark animate-in fade-in zoom-in-95 duration-100"
+          className="absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-xl border border-border-light bg-white py-1.5 shadow-theme-lg outline-none dark:border-border-dark dark:bg-bg-dark animate-in fade-in zoom-in-95 duration-200"
           role="listbox"
         >
           {options.length > 0 ? (

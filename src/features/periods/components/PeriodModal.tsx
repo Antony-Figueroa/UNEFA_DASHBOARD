@@ -271,18 +271,30 @@ export default function PeriodModal({
 
                     const dayAfterLastEnd = new Date(lastPeriod.endDate);
                     dayAfterLastEnd.setDate(dayAfterLastEnd.getDate() + 1);
+                    dayAfterLastEnd.setHours(0, 0, 0, 0); // Normalizar a medianoche
                     autoStartDate = dayAfterLastEnd;
                 }
 
-                reset({
+                const initialValues = {
                     year: nextYear,
                     periodoTipo: nextPeriodoTipo,
                     startDate: autoStartDate,
                     endDate: autoStartDate ? new Date(autoStartDate.getTime() + (16 * 7 * 24 * 60 * 60 * 1000)) : undefined,
-                });
+                };
+
+                reset(initialValues);
+
+                // Forzar la actualización de los campos en el estado de react-hook-form
+                // Esto asegura que useMemo y otros observadores vean los valores inmediatamente
+                if (initialValues.startDate) {
+                    setValue('startDate', initialValues.startDate, { shouldValidate: true });
+                }
+                if (initialValues.endDate) {
+                    setValue('endDate', initialValues.endDate, { shouldValidate: true });
+                }
             }
         }
-    }, [periodo, isOpen, reset, existingPeriods]);
+    }, [periodo, isOpen, reset, existingPeriods, setValue]);
 
    /**
     * Maneja el envío del formulario, valida las fechas y llama a la función onSave.
@@ -402,8 +414,8 @@ export default function PeriodModal({
                                             <FlatpickrDatePicker
                                                 disabled={isCulminado || isInCurso}
                                                 value={field.value ?? ''}
-                                                onChange={(dates) => {
-                                                    const date = dates[0];
+                                                onChange={(dateStr) => {
+                                                    const date = dateStr ? new Date(dateStr + 'T00:00:00') : null;
                                                     field.onChange(date);
                                                     if (date) {
                                                         const minDuration = 16 * 7 * 24 * 60 * 60 * 1000;
@@ -441,7 +453,7 @@ export default function PeriodModal({
                                             <FlatpickrDatePicker
                                                 disabled={isCulminado}
                                                 value={field.value ?? ''}
-                                                onChange={(dates) => field.onChange(dates[0])}
+                                                onChange={(dateStr) => field.onChange(dateStr ? new Date(dateStr + 'T00:00:00') : null)}
                                                 options={{
                                                     minDate: minEndDate,
                                                     maxDate: maxEndDate,

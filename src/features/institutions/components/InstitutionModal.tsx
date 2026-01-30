@@ -11,24 +11,38 @@ import Input from "../../../components/form/input/InputField";
 import TextArea from "../../../components/form/input/TextArea";
 import Select from "../../../components/form/Select";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
-import { Institution } from "../types";
+import { Institution, CreateInstitutionPayload, UpdateInstitutionPayload } from "../types";
 import Button from "../../../components/ui/button/Button";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { useInternshipTypes } from "../../internship-types/hooks/useInternshipTypes";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { useLists } from "../../lists/hooks/useLists";
 import * as enrollmentService from "../../enrollment/services/enrollmentService";
 
+/**
+ * Props for the InstitutionModal component.
+ */
 interface InstitutionModalProps {
+  /** Whether the modal is visible */
   isOpen: boolean;
+  /** Callback to close the modal */
   onClose: () => void;
-  onSave: (inst: Omit<Institution, "institutionId" | "registrationDate">) => void;
+  /** Callback fired when the form is submitted successfully */
+  onSave: (inst: CreateInstitutionPayload | UpdateInstitutionPayload) => void;
+  /** The institution record being edited, or null if creating a new one */
   editingInst?: Institution | null;
+  /** Options for the career selection dropdown */
   careerOptions: { value: string | number; label: string }[];
+  /** Whether a background action is in progress */
   isLoading?: boolean;
+  /** List of existing institutions for validation (e.g., duplicate RIF) */
   existingInstitutions?: Institution[];
 }
 
+/**
+ * Base Zod schema for institution form data.
+ */
 const baseInstSchema = z.object({
   rifPrefix: z.string().min(1, "El prefijo es obligatorio"),
   rifNumber: z.string()
@@ -49,8 +63,16 @@ const baseInstSchema = z.object({
   institutionType: z.string().min(1, "Seleccione un tipo de institución"),
 });
 
+/**
+ * Type inferred from the institution form schema.
+ */
 type InstFormData = z.infer<typeof baseInstSchema>;
 
+/**
+ * Creates a Zod schema with refinement for duplicate RIF validation.
+ * @param existingInstitutions - List of institutions to check against.
+ * @param editingInst - The institution currently being edited (if any).
+ */
 const createInstSchema = (existingInstitutions: Institution[], editingInst: Institution | null) => 
   baseInstSchema.superRefine((data, ctx) => {
     const fullRif = `${data.rifPrefix}-${data.rifNumber}`.toUpperCase();
@@ -67,6 +89,21 @@ const createInstSchema = (existingInstitutions: Institution[], editingInst: Inst
     }
   });
 
+/**
+ * Modal component for creating or editing institution records.
+ * Uses react-hook-form for form management and Zod for validation.
+ * 
+ * @example
+ * ```tsx
+ * <InstitutionModal
+ *   isOpen={isModalOpen}
+ *   onClose={() => setModalOpen(false)}
+ *   onSave={handleSave}
+ *   editingInst={selectedInstitution}
+ *   careerOptions={careers}
+ * />
+ * ```
+ */
 export default function InstitutionModal({
   isOpen,
   onClose,
@@ -88,7 +125,7 @@ export default function InstitutionModal({
     control,
     reset,
     setValue,
-    formState: { errors, isDirty },
+    formState: { errors, isDirty, isValid },
   } = useForm<InstFormData>({
     resolver: zodResolver(instSchema),
     mode: "onChange",
@@ -289,8 +326,12 @@ export default function InstitutionModal({
     }
   }, [editingInst, isOpen, reset]);
 
+  /**
+   * Handles form submission. Formats the data and calls the onSave callback.
+   * @param data - The validated form data.
+   */
   const onSubmit = (data: InstFormData) => {
-    const formattedData = {
+    const commonData = {
       rif: `${data.rifPrefix}-${data.rifNumber}`.toUpperCase(),
       name: data.name.toUpperCase(),
       fiscalAddress: data.fiscalAddress.toUpperCase(),
@@ -302,12 +343,21 @@ export default function InstitutionModal({
       extension: data.extension.toUpperCase(),
       institutionType: data.institutionType.toUpperCase(),
       status: editingInst?.status ?? true,
-      careerName: careerOptions.find(c => String(c.value) === String(data.careerId))?.label,
     };
 
-    onSave(formattedData);
+    if (editingInst) {
+      onSave({
+        ...commonData,
+        institutionId: editingInst.institutionId,
+      } as UpdateInstitutionPayload);
+    } else {
+      onSave(commonData as CreateInstitutionPayload);
+    }
   };
 
+  /**
+   * Helper to convert input value to uppercase.
+   */
   const handleUppercaseChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const start = e.target.selectionStart;
     const end = e.target.selectionEnd;
@@ -315,6 +365,9 @@ export default function InstitutionModal({
     e.target.setSelectionRange(start, end);
   };
 
+  /**
+   * Helper to restrict input to numeric characters only.
+   */
   const handleNumbersOnlyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const start = e.target.selectionStart;
     const end = e.target.selectionEnd;
@@ -331,14 +384,14 @@ export default function InstitutionModal({
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton className="max-w-[95%] sm:max-w-[85%] md:max-w-[70%] lg:max-w-4xl">
+      <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl">
         <ModalHeader>
           <h5 className="text-xl font-semibold text-text-primary dark:text-white/90">
             {editingInst ? "Editar Institución" : "Registrar Institución"}
           </h5>
           <p className="text-sm text-text-secondary">Complete la información de la institución.</p>
         </ModalHeader>
-      <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50 max-h-[70vh] overflow-y-auto">
+      <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
         <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">RIF *</label>
@@ -572,9 +625,9 @@ export default function InstitutionModal({
         <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading}>
           Cancelar
         </Button>
-        <Button onClick={handleSubmit(onSubmit)} loading={isLoading}>
+        <AsyncButton onClick={handleSubmit(onSubmit)} loading={isLoading} disabled={!isValid}>
           {editingInst ? "Guardar Cambios" : "Registrar Institución"}
-        </Button>
+        </AsyncButton>
       </ModalFooter>
     </Modal>
 

@@ -21,41 +21,67 @@ import {
   RefreshIcon,
   EyeIcon,
 } from "../../../icons/actions";
-import { InstitutionalResponsibleRowData } from "../types";
 import Badge from "../../../components/ui/badge/Badge";
 import Button from "../../../components/ui/button/Button";
-import { ActionButton } from "../../../components/common/ActionButton";
+import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import { useDebounce } from "../../../hooks/useDebounce";
 import Checkbox from "../../../components/form/input/Checkbox";
+import { InstitutionalResponsible } from "../types";
 
+/**
+ * Props for the InstitutionalResponsibleTable component.
+ */
 interface InstitutionalResponsibleTableProps {
-  data: InstitutionalResponsibleRowData[];
+  /** Array of institutional responsible records to display */
+  data: InstitutionalResponsible[];
+  /** Current active tab filter */
   activeTab: "Activas" | "Inactivas";
+  /** Current loading/error status of the data */
   status?: "loading" | "success" | "error";
+  /** Optional error object with message */
   error?: { message: string };
-  onEdit?: (resp: InstitutionalResponsibleRowData) => void;
-  onView?: (resp: InstitutionalResponsibleRowData) => void;
-  onToggleStatus?: (resp: InstitutionalResponsibleRowData) => void;
+  /** Callback fired when the edit button is clicked */
+  onEdit?: (resp: InstitutionalResponsible) => void;
+  /** Callback fired when the view button is clicked */
+  onView?: (resp: InstitutionalResponsible) => void;
+  /** Callback fired when the toggle status button is clicked */
+  onToggleStatus?: (resp: InstitutionalResponsible) => void;
+  /** Callback fired for bulk actions on selected records */
   onBulkAction?: (ids: string[], action: "inactivate" | "restore") => void;
+  /** Whether a background loading action is in progress */
   isLoading?: boolean;
 }
 
-type SortKey = keyof InstitutionalResponsibleRowData;
+/**
+ * Valid sort keys for the institutional responsible table.
+ */
+type SortKey = keyof InstitutionalResponsible;
 
+/**
+ * Props for the ActionButtons sub-component.
+ */
 interface ActionButtonsProps {
-    onEdit?: () => void;
-    onToggleStatus?: () => void;
-    onView?: () => void;
-    activeTab: "Activas" | "Inactivas";
-    isMobile?: boolean;
+  /** Callback for edit action */
+  onEdit?: () => void;
+  /** Callback for toggle status action */
+  onToggleStatus?: () => void;
+  /** Callback for view action */
+  onView?: () => void;
+  /** Current active tab filter */
+  activeTab: "Activas" | "Inactivas";
+  /** Whether the buttons are rendered in a mobile view */
+  isMobile?: boolean;
 }
 
+/**
+ * Renders action buttons (view, edit, delete/restore) for a table row.
+ */
 const ActionButtons = ({
-    onEdit,
-    onToggleStatus,
-    onView,
-    activeTab,
-    isMobile = false,
+  onEdit,
+  onToggleStatus,
+  onView,
+  activeTab,
+  isMobile = false,
 }: ActionButtonsProps) => {
     const containerClasses = isMobile 
         ? "flex flex-col gap-3 pt-2" 
@@ -64,8 +90,8 @@ const ActionButtons = ({
     return (
         <div className={containerClasses}>
             {onView && (
-                <ActionButton
-                    onClick={() => onView()}
+                <AsyncActionButton
+                    onClick={async () => onView()}
                     icon={<EyeIcon />}
                     tooltip="Ver Detalles"
                     label={isMobile ? "Ver Detalles" : undefined}
@@ -74,8 +100,8 @@ const ActionButtons = ({
                 />
             )}
             {onEdit && activeTab === "Activas" && (
-                <ActionButton
-                    onClick={() => onEdit()}
+                <AsyncActionButton
+                    onClick={async () => onEdit()}
                     icon={<EditIcon />}
                     tooltip="Editar"
                     label={isMobile ? "Editar Responsable" : undefined}
@@ -84,8 +110,8 @@ const ActionButtons = ({
                 />
             )}
             {onToggleStatus && (
-                <ActionButton
-                    onClick={() => onToggleStatus()}
+                <AsyncActionButton
+                    onClick={async () => onToggleStatus()}
                     icon={activeTab === "Inactivas" ? <RefreshIcon /> : <TrashIcon />}
                     tooltip={activeTab === "Inactivas" ? "Restaurar" : "Eliminar"}
                     label={isMobile ? (activeTab === "Inactivas" ? "Restaurar Responsable" : "Eliminar Responsable") : undefined}
@@ -97,6 +123,20 @@ const ActionButtons = ({
     );
 };
 
+/**
+ * Component for displaying and managing institutional responsibles in a tabular format.
+ * Supports filtering, sorting, pagination, and bulk actions.
+ * 
+ * @example
+ * ```tsx
+ * <InstitutionalResponsibleTable
+ *   data={responsibles}
+ *   activeTab="Activas"
+ *   onEdit={(resp) => handleEdit(resp)}
+ *   onToggleStatus={(resp) => handleToggle(resp)}
+ * />
+ * ```
+ */
 export default function InstitutionalResponsibleTable({
   data,
   activeTab,
@@ -148,6 +188,7 @@ export default function InstitutionalResponsibleTable({
       const valB = b[sortConfig.key];
 
       if (valA === undefined || valB === undefined) return 0;
+      if (valA === null || valB === null) return 0;
 
       const strA = String(valA).toLowerCase();
       const strB = String(valB).toLowerCase();
@@ -160,6 +201,9 @@ export default function InstitutionalResponsibleTable({
     return filtered;
   }, [data, activeTab, debouncedSearch, filters.institution, sortConfig]);
 
+  /**
+   * Generates institution options for the filter dropdown based on unique institutions in the data.
+   */
   const institutionOptions = useMemo(() => {
     const uniqueInstitutions = Array.from(new Set(data.map(i => i.institutionId)))
       .map(id => {
@@ -194,6 +238,10 @@ export default function InstitutionalResponsibleTable({
     );
   }
 
+  /**
+   * Toggles the expanded state of a row in mobile view.
+   * @param id - The ID of the responsible to toggle.
+   */
   const toggleRow = (id: string) => {
     const newExpanded = new Set(expandedRows);
     if (newExpanded.has(id)) newExpanded.delete(id);
@@ -201,6 +249,10 @@ export default function InstitutionalResponsibleTable({
     setExpandedRows(newExpanded);
   };
 
+  /**
+   * Updates the sort configuration when a column header is clicked.
+   * @param key - The field to sort by.
+   */
   const handleSort = (key: SortKey) => {
     setSortConfig((prev) => ({
       key,
@@ -208,6 +260,9 @@ export default function InstitutionalResponsibleTable({
     }));
   };
 
+  /**
+   * Renders an icon indicating the current sort direction for a column.
+   */
   const SortIndicator = ({ column }: { column: SortKey }) => {
     if (sortConfig.key !== column) {
       return (
@@ -227,6 +282,10 @@ export default function InstitutionalResponsibleTable({
     );
   };
 
+  /**
+   * Toggles selection for all items in the current page.
+   * @param checked - Whether to select or deselect all.
+   */
   const toggleSelectAll = (checked: boolean) => {
     if (checked) {
       setSelectedIds(new Set(currentData.map((i) => i.responsibleId)));
@@ -235,6 +294,11 @@ export default function InstitutionalResponsibleTable({
     }
   };
 
+  /**
+   * Toggles selection for a single item.
+   * @param id - The ID of the responsible to toggle.
+   * @param checked - Whether the item is selected.
+   */
   const toggleSelectOne = (id: string, checked: boolean) => {
     const newSelected = new Set(selectedIds);
     if (checked) newSelected.add(id);
@@ -289,7 +353,7 @@ export default function InstitutionalResponsibleTable({
           <div className="flex items-center">
             {(filters.search || filters.institution !== "all") && (
               <button
-                onClick={() => setFilters({ search: "", institution: "all" })}
+                onClick={async () => setFilters({ search: "", institution: "all" })}
                 className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
               >
                 <RefreshIcon className="icon-xs" />
@@ -347,37 +411,37 @@ export default function InstitutionalResponsibleTable({
                   ariaLabel="Seleccionar todos"
                 />
               </TableCell>
-              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={() => handleSort("identificationNumber")}>
+              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={async () => handleSort("identificationNumber")}>
                 <div className="flex items-center">
                   CÉDULA
                   <SortIndicator column="identificationNumber" />
                 </div>
               </TableCell>
-              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={() => handleSort("firstName")}>
+              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={async () => handleSort("firstName")}>
                 <div className="flex items-center">
                   NOMBRES
                   <SortIndicator column="firstName" />
                 </div>
               </TableCell>
-              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={() => handleSort("lastName")}>
+              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={async () => handleSort("lastName")}>
                 <div className="flex items-center">
                   APELLIDOS
                   <SortIndicator column="lastName" />
                 </div>
               </TableCell>
-              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={() => handleSort("phone")}>
+              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={async () => handleSort("phone")}>
                 <div className="flex items-center">
                   TELÉFONO
                   <SortIndicator column="phone" />
                 </div>
               </TableCell>
-              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={() => handleSort("email")}>
+              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={async () => handleSort("email")}>
                 <div className="flex items-center">
                   CORREO
                   <SortIndicator column="email" />
                 </div>
               </TableCell>
-              <TableCell isHeader className="table-header-cell cursor-pointer text-center" onClick={() => handleSort("institutionName")}>
+              <TableCell isHeader className="table-header-cell cursor-pointer text-center" onClick={async () => handleSort("institutionName")}>
                 <div className="flex items-center justify-center">
                   INSTITUCIÓN
                   <SortIndicator column="institutionName" />
@@ -470,7 +534,7 @@ export default function InstitutionalResponsibleTable({
                       </p>
                     </div>
                     <button
-                      onClick={() => toggleRow(rowId)}
+                      onClick={async () => toggleRow(rowId)}
                       className="absolute right-2 top-2 p-2 text-text-tertiary hover:bg-bg-secondary dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
                       style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
                     >

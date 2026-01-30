@@ -10,6 +10,7 @@ import * as z from "zod";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "../../../components/ui/modal";
 import Input from "../../../components/form/input/InputField";
 import Button from "../../../components/ui/button/Button";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
 import Select from "../../../components/form/Select";
 import CustomSelect from "../../../components/form/CustomSelect";
 import { 
@@ -125,9 +126,10 @@ export default function InstitutionalResponsibleModal({
     handleSubmit,
     control,
     reset,
-    formState: { errors, isSubmitted, isDirty },
+    formState: { errors, isSubmitted, isDirty, isValid },
   } = useForm<RespFormData>({
     resolver: zodResolver(respSchema),
+    mode: "onChange",
     defaultValues: {
       identificationPrefix: "V",
       identificationNumber: "",
@@ -407,14 +409,15 @@ export default function InstitutionalResponsibleModal({
           >
             Cancelar
           </Button>
-          <Button 
+          <AsyncButton 
             variant="primary" 
             type="submit" 
             className="min-h-12 px-8 rounded-xl font-bold"
             loading={isLoading}
+            disabled={!isValid}
           >
             {editingResp ? "Actualizar" : "Guardar"}
-          </Button>
+          </AsyncButton>
         </ModalFooter>
       </form>
     </Modal>

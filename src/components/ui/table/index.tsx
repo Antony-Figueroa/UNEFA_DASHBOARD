@@ -1,89 +1,198 @@
-import { ReactNode } from "react";
+import React, { ReactNode } from "react";
+import { cn } from "../../../utils/cn";
 
-// Props for Table
-interface TableProps {
-  children: ReactNode; // Table content (thead, tbody, etc.)
-  className?: string; // Optional className for styling
+/**
+ * Propiedades para el componente Table.
+ */
+export interface TableProps {
+  /** Contenido de la tabla (thead, tbody, etc.). */
+  children: ReactNode;
+  /** Clases CSS adicionales para el elemento table. */
+  className?: string;
+  /** Si la tabla debe tener un contenedor con scroll horizontal. Por defecto true. */
+  responsive?: boolean;
 }
 
-// Props for TableHeader
-interface TableHeaderProps {
-  children: ReactNode; // Header row(s)
-  className?: string; // Optional className for styling
+/**
+ * Propiedades para el componente TableHeader.
+ */
+export interface TableHeaderProps {
+  /** Filas de encabezado. */
+  children: ReactNode;
+  /** Clases CSS adicionales para el elemento thead. */
+  className?: string;
 }
 
-// Props for TableBody
-interface TableBodyProps {
-  children: ReactNode; // Body row(s)
-  className?: string; // Optional className for styling
+/**
+ * Propiedades para el componente TableBody.
+ */
+export interface TableBodyProps {
+  /** Filas del cuerpo. */
+  children: ReactNode;
+  /** Clases CSS adicionales para el elemento tbody. */
+  className?: string;
 }
 
-// Props for TableRow
-interface TableRowProps {
-  children: ReactNode; // Cells (th or td)
-  className?: string; // Optional className for styling
+/**
+ * Propiedades para el componente TableRow.
+ */
+export interface TableRowProps {
+  /** Celdas (th o td). */
+  children: ReactNode;
+  /** Clases CSS adicionales para el elemento tr. */
+  className?: string;
+  /** Manejador de clic opcional para la fila. */
   onClick?: () => void;
+  /** Si la fila es interactiva (añade efectos hover). */
+  hoverable?: boolean;
 }
 
-// Props for TableCell
-interface TableCellProps {
-  children: ReactNode; // Cell content
-  isHeader?: boolean; // If true, renders as <th>, otherwise <td>
-  className?: string; // Optional className for styling
-  colSpan?: number; // Optional colspan for spanning multiple columns
-  onClick?: () => void; // Optional onClick handler
+/**
+ * Propiedades para el componente TableCell.
+ */
+export interface TableCellProps {
+  /** Contenido de la celda. */
+  children: ReactNode;
+  /** Si es true, se renderiza como <th>, de lo contrario como <td>. */
+  isHeader?: boolean;
+  /** Clases CSS adicionales para el elemento de celda. */
+  className?: string;
+  /** Colspan opcional. */
+  colSpan?: number;
+  /** Rowspan opcional. */
+  rowSpan?: number;
+  /** Manejador de clic opcional para la celda. */
+  onClick?: () => void;
+  /** Alineación del texto. */
+  align?: "left" | "center" | "right";
 }
 
-// Table Component
-const Table: React.FC<TableProps> = ({ children, className }) => {
-  return <table className={`min-w-full  ${className}`}>{children}</table>;
+/**
+ * Componente Table principal.
+ * Proporciona un contenedor responsivo y estilos base para tablas.
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * <Table>
+ *   <TableHeader>
+ *     <TableRow>
+ *       <TableCell isHeader>ID</TableCell>
+ *       <TableCell isHeader>Nombre</TableCell>
+ *     </TableRow>
+ *   </TableHeader>
+ *   <TableBody>
+ *     <TableRow hoverable>
+ *       <TableCell>1</TableCell>
+ *       <TableCell>Antony</TableCell>
+ *     </TableRow>
+ *   </TableBody>
+ * </Table>
+ * ```
+ */
+export const Table: React.FC<TableProps> = ({ children, className, responsive = true }) => {
+  const table = (
+    <table className={cn("w-full border-collapse text-sm text-left", className)}>
+      {children}
+    </table>
+  );
+
+  if (!responsive) return table;
+
+  return (
+    <div className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+      {table}
+    </div>
+  );
 };
 
-// TableHeader Component
-const TableHeader: React.FC<TableHeaderProps> = ({ children, className }) => {
+/**
+ * Componente de encabezado de tabla (thead).
+ */
+export const TableHeader: React.FC<TableHeaderProps> = ({ children, className }) => {
   return (
-    <thead className={`bg-bg-secondary/50 dark:bg-white/5 border-b border-border-light dark:border-border-dark/50 ${className ?? ""}`}>
+    <thead className={cn(
+      "bg-bg-secondary/50 dark:bg-white/5 border-b border-border-light dark:border-border-dark",
+      className
+    )}>
       {children}
     </thead>
   );
 };
 
-// TableBody Component
-const TableBody: React.FC<TableBodyProps> = ({ children, className }) => {
-  return <tbody className={`divide-y divide-border-light dark:divide-border-dark/50 ${className ?? ""}`}>{children}</tbody>;
+/**
+ * Componente de cuerpo de tabla (tbody).
+ */
+export const TableBody: React.FC<TableBodyProps> = ({ children, className }) => {
+  return (
+    <tbody className={cn("divide-y divide-border-light dark:divide-border-dark", className)}>
+      {children}
+    </tbody>
+  );
 };
 
-// TableRow Component
-const TableRow: React.FC<TableRowProps> = ({ children, className, onClick }) => {
+/**
+ * Componente de fila de tabla (tr).
+ */
+export const TableRow: React.FC<TableRowProps> = ({ 
+  children, 
+  className, 
+  onClick,
+  hoverable = false
+}) => {
   return (
-    <tr 
-      className={`transition-colors duration-200 group table-row-hover ${className ?? ""}`}
+    <tr
       onClick={onClick}
+      className={cn(
+        "transition-colors duration-200",
+        hoverable && "hover:bg-bg-secondary/30 dark:hover:bg-white/5 cursor-pointer",
+        className
+      )}
     >
       {children}
     </tr>
   );
 };
 
-// TableCell Component
-const TableCell: React.FC<TableCellProps> = ({
+/**
+ * Componente de celda de tabla (th o td).
+ */
+export const TableCell: React.FC<TableCellProps> = ({
   children,
   isHeader = false,
   className,
   colSpan,
+  rowSpan,
   onClick,
+  align = "left",
 }) => {
-  const CellTag = isHeader ? "th" : "td";
-  const baseClasses = isHeader
-    ? "px-6 py-4 text-left text-xs font-bold text-text-tertiary uppercase tracking-wider dark:text-text-tertiary"
-    : "px-6 py-4 text-sm text-text-secondary dark:text-text-tertiary";
-    
+  const Tag = isHeader ? "th" : "td";
+  
+  const alignClasses = {
+    left: "text-left",
+    center: "text-center",
+    right: "text-right",
+  };
+
   return (
-    <CellTag className={`${baseClasses} ${className ?? ""}`} colSpan={colSpan} onClick={onClick}>
+    <Tag
+      colSpan={colSpan}
+      rowSpan={rowSpan}
+      onClick={onClick}
+      className={cn(
+        "px-4 py-3.5",
+        isHeader 
+          ? "font-semibold text-text-secondary dark:text-text-tertiary uppercase tracking-wider text-xs"
+          : "text-text-main dark:text-gray-300",
+        alignClasses[align],
+        className
+      )}
+    >
       {children}
-    </CellTag>
+    </Tag>
   );
 };
 
-export { Table, TableHeader, TableBody, TableRow, TableCell };
 export { Pagination } from "./Pagination";
+export default Table;
+

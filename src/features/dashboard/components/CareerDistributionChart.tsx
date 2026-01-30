@@ -1,12 +1,33 @@
+/**
+ * @file CareerDistributionChart.tsx
+ * @description Component that renders student distribution by career using ApexCharts.
+ * Supports switching between bar and donut chart views.
+ */
+
 import React, { useState } from 'react';
 import ReactApexChart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
+import { DashboardStats } from '../types';
 
+/**
+ * Props for the CareerDistributionChart component.
+ */
 interface CareerDistributionChartProps {
-  data: { careerName: string; studentCount: number; percentage: number }[];
+  /** Array of career distribution data objects */
+  data: DashboardStats['careerDistribution'];
+  /** Whether the data is currently being fetched */
   loading?: boolean;
 }
 
+/**
+ * CareerDistributionChart component.
+ * Displays academic distribution data with toggleable chart types.
+ * 
+ * @example
+ * ```tsx
+ * <CareerDistributionChart data={stats.careerDistribution} loading={false} />
+ * ```
+ */
 const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data, loading }) => {
   const [viewType, setViewType] = useState<'bar' | 'donut'>('bar');
 
@@ -36,7 +57,7 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
     dataLabels: {
       enabled: true,
       formatter: function (val, opt) {
-        return `${val} (${data[opt.dataPointIndex].percentage}%)`;
+        return `${val} (${data[opt.dataPointIndex]?.percentage}%)`;
       },
       textAnchor: 'start',
       style: { colors: ['#fff'] },
@@ -114,6 +135,7 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
             className={`rounded-md p-1.5 transition-all ${
               viewType === 'bar' ? 'bg-white shadow-sm dark:bg-gray-700' : 'text-gray-500'
             }`}
+            aria-label="View as Bar Chart"
           >
             <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
@@ -124,6 +146,7 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
             className={`rounded-md p-1.5 transition-all ${
               viewType === 'donut' ? 'bg-white shadow-sm dark:bg-gray-700' : 'text-gray-500'
             }`}
+            aria-label="View as Donut Chart"
           >
             <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />

@@ -7,25 +7,55 @@ import {
   DialogVariant 
 } from "./DialogConfig";
 import { 
-  CheckCircleIcon, 
-  ExclamationTriangleIcon, 
-  InformationCircleIcon, 
-  XIcon 
-} from "../../../icons/actions";
+  CheckCircle, 
+  AlertTriangle, 
+  Info, 
+  XCircle,
+  AlertCircle
+} from "lucide-react";
+import { cn } from "../../../utils/cn";
 
-interface UnifiedDialogProps {
+/**
+ * Propiedades para el componente UnifiedDialog.
+ */
+export interface UnifiedDialogProps {
+  /** Indica si el diálogo está visible. */
   isOpen: boolean;
+  /** Función que se llama cuando el diálogo debe cerrarse. */
   onClose: () => void;
+  /** Función opcional que se llama cuando se confirma la acción. */
   onConfirm?: () => void;
+  /** Variante del diálogo (success, error, warning, info, confirm). */
   variant: DialogVariant;
+  /** Título del diálogo. */
   title?: string;
+  /** Mensaje o contenido del diálogo. */
   message?: React.ReactNode;
+  /** Etiqueta para el botón de confirmar. */
   confirmLabel?: string;
+  /** Etiqueta para el botón de cancelar. Por defecto "Cancelar". */
   cancelLabel?: string;
+  /** Indica si la acción de confirmación está en estado de carga. */
   isLoading?: boolean;
 }
 
-const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
+/**
+ * Componente de diálogo estandarizado para la aplicación.
+ * Utiliza el componente Modal y proporciona estilos consistentes basados en variantes.
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * <UnifiedDialog 
+ *   isOpen={true} 
+ *   variant="success" 
+ *   title="Guardado" 
+ *   message="Datos guardados correctamente" 
+ *   onClose={handleClose} 
+ * />
+ * ```
+ */
+export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
   isOpen,
   onClose,
   onConfirm,
@@ -39,57 +69,88 @@ const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
   const colors = DIALOG_COLORS[variant];
   const layout = DIALOG_LAYOUT;
   
+  /**
+   * Obtiene el icono correspondiente a la variante del diálogo.
+   */
   const getIcon = () => {
-    const className = `w-10 h-10 sm:w-12 sm:h-12 ${colors.icon}`;
+    const iconProps = {
+      className: cn("w-10 h-10 sm:w-12 sm:h-12", colors.icon),
+      strokeWidth: 2
+    };
+
     switch (variant) {
-      case "success": return <CheckCircleIcon className={className} />;
-      case "error": return <XIcon className={className} />;
-      case "warning": return <ExclamationTriangleIcon className={className} />;
-      case "info": return <InformationCircleIcon className={className} />;
-      case "confirm": return <ExclamationTriangleIcon className={className} />;
+      case "success": return <CheckCircle {...iconProps} />;
+      case "error": return <XCircle {...iconProps} />;
+      case "warning": return <AlertTriangle {...iconProps} />;
+      case "info": return <Info {...iconProps} />;
+      case "confirm": return <AlertCircle {...iconProps} />;
       default: return null;
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-md rounded-[40px]! overflow-hidden" showCloseButton>
-      <ModalBody className="flex flex-col items-center text-center px-8 pt-10 pb-6">
-        <div className={`mb-6 p-6 rounded-full ${colors.bg} flex items-center justify-center`}>
+    <Modal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      className="max-w-md overflow-hidden" 
+      showCloseButton
+      size="md"
+    >
+      <ModalBody className="flex flex-col items-center text-center px-6 pt-8 pb-4 sm:px-10 sm:pt-12 sm:pb-6">
+        <div 
+          className={cn(
+            "mb-6 p-5 sm:p-6 rounded-full flex items-center justify-center animate-in zoom-in duration-300", 
+            colors.bg
+          )}
+          aria-hidden="true"
+        >
           {getIcon()}
         </div>
         
-        <h3 className={`${layout.titleSize} text-text-emphasis dark:text-text-emphasis mb-4`}>
+        <h3 className={cn(
+          layout.titleSize, 
+          "text-text-main dark:text-text-emphasis mb-3 tracking-tight"
+        )}>
           {title || "Notificación"}
         </h3>
         
-        <p className={`${layout.messageSize} text-text-secondary dark:text-text-tertiary max-w-70`}>
+        <div className={cn(
+          layout.messageSize, 
+          "text-text-secondary dark:text-text-tertiary max-w-[320px] leading-relaxed"
+        )}>
           {message}
-        </p>
+        </div>
       </ModalBody>
       
-      <ModalFooter className="border-none pt-0 pb-10 justify-center gap-4 px-8">
+      <ModalFooter className="border-none pt-2 pb-10 justify-center gap-3 px-8 sm:px-10">
         {onConfirm ? (
-          <>
+          <div className="flex flex-col-reverse sm:flex-row w-full gap-3">
             <Button
               variant="outline"
               onClick={onClose}
-              className="flex-1 h-12 rounded-2xl border-border-light text-text-primary font-semibold"
+              className="flex-1 h-12 rounded-xl border-border-light text-text-primary font-semibold hover:bg-bg-secondary transition-all"
               disabled={isLoading}
             >
               {cancelLabel}
             </Button>
             <Button
               onClick={onConfirm}
-              className={`flex-1 h-12 rounded-2xl ${colors.button} border-none text-white font-semibold`}
+              className={cn(
+                "flex-1 h-12 rounded-xl border-none text-white font-semibold shadow-lg shadow-current/10 transition-all active:scale-95", 
+                colors.button
+              )}
               loading={isLoading}
             >
               {confirmLabel || "Confirmar"}
             </Button>
-          </>
+          </div>
         ) : (
           <Button
             onClick={onClose}
-            className={`w-full h-12 rounded-2xl ${colors.button} border-none text-white font-semibold`}
+            className={cn(
+              "w-full h-12 rounded-xl border-none text-white font-semibold shadow-lg shadow-current/10 transition-all active:scale-95", 
+              colors.button
+            )}
           >
             Entendido
           </Button>

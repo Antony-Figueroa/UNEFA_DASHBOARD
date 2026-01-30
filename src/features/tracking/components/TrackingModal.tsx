@@ -7,9 +7,10 @@ import { useEffect, useState } from 'react';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Tracking } from '../types';
+import { Tracking, CreateTrackingPayload, UpdateTrackingPayload } from '../types';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
 import Button from '../../../components/ui/button/Button';
+import AsyncButton from '../../../components/ui/button/AsyncButton';
 import InputField from '../../../components/form/input/InputField';
 import TextArea from '../../../components/form/input/TextArea';
 import Select from '../../../components/form/Select';
@@ -19,14 +20,25 @@ import { useNavigate } from 'react-router';
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
 
+/**
+ * Propiedades del componente TrackingModal.
+ */
 interface TrackingModalProps {
+    /** Indica si el modal está visible */
     isOpen: boolean;
+    /** Función para cerrar el modal */
     onClose: () => void;
-    onSave: (tracking: Omit<Tracking, "trackingId" | "creationDate"> | Tracking) => void;
+    /** Función para guardar los cambios (creación o actualización) */
+    onSave: (payload: CreateTrackingPayload | UpdateTrackingPayload) => void;
+    /** Registro de seguimiento a editar (null para creación) */
     tracking: Tracking | null;
+    /** Indica si hay una operación de guardado en curso */
     isLoading?: boolean;
 }
 
+/**
+ * Esquema de validación para el formulario de seguimiento.
+ */
 const trackingSchema = z.object({
     studentIdNumber: z.string().min(1, { message: 'La cédula es obligatoria.' }),
     studentName: z.string().min(1, { message: 'El nombre es obligatorio.' }),
@@ -36,13 +48,25 @@ const trackingSchema = z.object({
     observations: z.string().optional(),
 });
 
+/**
+ * Tipo de datos inferido del esquema de validación.
+ */
 type TrackingFormData = z.infer<typeof trackingSchema>;
 
+/**
+ * Opciones por defecto para el campo de traslado.
+ */
 const TRANSFER_OPTIONS = [
     { value: 'false', label: 'No' },
     { value: 'true', label: 'Sí' },
 ];
 
+/**
+ * Componente TrackingModal.
+ * 
+ * Proporciona un formulario para crear o editar registros de seguimiento.
+ * Incluye autocompletado de nombre de estudiante basado en la cédula.
+ */
 export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoading = false }: TrackingModalProps) {
     const navigate = useNavigate();
     const { students } = useStudents();
@@ -50,7 +74,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
     const [isEditing, setIsEditing] = useState(false);
     const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
 
-    // Cargar opciones dinámicas
+    // Cargar opciones dinámicas desde el servicio de listas
     useEffect(() => {
         const loadOptions = async () => {
             try {
@@ -64,7 +88,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                     });
                 }
             } catch (error) {
-                console.error("Error loading list options for TrackingModal:", error);
+                console.error("[TrackingModal] Error al cargar opciones de lista:", error);
             }
         };
 
@@ -73,8 +97,9 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
         }
     }, [isOpen, fetchMultipleLists]);
     
-    const { register, handleSubmit, formState: { errors, isDirty }, reset, watch, setValue, control } = useForm<TrackingFormData>({
+    const { register, handleSubmit, formState: { errors, isDirty, isValid }, reset, watch, setValue, control } = useForm<TrackingFormData>({
         resolver: zodResolver(trackingSchema),
+        mode: "onChange",
         defaultValues: {
             studentIdNumber: '',
             studentName: '',
@@ -105,6 +130,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
         }
     }, [studentIdNumber, students, setValue]);
 
+    // Resetear formulario al abrir/cerrar o cambiar de registro
     useEffect(() => {
         if (isOpen) {
             if (tracking) {
@@ -131,25 +157,36 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
         }
     }, [tracking, isOpen, reset]);
 
+    /**
+     * Maneja el envío del formulario.
+     * 
+     * @param data - Datos del formulario validados.
+     */
     const onSubmit: SubmitHandler<TrackingFormData> = (data) => {
-        const formattedData: Omit<Tracking, 'trackingId' | 'creationDate'> = {
-            studentIdNumber: data.studentIdNumber,
-            studentName: data.studentName,
-            reportTitle: data.reportTitle,
-            transfer: data.transfer === 'true',
-            route: data.route,
-            observations: data.observations || '',
-            status: true,
-        };
-        
-        if (tracking) {
-            onSave({ ...tracking, ...formattedData });
-        } else {
-            onSave(formattedData);
+        try {
+            const payload: CreateTrackingPayload | UpdateTrackingPayload = {
+                studentIdNumber: data.studentIdNumber,
+                studentName: data.studentName,
+                reportTitle: data.reportTitle,
+                transfer: data.transfer === 'true',
+                route: data.route,
+                observations: data.observations || '',
+            };
+            
+            if (tracking) {
+                (payload as UpdateTrackingPayload).trackingId = tracking.trackingId;
+            }
+            
+            onSave(payload);
+            setIsEditing(false);
+        } catch (error) {
+            console.error("[TrackingModal] Error al procesar el envío del formulario:", error);
         }
-        setIsEditing(false);
     };
 
+    /**
+     * Navega a la página de registro de visitas para el seguimiento actual.
+     */
     const handleVisitRegister = () => {
         if (tracking?.trackingId) {
             navigate(`/tracking/visits/${tracking.trackingId}`);
@@ -275,26 +312,26 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                                 <Button type="button" variant="outline" onClick={handleCloseAttempt}>
                                     Cancelar
                                 </Button>
-                                <Button type="submit" loading={isLoading}>
+                                <AsyncButton type="submit" loading={isLoading} disabled={!isValid}>
                                     Guardar
-                                </Button>
+                                </AsyncButton>
                             </>
                         )}
                     </div>
                 </ModalFooter>
             </form>
-        </Modal>
+            </Modal>
 
-        <UnifiedDialog
-            isOpen={showConfirmation}
-            onClose={cancelClose}
-            onConfirm={confirmClose}
-            variant="warning"
-            title="Cambios no guardados"
-            message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
-            confirmLabel="Cerrar sin guardar"
-            cancelLabel="Continuar editando"
-        />
-    </>
-);
+            <UnifiedDialog
+                isOpen={showConfirmation}
+                onClose={cancelClose}
+                onConfirm={confirmClose}
+                variant="warning"
+                title="Cambios no guardados"
+                message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
+                confirmLabel="Cerrar sin guardar"
+                cancelLabel="Continuar editando"
+            />
+        </>
+    );
 }

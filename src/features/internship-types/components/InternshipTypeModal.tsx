@@ -1,3 +1,11 @@
+/**
+ * @file InternshipTypeModal.tsx
+ * @description Modal para la creación y edición de Tipos de Pasantía.
+ * Incluye validación con Zod y gestión de cambios no guardados.
+ * 
+ * @module features/internship-types/components
+ */
+
 import { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -5,34 +13,45 @@ import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
 import Select from "../../../components/form/Select";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
-import { InternshipType } from "../types";
+import { InternshipType, CreateInternshipTypePayload } from "../types";
 import Button from "../../../components/ui/button/Button";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 
 interface InternshipTypeModalProps {
+  /** Indica si el modal está visible */
   isOpen: boolean;
+  /** Callback para cerrar el modal */
   onClose: () => void;
-  onSave: (item: Omit<InternshipType, "INTERNSHIP_TYPE_ID" | "CREATION_DATE">) => void;
+  /** Callback para guardar los cambios */
+  onSave: (item: CreateInternshipTypePayload) => void;
+  /** Elemento que se está editando (null para creación) */
   editingItem?: InternshipType | null;
+  /** Lista de tipos existentes para validaciones de duplicados */
   existingTypes?: InternshipType[];
+  /** Indica si el tipo está siendo usado en el sistema */
   isInUse?: boolean;
+  /** Estado de carga de la acción de guardado */
   isLoading?: boolean;
 }
 
+/**
+ * Esquema de validación para el formulario.
+ */
 const createInternshipTypeSchema = (existingTypes: InternshipType[], editingItemId?: number) => 
   z.object({
-    NAME: z.string()
+    name: z.string()
       .min(1, "El nombre es obligatorio")
       .transform(val => val.toUpperCase())
       .refine(val => {
         const normalizedVal = val.trim().toUpperCase();
         return !existingTypes.some(t => 
-          t.NAME.trim().toUpperCase() === normalizedVal && 
-          t.INTERNSHIP_TYPE_ID !== editingItemId
+          t.name.trim().toUpperCase() === normalizedVal && 
+          t.id !== editingItemId
         );
       }, "Este tipo de práctica ya existe"),
-    PRIORITY: z.string().min(1, "La prioridad es obligatoria"),
+    priority: z.string().min(1, "La prioridad es obligatoria"),
   });
 
 type InternshipTypeFormData = z.infer<ReturnType<typeof createInternshipTypeSchema>>;
@@ -43,6 +62,9 @@ const priorityOptions = [
   { value: "2", label: "2" },
 ];
 
+/**
+ * Componente Modal para gestionar Tipos de Pasantía.
+ */
 export default function InternshipTypeModal({
   isOpen,
   onClose,
@@ -56,13 +78,13 @@ export default function InternshipTypeModal({
     handleSubmit,
     reset,
     control,
-    formState: { errors, isDirty },
+    formState: { errors, isDirty, isValid },
   } = useForm<InternshipTypeFormData>({
-    resolver: zodResolver(createInternshipTypeSchema(existingTypes, editingItem?.INTERNSHIP_TYPE_ID)),
+    resolver: zodResolver(createInternshipTypeSchema(existingTypes, editingItem?.id)),
     mode: "onChange",
     defaultValues: {
-      NAME: "",
-      PRIORITY: "",
+      name: "",
+      priority: "",
     },
   });
 
@@ -77,13 +99,13 @@ export default function InternshipTypeModal({
     if (isOpen) {
       if (editingItem) {
         reset({
-          NAME: editingItem.NAME,
-          PRIORITY: String(editingItem.PRIORITY),
+          name: editingItem.name,
+          priority: String(editingItem.priority),
         });
       } else {
         reset({
-          NAME: "",
-          PRIORITY: "",
+          name: "",
+          priority: "",
         });
       }
     } else {
@@ -93,10 +115,10 @@ export default function InternshipTypeModal({
 
   const onSubmit = (data: InternshipTypeFormData) => {
     onSave({
-      NAME: data.NAME,
-      ABBREVIATION: data.NAME.substring(0, 10).toUpperCase(), // Fallback para campo obligatorio en BD
-      PRIORITY: Number(data.PRIORITY),
-      STATUS: editingItem?.STATUS ?? 1,
+      name: data.name,
+      abbreviation: data.name.substring(0, 10).toUpperCase(), // Fallback para campo obligatorio en BD
+      priority: Number(data.priority),
+      status: editingItem?.status ?? true,
     });
   };
 
@@ -120,7 +142,7 @@ export default function InternshipTypeModal({
               <div>
                 <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nombre *</label>
                 <Controller
-                  name="NAME"
+                  name="name"
                   control={control}
                   render={({ field }) => (
                     <Input
@@ -131,8 +153,8 @@ export default function InternshipTypeModal({
                       }}
                       type="text"
                       placeholder="Ingrese el nombre"
-                      error={!!errors.NAME}
-                      hint={errors.NAME?.message}
+                      error={!!errors.name}
+                      hint={errors.name?.message}
                     />
                   )}
                 />
@@ -141,7 +163,7 @@ export default function InternshipTypeModal({
               <div>
                 <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Prioridad *</label>
                 <Controller
-                  name="PRIORITY"
+                  name="priority"
                   control={control}
                   render={({ field }) => (
                     <div className="space-y-1">
@@ -152,8 +174,8 @@ export default function InternshipTypeModal({
                          placeholder="Seleccione prioridad"
                          disabled={isInUse}
                        />
-                      {errors.PRIORITY && (
-                        <p className="mt-1 text-xs text-error-500">{errors.PRIORITY.message}</p>
+                      {errors.priority && (
+                        <p className="mt-1 text-xs text-error-500">{errors.priority.message}</p>
                       )}
                     </div>
                   )}
@@ -171,9 +193,9 @@ export default function InternshipTypeModal({
             <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
               Cancelar
             </Button>
-            <Button type="submit" form="internship-type-form" loading={isLoading} className="w-full sm:w-auto min-h-12">
+            <AsyncButton type="submit" form="internship-type-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid}>
               {editingItem ? "Actualizar Registro" : "Guardar Tipo"}
-            </Button>
+            </AsyncButton>
           </div>
         </ModalFooter>
       </Modal>

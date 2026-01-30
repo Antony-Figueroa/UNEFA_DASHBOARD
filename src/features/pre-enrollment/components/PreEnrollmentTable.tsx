@@ -1,39 +1,63 @@
+/**
+ * @file PreEnrollmentTable.tsx
+ * @description Componente de tabla para visualizar y gestionar pre-inscripciones.
+ * Incluye funcionalidades de filtrado, ordenamiento, paginación y acciones masivas.
+ */
+
 import { useState, useEffect, useMemo } from "react";
-import { ActionButton } from "../../../components/common/ActionButton";
+import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { PreEnrollmentRowData } from "../types";
-import { Career } from "../../careers/types";
-import { getCareers } from "../../careers/services/careersService";
 import { useDebounce } from "../../../hooks/useDebounce";
+import { useCareers } from "../../careers/hooks/useCareers";
 import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import Button from "../../../components/ui/button/Button";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 
+/**
+ * Representa una opción de filtrado en la tabla.
+ */
 interface FilterOption {
-    value: string;
-    label: string;
-    id?: string | number;
+  value: string;
+  label: string;
+  id?: string | number;
 }
 
+/**
+ * Propiedades del componente PreEnrollmentTable.
+ */
 interface PreEnrollmentTableProps {
-    data: PreEnrollmentRowData[];
-    status: "loading" | "success" | "error";
-    error: Error | null;
-    onEdit?: (item: PreEnrollmentRowData) => void;
-    onToggleStatus?: (id: string) => void;
-    onView?: (item: PreEnrollmentRowData) => void;
-    onExportToEnrollment?: (item: PreEnrollmentRowData) => void;
-    onBulkDelete?: (ids: string[]) => void;
-    onBulkRestore?: (ids: string[]) => void;
-    activeTab?: "Activas" | "Inactivas";
-    loading?: boolean;
-    periodOptions?: FilterOption[];
-    practiceTypeOptions?: FilterOption[];
-    careerOptions?: FilterOption[];
-    onReport?: (data: PreEnrollmentRowData[]) => void;
+  /** Lista de pre-inscripciones a mostrar */
+  data: PreEnrollmentRowData[];
+  /** Estado de carga de la lista */
+  status: "loading" | "success" | "error";
+  /** Error en caso de que la carga falle */
+  error: Error | null;
+  /** Función para editar una pre-inscripción */
+  onEdit?: (item: PreEnrollmentRowData) => void;
+  /** Función para cambiar el estado (activar/desactivar) de una pre-inscripción */
+  onToggleStatus?: (item: PreEnrollmentRowData) => void;
+  /** Función para ver detalles de una pre-inscripción */
+  onView?: (item: PreEnrollmentRowData) => void;
+  /** Función para exportar a inscripción definitiva */
+  onExportToEnrollment?: (item: PreEnrollmentRowData) => void;
+  /** Función para eliminación masiva */
+  onBulkDelete?: (ids: string[]) => void;
+  /** Función para restauración masiva */
+  onBulkRestore?: (ids: string[]) => void;
+  /** Pestaña activa actual */
+  activeTab?: "Activas" | "Inactivas";
+  /** Indica si se está realizando una acción de carga */
+  loading?: boolean;
+  /** Opciones para filtrar por período */
+  periodOptions?: FilterOption[];
+  /** Opciones para filtrar por tipo de práctica */
+  practiceTypeOptions?: FilterOption[];
+  /** Opciones para filtrar por carrera */
+  careerOptions?: FilterOption[];
 }
 
 type SortKey = "identificationNumber" | "studentName" | "period" | "preEnrollmentDate" | "enrollmentCode";
@@ -82,8 +106,8 @@ const ActionButtons = ({
     return (
         <div className={containerClasses}>
             {onView && (
-                <ActionButton
-                    onClick={() => onView()}
+                <AsyncActionButton
+                    onClick={async () => onView()}
                     icon={<EyeIcon />}
                     tooltip="Ver Detalles"
                     label={isMobile ? "Ver Detalles" : undefined}
@@ -92,8 +116,8 @@ const ActionButtons = ({
                 />
             )}
             {onEdit && (
-                <ActionButton
-                    onClick={() => onEdit()}
+                <AsyncActionButton
+                    onClick={async () => onEdit()}
                     icon={<EditIcon />}
                     tooltip="Editar"
                     label={isMobile ? "Editar Pre-inscripción" : undefined}
@@ -102,8 +126,8 @@ const ActionButtons = ({
                 />
             )}
             {onExportToEnrollment && (
-                <ActionButton
-                    onClick={() => onExportToEnrollment()}
+                <AsyncActionButton
+                    onClick={async () => onExportToEnrollment()}
                     icon={<ExportIcon />}
                     tooltip="Exportar a Inscripción"
                     label={isMobile ? "Exportar a Inscripción" : undefined}
@@ -112,8 +136,8 @@ const ActionButtons = ({
                 />
             )}
             {onToggleStatus && (
-                <ActionButton
-                    onClick={() => onToggleStatus()}
+                <AsyncActionButton
+                    onClick={async () => onToggleStatus()}
                     icon={status ? <TrashIcon /> : <RefreshIcon />}
                     tooltip={status ? "Eliminar" : "Restaurar"}
                     label={isMobile ? (status ? "Eliminar Pre-inscripción" : "Restaurar Pre-inscripción") : undefined}
@@ -140,26 +164,12 @@ export default function PreEnrollmentTable({
     periodOptions = [],
     practiceTypeOptions = [],
     careerOptions = [],
-    onReport,
 }: PreEnrollmentTableProps) {
+    const { careers: allCareers } = useCareers();
     const [searchTerm, setSearchTerm] = useState("");
     const [periodFilter, setPeriodFilter] = useState("");
     const [practiceTypeFilter, setPracticeTypeFilter] = useState("");
     const [careerFilter, setCareerFilter] = useState("");
-
-    const [allCareers, setAllCareers] = useState<Career[]>([]);
-
-    useEffect(() => {
-        const loadRefs = async () => {
-            try {
-                const careers = await getCareers();
-                setAllCareers(careers);
-            } catch {
-                // silencioso
-            }
-        };
-        loadRefs();
-    }, []);
 
     // Limpiar filtro de carrera si ya no es válido para el tipo de práctica seleccionado
     useEffect(() => {
@@ -247,7 +257,7 @@ export default function PreEnrollmentTable({
             const deletableIds = paged
                 .filter((p) => !p.isInUse)
                 .map((p) => p.preEnrollmentId)
-                .filter(Boolean) as string[];
+                .filter((id): id is string => Boolean(id));
             setSelectedIds(deletableIds);
         } else {
             setSelectedIds([]);
@@ -458,18 +468,7 @@ export default function PreEnrollmentTable({
 
                 <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
                     <div className="flex items-center gap-3">
-                        {onReport && filteredData.length > 0 && (
-                            <button
-                                onClick={() => onReport(filteredData)}
-                                className="flex items-center gap-2 rounded-lg bg-brand-500/10 px-3 py-2 text-xs font-semibold text-brand-600 hover:bg-brand-500 hover:text-white dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400 dark:hover:text-white transition-all min-h-11"
-                                title="Generar reporte con los filtros actuales"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                                </svg>
-                                <span>Reporte</span>
-                            </button>
-                        )}
+
 
                         {(searchTerm || periodFilter || practiceTypeFilter || careerFilter) && (
                             <button
@@ -509,7 +508,7 @@ export default function PreEnrollmentTable({
                                 </span>
                                 {activeTab === "Activas" ? (
                                     <button
-                                        onClick={() => onBulkDelete?.(selectedIds)}
+                                        onClick={async () => onBulkDelete?.(selectedIds)}
                                         className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12"
                                     >
                                         <TrashIcon className="icon-sm" />
@@ -517,7 +516,7 @@ export default function PreEnrollmentTable({
                                     </button>
                                 ) : (
                                     <button
-                                        onClick={() => onBulkRestore?.(selectedIds)}
+                                        onClick={async () => onBulkRestore?.(selectedIds)}
                                         className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-600 hover:bg-brand-100 dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400/20 transition-colors min-h-12"
                                     >
                                         <RefreshIcon className="icon-sm" />
@@ -546,19 +545,19 @@ export default function PreEnrollmentTable({
                                     ariaLabel="Seleccionar todos"
                                 />
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("identificationNumber")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("identificationNumber")}>
                                 <div className="flex items-center">Cédula <SortIndicator column="identificationNumber" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("studentName")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("studentName")}>
                                 <div className="flex items-center">Estudiante <SortIndicator column="studentName" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("period")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("period")}>
                                 <div className="flex items-center">Período <SortIndicator column="period" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("enrollmentCode")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("enrollmentCode")}>
                                 <div className="flex items-center">Matrícula <SortIndicator column="enrollmentCode" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("preEnrollmentDate")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("preEnrollmentDate")}>
                                 <div className="flex items-center">Fecha <SortIndicator column="preEnrollmentDate" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell text-right">
@@ -606,7 +605,7 @@ export default function PreEnrollmentTable({
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={activeTab === "Activas" && onEdit ? () => onEdit(s) : undefined}
-                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s.preEnrollmentId) : undefined}
+                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
                                             onExportToEnrollment={activeTab === "Activas" && onExportToEnrollment ? () => onExportToEnrollment(s) : undefined}
                                             status={s.status}
                                         />
@@ -615,7 +614,8 @@ export default function PreEnrollmentTable({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={7} className="p-0">
+                                <TableCell colSpan={7} className="p-0 border-0">
+                                <div className="py-20">
                                     <EmptyState
                                         title="No se encontraron pre-inscripciones"
                                         description={
@@ -629,7 +629,7 @@ export default function PreEnrollmentTable({
                                                     variant="outline"
                                                     size="sm"
                                                     onClick={clearFilters}
-                                                    className="flex items-center gap-2"
+                                                    className="flex items-center gap-2 mx-auto"
                                                 >
                                                     <RefreshIcon className="icon-xs" />
                                                     Limpiar filtros
@@ -637,7 +637,8 @@ export default function PreEnrollmentTable({
                                             ) : undefined
                                         }
                                     />
-                                </TableCell>
+                                </div>
+                            </TableCell>
                             </TableRow>
                         )}
                     </TableBody>
@@ -662,7 +663,7 @@ export default function PreEnrollmentTable({
                                             <p className="text-xs text-text-secondary mt-1 truncate uppercase">{s.identificationPrefix}-{s.identificationNumber}</p>
                                         </div>
                                         <button
-                                            onClick={() => toggleRowExpansion(preEnrollmentId)}
+                                            onClick={async () => toggleRowExpansion(preEnrollmentId)}
                                             className="absolute right-2 top-2 p-2 text-text-tertiary hover:bg-bg-secondary dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
                                             style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
                                             aria-label={isExpanded ? "Contraer" : "Expandir"}
@@ -692,7 +693,7 @@ export default function PreEnrollmentTable({
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={activeTab === "Activas" && onEdit ? () => onEdit(s) : undefined}
-                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s.preEnrollmentId) : undefined}
+                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
                                             onExportToEnrollment={activeTab === "Activas" && onExportToEnrollment ? () => onExportToEnrollment(s) : undefined}
                                             status={s.status}
                                             isMobile={true}

@@ -1,16 +1,19 @@
 /**
  * @file useEnrollment.tsx
- * @description Hook para la gestión de inscripciones en modo demostración.
+ * @description Hook for managing student enrollment state and operations.
+ * Provides functions for adding, editing, and toggling the status of enrollments.
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { Enrollment } from "../types";
+import { Enrollment, CreateEnrollmentPayload, UpdateEnrollmentPayload } from "../types";
 import * as enrollmentService from "../services/enrollmentService";
 import { useToast } from "../../../context/toast";
 import { RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
 
+/** Possible loading states for the enrollment feature */
 type Status = "loading" | "success" | "error";
 
+/** Display labels for enrollment record fields used in toast notifications */
 const ENROLLMENT_LABELS: Record<string, string> = {
   studentName: "Estudiante",
   identificationNumber: "Cédula",
@@ -22,12 +25,46 @@ const ENROLLMENT_LABELS: Record<string, string> = {
   period: "Período",
 };
 
+/**
+ * Custom hook to manage student enrollments.
+ * 
+ * @returns An object containing:
+ * - `enrollments`: Array of current enrollment records.
+ * - `status`: Current data fetching status.
+ * - `loadingAction`: Boolean indicating if a mutation (add/edit/toggle) is in progress.
+ * - `addEnrollment`: Function to create a new enrollment.
+ * - `editEnrollment`: Function to update an existing enrollment.
+ * - `toggleStatus`: Function to switch between active and inactive status.
+ * - `refreshEnrollments`: Function to reload enrollment data.
+ */
 export const useEnrollment = () => {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [status, setStatus] = useState<Status>("loading");
   const [loadingAction, setLoadingAction] = useState(false);
   const { addToast } = useToast();
 
+  /**
+   * Fetches the latest enrollment records from the service.
+   */
+  const refreshEnrollments = useCallback(async () => {
+    setStatus("loading");
+    try {
+      const data = await enrollmentService.getEnrollments();
+      setEnrollments(data);
+      setStatus("success");
+    } catch (e) {
+      console.error("[useEnrollment] Error loading enrollments:", e);
+      setStatus("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshEnrollments();
+  }, [refreshEnrollments]);
+
+  /**
+   * Safety timeout for long-running actions.
+   */
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
     if (loadingAction) {
@@ -40,23 +77,11 @@ export const useEnrollment = () => {
     };
   }, [loadingAction]);
 
-  const refreshEnrollments = useCallback(async () => {
-    setStatus("loading");
-    try {
-      const data = await enrollmentService.getEnrollments();
-      setEnrollments(data);
-      setStatus("success");
-    } catch (e) {
-      console.error("Error loading enrollments:", e);
-      setStatus("error");
-    }
-  }, []);
-
-  useEffect(() => {
-    refreshEnrollments();
-  }, [refreshEnrollments]);
-
-  const addEnrollment = async (data: Omit<Enrollment, "enrollmentId" | "enrollmentDate">) => {
+  /**
+   * Registers a new student enrollment.
+   * @param data - The enrollment payload to create.
+   */
+  const addEnrollment = async (data: CreateEnrollmentPayload) => {
     setLoadingAction(true);
     try {
       const newEntry = await enrollmentService.createEnrollment(data);
@@ -78,14 +103,18 @@ export const useEnrollment = () => {
         ),
       });
     } catch (e) {
-      console.error(e);
+      console.error("[useEnrollment] Error adding enrollment:", e);
       addToast({ variant: "error", title: "Error", message: "No se pudo registrar la inscripción." });
     } finally {
       setLoadingAction(false);
     }
   };
 
-  const editEnrollment = async (data: Enrollment) => {
+  /**
+   * Updates an existing student enrollment record.
+   * @param data - The updated enrollment data.
+   */
+  const editEnrollment = async (data: UpdateEnrollmentPayload) => {
     setLoadingAction(true);
     try {
       const updatedEntry = await enrollmentService.updateEnrollment(data);
@@ -95,23 +124,31 @@ export const useEnrollment = () => {
         variant: "success",
         category: "ESTUDIANTE",
         title: "Inscripción Actualizada",
-        message: <p>Los datos de <strong>{data.studentName}</strong> han sido actualizados.</p>,
+        message: <p>Los datos de <strong>{updatedEntry.studentName}</strong> han sido actualizados.</p>,
       });
     } catch (e) {
-      console.error(e);
+      console.error("[useEnrollment] Error editing enrollment:", e);
       addToast({ variant: "error", title: "Error", message: "No se pudo actualizar la inscripción." });
     } finally {
       setLoadingAction(false);
     }
   };
 
+  /**
+   * Toggles the active status of an enrollment record.
+   * @param item - The enrollment record to toggle.
+   */
   const toggleStatus = async (item: Enrollment) => {
     setLoadingAction(true);
     try {
-      const updatedItem = { ...item, status: !item.status };
+      const newStatus = !item.status;
+      const updatedItem = await enrollmentService.updateEnrollment({
+        enrollmentId: item.enrollmentId,
+        status: newStatus
+      } as UpdateEnrollmentPayload);
+      
       const goingInactive = item.status === true;
 
-      await enrollmentService.updateEnrollment(updatedItem);
       setEnrollments(prev => prev.map(p => p.enrollmentId === item.enrollmentId ? updatedItem : p));
       
       addToast({
@@ -137,15 +174,19 @@ export const useEnrollment = () => {
         onUndo: async () => {
           setLoadingAction(true);
           try {
-            await enrollmentService.updateEnrollment(item);
-            setEnrollments(prev => prev.map(p => p.enrollmentId === item.enrollmentId ? item : p));
+            const restoredItem = await enrollmentService.updateEnrollment({
+              enrollmentId: item.enrollmentId,
+              status: item.status
+            } as UpdateEnrollmentPayload);
+            
+            setEnrollments(prev => prev.map(p => p.enrollmentId === item.enrollmentId ? restoredItem : p));
             addToast({
               variant: "info",
               title: "Acción Deshecha",
               message: `Se ha restablecido el estado original de ${item.studentName}.`,
             });
           } catch (e) {
-            console.error(e);
+            console.error("[useEnrollment] Error undoing status toggle:", e);
             addToast({ variant: "error", title: "Error", message: "No se pudo deshacer la acción." });
           } finally {
             setLoadingAction(false);
@@ -153,7 +194,7 @@ export const useEnrollment = () => {
         }
       });
     } catch (e) {
-      console.error(e);
+      console.error("[useEnrollment] Error toggling status:", e);
       addToast({ variant: "error", title: "Error", message: "No se pudo cambiar el estado." });
     } finally {
       setLoadingAction(false);

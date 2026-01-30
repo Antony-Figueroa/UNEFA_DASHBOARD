@@ -7,25 +7,50 @@
 import { useEffect, useMemo } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Periodo } from '../types';
+import { Periodo, CreatePeriodPayload, UpdatePeriodPayload } from '../types';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
 import FlatpickrDatePicker from '../../../components/form/FlatpickrDatePicker';
 import Button from '../../../components/ui/button/Button';
+import AsyncButton from '../../../components/ui/button/AsyncButton';
 import { getPeriodSchema, PeriodFormData, getLapsoValue } from '../utils/periodValidations';
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
 
+/**
+ * Propiedades del componente PeriodModal.
+ */
 interface PeriodModalProps {
+    /** Indica si el modal está visible */
     isOpen: boolean;
+    /** Función para cerrar el modal */
     onClose: () => void;
-    onSave: (periodo: Omit<Periodo, "periodId" | "creationDate"> | Periodo) => void;
+    /** Función para guardar los cambios (creación o actualización) */
+    onSave: (payload: CreatePeriodPayload | UpdatePeriodPayload) => void;
+    /** Periodo a editar (null para creación) */
     periodo: Periodo | null;
+    /** Indica si hay una operación de guardado en curso */
     isLoading?: boolean;
+    /** Lista de periodos existentes para validaciones de solapamiento y secuencia */
     existingPeriods: Periodo[];
 }
 
-export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoading = false, existingPeriods }: PeriodModalProps) {
-    const { register, handleSubmit, formState: { errors, isDirty }, control, reset, watch, setValue } = useForm<PeriodFormData>({
+/**
+ * Componente modal para la creación y edición de periodos académicos.
+ * 
+ * Utiliza react-hook-form con validación Zod para asegurar la integridad de los datos.
+ * Incluye lógica para autocompletar el siguiente periodo lógico y prevenir solapamientos.
+ * 
+ * @param props - Propiedades del componente.
+ */
+export default function PeriodModal({ 
+    isOpen, 
+    onClose, 
+    onSave, 
+    periodo, 
+    isLoading = false, 
+    existingPeriods 
+}: PeriodModalProps) {
+    const { register, handleSubmit, formState: { errors, isDirty, isValid }, control, reset, watch, setValue } = useForm<PeriodFormData>({
         resolver: zodResolver(getPeriodSchema(existingPeriods, periodo?.periodId || undefined, !!periodo)),
         mode: 'onChange',
         defaultValues: {
@@ -194,25 +219,40 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
      * Maneja el envío del formulario, valida las fechas y llama a la función onSave.
      */
     const onSubmit: SubmitHandler<PeriodFormData> = (data) => {
-        let newDescription = `${data.periodoTipo}-${data.year}`;
-        let startDateToUse = data.startDate;
+        try {
+            let newDescription = `${data.periodoTipo}-${data.year}`;
+            let startDateToUse = data.startDate;
 
-        if (periodo && isInCurso) {
-            newDescription = periodo.description;
-            startDateToUse = periodo.startDate;
+            if (periodo && isInCurso) {
+                newDescription = periodo.description;
+                startDateToUse = periodo.startDate;
+            }
+
+            if (periodo) {
+                const updatePayload: UpdatePeriodPayload = {
+                    periodId: periodo.periodId,
+                    code: newDescription,
+                    description: newDescription,
+                    startDate: startDateToUse,
+                    endDate: data.endDate,
+                    periodStatus: periodo.periodStatus,
+                    status: periodo.status
+                };
+                onSave(updatePayload);
+            } else {
+                const createPayload: CreatePeriodPayload = {
+                    code: newDescription,
+                    description: newDescription,
+                    startDate: startDateToUse,
+                    endDate: data.endDate,
+                    periodStatus: 1, // Pendiente por defecto
+                    status: true
+                };
+                onSave(createPayload);
+            }
+        } catch (error) {
+            console.error("[PeriodModal] Error al procesar el envío del formulario:", error);
         }
-
-        const periodoData = {
-            ...(periodo && { periodId: periodo.periodId }),
-            code: newDescription,
-            description: newDescription,
-            startDate: startDateToUse,
-            endDate: data.endDate,
-            periodStatus: periodo?.periodStatus || 1,
-            status: periodo?.status ?? true
-        };
-
-        onSave(periodoData);
     };
 
     return (
@@ -342,9 +382,9 @@ export default function PeriodModal({ isOpen, onClose, onSave, periodo, isLoadin
                     <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
                         Cancelar
                     </Button>
-                    <Button type="submit" form="period-form" loading={isLoading} className="w-full sm:w-auto min-h-12">
+                    <AsyncButton type="submit" form="period-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid}>
                         {periodo ? 'Actualizar Registro' : 'Guardar Período'}
-                    </Button>
+                    </AsyncButton>
                 </div>
             </ModalFooter>
         </Modal>

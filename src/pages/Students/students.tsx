@@ -23,7 +23,12 @@ import StudentViewModal from "../../features/students/components/StudentViewModa
 import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
 import { StudentPDF } from "../../components/ui/pdf/templates/StudentPDF";
 import { useStudents } from "../../features/students/hooks/useStudents";
-import { Student, StudentRowData } from "../../features/students/types";
+import { 
+    Student, 
+    StudentRowData,
+    CreateStudentPayload,
+    UpdateStudentPayload
+} from "../../features/students/types";
 import { useCareers } from "../../features/careers/hooks/useCareers";
 import { useLists } from "../../features/lists/hooks/useLists";
 import { ListValue } from "../../features/lists/types";
@@ -32,6 +37,9 @@ import { formatDateTime } from "../../utils/date";
 /**
  * Transforma un objeto de tipo Student (dominio) a StudentRowData (vista).
  * Realiza el formateo de fechas y concatenación de nombres.
+ * 
+ * @param s - Estudiante en formato de dominio.
+ * @returns Estudiante en formato de fila para la tabla.
  */
 const formatStudentToRow = (s: Student): StudentRowData => ({
     ...s,
@@ -39,6 +47,10 @@ const formatStudentToRow = (s: Student): StudentRowData => ({
     fullNames: `${s.firstName} ${s.middleName ? s.middleName + " " : ""}${s.lastName} ${s.secondLastName ? s.secondLastName : ""}`.trim(),
 });
 
+/**
+ * Página principal del módulo de Estudiantes.
+ * Gestiona el listado, creación, edición y visualización de estudiantes.
+ */
 export default function StudentsPage() {
     const [pageLoading, setPageLoading] = useState(true);
     const navigate = useNavigate();
@@ -135,18 +147,31 @@ export default function StudentsPage() {
             });
     }, [students, pdfSearchTerm, pdfCareerFilter, pdfRegimeFilter]);
 
+    /**
+     * Inicia el flujo de creación de un nuevo estudiante.
+     */
     const handleCreate = () => {
         setEditingStudent(null);
         setIsModalOpen(true);
     };
 
+    /**
+     * Inicia el flujo de edición para un estudiante seleccionado.
+     * 
+     * @param row - Datos del estudiante en formato de fila.
+     */
     const handleEdit = (row: StudentRowData) => {
         const original = Array.isArray(students) ? students.find((s) => s.studentId === row.studentId) : null;
         setEditingStudent(original || null);
         setIsModalOpen(true);
     };
 
-    const handleSave = (payload: Omit<Student, "studentId" | "enrollmentDate">) => {
+    /**
+     * Maneja el guardado (creación o actualización) de un estudiante.
+     * 
+     * @param payload - Datos del estudiante a guardar.
+     */
+    const handleSave = (payload: CreateStudentPayload | UpdateStudentPayload) => {
         const isEditing = !!editingStudent;
         setConfirmation({
             isOpen: true,
@@ -155,13 +180,16 @@ export default function StudentsPage() {
             onConfirm: async () => {
                 try {
                     if (isEditing && editingStudent) {
-                        await editStudent({ ...editingStudent, ...payload });
+                        await editStudent({ 
+                            ...payload, 
+                            studentId: editingStudent.studentId 
+                        } as UpdateStudentPayload);
                     } else {
-                        await addStudent(payload);
+                        await addStudent(payload as CreateStudentPayload);
                     }
                     setIsModalOpen(false);
                 } catch (e) {
-                    console.error(e);
+                    console.error("[StudentsPage] Error al guardar:", e);
                 } finally {
                     setConfirmation(null);
                 }
@@ -171,8 +199,13 @@ export default function StudentsPage() {
         });
     };
 
-    const handleToggleStatus = (studentId: string) => {
-        const original = Array.isArray(students) ? students.find((s) => s.studentId === studentId) : null;
+    /**
+     * Maneja el cambio de estado (activar/inactivar) de un estudiante.
+     * 
+     * @param student - Estudiante al que se le cambiará el estado.
+     */
+    const handleToggleStatus = (student: StudentRowData) => {
+        const original = Array.isArray(students) ? students.find((s) => s.studentId === student.studentId) : null;
         if (!original) return;
         const goingInactive = !!original.status;
         setConfirmation({
@@ -184,7 +217,9 @@ export default function StudentsPage() {
             onConfirm: async () => {
                 try {
                     await toggleStatus(original);
-                } catch (e) { console.error(e); }
+                } catch (e) { 
+                    console.error("[StudentsPage] Error al cambiar estado:", e); 
+                }
                 finally { setConfirmation(null); }
             },
             confirmText: goingInactive ? "Confirmar" : "Restaurar",
@@ -192,6 +227,11 @@ export default function StudentsPage() {
         });
     };
 
+    /**
+     * Maneja la eliminación masiva de estudiantes seleccionados.
+     * 
+     * @param ids - Listado de IDs de estudiantes a inactivar.
+     */
     const handleBulkDelete = (ids: string[]) => {
         setConfirmation({
             isOpen: true,
@@ -202,8 +242,8 @@ export default function StudentsPage() {
                     await bulkRemoveStudents(ids);
                     setSelectedIds([]);
                 } catch (e) {
-                    console.error(e);
-                    setSelectedIds([]); // Ocultar botón incluso en caso de error según requisito 2
+                    console.error("[StudentsPage] Error en eliminación masiva:", e);
+                    setSelectedIds([]);
                 }
                 finally { setConfirmation(null); }
             },
@@ -212,6 +252,11 @@ export default function StudentsPage() {
         });
     };
 
+    /**
+     * Maneja la restauración masiva de estudiantes seleccionados.
+     * 
+     * @param ids - Listado de IDs de estudiantes a restaurar.
+     */
     const handleBulkRestore = (ids: string[]) => {
         setConfirmation({
             isOpen: true,
@@ -222,8 +267,8 @@ export default function StudentsPage() {
                     await bulkRestoreStudents(ids);
                     setSelectedIds([]);
                 } catch (e) {
-                    console.error(e);
-                    setSelectedIds([]); // Ocultar botón incluso en caso de error según requisito 2
+                    console.error("[StudentsPage] Error en restauración masiva:", e);
+                    setSelectedIds([]);
                 }
                 finally { setConfirmation(null); }
             },
@@ -232,6 +277,11 @@ export default function StudentsPage() {
         });
     };
 
+    /**
+     * Maneja la exportación de un estudiante al módulo de Pre-Inscripción.
+     * 
+     * @param student - Estudiante a exportar.
+     */
     const handleExportToPreEnrollment = (student: StudentRowData) => {
         setConfirmation({
             isOpen: true,

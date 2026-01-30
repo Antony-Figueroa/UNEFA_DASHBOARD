@@ -24,14 +24,27 @@ import { PreEnrollmentPDF } from "../../components/ui/pdf/templates/PreEnrollmen
 import { usePreEnrollment } from "../../features/pre-enrollment/hooks/usePreEnrollment";
 import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import { getInternshipTypes, mapToOptions } from "../../features/internship-types/services/internshipTypesService";
-import { PreEnrollment, PreEnrollmentRowData } from "../../features/pre-enrollment/types";
+import { PreEnrollment, PreEnrollmentRowData, CreatePreEnrollmentPayload, UpdatePreEnrollmentPayload } from "../../features/pre-enrollment/types";
 import { formatDateTime } from "../../utils/date";
 
+/**
+ * Formatea un objeto PreEnrollment a PreEnrollmentRowData para su visualización en tablas.
+ * 
+ * @param p - El registro de pre-inscripción.
+ * @returns El registro formateado.
+ */
 const formatPreEnrollmentToRow = (p: PreEnrollment): PreEnrollmentRowData => ({
     ...p,
     preEnrollmentDate: formatDateTime(p.preEnrollmentDate),
 });
 
+/**
+ * Componente PreEnrollmentPage.
+ * 
+ * Página principal para la gestión de pre-inscripciones.
+ * Proporciona una tabla con búsqueda, filtrado, creación, edición,
+ * activación/desactivación y generación de PDF de pre-inscripciones.
+ */
 export default function PreEnrollmentPage() {
     const [pageLoading, setPageLoading] = useState(true);
     const location = useLocation();
@@ -155,18 +168,32 @@ export default function PreEnrollmentPage() {
             .map(formatPreEnrollmentToRow);
     }, [preEnrollments, pdfSearchTerm, pdfPeriodFilter, pdfPracticeTypeFilter]);
 
+    /**
+     * Maneja la apertura del modal para crear una nueva pre-inscripción.
+     */
     const handleCreate = () => {
         setEditingEntry(null);
         setIsModalOpen(true);
     };
 
+    /**
+     * Maneja la apertura del modal para editar una pre-inscripción existente.
+     * 
+     * @param row - Registro de la fila seleccionada en la tabla.
+     */
     const handleEdit = (row: PreEnrollmentRowData) => {
         const original = preEnrollments.find((p) => p.preEnrollmentId === row.preEnrollmentId) || null;
         setEditingEntry(original);
         setIsModalOpen(true);
     };
 
-    const handleSave = (payload: Omit<PreEnrollment, "preEnrollmentId" | "preEnrollmentDate">) => {
+    /**
+     * Maneja el guardado (creación o actualización) de una pre-inscripción.
+     * Muestra un diálogo de confirmación antes de proceder.
+     * 
+     * @param payload - Datos de la pre-inscripción (Create o Update).
+     */
+    const handleSave = (payload: CreatePreEnrollmentPayload | UpdatePreEnrollmentPayload) => {
         const isEditing = !!editingEntry;
         setConfirmation({
             isOpen: true,
@@ -175,13 +202,16 @@ export default function PreEnrollmentPage() {
             onConfirm: async () => {
                 try {
                     if (isEditing && editingEntry) {
-                        await editPreEnrollment({ ...editingEntry, ...payload });
+                        await editPreEnrollment({ 
+                            ...payload, 
+                            preEnrollmentId: editingEntry.preEnrollmentId 
+                        } as UpdatePreEnrollmentPayload);
                     } else {
-                        await addPreEnrollment(payload);
+                        await addPreEnrollment(payload as CreatePreEnrollmentPayload);
                     }
                     setIsModalOpen(false);
-                } catch (e) {
-                    console.error(e);
+                } catch (error) {
+                    console.error("[PreEnrollmentPage] Error al guardar:", error);
                 } finally {
                     setConfirmation(null);
                 }
@@ -191,8 +221,14 @@ export default function PreEnrollmentPage() {
         });
     };
 
-    const handleToggleStatus = (id: string) => {
-        const original = preEnrollments.find((p) => p.preEnrollmentId === id);
+    /**
+     * Maneja el cambio de estado (activar/desactivar) de una pre-inscripción.
+     * Muestra un diálogo de confirmación antes de proceder.
+     * 
+     * @param item - Registro de la fila seleccionada.
+     */
+    const handleToggleStatus = (item: PreEnrollmentRowData) => {
+        const original = preEnrollments.find((p) => p.preEnrollmentId === item.preEnrollmentId);
         if (!original) return;
         const goingInactive = original.status === true;
         setConfirmation({
@@ -204,14 +240,22 @@ export default function PreEnrollmentPage() {
             onConfirm: async () => {
                 try {
                     await toggleStatus(original);
-                } catch (e) { console.error(e); }
-                finally { setConfirmation(null); }
+                } catch (error) { 
+                    console.error("[PreEnrollmentPage] Error al cambiar estado:", error); 
+                } finally { 
+                    setConfirmation(null); 
+                }
             },
             confirmText: goingInactive ? "Confirmar" : "Restaurar",
             variant: goingInactive ? "error" : "success",
         });
     };
 
+    /**
+     * Maneja la desactivación masiva de múltiples pre-inscripciones.
+     * 
+     * @param ids - Arreglo de IDs de pre-inscripción a desactivar.
+     */
     const handleBulkDelete = (ids: string[]) => {
         setConfirmation({
             isOpen: true,
@@ -221,7 +265,7 @@ export default function PreEnrollmentPage() {
                 try {
                     await bulkToggleStatus(ids, false);
                 } catch (e) {
-                    console.error(e);
+                    console.error("[PreEnrollmentPage] Error en desactivación masiva:", e);
                 } finally {
                     setConfirmation(null);
                 }
@@ -231,6 +275,11 @@ export default function PreEnrollmentPage() {
         });
     };
 
+    /**
+     * Maneja la restauración masiva de múltiples pre-inscripciones.
+     * 
+     * @param ids - Arreglo de IDs de pre-inscripción a restaurar.
+     */
     const handleBulkRestore = (ids: string[]) => {
         setConfirmation({
             isOpen: true,
@@ -240,7 +289,7 @@ export default function PreEnrollmentPage() {
                 try {
                     await bulkToggleStatus(ids, true);
                 } catch (e) {
-                    console.error(e);
+                    console.error("[PreEnrollmentPage] Error en restauración masiva:", e);
                 } finally {
                     setConfirmation(null);
                 }
@@ -250,17 +299,13 @@ export default function PreEnrollmentPage() {
         });
     };
 
-
+    /**
+     * Redirige al módulo de Inscripción llevando los datos de la pre-inscripción.
+     * 
+     * @param item - Registro de pre-inscripción a exportar.
+     */
     const handleExportToEnrollment = (item: PreEnrollmentRowData) => {
         navigate("/enrollment", { state: { preEnrollmentData: item } });
-    };
-
-    const handleReport = () => {
-        // Al hacer clic en reporte desde la tabla, abrimos el modal
-        // En PreEnrollment, el modal de PDF usa pdfFilteredData, que ya está filtrado por pdfSearchTerm, etc.
-        // Pero para ser consistentes con Enrollment, podríamos querer que el botón de la tabla
-        // active el modal con los datos que ya están en la tabla.
-        setIsPDFModalOpen(true);
     };
 
     return (
@@ -333,7 +378,6 @@ export default function PreEnrollmentPage() {
                                 onBulkRestore={handleBulkRestore}
                                 onView={setViewItem}
                                 onExportToEnrollment={handleExportToEnrollment}
-                                onReport={handleReport}
                                 loading={loadingAction}
                                 periodOptions={periodOptions}
                                 practiceTypeOptions={practiceTypeOptions}

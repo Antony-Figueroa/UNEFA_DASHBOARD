@@ -70,14 +70,6 @@ export default function PeriodModal({
     const isCulminado = periodo?.periodStatus === 3;
     const isInCurso = periodo?.periodStatus === 2;
 
-    // Debug para ver por qué el formulario no es válido
-    console.log("PeriodModal Debug:", {
-        isValid,
-        errors,
-        periodo: periodo?.description,
-        periodoStatus: periodo?.periodStatus
-    });
-
     /**
      * Calcula los rangos de fechas de los periodos existentes para deshabilitarlos en el calendario.
      */

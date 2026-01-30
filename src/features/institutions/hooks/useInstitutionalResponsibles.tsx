@@ -1,96 +1,95 @@
 /**
- * @file useInstitutionalResponsibles.tsx
- * @description Hook para la gestión de responsables institucionales.
+ * @fileoverview Custom hook for managing institutional responsibles state and operations.
+ * Connects UI components with the responsibles service and manages global notifications.
  */
 
-import { useState, useEffect, useCallback } from "react";
-import { InstitutionalResponsible } from "../types";
+import { InstitutionalResponsible, CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload } from "../types";
 import { useToast } from "../../../context/toast";
 import { ChangeComparison, RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
-import * as responsibleService from "../services/institutionalResponsiblesService";
+import { responsibleService } from "../services/institutionalResponsiblesService";
+import { useCrud } from "../../../hooks/useCrud";
 
-type Status = "loading" | "success" | "error";
-
+/**
+ * Labels for responsible person fields used in toast notifications and comparisons.
+ */
 const RESPONSIBLE_LABELS: Record<string, string> = {
   identificationPrefix: "Tipo",
   identificationNumber: "Cédula",
-  firstName: "Primer Nombre",
-  middleName: "Segundo Nombre",
-  lastName: "Primer Apellido",
-  secondLastName: "Segundo Apellido",
+  fullName: "Nombre Completo",
   phone: "Teléfono",
   email: "Correo",
   institutionName: "Institución",
+  position: "Cargo",
 };
 
+/**
+ * Hook to manage institutional responsibles.
+ * Provides state for responsibles list, loading status, and actions for CRUD operations using the useCrud hook.
+ * 
+ * @returns An object containing the responsibles state and action functions.
+ * 
+ * @example
+ * const { responsibles, addResponsible, editResponsible, toggleStatus } = useInstitutionalResponsibles();
+ */
 export const useInstitutionalResponsibles = () => {
-  const [responsibles, setResponsibles] = useState<InstitutionalResponsible[]>([]);
-  const [status, setStatus] = useState<Status>("loading");
-  const [loadingAction, setLoadingAction] = useState(false);
   const { addToast } = useToast();
 
-  const refreshResponsibles = useCallback(async () => {
-    setStatus("loading");
-    try {
-      const data = await responsibleService.getInstitutionalResponsibles();
-      setResponsibles(data);
-      setStatus("success");
-    } catch (e) {
-      console.error("Error loading responsibles:", e);
-      setStatus("error");
-    }
-  }, []);
+  const {
+    data: responsibles,
+    status,
+    loadingAction,
+    refresh: refreshResponsibles,
+    createItem: baseAddResponsible,
+    updateItem: baseEditResponsible,
+    toggleItemStatus: baseToggleStatus
+  } = useCrud<InstitutionalResponsible, CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload>(responsibleService, {
+    resourceName: "Responsable",
+    idField: "responsibleId",
+  });
 
-  useEffect(() => {
-    refreshResponsibles();
-  }, [refreshResponsibles]);
-
-  const addResponsible = async (respData: Omit<InstitutionalResponsible, "responsibleId" | "registrationDate">) => {
-    setLoadingAction(true);
-    try {
-      const newResp = await responsibleService.createInstitutionalResponsible(respData);
-      setResponsibles(prev => [newResp, ...prev]);
-      
+  /**
+   * Adds a new institutional responsible with custom notification.
+   * @param respData - The payload for the new responsible person.
+   */
+  const addResponsible = async (respData: CreateInstitutionalResponsiblePayload) => {
+    const newResp = await baseAddResponsible(respData);
+    if (newResp) {
+      const fullName = `${newResp.firstName} ${newResp.lastName}`;
       addToast({
         variant: "success",
         title: "Responsable Registrado",
         message: (
           <>
-            <p>El responsable <strong>{newResp.firstName} {newResp.lastName}</strong> ha sido registrado correctamente.</p>
+            <p>El responsable <strong>{fullName}</strong> ha sido registrado correctamente.</p>
             <RecordDetails
               data={newResp as unknown as Record<string, unknown>}
               labels={RESPONSIBLE_LABELS}
-              fields={['identificationNumber', 'phone', 'email', 'institutionName']}
+              fields={['firstName', 'lastName', 'phone', 'email', 'institutionName']}
             />
           </>
         ),
       });
-    } catch (error) {
-      console.error("Error adding responsible:", error);
-      addToast({
-        variant: "error",
-        title: "Error",
-        message: "No se pudo registrar el responsable.",
-      });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
-  const editResponsible = async (respData: InstitutionalResponsible) => {
-    setLoadingAction(true);
-    try {
-      const oldResp = responsibles.find(r => r.responsibleId === respData.responsibleId);
-      const updatedResp = await responsibleService.updateInstitutionalResponsible(respData.responsibleId, respData);
-      
-      setResponsibles(prev => prev.map(r => r.responsibleId === respData.responsibleId ? updatedResp : r));
-      
+  /**
+   * Updates an existing institutional responsible with custom comparison notification.
+   * @param id - The ID of the responsible person to update.
+   * @param respData - The partial data to update.
+   */
+  const editResponsible = async (respData: UpdateInstitutionalResponsiblePayload) => {
+    const { responsibleId } = respData;
+    const oldResp = responsibles.find(r => r.responsibleId === responsibleId);
+    const updatedResp = await baseEditResponsible(respData);
+    
+    if (updatedResp) {
+      const fullName = `${updatedResp.firstName} ${updatedResp.lastName}`;
       addToast({
         variant: "success",
         title: "Responsable Actualizado",
         message: (
           <>
-            <p>Los datos de <strong>{updatedResp.firstName} {updatedResp.lastName}</strong> han sido actualizados.</p>
+            <p>Los datos de <strong>{fullName}</strong> han sido actualizados.</p>
             {oldResp && <ChangeComparison 
               oldData={oldResp as unknown as Record<string, unknown>} 
               newData={updatedResp as unknown as Record<string, unknown>} 
@@ -99,48 +98,34 @@ export const useInstitutionalResponsibles = () => {
           </>
         ),
       });
-    } catch (error) {
-      console.error("Error editing responsible:", error);
-      addToast({
-        variant: "error",
-        title: "Error",
-        message: "No se pudo actualizar el responsable.",
-      });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
+  /**
+   * Toggles the active status of an institutional responsible with custom notification.
+   * @param resp - The responsible person object to toggle.
+   */
   const toggleStatus = async (resp: InstitutionalResponsible) => {
-    setLoadingAction(true);
-    try {
-      const newStatus = !resp.status;
-      const updatedResp = await responsibleService.toggleInstitutionalResponsibleStatus(resp.responsibleId, newStatus);
-      
-      setResponsibles(prev => prev.map(r => r.responsibleId === resp.responsibleId ? updatedResp : r));
-
+    const newStatus = !resp.status;
+    const success = await baseToggleStatus(resp.responsibleId, newStatus);
+    if (success) {
+      const fullName = `${resp.firstName} ${resp.lastName}`;
       addToast({
         variant: newStatus ? "success" : "warning",
         title: newStatus ? "Responsable Restaurado" : "Responsable Inactivado",
-        message: `El responsable ${resp.firstName} ${resp.lastName} ahora está ${newStatus ? 'activo' : 'inactivo'}.`,
+        message: `El responsable ${fullName} ahora está ${newStatus ? 'activo' : 'inactivo'}.`,
       });
-    } catch (error) {
-      console.error("Error toggling status:", error);
-      addToast({
-        variant: "error",
-        title: "Error",
-        message: "No se pudo cambiar el estado del responsable.",
-      });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
+  /**
+   * Inactivates multiple responsibles in bulk.
+   * @param ids - Array of responsible person IDs to inactivate.
+   */
   const bulkRemoveResponsibles = async (ids: string[]) => {
-    setLoadingAction(true);
     try {
-      await Promise.all(ids.map(id => responsibleService.toggleInstitutionalResponsibleStatus(id, false)));
-      setResponsibles(prev => prev.map(r => ids.includes(r.responsibleId) ? { ...r, status: false } : r));
+      await Promise.all(ids.map(id => responsibleService.toggleStatus(id, false)));
+      refreshResponsibles();
       
       addToast({
         variant: "warning",
@@ -148,22 +133,23 @@ export const useInstitutionalResponsibles = () => {
         message: `${ids.length} responsables han sido inactivados.`,
       });
     } catch (error) {
-      console.error("Error in bulk remove:", error);
+      console.error("[useInstitutionalResponsibles] Error in bulk remove:", error);
       addToast({
         variant: "error",
         title: "Error",
         message: "Ocurrió un error al inactivar los responsables.",
       });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
+  /**
+   * Restores multiple responsibles in bulk.
+   * @param ids - Array of responsible person IDs to restore.
+   */
   const bulkRestoreResponsibles = async (ids: string[]) => {
-    setLoadingAction(true);
     try {
-      await Promise.all(ids.map(id => responsibleService.toggleInstitutionalResponsibleStatus(id, true)));
-      setResponsibles(prev => prev.map(r => ids.includes(r.responsibleId) ? { ...r, status: true } : r));
+      await Promise.all(ids.map(id => responsibleService.toggleStatus(id, true)));
+      refreshResponsibles();
       
       addToast({
         variant: "success",
@@ -171,14 +157,12 @@ export const useInstitutionalResponsibles = () => {
         message: `${ids.length} responsables han sido restaurados.`,
       });
     } catch (error) {
-      console.error("Error in bulk restore:", error);
+      console.error("[useInstitutionalResponsibles] Error in bulk restore:", error);
       addToast({
         variant: "error",
         title: "Error",
         message: "Ocurrió un error al restaurar los responsables.",
       });
-    } finally {
-      setLoadingAction(false);
     }
   };
 

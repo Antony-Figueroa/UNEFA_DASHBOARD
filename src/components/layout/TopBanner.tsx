@@ -10,7 +10,7 @@ const TopBanner: React.FC = () => {
   const isMobileOpen = sidebarContext?.isMobileOpen ?? false;
   
   const [isVisible, setIsVisible] = useState(true);
-  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1000);
+  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024);
   const scrollRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -25,7 +25,7 @@ const TopBanner: React.FC = () => {
 
   useEffect(() => {
     const handleResize = () => {
-      setIsLargeScreen(window.innerWidth >= 1000);
+      setIsLargeScreen(window.innerWidth >= 1024);
       updateBannerHeight();
     };
     window.addEventListener("resize", handleResize);
@@ -36,7 +36,7 @@ const TopBanner: React.FC = () => {
   // Si no hay contexto de sidebar (páginas públicas), el ancho es siempre 0px
   const sidebarWidth = !sidebarContext || !isLargeScreen || isMobileOpen 
     ? "0px" 
-    : (isExpanded || isHovered ? "260px" : "70px");
+    : (isExpanded || isHovered ? "290px" : "90px");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -77,7 +77,7 @@ const TopBanner: React.FC = () => {
         left: sidebarWidth,
         width: `calc(100% - ${sidebarWidth})`
       }}
-      className={`${!sidebarContext ? "relative" : "fixed top-0"} ${!isLargeScreen ? "hidden" : "flex"} bg-white dark:bg-bg-dark border-b border-border-light dark:border-border-dark overflow-hidden z-99999 transition-all duration-300 ease-in-out items-center justify-start ${
+      className={`${!sidebarContext ? "relative" : "fixed top-0"} ${!isLargeScreen ? "hidden" : "flex"} bg-white dark:bg-bg-dark border-b border-border-light dark:border-border-dark overflow-hidden z-40 transition-all duration-300 ease-in-out items-center justify-start ${
         isVisible ? "h-auto opacity-100" : "h-0 opacity-0 border-none"
       }`}
     >

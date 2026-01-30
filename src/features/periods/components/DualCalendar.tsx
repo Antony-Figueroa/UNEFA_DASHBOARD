@@ -118,14 +118,14 @@ const DualCalendar: React.FC<DualCalendarProps> = ({ startDate, endDate }) => {
             const isMonday = day.getDay() === 1;
             const isSunday = day.getDay() === 0;
 
-            const containerClasses = "relative h-9 sm:h-11 flex items-center justify-center transition-all duration-200";
-            let backgroundClasses = "";
-            let textClasses = isCurrentMonth 
-              ? (isSelected ? "text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300")
-              : "text-gray-200 dark:text-gray-700";
-            
-            const indicatorClasses = "absolute inset-0 flex items-center justify-center pointer-events-none";
-            let dotClasses = "w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center rounded-full font-bold transition-all duration-300";
+            const containerClasses = "relative h-8 sm:h-9 flex items-center justify-center transition-all duration-200";
+    let backgroundClasses = "";
+    let textClasses = isCurrentMonth 
+      ? (isSelected ? "text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300")
+      : "text-gray-200 dark:text-gray-700";
+    
+    const indicatorClasses = "absolute inset-0 flex items-center justify-center pointer-events-none";
+    let dotClasses = "w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full font-bold transition-all duration-300";
 
             // Highlight Today
             if (isToday && !isSelected) {
@@ -146,20 +146,20 @@ const DualCalendar: React.FC<DualCalendarProps> = ({ startDate, endDate }) => {
                 if (isSunday) backgroundClasses += " rounded-r-md";
               }
 
-              if (isStart && isEnd) {
-                backgroundClasses = ""; // No background for single day range, just the dot
-                dotClasses = "w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg shadow-black/10 font-bold scale-105";
-              }
-            }
+          if (isStart && isEnd) {
+            backgroundClasses = ""; // No background for single day range, just the dot
+            dotClasses = "w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-lg shadow-black/10 font-bold scale-105";
+          }
+        }
 
-            return (
-              <div key={idx} className={`${containerClasses} ${backgroundClasses}`}>
-                <div className={indicatorClasses}>
-                  <div className={(isStart || isEnd) ? dotClasses : ""}></div>
-                  {isToday && !isStart && !isEnd && (
-                    <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full border-2 border-brand-600 dark:border-brand-400"></div>
-                  )}
-                </div>
+        return (
+          <div key={idx} className={`${containerClasses} ${backgroundClasses}`}>
+            <div className={indicatorClasses}>
+              <div className={(isStart || isEnd) ? dotClasses : ""}></div>
+              {isToday && !isStart && !isEnd && (
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 border-brand-600 dark:border-brand-400"></div>
+              )}
+            </div>
                 <span className={`relative z-10 text-[11px] sm:text-[13px] font-semibold ${(isStart || isEnd) ? 'text-white dark:text-gray-900' : textClasses}`}>
                   {day.getDate()}
                 </span>

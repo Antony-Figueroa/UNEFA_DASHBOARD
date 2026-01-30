@@ -345,7 +345,7 @@ export function CrudTable<TItem extends { id: string }>({
                 <button
                   key={action.id}
                   type="button"
-                  onClick={() => action.onAction(items.filter((i) => selectedIds.includes(i.id)))}
+                  onClick={async () => action.onAction(items.filter((i) => selectedIds.includes(i.id)))}
                   className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isDanger
                     ? "bg-error-50 text-error-600 hover:bg-error-100 dark:bg-error-400/10 dark:text-error-400 dark:hover:bg-error-400/20"
                     : isPrimary
@@ -405,7 +405,7 @@ export function CrudTable<TItem extends { id: string }>({
                       type="button"
                       className={`flex h-full w-full items-center px-4 py-3 text-left font-semibold group focus:outline-none focus:bg-bg-secondary dark:focus:bg-white/5 ${column.alignRight ? "justify-end" : ""
                         }`}
-                      onClick={() => handleSort(column.id)}
+                      onClick={async () => handleSort(column.id)}
                       aria-sort={ariaSort as "none" | "ascending" | "descending"}
                     >
                       <span>{column.header}</span>
@@ -495,7 +495,7 @@ export function CrudTable<TItem extends { id: string }>({
                           return (
                             <ActionButton
                               key={action.id}
-                              onClick={() => action.onClick(item)}
+                              onClick={async () => action.onClick(item)}
                               icon={icon}
                               tooltip={action.label}
                               variant={variant}
@@ -517,7 +517,7 @@ export function CrudTable<TItem extends { id: string }>({
           <div className="flex flex-1 justify-between sm:hidden">
             <button
               type="button"
-              onClick={() => handlePageChange(currentPage - 1)}
+              onClick={async () => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
               className="relative inline-flex items-center rounded-md border border-border-medium bg-bg-main px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-50 dark:border-border-dark dark:bg-bg-dark dark:text-text-tertiary"
             >
@@ -525,7 +525,7 @@ export function CrudTable<TItem extends { id: string }>({
             </button>
             <button
               type="button"
-              onClick={() => handlePageChange(currentPage + 1)}
+              onClick={async () => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
               className="relative ml-3 inline-flex items-center rounded-md border border-border-medium bg-bg-main px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-50 dark:border-border-dark dark:bg-bg-dark dark:text-text-tertiary"
             >
@@ -576,7 +576,7 @@ export function CrudTable<TItem extends { id: string }>({
             >
               <button
                 type="button"
-                onClick={() => handlePageChange(currentPage - 1)}
+                onClick={async () => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
                 className="relative inline-flex items-center rounded-l-md px-2 py-2 text-text-tertiary ring-1 ring-inset ring-border-medium hover:bg-bg-secondary focus:z-20 focus:outline-offset-0 disabled:opacity-50 dark:ring-border-dark dark:hover:bg-white/5"
               >
@@ -599,7 +599,7 @@ export function CrudTable<TItem extends { id: string }>({
               </span>
               <button
                 type="button"
-                onClick={() => handlePageChange(currentPage + 1)}
+                onClick={async () => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
                 className="relative inline-flex items-center rounded-r-md px-2 py-2 text-text-tertiary ring-1 ring-inset ring-border-medium hover:bg-bg-secondary focus:z-20 focus:outline-offset-0 disabled:opacity-50 dark:ring-border-dark dark:hover:bg-white/5"
               >

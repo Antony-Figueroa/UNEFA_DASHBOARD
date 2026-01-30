@@ -50,7 +50,7 @@ export default function PeriodModal({
     isLoading = false, 
     existingPeriods 
 }: PeriodModalProps) {
-    const { register, handleSubmit, formState: { errors, isDirty, isValid }, control, reset, watch, setValue } = useForm<PeriodFormData>({
+    const { register, handleSubmit, formState: { errors, isDirty }, control, reset, watch, setValue } = useForm<PeriodFormData>({
         resolver: zodResolver(getPeriodSchema(existingPeriods, periodo?.periodId || undefined, !!periodo)),
         mode: 'onChange',
         defaultValues: {
@@ -59,13 +59,16 @@ export default function PeriodModal({
         },
     });
 
+    // Obtener valores actuales para reactividad al inicio para evitar ReferenceError en useMemo
+    const yearValue = watch('year');
+    const startDateValue = watch('startDate');
+
     const {
         showConfirmation,
         handleCloseAttempt,
         confirmClose,
         cancelClose,
     } = useUnsavedChanges(isDirty, onClose);
-    const startDateValue = watch('startDate');
 
     const isCulminado = periodo?.periodStatus === 3;
     const isInCurso = periodo?.periodStatus === 2;
@@ -84,23 +87,92 @@ export default function PeriodModal({
 
     /**
      * Calcula la fecha mínima de inicio para un nuevo periodo.
+     * Debe ser el día después del último periodo O hoy, lo que sea posterior.
+     * ADEMÁS, debe estar dentro del año seleccionado en el selector.
      */
     const minNewPeriodStartDate = useMemo(() => {
-        if (periodo || existingPeriods.length === 0) return 'today';
-        const lastPeriod = [...existingPeriods].sort((a, b) => getLapsoValue(b.description) - getLapsoValue(a.description))[0];
-        const dayAfter = new Date(lastPeriod.endDate);
-        dayAfter.setDate(dayAfter.getDate() + 1);
-        return dayAfter;
-    }, [existingPeriods, periodo]);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // 1. Obtener el primer día del año seleccionado
+        let minYearDate: Date | undefined = undefined;
+        if (yearValue) {
+            minYearDate = new Date(parseInt(yearValue), 0, 1);
+            minYearDate.setHours(0, 0, 0, 0);
+        }
+
+        // Si el periodo está en curso o culminado, el campo ya está deshabilitado
+        // Si es pendiente, permitimos cambiar la fecha pero respetando el orden cronológico
+        
+        // Encontrar el periodo anterior al actual
+        const otherPeriods = existingPeriods.filter(p => p.periodId !== periodo?.periodId);
+        
+        let calculatedMinDate: Date;
+
+        if (otherPeriods.length === 0) {
+            calculatedMinDate = today;
+        } else {
+            // Ordenar por lapso para encontrar el anterior al actual
+            const sortedOthers = [...otherPeriods].sort((a, b) => getLapsoValue(b.description) - getLapsoValue(a.description));
+            
+            let previousPeriod;
+            if (periodo) {
+                const currentVal = getLapsoValue(periodo.description);
+                previousPeriod = sortedOthers.find(p => getLapsoValue(p.description) < currentVal);
+            } else {
+                previousPeriod = sortedOthers[0];
+            }
+
+            if (!previousPeriod) {
+                calculatedMinDate = today;
+            } else {
+                const dayAfter = new Date(previousPeriod.endDate);
+                dayAfter.setDate(dayAfter.getDate() + 1);
+                dayAfter.setHours(0, 0, 0, 0);
+                calculatedMinDate = dayAfter;
+            }
+        }
+
+        // Para nuevos periodos, no permitir fechas pasadas respecto a hoy
+        if (!periodo && calculatedMinDate < today) {
+            calculatedMinDate = today;
+        }
+
+        // RESTRICCIÓN CRÍTICA: La fecha mínima no puede ser inferior al inicio del año seleccionado
+        if (minYearDate && calculatedMinDate < minYearDate) {
+            return minYearDate;
+        }
+
+        return calculatedMinDate;
+    }, [existingPeriods, periodo, yearValue]);
+
+    /**
+     * Calcula la fecha máxima de inicio permitida (fin del año seleccionado).
+     */
+    const maxStartDate = useMemo(() => {
+        if (!yearValue) return undefined;
+        return new Date(parseInt(yearValue), 11, 31);
+    }, [yearValue]);
 
     /**
      * Calcula la fecha mínima de fin permitida (16 semanas después de la fecha de inicio).
      */
     const minEndDate = useMemo(() => {
         if (!startDateValue) return undefined;
+        // 16 semanas * 7 días * 24 horas * 60 min * 60 seg * 1000 ms
         const minDuration = 16 * 7 * 24 * 60 * 60 * 1000;
-        return new Date(startDateValue.getTime() + minDuration);
+        const minDate = new Date(startDateValue.getTime() + minDuration);
+        minDate.setHours(0, 0, 0, 0);
+        return minDate;
     }, [startDateValue]);
+
+    /**
+     * Calcula la fecha máxima de fin permitida (fin del año siguiente al seleccionado).
+     */
+    const maxEndDate = useMemo(() => {
+        if (!yearValue) return undefined;
+        return new Date(parseInt(yearValue) + 1, 11, 31);
+    }, [yearValue]);
 
     /**
      * Genera las opciones para el selector de AÑO.
@@ -129,9 +201,6 @@ export default function PeriodModal({
 
         return Array.from(optionsSet).sort((a, b) => parseInt(a) - parseInt(b));
     }, [periodo, existingPeriods]);
-
-    // Obtener valores actuales para reactividad
-    const yearValue = watch('year');
 
     /**
      * Efecto para sincronizar el año del calendario cuando cambia el selector de año.
@@ -215,10 +284,10 @@ export default function PeriodModal({
         }
     }, [periodo, isOpen, reset, existingPeriods]);
 
-    /**
-     * Maneja el envío del formulario, valida las fechas y llama a la función onSave.
-     */
-    const onSubmit: SubmitHandler<PeriodFormData> = (data) => {
+   /**
+    * Maneja el envío del formulario, valida las fechas y llama a la función onSave.
+    */
+   const onSubmit: SubmitHandler<PeriodFormData> = (data) => {
         try {
             let newDescription = `${data.periodoTipo}-${data.year}`;
             let startDateToUse = data.startDate;
@@ -273,13 +342,20 @@ export default function PeriodModal({
                 <form id="period-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-3xl mx-auto">
                     <div className="grid grid-cols-1 gap-y-5">
                         <div>
-                            <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Lapso Académico *</label>
+                            <div className="flex items-center gap-2 mb-2.5">
+                                <label className="block text-black dark:text-white font-medium text-sm">Lapso Académico *</label>
+                                {!periodo && existingPeriods.length > 0 && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 uppercase tracking-wider">
+                                        Auto
+                                    </span>
+                                )}
+                            </div>
                             <div className={`flex flex-row items-center rounded-lg border ${errors.year || errors.periodoTipo ? 'border-red-500' : 'border-border-light dark:border-border-dark'} bg-white dark:bg-bg-dark overflow-hidden`}>
                                 <div className="relative w-20 sm:w-28 bg-bg-secondary/10 dark:bg-white/5 border-r border-border-light dark:border-border-dark">
                                     <select
                                         {...register('periodoTipo')}
-                                        disabled={isCulminado || isInCurso}
-                                        className="w-full appearance-none bg-transparent py-2.5 pl-4 pr-10 text-sm text-text-primary outline-none dark:text-white font-medium"
+                                        disabled={!!periodo || (!periodo && existingPeriods.length > 0)}
+                                        className="w-full appearance-none bg-transparent py-2.5 pl-4 pr-10 text-sm text-text-primary outline-none dark:text-white font-medium disabled:opacity-70 disabled:cursor-not-allowed"
                                     >
                                         <option value="1" className="bg-white dark:bg-bg-dark text-black dark:text-white font-medium">1</option>
                                         <option value="2" className="bg-white dark:bg-bg-dark text-black dark:text-white font-medium">2</option>
@@ -294,8 +370,8 @@ export default function PeriodModal({
                                 <div className="relative flex-1">
                                     <select
                                         {...register('year')}
-                                        disabled={isCulminado || isInCurso}
-                                        className="w-full appearance-none bg-transparent py-2.5 pl-4 pr-10 text-sm text-text-primary outline-none dark:text-white"
+                                        disabled={!!periodo || (!periodo && existingPeriods.length > 0)}
+                                        className="w-full appearance-none bg-transparent py-2.5 pl-4 pr-10 text-sm text-text-primary outline-none dark:text-white disabled:opacity-70 disabled:cursor-not-allowed"
                                     >
                                         <option value="" disabled className="bg-white dark:bg-bg-dark text-text-secondary dark:text-text-tertiary">Seleccione Año</option>
                                         {yearOptions.map(option => (
@@ -331,11 +407,18 @@ export default function PeriodModal({
                                                     field.onChange(date);
                                                     if (date) {
                                                         const minDuration = 16 * 7 * 24 * 60 * 60 * 1000;
-                                                        setValue('endDate', new Date(date.getTime() + minDuration), { shouldValidate: true });
+                                                        const nextMinEndDate = new Date(date.getTime() + minDuration);
+                                                        
+                                                        // Si no hay fecha de fin o la actual es menor a la nueva mínima de 16 semanas
+                                                        const currentEndDate = watch('endDate');
+                                                        if (!currentEndDate || currentEndDate < nextMinEndDate) {
+                                                            setValue('endDate', nextMinEndDate, { shouldValidate: true });
+                                                        }
                                                     }
                                                 }}
                                                 options={{
                                                     minDate: minNewPeriodStartDate,
+                                                    maxDate: maxStartDate,
                                                     disable: disabledDateRanges,
                                                 }}
                                                 error={!!errors.startDate}
@@ -361,6 +444,7 @@ export default function PeriodModal({
                                                 onChange={(dates) => field.onChange(dates[0])}
                                                 options={{
                                                     minDate: minEndDate,
+                                                    maxDate: maxEndDate,
                                                     disable: disabledDateRanges,
                                                 }}
                                                 error={!!errors.endDate}
@@ -382,14 +466,13 @@ export default function PeriodModal({
                     <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
                         Cancelar
                     </Button>
-                    <AsyncButton type="submit" form="period-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid}>
+                    <AsyncButton 
+                        onClick={handleSubmit(onSubmit)} 
+                        loading={isLoading} 
+                        className="w-full sm:w-auto min-h-12" 
+                    >
                         {periodo ? 'Actualizar Registro' : 'Guardar Período'}
                     </AsyncButton>
-                    {!isValid && (
-                        <p className="text-xs text-red-500 mt-2">
-                            Por favor, corrija los errores del formulario para continuar.
-                        </p>
-                    )}
                 </div>
             </ModalFooter>
         </Modal>

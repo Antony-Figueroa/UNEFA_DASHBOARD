@@ -9,6 +9,12 @@ interface PeriodoPDFProps {
   data: Periodo[] | PeriodoRowData[];
 }
 
+const STATUS_LABELS = {
+  1: "Pendiente",
+  2: "En Curso",
+  3: "Culminado",
+} as const;
+
 const PeriodoPDF: React.FC<PeriodoPDFProps> = ({ data }) => {
   return (
     <PDFLayout
@@ -21,6 +27,7 @@ const PeriodoPDF: React.FC<PeriodoPDFProps> = ({ data }) => {
           <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Descripción</Text>
           <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Fecha Inicio</Text>
           <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Fecha Fin</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>Estado</Text>
         </View>
 
         {data.map((period, index) => (
@@ -32,6 +39,9 @@ const PeriodoPDF: React.FC<PeriodoPDFProps> = ({ data }) => {
             </Text>
             <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>
               {PDFService.formatDate(period.endDate)}
+            </Text>
+            <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>
+              {STATUS_LABELS[period.periodStatus as keyof typeof STATUS_LABELS] || "Desconocido"}
             </Text>
           </View>
         ))}

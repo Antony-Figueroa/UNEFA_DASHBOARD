@@ -13,6 +13,7 @@ import Button from "../../../components/ui/button/Button";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
+import CustomSelect from "../../../components/form/CustomSelect";
 import {
     EditIcon,
     TrashIcon,
@@ -52,6 +53,7 @@ type SortKey = keyof PeriodoRowData;
  * @returns El estatus como número (1: Pendiente, 2: En Curso, 3: Culminado).
  */
 const getSafePeriodStatus = (periodo: PeriodoRowData): number => {
+    if (!periodo) return 1;
     // Convierte a número si es necesario
     const status = periodo.periodStatus;
     if (typeof status === 'string') return parseInt(status) || 1;
@@ -65,10 +67,21 @@ const getSafePeriodStatus = (periodo: PeriodoRowData): number => {
  * @returns El progreso como número o null si no aplica.
  */
 const getSafeProgress = (periodo: PeriodoRowData): number | null => {
+    if (!periodo) return null;
     const progress = periodo.progress;
     if (progress === undefined || progress === null) return null;
     const numProgress = Number(progress);
     return isNaN(numProgress) ? null : Math.min(Math.max(numProgress, 0), 100);
+};
+
+/**
+ * Obtiene la etiqueta legible de un estatus de periodo.
+ * 
+ * @param status - Estatus numérico.
+ * @returns Etiqueta de texto.
+ */
+const getStatusLabel = (status: number) => {
+    return STATUS_LABELS[status as keyof typeof STATUS_LABELS] || "Desconocido";
 };
 
 /**
@@ -274,7 +287,11 @@ const PeriodTable = ({
         // Usamos una versión local de getLapsoValue para no depender de imports externos si es posible,
         // pero como ya lo tenemos en el proyecto, lo ideal es usarlo.
         // Por simplicidad en este componente, ordenaremos por la fecha de inicio.
-        const sortedAll = [...safeData].sort((a, b) => a.rawStartDate.getTime() - b.rawStartDate.getTime());
+        const sortedAll = [...safeData].sort((a, b) => {
+            const timeA = a.rawStartDate?.getTime() || 0;
+            const timeB = b.rawStartDate?.getTime() || 0;
+            return timeA - timeB;
+        });
         
         if (nonPendingPeriods.length === 0) {
             // Si no hay ninguno culminado, el primero cronológicamente es el activable
@@ -300,8 +317,8 @@ const PeriodTable = ({
         const safeData = isInvalidData ? [] : data;
 
         const filtered = safeData.filter((periodo) => {
-            const description = periodo.description.toLowerCase();
-            const matchesSearch = description.includes(searchTerm.toLowerCase());
+            const searchableText = `${periodo.description || ""} ${periodo.startDate || ""} ${periodo.endDate || ""} ${getStatusLabel(getSafePeriodStatus(periodo))}`.toLowerCase();
+            const matchesSearch = searchableText.includes(searchTerm.toLowerCase());
 
             const periodStatus = getSafePeriodStatus(periodo).toString();
             const matchesStatus =
@@ -317,11 +334,23 @@ const PeriodTable = ({
 
             // Usar fechas originales para ordenamiento cronológico preciso
             if (sortConfig.key === "startDate") {
-                valA = a.rawStartDate.getTime();
-                valB = b.rawStartDate.getTime();
+                valA = a.rawStartDate?.getTime() || 0;
+                valB = b.rawStartDate?.getTime() || 0;
             } else if (sortConfig.key === "endDate") {
-                valA = a.rawEndDate.getTime();
-                valB = b.rawEndDate.getTime();
+                valA = a.rawEndDate?.getTime() || 0;
+                valB = b.rawEndDate?.getTime() || 0;
+            } else if (sortConfig.key === "description") {
+                // Ordenar por descripción usando el valor del lapso
+                const getLapsoValue = (desc: string) => {
+                    if (!desc || !desc.includes('-')) return 0;
+                    const [tipo, year] = desc.split('-');
+                    const t = parseInt(tipo);
+                    const y = parseInt(year);
+                    if (isNaN(t) || isNaN(y)) return 0;
+                    return y * 10 + t;
+                };
+                valA = getLapsoValue(a.description);
+                valB = getLapsoValue(b.description);
             }
 
             if (valA === undefined || valB === undefined || valA === null || valB === null) return 0;
@@ -344,6 +373,29 @@ const PeriodTable = ({
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, statusFilter]);
+
+    // Generar las opciones del filtro dinámicamente basándose en los estados presentes en los datos
+    const statusOptions = useMemo(() => {
+        // Obtener estados únicos de los datos
+        const uniqueStatuses = Array.from(new Set(data.map(p => getSafePeriodStatus(p))));
+        
+        // Mapear a opciones con etiquetas amigables
+        const options = uniqueStatuses.map(s => ({
+            value: String(s),
+            label: STATUS_LABELS[s as keyof typeof STATUS_LABELS] || `Estado ${s}`
+        }));
+
+        // Ordenar las opciones: En Curso (2) primero, luego Pendiente (1), luego Culminado (3)
+        options.sort((a, b) => {
+            const orderMap: Record<string, number> = { "2": 1, "1": 2, "3": 3 };
+            return (orderMap[a.value] || 99) - (orderMap[b.value] || 99);
+        });
+
+        return [
+            { value: "", label: "Todos los Estados" },
+            ...options
+        ];
+    }, [data]);
 
     // Event handlers
     const handlePageChange = useCallback((newPage: number) => {
@@ -382,7 +434,7 @@ const PeriodTable = ({
     if (status === "loading" || externalLoading) {
         return (
             <div className="table-container">
-                <TableSkeleton columns={5} rows={itemsPerPage} />
+                <TableSkeleton columns={4} rows={itemsPerPage} />
             </div>
         );
     }
@@ -439,10 +491,6 @@ const PeriodTable = ({
         );
     };
 
-    const getStatusLabel = (status: number) => {
-        return STATUS_LABELS[status as keyof typeof STATUS_LABELS] || "Desconocido";
-    };
-
     // Si los datos son inválidos, mostrar mensaje de error después de ejecutar hooks
     if (isInvalidData) {
         return (
@@ -460,7 +508,7 @@ const PeriodTable = ({
                     <div className="relative max-w-xs w-full">
                         <input
                             type="text"
-                            placeholder="Buscar por descripción"
+                            placeholder="Buscar por período"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full rounded-lg border border-border-medium bg-transparent py-2 pl-10 pr-4 text-sm text-text-primary placeholder-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 dark:placeholder-text-tertiary"
@@ -482,30 +530,14 @@ const PeriodTable = ({
                             </svg>
                         </span>
                     </div>
-                    <div className="relative w-full sm:w-auto">
-                        <select
+                    <div className="relative w-full sm:w-48">
+                        <CustomSelect
+                            options={statusOptions}
                             value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="p-4 w-full rounded-lg border border-border-medium bg-transparent py-2 px-4 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 appearance-none"
-                        >
-                            <option value="" className="dark:bg-bg-dark p-2">
-                                Seleccione Estado
-                            </option>
-                            <option value="2" className="dark:bg-bg-dark">
-                                En Curso
-                            </option>
-                            <option value="1" className="dark:bg-bg-dark">
-                                Pendiente
-                            </option>
-                            <option value="3" className="dark:bg-bg-dark">
-                                Culminado
-                            </option>
-                        </select>
-                        <div className="p-4 pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
+                            onChange={setStatusFilter}
+                            placeholder="Estado"
+                            className="min-w-[140px]"
+                        />
                     </div>
                 </div>
 
@@ -578,16 +610,7 @@ const PeriodTable = ({
                                     <SortIndicator column="endDate" />
                                 </div>
                             </TableCell>
-                            <TableCell
-                                isHeader
-                                className="table-header-cell cursor-pointer"
-                                onClick={async () => handleSort("periodStatus")}
-                            >
-                                <div className="flex items-center">
-                                    Status
-                                    <SortIndicator column="periodStatus" />
-                                </div>
-                            </TableCell>
+
                             <TableCell
                                 isHeader
                                 className="table-header-cell cursor-pointer"
@@ -596,6 +619,16 @@ const PeriodTable = ({
                                 <div className="flex items-center">
                                     Progreso
                                     <SortIndicator column="progress" />
+                                </div>
+                            </TableCell>
+                            <TableCell
+                                isHeader
+                                className="table-header-cell cursor-pointer"
+                                onClick={async () => handleSort("periodStatus")}
+                            >
+                                <div className="flex items-center">
+                                    Status
+                                    <SortIndicator column="periodStatus" />
                                 </div>
                             </TableCell>
                             <TableCell
@@ -617,26 +650,17 @@ const PeriodTable = ({
                                         key={periodId}
                                         className="table-row-hover"
                                     >
-                                        <TableCell className="table-cell font-medium text-text-primary dark:text-white/90">
+                                        <TableCell className="table-cell font-medium text-text-primary dark:text-white">
                                             {periodo.description}
                                         </TableCell>
+
                                         <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                             {periodo.startDate || "-"}
                                         </TableCell>
                                         <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                             {periodo.endDate || "-"}
                                         </TableCell>
-                                        <TableCell className="table-cell">
-                                            <Badge
-                                                size="sm"
-                                                color={getStatusColor(periodStatus)}
-                                                variant="light"
-                                                shape="rounded"
-                                                className="font-semibold"
-                                            >
-                                                {getStatusLabel(periodStatus)}
-                                            </Badge>
-                                        </TableCell>
+
                                           <TableCell className="table-cell">
                                             {getSafePeriodStatus(periodo) === 2 && getSafeProgress(periodo) !== null ? (
                                                 <Tooltip content={
@@ -663,6 +687,17 @@ const PeriodTable = ({
                                                     -
                                                 </span>
                                             )}
+                                        </TableCell>
+                                        <TableCell className="table-cell">
+                                            <Badge
+                                                size="sm"
+                                                color={getStatusColor(periodStatus)}
+                                                variant="light"
+                                                shape="rounded"
+                                                className="font-semibold"
+                                            >
+                                                {getStatusLabel(periodStatus)}
+                                            </Badge>
                                         </TableCell>
                                         <TableCell className="table-cell text-right">
                                             <ActionButtons
@@ -691,7 +726,7 @@ const PeriodTable = ({
                             })
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="p-0">
+                                <TableCell colSpan={5} className="p-0">
                                     <EmptyState
                                         title="No se encontraron períodos"
                                         description={
@@ -741,9 +776,7 @@ const PeriodTable = ({
                                                     {getStatusLabel(periodStatus)}
                                                 </Badge>
                                             </div>
-                                            <h3 className="text-sm font-bold text-text-primary dark:text-white/90 leading-tight truncate px-12">
-                                                {periodo.description}
-                                            </h3>
+
                                             <div className="flex items-center justify-center gap-4 mt-2">
                                                 <div className="text-[11px] text-text-secondary dark:text-text-tertiary">
                                                     <span className="block font-medium uppercase tracking-wider opacity-60">Inicio</span>

@@ -1,17 +1,20 @@
 /**
  * @file useStudents.tsx
- * @description Hook para la gestión de estudiantes.
+ * @description Hook personalizado para la gestión de la lógica de negocio de estudiantes.
+ * Proporciona funciones para listar, crear, editar y cambiar el estado de los estudiantes,
+ * integrando notificaciones (toasts) y manejo de estados de carga.
+ * 
+ * @module features/students/hooks
  */
 
-import { useState, useEffect, useCallback } from "react";
-import { AxiosError } from "axios";
-import { Student } from "../types";
-import * as studentsService from "../services/studentsService";
+import { studentService } from "../services/studentsService";
 import { useToast } from "../../../context/toast";
-import { ChangeComparison, RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
+import { RecordDetails, ChangeComparison } from "../../../components/ui/alert/AlertContextualContent";
+import { useCrud } from "../../../hooks/useCrud";
+import { Student, CreateStudentPayload, UpdateStudentPayload } from "../types";
+import { AxiosError } from "axios";
 
-type Status = "loading" | "success" | "error";
-
+/** Etiquetas descriptivas para los campos del estudiante (usadas en notificaciones) */
 const STUDENT_LABELS: Record<string, string> = {
   firstName: "Nombre",
   lastName: "Apellido",
@@ -26,46 +29,40 @@ const STUDENT_LABELS: Record<string, string> = {
   birthDate: "Fecha de Nacimiento",
   civilStatus: "Estado Civil",
   studentType: "Tipo",
+  militaryRank: "Rango Militar",
   works: "Trabaja",
 };
 
+/**
+ * Hook useStudents.
+ * 
+ * Refactorizado para utilizar useCrud como motor de estado base, 
+ * manteniendo las notificaciones enriquecidas y lógica optimista específica.
+ * 
+ * @returns Un objeto con el estado de los estudiantes y funciones de gestión.
+ */
 export const useStudents = () => {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [status, setStatus] = useState<Status>("loading");
-  const [loadingAction, setLoadingAction] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
   const { addToast } = useToast();
 
-  const refreshStudents = useCallback(async (showLoading = true) => {
-    if (showLoading) setStatus("loading");
-    setError(null);
-    try {
-      const response = await studentsService.getStudents();
-      const studentsArray = Array.isArray(response.data) ? response.data : [];
-      setStudents(studentsArray);
-      if (showLoading) setStatus("success");
-    } catch (e) {
-      const err = e instanceof Error ? e : new Error("Error desconocido al cargar estudiantes");
-      setError(err);
-      if (showLoading) setStatus("error");
-      setStudents([]);
-      addToast({
-        variant: "error",
-        title: "Error de Conexión",
-        message: "No se pudieron cargar los estudiantes. Verifique su conexión.",
-      });
-    }
-  }, [addToast]);
+  const {
+    data: students,
+    status,
+    loadingAction,
+    error,
+    refresh: refreshStudents,
+    deleteItem: removeStudent,
+  } = useCrud<Student, CreateStudentPayload, UpdateStudentPayload>(studentService, {
+    resourceName: "Estudiante",
+    idField: "studentId",
+  });
 
-  useEffect(() => {
-    refreshStudents(true);
-  }, [refreshStudents]);
-
-  const addStudent = async (studentData: Omit<Student, "studentId" | "enrollmentDate">) => {
-    setLoadingAction(true);
+  /**
+   * Registra un nuevo estudiante con notificaciones personalizadas.
+   */
+  const addStudent = async (payload: CreateStudentPayload) => {
     try {
-      const newStudent = await studentsService.createStudent(studentData);
-      await refreshStudents(false);
+      const newStudent = await studentService.create(payload);
+      await refreshStudents();
       
       addToast({
         variant: "success",
@@ -82,25 +79,25 @@ export const useStudents = () => {
         ),
       });
     } catch (e) {
-      const axiosError = e as AxiosError<{ message: string }>;
-      const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error al registrar el estudiante";
+      console.error("[useStudents] Error al registrar estudiante:", e);
+      const axiosError = e as any;
       addToast({
         variant: "error",
         title: "Error de Registro",
-        message: errorMessage,
+        message: axiosError.response?.data?.message || axiosError.message || "Error al registrar el estudiante",
       });
       throw e;
-    } finally {
-      setLoadingAction(false);
     }
   };
 
-  const editStudent = async (studentData: Student) => {
-    setLoadingAction(true);
+  /**
+   * Actualiza un estudiante con comparación de cambios.
+   */
+  const editStudent = async (payload: UpdateStudentPayload) => {
     try {
-      const oldStudent = students.find(s => s.studentId === studentData.studentId);
-      const updatedStudent = await studentsService.updateStudent(studentData.studentId, studentData);
-      await refreshStudents(false);
+      const oldStudent = students.find(s => s.studentId === payload.studentId);
+      const updatedStudent = await studentService.update(payload);
+      await refreshStudents();
       
       addToast({
         variant: "success",
@@ -117,32 +114,25 @@ export const useStudents = () => {
         ),
       });
     } catch (e) {
+      console.error("[useStudents] Error al actualizar estudiante:", e);
       const axiosError = e as AxiosError<{ message: string }>;
-      const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error al actualizar el estudiante";
       addToast({
         variant: "error",
         title: "Error de Actualización",
-        message: errorMessage,
+        message: axiosError.response?.data?.message || axiosError.message || "Error al actualizar el estudiante",
       });
       throw e;
-    } finally {
-      setLoadingAction(false);
     }
   };
 
+  /**
+   * Cambia el estado (activo/inactivo) con actualización optimista.
+   */
   const toggleStatus = async (student: Student) => {
-    setLoadingAction(true);
-    const oldStatus = student.status;
-    const newStatus = !oldStatus;
-
-    // Actualización optimista
-    setStudents(prev => prev.map(s => 
-      s.studentId === student.studentId ? { ...s, status: newStatus } : s
-    ));
-
+    const newStatus = !student.status;
     try {
-      await studentsService.toggleStudentStatus(student.studentId, newStatus);
-      await refreshStudents(false);
+      await studentService.toggleStatus!(student.studentId, newStatus);
+      await refreshStudents();
 
       addToast({
         variant: newStatus ? "success" : "warning",
@@ -150,37 +140,23 @@ export const useStudents = () => {
         message: `El estudiante ${student.firstName} ${student.lastName} ahora está ${newStatus ? 'activo' : 'inactivo'}.`,
       });
     } catch (e) {
-      // Revertir cambio optimista en caso de error
-      setStudents(prev => prev.map(s => 
-        s.studentId === student.studentId ? { ...s, status: oldStatus } : s
-      ));
-
+      console.error("[useStudents] Error al cambiar estado:", e);
       const axiosError = e as AxiosError<{ message: string }>;
-      const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error al cambiar el estado";
       addToast({
         variant: "error",
         title: "Error",
-        message: errorMessage,
+        message: axiosError.response?.data?.message || axiosError.message || "Error al cambiar el estado",
       });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
+  /**
+   * Inactiva múltiples estudiantes de forma masiva.
+   */
   const bulkRemoveStudents = async (ids: string[]) => {
-    setLoadingAction(true);
-    
-    // Guardar estados anteriores para revertir si es necesario
-    const previousStudents = [...students];
-    
-    // Actualización optimista
-    setStudents(prev => prev.map(s => 
-      ids.includes(s.studentId) ? { ...s, status: false } : s
-    ));
-
     try {
-      await Promise.all(ids.map(id => studentsService.toggleStudentStatus(id, false)));
-      await refreshStudents(false);
+      await Promise.all(ids.map(id => studentService.toggleStatus!(id, false)));
+      await refreshStudents();
       
       addToast({
         variant: "warning",
@@ -188,35 +164,23 @@ export const useStudents = () => {
         message: `Se han inactivado ${ids.length} estudiantes correctamente.`,
       });
     } catch (e) {
-      // Revertir cambio optimista
-      setStudents(previousStudents);
-
+      console.error("[useStudents] Error en inactivación masiva:", e);
       const axiosError = e as AxiosError<{ message: string }>;
-      const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error en inactivación masiva";
       addToast({
         variant: "error",
         title: "Error Masivo",
-        message: errorMessage,
+        message: axiosError.response?.data?.message || axiosError.message || "Error en inactivación masiva",
       });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
+  /**
+   * Restaura múltiples estudiantes de forma masiva.
+   */
   const bulkRestoreStudents = async (ids: string[]) => {
-    setLoadingAction(true);
-    
-    // Guardar estados anteriores
-    const previousStudents = [...students];
-
-    // Actualización optimista
-    setStudents(prev => prev.map(s => 
-      ids.includes(s.studentId) ? { ...s, status: true } : s
-    ));
-
     try {
-      await Promise.all(ids.map(id => studentsService.toggleStudentStatus(id, true)));
-      await refreshStudents(false);
+      await Promise.all(ids.map(id => studentService.toggleStatus!(id, true)));
+      await refreshStudents();
       
       addToast({
         variant: "success",
@@ -224,18 +188,13 @@ export const useStudents = () => {
         message: `Se han restaurado ${ids.length} estudiantes exitosamente.`,
       });
     } catch (e) {
-      // Revertir cambio optimista
-      setStudents(previousStudents);
-
+      console.error("[useStudents] Error en restauración masiva:", e);
       const axiosError = e as AxiosError<{ message: string }>;
-      const errorMessage = axiosError.response?.data?.message || axiosError.message || "Error en restauración masiva";
       addToast({
         variant: "error",
         title: "Error Masivo",
-        message: errorMessage,
+        message: axiosError.response?.data?.message || axiosError.message || "Error en restauración masiva",
       });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
@@ -244,11 +203,13 @@ export const useStudents = () => {
     status,
     loadingAction,
     error,
+    refreshStudents,
     addStudent,
     editStudent,
+    removeStudent,
     toggleStatus,
     bulkRemoveStudents,
-    bulkRestoreStudents,
-    refreshStudents,
+    bulkRestoreStudents
   };
 };
+

@@ -4,14 +4,13 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { Tutor } from "../types";
-import * as tutorsService from "../services/tutorsService";
+import { Tutor, CreateTutorPayload, UpdateTutorPayload } from "../types";
+import { tutorsService } from "../services/tutorsService";
 import { getCareers } from "../../careers/services/careersService";
 import { Career } from "../../careers/types";
 import { useToast } from "../../../context/toast";
 import { ChangeComparison, RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
-
-type Status = "loading" | "success" | "error";
+import { useCrud } from "../../../hooks/useCrud";
 
 const TUTOR_LABELS: Record<string, string> = {
   firstName: "Nombre",
@@ -28,37 +27,37 @@ const TUTOR_LABELS: Record<string, string> = {
   carreras: "Carreras que atiende",
 };
 
+/**
+ * Hook para la gestión de tutores conectada a la API.
+ * Utiliza useCrud para la lógica base y extiende con lógica específica de tutores.
+ */
 export const useTutors = () => {
-  const [tutors, setTutors] = useState<Tutor[]>([]);
   const [careers, setCareers] = useState<Career[]>([]);
-  const [status, setStatus] = useState<Status>("loading");
-  const [error, setError] = useState<Error | null>(null);
-  const [loadingAction, setLoadingAction] = useState(false);
   const { addToast } = useToast();
 
+  const {
+    data: tutors,
+    status,
+    loadingAction,
+    error,
+    refresh: refreshTutorsBase,
+    createItem: baseAddTutor,
+    updateItem: baseEditTutor,
+    toggleItemStatus: baseToggleStatus
+  } = useCrud<Tutor, CreateTutorPayload, UpdateTutorPayload>(tutorsService, {
+    resourceName: "Tutor",
+    idField: "tutorId",
+  });
+
   const refreshTutors = useCallback(async () => {
-    setStatus("loading");
     try {
-      const [tutorsData, careersData] = await Promise.all([
-        tutorsService.getTutors(),
-        getCareers()
-      ]);
-      setTutors(tutorsData);
+      const careersData = await getCareers();
       setCareers(careersData);
-      setStatus("success");
-      setError(null);
+      await refreshTutorsBase();
     } catch (e) {
-      console.error("Error loading data:", e);
-      setStatus("error");
-      const err = e instanceof Error ? e : new Error("Error al cargar datos");
-      setError(err);
-      addToast({
-        variant: "error",
-        title: "Error de conexión",
-        message: "No se pudo conectar con la base de datos o el servidor. Por favor, verifique su conexión.",
-      });
+      console.error("[useTutors] Error loading careers:", e);
     }
-  }, [addToast]);
+  }, [refreshTutorsBase]);
 
   const getCareerNames = useCallback((careerIds: (string | number)[]) => {
     return careerIds
@@ -73,8 +72,8 @@ export const useTutors = () => {
     refreshTutors();
   }, [refreshTutors]);
 
-  const addTutor = async (tutorData: Omit<Tutor, "tutorId" | "registrationDate">) => {
-    // Validar duplicidad de cédula
+  const addTutor = async (tutorData: CreateTutorPayload) => {
+    // Validar duplicidad de cédula localmente antes de intentar crear
     const isDuplicate = tutors.some(
       t => t.identificationNumber === tutorData.identificationNumber && 
            t.identificationPrefix === tutorData.identificationPrefix
@@ -89,11 +88,8 @@ export const useTutors = () => {
       return;
     }
 
-    setLoadingAction(true);
-    try {
-      const newTutor = await tutorsService.createTutor(tutorData);
-      setTutors(prev => [newTutor, ...prev]);
-
+    const newTutor = await baseAddTutor(tutorData);
+    if (newTutor) {
       const careerNames = getCareerNames(newTutor.carreras || []);
 
       addToast({
@@ -101,178 +97,97 @@ export const useTutors = () => {
         title: "Tutor Registrado",
         message: (
           <>
-            <p>El tutor <strong>{newTutor.firstName} {newTutor.lastName}</strong> ha sido registrado correctamente.</p>
+            <p>El tutor <strong>{newTutor.firstName} {newTutor.lastName}</strong> ha sido registrado.</p>
             <RecordDetails
-              data={{
-                ...newTutor,
-                carreras: careerNames
-              } as unknown as Record<string, unknown>}
+              data={{ ...newTutor, carreras: careerNames } as unknown as Record<string, unknown>}
               labels={TUTOR_LABELS}
-              fields={['identificationNumber', 'profession', 'practiceTypes', 'carreras']}
+              fields={['identificationNumber', 'email', 'phone', 'carreras']}
             />
           </>
-        )
+        ),
       });
-    } catch (e) {
-      console.error("Error adding tutor:", e);
-      addToast({
-        variant: "error",
-        title: "Error al registrar",
-        message: "No se pudo registrar el tutor. Intente de nuevo.",
-      });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
-  const editTutor = async (tutorData: Tutor) => {
-    // Validar duplicidad de cédula (excluyendo al tutor actual)
-    const isDuplicate = tutors.some(
-      t => t.tutorId !== tutorData.tutorId && 
-           t.identificationNumber === tutorData.identificationNumber && 
-           t.identificationPrefix === tutorData.identificationPrefix
-    );
+  const editTutor = async (tutorData: UpdateTutorPayload) => {
+    const { tutorId } = tutorData;
+    const oldTutor = tutors.find(t => t.tutorId === tutorId);
+    const updatedTutor = await baseEditTutor(tutorData);
 
-    if (isDuplicate) {
-      addToast({
-        variant: "error",
-        title: "Cédula Duplicada",
-        message: `Ya existe otro tutor registrado con la cédula ${tutorData.identificationPrefix}-${tutorData.identificationNumber}.`,
-      });
-      return;
-    }
-
-    setLoadingAction(true);
-    try {
-      const updatedTutor = await tutorsService.updateTutor(tutorData.tutorId, tutorData);
-      const oldTutor = tutors.find(t => t.tutorId === tutorData.tutorId);
-
-      setTutors(prev => prev.map(t => t.tutorId === tutorData.tutorId ? updatedTutor : t));
-
-      const oldTutorWithNames = oldTutor ? {
-        ...oldTutor,
-        carreras: getCareerNames(oldTutor.carreras || [])
-      } : null;
-
-      const updatedTutorWithNames = {
-        ...updatedTutor,
-        carreras: getCareerNames(updatedTutor.carreras || [])
-      };
+    if (updatedTutor) {
+      const oldCareerNames = oldTutor ? getCareerNames(oldTutor.carreras || []) : "";
+      const newCareerNames = getCareerNames(updatedTutor.carreras || []);
 
       addToast({
         variant: "success",
-        title: "Actualización Exitosa",
+        title: "Tutor Actualizado",
         message: (
           <>
-            <p>Se han guardado los cambios para <strong>{updatedTutor.firstName} {updatedTutor.lastName}</strong>.</p>
-            {oldTutorWithNames && (
-              <ChangeComparison
-                oldData={oldTutorWithNames as unknown as Record<string, unknown>}
-                newData={updatedTutorWithNames as unknown as Record<string, unknown>}
-                labels={TUTOR_LABELS}
-              />
-            )}
+            <p>Los datos de <strong>{updatedTutor.firstName} {updatedTutor.lastName}</strong> han sido actualizados.</p>
+            {oldTutor && <ChangeComparison 
+              oldData={{ ...oldTutor, carreras: oldCareerNames } as unknown as Record<string, unknown>} 
+              newData={{ ...updatedTutor, carreras: newCareerNames } as unknown as Record<string, unknown>} 
+              labels={TUTOR_LABELS} 
+            />}
           </>
-        )
+        ),
       });
-    } catch (e) {
-      console.error("Error editing tutor:", e);
-      addToast({
-        variant: "error",
-        title: "Error al actualizar",
-        message: "No se pudo actualizar el tutor. Intente de nuevo.",
-      });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
   const toggleStatus = async (tutor: Tutor) => {
-    setLoadingAction(true);
-    try {
-      const newStatus = !tutor.status;
-      const updatedTutor = await tutorsService.toggleTutorStatus(tutor.tutorId, newStatus);
-      
-      setTutors(prev => prev.map(t => t.tutorId === tutor.tutorId ? updatedTutor : t));
-
+    const newStatus = !tutor.status;
+    const success = await baseToggleStatus(tutor.tutorId, newStatus);
+    if (success) {
       addToast({
         variant: newStatus ? "success" : "warning",
         title: newStatus ? "Tutor Restaurado" : "Tutor Inactivado",
-        message: (
-          <>
-            <p>
-              El tutor <strong>{tutor.firstName} {tutor.lastName}</strong> ahora está
-              <span className={`font-bold ${!newStatus ? 'text-warning-600' : 'text-success-600'}`}>
-                {newStatus ? ' ACTIVO' : ' INACTIVO'}
-              </span>.
-            </p>
-          </>
-        )
+        message: `El tutor ${tutor.firstName} ${tutor.lastName} ahora está ${newStatus ? 'activo' : 'inactivo'}.`,
       });
-    } catch (e) {
-      console.error("Error toggling tutor status:", e);
-      addToast({
-        variant: "error",
-        title: "Error de estado",
-        message: "No se pudo cambiar el estado del tutor.",
-      });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
   const bulkRemoveTutors = async (ids: string[]) => {
-    setLoadingAction(true);
     try {
-      await Promise.all(ids.map(id => tutorsService.toggleTutorStatus(id, false)));
-      setTutors(prev => prev.map(t => ids.includes(t.tutorId) ? { ...t, status: false } : t));
-      
+      await Promise.all(ids.map(id => tutorsService.toggleStatus(id, false)));
+      refreshTutorsBase();
       addToast({
         variant: "warning",
-        title: "Eliminación Masiva",
-        message: (
-          <p>Se han inactivado <strong>{ids.length}</strong> tutores correctamente.</p>
-        )
+        title: "Acción Masiva",
+        message: `${ids.length} tutores han sido inactivados.`,
       });
-    } catch (e) {
-      console.error("Error in bulk remove tutors:", e);
+    } catch (error) {
+      console.error("[useTutors] Error in bulk remove:", error);
       addToast({
         variant: "error",
-        title: "Error masivo",
-        message: "No se pudieron inactivar todos los tutores seleccionados.",
+        title: "Error",
+        message: "No se pudieron inactivar los tutores.",
       });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
   const bulkRestoreTutors = async (ids: string[]) => {
-    setLoadingAction(true);
     try {
-      await Promise.all(ids.map(id => tutorsService.toggleTutorStatus(id, true)));
-      setTutors(prev => prev.map(t => ids.includes(t.tutorId) ? { ...t, status: true } : t));
-
+      await Promise.all(ids.map(id => tutorsService.toggleStatus(id, true)));
+      refreshTutorsBase();
       addToast({
         variant: "success",
-        title: "Restauración Masiva",
-        message: (
-          <p>Se han restaurado <strong>{ids.length}</strong> tutores exitosamente.</p>
-        )
+        title: "Acción Masiva",
+        message: `${ids.length} tutores han sido restaurados.`,
       });
-    } catch (e) {
-      console.error("Error in bulk restore tutors:", e);
+    } catch (error) {
+      console.error("[useTutors] Error in bulk restore:", error);
       addToast({
         variant: "error",
-        title: "Error masivo",
-        message: "No se pudieron restaurar todos los tutores seleccionados.",
+        title: "Error",
+        message: "No se pudieron restaurar los tutores.",
       });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
   return {
     tutors,
+    careers,
     status,
     error,
     loadingAction,

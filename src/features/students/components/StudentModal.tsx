@@ -5,8 +5,12 @@ import { checkAvailability } from "../services/studentsService";
 import Input from "../../../components/form/input/InputField";
 import TextArea from "../../../components/form/input/TextArea";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
-import { Student } from "../types";
-import Button from "../../../components/ui/button/Button";
+import { 
+  CreateStudentPayload,
+  UpdateStudentPayload,
+  Student 
+} from "../types";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
 import Select from "../../../components/form/Select";
 import CustomSelect from "../../../components/form/CustomSelect";
 import FlatpickrDatePicker from "../../../components/form/FlatpickrDatePicker";
@@ -20,16 +24,40 @@ import {
   StudentFormOutput
 } from "../constants/validation";
 
+/**
+ * Propiedades del componente StudentModal.
+ */
 interface StudentModalProps {
+  /** Indica si el modal está abierto */
   isOpen: boolean;
+  /** Función para cerrar el modal */
   onClose: () => void;
-  onSave: (student: Omit<Student, "studentId" | "enrollmentDate">) => void;
+  /** Función para guardar los datos del estudiante (creación o actualización) */
+  onSave: (student: CreateStudentPayload | UpdateStudentPayload) => void;
+  /** Estudiante en edición (null si es creación) */
   editingStudent?: Student | null;
+  /** Opciones de carreras para el selector */
   careerOptions: { value: string | number; label: string }[];
+  /** Listas dinámicas cargadas previamente (opcional) */
   dynamicLists?: Record<string, ListValue[]>;
+  /** Indica si hay una operación de guardado en curso */
   isLoading?: boolean;
 }
 
+/**
+ * Modal para el registro y edición de estudiantes.
+ * Gestiona la validación de campos, carga de catálogos y verificación de disponibilidad de C.I./Email.
+ * 
+ * @example
+ * ```tsx
+ * <StudentModal 
+ *   isOpen={isOpen} 
+ *   onClose={() => setIsOpen(false)} 
+ *   onSave={handleSave} 
+ *   careerOptions={careers}
+ * />
+ * ```
+ */
 export default function StudentModal({
   isOpen,
   onClose,
@@ -288,7 +316,7 @@ export default function StudentModal({
       // pero TS lo ve como StudentFormInput. Lo tratamos como el output validado.
       const validatedData = data as StudentFormOutput;
 
-      const studentData: Omit<Student, "studentId" | "enrollmentDate"> = {
+      const studentData: CreateStudentPayload = {
         identificationPrefix: validatedData.identificationPrefix.toUpperCase() as Student["identificationPrefix"],
         identificationNumber: validatedData.identificationNumber,
         firstName: validatedData.firstName.toUpperCase(),
@@ -308,18 +336,24 @@ export default function StudentModal({
         studentType: validatedData.studentType.toUpperCase() as Student["studentType"],
         militaryRank: validatedData.militaryRank.toUpperCase(),
         works: validatedData.works.toUpperCase() as Student["works"],
-        status: editingStudent?.status ?? true,
       };
       
-      onSave(studentData);
+      if (editingStudent) {
+        onSave({
+          ...studentData,
+          studentId: editingStudent.studentId
+        } as UpdateStudentPayload);
+      } else {
+        onSave(studentData);
+      }
     } catch (error) {
-      console.error("Error en validación:", error);
+      console.error("[StudentModal] Error en validación:", error);
     }
   };
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton>
+      <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl">
         <ModalHeader>
           <div className="max-w-4xl mx-auto w-full">
             <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
@@ -808,10 +842,10 @@ export default function StudentModal({
 
       <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
         <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-6xl mx-auto">
-          <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
+          <AsyncButton variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
-          </Button>
-          <Button 
+          </AsyncButton>
+          <AsyncButton 
             type="submit" 
             form="student-form" 
             loading={isLoading} 
@@ -819,7 +853,7 @@ export default function StudentModal({
             className="w-full sm:w-auto min-h-12"
           >
             {editingStudent ? "Actualizar Registro" : "Guardar Estudiante"}
-          </Button>
+          </AsyncButton>
         </div>
       </ModalFooter>
     </Modal>

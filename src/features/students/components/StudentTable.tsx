@@ -1,13 +1,20 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
-import { ActionButton } from "../../../components/common/ActionButton";
+import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { StudentRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { useDebounce } from "../../../hooks/useDebounce";
 import Badge from "../../../components/ui/badge/Badge";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
+import { CrudStatus } from "../../../hooks/useCrud";
 
+/**
+ * Genera un color consistente basado en el nombre de la carrera.
+ * 
+ * @param careerName - Nombre de la carrera.
+ * @returns Variante de color para el Badge.
+ */
 const getCareerColor = (careerName: string): "primary" | "success" | "error" | "warning" | "info" => {
     const colors: ("primary" | "success" | "error" | "warning" | "info")[] = ["primary", "success", "error", "warning", "info"];
     let hash = 0;
@@ -17,43 +24,82 @@ const getCareerColor = (careerName: string): "primary" | "success" | "error" | "
     return colors[Math.abs(hash) % colors.length];
 };
 
+/**
+ * Propiedades del componente StudentTable.
+ */
 interface StudentTableProps {
+    /** Listado de estudiantes a mostrar */
     data: StudentRowData[];
-    status: "loading" | "success" | "error";
+    /** Estado de la carga de datos */
+    status: CrudStatus;
+    /** Error en caso de que la carga falle */
     error: Error | null;
+    /** Función llamada al solicitar editar un estudiante */
     onEdit?: (student: StudentRowData) => void;
-    onToggleStatus?: (studentId: string) => void;
+    /** Función llamada al solicitar cambiar el estado (activar/eliminar/restaurar) de un estudiante */
+    onToggleStatus?: (student: StudentRowData) => void;
+    /** Función llamada al solicitar exportar un estudiante a pre-inscripción */
     onExportToPreEnrollment?: (student: StudentRowData) => void;
+    /** Función llamada al solicitar ver los detalles de un estudiante */
     onView?: (student: StudentRowData) => void;
+    /** Función llamada para eliminar múltiples estudiantes en bloque */
     onBulkDelete?: (ids: string[]) => void;
+    /** Función llamada para restaurar múltiples estudiantes en bloque */
     onBulkRestore?: (ids: string[]) => void;
+    /** IDs de los estudiantes seleccionados (controlado externamente) */
     selectedIds?: string[];
+    /** Función llamada cuando cambia la selección de estudiantes */
     onSelectionChange?: (ids: string[]) => void;
+    /** Indica si se está en modo de visualización de registros inactivos */
     inactiveMode?: boolean;
+    /** Pestaña activa actual (Activas o Inactivas) */
     activeTab?: "Activas" | "Inactivas";
+    /** Opciones para el filtro de carrera */
     careerOptions?: { value: string | number; label: string }[];
+    /** Opciones para el filtro de régimen */
     regimeOptions?: { value: string; label: string }[];
+    /** Indica si hay una acción en curso (loading de acción) */
     loading?: boolean;
 }
 
+/** Claves permitidas para el ordenamiento de la tabla */
 type SortKey = "identificationNumber" | "fullNames" | "email" | "careerName" | "enrollmentDate";
+/** Direcciones permitidas para el ordenamiento */
 type SortOrder = "asc" | "desc";
 
+/**
+ * Propiedades para el componente de botones de acción.
+ */
 interface ActionButtonsProps {
+    /** Callback para editar */
     onEdit?: () => void;
+    /** Callback para cambiar estado */
     onToggleStatus?: () => void;
+    /** Callback para exportar a pre-inscripción */
     onExportToPreEnrollment?: () => void;
+    /** Callback para ver detalles */
     onView?: () => void;
+    /** Pestaña activa */
     activeTab: "Activas" | "Inactivas";
+    /** Modo inactivo */
     inactiveMode?: boolean;
+    /** Indica si la vista es móvil */
     isMobile?: boolean;
+    /** Estado actual del estudiante (activo/inactivo) */
     status?: boolean;
+    /** Indica si el botón de eliminar está deshabilitado */
     isDisabled?: boolean;
+    /** Tooltip a mostrar cuando está deshabilitado */
     disabledTooltip?: string;
+    /** Indica si el botón de exportar está deshabilitado */
     isExportDisabled?: boolean;
+    /** Tooltip para exportación deshabilitada */
     exportDisabledTooltip?: string;
 }
 
+/**
+ * Icono de exportación personalizado.
+ */
 const ExportIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -73,6 +119,9 @@ const ExportIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
+/**
+ * Renderiza el conjunto de botones de acción para cada fila de la tabla.
+ */
 const ActionButtons = ({
     onEdit,
     onToggleStatus,
@@ -94,8 +143,8 @@ const ActionButtons = ({
     return (
         <div className={containerClasses}>
             {onView && (
-                <ActionButton
-                    onClick={() => onView()}
+                <AsyncActionButton
+                    onClick={async () => onView()}
                     icon={<EyeIcon />}
                     tooltip="Ver Detalles"
                     label={isMobile ? "Ver Detalles" : undefined}
@@ -104,8 +153,8 @@ const ActionButtons = ({
                 />
             )}
             {onEdit && activeTab === "Activas" && (
-                <ActionButton
-                    onClick={() => onEdit()}
+                <AsyncActionButton
+                    onClick={async () => onEdit()}
                     icon={<EditIcon />}
                     tooltip="Editar"
                     label={isMobile ? "Editar Estudiante" : undefined}
@@ -114,8 +163,8 @@ const ActionButtons = ({
                 />
             )}
             {onToggleStatus && (inactiveMode || status === false) && (
-                <ActionButton
-                    onClick={() => onToggleStatus()}
+                <AsyncActionButton
+                    onClick={async () => onToggleStatus()}
                     icon={<RefreshIcon />}
                     tooltip={inactiveMode ? "Restaurar" : "Activar"}
                     label={isMobile ? (inactiveMode ? "Restaurar Estudiante" : "Activar Estudiante") : undefined}
@@ -124,8 +173,8 @@ const ActionButtons = ({
                 />
             )}
             {onToggleStatus && activeTab === "Activas" && (
-                <ActionButton
-                    onClick={() => onToggleStatus()}
+                <AsyncActionButton
+                    onClick={async () => onToggleStatus()}
                     icon={<TrashIcon />}
                     tooltip={isDisabled ? disabledTooltip : "Eliminar"}
                     label={isMobile ? "Eliminar Estudiante" : undefined}
@@ -135,8 +184,8 @@ const ActionButtons = ({
                 />
             )}
             {onExportToPreEnrollment && activeTab === "Activas" && (
-                <ActionButton
-                    onClick={() => onExportToPreEnrollment()}
+                <AsyncActionButton
+                    onClick={async () => onExportToPreEnrollment()}
                     icon={<ExportIcon className="icon-sm" />}
                     tooltip={isExportDisabled ? exportDisabledTooltip : "Exportar a Pre-Inscripción"}
                     label={isMobile ? "Exportar a Pre-Inscripción" : undefined}
@@ -149,6 +198,20 @@ const ActionButtons = ({
     );
 };
 
+/**
+ * Componente de tabla principal para la gestión de estudiantes.
+ * Implementa filtrado, ordenamiento, paginación y acciones masivas.
+ * 
+ * @example
+ * ```tsx
+ * <StudentTable 
+ *   data={students} 
+ *   status="success" 
+ *   error={null} 
+ *   onEdit={handleEdit}
+ * />
+ * ```
+ */
 export default function StudentTable({
     data = [],
     status,
@@ -494,7 +557,7 @@ export default function StudentTable({
                                         isDisabled={!paged.filter(s => selectedIds.includes(s.studentId)).some(s => s.isInUse)}
                                     >
                                         <button
-                                            onClick={() => onBulkDelete?.(selectedIds)}
+                                            onClick={async () => onBulkDelete?.(selectedIds)}
                                             disabled={paged.filter(s => selectedIds.includes(s.studentId)).some(s => s.isInUse)}
                                             className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
@@ -504,7 +567,7 @@ export default function StudentTable({
                                     </Tooltip>
                                 ) : (
                                     <button
-                                        onClick={() => onBulkRestore?.(selectedIds)}
+                                        onClick={async () => onBulkRestore?.(selectedIds)}
                                         className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-600 hover:bg-brand-100 dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400/20 transition-colors min-h-12"
                                     >
                                         <RefreshIcon className="icon-sm" />
@@ -540,17 +603,17 @@ export default function StudentTable({
                                     ariaLabel="Seleccionar todos los estudiantes"
                                 />
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("identificationNumber")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("identificationNumber")}>
                                 <div className="flex items-center">Cédula <SortIndicator column="identificationNumber" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("fullNames")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("fullNames")}>
                                 <div className="flex items-center">Nombres y Apellidos <SortIndicator column="fullNames" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell">Teléfono</TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("email")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("email")}>
                                 <div className="flex items-center">Correo Electrónico <SortIndicator column="email" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("careerName")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("careerName")}>
                                 <div className="flex items-center">Carrera <SortIndicator column="careerName" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell text-right"> </TableCell>
@@ -598,7 +661,7 @@ export default function StudentTable({
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
-                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s.studentId) : undefined}
+                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
                                             onExportToPreEnrollment={onExportToPreEnrollment ? () => onExportToPreEnrollment(s) : undefined}
                                             activeTab={activeTab}
                                             inactiveMode={inactiveMode}
@@ -655,7 +718,7 @@ export default function StudentTable({
                                             <p className="text-xs text-text-secondary dark:text-text-tertiary mt-1 truncate">{s.identificationPrefix}-{s.identificationNumber}</p>
                                         </div>
                                         <button
-                                            onClick={() => toggleRowExpansion(rowId)}
+                                            onClick={async () => toggleRowExpansion(rowId)}
                                             className="absolute right-2 top-2 p-2 text-text-tertiary hover:bg-bg-secondary dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
                                             style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
                                         >
@@ -692,7 +755,7 @@ export default function StudentTable({
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
-                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s.studentId) : undefined}
+                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
                                             onExportToPreEnrollment={onExportToPreEnrollment ? () => onExportToPreEnrollment(s) : undefined}
                                             activeTab={activeTab}
                                             inactiveMode={inactiveMode}

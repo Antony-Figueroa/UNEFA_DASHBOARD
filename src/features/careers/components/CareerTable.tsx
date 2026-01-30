@@ -1,7 +1,15 @@
+/**
+ * @file CareerTable.tsx
+ * @description Componente de tabla especializado para mostrar y gestionar carreras.
+ * Soporta ordenamiento, paginación, selección múltiple y acciones CRUD.
+ * 
+ * @module features/careers/components
+ */
+
 import { useMemo, useState, useEffect } from "react";
 import { useDbStatus } from "../../../context/db-status";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
-import { ActionButton } from "../../../components/common/ActionButton";
+import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { CareerRowData } from "../types";
@@ -9,6 +17,11 @@ import { InternshipTypeOption } from "../../internship-types/types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import Badge from "../../../components/ui/badge/Badge";
 
+/**
+ * Genera un color consistente basado en el nombre de la carrera para badges/iconos.
+ * @param {string} careerName - Nombre de la carrera.
+ * @returns {"primary" | "success" | "error" | "warning" | "info"} Variante de color.
+ */
 const getCareerColor = (careerName: string): "primary" | "success" | "error" | "warning" | "info" => {
   const colors: ("primary" | "success" | "error" | "warning" | "info")[] = ["primary", "success", "error", "warning", "info"];
   let hash = 0;
@@ -18,27 +31,49 @@ const getCareerColor = (careerName: string): "primary" | "success" | "error" | "
   return colors[Math.abs(hash) % colors.length];
 };
 
+/**
+ * Propiedades del componente CareerTable.
+ */
 interface CareerTableProps {
+  /** Datos de las carreras a mostrar */
   data: CareerRowData[];
+  /** Estado de la carga de datos */
   status: "loading" | "success" | "error";
+  /** Error en caso de fallo en la carga */
   error: Error | null;
+  /** Callback al editar una carrera */
   onEdit?: (career: CareerRowData) => void;
+  /** Callback al eliminar una carrera */
   onDelete?: (careerId: string | number) => void;
+  /** Callback al cambiar el estado (activar/desactivar) */
   onToggleStatus?: (careerId: string | number) => void;
+  /** Callback al ver detalles de una carrera */
   onView?: (career: CareerRowData) => void;
+  /** Callback para eliminación masiva */
   onBulkDelete?: (ids: (string | number)[]) => void;
+  /** Callback para restauración masiva */
   onBulkRestore?: (ids: (string | number)[]) => void;
+  /** Indica si se muestran carreras inactivas */
   inactiveMode?: boolean;
+  /** Pestaña activa actual */
   activeTab?: "Activas" | "Inactivas";
+  /** Indica si hay una operación en curso */
   loading?: boolean;
+  /** Opciones de tipos de pasantía para mapeo visual */
   practiceOptions?: InternshipTypeOption[];
 }
 
 type SortKey = "careerCode" | "careerName" | "minimumGrade" | "careerAbbreviation";
 type SortOrder = "asc" | "desc";
 
+/**
+ * Formatea un número a dos decimales.
+ */
 const formatDecimal = (n: number) => n.toFixed(2);
 
+/**
+ * Sub-componente para renderizar las acciones CRUD de cada fila.
+ */
 interface ActionButtonsProps {
   onEdit?: () => void;
   onDelete?: () => void;
@@ -69,8 +104,8 @@ const ActionButtons = ({
   return (
     <div className={containerClasses}>
       {onView && (
-        <ActionButton
-          onClick={() => onView()}
+        <AsyncActionButton
+          onClick={async (e) => { e.stopPropagation(); onView(); }}
           icon={<EyeIcon />}
           tooltip="Ver Detalles"
           label={isMobile ? "Ver Detalles" : undefined}
@@ -80,8 +115,8 @@ const ActionButtons = ({
       )}
 
       {onEdit && activeTab === "Activas" && (
-        <ActionButton
-          onClick={() => onEdit()}
+        <AsyncActionButton
+          onClick={async (e) => { e.stopPropagation(); onEdit(); }}
           icon={<EditIcon />}
           tooltip="Editar"
           label={isMobile ? "Editar Carrera" : undefined}
@@ -91,8 +126,8 @@ const ActionButtons = ({
       )}
 
       {onToggleStatus && (
-        <ActionButton
-          onClick={() => onToggleStatus()}
+        <AsyncActionButton
+          onClick={async (e) => { e.stopPropagation(); onToggleStatus(); }}
           icon={inactiveMode ? <RefreshIcon /> : <TrashIcon />}
           tooltip={isDisabled && !inactiveMode ? disabledTooltip : (inactiveMode ? "Restaurar" : "Eliminar")}
           label={isMobile ? (inactiveMode ? "Restaurar" : "Eliminar") : undefined}
@@ -103,8 +138,8 @@ const ActionButtons = ({
       )}
 
       {onDelete && activeTab === "Activas" && !onToggleStatus && (
-        <ActionButton
-          onClick={() => onDelete()}
+        <AsyncActionButton
+          onClick={async (e) => { e.stopPropagation(); onDelete(); }}
           icon={<TrashIcon />}
           tooltip={isDisabled ? disabledTooltip : "Eliminar Carrera"}
           label={isMobile ? "Eliminar Carrera" : undefined}
@@ -214,7 +249,7 @@ export default function CareerTable({
           {dbStatus === "disconnected" ? "La conexión con la base de datos se ha perdido" : "no hay conexion a la bd"}
         </p>
         <button 
-          onClick={() => window.location.reload()}
+          onClick={async () => window.location.reload()}
           className="mt-6 px-4 py-2 bg-error-600 text-white rounded-lg hover:bg-error-700 transition-colors text-sm font-medium"
         >
           Reintentar conexión
@@ -407,7 +442,7 @@ export default function CareerTable({
                     isDisabled={selectedIds.some(id => inUseIds.has(id))}
                   >
                     <button
-                      onClick={() => onBulkDelete?.(selectedIds)}
+                      onClick={async () => onBulkDelete?.(selectedIds)}
                       disabled={selectedIds.some(id => inUseIds.has(id))}
                       className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -417,7 +452,7 @@ export default function CareerTable({
                   </Tooltip>
                 ) : (
                   <button
-                    onClick={() => onBulkRestore?.(selectedIds)}
+                    onClick={async () => onBulkRestore?.(selectedIds)}
                     className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-600 hover:bg-brand-100 dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400/20 transition-colors min-h-12"
                   >
                     <RefreshIcon className="icon-sm" />
@@ -449,7 +484,7 @@ export default function CareerTable({
               <TableCell
                 isHeader
                 className="table-header-cell cursor-pointer group"
-                onClick={() => handleSort("careerCode")}
+                onClick={async () => handleSort("careerCode")}
               >
                 <div className="flex items-center">
                   Código
@@ -459,7 +494,7 @@ export default function CareerTable({
               <TableCell
                 isHeader
                 className="table-header-cell cursor-pointer group"
-                onClick={() => handleSort("careerName")}
+                onClick={async () => handleSort("careerName")}
               >
                 <div className="flex items-center">
                   Carrera
@@ -469,7 +504,7 @@ export default function CareerTable({
               <TableCell
                 isHeader
                 className="table-header-cell cursor-pointer group"
-                onClick={() => handleSort("minimumGrade")}
+                onClick={async () => handleSort("minimumGrade")}
               >
                 <div className="flex items-center">
                   Nota mínima
@@ -604,7 +639,7 @@ export default function CareerTable({
                     </div>
                     <div className="absolute right-2 top-2">
                       <button
-                        onClick={() => toggleRowExpansion(rowId)}
+                        onClick={async () => toggleRowExpansion(rowId)}
                         className="p-2 text-text-tertiary hover:bg-bg-secondary dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
                         style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
                         aria-label={isExpanded ? "Contraer" : "Expandir"}

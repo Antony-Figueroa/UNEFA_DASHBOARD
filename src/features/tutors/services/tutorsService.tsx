@@ -3,46 +3,37 @@
  * @description Servicio para la gestión de tutores a través de la API.
  */
 
-import { Tutor } from "../types";
-import apiClient from "../../../api/apiClient";
+import { Tutor, CreateTutorPayload, UpdateTutorPayload } from "../types";
+import { createCrudService } from "../../../api/crudServiceFactory";
 
 const API_URL = "/tutors";
 
 /**
- * Obtiene la lista de tutores desde la API.
+ * Interface for Tutor Data Transfer Object (API Response).
  */
-export const getTutors = async (): Promise<Tutor[]> => {
-  const response = await apiClient.get<Tutor[]>(API_URL);
-  return response.data;
-};
+interface TutorDTO extends Omit<Tutor, 'registrationDate'> {
+  registrationDate: string | Date;
+}
 
 /**
- * Crea un nuevo tutor.
+ * Maps a TutorDTO from the API to a domain object.
  */
-export const createTutor = async (tutor: Omit<Tutor, "tutorId" | "registrationDate">): Promise<Tutor> => {
-  const response = await apiClient.post<Tutor>(API_URL, tutor);
-  return response.data;
-};
+const mapFromApi = (dto: TutorDTO): Tutor => ({
+  ...dto,
+  registrationDate: new Date(dto.registrationDate),
+});
 
 /**
- * Actualiza un tutor existente.
+ * Servicio de Tutores utilizando la factoría CRUD.
  */
-export const updateTutor = async (id: string, tutor: Partial<Tutor>): Promise<Tutor> => {
-  const response = await apiClient.patch<Tutor>(`${API_URL}/${id}`, tutor);
-  return response.data;
-};
+export const tutorsService = createCrudService<Tutor, CreateTutorPayload, UpdateTutorPayload, TutorDTO>({
+  endpoint: API_URL,
+  mapFromApi
+});
 
-/**
- * Elimina (inactiva) un tutor.
- */
-export const deleteTutor = async (id: string): Promise<void> => {
-  await apiClient.delete(`${API_URL}/${id}`);
-};
-
-/**
- * Cambia el estado de un tutor.
- */
-export const toggleTutorStatus = async (id: string, status: boolean): Promise<Tutor> => {
-  const response = await apiClient.patch<Tutor>(`${API_URL}/${id}/status`, { status });
-  return response.data;
-};
+// Exportaciones individuales para mantener compatibilidad
+export const getTutors = tutorsService.getAll;
+export const createTutor = tutorsService.create;
+export const updateTutor = tutorsService.update;
+export const deleteTutor = tutorsService.delete;
+export const toggleTutorStatus = tutorsService.toggleStatus!;

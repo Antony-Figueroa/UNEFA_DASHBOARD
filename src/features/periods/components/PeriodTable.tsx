@@ -12,7 +12,7 @@ import Badge from "../../../components/ui/badge/Badge";
 import Button from "../../../components/ui/button/Button";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
-import { ActionButton } from "../../../components/common/ActionButton";
+import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import {
     EditIcon,
     TrashIcon,
@@ -39,28 +39,18 @@ const STATUS_LABELS = {
     3: "Culminado",
 } as const;
 
-// ============================================
-// INTERFACES
-// ============================================
-interface PeriodTableProps {
-    data: PeriodoRowData[];
-    status: "loading" | "success" | "error";
-    error: Error | null;
-    onEdit?: (periodo: PeriodoRowData) => void;
-    onCulminate?: (periodo: PeriodoRowData) => void;
-    onActivate?: (periodo: PeriodoRowData) => void;
-    onDelete?: (id: string) => void;
-    onRestore?: (periodo: PeriodoRowData) => void;
-    onView?: (periodo: PeriodoRowData) => void;
-    loading?: boolean;
-}
-
 type SortKey = keyof PeriodoRowData;
 
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
 
+/**
+ * Obtiene el estatus numérico de un periodo de forma segura.
+ * 
+ * @param periodo - Objeto de datos del periodo.
+ * @returns El estatus como número (1: Pendiente, 2: En Curso, 3: Culminado).
+ */
 const getSafePeriodStatus = (periodo: PeriodoRowData): number => {
     // Convierte a número si es necesario
     const status = periodo.periodStatus;
@@ -68,6 +58,12 @@ const getSafePeriodStatus = (periodo: PeriodoRowData): number => {
     return Number(status) || 1;
 };
 
+/**
+ * Obtiene el progreso numérico de un periodo de forma segura, normalizado entre 0 y 100.
+ * 
+ * @param periodo - Objeto de datos del periodo.
+ * @returns El progreso como número o null si no aplica.
+ */
 const getSafeProgress = (periodo: PeriodoRowData): number | null => {
     const progress = periodo.progress;
     if (progress === undefined || progress === null) return null;
@@ -75,6 +71,9 @@ const getSafeProgress = (periodo: PeriodoRowData): number | null => {
     return isNaN(numProgress) ? null : Math.min(Math.max(numProgress, 0), 100);
 };
 
+/**
+ * Propiedades para el sub-componente de botones de acción.
+ */
 interface ActionButtonsProps {
     onEdit?: () => void;
     onDelete?: () => void;
@@ -89,9 +88,10 @@ interface ActionButtonsProps {
     disabledTooltip?: string;
 }
 
-// ============================================
-// COMPONENT: ActionButtons
-// ============================================
+/**
+ * Sub-componente que renderiza los botones de acción para cada fila.
+ * La disponibilidad de los botones depende del estatus del periodo y las funciones recibidas.
+ */
 const ActionButtons = ({
     onEdit,
     onDelete,
@@ -115,8 +115,8 @@ const ActionButtons = ({
     return (
         <div className={containerClasses}>
             {onView && (
-                <ActionButton
-                    onClick={() => onView()}
+                <AsyncActionButton
+                    onClick={async () => onView()}
                     icon={<EyeIcon />}
                     tooltip="Ver Detalles"
                     label={isMobile ? "Ver Detalles" : undefined}
@@ -125,8 +125,8 @@ const ActionButtons = ({
                 />
             )}
             {hasStatus && currentPeriodStatus !== 3 && onEdit && (
-                <ActionButton
-                    onClick={() => onEdit()}
+                <AsyncActionButton
+                    onClick={async () => onEdit()}
                     icon={<EditIcon />}
                     tooltip={currentPeriodStatus === 2 ? "Editar (Solo Fecha Fin)" : "Editar"}
                     label={isMobile ? (currentPeriodStatus === 2 ? "Editar Fecha Fin" : "Editar Período") : undefined}
@@ -135,8 +135,8 @@ const ActionButtons = ({
                 />
             )}
             {hasStatus && currentPeriodStatus === 1 && canActivate && onActivate && (
-                <ActionButton
-                    onClick={() => onActivate()}
+                <AsyncActionButton
+                    onClick={async () => onActivate()}
                     icon={<CheckCircleIcon />}
                     tooltip="Activar"
                     label={isMobile ? "Activar Período" : undefined}
@@ -145,8 +145,8 @@ const ActionButtons = ({
                 />
             )}
             {hasStatus && currentPeriodStatus === 2 && onCulminate && (
-                <ActionButton
-                    onClick={() => onCulminate()}
+                <AsyncActionButton
+                    onClick={async () => onCulminate()}
                     icon={<CheckCircleIcon />}
                     tooltip="Culminar"
                     label={isMobile ? "Culminar Período" : undefined}
@@ -155,8 +155,8 @@ const ActionButtons = ({
                 />
             )}
             {!hasStatus && onRestore && (
-                <ActionButton
-                    onClick={() => onRestore()}
+                <AsyncActionButton
+                    onClick={async () => onRestore()}
                     icon={<RefreshIcon />}
                     tooltip="Restaurar"
                     label={isMobile ? "Restaurar Período" : undefined}
@@ -165,8 +165,8 @@ const ActionButtons = ({
                 />
             )}
             {hasStatus && currentPeriodStatus === 1 && onDelete && (
-                <ActionButton
-                    onClick={() => onDelete()}
+                <AsyncActionButton
+                    onClick={async () => onDelete()}
                     icon={<TrashIcon />}
                     tooltip={isDisabled ? disabledTooltip : "Eliminar"}
                     label={isMobile ? "Eliminar Período" : undefined}
@@ -180,8 +180,42 @@ const ActionButtons = ({
 };
 
 // ============================================
-// COMPONENT: PeriodTable
+// INTERFACES
 // ============================================
+/**
+ * Propiedades del componente PeriodTable.
+ */
+interface PeriodTableProps {
+    /** Arreglo de datos de periodos formateados para la tabla */
+    data: PeriodoRowData[];
+    /** Estado de carga de la petición */
+    status: "loading" | "success" | "error";
+    /** Error capturado si el estado es 'error' */
+    error: Error | null;
+    /** Función llamada al solicitar editar un periodo */
+    onEdit?: (periodo: PeriodoRowData) => void;
+    /** Función llamada al solicitar culminar un periodo en curso */
+    onCulminate?: (periodo: PeriodoRowData) => void;
+    /** Función llamada al solicitar activar un periodo pendiente */
+    onActivate?: (periodo: PeriodoRowData) => void;
+    /** Función llamada al solicitar eliminar un periodo */
+    onDelete?: (periodo: PeriodoRowData) => void;
+    /** Función llamada al solicitar restaurar un periodo eliminado */
+    onRestore?: (periodo: PeriodoRowData) => void;
+    /** Función llamada al solicitar ver detalles de un periodo */
+    onView?: (periodo: PeriodoRowData) => void;
+    /** Indica si hay una acción asíncrona en curso (guardado, borrado, etc.) */
+    loading?: boolean;
+}
+
+/**
+ * Componente de tabla para la visualización y gestión de periodos académicos.
+ * 
+ * Soporta filtrado, búsqueda, ordenamiento, paginación y vista responsiva para móviles.
+ * Implementa una lógica de activación secuencial cronológica.
+ * 
+ * @param props - Propiedades del componente.
+ */
 const PeriodTable = ({
     data = [],
     status,
@@ -194,6 +228,7 @@ const PeriodTable = ({
     onView,
     loading: externalLoading,
 }: PeriodTableProps) => {
+
     // Check if data is valid for rendering
     const isInvalidData = !Array.isArray(data);
 
@@ -516,7 +551,7 @@ const PeriodTable = ({
                             <TableCell
                                 isHeader
                                 className="table-header-cell cursor-pointer"
-                                onClick={() => handleSort("description")}
+                                onClick={async () => handleSort("description")}
                             >
                                 <div className="flex items-center">
                                     Descripción
@@ -526,7 +561,7 @@ const PeriodTable = ({
                             <TableCell
                                 isHeader
                                 className="table-header-cell cursor-pointer"
-                                onClick={() => handleSort("startDate")}
+                                onClick={async () => handleSort("startDate")}
                             >
                                 <div className="flex items-center">
                                     Fecha Inicio
@@ -536,7 +571,7 @@ const PeriodTable = ({
                             <TableCell
                                 isHeader
                                 className="table-header-cell cursor-pointer"
-                                onClick={() => handleSort("endDate")}
+                                onClick={async () => handleSort("endDate")}
                             >
                                 <div className="flex items-center">
                                     Fecha Fin
@@ -546,7 +581,7 @@ const PeriodTable = ({
                             <TableCell
                                 isHeader
                                 className="table-header-cell cursor-pointer"
-                                onClick={() => handleSort("periodStatus")}
+                                onClick={async () => handleSort("periodStatus")}
                             >
                                 <div className="flex items-center">
                                     Status
@@ -556,7 +591,7 @@ const PeriodTable = ({
                             <TableCell
                                 isHeader
                                 className="table-header-cell cursor-pointer"
-                                onClick={() => handleSort("progress")}
+                                onClick={async () => handleSort("progress")}
                             >
                                 <div className="flex items-center">
                                     Progreso
@@ -640,9 +675,7 @@ const PeriodTable = ({
                                                 }
                                                 onView={onView ? () => onView(periodo) : undefined}
                                                 onDelete={
-                                                    onDelete && periodId
-                                                        ? () => onDelete(periodId)
-                                                        : undefined
+                                                    onDelete ? () => onDelete(periodo) : undefined
                                                 }
                                                 onRestore={
                                                     onRestore ? () => onRestore(periodo) : undefined
@@ -724,7 +757,7 @@ const PeriodTable = ({
                                         </div>
                                         <div className="absolute right-2 top-2">
                                             <button
-                                                onClick={() => toggleRowExpansion(periodId)}
+                                                onClick={async () => toggleRowExpansion(periodId)}
                                                 className="p-2 text-text-tertiary hover:bg-bg-secondary dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
                                                 style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
                                                 aria-label={isExpanded ? "Contraer" : "Expandir"}
@@ -779,9 +812,7 @@ const PeriodTable = ({
                                                 }
                                                 onView={onView ? () => onView(periodo) : undefined}
                                                 onDelete={
-                                                    onDelete && periodo.periodId
-                                                        ? () => onDelete(periodo.periodId!)
-                                                        : undefined
+                                                    onDelete ? () => onDelete(periodo) : undefined
                                                 }
                                                 onRestore={
                                                     onRestore ? () => onRestore(periodo) : undefined

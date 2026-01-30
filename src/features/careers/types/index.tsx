@@ -1,25 +1,55 @@
 /**
- * @file Define la estructura de datos para una Carrera.
- * @description Centraliza las interfaces para asegurar consistencia en el módulo de Carreras.
+ * @file index.tsx
+ * @description Definiciones de tipos y esquemas para el módulo de Carreras.
+ * Centraliza las interfaces para asegurar consistencia en todo el dominio de Carreras.
+ * 
+ * @module features/careers/types
  */
 
+/**
+ * Representa la entidad Carrera en el sistema.
+ */
 export interface Career {
-  careerId: string | number; // Cambiado para soportar ID numérico
-  careerCode: string; // Cambiado a string para soportar ceros a la izquierda
+  /** Identificador único de la carrera (UUID o numérico) */
+  careerId: string | number;
+  /** Código académico de la carrera (ej: 'ING-SIST') */
+  careerCode: string;
+  /** Nombre completo de la carrera */
   careerName: string;
+  /** Nota mínima aprobatoria para la carrera */
   minimumGrade: number;
+  /** Siglas o abreviación de la carrera (ej: 'ISO') */
   careerAbbreviation: string;
+  /** Tipo de carrera según duración (Técnica o Ingeniería/Licenciatura) */
   careerType: 'CORTA' | 'LARGA';
-  internshipTypeIds?: string[]; // Opcional ya que no está en la imagen de la tabla
+  /** Lista de identificadores de tipos de pasantía permitidos */
+  internshipTypeIds?: string[];
+  /** Fecha en la que se registró la carrera en el sistema */
   creationDate: Date;
-  status: boolean | number; // Cambiado para soportar 0/1 (smallint)
+  /** Estado de la carrera (true/1: Activo, false/0: Inactivo) */
+  status: boolean | number;
+  /** Indica si la carrera tiene registros asociados que impiden su eliminación */
   isInUse?: boolean;
+  /** Indica si existen evaluaciones pendientes asociadas a esta carrera */
   hasPendingEvaluations?: boolean;
 }
 
-// Tipo para mostrar en tabla (fechas formateadas)
-export interface CareerRowData
-  extends Omit<Career, "creationDate"> {
-  creationDate: string; // fecha formateada
+/**
+ * Interfaz extendida para la visualización de carreras en tablas.
+ * Transforma campos complejos (como fechas) en strings formateados.
+ */
+export interface CareerRowData extends Omit<Career, "creationDate"> {
+  /** Fecha de creación formateada como string (ej: 'DD/MM/YYYY') */
+  creationDate: string;
 }
+
+/**
+ * Payload necesario para crear una nueva carrera.
+ */
+export type CreateCareerPayload = Omit<Career, 'careerId' | 'creationDate' | 'isInUse' | 'hasPendingEvaluations'>;
+
+/**
+ * Payload necesario para actualizar una carrera existente.
+ */
+export type UpdateCareerPayload = Partial<CreateCareerPayload>;
 

@@ -269,7 +269,7 @@ const AppSidebar: React.FC = () => {
         height: '100vh',
         top: 0
       }}
-      className={`fixed flex flex-col px-5 left-0 bg-white dark:bg-bg-dark dark:border-white/10 text-text-primary transition-all duration-300 ease-in-out z-999999 border-r border-border-light shadow-theme-md 
+      className={`fixed flex flex-col px-5 left-0 bg-white dark:bg-bg-dark dark:border-white/10 text-text-primary transition-all duration-300 ease-in-out z-50 border-r border-border-light shadow-theme-md 
         ${isExpanded || isMobileOpen
           ? "w-72.5"
           : isHovered

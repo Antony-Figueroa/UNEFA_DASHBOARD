@@ -1,7 +1,15 @@
+/**
+ * @file InternshipTypeTable.tsx
+ * @description Componente de tabla para visualizar y gestionar tipos de pasantía.
+ * Soporta filtrado, ordenamiento, paginación y acciones masivas.
+ * 
+ * @module features/internship-types/components
+ */
+
 import { useMemo, useState, useEffect } from "react";
 import { useDbStatus } from "../../../context/db-status";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
-import { ActionButton } from "../../../components/common/ActionButton";
+import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon } from "../../../icons/actions";
 import { InternshipType } from "../types";
 import { Career } from "../../careers/types";
@@ -10,30 +18,45 @@ import Badge from "../../../components/ui/badge/Badge";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 
 interface InternshipTypeTableProps {
+  /** Lista de tipos de pasantía a mostrar */
   data: InternshipType[];
+  /** Lista de carreras para verificar vinculaciones */
   careers?: Career[];
+  /** Estado de carga de los datos */
   status: "loading" | "success" | "error";
+  /** Error en caso de falla en la carga */
   error: Error | null;
+  /** Callback al editar un elemento */
   onEdit?: (item: InternshipType) => void;
-  onDelete?: (id: number) => void;
+  /** Callback al cambiar el estado de un elemento (eliminar/restaurar) */
   onToggleStatus?: (id: number) => void;
+  /** Callback al ver detalles de un elemento */
   onView?: (item: InternshipType) => void;
+  /** Callback para eliminación masiva */
   onBulkDelete?: (ids: number[]) => void;
+  /** Callback para restauración masiva */
   onBulkRestore?: (ids: number[]) => void;
+  /** Indica si se está mostrando la vista de elementos inactivos */
   inactiveMode?: boolean;
+  /** Pestaña activa actual */
   activeTab?: "Activas" | "Inactivas";
+  /** Estado de carga general */
   loading?: boolean;
 }
 
-type SortKey = "NAME" | "PRIORITY";
+/** Claves por las que se puede ordenar la tabla */
+type SortKey = keyof Pick<InternshipType, "name" | "priority">;
+/** Dirección del ordenamiento */
 type SortOrder = "asc" | "desc";
 
+/**
+ * Componente de presentación para la tabla de Tipos de Pasantía.
+ */
 export default function InternshipTypeTable({
   data = [],
   careers = [],
   status,
   onEdit,
-  // onDelete, // Eliminado porque no se usa
   onToggleStatus,
   onView,
   onBulkDelete,
@@ -48,27 +71,33 @@ export default function InternshipTypeTable({
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; order: SortOrder }>({
-    key: "NAME",
+    key: "name",
     order: "asc",
   });
 
-  // Función para verificar si un tipo de práctica está vinculado a alguna carrera
+  /**
+   * Verifica si un tipo de pasantía está vinculado a alguna carrera.
+   * @param {number} typeId - ID del tipo de pasantía.
+   * @returns {boolean} True si está vinculado.
+   */
   const hasLinkedCareers = (typeId: number) => {
     return careers.some(c => c.internshipTypeIds?.includes(String(typeId)));
   };
 
+  // Limpiar selección al cambiar de pestaña
   useEffect(() => {
     setSelectedIds([]);
   }, [activeTab]);
 
+  /**
+   * Datos filtrados y ordenados basados en el estado actual.
+   */
   const filteredData = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
     const filtered = data.filter((item) => {
-      const name = String(item.NAME ?? "").toLowerCase();
+      const name = String(item.name ?? "").toLowerCase();
       const matchesSearch = name.includes(search);
-      const matchesTab = activeTab === "Activas" 
-        ? (item.STATUS === 1) 
-        : (item.STATUS === 0);
+      const matchesTab = activeTab === "Activas" ? item.status : !item.status;
       return matchesSearch && matchesTab;
     });
 
@@ -108,7 +137,7 @@ export default function InternshipTypeTable({
           {dbStatus === "disconnected" ? "La conexión con la base de datos se ha perdido" : "No hay conexión a la base de datos"}
         </p>
         <button 
-          onClick={() => window.location.reload()}
+          onClick={async () => window.location.reload()}
           className="mt-6 px-4 py-2 bg-error-600 text-white rounded-lg hover:bg-error-700 transition-colors text-sm font-medium"
         >
           Reintentar conexión
@@ -124,7 +153,7 @@ export default function InternshipTypeTable({
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(paged.map((i) => i.INTERNSHIP_TYPE_ID));
+      setSelectedIds(paged.map((i) => i.id));
     } else {
       setSelectedIds([]);
     }
@@ -136,6 +165,13 @@ export default function InternshipTypeTable({
     } else {
       setSelectedIds((prev) => prev.filter((i) => i !== id));
     }
+  };
+
+  const toggleSort = (key: SortKey) => {
+    setSortConfig(prev => ({
+      key,
+      order: prev.key === key && prev.order === "asc" ? "desc" : "asc"
+    }));
   };
 
   return (
@@ -157,7 +193,7 @@ export default function InternshipTypeTable({
               {selectedIds.length} seleccionados
             </span>
             <button
-              onClick={() => inactiveMode ? onBulkRestore?.(selectedIds) : onBulkDelete?.(selectedIds)}
+              onClick={async () => inactiveMode ? onBulkRestore?.(selectedIds) : onBulkDelete?.(selectedIds)}
               className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 inactiveMode 
                   ? "bg-success-50 text-success-600 hover:bg-success-100 dark:bg-success-900/20 dark:text-success-400" 
@@ -182,11 +218,11 @@ export default function InternshipTypeTable({
                     onChange={(checked) => handleSelectAll(checked)}
                   />
                 </TableCell>
-                <TableCell className="cursor-pointer" onClick={() => setSortConfig({ key: "NAME", order: sortConfig.key === "NAME" && sortConfig.order === "asc" ? "desc" : "asc" })}>
-                  Nombre {sortConfig.key === "NAME" && (sortConfig.order === "asc" ? "↑" : "↓")}
+                <TableCell className="cursor-pointer" onClick={async () => toggleSort("name")}>
+                  Nombre {sortConfig.key === "name" && (sortConfig.order === "asc" ? "↑" : "↓")}
                 </TableCell>
-                <TableCell className="cursor-pointer" onClick={() => setSortConfig({ key: "PRIORITY", order: sortConfig.key === "PRIORITY" && sortConfig.order === "asc" ? "desc" : "asc" })}>
-                  Prioridad {sortConfig.key === "PRIORITY" && (sortConfig.order === "asc" ? "↑" : "↓")}
+                <TableCell className="cursor-pointer" onClick={async () => toggleSort("priority")}>
+                  Prioridad {sortConfig.key === "priority" && (sortConfig.order === "asc" ? "↑" : "↓")}
                 </TableCell>
                 <TableCell>Estado</TableCell>
                 <TableCell className="text-right"> </TableCell>
@@ -201,46 +237,46 @@ export default function InternshipTypeTable({
                 </TableRow>
               ) : (
                 paged.map((item) => (
-                  <TableRow key={item.INTERNSHIP_TYPE_ID}>
+                  <TableRow key={item.id}>
                     <TableCell>
                       <Checkbox
-                        checked={selectedIds.includes(item.INTERNSHIP_TYPE_ID)}
-                        onChange={(checked) => handleSelectRow(item.INTERNSHIP_TYPE_ID, checked)}
+                        checked={selectedIds.includes(item.id)}
+                        onChange={(checked) => handleSelectRow(item.id, checked)}
                       />
                     </TableCell>
                     <TableCell className="font-medium text-text-primary dark:text-white">
-                      {item.NAME}
+                      {item.name}
                     </TableCell>
                     <TableCell>
-                      <Badge color="info">{item.PRIORITY}</Badge>
+                      <Badge color="info">{item.priority}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge color={item.STATUS === 1 ? "success" : "error"}>
-                        {item.STATUS === 1 ? "Activo" : "Inactivo"}
+                      <Badge color={item.status ? "success" : "error"}>
+                        {item.status ? "Activo" : "Inactivo"}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <ActionButton
-                          onClick={() => onView?.(item)}
+                        <AsyncActionButton
+                          onClick={async () => onView?.(item)}
                           icon={<EyeIcon />}
                           tooltip="Ver Detalles"
                           variant="primary"
                         />
                         {activeTab === "Activas" && (
-                          <ActionButton
-                            onClick={() => onEdit?.(item)}
+                          <AsyncActionButton
+                            onClick={async () => onEdit?.(item)}
                             icon={<EditIcon />}
                             tooltip="Editar"
                             variant="primary"
                           />
                         )}
-                        {hasLinkedCareers(item.INTERNSHIP_TYPE_ID) && !inactiveMode ? (
+                        {hasLinkedCareers(item.id) && !inactiveMode ? (
                           <Tooltip content="No se puede eliminar porque tiene carreras afiliadas">
                             <div className="cursor-not-allowed opacity-50">
-                              <ActionButton
+                              <AsyncActionButton
                                 disabled
-                                onClick={() => {}}
+                                onClick={async () => {}}
                                 icon={<TrashIcon />}
                                 tooltip="No se puede eliminar porque tiene carreras afiliadas"
                                 variant="danger"
@@ -248,8 +284,8 @@ export default function InternshipTypeTable({
                             </div>
                           </Tooltip>
                         ) : (
-                          <ActionButton
-                            onClick={() => onToggleStatus?.(item.INTERNSHIP_TYPE_ID)}
+                          <AsyncActionButton
+                            onClick={async () => onToggleStatus?.(item.id)}
                             icon={inactiveMode ? <RefreshIcon /> : <TrashIcon />}
                             tooltip={inactiveMode ? "Restaurar" : "Eliminar"}
                             variant={inactiveMode ? "success" : "danger"}

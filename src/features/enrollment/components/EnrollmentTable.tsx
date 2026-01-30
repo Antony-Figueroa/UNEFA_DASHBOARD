@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ActionButton } from "../../../components/common/ActionButton";
+import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { EnrollmentRowData } from "../types";
@@ -12,97 +12,142 @@ import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { generateMatricula } from "../../../utils/matricula";
 
+/**
+ * Interface for filter options used in select inputs.
+ */
 interface FilterOption {
-    value: string;
-    label: string;
-    id?: string | number;
+  /** The value of the option */
+  value: string;
+  /** The display label of the option */
+  label: string;
+  /** Optional unique identifier */
+  id?: string | number;
 }
 
+/**
+ * Props for the EnrollmentTable component.
+ */
 interface EnrollmentTableProps {
-    data: EnrollmentRowData[];
-    status: "loading" | "success" | "error";
-    error: Error | null;
-    onEdit?: (item: EnrollmentRowData) => void;
-    onToggleStatus?: (id: string) => void;
-    onView?: (item: EnrollmentRowData) => void;
-    activeTab?: "Activas" | "Inactivas";
-    loading?: boolean;
-    periodOptions?: FilterOption[];
-    practiceTypeOptions?: FilterOption[];
-    careerOptions?: FilterOption[];
-    onReport?: (data: EnrollmentRowData[]) => void;
+  /** Array of enrollment data to display */
+  data: EnrollmentRowData[];
+  /** Loading status of the data */
+  status: "loading" | "success" | "error";
+  /** Error object if status is 'error' */
+  error: Error | null;
+  /** Callback for when an item is selected for editing */
+  onEdit?: (item: EnrollmentRowData) => void;
+  /** Callback for when an item's status is toggled */
+  onToggleStatus?: (item: EnrollmentRowData) => void;
+  /** Callback for when an item is selected for viewing */
+  onView?: (item: EnrollmentRowData) => void;
+  /** The currently active tab ('Activas' or 'Inactivas') */
+  activeTab?: "Activas" | "Inactivas";
+  /** External loading state */
+  loading?: boolean;
+  /** Available period filter options */
+  periodOptions?: FilterOption[];
+  /** Available practice type filter options */
+  practiceTypeOptions?: FilterOption[];
+  /** Available career filter options */
+  careerOptions?: FilterOption[];
+  /** Callback to generate a report from the filtered data */
+  onReport?: (data: EnrollmentRowData[]) => void;
 }
 
+/**
+ * Keys available for sorting the table.
+ */
 type SortKey = "studentName" | "careerName" | "academicTutorName" | "methodologicalTutorName" | "institutionName" | "practiceType" | "period";
+
+/**
+ * Sorting order.
+ */
 type SortOrder = "asc" | "desc";
 
+/**
+ * Props for the ActionButtons sub-component.
+ */
 interface ActionButtonsProps {
-    onEdit?: () => void;
-    onToggleStatus?: () => void;
-    onView?: () => void;
-    status: boolean;
-    isMobile?: boolean;
+  /** Callback for the edit action */
+  onEdit?: () => void;
+  /** Callback for the toggle status action */
+  onToggleStatus?: () => void;
+  /** Callback for the view action */
+  onView?: () => void;
+  /** Current active status of the item */
+  status: boolean;
+  /** Whether the component is rendered in a mobile view */
+  isMobile?: boolean;
 }
 
+/**
+ * Sub-component for rendering action buttons (view, edit, toggle status).
+ */
 const ActionButtons = ({
-    onEdit,
-    onToggleStatus,
-    onView,
-    status,
-    isMobile = false,
+  onEdit,
+  onToggleStatus,
+  onView,
+  status,
+  isMobile = false,
 }: ActionButtonsProps) => {
-    const containerClasses = isMobile 
-        ? "flex flex-col gap-3 pt-2" 
-        : "flex justify-end gap-3";
+  const containerClasses = isMobile 
+    ? "flex flex-col gap-3 pt-2" 
+    : "flex justify-end gap-3";
 
-    return (
-        <div className={containerClasses}>
-            {onView && (
-                <ActionButton
-                    onClick={() => onView()}
-                    icon={<EyeIcon />}
-                    tooltip="Ver Detalles"
-                    label={isMobile ? "Ver Detalles" : undefined}
-                    variant="primary"
-                    fullWidth={isMobile}
-                />
-            )}
-            {onEdit && status && (
-                <ActionButton
-                    onClick={() => onEdit()}
-                    icon={<EditIcon />}
-                    tooltip="Editar"
-                    label={isMobile ? "Editar Inscripción" : undefined}
-                    variant="primary"
-                    fullWidth={isMobile}
-                />
-            )}
-            {onToggleStatus && (
-                <ActionButton
-                    onClick={() => onToggleStatus()}
-                    icon={status ? <TrashIcon /> : <RefreshIcon />}
-                    tooltip={status ? "Eliminar" : "Restaurar"}
-                    label={isMobile ? (status ? "Eliminar Inscripción" : "Restaurar Inscripción") : undefined}
-                    variant={status ? "danger" : "success"}
-                    fullWidth={isMobile}
-                />
-            )}
-        </div>
-    );
+  return (
+    <div className={containerClasses}>
+      {onView && (
+        <AsyncActionButton
+          onClick={async () => onView()}
+          icon={<EyeIcon />}
+          tooltip="Ver Detalles"
+          label={isMobile ? "Ver Detalles" : undefined}
+          variant="primary"
+          fullWidth={isMobile}
+        />
+      )}
+      {onEdit && status && (
+        <AsyncActionButton
+          onClick={async () => onEdit()}
+          icon={<EditIcon />}
+          tooltip="Editar"
+          label={isMobile ? "Editar Inscripción" : undefined}
+          variant="primary"
+          fullWidth={isMobile}
+        />
+      )}
+      {onToggleStatus && (
+        <AsyncActionButton
+          onClick={async () => onToggleStatus()}
+          icon={status ? <TrashIcon /> : <RefreshIcon />}
+          tooltip={status ? "Eliminar" : "Restaurar"}
+          label={isMobile ? (status ? "Eliminar Inscripción" : "Restaurar Inscripción") : undefined}
+          variant={status ? "danger" : "success"}
+          fullWidth={isMobile}
+        />
+      )}
+    </div>
+  );
 };
 
+/**
+ * Table component for displaying and filtering student enrollments.
+ * 
+ * Supports searching, multiple filters (period, practice type, career),
+ * sorting, and pagination. Also includes a mobile-responsive expanded view.
+ */
 export default function EnrollmentTable({
-    data = [],
-    status,
-    error,
-    onEdit,
-    onToggleStatus,
-    onView,
-    activeTab = "Activas",
-    loading: externalLoading,
-    periodOptions = [],
-    practiceTypeOptions = [],
-    careerOptions = [],
+  data = [],
+  status,
+  error,
+  onEdit,
+  onToggleStatus,
+  onView,
+  activeTab = "Activas",
+  loading: externalLoading,
+  periodOptions = [],
+  practiceTypeOptions = [],
+  careerOptions = [],
 }: EnrollmentTableProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [periodFilter, setPeriodFilter] = useState("");
@@ -455,27 +500,27 @@ export default function EnrollmentTable({
                 <Table className="table-root">
                     <TableHeader className="table-header-row">
                         <TableRow>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("studentName")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("studentName")}>
                                 <div className="flex items-center">Estudiante <SortIndicator column="studentName" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("careerName")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("careerName")}>
                                 <div className="flex items-center">Carrera <SortIndicator column="careerName" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell">Matrícula</TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("academicTutorName")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("academicTutorName")}>
                                 <div className="flex items-center">Tutor Académico <SortIndicator column="academicTutorName" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("methodologicalTutorName")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("methodologicalTutorName")}>
                                 <div className="flex items-center">Tutor Metodológico <SortIndicator column="methodologicalTutorName" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("institutionName")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("institutionName")}>
                                 <div className="flex items-center">Institución <SortIndicator column="institutionName" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell">Responsable</TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("practiceType")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("practiceType")}>
                                 <div className="flex items-center">Tipo Práctica <SortIndicator column="practiceType" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("period")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("period")}>
                                 <div className="flex items-center">Periodo <SortIndicator column="period" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell text-right">&nbsp;</TableCell>
@@ -522,7 +567,7 @@ export default function EnrollmentTable({
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
-                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s.enrollmentId) : undefined}
+                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
                                             status={s.status}
                                         />
                                     </TableCell>
@@ -559,7 +604,7 @@ export default function EnrollmentTable({
                                             <p className="text-xs text-text-tertiary mt-1 truncate uppercase">{s.identificationPrefix}-{s.identificationNumber}</p>
                                         </div>
                                         <button
-                                            onClick={() => toggleRowExpansion(s.enrollmentId ?? "")}
+                                            onClick={async () => toggleRowExpansion(s.enrollmentId ?? "")}
                                             className="absolute right-2 top-2 p-2 text-text-tertiary hover:bg-bg-secondary dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
                                             style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
                                             aria-label={isExpanded ? "Contraer" : "Expandir"}
@@ -601,7 +646,7 @@ export default function EnrollmentTable({
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
-                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s.enrollmentId) : undefined}
+                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
                                             status={s.status}
                                             isMobile={true}
                                         />

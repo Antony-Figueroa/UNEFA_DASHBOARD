@@ -1,52 +1,93 @@
+/**
+ * @file PreEnrollmentModal.tsx
+ * @description Componente de modal para la creación y edición de pre-inscripciones.
+ * Integra validación con Zod, búsqueda automática de estudiantes y generación de matrícula.
+ */
+
 import { useEffect, useState, useCallback } from "react";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
-import { PreEnrollment } from "../types";
+import { PreEnrollment, CreatePreEnrollmentPayload, UpdatePreEnrollmentPayload } from "../types";
 import Button from "../../../components/ui/button/Button";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
 import CustomSelect from "../../../components/form/CustomSelect";
 import { Student } from "../../students/types";
 import { getStudents } from "../../students/services/studentsService";
 import { getPeriods } from "../../periods/services/periodService";
 import { Periodo } from "../../periods/types";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
-import { getInternshipTypesByCareer, getInternshipTypes } from "../../internship-types/services/internshipTypesService";
+import { getInternshipTypes, getInternshipTypesByCareer } from "../../internship-types/services/internshipTypesService";
 import { getCareers } from "../../careers/services/careersService";
+import { getPreEnrollments } from "../services/preEnrollmentService";
+import * as enrollmentService from "../../enrollment/services/enrollmentService";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { useLists } from "../../lists/hooks/useLists";
-import * as enrollmentService from "../../enrollment/services/enrollmentService";
-import { getPreEnrollments } from "../services/preEnrollmentService";
 import { generateMatricula } from "../../../utils/matricula";
 
+/**
+ * Propiedades del componente PreEnrollmentModal.
+ */
 interface PreEnrollmentModalProps {
+  /** Indica si el modal está visible */
   isOpen: boolean;
+  /** Función para cerrar el modal */
   onClose: () => void;
-  onSave: (data: Omit<PreEnrollment, "preEnrollmentId" | "preEnrollmentDate">) => void;
+  /** Función que se ejecuta al guardar los datos */
+  onSave: (payload: CreatePreEnrollmentPayload | UpdatePreEnrollmentPayload) => void;
+  /** Registro que se está editando (opcional) */
   editingEntry?: PreEnrollment | null;
+  /** Estado de carga de la operación de guardado */
   isLoading?: boolean;
+  /** Cédula inicial opcional para pre-llenar el formulario */
   initialCi?: string | null;
 }
 
+/**
+ * Esquema de validación para el formulario de pre-inscripción.
+ * Define las reglas y mensajes de error para cada campo.
+ */
 const preEnrollmentSchema = z.object({
+  /** Prefijo de identificación (V/E) */
   identificationPrefix: z.string().min(1, "Seleccione un prefijo"),
+  /** Número de identificación (solo dígitos) */
   identificationNumber: z.string()
     .min(1, "La identificación es obligatoria")
     .regex(/^\d+$/, "Solo se admiten números"),
+  /** Nombre completo del estudiante (autocompletado) */
   studentName: z.string()
     .min(1, "El nombre del estudiante es obligatorio"),
+  /** Teléfono de contacto (autocompletado) */
   phone: z.string()
     .min(1, "El teléfono es obligatorio"),
+  /** Período académico para la pre-inscripción */
   period: z.string().min(1, "Seleccione el período"),
+  /** Tipo de práctica (autocompletado según la carrera) */
   practiceType: z.string().min(1, "Seleccione el tipo de práctica"),
+  /** Código de matrícula generado automáticamente */
   enrollmentCode: z.string().min(1, "La matrícula es obligatoria"),
+  /** Nombre de la carrera (informativo) */
   careerName: z.string().optional(),
 });
 
+/**
+ * Tipo deducido del esquema de validación para los datos del formulario.
+ */
 type PreEnrollmentFormData = z.infer<typeof preEnrollmentSchema>;
 
+/**
+ * Componente PreEnrollmentModal.
+ * 
+ * Maneja la creación y edición de registros de pre-inscripción.
+ * Incluye búsqueda automática de estudiantes, validación de estado de inscripción
+ * y generación automática de matrícula basada en la carrera y semestre.
+ * 
+ * @param props - Propiedades del componente.
+ * @returns Nodo de React que representa el modal.
+ */
 export default function PreEnrollmentModal({
   isOpen,
   onClose,
@@ -63,6 +104,10 @@ export default function PreEnrollmentModal({
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const { fetchMultipleLists } = useLists();
 
+  /**
+   * Opciones de nacionalidad/prefijo de identificación.
+   * Se cargan dinámicamente o usan valores por defecto.
+   */
   const NATIONALITY_OPTIONS = options["Nacionalidad"] || [
     { value: "V", label: "V" },
     { value: "E", label: "E" },
@@ -75,7 +120,7 @@ export default function PreEnrollmentModal({
     reset,
     setValue,
     getValues,
-    formState: { errors, isSubmitted, isDirty },
+    formState: { errors, isSubmitted, isDirty, isValid },
     setError,
     clearErrors,
   } = useForm<PreEnrollmentFormData>({
@@ -95,15 +140,18 @@ export default function PreEnrollmentModal({
   const idNumber = useWatch({ control, name: "identificationNumber" });
   const idPrefix = useWatch({ control, name: "identificationPrefix" });
 
+  /**
+   * Efecto para cargar la lista de estudiantes disponibles al abrir el modal.
+   * Filtra estudiantes que no tienen registros activos en prácticas.
+   */
   useEffect(() => {
     const fetchStudents = async () => {
       try {
         const response = await getStudents();
-        // Filtrar estudiantes que NO están en uso (sin registros en prácticas)
         const availableStudents = response.data.filter(s => !s.isInUse && s.status);
         setAllStudents(availableStudents);
       } catch (error) {
-        console.error("Error fetching students:", error);
+        console.error("[PreEnrollmentModal] Error al cargar estudiantes:", error);
       }
     };
     if (isOpen && !editingEntry) {
@@ -111,6 +159,10 @@ export default function PreEnrollmentModal({
     }
   }, [isOpen, editingEntry]);
 
+  /**
+   * Efecto para manejar las sugerencias de búsqueda de estudiantes
+   * basadas en el número de identificación ingresado.
+   */
   useEffect(() => {
     if (idNumber && idNumber.length >= 3 && !editingEntry) {
       const filtered = allStudents.filter(s => 
@@ -132,7 +184,10 @@ export default function PreEnrollmentModal({
     cancelClose,
   } = useUnsavedChanges(isDirty, onClose);
 
-  // Cargar periodos y tipos de práctica
+  /**
+   * Efecto para cargar períodos académicos y tipos de práctica.
+   * Filtra y selecciona el período más cercano disponible.
+   */
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -141,14 +196,12 @@ export default function PreEnrollmentModal({
           getInternshipTypes()
         ]);
         
-        // Filtrar solo periodos pendientes (status 1) y encontrar el más cercano
         const pendingPeriods = periodData
           .filter(p => p.periodStatus === 1 && p.status)
           .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
         
         const closestPeriod = pendingPeriods.length > 0 ? [pendingPeriods[0]] : [];
         
-        // Si estamos editando, asegurar que el periodo de la entrada esté en la lista
         if (editingEntry) {
           const exists = closestPeriod.some(p => p.description === editingEntry.period);
           if (!exists) {
@@ -165,7 +218,7 @@ export default function PreEnrollmentModal({
           setValue("period", closestPeriod[0].description);
         }
       } catch (error) {
-        console.error("Error al cargar datos iniciales:", error);
+        console.error("[PreEnrollmentModal] Error al cargar períodos/tipos:", error);
       }
     };
 
@@ -174,7 +227,9 @@ export default function PreEnrollmentModal({
     }
   }, [isOpen, editingEntry, setValue, getValues]);
 
-  // Cargar opciones dinámicas
+  /**
+   * Efecto para cargar listas desplegables dinámicas (ej. Nacionalidad).
+   */
   useEffect(() => {
     const loadOptions = async () => {
       try {
@@ -183,7 +238,6 @@ export default function PreEnrollmentModal({
         
         Object.entries(data).forEach(([key, values]) => {
           mappedOptions[key] = values.map(v => ({
-            // Para Nacionalidad usamos la abreviación (V, E)
             value: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase(),
             label: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase()
           }));
@@ -191,7 +245,7 @@ export default function PreEnrollmentModal({
         
         setOptions(mappedOptions);
       } catch (error) {
-        console.error("Error loading list options:", error);
+        console.error("[PreEnrollmentModal] Error al cargar opciones dinámicas:", error);
       }
     };
 
@@ -200,6 +254,10 @@ export default function PreEnrollmentModal({
     }
   }, [isOpen, fetchMultipleLists]);
 
+  /**
+   * Limpia los campos relacionados con los datos del estudiante en el formulario.
+   * Se utiliza cuando no se encuentra un estudiante o la búsqueda es inválida.
+   */
   const clearStudentFields = useCallback(() => {
     setValue("studentName", "");
     setValue("phone", "");
@@ -209,6 +267,14 @@ export default function PreEnrollmentModal({
     clearErrors("identificationNumber");
   }, [setValue, clearErrors]);
 
+  /**
+   * Busca un estudiante en el sistema por su prefijo y número de identificación.
+   * Verifica si el estudiante existe, si ya tiene inscripciones o pre-inscripciones activas,
+   * y carga automáticamente sus datos y genera la matrícula si es elegible.
+   * 
+   * @param prefix - Prefijo de identificación (V/E).
+   * @param number - Número de identificación.
+   */
   const lookupStudent = useCallback(async (prefix: string, number: string) => {
     if (number.length < 5) {
       clearStudentFields();
@@ -262,7 +328,7 @@ export default function PreEnrollmentModal({
         if (student.careerId) {
           const types = await getInternshipTypesByCareer(student.careerId);
           if (types.length > 0) {
-            setValue("practiceType", types[0].NAME);
+            setValue("practiceType", types[0].name);
           } else {
             setValue("practiceType", "");
           }
@@ -284,7 +350,7 @@ export default function PreEnrollmentModal({
         });
       }
     } catch (error) {
-      console.error("Error al buscar estudiante:", error);
+      console.error("[PreEnrollmentModal] Error al buscar estudiante:", error);
       clearStudentFields();
     } finally {
       setIsSearching(false);
@@ -344,16 +410,40 @@ export default function PreEnrollmentModal({
     }
   }, [editingEntry, reset, isOpen, initialCi, getValues]);
 
+  /**
+   * Procesa el envío del formulario para crear o actualizar una pre-inscripción.
+   * 
+   * @param data - Datos validados del formulario.
+   */
   const onSubmit = (data: PreEnrollmentFormData) => {
-    onSave({
-      ...data,
-      identificationPrefix: data.identificationPrefix as "V" | "E",
-      careerName: data.careerName || "",
-      status: editingEntry ? editingEntry.status : true,
-    });
+    try {
+      if (editingEntry) {
+        const updatePayload: UpdatePreEnrollmentPayload = {
+          ...data,
+          identificationPrefix: data.identificationPrefix as "V" | "E",
+          preEnrollmentId: editingEntry.preEnrollmentId,
+          careerName: data.careerName || "",
+        };
+        onSave(updatePayload);
+      } else {
+        const createPayload: CreatePreEnrollmentPayload = {
+          ...data,
+          identificationPrefix: data.identificationPrefix as "V" | "E",
+          careerName: data.careerName || "",
+        };
+        onSave(createPayload);
+      }
+    } catch (error) {
+      console.error("[PreEnrollmentModal] Error al procesar el formulario:", error);
+    }
   };
 
-  // Badge para campos autogenerados con tooltip descriptivo
+  /**
+   * Componente interno para mostrar un indicador de campo autogenerado.
+   * 
+   * @param props - Propiedades del badge.
+   * @param props.tooltip - Texto descriptivo que se muestra al pasar el mouse.
+   */
   const AutoGeneratedBadge = ({ tooltip }: { tooltip: string }) => (
   <Tooltip content={tooltip}>
     <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-400/10 dark:text-blue-400 dark:ring-blue-400/30 uppercase tracking-wider ml-2 cursor-help">
@@ -364,7 +454,7 @@ export default function PreEnrollmentModal({
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton>
+      <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl">
         <ModalHeader>
         <div className="max-w-4xl mx-auto w-full">
           <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
@@ -455,7 +545,7 @@ export default function PreEnrollmentModal({
                             if (student.careerId) {
                               const types = await getInternshipTypesByCareer(student.careerId);
                               if (types.length > 0) {
-                                setValue("practiceType", types[0].NAME);
+                                setValue("practiceType", types[0].name);
                               }
                             }
                             
@@ -584,9 +674,9 @@ export default function PreEnrollmentModal({
           <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
-          <Button type="submit" form="pre-enrollment-form" loading={isLoading} className="w-full sm:w-auto min-h-12">
+          <AsyncButton type="submit" form="pre-enrollment-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid}>
             {editingEntry ? "Actualizar Registro" : "Guardar Registro"}
-          </Button>
+          </AsyncButton>
         </div>
       </ModalFooter>
     </Modal>

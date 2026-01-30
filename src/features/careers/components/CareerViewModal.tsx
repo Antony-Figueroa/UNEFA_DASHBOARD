@@ -6,6 +6,7 @@
 
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { CareerRowData } from "../types";
 
 import { InternshipTypeOption } from "../../internship-types/types";
@@ -112,9 +113,9 @@ export default function CareerViewModal({
           Cerrar
         </Button>
         {onEdit && (
-          <Button onClick={() => { onEdit(career); onClose(); }} className="flex-1 sm:flex-none">
+          <AsyncButton onClick={async () => { onEdit(career); onClose(); }} className="flex-1 sm:flex-none">
             Editar Carrera
-          </Button>
+          </AsyncButton>
         )}
       </ModalFooter>
     </Modal>

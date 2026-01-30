@@ -1,14 +1,45 @@
-interface RadioProps {
-  id: string; // Unique ID for the radio button
-  name: string; // Radio group name
-  value: string; // Value of the radio button
-  checked: boolean; // Whether the radio button is checked
-  label: string; // Label for the radio button
-  onChange: (value: string) => void; // Handler for value change
-  className?: string; // Optional additional classes
-  disabled?: boolean; // Optional disabled state for the radio button
+import React from "react";
+import { cn } from "../../../utils/cn";
+
+/**
+ * Propiedades para el componente Radio estandarizado.
+ */
+export interface RadioProps {
+  /** ID único para el botón de radio. */
+  id: string;
+  /** Nombre del grupo de radio. */
+  name: string;
+  /** Valor del botón de radio. */
+  value: string;
+  /** Indica si el botón de radio está seleccionado. */
+  checked: boolean;
+  /** Texto que acompaña al radio button. */
+  label: string;
+  /** Función que se ejecuta al cambiar el estado. */
+  onChange: (value: string) => void;
+  /** Clases adicionales para el contenedor. */
+  className?: string;
+  /** Si el componente está deshabilitado. */
+  disabled?: boolean;
 }
 
+/**
+ * Componente de botón de radio (Radio) estandarizado.
+ * Proporciona un estilo personalizado y accesible para la selección única.
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * <Radio 
+ *   id="option1" 
+ *   name="options" 
+ *   value="1" 
+ *   checked={selected === "1"} 
+ *   onChange={setSelected} 
+ *   label="Opción 1" 
+ * />
+ * ```
+ */
 const Radio: React.FC<RadioProps> = ({
   id,
   name,
@@ -22,11 +53,13 @@ const Radio: React.FC<RadioProps> = ({
   return (
     <label
       htmlFor={id}
-      className={`relative flex cursor-pointer  select-none items-center gap-3 text-sm font-medium ${
+      className={cn(
+        "relative flex select-none items-center gap-3 text-sm font-medium transition-all duration-200",
         disabled
-          ? "text-text-tertiary dark:text-text-tertiary cursor-not-allowed"
-          : "text-text-secondary dark:text-text-tertiary"
-      } ${className}`}
+          ? "text-text-tertiary cursor-not-allowed opacity-60"
+          : "text-text-secondary dark:text-text-tertiary cursor-pointer hover:text-text-primary dark:hover:text-text-emphasis",
+        className
+      )}
     >
       <input
         id={id}
@@ -34,27 +67,28 @@ const Radio: React.FC<RadioProps> = ({
         type="radio"
         value={value}
         checked={checked}
-        onChange={() => !disabled && onChange(value)} // Prevent onChange when disabled
+        onChange={() => !disabled && onChange(value)}
         className="sr-only"
-        disabled={disabled} // Disable input
+        disabled={disabled}
       />
+      
       <span
-        className={`flex h-5 w-5 items-center justify-center rounded-full border-[1.25px] ${
+        className={cn(
+          "flex h-5 w-5 items-center justify-center rounded-full border transition-all duration-200",
           checked
             ? "border-brand-500 bg-brand-500"
-            : "bg-transparent border-border-medium dark:border-border-dark"
-        } ${
-          disabled
-            ? "bg-bg-secondary dark:bg-white/5 border-border-light dark:border-border-dark"
-            : ""
-        }`}
+            : "bg-transparent border-border-medium dark:border-border-dark",
+          disabled && "bg-bg-secondary dark:bg-white/5 border-border-light dark:border-border-dark"
+        )}
       >
         <span
-          className={`h-2 w-2 rounded-full bg-white ${
-            checked ? "block" : "hidden"
-          }`}
-        ></span>
+          className={cn(
+            "h-2 w-2 rounded-full bg-white transition-transform duration-200",
+            checked ? "scale-100" : "scale-0"
+          )}
+        />
       </span>
+      
       {label}
     </label>
   );

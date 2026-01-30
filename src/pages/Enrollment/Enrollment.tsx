@@ -24,15 +24,29 @@ import { EnrollmentPDF } from "../../components/ui/pdf/templates/EnrollmentPDF";
 import { getInternshipTypes, mapToOptions } from "../../features/internship-types/services/internshipTypesService";
 import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import { useEnrollment } from "../../features/enrollment/hooks/useEnrollment";
-import { Enrollment, EnrollmentRowData } from "../../features/enrollment/types";
+import { Enrollment, EnrollmentRowData, CreateEnrollmentPayload, UpdateEnrollmentPayload } from "../../features/enrollment/types";
 import { PreEnrollmentRowData } from "../../features/pre-enrollment/types";
 import { formatDateTime } from "../../utils/date";
 
+/**
+ * Normalizes an enrollment object for display in the table.
+ * 
+ * @param e - The enrollment object.
+ * @returns The formatted row data.
+ */
 const formatEnrollmentToRow = (e: Enrollment): EnrollmentRowData => ({
     ...e,
     enrollmentDate: formatDateTime(e.enrollmentDate),
 });
 
+/**
+ * Enrollment Page component.
+ * 
+ * Manages the enrollment lifecycle: listing, creating, editing, and toggling status.
+ * Also handles report generation via PDF.
+ * 
+ * @returns The Enrollment page component.
+ */
 export default function EnrollmentPage() {
     const [pageLoading, setPageLoading] = useState(true);
     const location = useLocation();
@@ -170,33 +184,46 @@ export default function EnrollmentPage() {
         return pdfFilteredData.filter(e => pdfSelectedIds.has(e.enrollmentId));
     }, [pdfFilteredData, pdfSelectedIds]);
 
+    /**
+     * Opens the modal to create a new enrollment.
+     */
     const handleCreate = () => {
         setEditingEntry(null);
         setIsModalOpen(true);
     };
 
+    /**
+     * Opens the modal to edit an existing enrollment.
+     * 
+     * @param row - The row data of the enrollment to edit.
+     */
     const handleEdit = (row: EnrollmentRowData) => {
         const original = enrollments.find((e) => e.enrollmentId === row.enrollmentId) || null;
         setEditingEntry(original);
         setIsModalOpen(true);
     };
 
-    const handleSave = (payload: Omit<Enrollment, "enrollmentId" | "enrollmentDate">) => {
-        const isEditing = !!editingEntry;
+    /**
+     * Handles saving an enrollment (create or update).
+     * 
+     * @param payload - The data to save (CreateEnrollmentPayload or UpdateEnrollmentPayload).
+     */
+    const handleSave = (payload: CreateEnrollmentPayload | UpdateEnrollmentPayload) => {
+        const isEditing = "enrollmentId" in payload;
         setConfirmation({
             isOpen: true,
             title: isEditing ? "Confirmar Modificación" : "Confirmar Registro",
             message: `¿Estás seguro de que deseas ${isEditing ? "guardar los cambios de" : "registrar"} esta inscripción?`,
             onConfirm: async () => {
                 try {
-                    if (isEditing && editingEntry) {
-                        await editEnrollment({ ...editingEntry, ...payload });
+                    if (isEditing) {
+                        await editEnrollment(payload as UpdateEnrollmentPayload);
                     } else {
-                        await addEnrollment(payload);
+                        await addEnrollment(payload as CreateEnrollmentPayload);
                     }
                     setIsModalOpen(false);
                 } catch (e) {
-                    console.error(e);
+                    console.error("[EnrollmentPage] Error saving enrollment:", e);
                 } finally {
                     setConfirmation(null);
                 }
@@ -206,8 +233,13 @@ export default function EnrollmentPage() {
         });
     };
 
-    const handleToggleStatus = (id: string) => {
-        const original = enrollments.find((e) => e.enrollmentId === id);
+    /**
+     * Handles toggling the active status of an enrollment.
+     * 
+     * @param row - The row data of the enrollment to toggle.
+     */
+    const handleToggleStatus = (row: EnrollmentRowData) => {
+        const original = enrollments.find((e) => e.enrollmentId === row.enrollmentId);
         if (!original) return;
         const goingInactive = original.status === true;
         setConfirmation({
@@ -219,8 +251,11 @@ export default function EnrollmentPage() {
             onConfirm: async () => {
                 try {
                     await toggleStatus(original);
-                } catch (e) { console.error(e); }
-                finally { setConfirmation(null); }
+                } catch (e) { 
+                    console.error("[EnrollmentPage] Error toggling status:", e); 
+                } finally { 
+                    setConfirmation(null); 
+                }
             },
             confirmText: goingInactive ? "Confirmar" : "Restaurar",
             variant: goingInactive ? "error" : "success",

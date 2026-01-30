@@ -23,7 +23,7 @@ import TutorViewModal from "../../features/tutors/components/TutorViewModal";
 import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
 import { TutorPDF } from "../../components/ui/pdf/templates/TutorPDF";
 import { useTutors } from "../../features/tutors/hooks/useTutors";
-import { Tutor, TutorRowData } from "../../features/tutors/types";
+import { Tutor, TutorRowData, CreateTutorPayload, UpdateTutorPayload } from "../../features/tutors/types";
 import { formatDateTime } from "../../utils/date";
 import { useLists } from "../../features/lists/hooks/useLists";
 import { useCareers } from "../../features/careers/hooks/useCareers";
@@ -31,12 +31,19 @@ import { useCareers } from "../../features/careers/hooks/useCareers";
 /**
  * Transforma un objeto de tipo Tutor (dominio) a TutorRowData (vista).
  * Realiza el formateo de fechas y concatenación de nombres.
+ * 
+ * @param t - Objeto de tutor del dominio
+ * @returns Objeto de tutor formateado para la tabla
  */
 const formatTutorToRow = (t: Tutor): TutorRowData => ({
     ...t,
     registrationDate: formatDateTime(t.registrationDate),
 });
 
+/**
+ * Página principal para la gestión de tutores.
+ * Proporciona una interfaz para listar, crear, editar y cambiar el estado de los tutores.
+ */
 export default function TutorsPage() {
     const [pageLoading, setPageLoading] = useState(true);
     const { fetchMultipleLists } = useLists();
@@ -171,7 +178,12 @@ export default function TutorsPage() {
         setIsModalOpen(true);
     };
 
-    const handleSave = (payload: Omit<Tutor, "tutorId" | "registrationDate">) => {
+    /**
+     * Maneja el guardado (creación o edición) de un tutor.
+     * 
+     * @param payload - Datos del tutor a guardar
+     */
+    const handleSave = (payload: CreateTutorPayload | UpdateTutorPayload) => {
         const isEditing = !!editingTutor;
         setConfirmation({
             isOpen: true,
@@ -180,13 +192,18 @@ export default function TutorsPage() {
             onConfirm: async () => {
                 try {
                     if (isEditing && editingTutor) {
-                        await editTutor({ ...editingTutor, ...payload });
+                        const updatePayload: UpdateTutorPayload = {
+                            ...payload,
+                            tutorId: editingTutor.tutorId,
+                            status: editingTutor.status
+                        };
+                        await editTutor(updatePayload);
                     } else {
-                        await addTutor(payload);
+                        await addTutor(payload as CreateTutorPayload);
                     }
                     setIsModalOpen(false);
                 } catch (e) {
-                    console.error(e);
+                    console.error("[TutorsPage] Error al guardar el tutor:", e);
                 } finally {
                     setConfirmation(null);
                 }
@@ -196,8 +213,13 @@ export default function TutorsPage() {
         });
     };
 
-    const handleToggleStatus = (tutorId: string) => {
-        const original = tutors.find((t) => t.tutorId === tutorId);
+    /**
+     * Maneja el cambio de estado (activo/inactivo) de un tutor.
+     * 
+     * @param row - Datos del tutor cuyo estado se desea cambiar
+     */
+    const handleToggleStatus = (row: TutorRowData) => {
+        const original = tutors.find((t) => t.tutorId === row.tutorId);
         if (!original) return;
         const goingInactive = original.status === true;
         setConfirmation({
@@ -209,7 +231,9 @@ export default function TutorsPage() {
             onConfirm: async () => {
                 try {
                     await toggleStatus(original);
-                } catch (e) { console.error(e); }
+                } catch (e) { 
+                    console.error("[TutorsPage] Error al cambiar el estado del tutor:", e); 
+                }
                 finally { setConfirmation(null); }
             },
             confirmText: goingInactive ? "Confirmar" : "Restaurar",
@@ -217,6 +241,11 @@ export default function TutorsPage() {
         });
     };
 
+    /**
+     * Maneja la eliminación masiva de tutores.
+     * 
+     * @param ids - IDs de los tutores a eliminar
+     */
     const handleBulkDelete = (ids: string[]) => {
         setConfirmation({
             isOpen: true,
@@ -225,7 +254,9 @@ export default function TutorsPage() {
             onConfirm: async () => {
                 try {
                     await bulkRemoveTutors(ids);
-                } catch (e) { console.error(e); }
+                } catch (e) { 
+                    console.error("[TutorsPage] Error al eliminar tutores masivamente:", e); 
+                }
                 finally { setConfirmation(null); }
             },
             confirmText: "Confirmar",
@@ -233,6 +264,11 @@ export default function TutorsPage() {
         });
     };
 
+    /**
+     * Maneja la restauración masiva de tutores.
+     * 
+     * @param ids - IDs de los tutores a restaurar
+     */
     const handleBulkRestore = (ids: string[]) => {
         setConfirmation({
             isOpen: true,
@@ -241,7 +277,9 @@ export default function TutorsPage() {
             onConfirm: async () => {
                 try {
                     await bulkRestoreTutors(ids);
-                } catch (e) { console.error(e); }
+                } catch (e) { 
+                    console.error("[TutorsPage] Error al restaurar tutores masivamente:", e); 
+                }
                 finally { setConfirmation(null); }
             },
             confirmText: "Restaurar",

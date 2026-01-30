@@ -6,45 +6,49 @@ Proyecto-Unefa es una plataforma integral de gestión académica construida con 
 
 ## 🚀 Análisis de Arquitectura y Lógica de Negocio
 
-### 1. Arquitectura del Sistema
-El sistema sigue un patrón de **Arquitectura de Capas** y **Módulos basados en Características (Feature-based)**, lo que facilita el mantenimiento y la escalabilidad.
+El sistema ha sido refactorizado siguiendo una **Arquitectura Basada en Características (Feature-Based)** y **Clean Architecture**, lo que garantiza una separación clara de responsabilidades y facilidad de mantenimiento.
 
-#### Diagrama de Componentes
+Para un análisis profundo de la implementación técnica, patrones de diseño y guías de mantenimiento, consulte el [README Técnico](README_TECNICO.md).
+
+### 1. Arquitectura del Sistema
+
+El sistema organiza el código en capas cohesivas:
+
+- **Presentación:** Componentes React y UI atómica.
+- **Lógica de Negocio:** Hooks personalizados y orquestadores de estado.
+- **Acceso a Datos:** Servicios centralizados y cliente API.
+
+#### Diagrama de Componentes (Actualizado)
+
 ```mermaid
 graph TD
     subgraph Frontend [React 19 + Vite]
         UI[Componentes de UI / Atomic Design]
-        Pages[Páginas / Vistas]
-        Hooks[Hooks Personalizados / Lógica de Estado]
-        Services[Servicios de API / Axios]
-        Context[Contextos Globales / Theme, Auth, Sidebar]
+        Features[Módulos por Características / Features]
+        Hooks[Hooks de Lógica / useCrud]
+        Services[Servicios de API / Factories]
+        Context[Contextos Globales / Auth, Theme]
     end
 
     subgraph Backend [Express + Node.js]
-        Controllers[Controladores / Lógica de Negocio]
+        Controllers[Controladores / Business Logic]
         Routes[Rutas de API]
-        DBManager[Gestor de DB / Supabase Client]
+        DBManager[Gestor de DB / Supabase]
     end
 
-    subgraph External [Servicios Externos]
-        Supabase[(Supabase / PostgreSQL)]
-        Vercel[Vercel Analytics]
-    end
-
-    Pages --> Hooks
+    Features --> Hooks
     Hooks --> Services
     Services --> Routes
-    Routes --> Controllers
-    Controllers --> DBManager
-    DBManager --> Supabase
-    UI --> Pages
-    Context --> Pages
+    UI --> Features
+    Context --> Features
 ```
 
 ### 2. Flujo de Datos y Lógica de Negocio
+
 La lógica de negocio se centraliza en la capa de **Hooks** y **Servicios** en el frontend, y en los **Controladores** en el backend.
 
 #### Diagrama de Flujo Principal (CRUD de Periodos/Carreras)
+
 ```mermaid
 sequenceDiagram
     participant U as Usuario
@@ -70,21 +74,24 @@ sequenceDiagram
 
 ## 📂 Estructura del Proyecto
 
-### Organización de Directorios
+### Organización de Directorios (Refactorizada)
+
 ```text
 src/
-├── api/                # Cliente API centralizado (Axios)
-├── components/         # Componentes reutilizables (UI, Form, Common)
-├── context/            # Proveedores de estado global (Theme, Sidebar, Toast)
-├── features/           # Módulos por funcionalidad (Periods, Careers, Students, etc.)
-│   ├── components/     # Componentes específicos de la feature
-│   ├── hooks/          # Lógica de estado y side-effects
-│   ├── services/       # Llamadas a API específicas
-│   └── types/          # Definiciones de TypeScript
-├── layout/             # Estructura visual base (Header, Sidebar, Layout)
-├── pages/              # Páginas de la aplicación (Orquestadores de features)
-├── routes/             # Configuración de rutas modularizada (React.lazy)
-└── lib/                # Librerías externas (Supabase Client)
+├── api/                # Cliente API y configuraciones base
+├── components/         # Componentes compartidos (UI, Form, Common)
+│   ├── ui/             # Componentes atómicos (Button, Table, etc.)
+│   └── form/           # Elementos de formulario estandarizados
+├── context/            # Proveedores de estado global
+├── features/           # Módulos encapsulados por funcionalidad
+│   ├── users/          # Ejemplo: Módulo de Usuarios
+│   │   ├── components/ # Componentes específicos
+│   │   ├── hooks/      # Lógica y integración CRUD
+│   │   └── services/   # Peticiones a API
+│   └── ...             # Otras características (careers, periods, etc.)
+├── layout/             # Estructura visual (Sidebar, Navbar)
+├── utils/              # Utilidades transversales (cn, formatters)
+└── lib/                # Librerías de terceros (Supabase)
 
 backend/
 ├── src/
@@ -98,6 +105,7 @@ backend/
 ## 🛠️ Guía de Configuración y Despliegue
 
 ### 🛡️ Seguridad y Configuración de Docker
+
 Para garantizar la integridad de la configuración, se han implementado las siguientes medidas de seguridad en el entorno Docker:
 
 1. **Montaje de Solo Lectura**: Los archivos `.env` (tanto en la raíz como en `backend/`) se montan en los contenedores con el flag `:ro` (read-only). Esto impide que cualquier proceso dentro del contenedor modifique las variables de entorno.
@@ -105,13 +113,16 @@ Para garantizar la integridad de la configuración, se han implementado las sigu
 3. **Validación en Tiempo de Ejecución**: Se han añadido notas de seguridad en los Dockerfiles documentando esta restricción.
 
 ### Requisitos del Sistema
+
 - **Node.js**: >= 18.x
 - **NPM**: >= 9.x
 - **Docker**: (Opcional) para contenedores.
 - **Supabase Account**: Para la base de datos.
 
 ### Clonación y Configuración
+
 1. **Clonar el repositorio**:
+
    ```bash
    git clone https://github.com/tu-usuario/proyecto-unefa.git
    cd proyecto-unefa
@@ -119,14 +130,16 @@ Para garantizar la integridad de la configuración, se han implementado las sigu
 
 2. **Configurar Variables de Entorno**:
    Crea un archivo `.env` en la raíz y otro en `/backend`:
-   
+
    **Frontend (.env)**:
+
    ```env
    VITE_SUPABASE_URL=tu_url_supabase
    VITE_SUPABASE_ANON_KEY=tu_anon_key
    ```
 
    **Backend (backend/.env)**:
+
    ```env
    SUPABASE_URL=tu_url_supabase
    SUPABASE_SERVICE_ROLE_KEY=tu_service_role_key
@@ -134,6 +147,7 @@ Para garantizar la integridad de la configuración, se han implementado las sigu
    ```
 
 3. **Instalar Dependencias**:
+
    ```bash
    npm install
    cd backend && npm install
@@ -144,7 +158,9 @@ Para garantizar la integridad de la configuración, se han implementado las sigu
    - **Backend**: `cd backend && npm run dev` (Acceso en `http://localhost:3000`)
 
 ### Uso con Docker
+
 El sistema incluye soporte para Docker Compose, facilitando la ejecución de ambos entornos simultáneamente.
+
 ```bash
 docker-compose up --build
 ```
@@ -152,6 +168,7 @@ docker-compose up --build
 ---
 
 ## 📈 Tecnologías Principales
+
 - **Frontend**: React 19, Vite, Tailwind CSS v4, React Router 7, React Hook Form, Zod.
 - **Backend**: Node.js, Express, TypeScript, Helmet, CORS.
 - **Base de Datos**: Supabase (PostgreSQL).
@@ -160,6 +177,7 @@ docker-compose up --build
 ---
 
 ## 📝 Changelog (Últimas Optimizaciones)
+
 - **Modularización de Rutas**: Se migró la lógica de enrutamiento de `App.tsx` a `src/routes/index.tsx` utilizando `React.lazy` para mejorar el rendimiento.
 - **Refactorización de Código**: Aplicación de principios SOLID en hooks y servicios de características.
 - **Limpieza de Documentación**: Eliminación de archivos `.md` redundantes y consolidación en este README.
@@ -170,4 +188,5 @@ docker-compose up --build
 ---
 
 ## 📄 Licencia
+
 Este proyecto está bajo la Licencia MIT.

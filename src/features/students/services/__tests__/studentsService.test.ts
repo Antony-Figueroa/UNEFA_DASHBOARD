@@ -85,11 +85,9 @@ describe("studentsService", () => {
   });
 
   it("toggleStudentStatus envía el estado correcto", async () => {
-    const student = buildStudent({ status: false });
-    vi.mocked(apiClient.patch).mockResolvedValueOnce({ data: student });
+    vi.mocked(apiClient.patch).mockResolvedValueOnce({ data: { status: false } });
 
-    const result = await toggleStudentStatus("1", false);
+    await toggleStudentStatus("1", false);
     expect(apiClient.patch).toHaveBeenCalledWith("/students/1/status", { status: false });
-    expect(result.status).toBe(false);
   });
 });

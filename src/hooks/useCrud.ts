@@ -20,6 +20,8 @@ export interface CrudServiceAdapter<TItem, TCreatePayload, TUpdatePayload> {
   update: (data: TUpdatePayload) => Promise<TItem>;
   delete: (id: string | number) => Promise<void>;
   toggleStatus?: (id: string | number, status: boolean) => Promise<void>;
+  bulkDelete?: (ids: (string | number)[]) => Promise<void>;
+  bulkRestore?: (ids: (string | number)[]) => Promise<void>;
 }
 
 /** Opciones de configuración para el hook useCrud */
@@ -184,6 +186,54 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
     }
   };
 
+  /**
+   * Realiza la eliminación masiva de registros.
+   */
+  const bulkDelete = async (ids: (string | number)[]): Promise<boolean> => {
+    if (!service.bulkDelete) return false;
+    setLoadingAction(true);
+    try {
+      await service.bulkDelete(ids);
+      await refresh();
+      addToast({
+        variant: "success",
+        title: "Eliminación Masiva",
+        message: `Se han eliminado ${ids.length} registros exitosamente.`
+      });
+      return true;
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(`Error en eliminación masiva de ${resourceName}`);
+      addToast({ variant: "error", title: "Error", message: err.message });
+      throw err;
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
+  /**
+   * Realiza la restauración masiva de registros.
+   */
+  const bulkRestore = async (ids: (string | number)[]): Promise<boolean> => {
+    if (!service.bulkRestore) return false;
+    setLoadingAction(true);
+    try {
+      await service.bulkRestore(ids);
+      await refresh();
+      addToast({
+        variant: "success",
+        title: "Restauración Masiva",
+        message: `Se han restaurado ${ids.length} registros exitosamente.`
+      });
+      return true;
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(`Error en restauración masiva de ${resourceName}`);
+      addToast({ variant: "error", title: "Error", message: err.message });
+      throw err;
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
   /** Lista filtrada según el término de búsqueda y la función proporcionada */
   const filteredData = searchTerm && filterFn 
     ? data.filter(item => filterFn(item, searchTerm))
@@ -201,6 +251,8 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
     createItem,
     updateItem,
     deleteItem,
-    toggleItemStatus
+    toggleItemStatus,
+    bulkDelete,
+    bulkRestore
   };
 }

@@ -31,6 +31,7 @@ const mapFromApi = (data: any): Student => ({
  */
 export const studentService = createCrudService<Student, CreateStudentPayload, UpdateStudentPayload, any>({
   endpoint: API_URL,
+  idField: "studentId",
   mapFromApi
 });
 

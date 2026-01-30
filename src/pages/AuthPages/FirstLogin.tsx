@@ -6,7 +6,7 @@ import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import Button from "../../components/ui/button/Button";
 import * as authService from "../../features/auth/services/authService";
-import { SecurityQuestion, SecurityAnswer } from "../../features/auth/services/authService";
+import { SecurityQuestion, SecurityAnswer } from "../../features/auth/types";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Select from "../../components/form/Select";
 
@@ -213,7 +213,7 @@ export default function FirstLogin() {
                       options={presetQuestions.map(pq => ({ value: pq.id.toString(), label: pq.description }))}
                       placeholder="Seleccione una pregunta"
                       value={q.questionId ? q.questionId.toString() : ""}
-                      onChange={(value) => handleQuestionChange(index, "questionId", value)}
+                      onChangeValue={(value) => handleQuestionChange(index, "questionId", value)}
                     />
                     <Input
                       placeholder="Su respuesta"

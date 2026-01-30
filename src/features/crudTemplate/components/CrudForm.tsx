@@ -206,7 +206,7 @@ export function CrudForm({
                 <Select
                   placeholder={field.placeholder}
                   defaultValue={String(value ?? "")}
-                  onChange={(val) => handleChange(field.name, val)}
+                  onChangeValue={(val) => handleChange(field.name, val)}
                   options={field.options ?? []}
                 />
                 {error && (

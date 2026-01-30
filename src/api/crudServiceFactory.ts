@@ -15,6 +15,8 @@ import apiClient from "./apiClient";
 export interface CrudServiceConfig<TItem, TCreatePayload, TUpdatePayload, TApiDTO> {
   /** Endpoint base para el recurso (ej: '/careers') */
   endpoint: string;
+  /** Campo que actúa como ID en el payload de actualización (opcional) */
+  idField?: string;
   /** Función para mapear el DTO de la API a la entidad de dominio */
   mapFromApi: (dto: TApiDTO) => TItem;
   /** Función para mapear la entidad o el payload al DTO de la API (opcional) */
@@ -31,6 +33,8 @@ export interface CrudService<TItem, TCreatePayload, TUpdatePayload> {
   update: (data: TUpdatePayload) => Promise<TItem>;
   delete: (id: string | number) => Promise<void>;
   toggleStatus: (id: string | number, status: boolean) => Promise<void>;
+  bulkDelete: (ids: (string | number)[]) => Promise<void>;
+  bulkRestore: (ids: (string | number)[]) => Promise<void>;
 }
 
 /**
@@ -42,7 +46,7 @@ export interface CrudService<TItem, TCreatePayload, TUpdatePayload> {
 export function createCrudService<TItem, TCreatePayload, TUpdatePayload, TApiDTO>(
   config: CrudServiceConfig<TItem, TCreatePayload, TUpdatePayload, TApiDTO>
 ): CrudService<TItem, TCreatePayload, TUpdatePayload> {
-  const { endpoint, mapFromApi } = config;
+  const { endpoint, idField, mapFromApi } = config;
 
   return {
     getAll: async () => {
@@ -64,7 +68,12 @@ export function createCrudService<TItem, TCreatePayload, TUpdatePayload, TApiDTO
     update: async (data: TUpdatePayload) => {
       // Se asume que el ID está presente en el payload o se maneja externamente
       // En esta implementación genérica, intentamos obtener el ID de campos comunes
-      const id = (data as any).id || (data as any).ID || (data as any)[`${endpoint.replace(/^\//, '')}Id`];
+      const possibleIdField = idField || `${endpoint.replace(/^\//, '')}Id`;
+      const id = (data as any).id || 
+                 (data as any).ID || 
+                 (data as any)[possibleIdField] || 
+                 (data as any)[possibleIdField.replace(/sId$/, 'Id')];
+      
       const response = await apiClient.put<TApiDTO>(`${endpoint}/${id}`, data);
       return mapFromApi(response.data);
     },
@@ -75,6 +84,14 @@ export function createCrudService<TItem, TCreatePayload, TUpdatePayload, TApiDTO
 
     toggleStatus: async (id: string | number, status: boolean) => {
       await apiClient.patch(`${endpoint}/${id}/status`, { status });
+    },
+    
+    bulkDelete: async (ids: (string | number)[]) => {
+      await apiClient.post(`${endpoint}/bulk-delete`, { ids });
+    },
+    
+    bulkRestore: async (ids: (string | number)[]) => {
+      await apiClient.post(`${endpoint}/bulk-restore`, { ids });
     }
   };
 }

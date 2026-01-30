@@ -31,7 +31,9 @@ export const useCareers = () => {
     createItem: addCareer,
     updateItem: editCareer,
     deleteItem: removeCareer,
-    toggleItemStatus: toggleCareerStatus
+    toggleItemStatus: toggleCareerStatus,
+    bulkDelete: bulkRemoveCareers,
+    bulkRestore: bulkRestoreCareers
   } = useCrud<Career, CreateCareerPayload, UpdateCareerPayload>(careerService, {
     resourceName: "Carrera",
     idField: "careerId",
@@ -70,6 +72,8 @@ export const useCareers = () => {
     addCareer,
     editCareer,
     removeCareer,
-    toggleCareerStatus
+    toggleCareerStatus,
+    bulkRemoveCareers,
+    bulkRestoreCareers
   };
 };

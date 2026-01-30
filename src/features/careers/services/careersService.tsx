@@ -79,6 +79,7 @@ const mapFromApi = (dto: CareerApiDTO): Career => {
  */
 export const careerService = createCrudService<Career, CreateCareerPayload, UpdateCareerPayload, CareerApiDTO>({
   endpoint: API_URL,
+  idField: "careerId",
   mapFromApi
 });
 

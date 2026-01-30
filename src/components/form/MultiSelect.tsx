@@ -62,7 +62,7 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
   placeholder = "Seleccionar opciones",
   infoTooltip,
   className = "",
-}) => {
+}, ref) => {
   const isControlled = value !== undefined;
   const [internalSelected, setInternalSelected] = useState<string[]>(defaultSelected);
   const selectedOptions = isControlled ? value : internalSelected;
@@ -163,7 +163,16 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
   };
 
   return (
-    <div className={cn("w-full", className)} ref={dropdownRef}>
+    <div className={cn("w-full", className)} ref={(node) => {
+      // Sincronizar con el ref interno para la lógica de click-outside
+      (dropdownRef as any).current = node;
+      // Sincronizar con el ref de forwardRef
+      if (typeof ref === "function") {
+        ref(node);
+      } else if (ref) {
+        (ref as any).current = node;
+      }
+    }}>
       {/* Label e Info Tooltip */}
       <div className="flex items-center gap-1.5 mb-1.5">
         <label

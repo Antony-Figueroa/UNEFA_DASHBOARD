@@ -355,7 +355,7 @@ export default function StudentModal({
     <>
       <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl">
         <ModalHeader>
-          <div className="max-w-4xl mx-auto w-full">
+          <div className="w-full">
             <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
               {editingStudent ? "Editar Estudiante" : "Registrar Estudiante"}
             </h5>
@@ -366,7 +366,7 @@ export default function StudentModal({
         </ModalHeader>
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
-        <form id="student-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto">
+        <form id="student-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 w-full">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
             {/* Fila 1 */}
             <div>
@@ -392,11 +392,11 @@ export default function StudentModal({
                 </div>
                 <div className="flex-1">
                   <Input
-                      {...register("identificationNumber")}
-                      placeholder="Número de cédula"
-                      error={!!errors.identificationNumber}
-                      hint={isCheckingCi ? "Verificando disponibilidad..." : errors.identificationNumber?.message}
-                      disabled={!!editingStudent || isCheckingCi}
+                    {...register("identificationNumber")}
+                    placeholder="Número de cédula"
+                    error={!!errors.identificationNumber}
+                    hint={isCheckingCi ? "Verificando..." : (errors.identificationNumber?.message || " ")}
+                    disabled={isCheckingCi}
                     maxLength={8}
                     autoComplete="off"
                     onChange={(e) => {
@@ -427,6 +427,7 @@ export default function StudentModal({
                           setIsCheckingCi(false);
                         }
                       }
+                      register("identificationNumber").onBlur(e);
                     }}
                   />
                 </div>
@@ -493,14 +494,14 @@ export default function StudentModal({
                 control={control}
                 render={({ field }) => (
                   <Select
-                    id="sex"
-                    options={SEX_OPTIONS}
-                    placeholder="Seleccione Sexo"
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={field.value}
-                    className={errors.sex ? "border-error-500" : ""}
-                  />
+                      id="sex"
+                      options={SEX_OPTIONS}
+                      placeholder="Seleccione Sexo"
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={field.value}
+                      error={!!errors.sex}
+                    />
                 )}
               />
               {errors.sex && (
@@ -522,16 +523,8 @@ export default function StudentModal({
                 render={({ field }) => (
                   <FlatpickrDatePicker
                     value={field.value}
-                    onChange={(dates) => {
-                      const date = dates[0];
-                      if (date) {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        field.onChange(`${year}-${month}-${day}`);
-                      } else {
-                        field.onChange("");
-                      }
+                    onChange={(dateStr) => {
+                      field.onChange(dateStr);
                     }}
                     onBlur={field.onBlur}
                     error={!!errors.birthDate}
@@ -557,14 +550,14 @@ export default function StudentModal({
                 control={control}
                 render={({ field }) => (
                   <Select
-                    id="civilStatus"
-                    options={CIVIL_STATUS_OPTIONS}
-                    placeholder="Seleccione Estado Civil"
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={field.value}
-                    className={errors.civilStatus ? "border-error-500" : ""}
-                  />
+                      id="civilStatus"
+                      options={CIVIL_STATUS_OPTIONS}
+                      placeholder="Seleccione Estado Civil"
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={field.value}
+                      error={!!errors.civilStatus}
+                    />
                 )}
               />
               {errors.civilStatus && (
@@ -652,6 +645,7 @@ export default function StudentModal({
                       setIsCheckingEmail(false);
                     }
                   }
+                  register("email").onBlur(e);
                 }}
               />
             </div>
@@ -664,15 +658,15 @@ export default function StudentModal({
                 control={control}
                 render={({ field }) => (
                   <Select
-                    id="careerId"
-                    options={careerOptions.map((opt) => ({ value: String(opt.value), label: opt.label.toUpperCase() }))}
-                    placeholder="Seleccione Carrera"
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={String(field.value)}
-                    disabled={isLoading || (!!editingStudent && editingStudent.isInUse)}
-                    className={errors.careerId ? "border-error-500" : ""}
-                  />
+                      id="careerId"
+                      options={careerOptions.map((opt) => ({ value: String(opt.value), label: opt.label.toUpperCase() }))}
+                      placeholder="Seleccione Carrera"
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={String(field.value)}
+                      disabled={isLoading || (!!editingStudent && editingStudent.isInUse)}
+                      error={!!errors.careerId}
+                    />
                 )}
               />
               {errors.careerId && (
@@ -724,14 +718,14 @@ export default function StudentModal({
                 control={control}
                 render={({ field }) => (
                   <Select
-                    id="regime"
-                    options={REGIME_OPTIONS}
-                    placeholder="Seleccione Régimen"
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={field.value}
-                    className={errors.regime ? "border-error-500" : ""}
-                  />
+                      id="regime"
+                      options={REGIME_OPTIONS}
+                      placeholder="Seleccione Régimen"
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={field.value}
+                      error={!!errors.regime}
+                    />
                 )}
               />
               {errors.regime && (
@@ -748,14 +742,14 @@ export default function StudentModal({
                 control={control}
                 render={({ field }) => (
                   <Select
-                    id="studentType"
-                    options={STUDENT_TYPE_OPTIONS}
-                    placeholder="Seleccione campo"
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={field.value}
-                    className={errors.studentType ? "border-error-500" : ""}
-                  />
+                      id="studentType"
+                      options={STUDENT_TYPE_OPTIONS}
+                      placeholder="Seleccione campo"
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={field.value}
+                      error={!!errors.studentType}
+                    />
                 )}
               />
               {errors.studentType && (
@@ -782,7 +776,7 @@ export default function StudentModal({
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         value={field.value}
-                        className={errors.militaryRank ? "border-error-500" : ""}
+                        error={!!errors.militaryRank}
                       />
                     );
                   }}
@@ -809,7 +803,7 @@ export default function StudentModal({
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     value={field.value}
-                    className={errors.works ? "border-error-500" : ""}
+                    error={!!errors.works}
                   />
                 )}
               />
@@ -849,8 +843,14 @@ export default function StudentModal({
             type="submit" 
             form="student-form" 
             loading={isLoading} 
-            disabled={!isValid}
             className="w-full sm:w-auto min-h-12"
+            onClick={() => {
+              if (!isValid) {
+                console.log("[StudentModal] Form is invalid. Errors:", errors);
+                // Forzar validación de todos los campos para mostrar errores
+                handleSubmit(() => {})();
+              }
+            }}
           >
             {editingStudent ? "Actualizar Registro" : "Guardar Estudiante"}
           </AsyncButton>

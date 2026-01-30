@@ -8,6 +8,7 @@ import MultiSelect from "../../../components/form/MultiSelect";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Career } from "../types";
 import Button from "../../../components/ui/button/Button";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 
@@ -90,7 +91,7 @@ export default function CareerModal({
     reset,
     watch,
     setValue,
-    formState: { errors, isDirty },
+    formState: { errors, isDirty, isValid },
   } = useForm<CareerFormData>({
     resolver: zodResolver(createCareerSchema(existingCareers, editingCareer?.careerId)),
     mode: "onChange",
@@ -372,9 +373,9 @@ export default function CareerModal({
           <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
-          <Button type="submit" form="career-form" loading={isLoading} className="w-full sm:w-auto min-h-12">
+          <AsyncButton type="submit" form="career-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid}>
             {editingCareer ? "Actualizar Registro" : "Guardar Carrera"}
-          </Button>
+          </AsyncButton>
         </div>
       </ModalFooter>
     </Modal>

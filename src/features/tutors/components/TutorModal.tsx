@@ -4,8 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
-import { Tutor } from "../types";
+import { Tutor, CreateTutorPayload, UpdateTutorPayload } from "../types";
 import Button from "../../../components/ui/button/Button";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
 import Select from "../../../components/form/Select";
 import MultiSelect from "../../../components/form/MultiSelect";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
@@ -14,15 +15,30 @@ import { getCareers } from "../../careers/services/careersService";
 import { Career } from "../../careers/types";
 import { useLists } from "../../lists/hooks/useLists";
 
+/**
+ * Props for the TutorModal component.
+ */
 interface TutorModalProps {
+  /** Whether the modal is open */
   isOpen: boolean;
+  /** Function to call when closing the modal */
   onClose: () => void;
-  onSave: (tutor: Omit<Tutor, "tutorId" | "registrationDate">) => void;
+  /** Function to call when saving the tutor data */
+  onSave: (tutor: CreateTutorPayload | UpdateTutorPayload) => void;
+  /** The tutor object to edit, or null for creating a new one */
   editingTutor?: Tutor | null;
+  /** Whether the modal is in a loading state */
   isLoading?: boolean;
+  /** List of all tutors for validation purposes */
   tutors?: Tutor[];
 }
 
+/**
+ * Modal component for creating and editing tutors.
+ * 
+ * @param props - Component props.
+ * @returns The TutorModal component.
+ */
 export default function TutorModal({
   isOpen,
   onClose,
@@ -189,7 +205,7 @@ export default function TutorModal({
     handleSubmit,
     control,
     reset,
-    formState: { errors, isDirty },
+    formState: { errors, isDirty, isValid },
   } = useForm<TutorFormData>({
     resolver: zodResolver(tutorSchema),
     mode: "onChange",
@@ -288,23 +304,28 @@ export default function TutorModal({
   }, [isOpen, editingTutor, reset]);
 
   const onSubmit: SubmitHandler<TutorFormData> = (data) => {
-    onSave({
-      identificationPrefix: data.identificationPrefix as "V" | "E",
-      identificationNumber: data.identificationNumber,
-      firstName: data.firstName,
-      middleName: data.middleName,
-      lastName: data.lastName,
-      secondLastName: data.secondLastName,
-      sex: data.sex as "FEMENINO" | "MASCULINO",
-      phone: `${data.phoneAreaCode}${data.phoneNumber}`,
-      email: data.email,
-      condition: data.condition,
-      dedication: data.dedication,
-      category: data.category,
-      profession: data.profession,
-      status: editingTutor?.status ?? true,
-      carreras: data.carreras,
-    });
+    try {
+      const payload = {
+        identificationPrefix: data.identificationPrefix as "V" | "E",
+        identificationNumber: data.identificationNumber,
+        firstName: data.firstName,
+        middleName: data.middleName,
+        lastName: data.lastName,
+        secondLastName: data.secondLastName,
+        sex: data.sex as "FEMENINO" | "MASCULINO",
+        phone: `${data.phoneAreaCode}${data.phoneNumber}`,
+        email: data.email,
+        condition: data.condition,
+        dedication: data.dedication,
+        category: data.category,
+        profession: data.profession,
+        carreras: data.carreras,
+      };
+
+      onSave(payload);
+    } catch (error) {
+      console.error("[TutorModal] Error al procesar el envío del formulario:", error);
+    }
   };
 
   const isInUse = editingTutor?.isInUse;
@@ -316,7 +337,7 @@ export default function TutorModal({
         onClose={onClose} 
         onCloseAttempt={handleCloseAttempt} 
         showCloseButton 
-        className="max-w-[95%] sm:max-w-[85%] md:max-w-[70%] lg:max-w-4xl"
+        size="4xl"
       >
         <ModalHeader>
           <h5 className="text-xl font-semibold text-text-primary dark:text-white/90">
@@ -614,14 +635,15 @@ export default function TutorModal({
           <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
-          <Button
+          <AsyncButton
             type="submit"
             form="tutor-form"
             loading={isLoading}
             className="w-full sm:w-auto min-h-12"
+            disabled={!isValid}
           >
             {editingTutor ? "Actualizar Registro" : "Guardar Tutor"}
-          </Button>
+          </AsyncButton>
         </div>
       </ModalFooter>
     </Modal>

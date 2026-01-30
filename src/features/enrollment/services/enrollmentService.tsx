@@ -1,49 +1,64 @@
 /**
  * @file enrollmentService.tsx
- * @description Servicio para la gestión de inscripciones mediante API.
+ * @description Service for managing student enrollments via the API.
+ * Handles CRUD operations and data normalization.
  */
 
-import { Enrollment } from "../types";
+import { Enrollment, CreateEnrollmentPayload, UpdateEnrollmentPayload } from "../types";
 import apiClient from "../../../api/apiClient";
 
 const API_URL = "/enrollments";
 
 /**
- * Obtiene la lista de inscripciones desde la API.
+ * Normalizes an enrollment object from the API response.
+ * Converts string dates to Date objects.
+ * 
+ * @param data - The raw enrollment data from the API.
+ * @returns The normalized Enrollment object.
+ */
+const mapToEnrollment = (data: any): Enrollment => ({
+  ...data,
+  enrollmentDate: new Date(data.enrollmentDate),
+});
+
+/**
+ * Retrieves the complete list of enrollments.
+ * 
+ * @returns A promise with an array of normalized enrollments.
  */
 export const getEnrollments = async (): Promise<Enrollment[]> => {
-  const response = await apiClient.get<Enrollment[]>(API_URL);
-  return response.data.map(e => ({
-    ...e,
-    enrollmentDate: new Date(e.enrollmentDate)
-  }));
+  const response = await apiClient.get<any[]>(API_URL);
+  return response.data.map(mapToEnrollment);
 };
 
 /**
- * Crea una inscripción en la API.
+ * Creates a new enrollment record.
+ * 
+ * @param payload - The enrollment data to create.
+ * @returns A promise with the newly created normalized enrollment.
  */
-export const createEnrollment = async (data: Omit<Enrollment, "enrollmentId" | "enrollmentDate">): Promise<Enrollment> => {
-  const response = await apiClient.post<Enrollment>(API_URL, data);
-  return {
-    ...response.data,
-    enrollmentDate: new Date(response.data.enrollmentDate)
-  };
+export const createEnrollment = async (payload: CreateEnrollmentPayload): Promise<Enrollment> => {
+  const response = await apiClient.post<any>(API_URL, payload);
+  return mapToEnrollment(response.data);
 };
 
 /**
- * Actualiza una inscripción en la API.
+ * Updates an existing enrollment record.
+ * 
+ * @param payload - The enrollment data to update (must include enrollmentId).
+ * @returns A promise with the updated normalized enrollment.
  */
-export const updateEnrollment = async (data: Enrollment): Promise<Enrollment> => {
-  const { enrollmentId, ...updates } = data;
-  const response = await apiClient.put<Enrollment>(`${API_URL}/${enrollmentId}`, updates);
-  return {
-    ...response.data,
-    enrollmentDate: new Date(response.data.enrollmentDate)
-  };
+export const updateEnrollment = async (payload: UpdateEnrollmentPayload): Promise<Enrollment> => {
+  const { enrollmentId, ...updates } = payload;
+  const response = await apiClient.put<any>(`${API_URL}/${enrollmentId}`, updates);
+  return mapToEnrollment(response.data);
 };
 
 /**
- * Elimina (desactivar) una inscripción en la API.
+ * Deletes (soft-deactivates) an enrollment record by its ID.
+ * 
+ * @param id - The unique identifier of the enrollment.
+ * @returns A promise that resolves when the operation is complete.
  */
 export const deleteEnrollment = async (id: string): Promise<void> => {
   await apiClient.delete(`${API_URL}/${id}`);

@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 
-import { ActionButton } from "../../../components/common/ActionButton";
+import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { TutorRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
@@ -9,7 +9,14 @@ import { useDebounce } from "../../../hooks/useDebounce";
 import Badge from "../../../components/ui/badge/Badge";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { Career } from "../../careers/types";
+import { CrudStatus } from "../../../hooks/useCrud";
 
+/**
+ * Genera un color basado en el nombre de la profesión para visualización consistente.
+ * 
+ * @param profession - Nombre de la profesión
+ * @returns Color asignado (primary, success, error, warning, info)
+ */
 const getProfessionColor = (profession: string): "primary" | "success" | "error" | "warning" | "info" => {
     const colors: ("primary" | "success" | "error" | "warning" | "info")[] = ["primary", "success", "error", "warning", "info"];
     let hash = 0;
@@ -19,36 +26,68 @@ const getProfessionColor = (profession: string): "primary" | "success" | "error"
     return colors[Math.abs(hash) % colors.length];
 };
 
+/**
+ * Propiedades para el componente TutorTable.
+ */
 interface TutorTableProps {
+    /** Lista de tutores a mostrar */
     data: TutorRowData[];
-    status: "loading" | "success" | "error";
+    /** Estado de la carga de datos */
+    status: CrudStatus;
+    /** Error en caso de fallo en la carga */
     error: Error | null;
+    /** Función para editar un tutor */
     onEdit?: (tutor: TutorRowData) => void;
-    onToggleStatus?: (tutorId: string) => void;
+    /** Función para cambiar el estado (activo/inactivo) de un tutor */
+    onToggleStatus?: (tutor: TutorRowData) => void;
+    /** Función para ver los detalles de un tutor */
     onView?: (tutor: TutorRowData) => void;
+    /** Función para eliminación masiva de tutores */
     onBulkDelete?: (ids: string[]) => void;
+    /** Función para restauración masiva de tutores */
     onBulkRestore?: (ids: string[]) => void;
+    /** Indica si se muestra el modo de inactivos */
     inactiveMode?: boolean;
+    /** Pestaña activa (Activas o Inactivas) */
     activeTab?: "Activas" | "Inactivas";
+    /** Opciones para filtrar por tipo de práctica */
     practiceTypeOptions?: { value: string; label: string }[];
+    /** Opciones para filtrar por carrera */
     careerOptions?: { value: string; label: string }[];
+    /** Lista completa de carreras para mapeo de nombres */
     careers?: Career[];
+    /** Opciones para filtrar por condición */
     conditionOptions?: { value: string; label: string }[];
+    /** Indica si el componente está en estado de carga */
     loading?: boolean;
 }
 
+/** Claves por las que se puede ordenar la tabla */
 type SortKey = "identificationNumber" | "firstName" | "lastName" | "email" | "practiceTypes" | "registrationDate";
+/** Orden de clasificación */
 type SortOrder = "asc" | "desc";
 
+/**
+ * Propiedades para el componente de botones de acción.
+ */
 interface ActionButtonsProps {
+    /** Función para editar */
     onEdit?: () => void;
+    /** Función para cambiar estado */
     onToggleStatus?: () => void;
+    /** Función para ver detalles */
     onView?: () => void;
+    /** Pestaña activa actual */
     activeTab: "Activas" | "Inactivas";
+    /** Indica si la vista es móvil */
     isMobile?: boolean;
+    /** Indica si el tutor está en uso y no se puede eliminar */
     isInUse?: boolean;
 }
 
+/**
+ * Componente que renderiza los botones de acción para cada fila.
+ */
 const ActionButtons = ({
     onEdit,
     onToggleStatus,
@@ -62,8 +101,8 @@ const ActionButtons = ({
         : "flex justify-end gap-3";
 
     const deleteButton = (
-        <ActionButton
-            onClick={() => !isInUse && onToggleStatus?.()}
+        <AsyncActionButton
+            onClick={async () => { if (!isInUse) onToggleStatus?.(); }}
             icon={activeTab === "Activas" ? <TrashIcon /> : <RefreshIcon />}
             tooltip={
                 activeTab === "Activas" 
@@ -80,8 +119,8 @@ const ActionButtons = ({
     return (
         <div className={containerClasses}>
             {onView && (
-                <ActionButton
-                    onClick={() => onView()}
+                <AsyncActionButton
+                    onClick={async () => onView()}
                     icon={<EyeIcon />}
                     tooltip="Ver detalles"
                     label={isMobile ? "Ver Detalles" : undefined}
@@ -90,8 +129,8 @@ const ActionButtons = ({
                 />
             )}
             {onEdit && activeTab === "Activas" && (
-                <ActionButton
-                    onClick={() => onEdit()}
+                <AsyncActionButton
+                    onClick={async () => onEdit()}
                     icon={<EditIcon />}
                     tooltip="Editar"
                     label={isMobile ? "Editar Tutor" : undefined}
@@ -112,6 +151,10 @@ const ActionButtons = ({
     );
 };
 
+/**
+ * Componente de tabla para visualizar y gestionar tutores.
+ * Soporta filtrado, ordenación, paginación, acciones individuales y masivas.
+ */
 export default function TutorTable({
     data = [],
     status,
@@ -454,7 +497,7 @@ export default function TutorTable({
                                 </span>
                                 {activeTab === "Activas" ? (
                                     <button
-                                        onClick={() => onBulkDelete?.(selectedIds)}
+                                        onClick={async () => onBulkDelete?.(selectedIds)}
                                         className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12"
                                     >
                                         <TrashIcon className="icon-sm" />
@@ -462,7 +505,7 @@ export default function TutorTable({
                                     </button>
                                 ) : (
                                     <button
-                                        onClick={() => onBulkRestore?.(selectedIds)}
+                                        onClick={async () => onBulkRestore?.(selectedIds)}
                                         className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-600 hover:bg-brand-100 dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400/20 transition-colors min-h-12"
                                     >
                                         <RefreshIcon className="icon-sm" />
@@ -491,18 +534,18 @@ export default function TutorTable({
                                     ariaLabel="Seleccionar todos"
                                 />
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("identificationNumber")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("identificationNumber")}>
                                 <div className="flex items-center">Cédula <SortIndicator column="identificationNumber" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("lastName")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("lastName")}>
                                 <div className="flex items-center uppercase">Nombres y Apellidos <SortIndicator column="lastName" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell uppercase">Carreras</TableCell>
                             <TableCell isHeader className="table-header-cell uppercase">Teléfono</TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("email")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("email")}>
                                 <div className="flex items-center uppercase">Correo Electrónico <SortIndicator column="email" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={() => handleSort("practiceTypes")}>
+                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("practiceTypes")}>
                                 <div className="flex items-center uppercase">Tipo de Práctica <SortIndicator column="practiceTypes" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell text-right">&nbsp;</TableCell>
@@ -578,7 +621,7 @@ export default function TutorTable({
                                         <ActionButtons
                                             onView={onView ? () => onView(t) : undefined}
                                             onEdit={onEdit ? () => onEdit(t) : undefined}
-                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(t.tutorId) : undefined}
+                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(t) : undefined}
                                             activeTab={activeTab}
                                             isInUse={t.isInUse}
                                         />
@@ -629,7 +672,7 @@ export default function TutorTable({
                                             <p className="text-xs text-text-tertiary mt-1 truncate uppercase">{t.identificationPrefix}-{t.identificationNumber}</p>
                                         </div>
                                         <button
-                                            onClick={() => toggleRowExpansion(rowId)}
+                                            onClick={async () => toggleRowExpansion(rowId)}
                                             className="absolute right-2 top-2 p-2 text-text-tertiary hover:bg-bg-secondary dark:hover:bg-white/5 rounded-full min-h-12 min-w-12 flex items-center justify-center transition-transform duration-200"
                                             style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
                                         >
@@ -687,7 +730,7 @@ export default function TutorTable({
                                         <ActionButtons
                                             onView={onView ? () => onView(t) : undefined}
                                             onEdit={onEdit ? () => onEdit(t) : undefined}
-                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(t.tutorId) : undefined}
+                                            onToggleStatus={onToggleStatus ? () => onToggleStatus(t) : undefined}
                                             activeTab={activeTab}
                                             isMobile
                                             isInUse={t.isInUse}

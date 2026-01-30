@@ -1,18 +1,32 @@
+/**
+ * @file GrowthMetrics.tsx
+ * @description Component that displays monthly student growth metrics and breakdown.
+ * Includes trend indicators and mini-bar charts for weekly/daily views.
+ */
+
 import React from 'react';
 import { FiArrowUp, FiArrowDown, FiTrendingUp } from 'react-icons/fi';
+import { DashboardStats } from '../types';
 
+/**
+ * Props for the GrowthMetrics component.
+ */
 interface GrowthMetricsProps {
-  growth: {
-    totalLastMonth: number;
-    totalPrevMonth: number;
-    percentageChange: number;
-    trend: 'up' | 'down' | 'neutral';
-    weeklyBreakdown: { label: string; count: number }[];
-    dailyBreakdown: { label: string; count: number }[];
-  };
+  /** Growth data object containing totals, trends, and breakdowns */
+  growth: DashboardStats['monthlyGrowth'];
+  /** Whether the data is currently being fetched */
   loading?: boolean;
 }
 
+/**
+ * GrowthMetrics component.
+ * Visualizes student registration growth compared to previous periods.
+ * 
+ * @example
+ * ```tsx
+ * <GrowthMetrics growth={stats.monthlyGrowth} loading={false} />
+ * ```
+ */
 const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
   if (loading) {
     return (
@@ -63,7 +77,7 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
                   />
                 </div>
                 <span className="text-[10px] font-medium text-gray-500">{item.label}</span>
-                <div className="absolute -top-8 hidden rounded bg-gray-900 px-2 py-1 text-xs text-white group-hover:block">
+                <div className="absolute -top-8 hidden rounded bg-gray-900 px-2 py-1 text-xs text-white group-hover:block z-10">
                   {item.count} estudiantes
                 </div>
               </div>

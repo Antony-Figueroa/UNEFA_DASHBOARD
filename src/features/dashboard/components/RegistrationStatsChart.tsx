@@ -1,16 +1,37 @@
-import React, { useState } from 'react';
+/**
+ * @file RegistrationStatsChart.tsx
+ * @description Component that renders student registration trends over time using an area chart.
+ * Includes time-range filtering (7 days, 30 days, all).
+ */
+
+import React, { useState, useMemo } from 'react';
 import ReactApexChart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
+import { DashboardStats } from '../types';
 
+/**
+ * Props for the RegistrationStatsChart component.
+ */
 interface RegistrationStatsChartProps {
-  data: { date: string; count: number }[];
+  /** Array of registration data points (date and count) */
+  data: DashboardStats['registrationStats'];
+  /** Whether the data is currently being fetched */
   loading?: boolean;
 }
 
+/**
+ * RegistrationStatsChart component.
+ * Visualizes the history of student registrations with interactive filtering.
+ * 
+ * @example
+ * ```tsx
+ * <RegistrationStatsChart data={stats.registrationStats} loading={false} />
+ * ```
+ */
 const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, loading }) => {
   const [filter, setFilter] = useState<'7d' | '30d' | 'all'>('30d');
 
-  const filteredData = React.useMemo(() => {
+  const filteredData = useMemo(() => {
     if (filter === '7d') return data.slice(-7);
     if (filter === '30d') return data.slice(-30);
     return data;
@@ -113,6 +134,7 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
                   ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-700 dark:text-brand-400'
                   : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
               }`}
+              aria-label={`Filter by ${f === '7d' ? 'last 7 days' : f === '30d' ? 'last 30 days' : 'all time'}`}
             >
               {f === '7d' ? '7 días' : f === '30d' ? '30 días' : 'Todo'}
             </button>

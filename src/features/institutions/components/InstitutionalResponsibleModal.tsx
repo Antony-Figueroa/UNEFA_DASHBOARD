@@ -12,13 +12,20 @@ import Input from "../../../components/form/input/InputField";
 import Button from "../../../components/ui/button/Button";
 import Select from "../../../components/form/Select";
 import CustomSelect from "../../../components/form/CustomSelect";
-import { InstitutionalResponsible } from "../types";
+import { 
+  InstitutionalResponsible, 
+  CreateInstitutionalResponsiblePayload, 
+  UpdateInstitutionalResponsiblePayload 
+} from "../types";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { useLists } from "../../lists/hooks/useLists";
 
 const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
 
+/**
+ * Zod schema for institutional responsible form data.
+ */
 const respSchema = z.object({
   identificationPrefix: z.string().min(1, "Seleccione un prefijo"),
   identificationNumber: z.string()
@@ -50,17 +57,44 @@ const respSchema = z.object({
   institutionId: z.string().min(1, "Seleccione una institución"),
 });
 
+/**
+ * Type inferred from the responsible form schema.
+ */
 type RespFormData = z.infer<typeof respSchema>;
 
+/**
+ * Props for the InstitutionalResponsibleModal component.
+ */
 interface InstitutionalResponsibleModalProps {
+  /** Whether the modal is visible */
   isOpen: boolean;
+  /** Callback to close the modal */
   onClose: () => void;
-  onSave: (data: Omit<InstitutionalResponsible, "responsibleId" | "registrationDate"> & { responsibleId?: string }) => void;
+  /** Callback fired when the form is submitted successfully */
+  onSave: (data: CreateInstitutionalResponsiblePayload | UpdateInstitutionalResponsiblePayload) => void;
+  /** The responsible record being edited, or null if creating a new one */
   editingResp?: InstitutionalResponsible | null;
+  /** Options for the institution selection dropdown */
   institutionOptions: { value: string; label: string }[];
+  /** Whether a background action is in progress */
   isLoading?: boolean;
 }
 
+/**
+ * Modal component for creating or editing institutional responsible records.
+ * Uses react-hook-form for form management and Zod for validation.
+ * 
+ * @example
+ * ```tsx
+ * <InstitutionalResponsibleModal
+ *   isOpen={isModalOpen}
+ *   onClose={() => setModalOpen(false)}
+ *   onSave={handleSave}
+ *   editingResp={selectedResponsible}
+ *   institutionOptions={institutions}
+ * />
+ * ```
+ */
 export default function InstitutionalResponsibleModal({
   isOpen,
   onClose,
@@ -185,20 +219,31 @@ export default function InstitutionalResponsibleModal({
     }
   }, [editingResp, isOpen, reset]);
 
+  /**
+   * Handles form submission. Formats the data and calls the onSave callback.
+   * @param data - The validated form data.
+   */
   const onSubmit = (data: RespFormData) => {
     const { phonePrefix, phoneNumber, ...rest } = data;
-    onSave({
+    const commonData = {
       ...rest,
       phone: `${phonePrefix}${phoneNumber}`,
       status: editingResp?.status ?? true,
-      institutionName: institutionOptions.find(i => i.value === data.institutionId)?.label,
-      responsibleId: editingResp?.responsibleId,
-    });
+    };
+
+    if (editingResp) {
+      onSave({
+        ...commonData,
+        responsibleId: editingResp.responsibleId,
+      } as UpdateInstitutionalResponsiblePayload);
+    } else {
+      onSave(commonData as CreateInstitutionalResponsiblePayload);
+    }
   };
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} className="max-w-4xl" showCloseButton>
+      <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} size="5xl" showCloseButton>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
           <ModalHeader>
             {editingResp ? "Editar Responsable" : "Nuevo Responsable"}

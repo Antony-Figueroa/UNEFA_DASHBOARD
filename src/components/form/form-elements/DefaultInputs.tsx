@@ -62,9 +62,9 @@ export default function DefaultInputs() {
             id="date-picker"
             label="Date Picker Input"
             placeholder="Select a date"
-            onChange={(e) => {
+            onChange={(dateStr) => {
               // Handle your logic
-              console.log(e.target.value);
+              console.log(dateStr);
             }}
           />
         </div>

@@ -4,7 +4,7 @@
  * `react-flatpickr` para una selección de fechas estilizada y consistente.
  */
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Periodo, CreatePeriodPayload, UpdatePeriodPayload } from '../types';
@@ -72,6 +72,9 @@ export default function PeriodModal({
 
     const isCulminado = periodo?.periodStatus === 3;
     const isInCurso = periodo?.periodStatus === 2;
+
+    // Ref para evitar que los efectos de sincronización interfieran con la inicialización
+    const isInitializing = useRef(false);
 
     /**
      * Calcula los rangos de fechas de los periodos existentes para deshabilitarlos en el calendario.
@@ -204,9 +207,10 @@ export default function PeriodModal({
 
     /**
      * Efecto para sincronizar el año del calendario cuando cambia el selector de año.
+     * No debe ejecutarse durante la inicialización para evitar sobrescribir los valores sugeridos.
      */
     useEffect(() => {
-        if (!isOpen || periodo || !yearValue) return;
+        if (!isOpen || periodo || !yearValue || isInitializing.current) return;
 
         const selectedYearNum = parseInt(yearValue);
         if (isNaN(selectedYearNum)) return;
@@ -233,15 +237,33 @@ export default function PeriodModal({
     }, [yearValue, isOpen, periodo, minNewPeriodStartDate, setValue, watch]);
 
     /**
+     * Efecto para limpiar el formulario cuando el modal se cierra.
+     * Esto asegura que la próxima vez que se abra no haya residuos del estado anterior.
+     */
+    useEffect(() => {
+        if (!isOpen) {
+            reset({
+                year: '',
+                periodoTipo: '1',
+                startDate: undefined,
+                endDate: undefined,
+            });
+        }
+    }, [isOpen, reset]);
+
+    /**
      * Efecto para inicializar o resetear el formulario cuando el modal se abre.
      */
     useEffect(() => {
         if (isOpen) {
+            isInitializing.current = true;
+            
             if (periodo) {
                 // Dividir el lapso existente (ej: "1-2025") en año y tipo
                 const [tipo, year] = periodo.description.split('-');
-                const inicio = periodo.startDate; // Ya es un objeto Date gracias al servicio
-                const fin = periodo.endDate;     // Ya es un objeto Date gracias al servicio
+                const inicio = periodo.startDate; 
+                const fin = periodo.endDate;     
+                
                 reset({
                     year: year,
                     periodoTipo: tipo as '1' | '2',
@@ -271,8 +293,12 @@ export default function PeriodModal({
 
                     const dayAfterLastEnd = new Date(lastPeriod.endDate);
                     dayAfterLastEnd.setDate(dayAfterLastEnd.getDate() + 1);
-                    dayAfterLastEnd.setHours(0, 0, 0, 0); // Normalizar a medianoche
+                    dayAfterLastEnd.setHours(0, 0, 0, 0); 
                     autoStartDate = dayAfterLastEnd;
+
+                    if (autoStartDate.getFullYear() < parseInt(nextYear)) {
+                        autoStartDate = new Date(parseInt(nextYear), 0, 1);
+                    }
                 }
 
                 const initialValues = {
@@ -284,8 +310,6 @@ export default function PeriodModal({
 
                 reset(initialValues);
 
-                // Forzar la actualización de los campos en el estado de react-hook-form
-                // Esto asegura que useMemo y otros observadores vean los valores inmediatamente
                 if (initialValues.startDate) {
                     setValue('startDate', initialValues.startDate, { shouldValidate: true });
                 }
@@ -293,6 +317,11 @@ export default function PeriodModal({
                     setValue('endDate', initialValues.endDate, { shouldValidate: true });
                 }
             }
+            
+            // Finalizar inicialización después de un breve delay para permitir que watch() se actualice
+            setTimeout(() => {
+                isInitializing.current = false;
+            }, 50);
         }
     }, [periodo, isOpen, reset, existingPeriods, setValue]);
 

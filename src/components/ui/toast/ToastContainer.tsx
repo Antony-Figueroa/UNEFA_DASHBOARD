@@ -53,7 +53,7 @@ const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({
                 className="text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400 uppercase tracking-wider transition-colors"
                 type="button"
               >
-                Deshacer
+                
               </button>
             )}
             {toast.onViewDetails && (
@@ -65,7 +65,7 @@ const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({
                 className="text-xs font-bold text-text-secondary hover:text-text-primary dark:text-text-tertiary uppercase tracking-wider transition-colors"
                 type="button"
               >
-                Ver Detalles
+              
               </button>
             )}
           </div>

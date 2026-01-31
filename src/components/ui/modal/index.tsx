@@ -45,6 +45,18 @@ export const Modal: React.FC<ModalProps & { size?: "sm" | "md" | "lg" | "xl" | "
   const modalRef = useRef<HTMLDivElement>(null);
   const handleClose = (typeof onCloseAttempt === 'function' ? onCloseAttempt : null) || onClose;
 
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    // Si el clic es en el backdrop y no en un elemento de Flatpickr que está fuera del modal
+    const target = e.target as HTMLElement;
+    const isFlatpickrElement = target.closest('.flatpickr-calendar') || 
+                               target.closest('.flatpickr-monthDropdown-months') ||
+                               target.closest('.flatpickr-innerContainer');
+    
+    if (!isFlatpickrElement) {
+      handleClose();
+    }
+  };
+
   // Atrapado de foco para accesibilidad
   useEffect(() => {
     if (isOpen && modalRef.current) {
@@ -114,7 +126,7 @@ export const Modal: React.FC<ModalProps & { size?: "sm" | "md" | "lg" | "xl" | "
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-[2px] animate-in fade-in duration-300" 
-        onClick={handleClose}
+        onClick={handleBackdropClick}
         aria-hidden="true"
       />
 

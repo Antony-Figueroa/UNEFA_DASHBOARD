@@ -1,3 +1,10 @@
+/**
+ * @file CareerModal.tsx
+ * @description Modal para la creación y edición de Carreras.
+ * Implementa validaciones complejas con Zod, manejo de estado de formulario con React Hook Form,
+ * y protección contra pérdida de cambios no guardados.
+ */
+
 import { useEffect, useMemo, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,18 +21,35 @@ import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 
 import { InternshipTypeOption } from "../../internship-types/types";
 
+/**
+ * Propiedades del componente CareerModal.
+ */
 interface CareerModalProps {
+  /** Indica si el modal está visible */
   isOpen: boolean;
+  /** Función para cerrar el modal */
   onClose: () => void;
+  /** Función que se llama al guardar los datos (crear o editar) */
   onSave: (career: Omit<Career, "careerId" | "creationDate">) => void;
+  /** Objeto de la carrera en edición (null si es creación) */
   editingCareer?: Career | null;
+  /** Opciones de tipos de pasantías disponibles */
   internshipOptions: InternshipTypeOption[];
+  /** Indica si hay una operación asíncrona en curso */
   isLoading?: boolean;
+  /** Indica si la carrera tiene evaluaciones pendientes (restricción de edición) */
   hasPendingEvaluations?: boolean;
+  /** Indica si la carrera ya está siendo usada por estudiantes/procesos */
   isInUse?: boolean;
+  /** Lista de carreras existentes para validación de duplicados */
   existingCareers?: Career[];
 }
 
+/**
+ * Esquema de validación para el formulario de Carreras.
+ * @param existingCareers - Lista de carreras para validar unicidad.
+ * @param editingCareerId - ID de la carrera actual (para ignorarla en validación de duplicados).
+ */
 const createCareerSchema = (existingCareers: Career[], editingCareerId?: string | number) => 
   z.object({
     careerName: z.string()
@@ -63,16 +87,26 @@ const createCareerSchema = (existingCareers: Career[], editingCareerId?: string 
 
 type CareerFormData = z.infer<ReturnType<typeof createCareerSchema>>;
 
+/**
+ * Opciones para la nota mínima (1 a 20).
+ */
 const gradeOptions = Array.from({ length: 20 }, (_, i) => ({
   value: String(i + 1),
   label: String(i + 1)
 }));
 
+/**
+ * Opciones para el tipo de carrera.
+ */
 const careerTypeOptions = [
   { value: 'CORTA', label: 'CORTA' },
   { value: 'LARGA', label: 'LARGA' }
 ];
 
+/**
+ * Componente CareerModal.
+ * Maneja el ciclo de vida del formulario de carreras, incluyendo inicialización y limpieza.
+ */
 export default function CareerModal({
   isOpen,
   onClose,
@@ -84,6 +118,7 @@ export default function CareerModal({
   isInUse = false,
   existingCareers = [],
 }: CareerModalProps) {
+  // Ref para evitar lecturas de estado desactualizadas durante la inicialización del modal
   const isInitializing = useRef(false);
 
   const {
@@ -96,7 +131,7 @@ export default function CareerModal({
     formState: { errors, isDirty, isValid },
   } = useForm<CareerFormData>({
     resolver: zodResolver(createCareerSchema(existingCareers, editingCareer?.careerId)),
-    mode: "onChange",
+    mode: "all",
     defaultValues: {
       careerName: "",
       careerCode: "",
@@ -266,8 +301,10 @@ export default function CareerModal({
                     options={careerTypeOptions}
                     value={field.value}
                     onChange={field.onChange}
+                    onBlur={field.onBlur}
                     placeholder="Seleccione tipo"
                     disabled={isInUse}
+                    error={!!errors.careerType}
                   />
                 )}
               />
@@ -275,7 +312,7 @@ export default function CareerModal({
                 <p className="mt-1 text-[10px] text-text-tertiary italic uppercase font-bold tracking-tighter opacity-70">Bloqueado por uso</p>
               )}
               {errors.careerType && (
-                <p className="mt-1 text-xs text-error-500">{errors.careerType.message}</p>
+                <p className="mt-1 text-xs text-error-500 font-medium">{errors.careerType.message}</p>
               )}
             </div>
 
@@ -289,8 +326,10 @@ export default function CareerModal({
                       options={gradeOptions}
                       value={field.value}
                       onChange={field.onChange}
+                      onBlur={field.onBlur}
                       placeholder="Seleccione Nota Mínima"
                       disabled={isInUse && hasPendingEvaluations}
+                      error={!!errors.minimumGrade}
                     />
                   )}
                 />
@@ -300,7 +339,7 @@ export default function CareerModal({
                   </p>
                 )}
                 {errors.minimumGrade && (
-                <p className="mt-1 text-xs text-error-500">{errors.minimumGrade.message}</p>
+                <p className="mt-1 text-xs text-error-500 font-medium">{errors.minimumGrade.message}</p>
               )}
             </div>
             <div>
@@ -323,9 +362,10 @@ export default function CareerModal({
                 control={control}
                 render={({ field }) => (
                   <MultiSelect
-                    label="Tipos de Prácticas"
+                    label="Tipos de Prácticas *"
                     options={mappedInternshipOptions}
                     value={field.value}
+                    onBlur={field.onBlur}
                     onChange={(selectedIds: string[]) => {
                       // IDs según base de datos: 1 (ÚNICA), 2 (HOSPITALARIA), 3 (COMUNITARIA)
                       const lastSelected = selectedIds[selectedIds.length - 1];
@@ -362,6 +402,7 @@ export default function CareerModal({
                     }}
                     placeholder="Seleccione los tipos"
                     disabled={isInUse}
+                    error={!!errors.internshipTypeIds}
                   />
                 )}
               />
@@ -369,7 +410,7 @@ export default function CareerModal({
                 <p className="mt-1 text-[10px] text-text-tertiary italic uppercase font-bold tracking-tighter opacity-70">Bloqueado por uso</p>
               )}
               {errors.internshipTypeIds && (
-                <p className="mt-1 text-xs text-error-500">{errors.internshipTypeIds.message}</p>
+                <p className="mt-1 text-xs text-error-500 font-medium">{errors.internshipTypeIds.message}</p>
               )}
             </div>
           </div>

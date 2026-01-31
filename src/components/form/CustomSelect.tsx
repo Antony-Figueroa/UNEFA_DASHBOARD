@@ -1,4 +1,11 @@
+/**
+ * @file CustomSelect.tsx
+ * @description Componente de selección (Dropdown) personalizado y altamente personalizable.
+ * Resuelve problemas de visualización en modales mediante el uso de Portals y posicionamiento dinámico.
+ */
+
 import { useState, useEffect, useRef, forwardRef } from "react";
+import { createPortal } from "react-dom";
 import { Tooltip } from "../ui/tooltip/Tooltip";
 import { cn } from "../../utils/cn";
 import { ChevronDown } from "lucide-react";
@@ -44,17 +51,13 @@ export interface CustomSelectProps {
 }
 
 /**
- * Componente de selección (Dropdown) personalizado y accesible.
- * A diferencia del Select estándar, este utiliza elementos personalizados para mayor control visual y soporte para tooltips en opciones desactivadas.
+ * Componente CustomSelect.
  * 
- * @component
- * @example
- * ```tsx
- * <CustomSelect 
- *   options={[{ value: '1', label: 'Activo' }, { value: '2', label: 'Inactivo', disabled: true, disabledReason: 'No disponible' }]} 
- *   onChange={(val) => console.log(val)} 
- * />
- * ```
+ * Características clave:
+ * 1. **Portals**: El menú desplegable se renderiza en el `document.body` para evitar problemas de `overflow: hidden` o `z-index` en modales.
+ * 2. **Posicionamiento Dinámico**: Calcula su posición relativa al viewport y se actualiza al hacer scroll o cambiar el tamaño de la ventana.
+ * 3. **Accesibilidad**: Soporta estados de error, deshabilitado y tooltips informativos.
+ * 4. **Estética**: Sigue la línea de diseño del proyecto con soporte para modo oscuro.
  */
 const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
   id,
@@ -70,32 +73,75 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
 }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState<string>(value !== undefined ? value : defaultValue);
+  
+  /** 
+   * Estado para almacenar las coordenadas y dimensiones del input.
+   * Se usa para posicionar el menú desplegable (Portal) exactamente debajo del botón.
+   */
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Sincronizar estado si el valor externo cambia
+  /**
+   * Actualiza la posición del menú desplegable basándose en la posición actual del contenedor en el viewport.
+   * Esto asegura que el menú "siga" al input si este se desplaza (ej. scroll en el modal).
+   */
+  const updateCoords = () => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom,
+        left: rect.left,
+        width: rect.width // Usar rect.width en lugar de offsetWidth
+      });
+    }
+  };
+
+  /**
+   * Efecto para manejar eventos de scroll y resize globales.
+   * El listener de scroll usa `capture: true` para detectar scroll en cualquier contenedor padre (como el modal body).
+   */
+  useEffect(() => {
+    if (isOpen) {
+      updateCoords();
+      window.addEventListener('scroll', updateCoords, true);
+      window.addEventListener('resize', updateCoords);
+    }
+    return () => {
+      window.removeEventListener('scroll', updateCoords, true);
+      window.removeEventListener('resize', updateCoords);
+    };
+  }, [isOpen]);
+
+  // Sincronizar estado interno si el valor externo (prop value) cambia
   useEffect(() => {
     if (value !== undefined) {
       setSelectedValue(value);
     }
   }, [value]);
 
-  // Manejar clics fuera del componente para cerrar el menú
+  /**
+   * Maneja el cierre del menú al hacer clic fuera.
+   */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         if (isOpen) {
           setIsOpen(false);
-          if (onBlur) onBlur();
+          onBlur?.(); // Disparar onBlur al cerrar el menú por clic fuera
         }
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, [isOpen, onBlur]);
 
   /**
-   * Maneja la selección de una opción.
+   * Procesa la selección de una opción.
    * @param option - La opción seleccionada.
    */
   const handleSelect = (option: CustomSelectOption) => {
@@ -104,9 +150,67 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
     setSelectedValue(option.value);
     onChange(option.value);
     setIsOpen(false);
+    onBlur?.(); // Notificar pérdida de foco para validaciones (React Hook Form)
   };
 
   const selectedOption = options.find((opt) => opt.value === selectedValue);
+
+  /**
+   * Contenido del menú desplegable. Se define por separado para ser usado con createPortal.
+   */
+  const renderMenu = () => {
+    if (!isOpen || disabled) return null;
+
+    return (
+      <ul
+        className="max-h-60 w-full overflow-auto rounded-xl border border-border-light bg-white py-1.5 shadow-theme-lg outline-none dark:border-border-dark dark:bg-bg-dark animate-in fade-in zoom-in-95 duration-200"
+        role="listbox"
+        style={{
+          width: coords.width,
+          minWidth: '120px' // Asegurar un ancho mínimo para opciones cortas (como notas)
+        }}
+      >
+        {options.length > 0 ? (
+          options.map((option) => {
+            const isOptionDisabled = option.disabled;
+            const optionContent = (
+              <li
+                key={option.value}
+                onClick={() => handleSelect(option)}
+                aria-disabled={isOptionDisabled}
+                role="option"
+                aria-selected={selectedValue === option.value}
+                className={cn(
+                  "relative cursor-pointer select-none px-4 py-2 text-sm transition-colors",
+                  isOptionDisabled
+                    ? "cursor-not-allowed bg-bg-secondary text-text-tertiary opacity-50 line-through dark:bg-gray-800/50"
+                    : selectedValue === option.value
+                      ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400 font-medium"
+                      : "text-text-primary hover:bg-gray-50 dark:text-text-emphasis dark:hover:bg-white/5"
+                )}
+              >
+                {option.label}
+              </li>
+            );
+
+            if (isOptionDisabled && option.disabledReason) {
+              return (
+                <Tooltip key={option.value} content={option.disabledReason}>
+                  {optionContent}
+                </Tooltip>
+              );
+            }
+
+            return optionContent;
+          })
+        ) : (
+          <li className="px-4 py-2 text-sm text-text-tertiary text-center">
+            No hay opciones
+          </li>
+        )}
+      </ul>
+    );
+  };
 
   return (
     <div
@@ -148,52 +252,20 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
         />
       </button>
 
-      {/* Menú Desplegable */}
-      {isOpen && !disabled && (
-        <ul
-          className="absolute z-50 mt-2 max-h-60 w-full overflow-auto rounded-xl border border-border-light bg-white py-1.5 shadow-theme-lg outline-none dark:border-border-dark dark:bg-bg-dark animate-in fade-in zoom-in-95 duration-200"
-          role="listbox"
+      {/* Menú Desplegable con Portal: se renderiza fuera del DOM local para evitar cortes por overflow */}
+      {isOpen && !disabled && containerRef.current && createPortal(
+        <div 
+          className="fixed"
+          style={{
+            top: coords.top + 4,
+            left: coords.left,
+            width: coords.width,
+            zIndex: 9999, // Usar zIndex numérico para evitar errores de linter con clases arbitrarias
+          }}
         >
-          {options.length > 0 ? (
-            options.map((option) => {
-              const isOptionDisabled = option.disabled;
-              const optionContent = (
-                <li
-                  key={option.value}
-                  onClick={() => handleSelect(option)}
-                  aria-disabled={isOptionDisabled}
-                  role="option"
-                  aria-selected={selectedValue === option.value}
-                  className={cn(
-                    "relative cursor-pointer select-none px-4 py-2 text-sm transition-colors",
-                    isOptionDisabled
-                      ? "cursor-not-allowed bg-bg-secondary text-text-tertiary opacity-50 line-through dark:bg-gray-800/50"
-                      : selectedValue === option.value
-                        ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400 font-medium"
-                        : "text-text-primary hover:bg-gray-50 dark:text-text-emphasis dark:hover:bg-white/5"
-                  )}
-                >
-                  {option.label}
-                </li>
-              );
-
-              // Si la opción está desactivada y tiene un motivo, mostramos el tooltip
-              if (isOptionDisabled && option.disabledReason) {
-                return (
-                  <Tooltip key={option.value} content={option.disabledReason}>
-                    {optionContent}
-                  </Tooltip>
-                );
-              }
-
-              return optionContent;
-            })
-          ) : (
-            <li className="px-4 py-2 text-sm text-text-tertiary text-center">
-              No hay opciones
-            </li>
-          )}
-        </ul>
+          {renderMenu()}
+        </div>,
+        document.body
       )}
     </div>
   );

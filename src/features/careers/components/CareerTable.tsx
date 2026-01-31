@@ -6,6 +6,18 @@
  * @module features/careers/components
  */
 
+/**
+ * @file CareerTable.tsx
+ * @description Componente de tabla especializado para mostrar y gestionar carreras.
+ * Implementa una interfaz de datos densa con funcionalidades de:
+ * - Ordenamiento por múltiples columnas.
+ * - Paginación configurable.
+ * - Selección múltiple para acciones en bloque.
+ * - Filtrado por tipo de práctica.
+ * - Buscador integrado.
+ * - Estados de carga y error visuales.
+ */
+
 import { useMemo, useState, useEffect } from "react";
 import { useDbStatus } from "../../../context/db-status";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
@@ -46,37 +58,39 @@ const getCareerColor = (careerName: string): "primary" | "success" | "error" | "
 interface CareerTableProps {
   /** Datos de las carreras a mostrar */
   data: CareerRowData[];
-  /** Estado de la carga de datos */
+  /** Estado de la carga de datos (idle, loading, error, success) */
   status: CrudStatus;
-  /** Error en caso de falla en la carga */
+  /** Error capturado durante la carga */
   error: Error | null;
-  /** Callback al editar una carrera */
+  /** Callback para iniciar la edición de una carrera */
   onEdit?: (career: CareerRowData) => void;
-  /** Callback al eliminar una carrera */
+  /** Callback para eliminar (lógicamente) una carrera */
   onDelete?: (careerId: string | number) => void;
-  /** Callback al cambiar el estado (activar/desactivar) */
+  /** Callback para activar/desactivar el estado de una carrera */
   onToggleStatus?: (careerId: string | number) => void;
-  /** Callback al ver detalles de una carrera */
+  /** Callback para abrir la vista de detalles */
   onView?: (career: CareerRowData) => void;
-  /** Callback para eliminación masiva */
+  /** Callback para eliminación masiva de registros seleccionados */
   onBulkDelete?: (ids: (string | number)[]) => void;
-  /** Callback para restauración masiva */
+  /** Callback para restauración masiva de registros seleccionados */
   onBulkRestore?: (ids: (string | number)[]) => void;
-  /** Indica si se muestran carreras inactivas */
+  /** Indica si se están mostrando datos del histórico (eliminados) */
   inactiveMode?: boolean;
-  /** Pestaña activa actual */
+  /** Pestaña activa en la que se encuentra la tabla */
   activeTab?: "Activas" | "Inactivas";
-  /** Indica si hay una operación en curso */
+  /** Indica si hay una operación de acción (ej. guardado) en curso */
   loading?: boolean;
-  /** Opciones de tipos de pasantía para mapeo visual */
+  /** Opciones de tipos de práctica para el filtro y visualización de badges */
   practiceOptions?: InternshipTypeOption[];
-  /** Término de búsqueda externo */
+  /** Valor actual del buscador (proveniente del estado global del módulo) */
   searchTerm?: string;
-  /** Callback para cambiar el término de búsqueda */
+  /** Función para notificar cambios en el buscador al componente padre */
   onSearchChange?: (term: string) => void;
 }
 
+/** Claves por las que se puede ordenar la tabla */
 type SortKey = "careerCode" | "careerName" | "minimumGrade" | "careerAbbreviation";
+/** Dirección del ordenamiento */
 type SortOrder = "asc" | "desc";
 
 /**
@@ -85,7 +99,7 @@ type SortOrder = "asc" | "desc";
 const formatDecimal = (n: number) => n.toFixed(2);
 
 /**
- * Sub-componente para renderizar las acciones CRUD de cada fila.
+ * Sub-componente interno para los botones de acción de cada fila.
  */
 interface ActionButtonsProps {
   onEdit?: () => void;
@@ -365,11 +379,11 @@ export default function CareerTable({
 
       {/* Cabecera reorganizada: filtros y búsqueda */}
       <div className="p-4 border-b border-border-light dark:border-border-dark space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <div className="relative flex-1 max-w-md">
             <input
               type="text"
-              placeholder="Buscar por nombre o código"
+              placeholder="Buscar por nombre o código de carrera"
               value={searchTerm}
               onChange={(e) => onSearchChange?.(e.target.value)}
               className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-10 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary"
@@ -380,7 +394,7 @@ export default function CareerTable({
               </svg>
             </span>
           </div>
-          <div className="relative">
+          <div className="relative w-full sm:w-64">
             <CustomSelect
               options={[
                 { value: "", label: "Todos los tipos" },

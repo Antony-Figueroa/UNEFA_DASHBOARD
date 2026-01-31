@@ -1,5 +1,12 @@
+/**
+ * @file MultiSelect.tsx
+ * @description Componente de selección múltiple estandarizado con soporte para Portals.
+ * Permite la selección de múltiples opciones mediante una interfaz de etiquetas (tags).
+ */
+
 import type React from "react";
 import { useState, useEffect, useRef, forwardRef } from "react";
+import { createPortal } from "react-dom";
 import { Tooltip } from "../ui/tooltip/Tooltip";
 import { cn } from "../../utils/cn";
 import { X, ChevronDown, AlertCircle } from "lucide-react";
@@ -36,23 +43,22 @@ export interface MultiSelectProps {
   infoTooltip?: string;
   /** Clases adicionales para personalizar el contenedor. */
   className?: string;
+  /** Indica si hay un error en la validación. */
+  error?: boolean;
+  /** Función que se llama cuando el componente pierde el foco. */
+  onBlur?: () => void;
 }
 
 /**
- * Componente de selección múltiple (MultiSelect) estandarizado.
- * Permite seleccionar varias opciones de una lista con etiquetas visuales y soporte para teclado.
+ * Componente MultiSelect.
  * 
- * @component
- * @example
- * ```tsx
- * <MultiSelect 
- *   label="Etiquetas" 
- *   options={[{ value: '1', text: 'React' }, { value: '2', text: 'Vite' }]} 
- *   onChange={(vals) => console.log(vals)} 
- * />
- * ```
+ * Características clave:
+ * 1. **Gestión de Selección**: Soporta modo controlado y no controlado.
+ * 2. **Visualización de Tags**: Las opciones seleccionadas se muestran como etiquetas removibles dentro del input.
+ * 3. **Posicionamiento con Portals**: Al igual que CustomSelect, utiliza Portals y posicionamiento dinámico para evitar cortes visuales en modales.
+ * 4. **Accesibilidad**: Incluye soporte para teclado y estados de validación (error).
  */
-const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
+const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({ 
   label,
   options,
   defaultSelected = [],
@@ -62,39 +68,69 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
   placeholder = "Seleccionar opciones",
   infoTooltip,
   className = "",
+  error = false,
+  onBlur,
 }, ref) => {
   const isControlled = value !== undefined;
   const [internalSelected, setInternalSelected] = useState<string[]>(defaultSelected);
   const selectedOptions = isControlled ? value : internalSelected;
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
+
+  /** 
+   * Estado para el posicionamiento dinámico del menú desplegable.
+   */
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Manejar clics fuera del componente para cerrar el menú
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
+  /**
+   * Calcula y actualiza las coordenadas del menú basándose en el elemento combobox.
+   * Se ejecuta al abrir y ante cualquier evento de scroll/resize.
+   */
+  const updateCoords = () => {
+    if (dropdownRef.current) {
+      const comboRect = dropdownRef.current.querySelector('[role="combobox"]')?.getBoundingClientRect();
+      if (comboRect) {
+        setCoords({
+          top: comboRect.bottom,
+          left: comboRect.left,
+          width: comboRect.width
+        });
       }
-    };
-
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
     }
+  };
+
+  /**
+   * Efecto para el seguimiento dinámico de la posición.
+   */
+  useEffect(() => {
+    if (isOpen) {
+      updateCoords();
+      window.addEventListener('scroll', updateCoords, true);
+      window.addEventListener('resize', updateCoords);
+    }
+    return () => {
+      window.removeEventListener('scroll', updateCoords, true);
+      window.removeEventListener('resize', updateCoords);
+    };
   }, [isOpen]);
 
   /**
-   * Actualiza la selección interna y notifica el cambio.
-   * @param newSelected - Lista de nuevos valores seleccionados.
+   * Maneja clics fuera del componente para cerrar el menú y disparar validaciones.
    */
-  const updateSelection = (newSelected: string[]) => {
-    if (!isControlled) setInternalSelected(newSelected);
-    onChange?.(newSelected);
-  };
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        if (isOpen) {
+          setIsOpen(false);
+          onBlur?.(); // Disparar onBlur al cerrar el menú por clic fuera
+        }
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen, onBlur]);
 
   /**
    * Alterna la visibilidad del menú desplegable.
@@ -107,22 +143,33 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
   };
 
   /**
-   * Maneja la selección o deselección de una opción.
-   * @param optionValue - El valor de la opción a alternar.
+   * Alterna la selección de una opción.
    */
   const handleSelect = (optionValue: string) => {
+    if (disabled) return;
+    
     const newSelected = selectedOptions.includes(optionValue)
       ? selectedOptions.filter((v) => v !== optionValue)
       : [...selectedOptions, optionValue];
-    updateSelection(newSelected);
+
+    if (!isControlled) {
+      setInternalSelected(newSelected);
+    }
+    onChange?.(newSelected);
   };
 
   /**
-   * Elimina una opción específica de la selección.
-   * @param optionValue - El valor de la opción a eliminar.
+   * Elimina una opción seleccionada desde su tag.
    */
-  const removeOption = (optionValue: string) => {
-    updateSelection(selectedOptions.filter((v) => v !== optionValue));
+  const handleRemove = (e: React.MouseEvent, optionValue: string) => {
+    e.stopPropagation();
+    if (disabled) return;
+    
+    const newSelected = selectedOptions.filter((v) => v !== optionValue);
+    if (!isControlled) {
+      setInternalSelected(newSelected);
+    }
+    onChange?.(newSelected);
   };
 
   /**
@@ -205,7 +252,10 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
           >
             <div
               className={cn(
-                "mb-2 flex min-h-[44px] w-full rounded-lg border border-border-medium py-1.5 px-3 shadow-theme-xs outline-none transition-all focus-within:border-brand-300 focus-within:shadow-focus-ring dark:border-border-dark dark:bg-bg-dark dark:focus-within:border-brand-300",
+                "mb-2 flex min-h-[44px] w-full rounded-lg border py-1.5 px-3 shadow-theme-xs outline-none transition-all focus-within:shadow-focus-ring dark:bg-bg-dark",
+                error 
+                  ? "border-error-500 focus-within:border-error-500 focus-within:shadow-error-100/50 dark:border-error-500/50" 
+                  : "border-border-medium focus-within:border-brand-300 dark:border-border-dark dark:focus-within:border-brand-300",
                 disabled ? "opacity-50 cursor-not-allowed bg-bg-secondary dark:bg-white/5" : "cursor-pointer"
               )}
             >
@@ -254,14 +304,20 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
             </div>
           </div>
 
-          {/* Menú Desplegable */}
-          {isOpen && (
-            <div
-              className="absolute left-0 z-50 w-full mt-1 overflow-y-auto bg-bg-main rounded-lg shadow-xl top-full max-h-60 dark:bg-bg-dark border border-border-light dark:border-border-dark animate-in fade-in zoom-in-95 duration-100"
-              onClick={(e) => e.stopPropagation()}
-              role="listbox"
-              aria-label={label}
-            >
+          {/* Menú Desplegable con Portal */}
+      {isOpen && createPortal(
+        <div
+          className="fixed mt-1 overflow-y-auto bg-bg-main rounded-lg shadow-xl max-h-60 dark:bg-bg-dark border border-border-light dark:border-border-dark animate-in fade-in zoom-in-95 duration-100"
+          style={{
+            top: coords.top,
+            left: coords.left,
+            width: coords.width,
+            zIndex: 9999, // Usar zIndex numérico para evitar errores de linter con clases arbitrarias
+          }}
+          onClick={(e) => e.stopPropagation()}
+          role="listbox"
+          aria-label={label}
+        >
               {options.length > 0 ? (
                 options.map((option, index) => {
                   const isSelected = selectedOptions.includes(option.value);
@@ -299,11 +355,12 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
                   );
                 })
               ) : (
-                <div className="p-4 text-sm text-center text-text-tertiary">
+                <div className="p-4 text-center text-sm text-text-tertiary">
                   No hay opciones disponibles
                 </div>
               )}
-            </div>
+            </div>,
+            document.body
           )}
         </div>
       </div>

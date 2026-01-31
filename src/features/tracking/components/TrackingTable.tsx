@@ -225,7 +225,7 @@ export default function TrackingTable({
                     <Select
                         options={[{ value: "", label: "Todos" }, ...transferOptions]}
                         value={transferFilter}
-                        onChange={(value) => setTransferFilter(value)}
+                        onChangeValue={(value) => setTransferFilter(value)}
                         className="bg-white dark:bg-white/5"
                     />
                 </div>

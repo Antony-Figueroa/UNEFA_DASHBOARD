@@ -147,3 +147,26 @@ export const resetWithToken = async (token: string, newPassword: string): Promis
   });
   return response.data;
 };
+
+export const authService = {
+  login,
+  getMe,
+  updateProfile,
+  logout,
+  changePassword,
+  getSecurityQuestions,
+  verifySecurityQuestions,
+  getPresetQuestions,
+  resetPassword,
+  requestRecovery,
+  resetWithToken,
+  validateToken: async (_token: string): Promise<AuthUser> => {
+    // Si ya hay un token en el storage, getMe usará el interceptor para validarlo
+    const response = await getMe();
+    if (response.success && response.user) {
+      return response.user;
+    }
+    throw new Error("Invalid token");
+  }
+};
+

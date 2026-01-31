@@ -15,13 +15,27 @@ export default function Images() {
       <PageBreadcrumb pageTitle="Images" />
       <div className="space-y-5 sm:space-y-6">
         <ComponentCard title="Responsive image">
-          <ResponsiveImage />
+          <ResponsiveImage 
+            src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" 
+            alt="Example responsive" 
+          />
         </ComponentCard>
         <ComponentCard title="Image in 2 Grid">
-          <TwoColumnImageGrid />
+          <TwoColumnImageGrid 
+            images={[
+              { src: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80", alt: "Grid 1" },
+              { src: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80", alt: "Grid 2" }
+            ]} 
+          />
         </ComponentCard>
         <ComponentCard title="Image in 3 Grid">
-          <ThreeColumnImageGrid />
+          <ThreeColumnImageGrid 
+            images={[
+              { src: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80", alt: "Grid 1" },
+              { src: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80", alt: "Grid 2" },
+              { src: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80", alt: "Grid 3" }
+            ]} 
+          />
         </ComponentCard>
       </div>
     </>

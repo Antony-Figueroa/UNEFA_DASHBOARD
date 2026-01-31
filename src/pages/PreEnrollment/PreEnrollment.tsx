@@ -13,14 +13,11 @@ import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
-import { RefreshIcon, PlusCircleIcon } from "../../icons/actions";
-import { DownloadIcon } from "../../icons";
+import { PlusCircleIcon } from "../../icons/actions";
 
 import PreEnrollmentTable from "../../features/pre-enrollment/components/PreEnrollmentTable";
 import PreEnrollmentModal from "../../features/pre-enrollment/components/PreEnrollmentModal";
 import PreEnrollmentViewModal from "../../features/pre-enrollment/components/PreEnrollmentViewModal";
-import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
-import { PreEnrollmentPDF } from "../../components/ui/pdf/templates/PreEnrollmentPDF";
 import { usePreEnrollment } from "../../features/pre-enrollment/hooks/usePreEnrollment";
 import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import { getInternshipTypes, mapToOptions } from "../../features/internship-types/services/internshipTypesService";
@@ -42,8 +39,8 @@ const formatPreEnrollmentToRow = (p: PreEnrollment): PreEnrollmentRowData => ({
  * Componente PreEnrollmentPage.
  * 
  * Página principal para la gestión de pre-inscripciones.
- * Proporciona una tabla con búsqueda, filtrado, creación, edición,
- * activación/desactivación y generación de PDF de pre-inscripciones.
+ * Proporciona una tabla con búsqueda, filtrado, creación, edición
+ * y activación/desactivación de pre-inscripciones.
  */
 export default function PreEnrollmentPage() {
     const [pageLoading, setPageLoading] = useState(true);
@@ -123,14 +120,7 @@ export default function PreEnrollmentPage() {
     } = usePreEnrollment();
 
     const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
-    const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    
-    // Estados para filtros del PDF
-    const [pdfSearchTerm, setPdfSearchTerm] = useState("");
-    const [pdfPeriodFilter, setPdfPeriodFilter] = useState("");
-    const [pdfPracticeTypeFilter, setPdfPracticeTypeFilter] = useState("");
-
     const [editingEntry, setEditingEntry] = useState<PreEnrollment | null>(null);
     const [viewItem, setViewItem] = useState<PreEnrollmentRowData | null>(null);
 
@@ -149,24 +139,7 @@ export default function PreEnrollmentPage() {
         return preEnrollments.map(formatPreEnrollmentToRow);
     }, [preEnrollments]);
 
-    const pdfFilteredData = useMemo(() => {
-        const search = pdfSearchTerm.trim().toLowerCase();
-        const period = pdfPeriodFilter.trim().toLowerCase();
-        const practiceType = pdfPracticeTypeFilter.trim().toLowerCase();
 
-        return (Array.isArray(preEnrollments) ? preEnrollments : [])
-            .filter(p => p.status === true)
-            .filter(p => {
-                const matchesSearch = !search || 
-                    p.identificationNumber.toLowerCase().includes(search) || 
-                    p.studentName.toLowerCase().includes(search);
-                const matchesPeriod = !period || p.period.toLowerCase() === period;
-                const matchesPracticeType = !practiceType || p.practiceType.toLowerCase() === practiceType;
-                
-                return matchesSearch && matchesPeriod && matchesPracticeType;
-            })
-            .map(formatPreEnrollmentToRow);
-    }, [preEnrollments, pdfSearchTerm, pdfPeriodFilter, pdfPracticeTypeFilter]);
 
     /**
      * Maneja la apertura del modal para crear una nueva pre-inscripción.
@@ -331,13 +304,6 @@ export default function PreEnrollmentPage() {
 
                     {!pageLoading && (
                         <div className="flex items-center gap-3">
-                            <Button
-                                variant="outline"
-                                onClick={() => setIsPDFModalOpen(true)}
-                                startIcon={<DownloadIcon className="h-5 w-5" />}
-                            >
-                                Reporte
-                            </Button>
                             <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
                                 Nueva Pre-Inscripción
                             </Button>
@@ -402,93 +368,6 @@ export default function PreEnrollmentPage() {
                         onClose={() => setViewItem(null)}
                         onEdit={handleEdit}
                         item={viewItem}
-                    />
-
-                    <PDFPreviewModal
-                        isOpen={isPDFModalOpen}
-                        onClose={() => setIsPDFModalOpen(false)}
-                        title="Reporte de Pre-Inscripciones Activas"
-                        data={pdfFilteredData}
-                        template={(data) => <PreEnrollmentPDF data={data} />}
-                        fileName={`reporte-pre-inscripciones-activas-${new Date().toISOString().split('T')[0]}.pdf`}
-                        searchTerm={pdfSearchTerm}
-                        onSearchChange={setPdfSearchTerm}
-                        renderFilters={() => (
-                            <div className="space-y-4">
-                                {/* Filtro por Periodo */}
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
-                                        Período Académico
-                                    </label>
-                                    <div className="relative">
-                                        <select
-                                            value={pdfPeriodFilter}
-                                            onChange={(e) => setPdfPeriodFilter(e.target.value)}
-                                            className="w-full pl-3 pr-10 py-2.5 bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all appearance-none text-text-primary dark:text-white"
-                                        >
-                                            <option value="" className="dark:bg-bg-dark text-text-primary dark:text-white">Todos los períodos</option>
-                                            {periodOptions.map((opt) => (
-                                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark text-text-primary dark:text-white">
-                                                    {opt.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Filtro por Tipo de Práctica */}
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
-                                        Tipo de Práctica
-                                    </label>
-                                    <div className="relative">
-                                        <select
-                                            value={pdfPracticeTypeFilter}
-                                            onChange={(e) => setPdfPracticeTypeFilter(e.target.value)}
-                                            className="w-full pl-3 pr-10 py-2.5 bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all appearance-none text-text-primary dark:text-white"
-                                        >
-                                            <option value="" className="dark:bg-bg-dark text-text-primary dark:text-white">Todos los tipos</option>
-                                            {practiceTypeOptions.map((opt) => (
-                                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark text-text-primary dark:text-white">
-                                                    {opt.label}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {(pdfSearchTerm || pdfPeriodFilter || pdfPracticeTypeFilter) && (
-                                    <button
-                                        onClick={() => {
-                                            setPdfSearchTerm("");
-                                            setPdfPeriodFilter("");
-                                            setPdfPracticeTypeFilter("");
-                                        }}
-                                        className="w-full mt-2 py-2 text-xs font-bold text-brand-500 hover:text-brand-600 transition-colors flex items-center justify-center gap-2"
-                                    >
-                                        <RefreshIcon className="h-4 w-4" />
-                                        Limpiar Filtros
-                                    </button>
-                                )}
-                            </div>
-                        )}
-                        columns={[
-                            { header: "Cédula", accessor: "identificationNumber" },
-                            { header: "Estudiante", accessor: "studentName" },
-                            { header: "Período", accessor: "period" },
-                            { header: "Tipo Práctica", accessor: "practiceType" },
-                            { header: "Fecha", accessor: "preEnrollmentDate" },
-                        ]}
                     />
 
                     <UnifiedDialog

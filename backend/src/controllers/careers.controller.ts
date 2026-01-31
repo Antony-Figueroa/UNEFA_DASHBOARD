@@ -125,3 +125,21 @@ export const bulkRestoreCareers = async (req: AuthRequest, res: Response) => {
     handleDbError(res, error);
   }
 };
+
+export const toggleCareerStatus = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const userId = req.user?.userId || 1;
+    
+    if (status === false || status === 0) {
+      await careersService.deleteCareer(id, userId);
+    } else {
+      await careersService.bulkRestoreCareers([id], userId);
+    }
+    
+    res.status(204).send();
+  } catch (error) {
+    handleDbError(res, error);
+  }
+};

@@ -80,6 +80,7 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
    */
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   /**
    * Actualiza la posición del menú desplegable basándose en la posición actual del contenedor en el viewport.
@@ -124,7 +125,10 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
    */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const isOutsideContainer = containerRef.current && !containerRef.current.contains(event.target as Node);
+      const isOutsideMenu = menuRef.current && !menuRef.current.contains(event.target as Node);
+
+      if (isOutsideContainer && isOutsideMenu) {
         if (isOpen) {
           setIsOpen(false);
           onBlur?.(); // Disparar onBlur al cerrar el menú por clic fuera
@@ -255,6 +259,7 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
       {/* Menú Desplegable con Portal: se renderiza fuera del DOM local para evitar cortes por overflow */}
       {isOpen && !disabled && containerRef.current && createPortal(
         <div 
+          ref={menuRef}
           className="fixed"
           style={{
             top: coords.top + 4,

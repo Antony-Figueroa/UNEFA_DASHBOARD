@@ -1,7 +1,8 @@
 /**
  * @file InternshipTypeModal.tsx
- * @description Modal para la creación y edición de Tipos de Pasantía.
- * Incluye validación con Zod y gestión de cambios no guardados.
+ * @description Modal para la creación y edición de Tipos de Práctica Profesional.
+ * Implementa validaciones con Zod, manejo de estado de formulario con React Hook Form,
+ * y protección contra pérdida de cambios no guardados mediante useUnsavedChanges.
  * 
  * @module features/internship-types/components
  */
@@ -19,30 +20,36 @@ import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 
+/**
+ * Propiedades del componente InternshipTypeModal.
+ */
 interface InternshipTypeModalProps {
   /** Indica si el modal está visible */
   isOpen: boolean;
-  /** Callback para cerrar el modal */
+  /** Función para cerrar el modal */
   onClose: () => void;
-  /** Callback para guardar los cambios */
+  /** Función que se llama al guardar los datos (crear o editar) */
   onSave: (item: CreateInternshipTypePayload) => void;
-  /** Elemento que se está editando (null para creación) */
+  /** Objeto de tipo de práctica que se está editando, null si es creación */
   editingItem?: InternshipType | null;
-  /** Lista de tipos existentes para validaciones de duplicados */
+  /** Lista de tipos de práctica existentes para validaciones de unicidad */
   existingTypes?: InternshipType[];
-  /** Indica si el tipo está siendo usado en el sistema */
+  /** Indica si el tipo de práctica ya tiene relaciones en la BD y no puede ser modificado críticamente */
   isInUse?: boolean;
-  /** Estado de carga de la acción de guardado */
+  /** Estado de carga de la petición de guardado */
   isLoading?: boolean;
 }
 
 /**
- * Esquema de validación para el formulario.
+ * Esquema de validación para el formulario de Tipos de Práctica.
+ * @param existingTypes - Lista de tipos para validar duplicados.
+ * @param editingItemId - ID del item actual para omitirlo en la validación de duplicados.
  */
 const createInternshipTypeSchema = (existingTypes: InternshipType[], editingItemId?: number) => 
   z.object({
     name: z.string()
       .min(1, "El nombre es obligatorio")
+      .regex(/^[A-ZÁÉÍÓÚÑ\s]+$/, "El nombre solo permite letras y acentos")
       .transform(val => val.toUpperCase())
       .refine(val => {
         const normalizedVal = val.trim().toUpperCase();
@@ -56,14 +63,21 @@ const createInternshipTypeSchema = (existingTypes: InternshipType[], editingItem
 
 type InternshipTypeFormData = z.infer<ReturnType<typeof createInternshipTypeSchema>>;
 
+/**
+ * Opciones de prioridad para los tipos de práctica.
+ * Determina el orden de importancia o ejecución.
+ */
 const priorityOptions = [
-  { value: "0", label: "0" },
-  { value: "1", label: "1" },
-  { value: "2", label: "2" },
+  { value: "0", label: "0 (Único)" },
+  { value: "1", label: "1 (Hospitalaria)" },
+  { value: "2", label: "2 (Comunitaria)" },
 ];
 
 /**
- * Componente Modal para gestionar Tipos de Pasantía.
+ * Componente InternshipTypeModal.
+ * 
+ * Permite al administrador crear nuevos tipos de práctica o modificar los existentes.
+ * Utiliza un sistema de "Dirty Check" para avisar al usuario si intenta cerrar el modal con cambios.
  */
 export default function InternshipTypeModal({
   isOpen,
@@ -83,7 +97,7 @@ export default function InternshipTypeModal({
     formState: { errors, isDirty, isValid },
   } = useForm<InternshipTypeFormData>({
     resolver: zodResolver(createInternshipTypeSchema(existingTypes, editingItem?.id)),
-    mode: "onChange",
+    mode: "all", // Cambiado a 'all' para validación inmediata y consistente
     defaultValues: {
       name: "",
       priority: "",
@@ -97,6 +111,9 @@ export default function InternshipTypeModal({
     cancelClose,
   } = useUnsavedChanges(isDirty, onClose);
 
+  /**
+   * Efecto para sincronizar el estado del formulario con el item en edición.
+   */
   useEffect(() => {
     if (isOpen) {
       isInitializing.current = true;
@@ -120,10 +137,12 @@ export default function InternshipTypeModal({
     }
   }, [editingItem, isOpen, reset]);
 
+  /**
+   * Manejador de envío del formulario.
+   */
   const onSubmit = (data: InternshipTypeFormData) => {
     onSave({
       name: data.name,
-      abbreviation: data.name.substring(0, 10).toUpperCase(), // Fallback para campo obligatorio en BD
       priority: Number(data.priority),
       status: editingItem?.status ?? true,
     });
@@ -133,7 +152,7 @@ export default function InternshipTypeModal({
     <>
       <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton>
         <ModalHeader>
-          <div className="max-w-4xl mx-auto w-full">
+          <div className="max-w-4xl mx-auto w-full text-center sm:text-left">
             <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
               {editingItem ? "Editar Tipo de Práctica" : "Registrar Tipo de Práctica"}
             </h5>
@@ -144,10 +163,29 @@ export default function InternshipTypeModal({
         </ModalHeader>
 
         <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
-          <form id="internship-type-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-4xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-              <div>
-                <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nombre *</label>
+          <form id="internship-type-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto py-4">
+            {/* Banner informativo para edición bloqueada */}
+            {isInUse && editingItem && (
+              <div className="p-4 rounded-xl bg-warning-50 border border-warning-200 dark:bg-warning-900/20 dark:border-warning-800/30">
+                <div className="flex gap-3">
+                  <div className="shrink-0 text-warning-600 dark:text-warning-400">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-warning-800 dark:text-warning-200">Restricción de Edición</h4>
+                    <p className="text-xs text-warning-700 dark:text-warning-300 mt-1">
+                      Este registro está siendo utilizado por una o más Carreras. La prioridad no puede ser modificada para mantener la integridad de los datos.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+              <div className="md:col-span-2">
+                <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nombre del Tipo de Práctica *</label>
                 <Controller
                   name="name"
                   control={control}
@@ -155,11 +193,12 @@ export default function InternshipTypeModal({
                     <Input
                       {...field}
                       onChange={(e) => {
-                        const val = e.target.value.toUpperCase();
+                        // Solo permite letras y espacios, fuerza mayúsculas
+                        const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').toUpperCase();
                         field.onChange(val);
                       }}
                       type="text"
-                      placeholder="Ingrese el nombre"
+                      placeholder="Ej: PRÁCTICA PROFESIONAL ÚNICA"
                       error={!!errors.name}
                       hint={errors.name?.message}
                     />
@@ -168,7 +207,7 @@ export default function InternshipTypeModal({
               </div>
 
               <div>
-                <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Prioridad *</label>
+                <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Prioridad en el Sistema *</label>
                 <Controller
                   name="priority"
                   control={control}
@@ -178,17 +217,19 @@ export default function InternshipTypeModal({
                          options={priorityOptions}
                          value={field.value}
                          onChange={field.onChange}
+                         onBlur={field.onBlur} // Asegura que la validación se dispare al salir
                          placeholder="Seleccione prioridad"
                          disabled={isInUse}
+                         error={!!errors.priority}
                        />
-                      {errors.priority && (
-                        <p className="mt-1 text-xs text-error-500">{errors.priority.message}</p>
-                      )}
                     </div>
                   )}
                 />
+                {errors.priority && (
+                  <p className="mt-1 text-xs text-error-500 font-medium">{errors.priority.message}</p>
+                )}
                 {isInUse && (
-                  <p className="mt-1 text-xs text-text-tertiary italic">No se puede editar la prioridad porque está asignada a un registro activo</p>
+                  <p className="mt-1 text-[10px] text-text-tertiary italic uppercase font-bold tracking-tighter opacity-70">Bloqueado por uso</p>
                 )}
               </div>
             </div>
@@ -201,7 +242,7 @@ export default function InternshipTypeModal({
               Cancelar
             </Button>
             <AsyncButton type="submit" form="internship-type-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid}>
-              {editingItem ? "Actualizar Registro" : "Guardar Tipo"}
+              {editingItem ? "Actualizar Registro" : "Guardar Tipo de Práctica"}
             </AsyncButton>
           </div>
         </ModalFooter>

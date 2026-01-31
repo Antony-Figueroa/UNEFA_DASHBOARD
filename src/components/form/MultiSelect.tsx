@@ -82,6 +82,7 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
    */
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   /**
    * Calcula y actualiza las coordenadas del menú basándose en el elemento combobox.
@@ -120,7 +121,10 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
    */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const isOutsideDropdown = dropdownRef.current && !dropdownRef.current.contains(event.target as Node);
+      const isOutsideMenu = menuRef.current && !menuRef.current.contains(event.target as Node);
+
+      if (isOutsideDropdown && isOutsideMenu) {
         if (isOpen) {
           setIsOpen(false);
           onBlur?.(); // Disparar onBlur al cerrar el menú por clic fuera
@@ -274,7 +278,7 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (!disabled) removeOption(val);
+                            if (!disabled) handleRemove(e, val);
                           }}
                           disabled={disabled}
                           className="ml-1.5 text-text-tertiary hover:text-text-secondary dark:text-text-tertiary transition-colors"
@@ -307,6 +311,7 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
           {/* Menú Desplegable con Portal */}
       {isOpen && createPortal(
         <div
+          ref={menuRef}
           className="fixed mt-1 overflow-y-auto bg-bg-main rounded-lg shadow-xl max-h-60 dark:bg-bg-dark border border-border-light dark:border-border-dark animate-in fade-in zoom-in-95 duration-100"
           style={{
             top: coords.top,

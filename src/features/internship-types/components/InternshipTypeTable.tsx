@@ -1,7 +1,13 @@
 /**
  * @file InternshipTypeTable.tsx
- * @description Componente de tabla para visualizar y gestionar tipos de pasantía.
- * Soporta filtrado, ordenamiento, paginación y acciones masivas.
+ * @description Componente de tabla especializado para mostrar y gestionar tipos de práctica profesional.
+ * Implementa una interfaz de datos densa con funcionalidades de:
+ * - Ordenamiento por nombre y prioridad.
+ * - Paginación configurable.
+ * - Selección múltiple para acciones en bloque (eliminación/restauración).
+ * - Verificación de integridad referencial (no permite eliminar tipos vinculados a carreras).
+ * - Buscador integrado.
+ * - Estados de error de conexión a DB.
  * 
  * @module features/internship-types/components
  */
@@ -17,40 +23,45 @@ import Checkbox from "../../../components/form/input/Checkbox";
 import Badge from "../../../components/ui/badge/Badge";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 
+/**
+ * Propiedades del componente InternshipTypeTable.
+ */
 interface InternshipTypeTableProps {
-  /** Lista de tipos de pasantía a mostrar */
+  /** Datos de los tipos de práctica a mostrar */
   data: InternshipType[];
-  /** Lista de carreras para verificar vinculaciones */
+  /** Lista de carreras para validar si un tipo puede ser eliminado */
   careers?: Career[];
-  /** Estado de carga de los datos */
+  /** Estado de la petición de datos (loading, success, error) */
   status: "loading" | "success" | "error";
-  /** Error en caso de falla en la carga */
+  /** Error capturado durante la petición, si existe */
   error: Error | null;
-  /** Callback al editar un elemento */
+  /** Callback para iniciar la edición de un registro */
   onEdit?: (item: InternshipType) => void;
-  /** Callback al cambiar el estado de un elemento (eliminar/restaurar) */
+  /** Callback para cambiar el estado de activo a inactivo y viceversa */
   onToggleStatus?: (id: number) => void;
-  /** Callback al ver detalles de un elemento */
+  /** Callback para abrir la vista de detalles */
   onView?: (item: InternshipType) => void;
-  /** Callback para eliminación masiva */
+  /** Callback para eliminar múltiples registros seleccionados */
   onBulkDelete?: (ids: number[]) => void;
-  /** Callback para restauración masiva */
+  /** Callback para restaurar múltiples registros seleccionados */
   onBulkRestore?: (ids: number[]) => void;
-  /** Indica si se está mostrando la vista de elementos inactivos */
+  /** Indica si la tabla está en modo visualización de inactivos */
   inactiveMode?: boolean;
-  /** Pestaña activa actual */
+  /** Nombre de la pestaña activa para control de lógica interna */
   activeTab?: "Activas" | "Inactivas";
-  /** Estado de carga general */
+  /** Estado global de carga */
   loading?: boolean;
 }
 
-/** Claves por las que se puede ordenar la tabla */
+/** Claves permitidas para el ordenamiento de la tabla */
 type SortKey = keyof Pick<InternshipType, "name" | "priority">;
 /** Dirección del ordenamiento */
 type SortOrder = "asc" | "desc";
 
 /**
- * Componente de presentación para la tabla de Tipos de Pasantía.
+ * Componente InternshipTypeTable.
+ * 
+ * Renderiza una tabla interactiva con todas las operaciones de gestión para los tipos de práctica.
  */
 export default function InternshipTypeTable({
   data = [],
@@ -76,21 +87,34 @@ export default function InternshipTypeTable({
   });
 
   /**
-   * Verifica si un tipo de pasantía está vinculado a alguna carrera.
-   * @param {number} typeId - ID del tipo de pasantía.
-   * @returns {boolean} True si está vinculado.
+   * Mapea el valor numérico de prioridad a su etiqueta descriptiva.
+   */
+  const getPriorityLabel = (priority: number) => {
+    switch (priority) {
+      case 0: return "Único";
+      case 1: return "Hospitalaria";
+      case 2: return "Comunitaria";
+      default: return String(priority);
+    }
+  };
+
+  /**
+   * Verifica si un tipo de práctica está vinculado a alguna carrera activa.
+   * Se usa para bloquear la eliminación y mantener la integridad de la base de datos.
    */
   const hasLinkedCareers = (typeId: number) => {
     return careers.some(c => c.internshipTypeIds?.includes(String(typeId)));
   };
 
-  // Limpiar selección al cambiar de pestaña
+  /**
+   * Limpia la selección de filas al cambiar entre las pestañas de Activas/Inactivas.
+   */
   useEffect(() => {
     setSelectedIds([]);
   }, [activeTab]);
 
   /**
-   * Datos filtrados y ordenados basados en el estado actual.
+   * Procesa los datos aplicando filtros de búsqueda, estado y ordenamiento.
    */
   const filteredData = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
@@ -124,6 +148,9 @@ export default function InternshipTypeTable({
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paged = filteredData.slice(startIndex, startIndex + itemsPerPage);
 
+  /**
+   * Renderiza un estado de error amigable si falla la conexión con la DB.
+   */
   if (status === "error" || dbStatus === "disconnected") {
     return (
       <div className="rounded-xl border border-alert-error-border bg-alert-error-bg p-8 text-center dark:border-error-800 dark:bg-error-950 animate-fadeIn">
@@ -137,7 +164,7 @@ export default function InternshipTypeTable({
           {dbStatus === "disconnected" ? "La conexión con la base de datos se ha perdido" : "No hay conexión a la base de datos"}
         </p>
         <button 
-          onClick={async () => window.location.reload()}
+          onClick={() => window.location.reload()}
           className="mt-6 px-4 py-2 bg-error-600 text-white rounded-lg hover:bg-error-700 transition-colors text-sm font-medium"
         >
           Reintentar conexión
@@ -176,6 +203,7 @@ export default function InternshipTypeTable({
 
   return (
     <div className="space-y-4">
+      {/* Barra de herramientas: Búsqueda y Acciones en bloque */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-md">
           <input
@@ -193,7 +221,7 @@ export default function InternshipTypeTable({
               {selectedIds.length} seleccionados
             </span>
             <button
-              onClick={async () => inactiveMode ? onBulkRestore?.(selectedIds) : onBulkDelete?.(selectedIds)}
+              onClick={() => inactiveMode ? onBulkRestore?.(selectedIds) : onBulkDelete?.(selectedIds)}
               className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 inactiveMode 
                   ? "bg-success-50 text-success-600 hover:bg-success-100 dark:bg-success-900/20 dark:text-success-400" 
@@ -207,7 +235,7 @@ export default function InternshipTypeTable({
         )}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border-light bg-white dark:border-white/5 dark:bg-bg-dark">
+      <div className="overflow-hidden rounded-xl border border-border-light bg-white dark:border-white/5 dark:bg-bg-dark shadow-sm">
         <div className="max-w-full overflow-x-auto table-scrollbar">
           <Table>
             <TableHeader>
@@ -218,21 +246,30 @@ export default function InternshipTypeTable({
                     onChange={(checked) => handleSelectAll(checked)}
                   />
                 </TableCell>
-                <TableCell className="cursor-pointer" onClick={async () => toggleSort("name")}>
-                  Nombre {sortConfig.key === "name" && (sortConfig.order === "asc" ? "↑" : "↓")}
+                <TableCell className="cursor-pointer hover:text-brand-500 transition-colors" onClick={() => toggleSort("name")}>
+                  <div className="flex items-center gap-1">
+                    Nombre {sortConfig.key === "name" && (sortConfig.order === "asc" ? "↑" : "↓")}
+                  </div>
                 </TableCell>
-                <TableCell className="cursor-pointer" onClick={async () => toggleSort("priority")}>
-                  Prioridad {sortConfig.key === "priority" && (sortConfig.order === "asc" ? "↑" : "↓")}
+                <TableCell className="cursor-pointer hover:text-brand-500 transition-colors" onClick={() => toggleSort("priority")}>
+                  <div className="flex items-center gap-1">
+                    Prioridad {sortConfig.key === "priority" && (sortConfig.order === "asc" ? "↑" : "↓")}
+                  </div>
                 </TableCell>
                 <TableCell>Estado</TableCell>
-                <TableCell className="text-right"> </TableCell>
+                <TableCell className="text-right">Acciones</TableCell>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paged.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-8 text-center text-text-secondary dark:text-text-tertiary">
-                    No se encontraron resultados
+                  <TableCell colSpan={5} className="py-12 text-center text-text-secondary dark:text-text-tertiary">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <svg className="w-8 h-8 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      No se encontraron tipos de práctica profesional
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -248,7 +285,9 @@ export default function InternshipTypeTable({
                       {item.name}
                     </TableCell>
                     <TableCell>
-                      <Badge color="info">{item.priority}</Badge>
+                      <Badge color="info" variant="light" className="font-bold">
+                        {item.priority} - {getPriorityLabel(item.priority)}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge color={item.status ? "success" : "error"}>
@@ -258,14 +297,14 @@ export default function InternshipTypeTable({
                     <TableCell>
                       <div className="flex justify-end gap-2">
                         <AsyncActionButton
-                          onClick={async () => onView?.(item)}
+                          onClick={() => onView?.(item)}
                           icon={<EyeIcon />}
                           tooltip="Ver Detalles"
                           variant="primary"
                         />
                         {activeTab === "Activas" && (
                           <AsyncActionButton
-                            onClick={async () => onEdit?.(item)}
+                            onClick={() => onEdit?.(item)}
                             icon={<EditIcon />}
                             tooltip="Editar"
                             variant="primary"
@@ -276,16 +315,16 @@ export default function InternshipTypeTable({
                             <div className="cursor-not-allowed opacity-50">
                               <AsyncActionButton
                                 disabled
-                                onClick={async () => {}}
+                                onClick={() => {}}
                                 icon={<TrashIcon />}
-                                tooltip="No se puede eliminar porque tiene carreras afiliadas"
+                                tooltip="Bloqueado: Uso en carreras"
                                 variant="danger"
                               />
                             </div>
                           </Tooltip>
                         ) : (
                           <AsyncActionButton
-                            onClick={async () => onToggleStatus?.(item.id)}
+                            onClick={() => onToggleStatus?.(item.id)}
                             icon={inactiveMode ? <RefreshIcon /> : <TrashIcon />}
                             tooltip={inactiveMode ? "Restaurar" : "Eliminar"}
                             variant={inactiveMode ? "success" : "danger"}
@@ -300,7 +339,7 @@ export default function InternshipTypeTable({
           </Table>
         </div>
         
-        <div className="border-t border-border-light p-4 dark:border-white/5">
+        <div className="border-t border-border-light p-4 dark:border-white/5 bg-bg-secondary/10">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

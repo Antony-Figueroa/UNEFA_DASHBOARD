@@ -271,7 +271,7 @@ export default function CareersPage() {
       onConfirm: async () => {
         try {
           if (isEditing && editingType) {
-            await editInternshipType(editingType.id, payload);
+            await editInternshipType({ ...payload, id: editingType.id });
           } else {
             await addInternshipType(payload);
           }
@@ -327,7 +327,7 @@ export default function CareersPage() {
         : `¿Estás seguro de que deseas restaurar el tipo de práctica "${original.name}"?`,
       onConfirm: async () => {
         try {
-          await toggleTypeStatus(id);
+          await toggleTypeStatus(id, !goingInactive);
         } catch (e) { console.error(e); }
         finally { setConfirmation(null); }
       },

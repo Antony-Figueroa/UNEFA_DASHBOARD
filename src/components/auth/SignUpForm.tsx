@@ -6,7 +6,7 @@ import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
 import { supabase } from "../../lib/supabase";
-import { useToast } from "../../hooks/useToast";
+import { useToast } from "../../context/toast";
 
 export default function SignUpForm() {
   const { addToast } = useToast();

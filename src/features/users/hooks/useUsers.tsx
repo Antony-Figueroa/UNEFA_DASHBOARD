@@ -42,8 +42,7 @@ export const useUsers = (filters: any = {}, activeTab: "Activos" | "Inactivos" =
         error: crudError,
         createItem: baseAddUser,
         updateItem: baseEditUser,
-        toggleItemStatus: baseToggleStatus,
-        bulkDelete: baseBulkDelete
+        toggleItemStatus: baseToggleStatus
     } = useCrud<User, CreateUserPayload, UpdateUserPayload>(userService as any, {
         resourceName: "Usuario",
         autoLoad: false // No cargamos automáticamente porque usamos fetchUsers personalizado

@@ -27,7 +27,16 @@ import { InstitutionPDF } from "../../components/ui/pdf/templates/InstitutionPDF
 import { InstitutionalResponsiblePDF } from "../../components/ui/pdf/templates/InstitutionalResponsiblePDF";
 import { useInstitutions } from "../../features/institutions/hooks/useInstitutions";
 import { useInstitutionalResponsibles } from "../../features/institutions/hooks/useInstitutionalResponsibles";
-import { Institution, InstitutionRowData, InstitutionalResponsible, InstitutionalResponsibleRowData } from "../../features/institutions/types";
+import { 
+  Institution, 
+  InstitutionRowData, 
+  InstitutionalResponsible, 
+  InstitutionalResponsibleRowData, 
+  CreateInstitutionPayload, 
+  UpdateInstitutionPayload,
+  CreateInstitutionalResponsiblePayload,
+  UpdateInstitutionalResponsiblePayload
+} from "../../features/institutions/types";
 import { useCareers } from "../../features/careers/hooks/useCareers";
 import { formatDateTime } from "../../utils/date";
 import { useInternshipTypes } from "../../features/internship-types/hooks/useInternshipTypes";
@@ -341,7 +350,7 @@ export default function InstitutionsPage() {
               {mainTab === "Instituciones" ? (
                 <InstitutionTable
                   data={instTableData}
-                  status={instStatus}
+                  status={instStatus === "idle" ? "success" : instStatus}
                   activeTab={activeTab}
                   careerOptions={careerOptions}
                   internshipTypes={internshipTypes}
@@ -355,7 +364,7 @@ export default function InstitutionsPage() {
               ) : (
                 <InstitutionalResponsibleTable
                   data={respTableData}
-                  status={respStatus}
+                  status={respStatus === "idle" ? "success" : respStatus}
                   activeTab={activeTab}
                   onEdit={handleOpenEditRespModal}
                   onView={setViewResp}
@@ -375,9 +384,9 @@ export default function InstitutionsPage() {
         onSave={async (data) => {
           try {
             if (editingInst) {
-              await editInstitution({ ...editingInst, ...data });
+              await editInstitution({ ...editingInst, ...data } as UpdateInstitutionPayload);
             } else {
-              await addInstitution(data);
+              await addInstitution(data as CreateInstitutionPayload);
             }
             setIsModalOpen(false);
           } catch (error) {
@@ -397,13 +406,14 @@ export default function InstitutionsPage() {
         onSave={async (data) => {
           try {
             if (editingResp) {
-              await editResponsible({ ...editingResp, ...data } as InstitutionalResponsible);
+              await editResponsible({ ...editingResp, ...data } as UpdateInstitutionalResponsiblePayload);
             } else {
-              await addResponsible(data as Omit<InstitutionalResponsible, "responsibleId" | "registrationDate">);
+              await addResponsible(data as CreateInstitutionalResponsiblePayload);
             }
             setIsRespModalOpen(false);
           } catch (error) {
             console.error("Error saving responsible:", error);
+            // El error ya debería ser manejado por el hook useInstitutionalResponsibles (mostrando un toast, etc.)
           }
         }}
         editingResp={editingResp}

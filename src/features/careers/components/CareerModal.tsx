@@ -422,7 +422,7 @@ export default function CareerModal({
           <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
-          <AsyncButton type="submit" form="career-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid}>
+          <AsyncButton type="submit" form="career-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid || (editingCareer ? !isDirty : false)}>
             {editingCareer ? "Actualizar Registro" : "Guardar Carrera"}
           </AsyncButton>
         </div>

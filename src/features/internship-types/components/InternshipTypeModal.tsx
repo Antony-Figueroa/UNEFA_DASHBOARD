@@ -241,7 +241,13 @@ export default function InternshipTypeModal({
             <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
               Cancelar
             </Button>
-            <AsyncButton type="submit" form="internship-type-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid}>
+            <AsyncButton 
+              type="submit" 
+              form="internship-type-form" 
+              loading={isLoading} 
+              className="w-full sm:w-auto min-h-12" 
+              disabled={!isValid || (editingItem ? !isDirty : false)}
+            >
               {editingItem ? "Actualizar Registro" : "Guardar Tipo de Práctica"}
             </AsyncButton>
           </div>

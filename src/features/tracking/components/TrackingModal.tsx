@@ -319,7 +319,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                                 <Button type="button" variant="outline" onClick={handleCloseAttempt}>
                                     Cancelar
                                 </Button>
-                                <AsyncButton type="submit" loading={isLoading} disabled={!isValid}>
+                                <AsyncButton type="submit" loading={isLoading} disabled={tracking ? !isDirty || !isValid : !isValid}>
                                     Guardar
                                 </AsyncButton>
                             </>

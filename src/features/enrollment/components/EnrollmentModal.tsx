@@ -670,7 +670,13 @@ export default function EnrollmentModal({
           <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
-          <AsyncButton type="submit" form="enrollment-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid || !!preEnrollmentError}>
+          <AsyncButton 
+            type="submit" 
+            form="enrollment-form" 
+            loading={isLoading} 
+            className="w-full sm:w-auto min-h-12" 
+            disabled={editingEntry ? !isDirty || !isValid : !isValid || !!preEnrollmentError}
+          >
             {editingEntry ? "Actualizar Inscripción" : "Guardar Inscripción"}
           </AsyncButton>
         </div>

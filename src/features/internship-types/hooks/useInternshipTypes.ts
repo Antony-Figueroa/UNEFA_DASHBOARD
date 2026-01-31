@@ -23,6 +23,7 @@ import * as internshipTypesService from "../services/internshipTypesService";
 export const useInternshipTypes = () => {
   const [internshipTypes, setInternshipTypes] = useState<InternshipType[]>([]);
   const [options, setOptions] = useState<InternshipTypeOption[]>([]);
+  const [activeOptions, setActiveOptions] = useState<InternshipTypeOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +39,7 @@ export const useInternshipTypes = () => {
       const data = await internshipTypesService.getInternshipTypes();
       setInternshipTypes(data);
       setOptions(internshipTypesService.mapToOptions(data));
+      setActiveOptions(internshipTypesService.mapToOptions(data.filter(t => t.status)));
     } catch (err) {
       setError("Error al cargar tipos de pasantías");
       console.error("[useInternshipTypes] Error en fetchAll:", err);
@@ -55,6 +57,7 @@ export const useInternshipTypes = () => {
     if (!careerId) {
       setInternshipTypes([]);
       setOptions([]);
+      setActiveOptions([]);
       return;
     }
     setIsLoading(true);
@@ -63,6 +66,7 @@ export const useInternshipTypes = () => {
       const data = await internshipTypesService.getInternshipTypesByCareer(careerId);
       setInternshipTypes(data);
       setOptions(internshipTypesService.mapToOptions(data));
+      setActiveOptions(internshipTypesService.mapToOptions(data.filter(t => t.status)));
     } catch (err) {
       setError(`Error al cargar tipos de prácticas profesionales para la carrera ${careerId}`);
       console.error("[useInternshipTypes] Error en fetchByCareer:", err);
@@ -189,6 +193,7 @@ export const useInternshipTypes = () => {
   return {
     internshipTypes,
     options,
+    activeOptions,
     isLoading,
     loadingAction,
     error,

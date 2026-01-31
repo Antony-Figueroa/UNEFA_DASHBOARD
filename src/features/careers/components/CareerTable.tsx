@@ -11,7 +11,15 @@ import { useDbStatus } from "../../../context/db-status";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
-import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
+import CustomSelect from "../../../components/form/CustomSelect";
+import {
+  EditIcon,
+  TrashIcon,
+  RefreshIcon,
+  EyeIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from "../../../icons/actions";
 import { CareerRowData } from "../types";
 import { InternshipTypeOption } from "../../internship-types/types";
 import { CrudStatus } from "../../../hooks/useCrud";
@@ -373,24 +381,19 @@ export default function CareerTable({
             </span>
           </div>
           <div className="relative">
-            <select
-              aria-label="Filtrar por tipo de práctica"
+            <CustomSelect
+              options={[
+                { value: "", label: "Todos los tipos" },
+                ...practiceOptions.map((opt) => ({
+                  value: String(opt.id),
+                  label: opt.label,
+                })),
+              ]}
               value={practiceTypeFilter}
-              onChange={(e) => setPracticeTypeFilter(e.target.value)}
-              className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
-            >
-              <option value="" className="dark:bg-bg-dark">Todos los tipos</option>
-              {practiceOptions.map((opt) => (
-                <option key={opt.id} value={opt.id} className="dark:bg-bg-dark">
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
+              onChange={setPracticeTypeFilter}
+              placeholder="Tipos de Práctica"
+              className="w-full h-11"
+            />
           </div>
         </div>
 

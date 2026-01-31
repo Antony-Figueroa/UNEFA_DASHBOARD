@@ -24,12 +24,14 @@ export const DbStatusProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [error, setError] = useState<string | null>(null);
   const { addToast } = useToast();
   
-  // Ref para rastrear el estado anterior y evitar notificaciones duplicadas o innecesarias
+  // Refs para rastrear el estado y evitar notificaciones innecesarias
   const previousStatus = useRef<DbStatus>('checking');
+  const consecutiveFailures = useRef<number>(0);
+  const MAX_FAILURES = 3; // Número de fallos antes de alarmar al usuario
 
   /**
    * Realiza una petición al servidor para verificar la conectividad con la DB.
-   * Maneja la lógica de notificaciones (toasts) basada en la transición de estados.
+   * Maneja la lógica de reintentos y notificaciones basada en la persistencia del fallo.
    */
   const checkStatus = useCallback(async () => {
     // Evitar chequeos innecesarios en rutas públicas
@@ -45,60 +47,73 @@ export const DbStatusProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const response = await apiClient.get('/db-status');
       const data = response.data;
       
-      const newStatus: DbStatus = data.status === 'connected' ? 'connected' : 'disconnected';
+      const isConnected = data.status === 'connected';
       
-      // Lógica de notificación ante cambios de estado
-      if (newStatus !== previousStatus.current) {
-        if (newStatus === 'connected' && previousStatus.current !== 'checking') {
+      if (isConnected) {
+        // Si se conecta, reseteamos el contador de fallos inmediatamente
+        consecutiveFailures.current = 0;
+        
+        if (previousStatus.current === 'disconnected') {
           addToast({
             variant: 'success',
             title: 'Conexión Recuperada',
             message: 'Se ha restablecido la conexión con la base de datos.',
           });
-        } else if (newStatus === 'disconnected') {
+        }
+        
+        previousStatus.current = 'connected';
+        setStatus('connected');
+        setError(null);
+      } else {
+        throw new Error('Database reported disconnected status');
+      }
+      
+      setLastChecked(new Date());
+    } catch (err: unknown) {
+      const isPublicPage = publicPaths.includes(window.location.pathname);
+      if (isPublicPage) return;
+
+      // Incrementar contador de fallos
+      consecutiveFailures.current += 1;
+      
+      console.warn(`[DbStatusContext] Intento de conexión fallido (${consecutiveFailures.current}/${MAX_FAILURES})`);
+
+      // Solo si superamos el máximo de fallos, actualizamos el estado global y mostramos alerta
+      if (consecutiveFailures.current >= MAX_FAILURES) {
+        if (previousStatus.current !== 'disconnected') {
           addToast({
             variant: 'error',
             title: 'Conexión Perdida',
             message: 'Se ha perdido la conexión con la base de datos. Algunos datos pueden estar desactualizados.',
           });
+          previousStatus.current = 'disconnected';
+          setStatus('disconnected');
         }
-        previousStatus.current = newStatus;
+        
+        const errorMessage = err instanceof Error ? err.message : 'Error de conexión';
+        setError(errorMessage);
       }
-
-      setStatus(newStatus);
-      setError(data.error || null);
+      
       setLastChecked(new Date());
-    } catch (err: unknown) {
-      const isPublicPage = publicPaths.includes(window.location.pathname);
 
-      if (!isPublicPage) {
-        console.error('[DbStatusContext] Error crítico al verificar estado:', err);
+      // Si falló pero aún no llegamos al máximo, programar un reintento rápido (3 segundos)
+      if (consecutiveFailures.current < MAX_FAILURES) {
+        setTimeout(checkStatus, 3000);
       }
-      
-      const errorMessage = err instanceof Error ? err.message : 'Error de red';
-      
-      // Notificar error de red solo si estábamos conectados previamente
-      if (previousStatus.current === 'connected' && !isPublicPage) {
-        addToast({
-          variant: 'error',
-          title: 'Error de Red',
-          message: 'No se pudo verificar el estado de la base de datos.',
-        });
-      }
-      
-      previousStatus.current = 'disconnected';
-      setStatus('disconnected');
-      setError(errorMessage);
-      setLastChecked(new Date());
     }
   }, [addToast]);
 
   // Configuración del polling para monitoreo continuo
   useEffect(() => {
     checkStatus();
-    // Intervalo de 30 segundos para el chequeo de salud
-    const CHECK_INTERVAL = 30000;
-    const interval = setInterval(checkStatus, CHECK_INTERVAL);
+    // Intervalo de 60 segundos para el chequeo de salud (aumentado para reducir ruido)
+    const CHECK_INTERVAL = 60000;
+    const interval = setInterval(() => {
+      // Solo iniciamos un nuevo ciclo de chequeo si no estamos en medio de una secuencia de fallos
+      if (consecutiveFailures.current === 0 || consecutiveFailures.current >= MAX_FAILURES) {
+        checkStatus();
+      }
+    }, CHECK_INTERVAL);
     
     return () => clearInterval(interval);
   }, [checkStatus]);

@@ -34,6 +34,20 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
     const isInteractingWithCalendar = useRef(false);
 
     // Actualizar el ref de opciones cuando cambien
+    // Gestionar el evento mouseup globalmente una sola vez
+    useEffect(() => {
+      const handleGlobalMouseUp = () => {
+        if (isInteractingWithCalendar.current) {
+          setTimeout(() => {
+            isInteractingWithCalendar.current = false;
+          }, 150);
+        }
+      };
+
+      window.addEventListener('mouseup', handleGlobalMouseUp);
+      return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+    }, []);
+
     useEffect(() => {
       optionsRef.current = options;
     }, [options]);
@@ -311,14 +325,6 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
               isInteractingWithCalendar.current = true;
               // No detenemos la propagación aquí para permitir que Flatpickr maneje sus propios clics
             });
-
-            // Al soltar el clic, resetear la bandera después de un breve momento
-            // para que el blur (que ocurre antes) pueda ser ignorado
-            window.addEventListener('mouseup', () => {
-              setTimeout(() => {
-                isInteractingWithCalendar.current = false;
-              }, 150);
-            }, { once: false });
 
             // Configurar elementos que no deben disparar el cierre por foco
             const monthSelect = instance.monthNav.querySelector('.flatpickr-monthDropdown-months');

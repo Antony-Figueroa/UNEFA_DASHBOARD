@@ -14,6 +14,7 @@ import { PreEnrollment, CreatePreEnrollmentPayload, UpdatePreEnrollmentPayload }
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import CustomSelect from "../../../components/form/CustomSelect";
+import { useToast } from "../../../context/toast";
 import { Student } from "../../students/types";
 import { getStudents } from "../../students/services/studentsService";
 import { getPeriods } from "../../periods/services/periodService";
@@ -103,6 +104,7 @@ export default function PreEnrollmentModal({
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const { fetchMultipleLists } = useLists();
+  const { addToast } = useToast();
 
   /**
    * Opciones de nacionalidad/prefijo de identificación.
@@ -299,9 +301,15 @@ export default function PreEnrollmentModal({
 
       if (alreadyEnrolled) {
         clearStudentFields();
+        const message = "El estudiante ya posee una inscripción activa. No puede pre-inscribirse.";
         setError("identificationNumber", {
           type: "manual",
-          message: "El estudiante ya posee una inscripción activa. No puede pre-inscribirse.",
+          message,
+        });
+        addToast({
+          variant: "error",
+          title: "Error de Validación",
+          message
         });
         return;
       }
@@ -312,9 +320,15 @@ export default function PreEnrollmentModal({
 
       if (hasActivePreEnrollment) {
         clearStudentFields();
+        const message = "El estudiante ya posee una pre-inscripción activa.";
         setError("identificationNumber", {
           type: "manual",
-          message: "El estudiante ya posee una pre-inscripción activa.",
+          message,
+        });
+        addToast({
+          variant: "error",
+          title: "Error de Validación",
+          message
         });
         return;
       }
@@ -344,9 +358,15 @@ export default function PreEnrollmentModal({
         setValue("enrollmentCode", enrollmentCode);
       } else {
         clearStudentFields();
+        const message = "El estudiante no se encuentra registrado.";
         setError("identificationNumber", {
           type: "manual",
-          message: "El estudiante no se encuentra registrado.",
+          message,
+        });
+        addToast({
+          variant: "error",
+          title: "Error de Validación",
+          message
         });
       }
     } catch (error) {
@@ -435,6 +455,11 @@ export default function PreEnrollmentModal({
       }
     } catch (error) {
       console.error("[PreEnrollmentModal] Error al procesar el formulario:", error);
+      addToast({
+        variant: "error",
+        title: "Error de Formulario",
+        message: "Ocurrió un error inesperado al procesar el formulario.",
+      });
     }
   };
 
@@ -529,9 +554,15 @@ export default function PreEnrollmentModal({
                           (e) => e.identificationPrefix === student.identificationPrefix && e.identificationNumber === student.identificationNumber && e.status
                         );
                         if (alreadyEnrolled) {
+                          const message = "El estudiante ya posee una inscripción activa. No puede pre-inscribirse.";
                           setError("identificationNumber", {
                             type: "manual",
-                            message: "El estudiante ya posee una inscripción activa. No puede pre-inscribirse.",
+                            message,
+                          });
+                          addToast({
+                            variant: "error",
+                            title: "Error de Validación",
+                            message
                           });
                           setShowSuggestions(false);
                           return;
@@ -674,7 +705,23 @@ export default function PreEnrollmentModal({
           <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
-          <AsyncButton type="submit" form="pre-enrollment-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid}>
+          <AsyncButton 
+            type="submit" 
+            form="pre-enrollment-form" 
+            loading={isLoading} 
+            className="w-full sm:w-auto min-h-12" 
+            disabled={!isValid}
+            onClick={async () => {
+              if (!isValid) {
+                await handleSubmit(() => {})();
+                addToast({
+                  variant: "error",
+                  title: "Error de Validación",
+                  message: "Por favor, complete todos los campos obligatorios correctamente.",
+                });
+              }
+            }}
+          >
             {editingEntry ? "Actualizar Registro" : "Guardar Registro"}
           </AsyncButton>
         </div>

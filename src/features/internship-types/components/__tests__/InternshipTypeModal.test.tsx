@@ -8,7 +8,6 @@ import { InternshipType } from "../../types";
 const sampleType: InternshipType = {
   id: 1,
   name: "Pasantía de Prueba",
-  abbreviation: "PP",
   priority: 5,
   status: true,
   creationDate: new Date("2026-01-17"),
@@ -65,10 +64,9 @@ describe("InternshipTypeModal", () => {
 
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledWith({
-        NAME: "NUEVA PASANTÍA",
-        ABBREVIATION: "NUEVA PASA", // substring(0, 10) de "NUEVA PASANTÍA"
-        PRIORITY: 1,
-        STATUS: 1,
+        name: "NUEVA PASANTÍA",
+        priority: 1,
+        status: true,
       });
     });
   });

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import type { CrudPageAlert } from "../types";
+import { useToast } from "../../../context/toast";
 
 /**
  * Estados posibles del recurso CRUD.
@@ -30,6 +30,8 @@ export interface UseCrudResourceOptions<TItem> {
   service: CrudService<TItem>;
   /** Si debe cargar los datos automáticamente al montar el componente. */
   autoLoad?: boolean;
+  /** Si es true, no muestra notificaciones automáticas (toasts) */
+  silent?: boolean;
 }
 
 /**
@@ -42,20 +44,16 @@ export interface UseCrudResourceResult<TItem> {
   status: CrudStatus;
   /** Error si la última operación falló. */
   error: Error | null;
-  /** Alerta actual para mostrar en la UI. */
-  alert: CrudPageAlert | null;
   /** Indica si hay una acción asíncrona (create/update/delete) en curso. */
   loadingAction: boolean;
-  /** Función para actualizar o limpiar la alerta. */
-  setAlert: (alert: CrudPageAlert | null) => void;
   /** Recarga la lista de elementos desde el servidor. */
-  refresh: () => Promise<void>;
+  refresh: (options?: { silent?: boolean }) => Promise<void>;
   /** Crea un nuevo elemento y refresca la lista. */
-  createItem: (data: Omit<TItem, "id">) => Promise<void>;
+  createItem: (data: Omit<TItem, "id">, options?: { silent?: boolean }) => Promise<void>;
   /** Actualiza un elemento y refresca la lista. */
-  updateItem: (data: TItem) => Promise<void>;
+  updateItem: (data: TItem, options?: { silent?: boolean }) => Promise<void>;
   /** Elimina un elemento y refresca la lista. */
-  removeItem: (data: TItem) => Promise<void>;
+  removeItem: (data: TItem, options?: { silent?: boolean }) => Promise<void>;
 }
 
 /**
@@ -77,12 +75,13 @@ export interface UseCrudResourceResult<TItem> {
 export function useCrudResource<TItem extends { id: string }>({
   service,
   autoLoad = true,
+  silent: defaultSilent = false,
 }: UseCrudResourceOptions<TItem>): UseCrudResourceResult<TItem> {
   const [items, setItems] = useState<TItem[]>([]);
   const [status, setStatus] = useState<CrudStatus>("idle");
   const [error, setError] = useState<Error | null>(null);
-  const [alert, setAlert] = useState<CrudPageAlert | null>(null);
   const [loadingAction, setLoadingAction] = useState(false);
+  const { addToast } = useToast();
 
   /**
    * Efecto para manejar el timeout de seguridad (30 segundos) en acciones críticas.
@@ -104,7 +103,8 @@ export function useCrudResource<TItem extends { id: string }>({
   /**
    * Refresca la lista de elementos consultando al servicio.
    */
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (options?: { silent?: boolean }) => {
+    const isSilent = options?.silent ?? defaultSilent;
     setStatus("loading");
     try {
       const data = await service.list();
@@ -117,14 +117,16 @@ export function useCrudResource<TItem extends { id: string }>({
       setError(err);
       setStatus("error");
       console.error("[useCrudResource:refresh]", err);
-      setAlert({
-        id: "load-error",
-        variant: "error",
-        title: "Error al cargar datos",
-        message: err.message,
-      });
+      
+      if (!isSilent) {
+        addToast({
+          variant: "error",
+          title: "Error de Carga",
+          message: err.message,
+        });
+      }
     }
-  }, [service]);
+  }, [service, addToast, defaultSilent]);
 
   /**
    * Carga inicial de datos.
@@ -138,27 +140,32 @@ export function useCrudResource<TItem extends { id: string }>({
   /**
    * Crea un nuevo registro.
    */
-  const createItem = async (data: Omit<TItem, "id">) => {
+  const createItem = async (data: Omit<TItem, "id">, options?: { silent?: boolean }) => {
+    const isSilent = options?.silent ?? defaultSilent;
     setLoadingAction(true);
     try {
       await service.create(data);
-      await refresh();
-      setAlert({
-        id: "create-success",
-        variant: "success",
-        title: "Éxito",
-        message: "Registro creado correctamente.",
-      });
+      await refresh({ silent: true }); // Refresco siempre silencioso internamente
+      
+      if (!isSilent) {
+        addToast({
+          variant: "success",
+          title: "Registro Creado",
+          message: "El registro ha sido creado exitosamente.",
+        });
+      }
     } catch (e) {
       const err =
         e instanceof Error ? e : new Error("Error desconocido al crear");
       console.error("[useCrudResource:createItem]", err);
-      setAlert({
-        id: "create-error",
-        variant: "error",
-        title: "Error al crear",
-        message: err.message,
-      });
+      
+      if (!isSilent) {
+        addToast({
+          variant: "error",
+          title: "Error de Creación",
+          message: err.message,
+        });
+      }
     } finally {
       setLoadingAction(false);
     }
@@ -167,27 +174,32 @@ export function useCrudResource<TItem extends { id: string }>({
   /**
    * Actualiza un registro existente.
    */
-  const updateItem = async (data: TItem) => {
+  const updateItem = async (data: TItem, options?: { silent?: boolean }) => {
+    const isSilent = options?.silent ?? defaultSilent;
     setLoadingAction(true);
     try {
       await service.update(data);
-      await refresh();
-      setAlert({
-        id: "update-success",
-        variant: "success",
-        title: "Éxito",
-        message: "Registro actualizado correctamente.",
-      });
+      await refresh({ silent: true });
+      
+      if (!isSilent) {
+        addToast({
+          variant: "success",
+          title: "Registro Actualizado",
+          message: "Los cambios han sido guardados exitosamente.",
+        });
+      }
     } catch (e) {
       const err =
         e instanceof Error ? e : new Error("Error desconocido al actualizar");
       console.error("[useCrudResource:updateItem]", err);
-      setAlert({
-        id: "update-error",
-        variant: "error",
-        title: "Error al actualizar",
-        message: err.message,
-      });
+      
+      if (!isSilent) {
+        addToast({
+          variant: "error",
+          title: "Error de Actualización",
+          message: err.message,
+        });
+      }
     } finally {
       setLoadingAction(false);
     }
@@ -196,27 +208,32 @@ export function useCrudResource<TItem extends { id: string }>({
   /**
    * Elimina un registro.
    */
-  const removeItem = async (data: TItem) => {
+  const removeItem = async (data: TItem, options?: { silent?: boolean }) => {
+    const isSilent = options?.silent ?? defaultSilent;
     setLoadingAction(true);
     try {
       await service.remove(data);
-      await refresh();
-      setAlert({
-        id: "delete-success",
-        variant: "success",
-        title: "Éxito",
-        message: "Registro eliminado correctamente.",
-      });
+      await refresh({ silent: true });
+      
+      if (!isSilent) {
+        addToast({
+          variant: "warning",
+          title: "Registro Eliminado",
+          message: "El registro ha sido eliminado exitosamente.",
+        });
+      }
     } catch (e) {
       const err =
         e instanceof Error ? e : new Error("Error desconocido al eliminar");
       console.error("[useCrudResource:removeItem]", err);
-      setAlert({
-        id: "delete-error",
-        variant: "error",
-        title: "Error al eliminar",
-        message: err.message,
-      });
+      
+      if (!isSilent) {
+        addToast({
+          variant: "error",
+          title: "Error de Eliminación",
+          message: err.message,
+        });
+      }
     } finally {
       setLoadingAction(false);
     }
@@ -226,9 +243,7 @@ export function useCrudResource<TItem extends { id: string }>({
     items,
     status,
     error,
-    alert,
     loadingAction,
-    setAlert,
     refresh,
     createItem,
     updateItem,

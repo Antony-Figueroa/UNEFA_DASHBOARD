@@ -41,7 +41,9 @@ export const useInstitutionalResponsibles = () => {
     refresh: refreshResponsibles,
     createItem: baseAddResponsible,
     updateItem: baseEditResponsible,
-    toggleItemStatus: baseToggleStatus
+    toggleItemStatus: baseToggleStatus,
+    bulkDelete: baseBulkDelete,
+    bulkRestore: baseBulkRestore
   } = useCrud<InstitutionalResponsible, CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload>(responsibleService, {
     resourceName: "Responsable",
     idField: "responsibleId",
@@ -52,68 +54,97 @@ export const useInstitutionalResponsibles = () => {
    * @param respData - The payload for the new responsible person.
    */
   const addResponsible = async (respData: CreateInstitutionalResponsiblePayload) => {
-    const newResp = await baseAddResponsible(respData);
-    if (newResp) {
-      const fullName = `${newResp.firstName} ${newResp.lastName}`;
+    try {
+      const newResp = await baseAddResponsible(respData, { silent: true });
+      if (newResp) {
+        const fullName = `${newResp.firstName} ${newResp.lastName}`;
+        addToast({
+          variant: "success",
+          title: "Responsable Registrado",
+          message: (
+            <>
+              <p>El responsable <strong>{fullName}</strong> ha sido registrado exitosamente.</p>
+              <RecordDetails
+                data={newResp as unknown as Record<string, unknown>}
+                labels={RESPONSIBLE_LABELS}
+                fields={['firstName', 'lastName', 'phone', 'email', 'institutionName']}
+              />
+            </>
+          ),
+        });
+      }
+    } catch (e) {
+      console.error("[useInstitutionalResponsibles] Error adding responsible:", e);
+      const axiosError = e as any;
       addToast({
-        variant: "success",
-        title: "Responsable Registrado",
-        message: (
-          <>
-            <p>El responsable <strong>{fullName}</strong> ha sido registrado correctamente.</p>
-            <RecordDetails
-              data={newResp as unknown as Record<string, unknown>}
-              labels={RESPONSIBLE_LABELS}
-              fields={['firstName', 'lastName', 'phone', 'email', 'institutionName']}
-            />
-          </>
-        ),
+        variant: "error",
+        title: "Error de Registro",
+        message: axiosError.response?.data?.message || axiosError.message || "No se pudo registrar el responsable.",
       });
+      throw e;
     }
   };
 
   /**
    * Updates an existing institutional responsible with custom comparison notification.
-   * @param id - The ID of the responsible person to update.
    * @param respData - The partial data to update.
    */
   const editResponsible = async (respData: UpdateInstitutionalResponsiblePayload) => {
-    const { responsibleId } = respData;
-    const oldResp = responsibles.find(r => r.responsibleId === responsibleId);
-    const updatedResp = await baseEditResponsible(respData);
-    
-    if (updatedResp) {
-      const fullName = `${updatedResp.firstName} ${updatedResp.lastName}`;
+    try {
+      const { responsibleId } = respData;
+      const oldResp = responsibles.find(r => r.responsibleId === responsibleId);
+      const updatedResp = await baseEditResponsible(respData, { silent: true });
+      
+      if (updatedResp) {
+        const fullName = `${updatedResp.firstName} ${updatedResp.lastName}`;
+        addToast({
+          variant: "success",
+          title: "Responsable Actualizado",
+          message: (
+            <>
+              <p>Los datos de <strong>{fullName}</strong> han sido actualizados exitosamente.</p>
+              {oldResp && <ChangeComparison 
+                oldData={oldResp as unknown as Record<string, unknown>} 
+                newData={updatedResp as unknown as Record<string, unknown>} 
+                labels={RESPONSIBLE_LABELS} 
+              />}
+            </>
+          ),
+        });
+      }
+    } catch (e) {
+      console.error("[useInstitutionalResponsibles] Error editing responsible:", e);
+      const axiosError = e as any;
       addToast({
-        variant: "success",
-        title: "Responsable Actualizado",
-        message: (
-          <>
-            <p>Los datos de <strong>{fullName}</strong> han sido actualizados.</p>
-            {oldResp && <ChangeComparison 
-              oldData={oldResp as unknown as Record<string, unknown>} 
-              newData={updatedResp as unknown as Record<string, unknown>} 
-              labels={RESPONSIBLE_LABELS} 
-            />}
-          </>
-        ),
+        variant: "error",
+        title: "Error de Actualización",
+        message: axiosError.response?.data?.message || axiosError.message || "No se pudo actualizar el responsable.",
       });
+      throw e;
     }
   };
 
   /**
-   * Toggles the active status of an institutional responsible with custom notification.
-   * @param resp - The responsible person object to toggle.
+   * Toggles the status of a responsible person.
+   * @param resp - The responsible person object.
    */
   const toggleStatus = async (resp: InstitutionalResponsible) => {
     const newStatus = !resp.status;
-    const success = await baseToggleStatus(resp.responsibleId, newStatus);
-    if (success) {
+    try {
+      await baseToggleStatus(resp.responsibleId, newStatus, { silent: true });
       const fullName = `${resp.firstName} ${resp.lastName}`;
+      
       addToast({
         variant: newStatus ? "success" : "warning",
-        title: newStatus ? "Responsable Restaurado" : "Responsable Inactivado",
-        message: `El responsable ${fullName} ahora está ${newStatus ? 'activo' : 'inactivo'}.`,
+        title: "Estado Actualizado",
+        message: `El responsable ${fullName} ahora está ${newStatus ? 'activo' : 'inactivo'} exitosamente.`,
+      });
+    } catch (e) {
+      console.error("[useInstitutionalResponsibles] Error toggling status:", e);
+      addToast({
+        variant: "error",
+        title: "Error de Estado",
+        message: "No se pudo cambiar el estado del responsable.",
       });
     }
   };
@@ -124,20 +155,19 @@ export const useInstitutionalResponsibles = () => {
    */
   const bulkRemoveResponsibles = async (ids: string[]) => {
     try {
-      await Promise.all(ids.map(id => responsibleService.toggleStatus(id, false)));
-      refreshResponsibles();
+      await baseBulkDelete(ids, { silent: true });
       
       addToast({
         variant: "warning",
         title: "Acción Masiva",
-        message: `${ids.length} responsables han sido inactivados.`,
+        message: `${ids.length} responsables han sido inactivados exitosamente.`,
       });
     } catch (error) {
       console.error("[useInstitutionalResponsibles] Error in bulk remove:", error);
       addToast({
         variant: "error",
-        title: "Error",
-        message: "Ocurrió un error al inactivar los responsables.",
+        title: "Error Masivo",
+        message: "Ocurrió un error al inactivar los responsables en lote.",
       });
     }
   };
@@ -148,20 +178,19 @@ export const useInstitutionalResponsibles = () => {
    */
   const bulkRestoreResponsibles = async (ids: string[]) => {
     try {
-      await Promise.all(ids.map(id => responsibleService.toggleStatus(id, true)));
-      refreshResponsibles();
+      await baseBulkRestore(ids, { silent: true });
       
       addToast({
         variant: "success",
         title: "Acción Masiva",
-        message: `${ids.length} responsables han sido restaurados.`,
+        message: `${ids.length} responsables han sido restaurados exitosamente.`,
       });
     } catch (error) {
       console.error("[useInstitutionalResponsibles] Error in bulk restore:", error);
       addToast({
         variant: "error",
-        title: "Error",
-        message: "Ocurrió un error al restaurar los responsables.",
+        title: "Error Masivo",
+        message: "Ocurrió un error al restaurar los responsables en lote.",
       });
     }
   };

@@ -182,3 +182,52 @@ export const deletePeriod = async (id: string): Promise<void> => {
     throw error;
   }
 };
+
+/**
+ * Cambia el estado (activo/inactivo) de un periodo académico.
+ * 
+ * @param id - Identificador del periodo.
+ * @param status - Nuevo estado.
+ */
+export const toggleStatus = async (id: string | number, status: boolean): Promise<void> => {
+  try {
+    await apiClient.patch(`${API_URL}/${id}/toggle-status`, { status });
+  } catch (error) {
+    console.error(`[periodService] Error al cambiar estado de periodo:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Realiza la eliminación masiva de periodos.
+ * 
+ * @param ids - Arreglo de identificadores.
+ */
+export const bulkDelete = async (ids: (string | number)[]): Promise<void> => {
+  try {
+    await apiClient.post(`${API_URL}/bulk-delete`, { ids });
+  } catch (error) {
+    console.error(`[periodService] Error en eliminación masiva de periodos:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Realiza la restauración masiva de periodos.
+ * 
+ * @param ids - Arreglo de identificadores.
+ */
+export const bulkRestore = async (ids: (string | number)[]): Promise<void> => {
+  try {
+    await apiClient.post(`${API_URL}/bulk-restore`, { ids });
+  } catch (error) {
+    console.error(`[periodService] Error en restauración masiva de periodos:`, error);
+    throw error;
+  }
+};
+
+// --- CRUD Adapter ---
+export const getAll = getPeriods;
+export const create = createPeriod;
+export const update = updatePeriod;
+export { deletePeriod as delete };

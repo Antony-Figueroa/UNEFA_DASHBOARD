@@ -9,7 +9,14 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addToast = useCallback((toast: Omit<Toast, "id" | "timestamp">): string => {
     const id = Math.random().toString(36).substring(2, 9);
     const timestamp = new Date();
-    const newToast = { ...toast, id, timestamp };
+    // Por defecto, todas las notificaciones son persistentes (no se cierran solas)
+    // a menos que se especifique explícitamente persistent: false
+    const newToast = { 
+      persistent: true, 
+      ...toast, 
+      id, 
+      timestamp 
+    };
 
     setToasts((prev) => [...prev, newToast]);
 

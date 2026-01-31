@@ -43,7 +43,9 @@ export const useTutors = () => {
     refresh: refreshTutorsBase,
     createItem: baseAddTutor,
     updateItem: baseEditTutor,
-    toggleItemStatus: baseToggleStatus
+    toggleItemStatus: baseToggleStatus,
+    bulkDelete: baseBulkDelete,
+    bulkRestore: baseBulkRestore
   } = useCrud<Tutor, CreateTutorPayload, UpdateTutorPayload>(tutorsService, {
     resourceName: "Tutor",
     idField: "tutorId",
@@ -88,7 +90,7 @@ export const useTutors = () => {
       return;
     }
 
-    const newTutor = await baseAddTutor(tutorData);
+    const newTutor = await baseAddTutor(tutorData, { silent: true });
     if (newTutor) {
       const careerNames = getCareerNames(newTutor.carreras || []);
 
@@ -97,7 +99,7 @@ export const useTutors = () => {
         title: "Tutor Registrado",
         message: (
           <>
-            <p>El tutor <strong>{newTutor.firstName} {newTutor.lastName}</strong> ha sido registrado.</p>
+            <p>El tutor <strong>{newTutor.firstName} {newTutor.lastName}</strong> ha sido registrado exitosamente.</p>
             <RecordDetails
               data={{ ...newTutor, carreras: careerNames } as unknown as Record<string, unknown>}
               labels={TUTOR_LABELS}
@@ -112,7 +114,7 @@ export const useTutors = () => {
   const editTutor = async (tutorData: UpdateTutorPayload) => {
     const { tutorId } = tutorData;
     const oldTutor = tutors.find(t => t.tutorId === tutorId);
-    const updatedTutor = await baseEditTutor(tutorData);
+    const updatedTutor = await baseEditTutor(tutorData, { silent: true });
 
     if (updatedTutor) {
       const oldCareerNames = oldTutor ? getCareerNames(oldTutor.carreras || []) : "";
@@ -137,7 +139,7 @@ export const useTutors = () => {
 
   const toggleStatus = async (tutor: Tutor) => {
     const newStatus = !tutor.status;
-    const success = await baseToggleStatus(tutor.tutorId, newStatus);
+    const success = await baseToggleStatus(tutor.tutorId, newStatus, { silent: true });
     if (success) {
       addToast({
         variant: newStatus ? "success" : "warning",
@@ -149,38 +151,36 @@ export const useTutors = () => {
 
   const bulkRemoveTutors = async (ids: string[]) => {
     try {
-      await Promise.all(ids.map(id => tutorsService.toggleStatus(id, false)));
-      refreshTutorsBase();
+      await baseBulkDelete(ids, { silent: true });
       addToast({
         variant: "warning",
         title: "Acción Masiva",
-        message: `${ids.length} tutores han sido inactivados.`,
+        message: `${ids.length} tutores han sido inactivados exitosamente.`,
       });
     } catch (error) {
       console.error("[useTutors] Error in bulk remove:", error);
       addToast({
         variant: "error",
-        title: "Error",
-        message: "No se pudieron inactivar los tutores.",
+        title: "Error Masivo",
+        message: "No se pudieron inactivar los tutores seleccionados.",
       });
     }
   };
 
   const bulkRestoreTutors = async (ids: string[]) => {
     try {
-      await Promise.all(ids.map(id => tutorsService.toggleStatus(id, true)));
-      refreshTutorsBase();
+      await baseBulkRestore(ids, { silent: true });
       addToast({
         variant: "success",
         title: "Acción Masiva",
-        message: `${ids.length} tutores han sido restaurados.`,
+        message: `${ids.length} tutores han sido restaurados exitosamente.`,
       });
     } catch (error) {
       console.error("[useTutors] Error in bulk restore:", error);
       addToast({
         variant: "error",
-        title: "Error",
-        message: "No se pudieron restaurar los tutores.",
+        title: "Error Masivo",
+        message: "No se pudieron restaurar los tutores seleccionados.",
       });
     }
   };

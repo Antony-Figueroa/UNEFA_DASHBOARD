@@ -15,6 +15,7 @@ import Select from "../../../components/form/Select";
 import CustomSelect from "../../../components/form/CustomSelect";
 import FlatpickrDatePicker from "../../../components/form/FlatpickrDatePicker";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
+import { useToast } from "../../../context/toast";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { useLists } from "../../lists/hooks/useLists";
 import { ListValue } from "../../lists/types";
@@ -70,6 +71,7 @@ export default function StudentModal({
   const [isCheckingCi, setIsCheckingCi] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const { fetchMultipleLists } = useLists();
+  const { addToast } = useToast();
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
 
   useEffect(() => {
@@ -348,6 +350,11 @@ export default function StudentModal({
       }
     } catch (error) {
       console.error("[StudentModal] Error en validación:", error);
+      addToast({
+        variant: "error",
+        title: "Error de Formulario",
+        message: "Por favor, revise los campos marcados en rojo.",
+      });
     }
   };
 
@@ -412,11 +419,19 @@ export default function StudentModal({
                         try {
                           const res = await checkAvailability('ci', fullCi, editingStudent?.studentId);
                           if (!res.available) {
+                            const message = res.status === 0 
+                                ? "Cédula registrada (INACTIVO). Contacte a administración para reactivar." 
+                                : "Esta cédula ya está registrada.";
+                            
                             setError("identificationNumber", { 
                               type: "manual", 
-                              message: res.status === 0 
-                                ? "Cédula registrada (INACTIVO). Contacte a administración para reactivar." 
-                                : "Esta cédula ya está registrada." 
+                              message 
+                            });
+
+                            addToast({
+                              variant: "error",
+                              title: "Error de Validación",
+                              message
                             });
                           } else {
                             clearErrors("identificationNumber");
@@ -844,11 +859,17 @@ export default function StudentModal({
             form="student-form" 
             loading={isLoading} 
             className="w-full sm:w-auto min-h-12"
-            onClick={() => {
+            onClick={async () => {
               if (!isValid) {
                 console.log("[StudentModal] Form is invalid. Errors:", errors);
                 // Forzar validación de todos los campos para mostrar errores
-                handleSubmit(() => {})();
+                await handleSubmit(() => {})();
+                
+                addToast({
+                  variant: "error",
+                  title: "Error de Validación",
+                  message: "Por favor, complete todos los campos obligatorios correctamente.",
+                });
               }
             }}
           >

@@ -182,3 +182,11 @@ export const getTrackingStats = async (): Promise<TrackingStats> => {
         throw error;
     }
 };
+
+// --- CRUD Adapter ---
+export const getAll = getTrackings;
+export const create = createTracking;
+export const update = updateTracking;
+export { deleteTracking as delete };
+export { restoreTracking as bulkRestore }; // Map restore to bulkRestore if needed or just export directly
+

@@ -33,7 +33,7 @@ interface TrackingTableProps {
     /** Arreglo de datos de seguimiento para mostrar */
     data: TrackingRowData[];
     /** Estado de carga de los datos */
-    status: "loading" | "success" | "error";
+    status: "loading" | "success" | "error" | "idle";
     /** Error capturado si el estado es 'error' */
     error: Error | null;
     /** Función llamada al solicitar editar un registro */

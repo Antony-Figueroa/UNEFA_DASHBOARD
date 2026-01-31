@@ -6,8 +6,10 @@ import Input from "../form/input/InputField";
 import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
 import { supabase } from "../../lib/supabase";
+import { useToast } from "../../hooks/useToast";
 
 export default function SignUpForm() {
+  const { addToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
   const [email, setEmail] = useState("");
@@ -15,13 +17,11 @@ export default function SignUpForm() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -38,11 +38,20 @@ export default function SignUpForm() {
       if (error) throw error;
 
       if (data.user) {
-        navigate("/signin", { state: { message: "¡Registro exitoso! Por favor, revisa tu correo para confirmar tu cuenta." } });
+        addToast({
+          variant: "success",
+          title: "Registro Exitoso",
+          message: "Su cuenta ha sido creada. Por favor, revise su correo para confirmar su cuenta."
+        });
+        navigate("/signin");
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "An error occurred during sign up";
-      setError(errorMessage);
+      const errorMessage = err instanceof Error ? err.message : "Error desconocido durante el registro";
+      addToast({
+        variant: "error",
+        title: "Error de Registro",
+        message: errorMessage
+      });
     } finally {
       setLoading(false);
     }
@@ -56,25 +65,19 @@ export default function SignUpForm() {
           className="inline-flex items-center text-sm text-text-secondary transition-colors hover:text-text-emphasis dark:text-text-tertiary dark:hover:text-text-secondary"
         >
           <ChevronLeftIcon className="size-5" />
-          Back to dashboard
+          Volver al inicio
         </Link>
       </div>
       <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
         <div>
           <div className="mb-5 sm:mb-8">
             <h1 className="mb-2 font-semibold text-text-emphasis text-title-sm dark:text-text-emphasis sm:text-title-md">
-              Sign Up
+              Registrarse
             </h1>
             <p className="text-sm text-text-secondary dark:text-text-tertiary">
-              Enter your email and password to sign up!
+              ¡Ingrese su correo y contraseña para registrarse!
             </p>
           </div>
-
-          {error && (
-            <div className="p-3 mb-4 text-sm text-red-500 bg-red-100 rounded-lg dark:bg-red-500/10">
-              {error}
-            </div>
-          )}
 
           <div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
@@ -103,7 +106,7 @@ export default function SignUpForm() {
                     fill="#EB4335"
                   />
                 </svg>
-                Sign up with Google
+                Registrarse con Google
               </button>
               <button className="inline-flex items-center justify-center gap-3 py-3 text-sm font-normal text-text-primary transition-colors bg-bg-secondary rounded-lg px-7 hover:bg-border-light hover:text-text-emphasis dark:bg-white/5 dark:text-text-emphasis dark:hover:bg-white/10">
                 <svg
@@ -116,7 +119,7 @@ export default function SignUpForm() {
                 >
                   <path d="M15.6705 1.875H18.4272L12.4047 8.75833L19.4897 18.125H13.9422L9.59717 12.4442L4.62554 18.125H1.86721L8.30887 10.7625L1.51221 1.875H7.20054L11.128 7.0675L15.6705 1.875ZM14.703 16.475H16.2305L6.37054 3.43833H4.73137L14.703 16.475Z" />
                 </svg>
-                Sign up with X
+                Registrarse con X
               </button>
             </div>
             <div className="relative py-3 sm:py-5">
@@ -125,7 +128,7 @@ export default function SignUpForm() {
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="p-2 text-text-tertiary bg-bg-main dark:bg-bg-dark sm:px-5 sm:py-2">
-                  Or
+                  O
                 </span>
               </div>
             </div>
@@ -135,11 +138,11 @@ export default function SignUpForm() {
                   {/* <!-- First Name --> */}
                   <div className="sm:col-span-1">
                     <Label>
-                      First Name<span className="text-error-500">*</span>
+                      Nombre<span className="text-error-500">*</span>
                     </Label>
                     <Input
                       type="text"
-                      placeholder="Enter your first name"
+                      placeholder="Ingrese su nombre"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       required
@@ -148,11 +151,11 @@ export default function SignUpForm() {
                   {/* <!-- Last Name --> */}
                   <div className="sm:col-span-1">
                     <Label>
-                      Last Name<span className="text-error-500">*</span>
+                      Apellido<span className="text-error-500">*</span>
                     </Label>
                     <Input
                       type="text"
-                      placeholder="Enter your last name"
+                      placeholder="Ingrese su apellido"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       required
@@ -162,11 +165,11 @@ export default function SignUpForm() {
                 {/* <!-- Email --> */}
                 <div>
                   <Label>
-                    Email<span className="text-error-500">*</span>
+                    Correo Electrónico<span className="text-error-500">*</span>
                   </Label>
                   <Input
                     type="email"
-                    placeholder="Enter your email"
+                    placeholder="Ingrese su correo"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -175,12 +178,12 @@ export default function SignUpForm() {
                 {/* <!-- Password --> */}
                 <div>
                   <Label>
-                    Password<span className="text-error-500">*</span>
+                    Contraseña<span className="text-error-500">*</span>
                   </Label>
                   <div className="relative">
                     <Input
                       type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
+                      placeholder="Ingrese su contraseña"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -205,13 +208,13 @@ export default function SignUpForm() {
                     onChange={setIsChecked}
                   />
                   <p className="inline-block font-normal text-text-secondary dark:text-text-tertiary">
-                    By creating an account means you agree to the{" "}
+                    Al crear una cuenta, usted acepta los{" "}
                     <Link to="/" className="text-brand-500 hover:text-brand-600">
-                      Terms and Conditions,
+                      Términos y Condiciones,
                     </Link>{" "}
-                    and our{" "}
+                    y nuestra{" "}
                     <Link to="/" className="text-brand-500 hover:text-brand-600">
-                      Privacy Policy
+                      Política de Privacidad
                     </Link>
                   </p>
                 </div>
@@ -223,7 +226,7 @@ export default function SignUpForm() {
                     type="submit"
                     disabled={loading || !isChecked}
                   >
-                    {loading ? "Signing up..." : "Sign Up"}
+                    {loading ? "Registrando..." : "Registrarse"}
                   </Button>
                 </div>
               </div>
@@ -231,12 +234,12 @@ export default function SignUpForm() {
 
             <div className="mt-5">
               <p className="text-sm font-normal text-center text-text-primary dark:text-text-tertiary sm:text-start">
-                Already have an account? {""}
+                ¿Ya tiene una cuenta? {""}
                 <Link
                   to="/signin"
                   className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
                 >
-                  Sign In
+                  Iniciar Sesión
                 </Link>
               </p>
             </div>

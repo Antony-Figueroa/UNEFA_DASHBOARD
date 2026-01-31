@@ -3,6 +3,7 @@ import { CrudTable } from "../../features/crudTemplate/components/CrudTable";
 import { CrudForm, CrudFieldConfig, CrudFormValues } from "../../features/crudTemplate/components/CrudForm";
 import { CrudLayout } from "../../features/crudTemplate/components/CrudLayout";
 import { useCrudResource, CrudService } from "../../features/crudTemplate/hooks/useCrudResource";
+import { useToast } from "../../context/toast";
 import type { CrudColumn, CrudFilterConfig } from "../../features/crudTemplate/types";
 import { Modal, ModalHeader, ModalBody } from "../../components/ui/modal";
 import BarChartOne from "../../components/charts/bar/BarChartOne";
@@ -60,8 +61,9 @@ export default function CrudExample() {
   const [confirmState, setConfirmState] = useState<import("../../features/crudTemplate/components/CrudConfirmDialog").CrudConfirmState | null>(null);
   const [editingItem, setEditingItem] = useState<ExampleEntity | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { addToast } = useToast();
 
-  const { items, status, error, alert, loadingAction, setAlert, createItem, updateItem, removeItem } = useCrudResource<ExampleEntity>({
+  const { items, status, error, loadingAction, createItem, updateItem, removeItem } = useCrudResource<ExampleEntity>({
     service: inMemoryService,
   });
 
@@ -238,8 +240,7 @@ export default function CrudExample() {
       label: "Ver",
       icon: "view",
       onClick: (item) => {
-        setAlert({
-          id: "view-item",
+        addToast({
           variant: "info",
           title: "Detalles del registro",
           message: `Viendo: ${item.name} (${item.code})`,
@@ -356,8 +357,6 @@ export default function CrudExample() {
         breadcrumbLabel="Plantilla CRUD"
         primaryActionLabel="Nuevo registro"
         onPrimaryAction={handleOpenCreate}
-        alert={alert}
-        onCloseAlert={() => setAlert(null)}
         confirmState={confirmState}
         onCloseConfirm={() => setConfirmState(null)}
         isLoadingConfirm={loadingAction}

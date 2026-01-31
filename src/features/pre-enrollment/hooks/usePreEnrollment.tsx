@@ -4,14 +4,11 @@
  * Proporciona métodos para listar, crear, editar y eliminar pre-inscripciones con notificaciones integradas.
  */
 
-import { useState, useEffect, useCallback } from "react";
 import { PreEnrollment, CreatePreEnrollmentPayload, UpdatePreEnrollmentPayload } from "../types";
-import * as preEnrollmentService from "../services/preEnrollmentService";
+import { preEnrollmentService } from "../services/preEnrollmentService";
 import { useToast } from "../../../context/toast";
 import { RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
-
-/** Estados posibles de la carga de datos inicial */
-type Status = "loading" | "success" | "error";
+import { useCrud } from "../../../hooks/useCrud";
 
 /** Etiquetas legibles para los campos de pre-inscripción en notificaciones */
 const PRE_ENROLLMENT_LABELS: Record<string, string> = {
@@ -29,46 +26,23 @@ const PRE_ENROLLMENT_LABELS: Record<string, string> = {
  * @returns Un objeto con el estado de las pre-inscripciones y funciones para manipularlas.
  */
 export const usePreEnrollment = () => {
-  const [preEnrollments, setPreEnrollments] = useState<PreEnrollment[]>([]);
-  const [status, setStatus] = useState<Status>("loading");
-  const [loadingAction, setLoadingAction] = useState(false);
   const { addToast } = useToast();
 
-  /**
-   * Limpia el estado de carga de acción después de un tiempo de espera (30s)
-   * para evitar bloqueos infinitos de la UI si una petición falla silenciosamente.
-   */
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout>;
-    if (loadingAction) {
-      timeoutId = setTimeout(() => {
-        setLoadingAction(false);
-      }, 30000);
-    }
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [loadingAction]);
-
-  /**
-   * Carga o refresca la lista de pre-inscripciones desde el servicio.
-   */
-  const refreshPreEnrollments = useCallback(async () => {
-    setStatus("loading");
-    try {
-      const data = await preEnrollmentService.getPreEnrollments();
-      setPreEnrollments(data);
-      setStatus("success");
-    } catch (e) {
-      console.error("[usePreEnrollment] Error al cargar pre-inscripciones:", e);
-      setStatus("error");
-    }
-  }, []);
-
-  /** Carga inicial al montar el hook */
-  useEffect(() => {
-    refreshPreEnrollments();
-  }, [refreshPreEnrollments]);
+  const {
+    data: preEnrollments,
+    status,
+    loadingAction,
+    error,
+    refresh: refreshPreEnrollments,
+    createItem: baseAddPreEnrollment,
+    updateItem: baseEditPreEnrollment,
+    toggleItemStatus: baseToggleStatus,
+    bulkDelete: baseBulkDelete,
+    bulkRestore: baseBulkRestore
+  } = useCrud<PreEnrollment, CreatePreEnrollmentPayload, UpdatePreEnrollmentPayload>(preEnrollmentService, {
+    resourceName: "Pre-Inscripción",
+    idField: "preEnrollmentId",
+  });
 
   /**
    * Registra una nueva pre-inscripción.
@@ -76,36 +50,33 @@ export const usePreEnrollment = () => {
    * @param payload - Datos de la pre-inscripción a crear.
    */
   const addPreEnrollment = async (payload: CreatePreEnrollmentPayload) => {
-    setLoadingAction(true);
     try {
-      await preEnrollmentService.createPreEnrollment(payload);
+      const newPreEnrollment = await baseAddPreEnrollment(payload, { silent: true });
       
-      addToast({
-        variant: "success",
-        title: "Pre-Inscripción Registrada",
-        message: (
-          <>
-            <p>La pre-inscripción de <strong>{payload.studentName}</strong> ha sido registrada correctamente.</p>
-            <RecordDetails
-              data={payload as unknown as Record<string, unknown>}
-              labels={PRE_ENROLLMENT_LABELS}
-              fields={['identificationNumber', 'period', 'enrollmentCode']}
-            />
-          </>
-        ),
-      });
-
-      await refreshPreEnrollments();
+      if (newPreEnrollment) {
+        addToast({
+          variant: "success",
+          title: "Pre-Inscripción Registrada",
+          message: (
+            <>
+              <p>La pre-inscripción de <strong>{newPreEnrollment.studentName}</strong> ha sido registrada exitosamente.</p>
+              <RecordDetails
+                data={newPreEnrollment as unknown as Record<string, unknown>}
+                labels={PRE_ENROLLMENT_LABELS}
+                fields={['identificationNumber', 'period', 'enrollmentCode']}
+              />
+            </>
+          ),
+        });
+      }
     } catch (error) {
       console.error("[usePreEnrollment] Error al crear pre-inscripción:", error);
       addToast({
         variant: "error",
-        title: "Error al Registrar",
-        message: "No se pudo registrar la pre-inscripción. Intente nuevamente.",
+        title: "Error de Registro",
+        message: "No se pudo registrar la pre-inscripción en el sistema.",
       });
       throw error;
-    } finally {
-      setLoadingAction(false);
     }
   };
 
@@ -115,27 +86,24 @@ export const usePreEnrollment = () => {
    * @param payload - Datos a actualizar incluyendo el ID.
    */
   const editPreEnrollment = async (payload: UpdatePreEnrollmentPayload) => {
-    setLoadingAction(true);
     try {
-      await preEnrollmentService.updatePreEnrollment(payload);
+      const updatedPreEnrollment = await baseEditPreEnrollment(payload, { silent: true });
 
-      addToast({
-        variant: "success",
-        title: "Pre-Inscripción Actualizada",
-        message: <p>Los datos de <strong>{payload.studentName || "el estudiante"}</strong> han sido actualizados.</p>,
-      });
-
-      await refreshPreEnrollments();
+      if (updatedPreEnrollment) {
+        addToast({
+          variant: "success",
+          title: "Pre-Inscripción Actualizada",
+          message: <p>Los datos de <strong>{updatedPreEnrollment.studentName || "el estudiante"}</strong> han sido actualizados exitosamente.</p>,
+        });
+      }
     } catch (error) {
-      console.error(`[usePreEnrollment] Error al editar pre-inscripción ${payload.preEnrollmentId}:`, error);
+      console.error(`[usePreEnrollment] Error al editar pre-inscripción:`, error);
       addToast({
         variant: "error",
-        title: "Error al Actualizar",
-        message: "Hubo un problema al actualizar los datos. Intente nuevamente.",
+        title: "Error de Actualización",
+        message: "No se pudieron actualizar los datos de la pre-inscripción.",
       });
       throw error;
-    } finally {
-      setLoadingAction(false);
     }
   };
 
@@ -145,13 +113,9 @@ export const usePreEnrollment = () => {
    * @param preEnrollment - La pre-inscripción a la cual cambiar el estado.
    */
   const toggleStatus = async (preEnrollment: PreEnrollment) => {
-    setLoadingAction(true);
     try {
       const newStatus = !preEnrollment.status;
-      await preEnrollmentService.updatePreEnrollment({
-        preEnrollmentId: preEnrollment.preEnrollmentId,
-        status: newStatus,
-      });
+      await baseToggleStatus(preEnrollment.preEnrollmentId, newStatus, { silent: true });
 
       addToast({
         variant: "success",
@@ -163,17 +127,13 @@ export const usePreEnrollment = () => {
           </p>
         ),
       });
-
-      await refreshPreEnrollments();
     } catch (error) {
-      console.error(`[usePreEnrollment] Error al cambiar estado de ${preEnrollment.preEnrollmentId}:`, error);
+      console.error(`[usePreEnrollment] Error al cambiar estado:`, error);
       addToast({
         variant: "error",
         title: "Error de Estado",
         message: "No se pudo cambiar el estado de la pre-inscripción.",
       });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
@@ -184,33 +144,25 @@ export const usePreEnrollment = () => {
    * @param newStatus - Nuevo estado a aplicar.
    */
   const bulkToggleStatus = async (ids: string[], newStatus: boolean) => {
-    setLoadingAction(true);
     try {
-      // Si el servicio no tiene bulk, lo hacemos secuencialmente por ahora
-      // O podemos añadirlo al servicio si es necesario.
-      await Promise.all(ids.map(id => 
-        preEnrollmentService.updatePreEnrollment({
-          preEnrollmentId: id,
-          status: newStatus
-        })
-      ));
+      if (newStatus) {
+        await baseBulkRestore(ids, { silent: true });
+      } else {
+        await baseBulkDelete(ids, { silent: true });
+      }
 
       addToast({
         variant: "success",
-        title: newStatus ? "Activación en Lote" : "Desactivación en Lote",
-        message: `Se han ${newStatus ? "activado" : "desactivado"} ${ids.length} registros correctamente.`,
+        title: "Acción Masiva",
+        message: `Se han ${newStatus ? "activado" : "desactivado"} ${ids.length} registros exitosamente.`,
       });
-
-      await refreshPreEnrollments();
     } catch (error) {
       console.error("[usePreEnrollment] Error en operación por lote:", error);
       addToast({
         variant: "error",
-        title: "Error en Lote",
-        message: "No se pudieron actualizar algunos registros.",
+        title: "Error Masivo",
+        message: "No se pudieron actualizar los registros seleccionados.",
       });
-    } finally {
-      setLoadingAction(false);
     }
   };
 
@@ -218,6 +170,7 @@ export const usePreEnrollment = () => {
     preEnrollments,
     status,
     loadingAction,
+    error,
     addPreEnrollment,
     editPreEnrollment,
     toggleStatus,

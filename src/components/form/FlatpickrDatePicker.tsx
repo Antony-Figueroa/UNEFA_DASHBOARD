@@ -288,8 +288,11 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
           // Pero deshabilitar los días que están fuera del rango real
           disable: [
             (date) => {
-              const isBefore = realMinDate ? date < new Date(realMinDate.setHours(0,0,0,0)) : false;
-              const isAfter = realMaxDate ? date > new Date(realMaxDate.setHours(23,59,59,999)) : false;
+              const d = new Date(date);
+              d.setHours(0, 0, 0, 0);
+              
+              const isBefore = realMinDate ? d < new Date(new Date(realMinDate).setHours(0,0,0,0)) : false;
+              const isAfter = realMaxDate ? d > new Date(new Date(realMaxDate).setHours(23,59,59,999)) : false;
               
               // Combinar con otras funciones de deshabilitado si existen en options.disable
               let extraDisable = false;

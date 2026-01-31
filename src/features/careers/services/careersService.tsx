@@ -72,6 +72,22 @@ const mapFromApi = (dto: CareerApiDTO): Career => {
 };
 
 /**
+ * Mapea la entidad de dominio Career o sus payloads al formato esperado por la API (DTO).
+ */
+const mapToApi = (payload: any): any => {
+  return {
+    CAREER_ID: payload.careerId,
+    CAREER_CODE: payload.careerCode,
+    CAREER_NAME: payload.careerName,
+    MINIMUM_GRADE: payload.minimumGrade,
+    CAREER_ABBREVIATION: payload.careerAbbreviation,
+    CAREER_TYPE: payload.careerType,
+    INTERNSHIP_TYPE_IDS: payload.internshipTypeIds,
+    STATUS: payload.status === true ? 1 : (payload.status === false ? 0 : payload.status),
+  };
+};
+
+/**
  * Servicio centralizado para la gestión de carreras generado mediante la fábrica CRUD.
  * 
  * Reemplaza las implementaciones manuales individuales por una estructura estandarizada,
@@ -80,7 +96,8 @@ const mapFromApi = (dto: CareerApiDTO): Career => {
 export const careerService = createCrudService<Career, CreateCareerPayload, UpdateCareerPayload, CareerApiDTO>({
   endpoint: API_URL,
   idField: "careerId",
-  mapFromApi
+  mapFromApi,
+  mapToApi
 });
 
 // Mantener exportaciones individuales para compatibilidad con código existente si es necesario

@@ -14,8 +14,6 @@ export interface InternshipType {
   id: number;
   /** Nombre completo (ej: Pasantía Larga) */
   name: string;
-  /** Siglas o nombre corto (ej: PL) */
-  abbreviation: string;
   /** Nivel de prioridad/orden en el sistema */
   priority: number;
   /** Estado de vigencia */
@@ -32,8 +30,6 @@ export interface InternshipTypeApiDTO {
   id?: number;
   NAME?: string;
   name?: string;
-  ABBREVIATION?: string;
-  abbreviation?: string;
   PRIORITY?: number;
   priority?: number;
   STATUS?: number | boolean;

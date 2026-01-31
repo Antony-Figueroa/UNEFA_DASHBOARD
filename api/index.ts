@@ -263,6 +263,26 @@ app.put('/api/careers/:id', checkRole(['ADMIN']), validate(careerSchema), async 
   }
 });
 
+app.patch('/api/careers/:id/status', checkRole(['ADMIN']), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    const data = await withRetry(async (supabase) => 
+      await supabase
+        .from('t_career')
+        .update({ STATUS: status ? 1 : 0 })
+        .eq('CAREER_ID', id)
+        .select()
+    );
+    
+    apiCache.delete('careers');
+    res.json((data as unknown[])[0]);
+  } catch (error) {
+    handleDbError(res, error);
+  }
+});
+
 app.delete('/api/careers/:id', checkRole(['ADMIN']), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;

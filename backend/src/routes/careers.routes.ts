@@ -6,6 +6,7 @@ import {
   createCareer, 
   updateCareer, 
   deleteCareer,
+  toggleCareerStatus,
   bulkDeleteCareers,
   bulkRestoreCareers 
 } from '../controllers/careers.controller.js';
@@ -17,6 +18,7 @@ router.get('/by-type/:typeId', getCareersByInternshipType);
 router.get('/:id', getCareerById);
 router.post('/', createCareer);
 router.put('/:id', updateCareer);
+router.patch('/:id/status', toggleCareerStatus);
 router.delete('/:id', deleteCareer);
 router.post('/bulk-delete', bulkDeleteCareers);
 router.post('/bulk-restore', bulkRestoreCareers);

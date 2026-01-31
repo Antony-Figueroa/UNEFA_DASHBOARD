@@ -16,7 +16,8 @@ const PERIOD_LABELS: Record<string, string> = {
     description: "Descripción del Período",
     startDate: "Fecha de Inicio",
     endDate: "Fecha de Cierre",
-    status: "Estado",
+    status: "Estado (Habilitado)",
+    periodStatus: "Fase del Período",
 };
 
 /**

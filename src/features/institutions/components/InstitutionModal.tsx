@@ -625,7 +625,7 @@ export default function InstitutionModal({
         <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading}>
           Cancelar
         </Button>
-        <AsyncButton onClick={handleSubmit(onSubmit)} loading={isLoading} disabled={!isValid}>
+        <AsyncButton onClick={handleSubmit(onSubmit)} loading={isLoading} disabled={!isValid || (editingInst ? !isDirty : false)}>
           {editingInst ? "Guardar Cambios" : "Registrar Institución"}
         </AsyncButton>
       </ModalFooter>

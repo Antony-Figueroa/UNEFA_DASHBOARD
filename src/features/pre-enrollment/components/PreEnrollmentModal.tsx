@@ -710,7 +710,7 @@ export default function PreEnrollmentModal({
             form="pre-enrollment-form" 
             loading={isLoading} 
             className="w-full sm:w-auto min-h-12" 
-            disabled={!isValid}
+            disabled={editingEntry ? !isDirty || !isValid : !isValid}
             onClick={async () => {
               if (!isValid) {
                 await handleSubmit(() => {})();

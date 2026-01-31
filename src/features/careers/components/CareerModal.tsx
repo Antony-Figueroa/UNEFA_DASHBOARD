@@ -3,7 +3,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
-import Select from "../../../components/form/Select";
+import CustomSelect from "../../../components/form/CustomSelect";
 import MultiSelect from "../../../components/form/MultiSelect";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Career } from "../types";
@@ -262,7 +262,7 @@ export default function CareerModal({
                 name="careerType"
                 control={control}
                 render={({ field }) => (
-                  <Select
+                  <CustomSelect
                     options={careerTypeOptions}
                     value={field.value}
                     onChange={field.onChange}
@@ -285,7 +285,7 @@ export default function CareerModal({
                 name="minimumGrade"
                 control={control}
                 render={({ field }) => (
-                  <Select
+                  <CustomSelect
                       options={gradeOptions}
                       value={field.value}
                       onChange={field.onChange}

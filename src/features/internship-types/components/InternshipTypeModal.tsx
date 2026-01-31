@@ -11,7 +11,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
-import Select from "../../../components/form/Select";
+import CustomSelect from "../../../components/form/CustomSelect";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { InternshipType, CreateInternshipTypePayload } from "../types";
 import Button from "../../../components/ui/button/Button";
@@ -174,7 +174,7 @@ export default function InternshipTypeModal({
                   control={control}
                   render={({ field }) => (
                     <div className="space-y-1">
-                      <Select
+                      <CustomSelect
                          options={priorityOptions}
                          value={field.value}
                          onChange={field.onChange}

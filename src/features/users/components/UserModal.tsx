@@ -289,7 +289,7 @@ const UserModal: React.FC<UserModalProps> = ({
             form="userForm" 
             loading={isSubmitting}
             className="w-full sm:w-auto min-h-12"
-            disabled={!isValid}
+            disabled={!isValid || (user ? !isDirty : false)}
           >
             {user ? "Actualizar Datos" : "Crear Usuario"}
           </AsyncButton>

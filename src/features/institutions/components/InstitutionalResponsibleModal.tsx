@@ -414,7 +414,7 @@ export default function InstitutionalResponsibleModal({
             type="submit" 
             className="min-h-12 px-8 rounded-xl font-bold"
             loading={isLoading}
-            disabled={!isValid}
+            disabled={!isValid || (editingResp ? !isDirty : false)}
           >
             {editingResp ? "Actualizar" : "Guardar"}
           </AsyncButton>

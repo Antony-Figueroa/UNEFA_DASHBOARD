@@ -858,6 +858,7 @@ export default function StudentModal({
             type="submit" 
             form="student-form" 
             loading={isLoading} 
+            disabled={!isValid || (editingStudent ? !isDirty : false)}
             className="w-full sm:w-auto min-h-12"
             onClick={async () => {
               if (!isValid) {

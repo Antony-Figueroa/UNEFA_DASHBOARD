@@ -640,7 +640,7 @@ export default function TutorModal({
             form="tutor-form"
             loading={isLoading}
             className="w-full sm:w-auto min-h-12"
-            disabled={!isValid}
+            disabled={!isValid || (editingTutor ? !isDirty : false)}
           >
             {editingTutor ? "Actualizar Registro" : "Guardar Tutor"}
           </AsyncButton>

@@ -50,7 +50,7 @@ export default function PeriodModal({
     isLoading = false, 
     existingPeriods 
 }: PeriodModalProps) {
-    const { register, handleSubmit, formState: { errors, isDirty }, control, reset, watch, setValue } = useForm<PeriodFormData>({
+    const { register, handleSubmit, formState: { errors, isDirty, isValid }, control, reset, watch, setValue } = useForm<PeriodFormData>({
         resolver: zodResolver(getPeriodSchema(existingPeriods, periodo?.periodId || undefined, !!periodo)),
         mode: 'onChange',
         defaultValues: {
@@ -510,6 +510,7 @@ export default function PeriodModal({
                     <AsyncButton 
                         onClick={handleSubmit(onSubmit)} 
                         loading={isLoading} 
+                        disabled={!isValid || (periodo ? !isDirty : false)}
                         className="w-full sm:w-auto min-h-12" 
                     >
                         {periodo ? 'Actualizar Registro' : 'Guardar Período'}

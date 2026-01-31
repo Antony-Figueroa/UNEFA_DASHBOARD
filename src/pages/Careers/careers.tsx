@@ -29,10 +29,10 @@ import InternshipTypeTable from "../../features/internship-types/components/Inte
 import InternshipTypeModal from "../../features/internship-types/components/InternshipTypeModal";
 import InternshipTypeViewModal from "../../features/internship-types/components/InternshipTypeViewModal";
 import { useCareers } from "../../features/careers/hooks/useCareers";
-import { Career, CareerRowData } from "../../features/careers/types";
+import { Career, CareerRowData, CreateCareerPayload, UpdateCareerPayload } from "../../features/careers/types";
 import { formatDateTime } from "../../utils/date";
 import { useInternshipTypes } from "../../features/internship-types/hooks/useInternshipTypes";
-import { InternshipType } from "../../features/internship-types/types";
+import { InternshipType, CreateInternshipTypePayload } from "../../features/internship-types/types";
 
 /**
  * Transforma un objeto de tipo Career (dominio) a CareerRowData (vista).
@@ -95,7 +95,7 @@ export default function CareersPage() {
     addCareer,
     editCareer,
     removeCareer,
-    toggleStatus,
+    toggleCareerStatus: toggleStatus,
     bulkRemoveCareers,
     bulkRestoreCareers,
   } = useCareers();
@@ -124,10 +124,7 @@ export default function CareersPage() {
    * Determina si un tipo de práctica está en uso (asignado a una carrera activa).
    */
   const isTypeInUse = (typeId: number) => {
-    return careers.some(c => 
-      c.internshipTypeIds?.includes(String(typeId)) && 
-      (c.status === true || c.status === 1)
-    );
+    return careers.some((c) => c.internshipTypeIds?.includes(String(typeId)));
   };
 
   /**
@@ -223,9 +220,9 @@ export default function CareersPage() {
       onConfirm: async () => {
         try {
           if (isEditing && editingCareer) {
-            await editCareer({ ...editingCareer, ...payload });
+            await editCareer({ ...editingCareer, ...payload } as UpdateCareerPayload);
           } else {
-            await addCareer(payload);
+            await addCareer(payload as CreateCareerPayload);
           }
           setIsModalOpen(false);
         } catch (e) {
@@ -242,7 +239,7 @@ export default function CareersPage() {
   /**
    * Procesa el guardado de un tipo de práctica.
    */
-  const handleSaveType = (payload: Omit<InternshipType, "INTERNSHIP_TYPE_ID" | "CREATION_DATE">) => {
+  const handleSaveType = (payload: CreateInternshipTypePayload) => {
     const isEditing = !!editingType;
     setConfirmation({
       isOpen: true,
@@ -251,7 +248,7 @@ export default function CareersPage() {
       onConfirm: async () => {
         try {
           if (isEditing && editingType) {
-            await editInternshipType(editingType.INTERNSHIP_TYPE_ID, payload);
+            await editInternshipType(editingType.id, payload);
           } else {
             await addInternshipType(payload);
           }
@@ -283,7 +280,7 @@ export default function CareersPage() {
         : `¿Estás seguro de que deseas restaurar la carrera "${original.careerName}"?`,
       onConfirm: async () => {
         try {
-          await toggleStatus(careerId);
+          await toggleStatus(careerId, !goingInactive);
         } catch (e) { console.error(e); }
         finally { setConfirmation(null); }
       },
@@ -296,15 +293,15 @@ export default function CareersPage() {
    * Alterna el estado de un tipo de práctica.
    */
   const handleToggleTypeStatus = (id: number) => {
-    const original = internshipTypes.find((t) => t.INTERNSHIP_TYPE_ID === id);
+    const original = internshipTypes.find((t) => t.id === id);
     if (!original) return;
-    const goingInactive = original.STATUS === 1;
+    const goingInactive = original.status;
     setConfirmation({
       isOpen: true,
       title: goingInactive ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
       message: goingInactive 
-        ? `¿Estás seguro de que deseas enviar el tipo de práctica "${original.NAME}" a Inactivos?`
-        : `¿Estás seguro de que deseas restaurar el tipo de práctica "${original.NAME}"?`,
+        ? `¿Estás seguro de que deseas enviar el tipo de práctica "${original.name}" a Inactivos?`
+        : `¿Estás seguro de que deseas restaurar el tipo de práctica "${original.name}"?`,
       onConfirm: async () => {
         try {
           await toggleTypeStatus(id);
@@ -544,13 +541,12 @@ export default function CareersPage() {
                 />
               ) : (
                 <InternshipTypeTable
-                  data={internshipTypes.filter((t) => (activeTab === "Activas" ? t.STATUS === 1 : t.STATUS === 0))}
+                  data={internshipTypes}
                   careers={careers}
                   status={loadingTypes ? "loading" : "success"}
                   error={null}
                   activeTab={activeTab}
                   onEdit={handleEditType}
-                  onDelete={handleToggleTypeStatus}
                   onToggleStatus={handleToggleTypeStatus}
                   onView={setViewType}
                   onBulkDelete={handleBulkDeleteTypes}
@@ -608,7 +604,7 @@ export default function CareersPage() {
         onSave={handleSaveType}
         editingItem={editingType}
         existingTypes={internshipTypes}
-        isInUse={editingType ? isTypeInUse(editingType.INTERNSHIP_TYPE_ID) : false}
+        isInUse={editingType ? isTypeInUse(editingType.id) : false}
         isLoading={loadingAction}
       />
 

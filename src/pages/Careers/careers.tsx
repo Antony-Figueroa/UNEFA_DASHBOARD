@@ -63,7 +63,8 @@ export default function CareersPage() {
   const [pageLoading, setPageLoading] = useState(true);
   const { 
     internshipTypes,
-    options: internshipOptions, 
+    options: internshipOptions,
+    activeOptions: activeInternshipOptions,
     fetchAll: fetchInternshipTypes, 
     isLoading: loadingTypes,
     loadingAction: loadingTypeAction,
@@ -545,25 +546,25 @@ export default function CareersPage() {
             </div>
 
             <SkeletonLoader isLoading={pageLoading || (mainTab === "Carreras" ? status === "loading" : loadingTypes)} skeleton={<TablePageSkeleton rows={5} />} id="careers-table">
-              {mainTab === "Carreras" ? (
-                <CareerTable
-                  data={filtered}
-                  status={status}
-                  error={error}
-                  activeTab={activeTab}
-                  practiceOptions={internshipOptions}
-                  searchTerm={searchTerm}
-                  onSearchChange={setSearchTerm}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onToggleStatus={handleToggleStatus}
-                  onView={setViewCareer}
-                  onBulkDelete={handleBulkDelete}
-                  onBulkRestore={handleBulkRestore}
-                  inactiveMode={activeTab === "Inactivas"}
-                  loading={loadingAction}
-                />
-              ) : (
+                {mainTab === "Carreras" ? (
+                  <CareerTable
+                    data={filtered}
+                    status={status}
+                    error={error}
+                    activeTab={activeTab}
+                    practiceOptions={activeInternshipOptions}
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onToggleStatus={handleToggleStatus}
+                    onView={setViewCareer}
+                    onBulkDelete={handleBulkDelete}
+                    onBulkRestore={handleBulkRestore}
+                    inactiveMode={activeTab === "Inactivas"}
+                    loading={loadingAction}
+                  />
+                ) : (
                 <InternshipTypeTable
                   data={internshipTypes}
                   careers={careers}
@@ -589,7 +590,7 @@ export default function CareersPage() {
         onClose={handleCloseCareerModal}
         onSave={handleSave}
         editingCareer={editingCareer}
-        internshipOptions={internshipOptions}
+        internshipOptions={activeInternshipOptions}
         isLoading={loadingAction}
         hasPendingEvaluations={editingCareer?.hasPendingEvaluations}
         isInUse={editingCareer?.isInUse}

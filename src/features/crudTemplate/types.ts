@@ -105,13 +105,3 @@ export interface CrudRowAction<TItem> {
   show?: (item: TItem) => boolean;
 }
 
-/**
- * Estructura de alertas para la página de gestión.
- */
-export interface CrudPageAlert {
-  id: string;
-  variant: "success" | "error" | "warning" | "info";
-  title: string;
-  message: string;
-}
-

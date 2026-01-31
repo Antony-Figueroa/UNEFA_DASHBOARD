@@ -2,11 +2,9 @@ import type { ReactNode } from "react";
 import ComponentCard from "../../../components/common/ComponentCard";
 import PageMeta from "../../../components/common/PageMeta";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
-import Alert from "../../../components/ui/alert/Alert";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
-import { PlusCircleIcon, XIcon } from "../../../icons/actions";
+import { PlusCircleIcon } from "../../../icons/actions";
 import { CrudConfirmDialog, CrudConfirmState } from "./CrudConfirmDialog";
-import type { CrudPageAlert } from "../types";
 
 export interface CrudLayoutProps {
   title: string;
@@ -15,8 +13,6 @@ export interface CrudLayoutProps {
   primaryActionLabel?: string;
   onPrimaryAction?: () => void;
   children: ReactNode;
-  alert?: CrudPageAlert | null;
-  onCloseAlert?: () => void;
   confirmState: CrudConfirmState | null;
   onCloseConfirm: () => void;
   isLoadingConfirm?: boolean;
@@ -41,8 +37,6 @@ export function CrudLayout({
   primaryActionLabel,
   onPrimaryAction,
   children,
-  alert,
-  onCloseAlert,
   confirmState,
   onCloseConfirm,
   isLoadingConfirm = false,
@@ -62,26 +56,6 @@ export function CrudLayout({
           </AsyncButton>
         )}
       </div>
-
-      {alert && (
-        <div className="relative mb-6">
-          <Alert
-            variant={alert.variant}
-            title={alert.title}
-            message={alert.message}
-            showLink={false}
-          />
-          {onCloseAlert && (
-            <button
-              onClick={onCloseAlert}
-              className="absolute right-4 top-4 text-text-secondary hover:text-text-primary dark:text-text-tertiary dark:hover:text-white/90"
-              aria-label="Cerrar alerta"
-            >
-              <XIcon className="w-5 h-5" />
-            </button>
-          )}
-        </div>
-      )}
 
       {chartsSlot && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 mb-6">

@@ -14,7 +14,6 @@ import CustomSelect from "../../components/form/CustomSelect";
 import { PlusCircleIcon } from "../../icons/actions";
 import { DownloadIcon } from "../../icons";
 import PeriodModal from "../../features/periods/components/PeriodModal";
-import Alert from "../../components/ui/alert/Alert";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
@@ -292,7 +291,7 @@ export default function Period() {
             message: `¿Estás seguro de que deseas enviar el período "${originalPeriodo.description}" a Inactivos?`,
             onConfirm: async () => {
                 try {
-                    await removePeriod(originalPeriodo);
+                    await removePeriod(originalPeriodo.periodId);
                 } catch (e) {
                     console.error("[PeriodPage] Error al eliminar periodo:", e);
                 } finally {
@@ -340,13 +339,18 @@ export default function Period() {
     return (
         <ErrorBoundary
             fallback={(
-                <div className="p-6">
-                    <Alert
-                        variant="error"
-                        title="Se produjo un error en la página de Periodos"
-                        message="Intenta recargar la página. Si persiste, contacta al soporte."
-                        showLink={false}
-                    />
+                <div className="p-6 rounded-xl border border-error-200 bg-error-50 dark:bg-error-500/10 dark:border-error-500/20">
+                    <div className="flex flex-col items-center justify-center text-center p-8">
+                        <div className="w-12 h-12 rounded-full bg-error-100 dark:bg-error-500/20 flex items-center justify-center mb-4">
+                            <span className="text-error-600 dark:text-error-400 text-2xl">!</span>
+                        </div>
+                        <h3 className="text-lg font-semibold text-error-900 dark:text-error-400 mb-2">
+                            Se produjo un error en la página de Periodos
+                        </h3>
+                        <p className="text-error-700 dark:text-error-500/80">
+                            Intenta recargar la página. Si persiste, contacta al soporte.
+                        </p>
+                    </div>
                 </div>
             )}
         >

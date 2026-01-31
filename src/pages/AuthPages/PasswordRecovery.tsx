@@ -16,7 +16,10 @@ interface ApiError {
   };
 }
 
+import { useToast } from "../../context/toast";
+
 export default function PasswordRecovery() {
+  const { addToast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
@@ -27,7 +30,6 @@ export default function PasswordRecovery() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   // Requisitos de complejidad (deben coincidir con el backend)
@@ -42,17 +44,29 @@ export default function PasswordRecovery() {
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
     try {
       const result = await authService.requestRecovery(email);
       if (result.success) {
         setSuccess(result.message);
+        addToast({
+          variant: "success",
+          title: "Enlace Enviado",
+          message: "Se ha enviado un correo con las instrucciones para restablecer su contraseña."
+        });
       } else {
-        setError(result.message);
+        addToast({
+          variant: "error",
+          title: "Error de Solicitud",
+          message: result.message || "No se pudo procesar la solicitud de recuperación."
+        });
       }
     } catch (err) {
       const apiError = err as ApiError;
-      setError(apiError.response?.data?.message || "Error al solicitar recuperación");
+      addToast({
+        variant: "error",
+        title: "Error de Conexión",
+        message: apiError.response?.data?.message || "No se pudo establecer conexión con el servidor."
+      });
     } finally {
       setLoading(false);
     }
@@ -61,27 +75,47 @@ export default function PasswordRecovery() {
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      setError("Las contraseñas no coinciden");
+      addToast({
+        variant: "error",
+        title: "Error de Validación",
+        message: "Las contraseñas no coinciden"
+      });
       return;
     }
     if (!isPasswordStrong(newPassword)) {
-      setError("La contraseña debe tener al menos 12 caracteres e incluir mayúsculas, minúsculas, números y símbolos.");
+      addToast({
+        variant: "error",
+        title: "Error de Validación",
+        message: "La contraseña no cumple con los requisitos mínimos de seguridad."
+      });
       return;
     }
 
     setLoading(true);
-    setError(null);
     try {
       const result = await authService.resetWithToken(token!, newPassword);
 
       if (result.success) {
-        navigate("/signin", { state: { message: result.message || "Contraseña restablecida exitosamente." } });
+        addToast({
+          variant: "success",
+          title: "Contraseña Restablecida",
+          message: "Su contraseña ha sido actualizada correctamente. Ya puede iniciar sesión."
+        });
+        navigate("/signin");
       } else {
-        setError(result.message || "Error al restablecer contraseña");
+        addToast({
+          variant: "error",
+          title: "Error de Restablecimiento",
+          message: result.message || "No se pudo restablecer la contraseña."
+        });
       }
     } catch (err) {
       const apiError = err as ApiError;
-      setError(apiError.response?.data?.message || "Error al restablecer contraseña");
+      addToast({
+        variant: "error",
+        title: "Error de Conexión",
+        message: apiError.response?.data?.message || "No se pudo establecer conexión con el servidor."
+      });
     } finally {
       setLoading(false);
     }
@@ -108,12 +142,6 @@ export default function PasswordRecovery() {
                 {step === 1 ? "Ingresa tu correo electrónico para recibir un enlace de recuperación." : "Crea una nueva contraseña segura para tu cuenta."}
               </p>
             </div>
-
-            {error && (
-              <div className="p-3 mb-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg" role="alert">
-                {error}
-              </div>
-            )}
 
             {success && (
               <div className="p-4 mb-4 text-sm text-green-700 bg-green-50 border border-green-100 rounded-lg" role="alert">

@@ -3,16 +3,11 @@
  * @description Centraliza el estado, llamadas a API y lógica de negocio (CRUD, alertas).
  */
 
-import { useState, useEffect, useCallback } from "react";
 import { Periodo, CreatePeriodPayload, UpdatePeriodPayload } from "../types";
 import * as periodService from "../services/periodService";
 import { useToast } from "../../../context/toast";
 import { ChangeComparison, RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
-
-/**
- * Estado de carga del hook.
- */
-type Status = 'loading' | 'success' | 'error';
+import { useCrud } from "../../../hooks/useCrud";
 
 /**
  * Etiquetas para la visualización de detalles en alertas y comparaciones.
@@ -27,172 +22,151 @@ const PERIOD_LABELS: Record<string, string> = {
 /**
  * Hook personalizado para la gestión de periodos académicos.
  * 
- * Centraliza el estado de los periodos, las operaciones CRUD contra el servicio,
- * y la lógica de notificaciones (toast) y auditoría visual.
+ * Ahora utiliza el hook genérico useCrud para centralizar la gestión de estado,
+ * carga, errores y notificaciones, manteniendo la lógica de auditoría visual.
  * 
  * @returns Un objeto con el estado de los periodos y funciones para manipularlos.
- * 
- * @example
- * const { periodos, addPeriod, editPeriod, removePeriod } = usePeriods();
  */
 export const usePeriods = () => {
-    const [periodos, setPeriodos] = useState<Periodo[]>([]);
-    const [status, setStatus] = useState<Status>('loading');
-    const [loadingAction, setLoadingAction] = useState(false);
-    const [error, setError] = useState<Error | null>(null);
     const { addToast } = useToast();
 
-    // Efecto para manejar el timeout de seguridad (30 segundos) en acciones críticas
-    useEffect(() => {
-        let timeoutId: ReturnType<typeof setTimeout>;
-        if (loadingAction) {
-            timeoutId = setTimeout(() => {
-                setLoadingAction(false);
-                console.warn("[usePeriods] Timeout de 30s alcanzado. Rehabilitando botones.");
-            }, 30000);
-        }
-        return () => {
-            if (timeoutId) clearTimeout(timeoutId);
-        };
-    }, [loadingAction]);
+    const {
+        data: periodos,
+        status,
+        loadingAction,
+        error,
+        refresh: refreshPeriods,
+        createItem: baseAddPeriod,
+        updateItem: baseEditPeriod,
+        deleteItem: removePeriod,
+        toggleItemStatus: baseToggleStatus,
+        bulkDelete: bulkRemovePeriods,
+        bulkRestore: bulkRestorePeriods
+    } = useCrud<Periodo, CreatePeriodPayload, UpdatePeriodPayload>(periodService as any, {
+        resourceName: "Período",
+        idField: "periodId",
+    });
 
     /**
-     * Refresca la lista de periodos desde el servidor.
-     * Incluye una lógica de debounce visual de 1s para evitar parpadeos en conexiones rápidas.
-     */
-    const refreshPeriods = useCallback(async () => {
-        setStatus('loading');
-        const startTime = Date.now();
-        try {
-            const data = await periodService.getPeriods();
-            // Asegurar unicidad por ID
-            const uniqueData = Array.from(new Map(data.map(item => [item.periodId, item])).values());
-
-            const elapsedTime = Date.now() - startTime;
-            const remainingTime = Math.max(0, 1000 - elapsedTime);
-
-            setTimeout(() => {
-                setPeriodos(uniqueData);
-                setStatus('success');
-            }, remainingTime);
-        } catch (e) {
-            console.error("[usePeriods] Error al refrescar periodos:", e);
-            const err = e instanceof Error ? e : new Error('Error desconocido al cargar períodos');
-            setError(err);
-            setStatus('error');
-        }
-    }, []);
-
-    useEffect(() => {
-        refreshPeriods();
-    }, [refreshPeriods]);
-
-    /**
-     * Crea un nuevo periodo académico y muestra una notificación de éxito.
-     * 
-     * @param periodoData - Datos del nuevo periodo (CreatePeriodPayload).
-     * @throws Re-lanza el error después de mostrar el toast de error.
+     * Crea un nuevo periodo académico y muestra una notificación de éxito enriquecida.
      */
     const addPeriod = async (periodoData: CreatePeriodPayload) => {
-        setLoadingAction(true);
         try {
-            await periodService.createPeriod(periodoData);
-            await refreshPeriods();
-            setLoadingAction(false);
-
-            addToast({
-                variant: "success",
-                title: "Período Creado",
-                message: (
-                    <>
-                        <p>El período <strong>{periodoData.description}</strong> ha sido creado exitosamente.</p>
-                        <RecordDetails data={periodoData as unknown as Record<string, unknown>} labels={PERIOD_LABELS} />
-                    </>
-                ),
-            });
+            const newPeriod = await baseAddPeriod(periodoData, { silent: true });
+            
+            if (newPeriod) {
+                addToast({
+                    variant: "success",
+                    title: "Período Registrado",
+                    message: (
+                        <>
+                            <p>El período <strong>{newPeriod.description}</strong> ha sido registrado exitosamente.</p>
+                            <RecordDetails data={newPeriod as unknown as Record<string, unknown>} labels={PERIOD_LABELS} />
+                        </>
+                    ),
+                });
+            }
+            return newPeriod;
         } catch (e) {
             console.error("[usePeriods] Error al añadir periodo:", e);
-            setLoadingAction(false);
-            const err = e instanceof Error ? e : new Error('Error desconocido al crear');
-            addToast({ variant: "error", title: "Error al Crear", message: err.message });
-            throw err;
+            const axiosError = e as any;
+            addToast({ 
+                variant: "error", 
+                title: "Error de Registro", 
+                message: axiosError.response?.data?.message || axiosError.message || "No se pudo registrar el período académico."
+            });
+            throw e;
         }
     };
 
     /**
      * Actualiza un periodo académico existente y muestra una notificación con comparación de cambios.
-     * Permite deshacer la acción desde la notificación.
-     * 
-     * @param periodoData - Datos actualizados del periodo (UpdatePeriodPayload).
-     * @throws Re-lanza el error después de mostrar el toast de error.
      */
     const editPeriod = async (periodoData: UpdatePeriodPayload) => {
-        setLoadingAction(true);
         try {
             const oldPeriod = periodos.find(p => p.periodId === periodoData.periodId);
 
-            // LOGGING: Registro de auditoría para cambios de estatus (excluidos de la UI)
+            // Auditoría para cambios de estatus
             if (oldPeriod && oldPeriod.periodStatus !== periodoData.periodStatus) {
                 console.log(`[Audit Log] Cambio de estatus detectado para periodo ${periodoData.description || oldPeriod.description}: ${oldPeriod.periodStatus} -> ${periodoData.periodStatus}`);
             }
 
-            await periodService.updatePeriod(periodoData);
-            await refreshPeriods();
-            setLoadingAction(false);
+            const updatedPeriod = await baseEditPeriod(periodoData, { silent: true });
 
-            addToast({
-                variant: "success",
-                title: "Período Actualizado",
-                message: (
-                    <>
-                        <p>Se han actualizado los datos del período <strong>{periodoData.description || oldPeriod?.description}</strong>.</p>
-                        {oldPeriod && <ChangeComparison oldData={oldPeriod as unknown as Record<string, unknown>} newData={periodoData as unknown as Record<string, unknown>} labels={PERIOD_LABELS} />}
-                    </>
-                ),
-                onUndo: oldPeriod ? async () => {
-                    await periodService.updatePeriod(oldPeriod);
-                    await refreshPeriods();
-                } : undefined
-            });
+            if (updatedPeriod) {
+                // Personalización de títulos y mensajes según la acción (Culminar, Activar, Editar)
+                let toastTitle = "Período Actualizado";
+                let toastMessage = <p>Los cambios del período <strong>{updatedPeriod.description}</strong> han sido guardados exitosamente.</p>;
+
+                if (oldPeriod && oldPeriod.periodStatus !== updatedPeriod.periodStatus) {
+                    if (updatedPeriod.periodStatus === 3) {
+                        toastTitle = "Período Culminado";
+                        toastMessage = <p>El período <strong>{updatedPeriod.description}</strong> ha sido culminado exitosamente.</p>;
+                    } else if (updatedPeriod.periodStatus === 2) {
+                        toastTitle = "Período Activado";
+                        toastMessage = <p>El período <strong>{updatedPeriod.description}</strong> ha sido puesto "En Curso" exitosamente.</p>;
+                    }
+                }
+
+                addToast({
+                    variant: "success",
+                    title: toastTitle,
+                    message: (
+                        <>
+                            {toastMessage}
+                            {oldPeriod && <ChangeComparison oldData={oldPeriod as unknown as Record<string, unknown>} newData={updatedPeriod as unknown as Record<string, unknown>} labels={PERIOD_LABELS} />}
+                        </>
+                    ),
+                });
+            }
+            return updatedPeriod;
         } catch (e) {
-            console.error("[usePeriods] Error al editar periodo:", e);
-            setLoadingAction(false);
-            const err = e instanceof Error ? e : new Error('Error desconocido al actualizar');
-            addToast({ variant: "error", title: "Error al Actualizar", message: err.message });
-            throw err;
+            console.error("[usePeriods] Error al actualizar periodo:", e);
+            const axiosError = e as any;
+            addToast({ 
+                variant: "error", 
+                title: "Error de Actualización", 
+                message: axiosError.response?.data?.message || axiosError.message || "No se pudo actualizar el período académico."
+            });
+            throw e;
         }
     };
 
     /**
-     * Elimina permanentemente un periodo académico.
-     * 
-     * @param periodo - El objeto completo del periodo a eliminar.
-     * @throws Re-lanza el error después de mostrar el toast de error.
+     * Cambia el estado (activo/inactivo) con actualización optimista.
      */
-    const removePeriod = async (periodo: Periodo) => {
-        setLoadingAction(true);
-        try {
-            await periodService.deletePeriod(periodo.periodId);
-            await refreshPeriods();
-            setLoadingAction(false);
+    const toggleStatus = async (period: Periodo) => {
+         const newStatus = !period.status; 
+         try {
+            await baseToggleStatus(period.periodId, newStatus, { silent: true });
+
             addToast({
-                variant: "warning",
-                title: "Período Eliminado",
-                message: (
-                    <>
-                        <p>El período <strong>{periodo.description}</strong> ha sido eliminado permanentemente.</p>
-                    </>
-                )
+                variant: newStatus ? "success" : "warning",
+                title: "Estado Actualizado",
+                message: `El período ${period.description} ha sido ${newStatus ? 'activado' : 'inactivado'} exitosamente.`,
             });
         } catch (e) {
-            console.error("[usePeriods] Error al eliminar periodo:", e);
-            setLoadingAction(false);
-            const err = e instanceof Error ? e : new Error('Error desconocido al eliminar');
-            addToast({ variant: "error", title: "Error al Eliminar", message: err.message });
-            throw err;
+            console.error("[usePeriods] Error al cambiar estado:", e);
+            addToast({
+                variant: "error",
+                title: "Error de Estado",
+                message: "No se pudo cambiar el estado del período.",
+            });
         }
     };
 
-    return { periodos, status, loadingAction, error, refreshPeriods, addPeriod, editPeriod, removePeriod };
+    return {
+        periodos,
+        status,
+        loadingAction,
+        error,
+        refreshPeriods,
+        addPeriod,
+        editPeriod,
+        removePeriod,
+        toggleStatus,
+        bulkRemovePeriods,
+        bulkRestorePeriods,
+    };
 };
 

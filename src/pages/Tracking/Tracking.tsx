@@ -10,13 +10,13 @@ import PageMeta from "../../components/common/PageMeta";
 import TrackingTable from "../../features/tracking/components/TrackingTable";
 import { PlusCircleIcon } from "../../icons/actions";
 import TrackingModal from "../../features/tracking/components/TrackingModal";
-import Alert from "../../components/ui/alert/Alert";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import Button from "../../components/ui/button/Button";
 import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { useTracking } from "../../features/tracking/hooks/useTracking";
 import { useLists } from "../../features/lists/hooks/useLists";
+import { useToast } from "../../context/toast";
 import { Tracking, TrackingRowData, CreateTrackingPayload, UpdateTrackingPayload, TRANSFER_OPTIONS } from "../../features/tracking/types";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
 import TrackingStatsChart from "../../features/tracking/components/TrackingStatsChart";
@@ -33,10 +33,10 @@ import { getTrackingStats, TrackingStats } from "../../features/tracking/service
 export default function TrackingPage() {
     const [pageLoading, setPageLoading] = useState(true);
     const { fetchMultipleLists } = useLists();
+    const { addToast } = useToast();
     const [lists, setLists] = useState<Record<string, { value: string; label: string }[]>>({});
     const [stats, setStats] = useState<TrackingStats | null>(null);
     const [statsLoading, setStatsLoading] = useState(true);
-    const [statsError, setStatsError] = useState<string | null>(null);
 
     const {
         trackings,
@@ -70,13 +70,16 @@ export default function TrackingPage() {
             if (!silent) setStatsLoading(true);
             const data = await getTrackingStats();
             setStats(data);
-            setStatsError(null);
         } catch (error: unknown) {
             console.error("[TrackingPage] Error al cargar estadísticas:", error);
             const errorMessage = error instanceof Error 
                                ? error.message 
                                : "Error al cargar las estadísticas de seguimiento";
-            setStatsError(errorMessage);
+            addToast({
+                variant: "error",
+                title: "Error de Estadísticas",
+                message: errorMessage
+            });
         } finally {
             if (!silent) setStatsLoading(false);
         }
@@ -157,6 +160,8 @@ export default function TrackingPage() {
             loadStats(true);
         } catch (err) {
             console.error("[TrackingPage] Error al procesar el guardado:", err);
+            // La notificación de error ya la maneja useTracking, 
+            // pero cerramos el modal si es un error de negocio esperado (opcional)
         }
     };
 
@@ -221,13 +226,18 @@ export default function TrackingPage() {
     return (
         <ErrorBoundary
             fallback={(
-                <div className="p-6">
-                    <Alert
-                        variant="error"
-                        title="Se produjo un error en la página de Seguimiento"
-                        message="Intenta recargar la página."
-                        showLink={false}
-                    />
+                <div className="p-6 rounded-xl border border-error-200 bg-error-50 dark:bg-error-500/10 dark:border-error-500/20">
+                    <div className="flex flex-col items-center justify-center text-center p-8">
+                        <div className="w-12 h-12 rounded-full bg-error-100 dark:bg-error-500/20 flex items-center justify-center mb-4">
+                            <span className="text-error-600 dark:text-error-400 text-2xl">!</span>
+                        </div>
+                        <h3 className="text-lg font-semibold text-error-900 dark:text-error-400 mb-2">
+                            Se produjo un error en la página de Seguimiento
+                        </h3>
+                        <p className="text-error-700 dark:text-error-500/80">
+                            Intenta recargar la página para solucionar el problema.
+                        </p>
+                    </div>
                 </div>
             )}
         >
@@ -259,14 +269,6 @@ export default function TrackingPage() {
                     </div>
 
                     <div className="space-y-6">
-                        {statsError && (
-                            <Alert 
-                                variant="error" 
-                                title="Error en Estadísticas"
-                                message={statsError}
-                            />
-                        )}
-
                         <TrackingStatsChart stats={stats} loading={statsLoading} />
                         <ComponentCard title={activeTab === 'active' ? "Seguimientos Activos" : "Seguimientos Inactivos"}>
                             <div className="mb-6 flex border-b border-border-light dark:border-white/5">

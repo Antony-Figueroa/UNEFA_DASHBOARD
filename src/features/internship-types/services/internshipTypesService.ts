@@ -85,18 +85,42 @@ export const updateInternshipType = async (id: number, data: UpdateInternshipTyp
 
 /**
  * Elimina (lógicamente) un tipo de práctica del sistema.
- * @param {number} id - ID del registro a eliminar.
+ * @param {number | string} id - ID del registro a eliminar.
  */
-export const deleteInternshipType = async (id: number): Promise<void> => {
+export const deleteInternshipType = async (id: number | string): Promise<void> => {
   await apiClient.delete(`${API_URL}/${id}`);
 };
 
+export const getAll = getInternshipTypes;
+export const create = createInternshipType;
+export const update = async (data: UpdateInternshipTypePayload): Promise<InternshipType> => {
+  const id = (data as any).id;
+  if (!id) throw new Error("ID is required for update");
+  return updateInternshipType(id, data);
+};
+export const remove = deleteInternshipType;
+
 /**
- * Alterna el estado de activación de un tipo de práctica.
- * @param {number} id - ID del registro.
+ * Cambia el estado de activación de un tipo de práctica.
+ * @param {number | string} id - ID del registro.
+ * @param {boolean} status - Nuevo estado.
  */
-export const toggleInternshipTypeStatus = async (id: number): Promise<void> => {
-  await apiClient.patch(`${API_URL}/${id}/toggle-status`);
+export const toggleStatus = async (id: number | string, status: boolean): Promise<void> => {
+  await apiClient.patch(`${API_URL}/${id}/toggle-status`, { status });
+};
+
+/**
+ * Ejecuta la eliminación masiva de registros.
+ */
+export const bulkDelete = async (ids: (string | number)[]): Promise<void> => {
+  await apiClient.post(`${API_URL}/bulk-delete`, { ids });
+};
+
+/**
+ * Ejecuta la restauración masiva de registros.
+ */
+export const bulkRestore = async (ids: (string | number)[]): Promise<void> => {
+  await apiClient.post(`${API_URL}/bulk-restore`, { ids });
 };
 
 /**
@@ -122,7 +146,7 @@ export const bulkRestoreInternshipTypes = async (ids: number[]): Promise<void> =
  */
 export const mapToOptions = (types: InternshipType[]): InternshipTypeOption[] => {
   return types.map((t) => {
-    const label = (t.abbreviation || t.name).toUpperCase();
+    const label = t.name.toUpperCase();
     return {
       id: t.id,
       value: label,

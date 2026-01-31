@@ -5,7 +5,8 @@ import { useDashboardStats } from "../../features/dashboard/hooks/useDashboardSt
 import RegistrationStatsChart from "../../features/dashboard/components/RegistrationStatsChart";
 import CareerDistributionChart from "../../features/dashboard/components/CareerDistributionChart";
 import GrowthMetrics from "../../features/dashboard/components/GrowthMetrics";
-import Alert from "../../components/ui/alert/Alert";
+import { useToast } from "../../context/toast";
+import { useEffect } from "react";
 
 /**
  * Componente Home (Dashboard)
@@ -13,6 +14,17 @@ import Alert from "../../components/ui/alert/Alert";
  */
 export default function Home() {
   const { stats, loading, error } = useDashboardStats();
+  const { addToast } = useToast();
+
+  useEffect(() => {
+    if (error) {
+      addToast({
+        variant: "error",
+        title: "Error de Conexión",
+        message: typeof error === 'string' ? error : "No se pudieron cargar las estadísticas del panel principal.",
+      });
+    }
+  }, [error, addToast]);
 
   return (
     <>
@@ -22,14 +34,6 @@ export default function Home() {
       />
 
       <div className="space-y-6">
-        {error && (
-          <Alert 
-            variant="error" 
-            title="Error de Conexión"
-            message={typeof error === 'string' ? error : "No se pudieron cargar las estadísticas del panel principal. Por favor, verifique su conexión a la base de datos."}
-          />
-        )}
-
         {/* 1. Banner de Bienvenida y Estadísticas Rápidas */}
         <div className="space-y-6">
           <WelcomeBanner />

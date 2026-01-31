@@ -56,7 +56,7 @@ export const useInstitutions = () => {
         title: "Institución Registrada",
         message: (
           <>
-            <p>La institución <strong>{newInst.name}</strong> ha sido registrada correctamente.</p>
+            <p>La institución <strong>{newInst.name}</strong> ha sido registrada exitosamente.</p>
             <RecordDetails
               data={newInst as unknown as Record<string, unknown>}
               labels={INSTITUTION_LABELS}
@@ -69,7 +69,7 @@ export const useInstitutions = () => {
       console.error("Error adding institution:", e);
       addToast({
         variant: "error",
-        title: "Error al registrar",
+        title: "Error de Registro",
         message: "No se pudo registrar la institución. Intente de nuevo.",
       });
     }
@@ -90,7 +90,7 @@ export const useInstitutions = () => {
         title: "Institución Actualizada",
         message: (
           <>
-            <p>Los datos de <strong>{updatedInst.name}</strong> han sido actualizados.</p>
+            <p>Los datos de <strong>{updatedInst.name}</strong> han sido actualizados exitosamente.</p>
             {oldInst && <ChangeComparison 
               oldData={oldInst as unknown as Record<string, unknown>} 
               newData={updatedInst as unknown as Record<string, unknown>} 

@@ -10,7 +10,10 @@ import { SecurityQuestion, SecurityAnswer } from "../../features/auth/types";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Select from "../../components/form/Select";
 
+import { useToast } from "../../context/toast";
+
 export default function FirstLogin() {
+  const { addToast } = useToast();
   const location = useLocation();
   const navigate = useNavigate();
   const [userId, setUserId] = useState<number | null>(null);
@@ -18,7 +21,6 @@ export default function FirstLogin() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [presetQuestions, setPresetQuestions] = useState<SecurityQuestion[]>([]);
   const [userQuestions, setUserQuestions] = useState<SecurityAnswer[]>([
     { questionId: 0, answer: "" },
@@ -72,15 +74,22 @@ export default function FirstLogin() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
 
     if (newPassword !== confirmPassword) {
-      setError("Las contraseñas no coinciden");
+      addToast({
+        variant: "error",
+        title: "Error de Validación",
+        message: "Las contraseñas no coinciden"
+      });
       return;
     }
 
     if (newPassword.length < 12) {
-      setError("La contraseña debe tener al menos 12 caracteres");
+      addToast({
+        variant: "error",
+        title: "Error de Validación",
+        message: "La contraseña debe tener al menos 12 caracteres"
+      });
       return;
     }
 
@@ -90,13 +99,21 @@ export default function FirstLogin() {
     const hasSpecial = /[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(newPassword);
 
     if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecial) {
-      setError("La contraseña debe contener mayúsculas, minúsculas, números y caracteres especiales");
+      addToast({
+        variant: "error",
+        title: "Error de Validación",
+        message: "La contraseña debe contener mayúsculas, minúsculas, números y caracteres especiales"
+      });
       return;
     }
 
     const hasEmptyQuestion = userQuestions.some(q => !q.questionId || !q.answer);
     if (hasEmptyQuestion) {
-      setError("Debe seleccionar y responder todas las preguntas de seguridad");
+      addToast({
+        variant: "error",
+        title: "Error de Validación",
+        message: "Debe seleccionar y responder todas las preguntas de seguridad"
+      });
       return;
     }
 
@@ -104,14 +121,27 @@ export default function FirstLogin() {
     try {
       const result = await authService.changePassword(userId!, newPassword, userQuestions);
       if (result.success) {
-        navigate("/signin", { state: { message: "Contraseña actualizada. Inicie sesión con su nueva clave." } });
+        addToast({
+          variant: "success",
+          title: "Configuración Finalizada",
+          message: "Su contraseña y preguntas de seguridad han sido actualizadas exitosamente."
+        });
+        navigate("/signin");
       } else {
-        setError(result.message || "Error al actualizar la contraseña");
+        addToast({
+          variant: "error",
+          title: "Error de Configuración",
+          message: result.message || "No se pudo completar la configuración de seguridad."
+        });
       }
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { message?: string } } };
-      const errorMessage = axiosError.response?.data?.message || (err as Error).message || "Error al actualizar la contraseña";
-      setError(errorMessage);
+      const errorMessage = axiosError.response?.data?.message || (err as Error).message || "No se pudo establecer conexión con el servidor.";
+      addToast({
+        variant: "error",
+        title: "Error de Conexión",
+        message: errorMessage
+      });
     } finally {
       setLoading(false);
     }
@@ -130,12 +160,6 @@ export default function FirstLogin() {
               Por seguridad, debe cambiar su contraseña temporal y configurar sus preguntas de seguridad.
             </p>
           </div>
-
-          {error && (
-            <div className="p-3 mb-4 text-sm text-red-500 bg-red-100 rounded-lg dark:bg-red-500/10" role="alert">
-              {error}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit}>
             <div className="space-y-6">

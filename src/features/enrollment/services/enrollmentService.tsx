@@ -63,3 +63,10 @@ export const updateEnrollment = async (payload: UpdateEnrollmentPayload): Promis
 export const deleteEnrollment = async (id: string): Promise<void> => {
   await apiClient.delete(`${API_URL}/${id}`);
 };
+
+// --- CRUD Adapter ---
+export const getAll = getEnrollments;
+export const create = createEnrollment;
+export const update = updateEnrollment;
+export { deleteEnrollment as delete };
+

@@ -55,7 +55,7 @@ export const DIALOG_COLORS = {
 export const STANDARD_TEXTS = {
   CONFIRM_DELETE: {
     title: "¿Está seguro de eliminar este registro?",
-    message: "Esta acción no se puede deshacer y el registro será marcado como inactivo.",
+    message: "El registro será marcado como inactivo.",
     confirmLabel: "Eliminar",
     cancelLabel: "Cancelar",
   },

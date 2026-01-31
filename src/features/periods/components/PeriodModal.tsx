@@ -142,8 +142,18 @@ export default function PeriodModal({
         }
 
         // RESTRICCIÓN CRÍTICA: La fecha mínima no puede ser inferior al inicio del año seleccionado
+        // EXCEPCIÓN: Si estamos editando un periodo que ya empieza antes de ese año, permitimos su fecha original
         if (minYearDate && calculatedMinDate < minYearDate) {
+            if (periodo && periodo.startDate < minYearDate) {
+                // Si la fecha del periodo es aún menor que calculatedMinDate, usamos la del periodo
+                return periodo.startDate < calculatedMinDate ? periodo.startDate : calculatedMinDate;
+            }
             return minYearDate;
+        }
+
+        // Si estamos editando, asegurarnos de que la fecha mínima no sea mayor a la fecha actual del periodo
+        if (periodo && periodo.startDate < calculatedMinDate) {
+            return periodo.startDate;
         }
 
         return calculatedMinDate;
@@ -164,10 +174,16 @@ export default function PeriodModal({
         if (!startDateValue) return undefined;
         // 16 semanas * 7 días * 24 horas * 60 min * 60 seg * 1000 ms
         const minDuration = 16 * 7 * 24 * 60 * 60 * 1000;
-        const minDate = new Date(startDateValue.getTime() + minDuration);
-        minDate.setHours(0, 0, 0, 0);
-        return minDate;
-    }, [startDateValue]);
+        const calculatedMinDate = new Date(startDateValue.getTime() + minDuration);
+        calculatedMinDate.setHours(0, 0, 0, 0);
+
+        // Si estamos editando, permitir la fecha de fin actual si es menor a la mínima de 16 semanas
+        if (periodo && periodo.endDate < calculatedMinDate) {
+            return periodo.endDate;
+        }
+
+        return calculatedMinDate;
+    }, [startDateValue, periodo]);
 
     /**
      * Calcula la fecha máxima de fin permitida (fin del año siguiente al seleccionado).

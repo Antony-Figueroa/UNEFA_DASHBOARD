@@ -53,4 +53,4 @@ export interface InternshipTypeOption {
 export type CreateInternshipTypePayload = Omit<InternshipType, 'id' | 'creationDate'>;
 
 /** Payload para actualizar un tipo de pasantía existente */
-export type UpdateInternshipTypePayload = Partial<CreateInternshipTypePayload>;
+export type UpdateInternshipTypePayload = Partial<CreateInternshipTypePayload> & { id: number };

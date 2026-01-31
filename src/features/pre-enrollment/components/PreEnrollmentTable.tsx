@@ -33,7 +33,7 @@ interface PreEnrollmentTableProps {
   /** Lista de pre-inscripciones a mostrar */
   data: PreEnrollmentRowData[];
   /** Estado de carga de la lista */
-  status: "loading" | "success" | "error";
+  status: "loading" | "success" | "error" | "idle";
   /** Error en caso de que la carga falle */
   error: Error | null;
   /** Función para editar una pre-inscripción */

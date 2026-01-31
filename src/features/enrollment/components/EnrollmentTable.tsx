@@ -31,7 +31,7 @@ interface EnrollmentTableProps {
   /** Array of enrollment data to display */
   data: EnrollmentRowData[];
   /** Loading status of the data */
-  status: "loading" | "success" | "error";
+  status: "loading" | "success" | "error" | "idle";
   /** Error object if status is 'error' */
   error: Error | null;
   /** Callback for when an item is selected for editing */

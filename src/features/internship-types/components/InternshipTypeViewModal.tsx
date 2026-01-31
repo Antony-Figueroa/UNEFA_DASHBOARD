@@ -33,6 +33,18 @@ export default function InternshipTypeViewModal({
 }: InternshipTypeViewModalProps) {
   if (!item) return null;
 
+  /**
+   * Mapea el valor numérico de prioridad a su etiqueta descriptiva.
+   */
+  const getPriorityLabel = (priority: number) => {
+    switch (priority) {
+      case 0: return "Único";
+      case 1: return "Hospitalaria";
+      case 2: return "Comunitaria";
+      default: return String(priority);
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} isFullscreen={true} showCloseButton>
       <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">Detalles del Tipo de Práctica</ModalHeader>
@@ -45,23 +57,17 @@ export default function InternshipTypeViewModal({
               <h4 className="font-bold text-text-primary dark:text-white/90 uppercase text-xs tracking-wider">Información General</h4>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
-              <div className="sm:col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+              <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Nombre</label>
                 <p className="text-sm font-semibold text-text-primary dark:text-white/90 uppercase">
                   {item.name}
                 </p>
               </div>
               <div>
-                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Abreviación</label>
-                <p className="text-sm font-semibold text-text-primary dark:text-white/90 uppercase">
-                  {item.abbreviation}
-                </p>
-              </div>
-              <div>
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Prioridad</label>
                 <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                  {item.priority}
+                  {item.priority} - {getPriorityLabel(item.priority)}
                 </p>
               </div>
             </div>

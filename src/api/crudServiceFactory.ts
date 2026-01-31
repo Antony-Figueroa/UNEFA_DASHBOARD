@@ -61,7 +61,8 @@ export function createCrudService<TItem, TCreatePayload, TUpdatePayload, TApiDTO
     },
 
     create: async (data: TCreatePayload) => {
-      const response = await apiClient.post<TApiDTO>(endpoint, data);
+      const payload = config.mapToApi ? config.mapToApi(data) : data;
+      const response = await apiClient.post<TApiDTO>(endpoint, payload);
       return mapFromApi(response.data);
     },
 
@@ -74,7 +75,8 @@ export function createCrudService<TItem, TCreatePayload, TUpdatePayload, TApiDTO
                  (data as any)[possibleIdField] || 
                  (data as any)[possibleIdField.replace(/sId$/, 'Id')];
       
-      const response = await apiClient.put<TApiDTO>(`${endpoint}/${id}`, data);
+      const payload = config.mapToApi ? config.mapToApi(data) : data;
+      const response = await apiClient.put<TApiDTO>(`${endpoint}/${id}`, payload);
       return mapFromApi(response.data);
     },
 

@@ -96,7 +96,7 @@ export const usePeriods = () => {
     const addPeriod = async (periodoData: CreatePeriodPayload) => {
         setLoadingAction(true);
         try {
-            const newPeriod = await periodService.createPeriod(periodoData);
+            await periodService.createPeriod(periodoData);
             await refreshPeriods();
             setLoadingAction(false);
 
@@ -109,7 +109,6 @@ export const usePeriods = () => {
                         <RecordDetails data={periodoData as unknown as Record<string, unknown>} labels={PERIOD_LABELS} />
                     </>
                 ),
-                onViewDetails: () => console.log("Ver detalles de período:", newPeriod.periodId),
             });
         } catch (e) {
             console.error("[usePeriods] Error al añadir periodo:", e);
@@ -182,7 +181,6 @@ export const usePeriods = () => {
                 message: (
                     <>
                         <p>El período <strong>{periodo.description}</strong> ha sido eliminado permanentemente.</p>
-                        <p className="mt-1 text-xs text-text-secondary italic">* Esta acción no se puede deshacer desde la interfaz, pero el registro permanece en auditoría.</p>
                     </>
                 )
             });

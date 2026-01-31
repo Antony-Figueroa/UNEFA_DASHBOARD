@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-default-secret-key-change-it';
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || 'your-default-secret-key-change-it';
 const JWT_EXPIRES_IN = '30m'; // 30 minutes session timeout
 
 export const hashPassword = async (password: string): Promise<string> => {

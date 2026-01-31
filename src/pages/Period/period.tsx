@@ -136,8 +136,8 @@ export default function Period() {
      * Cierra el modal de creación/edición.
      */
     const handleCloseCreateEditModal = () => {
-        setIsModalOpen(false);
         setEditingPeriodo(null);
+        setIsModalOpen(false);
     };
 
     /**

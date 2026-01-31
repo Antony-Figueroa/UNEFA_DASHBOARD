@@ -1,99 +1,441 @@
-import React from 'react';
-import Flatpickr from 'react-flatpickr';
-import { Spanish } from 'flatpickr/dist/l10n/es';
-import 'flatpickr/dist/flatpickr.css';
+import { forwardRef, useEffect, useRef } from 'react';
+import flatpickr from 'flatpickr';
+import { Spanish } from 'flatpickr/dist/l10n/es.js';
+import 'flatpickr/dist/flatpickr.min.css';
 import { cn } from '../../utils/cn';
-import { useTheme } from '../../context/ThemeContext';
-import { CalendarIcon } from '../../icons';
+import Label from './Label';
 
 /**
  * Propiedades para el componente FlatpickrDatePicker.
  */
-export interface FlatpickrDatePickerProps {
-  value: string | Date;
-  onChange: (date: string) => void;
+interface FlatpickrDatePickerProps {
+  id?: string;
+  label?: string;
+  defaultValue?: string | Date | null;
+  value?: string | Date | null;
+  onChange?: (dateStr: string) => void;
   placeholder?: string;
-  error?: boolean;
+  className?: string;
   disabled?: boolean;
   onBlur?: () => void;
-  options?: Record<string, any>;
-  className?: string;
-  id?: string;
+  error?: boolean;
+  options?: any;
 }
 
 /**
- * Componente de selección de fecha que combina la estética de Flatpickr
- * con un comportamiento de input estándar.
+ * Componente de selección de fecha usando Flatpickr para mantener la estética,
+ * pero configurado para comportarse como un input nativo.
  */
-const FlatpickrDatePicker: React.FC<FlatpickrDatePickerProps> = ({
-  value,
-  onChange,
-  onBlur,
-  error = false,
-  disabled = false,
-  className = "",
-  id,
-  options = {},
-  placeholder = "DD/MM/AAAA",
-}) => {
-  const { colorMode } = useTheme();
+const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProps>(
+  ({ id, label, defaultValue, value, onChange, placeholder = "dd/mm/yyyy", className, disabled, onBlur, error, options }, ref) => {
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    const fpInstance = useRef<any>(null);
+    const optionsRef = useRef(options);
+    const isInteractingWithCalendar = useRef(false);
 
-  const defaultOptions: Record<string, any> = {
-    locale: Spanish,
-    dateFormat: 'Y-m-d',
-    altInput: true,
-    altFormat: 'd/m/Y',
-    allowInput: true,
-    static: false,
-    monthSelectorType: 'static',
-    position: 'auto',
-    onOpen: (_selectedDates: Date[], _dateStr: string, instance: any) => {
-      if (colorMode === 'dark' && instance.calendarContainer) {
-        instance.calendarContainer.classList.add('dark');
-      }
-      if (instance.calendarContainer) {
-        instance.calendarContainer.style.zIndex = "10000000";
-      }
-    },
-    ...options,
-  };
+    // Actualizar el ref de opciones cuando cambien
+    useEffect(() => {
+      optionsRef.current = options;
+    }, [options]);
 
-  return (
-    <div className="relative w-full group">
-      <Flatpickr
-        id={id}
-        value={value}
-        onChange={(dates) => {
-          if (dates.length > 0) {
-            const date = dates[0];
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            onChange(`${year}-${month}-${day}`);
-          } else {
-            onChange("");
+    // Función para formatear la entrada manual
+    const handleInput = (e: React.FormEvent<HTMLInputElement>) => {
+      const input = e.currentTarget;
+      let val = input.value.replace(/\D/g, ''); // Solo números
+      
+      if (val.length > 8) val = val.slice(0, 8);
+      
+      let formatted = '';
+      if (val.length > 0) {
+        formatted = val.slice(0, 2);
+        if (val.length > 2) {
+          formatted += '/' + val.slice(2, 4);
+          if (val.length > 4) {
+            formatted += '/' + val.slice(4, 8);
           }
-        }}
-        onBlur={onBlur}
-        disabled={disabled}
-        options={defaultOptions}
-        placeholder={placeholder}
-        className={cn(
-          "h-11 w-full rounded-lg border px-4 py-2.5 text-sm shadow-theme-xs transition-all outline-none focus:ring-3",
-          "bg-transparent pr-10", // Espacio para el icono
-          disabled 
-            ? "text-text-tertiary border-border-medium opacity-50 bg-bg-secondary cursor-not-allowed dark:bg-white/5 dark:text-text-tertiary dark:border-border-dark"
-            : error
-              ? "border-error-500 focus:border-error-500 focus:ring-error-500/10 dark:text-error-400 dark:border-error-500 dark:focus:border-error-800"
-              : "text-text-primary border-border-medium focus:border-brand-300 focus:ring-brand-500/10 dark:border-border-dark dark:text-text-emphasis dark:focus:border-brand-800",
-          className
-        )}
-      />
-      <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-tertiary group-focus-within:text-brand-500 transition-colors">
-        <CalendarIcon className="size-5" />
-      </span>
-    </div>
-  );
-};
+        }
+      }
+      
+      input.value = formatted;
+    };
+
+    // Función para completar la fecha al perder el foco
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+      const input = e.currentTarget;
+      
+      // Si estamos interactuando con el calendario, no procesamos el blur aún
+      if (isInteractingWithCalendar.current) {
+        return;
+      }
+
+      // Pequeño delay para permitir que el foco se asiente en el nuevo elemento
+      setTimeout(() => {
+        if (isInteractingWithCalendar.current) return;
+
+        const activeElement = document.activeElement;
+        const isClickInsideCalendar = 
+          activeElement?.closest('.flatpickr-calendar') || 
+          activeElement?.classList.contains('flatpickr-monthDropdown-months') ||
+          activeElement?.classList.contains('cur-year') ||
+          activeElement?.classList.contains('flatpickr-next-month') ||
+          activeElement?.classList.contains('flatpickr-prev-month');
+
+        if (isClickInsideCalendar) {
+          return;
+        }
+
+        const val = input.value;
+        // Si el input no está vacío y no está completo (dd/mm/yyyy)
+        if (val && val.length > 0) {
+          const parts = val.split('/');
+          let day = parts[0] || '';
+          let month = parts[1] || '';
+          let year = parts[2] || '';
+
+          // Obtener límites de las opciones desde el ref
+          const currentOptions = optionsRef.current;
+          const minDate = currentOptions?.minDate ? new Date(currentOptions.minDate) : new Date('1900-01-01');
+          const maxDate = currentOptions?.maxDate ? new Date(currentOptions.maxDate) : new Date('2100-12-31');
+          
+          const minYear = minDate.getFullYear();
+          const maxYear = maxDate.getFullYear();
+
+          // 1. Completar el año si está incompleto o ausente
+          if (year.length === 0) {
+            year = String(minYear);
+          } else if (year.length < 4) {
+            if (year.length <= 2) {
+              const proposedYear = parseInt('20' + year.padStart(2, '0'));
+              if (proposedYear >= minYear && proposedYear <= maxYear) {
+                year = String(proposedYear);
+              } else {
+                year = String(minYear);
+              }
+            } else {
+              year = year.padEnd(4, '0');
+            }
+          }
+
+          // 2. Completar mes y día si faltan
+          if (month.length === 0) {
+            month = String(minDate.getMonth() + 1).padStart(2, '0');
+          } else if (month.length < 2) {
+            month = month.padStart(2, '0');
+          }
+
+          if (day.length === 0) {
+            day = String(minDate.getDate()).padStart(2, '0');
+          } else if (day.length < 2) {
+            day = day.padStart(2, '0');
+          }
+
+          // 3. Validar valores numéricos básicos (mes 1-12, día 1-31)
+          let nDay = Math.max(1, Math.min(31, parseInt(day) || 1));
+          let nMonth = Math.max(1, Math.min(12, parseInt(month) || 1));
+          let nYear = parseInt(year);
+
+          // 4. Crear objeto fecha para validación final de rango
+          let finalDate = new Date(nYear, nMonth - 1, nDay);
+          
+          if (finalDate.getMonth() !== nMonth - 1) {
+            finalDate = new Date(nYear, nMonth, 0); // Último día del mes anterior
+          }
+
+          // 5. Aplicar restricciones de minDate y maxDate
+          if (finalDate < minDate) finalDate = new Date(minDate);
+          if (finalDate > maxDate) finalDate = new Date(maxDate);
+
+          // 6. Formatear resultado final
+          const fDay = String(finalDate.getDate()).padStart(2, '0');
+          const fMonth = String(finalDate.getMonth() + 1).padStart(2, '0');
+          const fYear = String(finalDate.getFullYear());
+
+          const completedDate = `${fDay}/${fMonth}/${fYear}`;
+          input.value = completedDate;
+
+          // Sincronizar con la instancia de Flatpickr y disparar onChange
+          if (fpInstance.current) {
+            fpInstance.current.setDate(completedDate, true, 'd/m/Y');
+          }
+
+          // Disparar evento de input para compatibilidad adicional
+          const event = new Event('input', { bubbles: true });
+          input.dispatchEvent(event);
+        }
+        
+        onBlur?.();
+      }, 100);
+    };
+
+    // Función para validar la tecla presionada
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isNumber = /[0-9]/.test(e.key);
+      const isControl = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key);
+      
+      if (!isNumber && !isControl) {
+        e.preventDefault();
+      }
+    };
+
+    useEffect(() => {
+      if (inputRef.current) {
+        // Limpiar instancia previa si existe
+        if (fpInstance.current) {
+          fpInstance.current.destroy();
+        }
+
+        // Extraer minDate y maxDate reales de las opciones
+        const realMinDate = options?.minDate ? new Date(options.minDate) : undefined;
+        const realMaxDate = options?.maxDate ? new Date(options.maxDate) : undefined;
+
+        // Definir un rango visual de años más amplio para el dropdown (ej: +/- 10 años)
+        const currentYear = new Date().getFullYear();
+        const visualMinYear = Math.min(realMinDate?.getFullYear() || currentYear, currentYear - 5);
+        const visualMaxYear = Math.max(realMaxDate?.getFullYear() || currentYear, currentYear + 5);
+
+        // Función para deshabilitar años en el dropdown que están fuera del rango real
+        const updateYearOptions = (instance: any) => {
+          const yearSelect = instance.currentYearElement;
+          if (yearSelect && yearSelect.tagName === 'SELECT') {
+            Array.from(yearSelect.options).forEach((option: any) => {
+              const year = parseInt(option.value);
+              const isOutOfRange = (realMinDate && year < realMinDate.getFullYear()) || 
+                                  (realMaxDate && year > realMaxDate.getFullYear());
+              if (isOutOfRange) {
+                option.disabled = true;
+                option.style.opacity = '0.5';
+                option.style.cursor = 'not-allowed';
+              } else {
+                option.disabled = false;
+                option.style.opacity = '1';
+                option.style.cursor = 'pointer';
+              }
+            });
+          }
+        };
+
+        // Función para ocultar flechas si no se puede avanzar/retroceder más allá del rango real
+        const updateArrows = (instance: any) => {
+          if (!realMinDate && !realMaxDate) return;
+
+          const currentMonth = instance.currentMonth;
+          const currentYear = instance.currentYear;
+          const container = instance.calendarContainer;
+
+          if (realMinDate) {
+            const minMonth = realMinDate.getMonth();
+            const minYear = realMinDate.getFullYear();
+            
+            if (currentYear < minYear || (currentYear === minYear && currentMonth <= minMonth)) {
+              container.classList.add('hide-prev-arrow');
+            } else {
+              container.classList.remove('hide-prev-arrow');
+            }
+          }
+
+          if (realMaxDate) {
+            const maxMonth = realMaxDate.getMonth();
+            const maxYear = realMaxDate.getFullYear();
+            
+            if (currentYear > maxYear || (currentYear === maxYear && currentMonth >= maxMonth)) {
+              container.classList.add('hide-next-arrow');
+            } else {
+              container.classList.remove('hide-next-arrow');
+            }
+          }
+        };
+
+        fpInstance.current = flatpickr(inputRef.current, {
+          locale: Spanish,
+          dateFormat: 'Y-m-d',
+          altInput: true,
+          altFormat: 'd/m/Y',
+          allowInput: true,
+          monthSelectorType: 'dropdown',
+          yearSelectorType: 'dropdown',
+          defaultDate: value || defaultValue || undefined,
+          disableMobile: true,
+          animate: true,
+          // Renderizar el calendario en el body para evitar problemas de overflow en el modal
+          static: false,
+          // Usar rango visual amplio para que aparezcan en el select
+          minDate: new Date(visualMinYear, 0, 1),
+          maxDate: new Date(visualMaxYear, 11, 31),
+          altInputClass: cn(
+            'h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm shadow-theme-xs transition-all',
+            'placeholder:text-text-tertiary focus:outline-none focus:ring-3',
+            error 
+              ? 'border-error-500 focus:border-error-500 focus:ring-error-500/10' 
+              : 'text-text-primary border-border-medium focus:border-brand-300 focus:ring-brand-500/10',
+            'dark:bg-bg-dark dark:text-text-emphasis dark:border-border-dark dark:focus:border-brand-800',
+            disabled && 'opacity-50 cursor-not-allowed bg-bg-secondary dark:bg-white/5'
+          ),
+          ...options,
+          // Pero deshabilitar los días que están fuera del rango real
+          disable: [
+            (date) => {
+              const isBefore = realMinDate ? date < new Date(realMinDate.setHours(0,0,0,0)) : false;
+              const isAfter = realMaxDate ? date > new Date(realMaxDate.setHours(23,59,59,999)) : false;
+              
+              // Combinar con otras funciones de deshabilitado si existen en options.disable
+              let extraDisable = false;
+              if (options?.disable) {
+                if (Array.isArray(options.disable)) {
+                  extraDisable = options.disable.some((d: any) => {
+                    if (typeof d === 'function') return d(date);
+                    if (d instanceof Date) return d.toDateString() === date.toDateString();
+                    if (typeof d === 'object' && d.from && d.to) {
+                      return date >= new Date(d.from) && date <= new Date(d.to);
+                    }
+                    return false;
+                  });
+                } else if (typeof options.disable === 'function') {
+                  extraDisable = options.disable(date);
+                }
+              }
+              
+              return isBefore || isAfter || extraDisable;
+            }
+          ],
+          onReady: (_selectedDates, _dateStr, instance) => {
+            const altInput = instance.altInput;
+            if (altInput) {
+              altInput.addEventListener('input', (e: any) => handleInput(e));
+              altInput.addEventListener('keydown', (e: any) => handleKeyDown(e));
+              altInput.addEventListener('blur', (e: any) => handleBlur(e));
+              altInput.placeholder = placeholder;
+            }
+
+            // Evitar que clics en el calendario cierren otros componentes o el mismo
+            instance.calendarContainer.addEventListener('mousedown', (_e: MouseEvent) => {
+              isInteractingWithCalendar.current = true;
+              // No detenemos la propagación aquí para permitir que Flatpickr maneje sus propios clics
+            });
+
+            // Al soltar el clic, resetear la bandera después de un breve momento
+            // para que el blur (que ocurre antes) pueda ser ignorado
+            window.addEventListener('mouseup', () => {
+              setTimeout(() => {
+                isInteractingWithCalendar.current = false;
+              }, 150);
+            }, { once: false });
+
+            // Configurar elementos que no deben disparar el cierre por foco
+            const monthSelect = instance.monthNav.querySelector('.flatpickr-monthDropdown-months');
+            const yearInput = instance.currentYearElement;
+            const nextArrow = instance.nextMonthNav;
+            const prevArrow = instance.prevMonthNav;
+            
+            if (instance.config) {
+              instance.config.ignoredFocusElements = [
+                ...(instance.config.ignoredFocusElements || []),
+                monthSelect as HTMLElement,
+                yearInput as HTMLElement,
+                nextArrow as HTMLElement,
+                prevArrow as HTMLElement,
+                instance.calendarContainer as HTMLElement,
+                instance.innerContainer as HTMLElement
+              ].filter((el: any): el is HTMLElement => el !== null && el !== undefined);
+            }
+  
+            updateYearOptions(instance);
+            updateArrows(instance);
+          },
+          onClose: () => {
+            isInteractingWithCalendar.current = false;
+          },
+          onOpen: (_selectedDates, _dateStr, instance) => {
+            updateYearOptions(instance);
+            updateArrows(instance);
+          },
+          onMonthChange: (_selectedDates, _dateStr, instance) => {
+            setTimeout(() => {
+              updateYearOptions(instance);
+              updateArrows(instance);
+            }, 0);
+          },
+          onYearChange: (_selectedDates, _dateStr, instance) => {
+            setTimeout(() => {
+              updateYearOptions(instance);
+              updateArrows(instance);
+            }, 0);
+          },
+          onChange: (_selectedDates, dateStr) => {
+            onChange?.(dateStr);
+          }
+        });
+      }
+
+      return () => {
+        if (fpInstance.current) {
+          fpInstance.current.destroy();
+          fpInstance.current = null;
+        }
+      };
+    }, [defaultValue, value, onChange, placeholder, disabled, error, options]);
+
+    // Actualizar valor cuando cambie
+    useEffect(() => {
+      if (fpInstance.current && value !== undefined) {
+        const currentDate = fpInstance.current.selectedDates[0];
+        const newDate = value ? (value instanceof Date ? value : new Date(value)) : null;
+        
+        if (newDate?.getTime() !== currentDate?.getTime()) {
+          fpInstance.current.setDate(value || '', false);
+        }
+      }
+    }, [value]);
+
+    // Actualizar estado deshabilitado
+    useEffect(() => {
+      if (fpInstance.current) {
+        const altInput = fpInstance.current.altInput;
+        if (altInput) {
+          altInput.disabled = !!disabled;
+        }
+        fpInstance.current._input.disabled = !!disabled;
+      }
+    }, [disabled]);
+
+    // Actualizar opciones (minDate, maxDate, etc.)
+    useEffect(() => {
+      if (fpInstance.current && options) {
+        fpInstance.current.set(options);
+      }
+    }, [options]);
+
+    return (
+      <div className={cn('w-full', className)}>
+        {label && <Label htmlFor={id}>{label}</Label>}
+        <div className="relative">
+          <input
+            id={id}
+            ref={(node) => {
+              inputRef.current = node;
+              if (typeof ref === 'function') ref(node);
+              else if (ref) ref.current = node;
+            }}
+            type="text"
+            disabled={disabled}
+            onBlur={onBlur}
+            placeholder={placeholder}
+            className={cn(
+              'h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm shadow-theme-xs transition-all',
+              'placeholder:text-text-tertiary focus:outline-none focus:ring-3',
+              error 
+                ? 'border-error-500 focus:border-error-500 focus:ring-error-500/10' 
+                : 'text-text-primary border-border-medium focus:border-brand-300 focus:ring-brand-500/10',
+              'dark:bg-bg-dark dark:text-text-emphasis dark:border-border-dark dark:focus:border-brand-800',
+              disabled && 'opacity-50 cursor-not-allowed bg-bg-secondary dark:bg-white/5',
+              'hidden' // Ocultar el input original porque Flatpickr crea uno nuevo con altInput
+            )}
+          />
+        </div>
+      </div>
+    );
+  }
+);
+
+FlatpickrDatePicker.displayName = 'FlatpickrDatePicker';
 
 export default FlatpickrDatePicker;

@@ -8,7 +8,6 @@ const mockData: InternshipType[] = [
   {
     id: 1,
     name: "Pasantía A",
-    abbreviation: "PA",
     priority: 1,
     status: true,
     creationDate: new Date("2026-01-17"),
@@ -16,7 +15,6 @@ const mockData: InternshipType[] = [
   {
     id: 2,
     name: "Pasantía B",
-    abbreviation: "PB",
     priority: 2,
     status: true,
     creationDate: new Date("2026-01-17"),

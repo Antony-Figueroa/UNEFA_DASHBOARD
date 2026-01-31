@@ -202,7 +202,7 @@ interface PeriodTableProps {
     /** Arreglo de datos de periodos formateados para la tabla */
     data: PeriodoRowData[];
     /** Estado de carga de la petición */
-    status: "loading" | "success" | "error";
+    status: "loading" | "success" | "error" | "idle";
     /** Error capturado si el estado es 'error' */
     error: Error | null;
     /** Función llamada al solicitar editar un periodo */

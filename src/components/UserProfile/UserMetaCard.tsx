@@ -92,7 +92,7 @@ export default function UserMetaCard() {
     if (nameTrimmed.length < 3) {
       addToast({
         variant: "error",
-        title: "Nombre inválido",
+        title: "Error de Validación",
         message: "El nombre debe tener al menos 3 caracteres."
       });
       return;
@@ -101,7 +101,7 @@ export default function UserMetaCard() {
     if (!surnameTrimmed) {
       addToast({
         variant: "error",
-        title: "Apellido requerido",
+        title: "Error de Validación",
         message: "Por favor, ingrese su apellido."
       });
       return;
@@ -111,7 +111,7 @@ export default function UserMetaCard() {
     if (!emailTrimmed) {
       addToast({
         variant: "error",
-        title: "Email requerido",
+        title: "Error de Validación",
         message: "Por favor, ingrese su correo electrónico."
       });
       return;
@@ -121,7 +121,7 @@ export default function UserMetaCard() {
     if (!emailRegex.test(emailTrimmed)) {
       addToast({
         variant: "error",
-        title: "Email inválido",
+        title: "Error de Validación",
         message: "Ingrese un correo electrónico con formato válido."
       });
       return;
@@ -133,7 +133,7 @@ export default function UserMetaCard() {
       if (!phoneRegex.test(phoneTrimmed)) {
         addToast({
           variant: "error",
-          title: "Teléfono inválido",
+          title: "Error de Validación",
           message: "Ingrese un número de teléfono válido (ej: 04121234567)."
         });
         return;
@@ -164,13 +164,13 @@ export default function UserMetaCard() {
 
       if (result.success) {
         await checkAuth();
-        addToast({ variant: "success", title: "Éxito", message: "Perfil actualizado correctamente." });
+        addToast({ variant: "success", title: "Perfil Actualizado", message: "Su información personal ha sido actualizada correctamente." });
         closeModal();
       } else {
-        addToast({ variant: "error", title: "Error", message: result.message });
+        addToast({ variant: "error", title: "Error de Actualización", message: result.message || "No se pudo actualizar el perfil." });
       }
     } catch {
-      addToast({ variant: "error", title: "Error", message: "No se pudo conectar con el servidor." });
+      addToast({ variant: "error", title: "Error de Conexión", message: "No se pudo establecer conexión con el servidor." });
     } finally {
       setLoading(false);
     }

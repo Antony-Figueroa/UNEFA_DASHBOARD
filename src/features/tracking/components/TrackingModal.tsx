@@ -19,6 +19,7 @@ import { useLists } from '../../lists/hooks/useLists';
 import { useNavigate } from 'react-router';
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
+import { useToast } from '../../../context/toast';
 
 /**
  * Propiedades del componente TrackingModal.
@@ -71,6 +72,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
     const navigate = useNavigate();
     const { students } = useStudents();
     const { fetchMultipleLists } = useLists();
+    const { addToast } = useToast();
     const [isEditing, setIsEditing] = useState(false);
     const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
 
@@ -181,6 +183,11 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
             setIsEditing(false);
         } catch (error) {
             console.error("[TrackingModal] Error al procesar el envío del formulario:", error);
+            addToast({
+                variant: "error",
+                title: "Error de Validación",
+                message: "Por favor, revise los datos ingresados en el formulario."
+            });
         }
     };
 

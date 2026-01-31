@@ -50,7 +50,10 @@ export const useStudents = () => {
     loadingAction,
     error,
     refresh: refreshStudents,
+    createItem: baseAddStudent,
+    updateItem: baseEditStudent,
     deleteItem: removeStudent,
+    toggleItemStatus: baseToggleStatus,
   } = useCrud<Student, CreateStudentPayload, UpdateStudentPayload>(studentService, {
     resourceName: "Estudiante",
     idField: "studentId",
@@ -61,25 +64,27 @@ export const useStudents = () => {
    */
   const addStudent = async (payload: CreateStudentPayload) => {
     try {
-      const newStudent = await studentService.create(payload);
-      await refreshStudents();
-      
-      addToast({
-        variant: "success",
-        title: "Estudiante Creado",
-        message: (
-          <>
-            <p>El estudiante <strong>{newStudent.firstName} {newStudent.lastName}</strong> ha sido registrado correctamente.</p>
-            <RecordDetails
-              data={newStudent as unknown as Record<string, unknown>}
-              labels={STUDENT_LABELS}
-              fields={['identificationNumber', 'careerName', 'semester']}
-            />
-          </>
-        ),
-      });
+      const newStudent = await baseAddStudent(payload, { silent: true });
+      if (newStudent) {
+        addToast({
+          variant: "success",
+          title: "Estudiante Registrado",
+          message: (
+            <>
+              <p>El estudiante <strong>{newStudent.firstName} {newStudent.lastName}</strong> ha sido registrado exitosamente.</p>
+              <RecordDetails
+                data={newStudent as unknown as Record<string, unknown>}
+                labels={STUDENT_LABELS}
+                fields={['identificationNumber', 'careerName', 'semester']}
+              />
+            </>
+          ),
+        });
+      }
     } catch (e) {
       console.error("[useStudents] Error al registrar estudiante:", e);
+      // useCrud ya manejó el error si no pasamos silent: true en el catch, 
+      // pero aquí queremos un mensaje personalizado.
       const axiosError = e as any;
       addToast({
         variant: "error",
@@ -96,23 +101,24 @@ export const useStudents = () => {
   const editStudent = async (payload: UpdateStudentPayload) => {
     try {
       const oldStudent = students.find(s => s.studentId === payload.studentId);
-      const updatedStudent = await studentService.update(payload);
-      await refreshStudents();
+      const updatedStudent = await baseEditStudent(payload, { silent: true });
       
-      addToast({
-        variant: "success",
-        title: "Actualización Exitosa",
-        message: (
-          <>
-            <p>Se han guardado los cambios para <strong>{updatedStudent.firstName} {updatedStudent.lastName}</strong>.</p>
-            {oldStudent && <ChangeComparison
-              oldData={oldStudent as unknown as Record<string, unknown>}
-              newData={updatedStudent as unknown as Record<string, unknown>}
-              labels={STUDENT_LABELS}
-            />}
-          </>
-        ),
-      });
+      if (updatedStudent) {
+        addToast({
+          variant: "success",
+          title: "Estudiante Actualizado",
+          message: (
+            <>
+              <p>Los cambios de <strong>{updatedStudent.firstName} {updatedStudent.lastName}</strong> se han guardado exitosamente.</p>
+              {oldStudent && <ChangeComparison
+                oldData={oldStudent as unknown as Record<string, unknown>}
+                newData={updatedStudent as unknown as Record<string, unknown>}
+                labels={STUDENT_LABELS}
+              />}
+            </>
+          ),
+        });
+      }
     } catch (e) {
       console.error("[useStudents] Error al actualizar estudiante:", e);
       const axiosError = e as AxiosError<{ message: string }>;
@@ -131,21 +137,19 @@ export const useStudents = () => {
   const toggleStatus = async (student: Student) => {
     const newStatus = !student.status;
     try {
-      await studentService.toggleStatus!(student.studentId, newStatus);
-      await refreshStudents();
-
+      await baseToggleStatus(student.studentId, newStatus, { silent: true });
+      
       addToast({
         variant: newStatus ? "success" : "warning",
-        title: newStatus ? "Estudiante Restaurado" : "Estudiante Inactivado",
-        message: `El estudiante ${student.firstName} ${student.lastName} ahora está ${newStatus ? 'activo' : 'inactivo'}.`,
+        title: "Estado Actualizado",
+        message: `El estudiante ${student.firstName} ${student.lastName} ahora está ${newStatus ? 'activo' : 'inactivo'} exitosamente.`,
       });
     } catch (e) {
       console.error("[useStudents] Error al cambiar estado:", e);
-      const axiosError = e as AxiosError<{ message: string }>;
       addToast({
         variant: "error",
-        title: "Error",
-        message: axiosError.response?.data?.message || axiosError.message || "Error al cambiar el estado",
+        title: "Error de Estado",
+        message: "No se pudo cambiar el estado del estudiante.",
       });
     }
   };

@@ -77,7 +77,7 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       addToast({
         variant: "error",
         title: `Error de Carga`,
-        message: err.message
+        message: `No se pudieron cargar los datos de ${resourceName}s. ${err.message}`
       });
     }
   }, [service, resourceName, addToast]);
@@ -90,22 +90,39 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
 
   /**
    * Crea un nuevo registro.
+   * @param payload - Datos del nuevo registro.
+   * @param options - Opciones adicionales (ej: suprimir notificación).
    * @returns El elemento creado o undefined en caso de error.
    */
-  const createItem = async (payload: TCreatePayload): Promise<TItem | undefined> => {
+  const createItem = async (
+    payload: TCreatePayload, 
+    options?: { silent?: boolean }
+  ): Promise<TItem | undefined> => {
     setLoadingAction(true);
     try {
       const newItem = await service.create(payload);
       await refresh();
-      addToast({
-        variant: "success",
-        title: `${resourceName} Creado`,
-        message: `El registro se ha guardado exitosamente.`
-      });
+      
+      if (!options?.silent) {
+        addToast({
+          variant: "success",
+          title: `${resourceName} Registrado`,
+          message: `El registro de ${resourceName} se ha guardado exitosamente.`
+        });
+      }
+      
       return newItem;
     } catch (e) {
       const err = e instanceof Error ? e : new Error(`Error al crear ${resourceName}`);
-      addToast({ variant: "error", title: "Error", message: err.message });
+      
+      if (!options?.silent) {
+        addToast({ 
+          variant: "error", 
+          title: `Error al Crear`, 
+          message: err.message 
+        });
+      }
+      
       throw err;
     } finally {
       setLoadingAction(false);
@@ -114,22 +131,39 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
 
   /**
    * Actualiza un registro existente.
+   * @param payload - Datos actualizados.
+   * @param options - Opciones adicionales.
    * @returns El elemento actualizado o undefined en caso de error.
    */
-  const updateItem = async (payload: TUpdatePayload): Promise<TItem | undefined> => {
+  const updateItem = async (
+    payload: TUpdatePayload, 
+    options?: { silent?: boolean }
+  ): Promise<TItem | undefined> => {
     setLoadingAction(true);
     try {
       const updatedItem = await service.update(payload);
       await refresh();
-      addToast({
-        variant: "success",
-        title: `${resourceName} Actualizado`,
-        message: `Los cambios se han guardado exitosamente.`
-      });
+      
+      if (!options?.silent) {
+        addToast({
+          variant: "success",
+          title: `${resourceName} Actualizado`,
+          message: `Los cambios en ${resourceName} se han guardado exitosamente.`
+        });
+      }
+      
       return updatedItem;
     } catch (e) {
       const err = e instanceof Error ? e : new Error(`Error al actualizar ${resourceName}`);
-      addToast({ variant: "error", title: "Error", message: err.message });
+      
+      if (!options?.silent) {
+        addToast({ 
+          variant: "error", 
+          title: `Error al Actualizar`, 
+          message: err.message 
+        });
+      }
+      
       throw err;
     } finally {
       setLoadingAction(false);
@@ -138,22 +172,39 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
 
   /**
    * Elimina (o inactiva) un registro.
-   * @returns true si se eliminó correctamente, false o lanza error de lo contrario.
+   * @param id - Identificador del registro.
+   * @param options - Opciones adicionales.
+   * @returns true si se eliminó correctamente.
    */
-  const deleteItem = async (id: string | number): Promise<boolean> => {
+  const deleteItem = async (
+    id: string | number, 
+    options?: { silent?: boolean }
+  ): Promise<boolean> => {
     setLoadingAction(true);
     try {
       await service.delete(id);
       await refresh();
-      addToast({
-        variant: "success",
-        title: `${resourceName} Eliminado`,
-        message: `El registro ha sido eliminado correctamente.`
-      });
+      
+      if (!options?.silent) {
+        addToast({
+          variant: "success",
+          title: `${resourceName} Eliminado`,
+          message: `El registro de ${resourceName} ha sido eliminado exitosamente.`
+        });
+      }
+      
       return true;
     } catch (e) {
       const err = e instanceof Error ? e : new Error(`Error al eliminar ${resourceName}`);
-      addToast({ variant: "error", title: "Error", message: err.message });
+      
+      if (!options?.silent) {
+        addToast({ 
+          variant: "error", 
+          title: `Error al Eliminar`, 
+          message: err.message 
+        });
+      }
+      
       throw err;
     } finally {
       setLoadingAction(false);
@@ -161,25 +212,44 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
   };
 
   /**
-   * Cambia el estado (activo/inactivo) de un registro si el servicio lo soporta.
-   * @returns true si se actualizó el estado, false de lo contrario.
+   * Cambia el estado (activo/inactivo) de un registro.
+   * @param id - Identificador del registro.
+   * @param newStatus - Nuevo estado.
+   * @param options - Opciones adicionales.
+   * @returns true si se actualizó el estado.
    */
-  const toggleItemStatus = async (id: string | number, newStatus: boolean): Promise<boolean> => {
+  const toggleItemStatus = async (
+    id: string | number, 
+    newStatus: boolean, 
+    options?: { silent?: boolean }
+  ): Promise<boolean> => {
     if (!service.toggleStatus) return false;
     
     setLoadingAction(true);
     try {
       await service.toggleStatus(id, newStatus);
       await refresh();
-      addToast({
-        variant: "success",
-        title: "Estado Actualizado",
-        message: `El registro ha sido ${newStatus ? 'activado' : 'inactivado'} exitosamente.`
-      });
+      
+      if (!options?.silent) {
+        addToast({
+          variant: "success",
+          title: "Estado Actualizado",
+          message: `El registro de ${resourceName} ha sido ${newStatus ? 'activado' : 'inactivado'} exitosamente.`
+        });
+      }
+      
       return true;
     } catch (e) {
       const err = e instanceof Error ? e : new Error(`Error al cambiar estado de ${resourceName}`);
-      addToast({ variant: "error", title: "Error", message: err.message });
+      
+      if (!options?.silent) {
+        addToast({ 
+          variant: "error", 
+          title: "Error de Estado", 
+          message: err.message 
+        });
+      }
+      
       throw err;
     } finally {
       setLoadingAction(false);
@@ -188,22 +258,39 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
 
   /**
    * Realiza la eliminación masiva de registros.
+   * @param ids - Arreglo de identificadores.
+   * @param options - Opciones adicionales.
    */
-  const bulkDelete = async (ids: (string | number)[]): Promise<boolean> => {
+  const bulkDelete = async (
+    ids: (string | number)[], 
+    options?: { silent?: boolean }
+  ): Promise<boolean> => {
     if (!service.bulkDelete) return false;
     setLoadingAction(true);
     try {
       await service.bulkDelete(ids);
       await refresh();
-      addToast({
-        variant: "success",
-        title: "Eliminación Masiva",
-        message: `Se han eliminado ${ids.length} registros exitosamente.`
-      });
+      
+      if (!options?.silent) {
+        addToast({
+          variant: "success",
+          title: "Eliminación Masiva",
+          message: `Se han eliminado ${ids.length} registros de ${resourceName} exitosamente.`
+        });
+      }
+      
       return true;
     } catch (e) {
       const err = e instanceof Error ? e : new Error(`Error en eliminación masiva de ${resourceName}`);
-      addToast({ variant: "error", title: "Error", message: err.message });
+      
+      if (!options?.silent) {
+        addToast({ 
+          variant: "error", 
+          title: "Error Masivo", 
+          message: err.message 
+        });
+      }
+      
       throw err;
     } finally {
       setLoadingAction(false);
@@ -212,22 +299,39 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
 
   /**
    * Realiza la restauración masiva de registros.
+   * @param ids - Arreglo de identificadores.
+   * @param options - Opciones adicionales.
    */
-  const bulkRestore = async (ids: (string | number)[]): Promise<boolean> => {
+  const bulkRestore = async (
+    ids: (string | number)[], 
+    options?: { silent?: boolean }
+  ): Promise<boolean> => {
     if (!service.bulkRestore) return false;
     setLoadingAction(true);
     try {
       await service.bulkRestore(ids);
       await refresh();
-      addToast({
-        variant: "success",
-        title: "Restauración Masiva",
-        message: `Se han restaurado ${ids.length} registros exitosamente.`
-      });
+      
+      if (!options?.silent) {
+        addToast({
+          variant: "success",
+          title: "Restauración Masiva",
+          message: `Se han restaurado ${ids.length} registros de ${resourceName} exitosamente.`
+        });
+      }
+      
       return true;
     } catch (e) {
       const err = e instanceof Error ? e : new Error(`Error en restauración masiva de ${resourceName}`);
-      addToast({ variant: "error", title: "Error", message: err.message });
+      
+      if (!options?.silent) {
+        addToast({ 
+          variant: "error", 
+          title: "Error de Restauración", 
+          message: err.message 
+        });
+      }
+      
       throw err;
     } finally {
       setLoadingAction(false);

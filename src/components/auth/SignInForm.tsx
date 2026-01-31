@@ -7,40 +7,52 @@ import Button from "../ui/button/Button";
 import * as authService from "../../features/auth/services/authService";
 import { useAuth } from "../../context/auth";
 
+import { useToast } from "../../context/toast";
+
 export default function SignInForm() {
+  const { addToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [userCi, setUserCi] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [warning, setWarning] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { checkAuth } = useAuth();
 
   useEffect(() => {
     if (location.state?.message) {
-      setSuccessMessage(location.state.message);
+      addToast({
+        variant: "success",
+        title: "Información",
+        message: location.state.message
+      });
     }
-  }, [location]);
+  }, [location, addToast]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
-    setWarning(null);
 
     try {
       const data = await authService.login(userCi, password);
 
       if (data.requirePasswordChange) {
+        addToast({
+          variant: "warning",
+          title: "Cambio de Contraseña Requerido",
+          message: "Por seguridad, debe actualizar su contraseña antes de continuar."
+        });
         navigate("/first-login", { state: { userId: data.userId } });
         return;
       }
 
       if (data.user) {
         await checkAuth(); // Actualizar el estado global del usuario
+        addToast({
+          variant: "success",
+          title: "Bienvenido",
+          message: `Sesión iniciada correctamente. Bienvenido, ${data.user.name}.`
+        });
         navigate("/dashboard");
       }
     } catch (err: unknown) {
@@ -50,12 +62,24 @@ export default function SignInForm() {
       
       if (remaining !== undefined) {
         if (remaining <= 2) {
-          setWarning(errorMessage);
+          addToast({
+            variant: "warning",
+            title: "Aviso de Seguridad",
+            message: errorMessage
+          });
         } else {
-          setError(errorMessage);
+          addToast({
+            variant: "error",
+            title: "Error de Acceso",
+            message: errorMessage
+          });
         }
       } else {
-        setError(errorMessage);
+        addToast({
+          variant: "error",
+          title: "Error de Acceso",
+          message: errorMessage
+        });
       }
     } finally {
       setLoading(false);
@@ -83,33 +107,6 @@ export default function SignInForm() {
               Ingrese su cédula y contraseña para acceder al sistema.
             </p>
           </div>
-
-          {error && (
-            <div className="p-3 mb-4 text-sm text-red-600 bg-red-100 border border-red-200 rounded-lg dark:bg-red-500/10 dark:border-red-500/20" role="alert">
-              <div className="flex items-center gap-2">
-                <svg className="size-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
-                <span>{error}</span>
-              </div>
-            </div>
-          )}
-
-          {warning && (
-            <div className="p-3 mb-4 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg dark:bg-amber-500/10 dark:border-amber-500/20" role="alert">
-              <div className="flex items-center gap-2">
-                <svg className="size-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
-                <span>{warning}</span>
-              </div>
-            </div>
-          )}
-
-          {successMessage && (
-            <div className="p-3 mb-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg dark:bg-green-500/10 dark:border-green-500/20" role="alert">
-              <div className="flex items-center gap-2">
-                <svg className="size-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                <span>{successMessage}</span>
-              </div>
-            </div>
-          )}
 
           <div>
             <form onSubmit={handleSignIn}>

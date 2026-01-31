@@ -19,12 +19,12 @@ const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({
   }, [onRemove, toast.id]);
 
   useEffect(() => {
-    if (!toast.persistent) {
-      const timer = setTimeout(() => {
-        handleClose();
-      }, toast.duration || 5000);
-      return () => clearTimeout(timer);
-    }
+    if (toast.persistent) return;
+
+    const timer = setTimeout(() => {
+      handleClose();
+    }, toast.duration || 10000); // Aumentado a 10s por defecto si no es persistente
+    return () => clearTimeout(timer);
   }, [toast.persistent, toast.duration, handleClose]);
 
   return (

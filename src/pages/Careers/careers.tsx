@@ -89,9 +89,12 @@ export default function CareersPage() {
    */
   const {
     careers,
+    filteredCareers,
     status,
     loadingAction: loadingCareerAction,
     error,
+    searchTerm,
+    setSearchTerm,
     addCareer,
     editCareer,
     removeCareer,
@@ -139,19 +142,17 @@ export default function CareersPage() {
   variant: DialogVariant;
 };
 
-
-
   /** @state {ConfirmationInfo|null} confirmation - Estado que orquesta el diálogo de confirmación global. */
   const [confirmation, setConfirmation] = useState<ConfirmationInfo | null>(null);
 
   /**
    * Datos filtrados y formateados para su presentación.
-   * Se recalcula solo cuando cambian las carreras o la pestaña activa.
+   * Se recalcula solo cuando cambian las carreras filtradas por búsqueda o la pestaña activa.
    */
   const filtered = useMemo(() => {
-    const byStatus = careers.filter((c) => (activeTab === "Activas" ? c.status : !c.status));
+    const byStatus = filteredCareers.filter((c) => (activeTab === "Activas" ? c.status : !c.status));
     return byStatus.map(formatCareerToRow);
-  }, [careers, activeTab]);
+  }, [filteredCareers, activeTab]);
 
   /**
    * Datos filtrados específicamente para el reporte PDF.
@@ -183,6 +184,27 @@ export default function CareersPage() {
       setEditingType(null);
       setIsTypeModalOpen(true);
     }
+  };
+
+  /**
+   * Cierra el modal de carrera y limpia el estado de edición.
+   */
+  const handleCloseCareerModal = () => {
+    setIsModalOpen(false);
+    // Pequeño delay para permitir que la animación de cierre termine antes de limpiar el estado
+    setTimeout(() => {
+      setEditingCareer(null);
+    }, 300);
+  };
+
+  /**
+   * Cierra el modal de tipo de práctica y limpia el estado de edición.
+   */
+  const handleCloseTypeModal = () => {
+    setIsTypeModalOpen(false);
+    setTimeout(() => {
+      setEditingType(null);
+    }, 300);
   };
 
   /**
@@ -530,6 +552,8 @@ export default function CareersPage() {
                   error={error}
                   activeTab={activeTab}
                   practiceOptions={internshipOptions}
+                  searchTerm={searchTerm}
+                  onSearchChange={setSearchTerm}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                   onToggleStatus={handleToggleStatus}
@@ -562,7 +586,7 @@ export default function CareersPage() {
       {/* Modales de Carreras */}
       <CareerModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseCareerModal}
         onSave={handleSave}
         editingCareer={editingCareer}
         internshipOptions={internshipOptions}
@@ -600,7 +624,7 @@ export default function CareersPage() {
       {/* Modales de Tipos de Prácticas */}
       <InternshipTypeModal
         isOpen={isTypeModalOpen}
-        onClose={() => setIsTypeModalOpen(false)}
+        onClose={handleCloseTypeModal}
         onSave={handleSaveType}
         editingItem={editingType}
         existingTypes={internshipTypes}

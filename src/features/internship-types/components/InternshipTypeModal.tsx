@@ -6,7 +6,7 @@
  * @module features/internship-types/components
  */
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -74,6 +74,8 @@ export default function InternshipTypeModal({
   isInUse = false,
   isLoading = false,
 }: InternshipTypeModalProps) {
+  const isInitializing = useRef(false);
+
   const {
     handleSubmit,
     reset,
@@ -97,6 +99,7 @@ export default function InternshipTypeModal({
 
   useEffect(() => {
     if (isOpen) {
+      isInitializing.current = true;
       if (editingItem) {
         reset({
           name: editingItem.name,
@@ -108,8 +111,12 @@ export default function InternshipTypeModal({
           priority: "",
         });
       }
+      setTimeout(() => {
+        isInitializing.current = false;
+      }, 50);
     } else {
       reset();
+      isInitializing.current = false;
     }
   }, [editingItem, isOpen, reset]);
 

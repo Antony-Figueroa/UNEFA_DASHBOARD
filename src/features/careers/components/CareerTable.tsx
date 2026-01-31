@@ -62,6 +62,10 @@ interface CareerTableProps {
   loading?: boolean;
   /** Opciones de tipos de pasantía para mapeo visual */
   practiceOptions?: InternshipTypeOption[];
+  /** Término de búsqueda externo */
+  searchTerm?: string;
+  /** Callback para cambiar el término de búsqueda */
+  onSearchChange?: (term: string) => void;
 }
 
 type SortKey = "careerCode" | "careerName" | "minimumGrade" | "careerAbbreviation";
@@ -165,8 +169,9 @@ export default function CareerTable({
   inactiveMode = false,
   activeTab = "Activas",
   practiceOptions = [],
+  searchTerm = "",
+  onSearchChange,
 }: CareerTableProps) {
-  const [searchTerm, setSearchTerm] = useState("");
   const [practiceTypeFilter, setPracticeTypeFilter] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -195,22 +200,16 @@ export default function CareerTable({
   }, [activeTab]);
 
   const filteredData = useMemo(() => {
-    const search = searchTerm.trim().toLowerCase();
     const filtered = data.filter((c) => {
-      const name = String(c.careerName ?? "").toLowerCase();
-      const code = String(c.careerCode ?? "").toLowerCase();
-      const abbreviation = String(c.careerAbbreviation ?? "").toLowerCase();
-      const matchesSearch = name.includes(search) || code.includes(search) || abbreviation.includes(search);
+      // El filtrado por búsqueda y estado ya viene aplicado desde CareersPage/useCrud
+      // Aquí solo filtramos por tipo de práctica si es necesario
       const matchesType =
         practiceTypeFilter === "" ||
         (Array.isArray(c.internshipTypeIds) &&
           c.internshipTypeIds
             .map((t) => String(t).toUpperCase())
             .includes(String(practiceTypeFilter).toUpperCase()));
-      const matchesTab = activeTab === "Activas" 
-        ? (c.status === true || c.status === 1) 
-        : (c.status === false || c.status === 0);
-      return matchesSearch && matchesType && matchesTab;
+      return matchesType;
     });
 
     // Aplicar ordenamiento
@@ -231,7 +230,7 @@ export default function CareerTable({
     });
 
     return filtered;
-  }, [data, searchTerm, practiceTypeFilter, activeTab, sortConfig]);
+  }, [data, practiceTypeFilter, sortConfig]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -313,7 +312,7 @@ export default function CareerTable({
   };
 
   const clearFilters = () => {
-    setSearchTerm("");
+    onSearchChange?.("");
     setPracticeTypeFilter("");
   };
 
@@ -364,7 +363,7 @@ export default function CareerTable({
               type="text"
               placeholder="Buscar por nombre o código"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => onSearchChange?.(e.target.value)}
               className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-10 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary"
             />
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary">
@@ -592,7 +591,7 @@ export default function CareerTable({
                     {(searchTerm || practiceTypeFilter !== "") && (
                       <button
                         onClick={() => {
-                          setSearchTerm("");
+                          onSearchChange?.("");
                           setPracticeTypeFilter("");
                         }}
                         className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
@@ -718,7 +717,7 @@ export default function CareerTable({
             {(searchTerm || practiceTypeFilter !== "") && (
               <button
                 onClick={() => {
-                  setSearchTerm("");
+                  onSearchChange?.("");
                   setPracticeTypeFilter("");
                 }}
                 className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"

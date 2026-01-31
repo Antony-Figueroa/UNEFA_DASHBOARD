@@ -22,6 +22,7 @@ import { Career, CreateCareerPayload, UpdateCareerPayload } from "../types";
 export const useCareers = () => {
   const {
     data: careers,
+    filteredData: filteredCareers,
     status,
     loadingAction,
     error,
@@ -45,19 +46,6 @@ export const useCareers = () => {
         String(c.careerAbbreviation).toLowerCase().includes(lowerTerm)
       );
     }
-  });
-
-  /**
-   * Lista de carreras filtradas por el término de búsqueda actual.
-   * Proviene de la lógica centralizada de useCrud.
-   */
-  const filteredCareers = careers.filter((c) => {
-    const term = searchTerm.toLowerCase();
-    return (
-      String(c.careerName).toLowerCase().includes(term) ||
-      String(c.careerCode).toLowerCase().includes(term) ||
-      String(c.careerAbbreviation).toLowerCase().includes(term)
-    );
   });
 
   return {

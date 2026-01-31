@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -84,6 +84,8 @@ export default function CareerModal({
   isInUse = false,
   existingCareers = [],
 }: CareerModalProps) {
+  const isInitializing = useRef(false);
+
   const {
     register,
     handleSubmit,
@@ -110,7 +112,7 @@ export default function CareerModal({
 
   // Efecto para establecer automáticamente la nota mínima en 16 al escribir el código
   useEffect(() => {
-    if (!editingCareer && careerCode && careerCode.length > 0 && !minimumGrade) {
+    if (!editingCareer && careerCode && careerCode.length > 0 && !minimumGrade && !isInitializing.current) {
       setValue("minimumGrade", "16", { shouldValidate: true });
     }
   }, [careerCode, minimumGrade, setValue, editingCareer]);
@@ -124,6 +126,7 @@ export default function CareerModal({
 
   useEffect(() => {
     if (isOpen) {
+      isInitializing.current = true;
       if (editingCareer) {
         reset({
           careerName: editingCareer.careerName,
@@ -143,8 +146,13 @@ export default function CareerModal({
           internshipTypeIds: [],
         });
       }
+      // Pequeño delay para asegurar que el reset se procese antes de permitir otros efectos
+      setTimeout(() => {
+        isInitializing.current = false;
+      }, 50);
     } else {
       reset();
+      isInitializing.current = false;
     }
   }, [editingCareer, isOpen, reset]);
 

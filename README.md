@@ -8,7 +8,7 @@ Proyecto-Unefa es una plataforma integral de gestión académica construida con 
 
 El sistema ha sido refactorizado siguiendo una **Arquitectura Basada en Características (Feature-Based)** y **Clean Architecture**, lo que garantiza una separación clara de responsabilidades y facilidad de mantenimiento.
 
-Para un análisis profundo de la implementación técnica, patrones de diseño y guías de mantenimiento, consulte el [README Técnico](README_TECNICO.md).
+Para un análisis profundo de la implementación técnica, patrones de diseño y guías de mantenimiento, consulte el [README Técnico](docs/README_TECNICO.md).
 
 ### 1. Arquitectura del Sistema
 

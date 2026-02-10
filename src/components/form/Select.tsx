@@ -1,6 +1,6 @@
 import { useState, useEffect, forwardRef } from "react";
 import { cn } from "../../utils/cn";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { ChevronDownIcon } from "../../icons";
 
 /**
  * Interfaz para las opciones del componente Select.
@@ -84,7 +84,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newValue = e.target.value;
     setSelectedValue(newValue);
-    
+
     // Llamar a ambos manejadores si existen
     if (onChangeValue) onChangeValue(newValue);
     if (onChange) onChange(e);
@@ -102,8 +102,8 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
           "placeholder:text-text-tertiary focus:outline-none focus:ring-3 focus:ring-brand-500/10",
           "disabled:bg-gray-100 disabled:opacity-70 disabled:cursor-not-allowed dark:disabled:bg-white/5",
           // Estados de error vs normal
-          error 
-            ? "border-error-500 focus:border-error-500 focus:ring-error-500/10 dark:border-error-800" 
+          error
+            ? "border-error-500 focus:border-error-500 focus:ring-error-500/10 dark:border-error-800"
             : "border-border-medium focus:border-brand-300 dark:border-border-dark dark:focus:border-brand-800",
           // Color de texto según selección
           selectedValue
@@ -122,7 +122,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
         >
           {placeholder}
         </option>
-        
+
         {/* Mapeo de opciones */}
         {options.map((option) => (
           <option
@@ -134,18 +134,37 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
           </option>
         ))}
       </select>
-      
+
       {/* Icono de flecha o cargador */}
       <span className="absolute top-1/2 right-4 -translate-y-1/2 pointer-events-none text-text-tertiary dark:text-text-tertiary">
         {isLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin text-brand-500" />
+          <svg
+            className="h-4 w-4 animate-spin text-brand-500"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
         ) : (
-          <ChevronDown className="h-4 w-4" />
+          <ChevronDownIcon className="h-4 w-4" />
         )}
       </span>
 
       {hint && (
-        <p 
+        <p
           id={`${id}-hint`}
           className={cn(
             "mt-1.5 text-xs font-medium",

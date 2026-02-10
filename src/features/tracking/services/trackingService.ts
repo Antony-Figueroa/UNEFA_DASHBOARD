@@ -15,7 +15,7 @@ const API_URL = "/tracking";
  */
 interface TrackingApiDTO {
     /** Identificador único del seguimiento */
-    id?: string;
+    trackingId?: string;
     /** Número de cédula/identificación del estudiante */
     studentIdNumber: string;
     /** Nombre completo del estudiante */
@@ -41,7 +41,7 @@ interface TrackingApiDTO {
  * @returns Objeto `Tracking` normalizado.
  */
 const fromApi = (dto: TrackingApiDTO): Tracking => ({
-    trackingId: dto.id || "",
+    trackingId: dto.trackingId || "",
     studentIdNumber: dto.studentIdNumber,
     studentName: dto.studentName,
     reportTitle: dto.reportTitle,
@@ -77,7 +77,7 @@ const toApi = (tracking: Partial<Tracking> | CreateTrackingPayload | UpdateTrack
     }
 
     if ('trackingId' in tracking) {
-        dto.id = tracking.trackingId;
+        dto.trackingId = tracking.trackingId;
     }
 
     return dto;

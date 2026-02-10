@@ -9,7 +9,7 @@ import { useState, useEffect, useRef, forwardRef } from "react";
 import { createPortal } from "react-dom";
 import { Tooltip } from "../ui/tooltip/Tooltip";
 import { cn } from "../../utils/cn";
-import { X, ChevronDown, AlertCircle } from "lucide-react";
+import { CloseIcon, ChevronDownIcon, AlertIcon } from "../../icons";
 
 /**
  * Interfaz para las opciones del componente MultiSelect.
@@ -58,7 +58,7 @@ export interface MultiSelectProps {
  * 3. **Posicionamiento con Portals**: Al igual que CustomSelect, utiliza Portals y posicionamiento dinámico para evitar cortes visuales en modales.
  * 4. **Accesibilidad**: Incluye soporte para teclado y estados de validación (error).
  */
-const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({ 
+const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
   label,
   options,
   defaultSelected = [],
@@ -151,7 +151,7 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
    */
   const handleSelect = (optionValue: string) => {
     if (disabled) return;
-    
+
     const newSelected = selectedOptions.includes(optionValue)
       ? selectedOptions.filter((v) => v !== optionValue)
       : [...selectedOptions, optionValue];
@@ -168,7 +168,7 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
   const handleRemove = (e: React.MouseEvent, optionValue: string) => {
     e.stopPropagation();
     if (disabled) return;
-    
+
     const newSelected = selectedOptions.filter((v) => v !== optionValue);
     if (!isControlled) {
       setInternalSelected(newSelected);
@@ -235,7 +235,7 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
         {infoTooltip && (
           <Tooltip content={infoTooltip}>
             <span className="cursor-help text-warning-500">
-              <AlertCircle className="w-4 h-4" />
+              <AlertIcon className="w-4 h-4" />
             </span>
           </Tooltip>
         )}
@@ -257,8 +257,8 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
             <div
               className={cn(
                 "mb-2 flex min-h-[44px] w-full rounded-lg border py-1.5 px-3 shadow-theme-xs outline-none transition-all focus-within:shadow-focus-ring dark:bg-bg-dark",
-                error 
-                  ? "border-error-500 focus-within:border-error-500 focus-within:shadow-error-100/50 dark:border-error-500/50" 
+                error
+                  ? "border-error-500 focus-within:border-error-500 focus-within:shadow-error-100/50 dark:border-error-500/50"
                   : "border-border-medium focus-within:border-brand-300 dark:border-border-dark dark:focus-within:border-brand-300",
                 disabled ? "opacity-50 cursor-not-allowed bg-bg-secondary dark:bg-white/5" : "cursor-pointer"
               )}
@@ -284,7 +284,7 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
                           className="ml-1.5 text-text-tertiary hover:text-text-secondary dark:text-text-tertiary transition-colors"
                           aria-label={`Eliminar ${text}`}
                         >
-                          <X className="w-3.5 h-3.5" />
+                          <CloseIcon className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     );
@@ -295,34 +295,34 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
                   </div>
                 )}
               </div>
-              
+
               {/* Icono de estado */}
               <div className="flex items-center self-center pl-2">
-                <ChevronDown 
+                <ChevronDownIcon
                   className={cn(
                     "w-4 h-4 text-text-tertiary transition-transform duration-200",
                     isOpen && "rotate-180"
-                  )} 
+                  )}
                 />
               </div>
             </div>
           </div>
 
           {/* Menú Desplegable con Portal */}
-      {isOpen && createPortal(
-        <div
-          ref={menuRef}
-          className="fixed mt-1 overflow-y-auto bg-bg-main rounded-lg shadow-xl max-h-60 dark:bg-bg-dark border border-border-light dark:border-border-dark animate-in fade-in zoom-in-95 duration-100"
-          style={{
-            top: coords.top,
-            left: coords.left,
-            width: coords.width,
-            zIndex: 9999, // Usar zIndex numérico para evitar errores de linter con clases arbitrarias
-          }}
-          onClick={(e) => e.stopPropagation()}
-          role="listbox"
-          aria-label={label}
-        >
+          {isOpen && createPortal(
+            <div
+              ref={menuRef}
+              className="fixed mt-1 overflow-y-auto bg-bg-main rounded-lg shadow-xl max-h-60 dark:bg-bg-dark border border-border-light dark:border-border-dark animate-in fade-in zoom-in-95 duration-100"
+              style={{
+                top: coords.top,
+                left: coords.left,
+                width: coords.width,
+                zIndex: 9999, // Usar zIndex numérico para evitar errores de linter con clases arbitrarias
+              }}
+              onClick={(e) => e.stopPropagation()}
+              role="listbox"
+              aria-label={label}
+            >
               {options.length > 0 ? (
                 options.map((option, index) => {
                   const isSelected = selectedOptions.includes(option.value);

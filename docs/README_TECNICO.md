@@ -1,0 +1,86 @@
+# UNEFA Dashboard - Arquitectura Técnica y Guía de Mantenimiento
+
+Este documento detalla la arquitectura implementada en el proyecto **UNEFA_DASHBOARD**, basada en **Clean Architecture** y **Feature-Based Architecture**, con el objetivo de proporcionar un sistema escalable, mantenible y robusto.
+
+---
+
+## 🏗️ Arquitectura del Sistema
+
+El proyecto ha sido refactorizado para separar claramente las responsabilidades, siguiendo los principios **SOLID**, **DRY** y **KISS**.
+
+### 1. Organización por Características (Feature-Based)
+En lugar de agrupar por tipo de archivo (hooks, components, services), el código se organiza por módulos funcionales dentro de `src/features/`. Cada característica es autónoma y contiene:
+- `components/`: Componentes específicos de la funcionalidad.
+- `hooks/`: Lógica de estado y efectos (incluyendo integración con CRUD).
+- `services/`: Capa de acceso a datos (API).
+- `types/`: Definiciones de interfaces y tipos.
+- `utils/`: Utilidades específicas del módulo.
+
+### 2. Capas de la Aplicación (Clean Architecture)
+- **Capa de Presentación (UI):** Componentes React que utilizan hooks para obtener datos y manejar acciones.
+- **Capa de Lógica de Negocio (Hooks):** Orquestan el estado, validaciones y llamadas a servicios.
+- **Capa de Datos (Services):** Encapsula las peticiones HTTP y la comunicación con Supabase/Backend.
+
+---
+
+## 🛠️ Tecnologías Principales
+
+- **Frontend:** React 19, Vite.
+- **Estilos:** Tailwind CSS v4, Framer Motion (animaciones).
+- **Formularios:** React Hook Form + Zod (validación).
+- **Iconos:** Lucide React.
+- **Utilidades:** `clsx` y `tailwind-merge` (vía `cn.ts`).
+
+---
+
+## 🧩 Patrones y Estándares de Código
+
+### Documentación TSDoc
+Todos los componentes, funciones y tipos deben estar documentados utilizando **TSDoc** en español. Esto incluye:
+- Propósito del elemento.
+- Descripción de parámetros y valores de retorno.
+- Ejemplos de uso (`@example`).
+
+### Componentes de UI Centralizados
+Los componentes en `src/components/ui/` son la base visual del proyecto. Deben ser:
+- **Atómicos:** Realizar una sola tarea visual.
+- **Accesibles:** Incluir atributos `aria-*` y roles adecuados.
+- **Personalizables:** Aceptar `className` y utilizar la utilidad `cn()` para fusionar estilos.
+
+### Gestión de CRUD Centralizada
+Se utiliza un patrón de fábrica para servicios CRUD:
+- `crudServiceFactory.ts`: Genera servicios estandarizados.
+- `useCrud.ts`: Hook genérico para manejar el estado de operaciones CRUD (loading, error, data).
+
+---
+
+## 📝 Guía de Mantenimiento
+
+### Añadir una Nueva Característica
+1. Crea una carpeta en `src/features/nombre-feature`.
+2. Define los tipos en `types.ts`.
+3. Crea el servicio usando `createCrudService`.
+4. Implementa el hook `useNombreFeature` utilizando `useCrudResource`.
+5. Desarrolla los componentes necesarios en la subcarpeta `components/`.
+
+### Estándares de Naming
+- **Componentes:** `PascalCase` (ej. `Button.tsx`).
+- **Hooks:** `camelCase` con prefijo `use` (ej. `useAuth.ts`).
+- **Servicios:** `camelCase` con sufijo `Service` (ej. `usersService.ts`).
+- **Tipos/Interfaces:** `PascalCase` (ej. `UserPayload`).
+
+### Manejo de Errores
+Utiliza logs con prefijo de contexto para facilitar la depuración:
+```typescript
+console.error("[FeatureName:ActionName]", error);
+```
+
+---
+
+## 🚀 Mejores Prácticas Implementadas
+- **Mobile First:** Diseño responsivo desde el inicio.
+- **Tree Shaking:** Importaciones optimizadas.
+- **Accesibilidad (A11y):** Uso de HTML semántico y atributos ARIA.
+- **Performance:** Minimización de re-renders mediante el uso estratégico de hooks.
+
+---

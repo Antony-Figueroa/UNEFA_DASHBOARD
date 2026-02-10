@@ -8,7 +8,7 @@ import { useState, useEffect, useRef, forwardRef } from "react";
 import { createPortal } from "react-dom";
 import { Tooltip } from "../ui/tooltip/Tooltip";
 import { cn } from "../../utils/cn";
-import { ChevronDown } from "lucide-react";
+import { ChevronDownIcon } from "../../icons";
 
 /**
  * Interfaz para las opciones del componente CustomSelect.
@@ -73,7 +73,7 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
 }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState<string>(value !== undefined ? value : defaultValue);
-  
+
   /** 
    * Estado para almacenar las coordenadas y dimensiones del input.
    * Se usa para posicionar el menú desplegable (Portal) exactamente debajo del botón.
@@ -150,7 +150,7 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
    */
   const handleSelect = (option: CustomSelectOption) => {
     if (option.disabled || disabled) return;
-    
+
     setSelectedValue(option.value);
     onChange(option.value);
     setIsOpen(false);
@@ -235,12 +235,12 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
         aria-disabled={disabled}
         className={cn(
           "h-11 w-full flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm transition-all duration-200 outline-none",
-          disabled 
-            ? "cursor-not-allowed bg-gray-100 opacity-50 border-border-medium dark:bg-bg-dark/50 dark:text-text-tertiary" 
+          disabled
+            ? "cursor-not-allowed bg-gray-100 opacity-50 border-border-medium dark:bg-bg-dark/50 dark:text-text-tertiary"
             : error
               ? "border-error-500 focus:ring-error-500/10 dark:border-error-800"
-              : isOpen 
-                ? "border-brand-500 ring-4 ring-brand-500/10 dark:border-brand-400" 
+              : isOpen
+                ? "border-brand-500 ring-4 ring-brand-500/10 dark:border-brand-400"
                 : "border-border-medium bg-transparent hover:border-brand-300 focus:border-brand-300 focus:ring-4 focus:ring-brand-500/10 dark:border-border-dark dark:bg-bg-dark",
           selectedValue ? "text-text-primary dark:text-text-emphasis" : "text-text-tertiary"
         )}
@@ -248,17 +248,17 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
         <span className="truncate">
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <ChevronDown 
+        <ChevronDownIcon
           className={cn(
             "h-4 w-4 text-text-tertiary transition-transform duration-300 ease-in-out",
             isOpen && "rotate-180 text-brand-500"
-          )} 
+          )}
         />
       </button>
 
       {/* Menú Desplegable con Portal: se renderiza fuera del DOM local para evitar cortes por overflow */}
       {isOpen && !disabled && containerRef.current && createPortal(
-        <div 
+        <div
           ref={menuRef}
           className="fixed"
           style={{

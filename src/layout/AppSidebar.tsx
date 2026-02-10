@@ -15,6 +15,7 @@ import {
   DocsIcon,
 } from "../icons";
 import { useSidebar } from "../context/sidebar";
+import PeriodStatusCard from "../components/Sidebar/PeriodStatusCard";
 
 type NavItem = {
   name: string;
@@ -265,7 +266,7 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
-      style={{ 
+      style={{
         height: '100vh',
         top: 0
       }}
@@ -328,6 +329,9 @@ const AppSidebar: React.FC = () => {
             </div>
           </div>
         </nav>
+        <div className="mt-auto">
+          <PeriodStatusCard />
+        </div>
       </div>
     </aside>
   );

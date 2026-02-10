@@ -1,6 +1,6 @@
 import { useState, forwardRef } from "react";
 import { cn } from "../../../utils/cn";
-import { ChevronDown } from "lucide-react";
+import { ChevronDownIcon } from "../../../icons";
 
 /**
  * Interfaz para los códigos de país del PhoneInput.
@@ -120,7 +120,7 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(({
             ))}
           </select>
           <div className="absolute right-2.5 pointer-events-none text-text-tertiary dark:text-text-tertiary">
-            <ChevronDown className="w-4 h-4" />
+            <ChevronDownIcon className="w-4 h-4" />
           </div>
         </div>
       )}
@@ -155,7 +155,7 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(({
             ))}
           </select>
           <div className="absolute right-2.5 pointer-events-none text-text-tertiary dark:text-text-tertiary">
-            <ChevronDown className="w-4 h-4" />
+            <ChevronDownIcon className="w-4 h-4" />
           </div>
         </div>
       )}

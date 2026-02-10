@@ -1,18 +1,17 @@
 import React from "react";
 import { Modal, ModalBody, ModalFooter } from "../modal";
 import Button from "../button/Button";
-import { 
-  DIALOG_COLORS, 
-  DIALOG_LAYOUT, 
-  DialogVariant 
+import {
+  DIALOG_COLORS,
+  DIALOG_LAYOUT,
+  DialogVariant
 } from "./DialogConfig";
-import { 
-  CheckCircle, 
-  AlertTriangle, 
-  Info, 
-  XCircle,
-  AlertCircle
-} from "lucide-react";
+import {
+  CheckCircleIcon,
+  AlertIcon,
+  InfoIcon,
+  ErrorIcon
+} from "../../../icons";
 import { cn } from "../../../utils/cn";
 
 /**
@@ -68,7 +67,7 @@ export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
 }) => {
   const colors = DIALOG_COLORS[variant];
   const layout = DIALOG_LAYOUT;
-  
+
   /**
    * Obtiene el icono correspondiente a la variante del diálogo.
    */
@@ -79,49 +78,49 @@ export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
     };
 
     switch (variant) {
-      case "success": return <CheckCircle {...iconProps} />;
-      case "error": return <XCircle {...iconProps} />;
-      case "warning": return <AlertTriangle {...iconProps} />;
-      case "info": return <Info {...iconProps} />;
-      case "confirm": return <AlertCircle {...iconProps} />;
+      case "success": return <CheckCircleIcon {...iconProps} />;
+      case "error": return <ErrorIcon {...iconProps} />;
+      case "warning": return <AlertIcon {...iconProps} />;
+      case "info": return <InfoIcon {...iconProps} />;
+      case "confirm": return <AlertIcon {...iconProps} />;
       default: return null;
     }
   };
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose} 
-      className="max-w-md overflow-hidden" 
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      className="max-w-md overflow-hidden"
       showCloseButton
       size="md"
     >
       <ModalBody className="flex flex-col items-center text-center px-6 pt-8 pb-4 sm:px-10 sm:pt-12 sm:pb-6">
-        <div 
+        <div
           className={cn(
-            "mb-6 p-5 sm:p-6 rounded-full flex items-center justify-center animate-in zoom-in duration-300", 
+            "mb-6 p-5 sm:p-6 rounded-full flex items-center justify-center animate-in zoom-in duration-300",
             colors.bg
           )}
           aria-hidden="true"
         >
           {getIcon()}
         </div>
-        
+
         <h3 className={cn(
-          layout.titleSize, 
+          layout.titleSize,
           "text-text-main dark:text-text-emphasis mb-3 tracking-tight"
         )}>
           {title || "Notificación"}
         </h3>
-        
+
         <div className={cn(
-          layout.messageSize, 
+          layout.messageSize,
           "text-text-secondary dark:text-text-tertiary max-w-[320px] leading-relaxed"
         )}>
           {message}
         </div>
       </ModalBody>
-      
+
       <ModalFooter className="border-none pt-2 pb-10 justify-center gap-3 px-8 sm:px-10">
         {onConfirm ? (
           <div className="flex flex-col-reverse sm:flex-row w-full gap-3">
@@ -136,7 +135,7 @@ export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
             <Button
               onClick={onConfirm}
               className={cn(
-                "flex-1 h-12 rounded-xl border-none text-white font-semibold shadow-lg shadow-current/10 transition-all active:scale-95", 
+                "flex-1 h-12 rounded-xl border-none text-white font-semibold shadow-lg shadow-current/10 transition-all active:scale-95",
                 colors.button
               )}
               loading={isLoading}
@@ -148,7 +147,7 @@ export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
           <Button
             onClick={onClose}
             className={cn(
-              "w-full h-12 rounded-xl border-none text-white font-semibold shadow-lg shadow-current/10 transition-all active:scale-95", 
+              "w-full h-12 rounded-xl border-none text-white font-semibold shadow-lg shadow-current/10 transition-all active:scale-95",
               colors.button
             )}
           >

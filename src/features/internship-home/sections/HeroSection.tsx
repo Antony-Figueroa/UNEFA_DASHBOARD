@@ -53,11 +53,11 @@ const HeroSection: React.FC = () => {
       </style>
 
       {/* Patrón de fondo con logo de la UNEFA animado */}
-      <div 
+      <div
         className="absolute inset-0 z-0 overflow-hidden"
         aria-hidden="true"
       >
-        <div 
+        <div
           className="absolute -inset-full opacity-10 flex flex-col justify-center items-center"
           style={{
             transform: 'rotate(15deg)',
@@ -65,16 +65,16 @@ const HeroSection: React.FC = () => {
           }}
         >
           {Array.from({ length: rowCount }).map((_, rowIndex) => (
-            <div 
+            <div
               key={rowIndex}
               className={`logo-row ${rowIndex % 2 === 0 ? 'animate-scroll-right' : 'animate-scroll-left'}`}
             >
               {/* Duplicamos los logos para el efecto de loop infinito */}
               {Array.from({ length: logosPerRow * 2 }).map((_, logoIndex) => (
                 <div key={logoIndex} className="logo-item">
-                  <img 
-                    src="/logo-nuevo.png" 
-                    alt="" 
+                  <img
+                    src="/logo-nuevo.png"
+                    alt=""
                     className="w-12.5 h-12.5 object-contain"
                   />
                 </div>
@@ -107,7 +107,7 @@ const HeroSection: React.FC = () => {
                   mainClassName="px-2 sm:px-2 md:px-3 bg-[#2d90c4] text-white overflow-hidden py-0.5 sm:py-1 md:py-2 justify-center rounded-lg"
                   staggerFrom={"last"}
                   initial={{ y: "100%" }}
-                  animate={{ y: 0 }}
+                  animate={{ y: "0%" }}
                   exit={{ y: "-120%" }}
                   staggerDuration={0.025}
                   splitLevelClassName="overflow-hidden pb-0.5 sm:pb-1 md:pb-1"
@@ -126,9 +126,9 @@ const HeroSection: React.FC = () => {
                   Comenzar ahora
                 </Button>
               </Link>
-              <Button 
-                variant="outline" 
-                size="md" 
+              <Button
+                variant="outline"
+                size="md"
                 className="px-8"
                 onClick={() => smoothScrollTo("procesos")}
               >

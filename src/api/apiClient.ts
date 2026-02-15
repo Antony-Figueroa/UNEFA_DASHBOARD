@@ -66,9 +66,14 @@ apiClient.interceptors.response.use(
     
     // Rutas de monitoreo que no deben ensuciar el log de errores
     const isMonitoringPath = config?.url?.includes('/health') || config?.url?.includes('/db-status');
+
+    // Verificar si el token fue renovado recientemente (evita falsos positivos)
+    const lastRefresh = sessionStorage.getItem('auth_last_refresh');
+    const timeSinceLastRefresh = lastRefresh ? Date.now() - parseInt(lastRefresh) : Infinity;
+    const wasRecentlyRefreshed = timeSinceLastRefresh < 60000; // Menos de 1 minuto
     
     // 1. Manejo de Sesión Expirada (401)
-    if (error.response?.status === 401 && !isPublicPage) {
+    if (error.response?.status === 401 && !isPublicPage && !wasRecentlyRefreshed) {
       console.warn('[API] Sesión expirada o no autorizada. Notificando al sistema...');
       
       // Marcar causa de redirección en sessionStorage

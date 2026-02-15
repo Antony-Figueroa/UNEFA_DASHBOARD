@@ -47,7 +47,7 @@ export const login = async (req: Request, res: Response) => {
         httpOnly: true,
         secure: true, // Siempre true para permitir cross-site en HTTPS
         sameSite: 'none', // Requerido para que Vercel pueda enviar la cookie a Render
-        maxAge: 30 * 60 * 1000, // 30 minutos
+        maxAge: 60 * 60 * 1000, // 1 hora
         path: '/'
       });
     }
@@ -219,6 +219,40 @@ export const resetPasswordWithToken = async (req: Request, res: Response) => {
 export const logout = async (_req: Request, res: Response) => {
   res.clearCookie('auth_token');
   res.json({ message: 'Sesión cerrada correctamente' });
+};
+
+export const refreshSession = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const userCi = req.user?.userCi;
+    const role = req.user?.role;
+
+    if (!userId || !userCi || role === undefined) {
+      return res.status(401).json({ success: false, message: 'Sesión no válida' });
+    }
+
+    // Generar nuevo token con tiempo extendido
+    const newToken = authService.generateRefreshToken({ userId, userCi, role });
+
+    // Actualizar cookie
+    res.cookie('auth_token', newToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 60 * 60 * 1000, // 1 hora
+      path: '/'
+    });
+
+    console.log(`[Auth] Sesión renovada para CI: ${userCi}`);
+    res.json({ 
+      success: true, 
+      message: 'Sesión renovada exitosamente',
+      expiresIn: '1h'
+    });
+  } catch (error) {
+    console.error(`[Auth] Error al renovar sesión:`, error);
+    handleAuthError(res, error);
+  }
 };
 
 export const changePassword = async (req: Request, res: Response) => {

@@ -140,8 +140,13 @@
   --color-warning-900: #7a2e0e;
   --color-warning-950: #4e1d09;
 
-  --color-theme-pink-500: #ee46bc;
+  /* UNEFA Institutional Palette Extensions */
+  --color-unefa-blue: #054f94;
+  --color-unefa-gold: #c5a059;
+  --color-unefa-gold-light: #dfc18c;
+  --color-unefa-alabaster: #fcfcfd;
 
+  --color-theme-pink-500: #ee46bc;
   --color-theme-purple-500: #7a5af8;
 
   /* Semantic Colors */
@@ -308,23 +313,30 @@
 }
 
 @utility menu-item {
-  @apply relative flex items-center w-full gap-3 px-3 py-2 font-medium rounded-lg text-theme-sm transition-all duration-200;
+  @apply relative flex items-center w-full gap-3 px-3.5 py-2.5 font-medium rounded-xl text-theme-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)];
 }
 
 @utility action-menu-item {
-  @apply relative flex items-center w-full gap-3 px-4 py-3 font-semibold rounded-lg text-theme-base transition-all duration-200;
+  @apply relative flex items-center w-full gap-3 px-4 py-3 font-semibold rounded-xl text-theme-base transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)];
 }
 
 @utility menu-item-active {
-  @apply bg-brand-500 text-white dark:bg-brand-500 dark:text-white;
+  @apply bg-brand-500 text-white shadow-lg shadow-brand-500/20 border border-white/10 dark:bg-brand-600/50 dark:shadow-brand-600/10;
+}
+
+@utility menu-item-open {
+  @apply bg-gray-50/80 text-unefa-blue border border-gray-100 dark:bg-white/5 dark:text-white dark:border-white/5;
 }
 
 @utility menu-item-inactive {
-  @apply text-text-secondary hover:bg-brand-500 hover:text-white group-hover:text-white dark:text-text-tertiary dark:hover:bg-brand-500 dark:hover:text-white dark:group-hover:text-white;
+  @apply text-text-secondary hover:bg-gray-50/70 hover:text-unefa-blue dark:text-text-tertiary dark:hover:bg-white/[0.04] dark:hover:text-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)];
+  &:hover {
+    @apply -translate-y-[0.5px];
+  }
 }
 
 @utility menu-item-icon {
-  @apply text-text-secondary group-hover:text-text-primary dark:text-text-tertiary;
+  @apply text-text-secondary transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] dark:text-text-tertiary;
 }
 
 @utility menu-item-icon-active {
@@ -338,7 +350,7 @@
 }
 
 @utility menu-item-icon-inactive {
-  @apply text-text-secondary group-hover:text-white dark:text-text-tertiary dark:group-hover:text-white;
+  @apply text-text-secondary group-hover:text-unefa-blue dark:text-text-tertiary dark:group-hover:text-white transition-colors duration-300;
 }
 
 @utility menu-item-arrow {

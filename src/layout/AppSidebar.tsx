@@ -13,6 +13,7 @@ import {
   TableIcon,
   UserCircleIcon,
   DocsIcon,
+  SparklesIcon,
 } from "../icons";
 import { useSidebar } from "../context/sidebar";
 import PeriodStatusCard from "../components/Sidebar/PeriodStatusCard";
@@ -79,7 +80,7 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    icon: <DocsIcon />,
+    icon: <SparklesIcon />,
     name: "Asistente de IA",
     path: "/ai-assistant",
   },
@@ -164,7 +165,7 @@ const AppSidebar: React.FC = () => {
             <button
               onClick={() => handleSubmenuToggle(index)}
               className={`menu-item group ${openSubmenu === index
-                ? "menu-item-active"
+                ? "menu-item-open"
                 : "menu-item-inactive"
                 } cursor-pointer ${!isExpanded && !isHovered
                   ? "lg:justify-center"
@@ -173,7 +174,7 @@ const AppSidebar: React.FC = () => {
             >
               <span
                 className={`menu-item-icon-size  ${openSubmenu === index
-                  ? "menu-item-icon-active"
+                  ? "text-unefa-blue dark:text-white"
                   : "menu-item-icon-inactive"
                   }`}
               >
@@ -184,8 +185,8 @@ const AppSidebar: React.FC = () => {
               )}
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
-                  className={`ml-auto icon-sm transition-transform duration-200 ${openSubmenu === index
-                    ? "rotate-180 text-brand-500"
+                  className={`ml-auto icon-sm transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${openSubmenu === index
+                    ? "rotate-180 text-unefa-blue dark:text-white"
                     : ""
                     }`}
                 />
@@ -217,7 +218,7 @@ const AppSidebar: React.FC = () => {
               ref={(el) => {
                 subMenuRefs.current[index] = el;
               }}
-              className="overflow-hidden transition-all duration-300"
+              className="overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
               style={{
                 height:
                   openSubmenu === index
@@ -225,37 +226,21 @@ const AppSidebar: React.FC = () => {
                     : "0px",
               }}
             >
-              <ul className="mt-2 space-y-1 ml-9">
+              <ul className="mt-1.5 space-y-1 ml-6 border-l border-border-light/40 dark:border-white/5 pl-4">
                 {nav.subItems.map((subItem) => (
                   <li key={subItem.name}>
                     <Link
                       to={subItem.path}
-                      className={`menu-dropdown-item ${isActive(subItem.path)
+                      className={`menu-dropdown-item flex items-center group/sub ${isActive(subItem.path)
                         ? "menu-dropdown-item-active"
                         : "menu-dropdown-item-inactive"
                         }`}
                     >
-                      {subItem.name}
+                      <div className={`size-1.5 rounded-full mr-2 transition-all duration-300 ${isActive(subItem.path) ? "bg-white scale-125" : "bg-text-tertiary/40 group-hover/sub:bg-brand-500"}`} />
+                      <span className="truncate">{subItem.name}</span>
                       <span className="flex items-center gap-1 ml-auto">
                         {subItem.new && (
-                          <span
-                            className={`ml-auto ${isActive(subItem.path)
-                              ? "menu-dropdown-badge-active"
-                              : "menu-dropdown-badge-inactive"
-                              } menu-dropdown-badge`}
-                          >
-                            new
-                          </span>
-                        )}
-                        {subItem.pro && (
-                          <span
-                            className={`ml-auto ${isActive(subItem.path)
-                              ? "menu-dropdown-badge-active"
-                              : "menu-dropdown-badge-inactive"
-                              } menu-dropdown-badge`}
-                          >
-                            pro
-                          </span>
+                          <span className="px-1.5 py-0.5 text-[8px] font-bold uppercase rounded bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400">new</span>
                         )}
                       </span>
                     </Link>
@@ -271,70 +256,50 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
-      style={{
-        height: '100vh',
-        top: 0
-      }}
-      className={`fixed flex flex-col px-5 left-0 bg-white dark:bg-bg-dark dark:border-white/10 text-text-primary transition-all duration-300 ease-in-out z-50 border-r border-border-light shadow-theme-md 
-        ${isExpanded || isMobileOpen
-          ? "w-72.5"
-          : isHovered
-            ? "w-72.5"
-            : "w-22.5"
-        }
-        ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:translate-x-0`}
+      className={`fixed flex flex-col left-0 bg-white dark:bg-bg-dark text-text-primary transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-50 border-r border-border-light/60 dark:border-white/5
+        ${isExpanded || isHovered || isMobileOpen ? "w-72.5 shadow-xl shadow-gray-200/20 dark:shadow-none" : "w-22.5"}
+        ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+      `}
+      style={{ height: '100vh', top: 0 }}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div
-        className={`py-6 flex ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
-          }`}
-      >
-        <Link to="/dashboard">
-          {isExpanded || isHovered || isMobileOpen ? (
-            <div className="flex items-center gap-5">
-              <img
-                src="/logo-nuevo.png"
-                alt="Logo"
-                width={35}
-                height={35}
-              />
-              <span className="text-xl font-bold text-text-emphasis">
-                Dashboard UNEFA
+      <div className={`py-8 px-6 flex items-center ${!isExpanded && !isHovered ? "justify-center" : "justify-start"}`}>
+        <Link to="/dashboard" className="flex items-center gap-4 group">
+          <div className="relative">
+            <img src="/logo-nuevo.png" alt="UNEFA" className="size-10 object-contain transition-transform duration-300 group-hover:scale-110" />
+            <div className="absolute -inset-1 bg-brand-500/10 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          {(isExpanded || isHovered || isMobileOpen) && (
+            <div className="flex flex-col">
+              <span className="text-lg font-bold leading-tight tracking-tight text-unefa-blue dark:text-white">
+                UNEFA
+              </span>
+              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-text-tertiary">
+                Dashboard
               </span>
             </div>
-          ) : (
-            <img
-              src="/logo-nuevo.png"
-              alt="Logo"
-              width={35}
-              height={35}
-            />
           )}
         </Link>
       </div>
-      <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
-        <nav className="mb-6">
-          <div className="flex flex-col gap-4">
+
+      <div className="flex-1 flex flex-col px-4 overflow-y-auto no-scrollbar py-2">
+        <nav className="flex-1">
+          <div className="space-y-6">
             <div>
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-5 text-text-tertiary ${!isExpanded && !isHovered
-                  ? "lg:justify-center"
-                  : "justify-start"
-                  }`}
-              >
+              <header className={`px-3 mb-3 flex items-center ${!isExpanded && !isHovered ? "justify-center" : "justify-start"}`}>
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "Menu"
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-text-tertiary/70">Principal</span>
                 ) : (
-                  <HorizontaLDots className="icon-md" />
+                  <HorizontaLDots className="size-4 text-text-tertiary/40" />
                 )}
-              </h2>
+              </header>
               {renderMenuItems(filteredNavItems as NavItem[])}
             </div>
           </div>
         </nav>
-        <div className="mt-auto">
+
+        <div className="mt-auto py-6">
           <PeriodStatusCard />
         </div>
       </div>

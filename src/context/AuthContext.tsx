@@ -9,6 +9,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import * as authService from "../features/auth/services/authService";
 import { AuthContext, type AuthUser } from "./auth";
+import { UnifiedDialog } from "../components/ui/dialog/UnifiedDialog";
 
 /**
  * Proveedor de autenticación que envuelve la aplicación.
@@ -20,6 +21,7 @@ import { AuthContext, type AuthUser } from "./auth";
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isExpired, setIsExpired] = useState(false);
 
   /**
    * Verifica el estado actual de la sesión llamando al servicio de autenticación.
@@ -46,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Rutas públicas que no requieren verificación inmediata (mejora performance y evita cold-starts)
     const publicPaths = ['/', '/signin', '/signup', '/first-login', '/password-recovery', '/reset-password'];
     const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
-    
+
     if (publicPaths.includes(currentPath)) {
       setLoading(false);
       return;
@@ -54,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuth();
   }, [checkAuth]);
 
-  // Sincronización de sesión entre pestañas del navegador
+  // Sincronización de sesión entre pestañas y detección de expiración
   useEffect(() => {
     /**
      * Maneja eventos de storage para detectar logout en otras pestañas.
@@ -66,8 +68,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         window.location.replace('/signin');
       }
     };
+
+    /**
+     * Maneja el evento de expiración de sesión emitido por el apiClient.
+     */
+    const handleSessionExpired = () => {
+      console.warn("[AuthContext] Sesión expirada detectada via evento.");
+      setIsExpired(true);
+      sessionStorage.setItem('auth_redirect_reason', 'expired'); // Set reason before redirect
+    };
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('unefa:auth:session-expired', handleSessionExpired as EventListener);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('unefa:auth:session-expired', handleSessionExpired as EventListener);
+    };
   }, []);
 
   /**
@@ -82,20 +99,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setUser(null);
       // Limpieza exhaustiva de datos locales
+      const reason = sessionStorage.getItem('auth_redirect_reason');
       localStorage.clear();
       sessionStorage.clear();
-      
+
+      if (reason) {
+        sessionStorage.setItem('auth_redirect_reason', reason);
+      }
+
       // Emitir evento para sincronizar cierre en otras pestañas
       localStorage.setItem('auth_logout', Date.now().toString());
-      
+
       // Redirección física para resetear el estado de toda la SPA
       window.location.replace('/signin');
     }
   }, []);
 
+  const handleConfirmExpiration = () => {
+    setIsExpired(false);
+    signOut();
+  };
+
   return (
     <AuthContext.Provider value={{ user, loading, signOut, checkAuth }}>
       {children}
+
+      <UnifiedDialog
+        isOpen={isExpired}
+        onClose={handleConfirmExpiration}
+        onConfirm={handleConfirmExpiration}
+        variant="confirm"
+        title="Sesión Expirada"
+        message="Su sesión ha expirado por inactividad o seguridad. Por favor, inicie sesión nuevamente para continuar trabajando."
+        confirmLabel="Volver al Inicio"
+        cancelLabel="Cerrar"
+      />
     </AuthContext.Provider>
   );
 };

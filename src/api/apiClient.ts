@@ -69,9 +69,14 @@ apiClient.interceptors.response.use(
     
     // 1. Manejo de Sesión Expirada (401)
     if (error.response?.status === 401 && !isPublicPage) {
-      console.warn('[API] Sesión expirada o no autorizada. Redirigiendo al login...');
-      // Redirección forzada al login para limpiar estado de la app
-      window.location.replace('/signin');
+      console.warn('[API] Sesión expirada o no autorizada. Notificando al sistema...');
+      
+      // Marcar causa de redirección en sessionStorage
+      sessionStorage.setItem('auth_redirect_reason', 'expired');
+      
+      // Emitir evento para que el AuthContext o componentes de UI manejen la expiración con un modal
+      window.dispatchEvent(new CustomEvent('unefa:auth:session-expired'));
+      
       return Promise.reject(error);
     }
 

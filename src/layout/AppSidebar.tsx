@@ -80,6 +80,11 @@ const navItems: NavItem[] = [
   },
   {
     icon: <DocsIcon />,
+    name: "Asistente de IA",
+    path: "/ai-assistant",
+  },
+  {
+    icon: <DocsIcon />,
     name: "Manuales",
     path: "/blank",
   },

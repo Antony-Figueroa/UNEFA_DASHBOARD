@@ -13,8 +13,8 @@ const LayoutContent: React.FC = () => {
   useSessionTimeout();
 
   return (
-    <div 
-      className="min-h-screen xl:flex"
+    <div
+      className="min-h-screen bg-gray-50 dark:bg-bg-dark"
       style={{ paddingTop: 'var(--banner-height, 0px)' }}
     >
       <TopBanner />
@@ -23,17 +23,17 @@ const LayoutContent: React.FC = () => {
         <Backdrop />
       </div>
       <div
-        className={`flex-1 transition-all duration-300 ease-in-out ${isExpanded || isHovered ? "lg:ml-[290px]" : "lg:ml-[90px]"
-          } ${isMobileOpen ? "ml-0" : ""}`}
+        className={`flex flex-col min-h-screen transition-all duration-300 ease-in-out ${isExpanded || isHovered ? "lg:pl-[290px]" : "lg:pl-[90px]"
+          } ${isMobileOpen ? "pl-0" : ""}`}
       >
-        <div 
+        <div
           className="sticky z-40"
           style={{ top: 'var(--banner-height, 0px)' }}
         >
           <DatabaseStatusBanner />
           <AppHeader />
         </div>
-        <div className="mx-auto max-w-(--breakpoint-1xl) p-4 pt-8 md:p-6 md:pt-10">
+        <div className="flex-1 mx-auto w-full max-w-(--breakpoint-1xl) p-4 pt-8 md:p-6 md:pt-10">
           <Outlet />
         </div>
       </div>

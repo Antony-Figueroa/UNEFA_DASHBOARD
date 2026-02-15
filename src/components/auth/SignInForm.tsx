@@ -27,6 +27,18 @@ export default function SignInForm() {
         message: location.state.message
       });
     }
+
+    // Verificar si venimos de una redirección por expiración
+    const reason = sessionStorage.getItem('auth_redirect_reason');
+    if (reason === 'expired') {
+      addToast({
+        variant: "warning",
+        title: "Sesión Expirada",
+        message: "Su sesión ha finalizado por seguridad. Inicie sesión nuevamente.",
+        duration: 8000
+      });
+      sessionStorage.removeItem('auth_redirect_reason');
+    }
   }, [location, addToast]);
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -59,7 +71,7 @@ export default function SignInForm() {
       const axiosError = err as { response?: { data?: { message?: string, attemptsRemaining?: number } } };
       const errorMessage = axiosError.response?.data?.message || (err as Error).message || "Error al iniciar sesión";
       const remaining = axiosError.response?.data?.attemptsRemaining;
-      
+
       if (remaining !== undefined) {
         if (remaining <= 2) {
           addToast({
@@ -115,10 +127,10 @@ export default function SignInForm() {
                   <Label htmlFor="userCi">
                     Cédula <span className="text-error-500">*</span>{" "}
                   </Label>
-                  <Input 
+                  <Input
                     id="userCi"
                     type="text"
-                    placeholder="Ingrese su cédula" 
+                    placeholder="Ingrese su cédula"
                     value={userCi}
                     onChange={(e) => setUserCi(e.target.value)}
                     required
@@ -162,9 +174,9 @@ export default function SignInForm() {
                   </Link>
                 </div>
                 <div className="mt-6">
-                  <Button 
-                    className="w-full" 
-                    size="md" 
+                  <Button
+                    className="w-full"
+                    size="md"
                     type="submit"
                     disabled={loading}
                   >

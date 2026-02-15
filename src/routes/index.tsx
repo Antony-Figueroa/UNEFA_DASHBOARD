@@ -39,6 +39,7 @@ const Images = lazy(() => import("../pages/UiElements/Images"));
 const Videos = lazy(() => import("../pages/UiElements/Videos"));
 const LineChart = lazy(() => import("../pages/Charts/LineChart"));
 const BarChart = lazy(() => import("../pages/Charts/BarChart"));
+const AIAssistant = lazy(() => import("../pages/AIAssistant/AIAssistant"));
 const NotFound = lazy(() => import("../pages/OtherPage/NotFound"));
 
 export const AppRoutes = () => {
@@ -104,7 +105,7 @@ export const AppRoutes = () => {
             }
           >
             <Route path="/dashboard" element={<Home />} />
-            
+
             {/* Core Features */}
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/calendar" element={<Calendar />} />
@@ -112,12 +113,15 @@ export const AppRoutes = () => {
             <Route path="/students" element={<Students />} />
             <Route path="/tutors" element={<Tutors />} />
             <Route path="/institutions" element={<InstitutionsPage />} />
-            
+
+            {/* AI Assistant */}
+            <Route path="/ai-assistant" element={<AIAssistant />} />
+
             {/* Management */}
             <Route path="/period" element={<Period />} />
             <Route path="/careers" element={<CareersPage />} />
             <Route path="/crud-example" element={<CrudExample />} />
-            
+
             {/* Process */}
             <Route path="/pre-enrollment" element={<PreEnrollmentPage />} />
             <Route path="/enrollment" element={<EnrollmentPage />} />
@@ -125,27 +129,27 @@ export const AppRoutes = () => {
             <Route path="/visit-registration" element={<VisitRegistration />} />
 
             {/* Configuration - Only for Admin (Role 1) and Master (Role 0) */}
-            <Route 
-              path="/configure/users" 
+            <Route
+              path="/configure/users"
               element={
                 <ProtectedRoute allowedRoles={[0, 1]}>
                   <UserManagementPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/configure/lists" 
+            <Route
+              path="/configure/lists"
               element={
                 <ProtectedRoute allowedRoles={[0, 1]}>
                   <ListsConfiguration />
                 </ProtectedRoute>
-              } 
+              }
             />
-            
+
             {/* Forms & Tables */}
             <Route path="/form-elements" element={<FormElements />} />
             <Route path="/basic-tables" element={<BasicTables />} />
-            
+
             {/* UI Elements */}
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/avatars" element={<Avatars />} />
@@ -153,7 +157,7 @@ export const AppRoutes = () => {
             <Route path="/buttons" element={<Buttons />} />
             <Route path="/images" element={<Images />} />
             <Route path="/videos" element={<Videos />} />
-            
+
             {/* Charts */}
             <Route path="/line-chart" element={<LineChart />} />
             <Route path="/bar-chart" element={<BarChart />} />

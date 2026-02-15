@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ChatSession } from '../types';
 import { chatHistoryService } from '../services/ChatHistoryService';
-import { useAuth } from '../../auth/hooks/useAuth';
+import { useAuth } from '../../../context/auth';
 import { TrashBinIcon } from '../../../icons';
 import { UnifiedDialog } from '../../../components/ui/dialog/UnifiedDialog';
 
@@ -27,9 +27,20 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
     const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
 
     useEffect(() => {
-        if (user && isOpen) {
-            chatHistoryService.getSessions(user.id).then(setSessions);
-        }
+        const fetchSessions = () => {
+            if (user && isOpen) {
+                chatHistoryService.getSessions(user.id).then(setSessions);
+            }
+        };
+
+        fetchSessions();
+
+        // Escuchar actualizaciones de sesiones (mensajes nuevos, títulos, etc.)
+        window.addEventListener('unefa:ai-chat:sessions-updated', fetchSessions);
+
+        return () => {
+            window.removeEventListener('unefa:ai-chat:sessions-updated', fetchSessions);
+        };
     }, [user, isOpen]);
 
     const handleDeleteClick = (e: React.MouseEvent, id: string) => {
@@ -45,18 +56,20 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
         }
     };
 
-    if (!isOpen) return null;
-
     return (
         <>
-            <div className="fixed inset-0 z-50 flex justify-end overflow-hidden sm:relative sm:z-auto sm:flex-none">
-                {/* Backdrop for mobile */}
-                <div
-                    className="fixed inset-0 bg-gray-600/30 backdrop-blur-sm sm:hidden"
-                    onClick={onClose}
-                />
+            {/* Backdrop for mobile */}
+            <div
+                className={`fixed inset-0 z-50 bg-gray-600/30 backdrop-blur-sm transition-opacity duration-300 sm:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    }`}
+                onClick={onClose}
+            />
 
-                <div className="relative w-80 max-w-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-xl sm:shadow-none flex flex-col h-full animate-in slide-in-from-right duration-300">
+            <div
+                className={`fixed inset-y-0 right-0 z-50 flex overflow-hidden transition-all duration-300 ease-in-out sm:relative sm:z-auto ${isOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 pointer-events-none'
+                    }`}
+            >
+                <div className="w-80 flex-shrink-0 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 shadow-xl sm:shadow-none flex flex-col h-full">
                     <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
                         <h2 className="font-semibold text-gray-900 dark:text-white">Conversaciones</h2>
                         <button

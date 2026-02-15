@@ -85,8 +85,8 @@ const PeriodStatusCard: React.FC = () => {
             className={cn(
                 "mx-4 mb-8 p-4 rounded-2xl border transition-all duration-300 shadow-sm hover:shadow-md group",
                 isCurrent
-                    ? "bg-success-50/50 border-success-100 dark:bg-success-500/5 dark:border-success-500/20"
-                    : "bg-brand-50/50 border-brand-100 dark:bg-brand-500/5 dark:border-brand-500/20"
+                    ? "bg-success-50/30 border-success-100/50 dark:bg-success-500/5 dark:border-success-500/20"
+                    : "bg-unefa-gold/[0.03] border-unefa-gold/20 dark:bg-unefa-gold/5 dark:border-unefa-gold/15"
             )}
         >
             <div className="flex items-start gap-3">
@@ -94,8 +94,8 @@ const PeriodStatusCard: React.FC = () => {
                     className={cn(
                         "p-2.5 rounded-xl transition-transform group-hover:scale-110 duration-300",
                         isCurrent
-                            ? "bg-success-100 text-success-600 dark:bg-success-500/20 dark:text-success-400"
-                            : "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
+                            ? "bg-success-100/80 text-success-700 dark:bg-success-500/20 dark:text-success-400"
+                            : "bg-unefa-gold/10 text-unefa-gold dark:bg-unefa-gold/20 dark:text-unefa-gold-light"
                     )}
                 >
                     {isCurrent ? <TimeIcon className="w-5 h-5" /> : <CalenderIcon className="w-5 h-5" />}
@@ -106,7 +106,7 @@ const PeriodStatusCard: React.FC = () => {
                         <p
                             className={cn(
                                 "text-[10px] font-bold uppercase tracking-widest",
-                                isCurrent ? "text-success-600 dark:text-success-400" : "text-brand-600 dark:text-brand-400"
+                                isCurrent ? "text-success-700 dark:text-success-400" : "text-unefa-gold dark:text-unefa-gold-light"
                             )}
                         >
                             {isCurrent ? "Período Actual" : "Próximo Período"}

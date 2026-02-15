@@ -1,15 +1,14 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import type { Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { MessageBubbleProps } from '../types';
 import { cn } from '../../../utils/cn';
 
 // Custom icon components matching the project's icon system
 const BotIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="11" width="18" height="10" rx="2" />
-        <circle cx="12" cy="5" r="2" />
-        <path d="M12 7v4" />
-        <line x1="8" y1="16" x2="8.01" y2="16" />
-        <line x1="16" y1="16" x2="16.01" y2="16" />
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
     </svg>
 );
 
@@ -35,9 +34,82 @@ const ExternalLinkIcon = () => (
     </svg>
 );
 
+// Markdown components for rich rendering
+const MarkdownComponents: Components = {
+    // Table styling
+    table: ({ ...props }: any) => (
+        <div className="overflow-x-auto my-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700" {...props} />
+        </div>
+    ),
+    thead: ({ ...props }: any) => (
+        <thead className="bg-gray-50 dark:bg-gray-800" {...props} />
+    ),
+    th: ({ ...props }: any) => (
+        <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider" {...props} />
+    ),
+    tbody: ({ ...props }: any) => (
+        <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700" {...props} />
+    ),
+    tr: ({ ...props }: any) => (
+        <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" {...props} />
+    ),
+    td: ({ children, ...props }: any) => {
+        // Status badge logic
+        const content = String(children).toLowerCase().trim();
+        let badgeClass = "";
+        
+        if (content === "culminado" || content.includes("culminado")) {
+            badgeClass = "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800";
+        } else if (content === "en curso" || content.includes("en curso")) {
+            badgeClass = "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
+        } else if (content === "próximo" || content.includes("próximo")) {
+            badgeClass = "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
+        }
+
+        if (badgeClass) {
+             return (
+                <td className="px-4 py-3 text-sm whitespace-nowrap" {...props}>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${badgeClass}`}>
+                        {children}
+                    </span>
+                </td>
+             );
+        }
+        
+        return (
+            <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300" {...props}>
+                {children}
+            </td>
+        );
+    },
+    // List styling
+    ul: ({ ...props }: any) => <ul className="list-disc pl-5 my-2 space-y-1" {...props} />,
+    ol: ({ ...props }: any) => <ol className="list-decimal pl-5 my-2 space-y-1" {...props} />,
+    li: ({ ...props }: any) => <li className="text-sm" {...props} />,
+    // Heading styling
+    h1: ({ ...props }: any) => <h1 className="text-xl font-bold mt-4 mb-2" {...props} />,
+    h2: ({ ...props }: any) => <h2 className="text-lg font-bold mt-3 mb-2" {...props} />,
+    h3: ({ ...props }: any) => <h3 className="text-md font-bold mt-2 mb-1" {...props} />,
+    // Paragraph
+    p: ({ ...props }: any) => <p className="mb-2 last:mb-0" {...props} />,
+    // Links
+    a: ({ ...props }: any) => (
+        <a 
+            className="text-brand-600 dark:text-brand-400 hover:underline font-medium inline-flex items-center gap-1" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            {...props}
+        >
+            {props.children}
+            <ExternalLinkIcon />
+        </a>
+    ),
+};
+
 /**
  * Burbuja de mensaje con diseño estructurado institucional
- * TODO: Reactivar Markdown una vez instaladas las dependencias
+ * Renderiza Markdown con soporte avanzado para tablas y estilos
  */
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
     message,
@@ -58,26 +130,35 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         >
             {/* Avatar del asistente (solo para mensajes de IA) */}
             {isAI && (
-                <div className="flex-shrink-0 h-8 w-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white shadow-theme-sm">
+                <div className="shrink-0 h-8 w-8 rounded-lg bg-linear-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white shadow-theme-sm">
                     <BotIcon />
                 </div>
             )}
 
-            <div className={cn('flex flex-col gap-1.5 max-w-[85%]', isAI ? 'items-start' : 'items-end')}>
+            <div className={cn('flex flex-col gap-1.5 max-w-[95%] md:max-w-[85%]', isAI ? 'items-start' : 'items-end')}>
                 {/* Mensaje con diseño estructurado */}
                 <div
                     className={cn(
                         'border px-4 py-2.5 transition-colors shadow-theme-xs',
                         isAI
-                            ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-lg rounded-tl-sm'
+                            ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-lg rounded-tl-sm w-full'
                             : 'bg-brand-500 text-white border-brand-600 rounded-lg rounded-tr-sm'
                     )}
                 >
                     <div className={cn(
-                        "text-sm leading-relaxed whitespace-pre-wrap",
+                        "text-sm leading-relaxed",
                         !isAI && "text-white"
                     )}>
-                        {message.content}
+                        {isAI ? (
+                            <ReactMarkdown 
+                                remarkPlugins={[remarkGfm]}
+                                components={MarkdownComponents}
+                            >
+                                {message.content}
+                            </ReactMarkdown>
+                        ) : (
+                            <div className="whitespace-pre-wrap">{message.content}</div>
+                        )}
                     </div>
 
                     {/* Status indicators */}
@@ -127,7 +208,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
             {/* Avatar del usuario (solo para mensajes de usuario) */}
             {!isAI && (
-                <div className="flex-shrink-0 h-8 w-8 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center shadow-theme-xs">
+                <div className="shrink-0 h-8 w-8 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center shadow-theme-xs">
                     <UserIcon />
                 </div>
             )}

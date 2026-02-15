@@ -7,6 +7,7 @@ const router = Router();
 router.post('/login', authController.login);
 router.post('/verify-master', authenticateToken, authController.verifyMaster);
 router.get('/me', authenticateToken, authController.getMe);
+router.post('/refresh', authenticateToken, authController.refreshSession);
 router.put('/profile', authenticateToken, authController.updateProfile);
 router.post('/change-password', authController.changePassword);
 router.get('/security-questions/:userCi', authController.getSecurityQuestions);

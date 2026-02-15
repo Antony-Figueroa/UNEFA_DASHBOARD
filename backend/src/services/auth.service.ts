@@ -676,3 +676,14 @@ export const getPresetQuestions = async () => {
   });
 };
 
+/**
+ * Genera un nuevo token JWT para renovar la sesión
+ */
+export const generateRefreshToken = (payload: { userId: number; userCi: string; role: number }): string => {
+  return generateToken({ 
+    userId: payload.userId, 
+    userCi: payload.userCi, 
+    role: payload.role 
+  }, '1h');
+};
+

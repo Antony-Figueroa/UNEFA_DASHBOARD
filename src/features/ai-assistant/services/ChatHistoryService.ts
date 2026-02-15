@@ -10,6 +10,7 @@ import { ChatSession, Message } from "../types";
 export type { Message };
 
 const STORAGE_PREFIX = "unefa_ai_chat_";
+const UPDATE_EVENT = "unefa:ai-chat:sessions-updated";
 
 class ChatHistoryService {
   /**
@@ -17,6 +18,13 @@ class ChatHistoryService {
    */
   private getStorageKey(userId: number): string {
     return `${STORAGE_PREFIX}${userId}_sessions`;
+  }
+
+  /**
+   * Notifica a los componentes interesados que las sesiones han cambiado
+   */
+  private notifyUpdate() {
+    window.dispatchEvent(new CustomEvent(UPDATE_EVENT));
   }
 
   /**
@@ -64,6 +72,7 @@ class ChatHistoryService {
       }
 
       localStorage.setItem(this.getStorageKey(userId), JSON.stringify(sessions));
+      this.notifyUpdate();
     } catch (error) {
       console.error("[ChatHistoryService] Error saving session:", error);
     }
@@ -77,6 +86,7 @@ class ChatHistoryService {
       const sessions = await this.getSessions(userId);
       const filtered = sessions.filter(s => s.id !== sessionId);
       localStorage.setItem(this.getStorageKey(userId), JSON.stringify(filtered));
+      this.notifyUpdate();
     } catch (error) {
       console.error("[ChatHistoryService] Error deleting session:", error);
     }
@@ -86,8 +96,13 @@ class ChatHistoryService {
    * Creates a new empty session object.
    */
   createNewSession(userId: number, title?: string): ChatSession {
+    // Fallback para entornos sin crypto.randomUUID (como contextos no seguros http)
+    const uuid = typeof crypto !== 'undefined' && crypto.randomUUID 
+      ? crypto.randomUUID() 
+      : `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
     return {
-      id: crypto.randomUUID(),
+      id: uuid,
       userId: userId.toString(),
       title: title || "Nueva conversación",
       messages: [],

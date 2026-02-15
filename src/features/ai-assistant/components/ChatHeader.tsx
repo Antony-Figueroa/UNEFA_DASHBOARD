@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChatHeaderProps } from '../types';
-import { ChevronLeftIcon, TrashBinIcon } from '../../../icons';
+import { TrashBinIcon } from '../../../icons';
 
 const SettingsIcon = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -9,12 +9,7 @@ const SettingsIcon = () => (
     </svg>
 );
 
-// Badge institucional icon
-const ShieldIcon = () => (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    </svg>
-);
+
 
 const ClockIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -28,8 +23,6 @@ const ClockIcon = () => (
  * Diseño institucional con badge oficial
  */
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
-    model,
-    onBackClick,
     onClearChat,
     onSettingsClick,
     onHistoryToggle
@@ -39,28 +32,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             <div className="flex items-center justify-between px-6 py-5">
                 {/* Left section */}
                 <div className="flex items-center gap-4">
-                    {onBackClick && (
-                        <button
-                            onClick={onBackClick}
-                            className="flex items-center justify-center h-9 w-9 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                            aria-label="Volver al dashboard"
-                        >
-                            <ChevronLeftIcon className="text-gray-600 dark:text-gray-400" />
-                        </button>
-                    )}
-
                     <div className="flex flex-col">
                         <div className="flex items-center gap-2 mb-1">
                             <h1 className="text-base font-semibold text-gray-900 dark:text-white">
                                 Asistente de IA UNEFA
                             </h1>
-                            {/* Badge institucional */}
-                            <div className="flex items-center gap-1.5 rounded-md border border-brand-200 dark:border-brand-800 bg-brand-50 dark:bg-brand-900/20 px-2 py-0.5">
-                                <ShieldIcon />
-                                <span className="text-[10px] font-medium text-brand-700 dark:text-brand-400 uppercase tracking-wide">
-                                    Oficial
-                                </span>
-                            </div>
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                             Siempre disponible para ayudarte
@@ -68,18 +44,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                     </div>
                 </div>
 
-                {/* Right section - Model & Actions */}
+                {/* Right section - Actions */}
                 <div className="flex items-center gap-3">
-                    {/* Model indicator */}
-                    {model && (
-                        <div className="hidden sm:flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-1.5">
-                            <div className="h-1.5 w-1.5 rounded-full bg-success-500" />
-                            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                                {model}
-                            </span>
-                        </div>
-                    )}
-
                     {/* Actions */}
                     <div className="flex items-center gap-1">
                         {onHistoryToggle && (

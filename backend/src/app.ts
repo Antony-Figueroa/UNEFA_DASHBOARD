@@ -20,6 +20,7 @@ import institutionalResponsiblesRoutes from './routes/institutional-responsibles
 import listsRoutes from './routes/lists.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import usersRoutes from './routes/users.routes.js';
+import aiRoutes from './routes/ai.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import { dbManager } from './lib/db-manager.js';
 import { performanceMiddleware } from './lib/performance-middleware.js';
@@ -124,6 +125,7 @@ app.use((req, _res, next) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/ai', aiRoutes); // AI Agent Routes (Separate Auth)
 app.use('/api/users', usersRoutes);
 
 // Public Health endpoints (Must be before authentication)

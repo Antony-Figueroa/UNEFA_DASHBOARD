@@ -15,7 +15,9 @@ export class GoogleAIService extends AIService {
 
     async sendMessage(request: ChatRequest): Promise<ChatResponse> {
         try {
-            const supportsSystemInstruction = !this.model.includes('gemma-3');
+            // Gemma 3 y Gemini soportan system_instruction nativo en v1beta, 
+            // pero gemma-3-1b-it parece rechazarlo explícitamente vía API
+            const supportsSystemInstruction = !this.model.includes('gemma');
             
             const body: any = {
                 contents: this.formatMessages(request.messages, !supportsSystemInstruction ? request.systemInstruction : undefined),
@@ -72,7 +74,7 @@ export class GoogleAIService extends AIService {
         const streamEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:streamGenerateContent?alt=sse&key=${this.apiKey}`;
 
         try {
-            const supportsSystemInstruction = !this.model.includes('gemma-3');
+            const supportsSystemInstruction = !this.model.includes('gemma');
 
             const body: any = {
                 contents: this.formatMessages(request.messages, !supportsSystemInstruction ? request.systemInstruction : undefined),

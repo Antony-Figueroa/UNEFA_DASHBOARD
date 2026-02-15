@@ -4,7 +4,6 @@ import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
 import { AISuggestions } from './AISuggestions';
 import { ChatInput } from './ChatInput';
-import { useNavigate } from 'react-router';
 import { useAIChat } from '../hooks/useAIChat';
 import { ChatHistorySidebar } from './ChatHistorySidebar';
 import { UnifiedDialog } from '../../../components/ui/dialog/UnifiedDialog';
@@ -13,7 +12,6 @@ import { UnifiedDialog } from '../../../components/ui/dialog/UnifiedDialog';
  * Ventana principal de chat de IA (Full Page)
  */
 export const ChatWindow: React.FC<ChatWindowProps> = () => {
-    const navigate = useNavigate();
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
 
@@ -55,9 +53,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = () => {
         }
     };
 
-    const handleBack = () => {
-        navigate('/dashboard');
-    };
+
 
     const toggleHistory = () => {
         setIsHistoryOpen(!isHistoryOpen);
@@ -68,8 +64,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = () => {
             {/* Main Chat Area */}
             <div className="flex flex-col flex-1 h-full min-w-0">
                 <ChatHeader
-                    model="Gemma 3 1B Instruct"
-                    onBackClick={handleBack}
                     onClearChat={handleClearChat}
                     onHistoryToggle={toggleHistory}
                 />

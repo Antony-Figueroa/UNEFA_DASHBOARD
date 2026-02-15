@@ -148,6 +148,15 @@ export const resetWithToken = async (token: string, newPassword: string): Promis
   return response.data;
 };
 
+/**
+ * Refreshes the current session to extend its duration.
+ * @returns A promise with the refresh response.
+ */
+export const refreshSession = async (): Promise<{ success: boolean; message: string; expiresIn: string }> => {
+  const response = await apiClient.post<{ success: boolean; message: string; expiresIn: string }>("/auth/refresh");
+  return response.data;
+};
+
 export const authService = {
   login,
   getMe,
@@ -160,6 +169,7 @@ export const authService = {
   resetPassword,
   requestRecovery,
   resetWithToken,
+  refreshSession,
   validateToken: async (_token: string): Promise<AuthUser> => {
     // Si ya hay un token en el storage, getMe usará el interceptor para validarlo
     const response = await getMe();

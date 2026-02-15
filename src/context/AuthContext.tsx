@@ -10,6 +10,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import * as authService from "../features/auth/services/authService";
 import { AuthContext, type AuthUser } from "./auth";
 import { UnifiedDialog } from "../components/ui/dialog/UnifiedDialog";
+import { useSessionRefresh } from "../hooks/useSessionRefresh";
 
 /**
  * Proveedor de autenticación que envuelve la aplicación.
@@ -22,6 +23,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isExpired, setIsExpired] = useState(false);
+
+  // Activar renovación automática de sesión cuando el usuario está autenticado
+  useSessionRefresh();
 
   /**
    * Verifica el estado actual de la sesión llamando al servicio de autenticación.

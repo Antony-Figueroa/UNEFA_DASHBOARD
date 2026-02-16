@@ -197,11 +197,13 @@
   --shadow-theme-sm: 0px 1px 2px rgba(0, 0, 0, 0.1);
   --shadow-theme-xs: 0px 1px 1px rgba(0, 0, 0, 0.05);
   --shadow-theme-xl: 0px 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-datepicker: -5px 0 0 var(--color-bg-dark), 5px 0 0 var(--color-bg-dark);
+  --shadow-datepicker:
+    -5px 0 0 var(--color-bg-dark), 5px 0 0 var(--color-bg-dark);
   --shadow-focus-ring: 0px 0px 0px 4px rgba(0, 127, 255, 0.12);
-  --shadow-slider-navigation: 0px 1px 2px 0px rgba(16, 24, 40, 0.1),
-    0px 1px 3px 0px rgba(16, 24, 40, 0.1);
-  --shadow-tooltip: 0px 4px 6px -2px rgba(16, 24, 40, 0.05),
+  --shadow-slider-navigation:
+    0px 1px 2px 0px rgba(16, 24, 40, 0.1), 0px 1px 3px 0px rgba(16, 24, 40, 0.1);
+  --shadow-tooltip:
+    0px 4px 6px -2px rgba(16, 24, 40, 0.05),
     -8px 0px 20px 8px rgba(16, 24, 40, 0.05);
 
   --animate-fade-in: fadeIn 0.3s ease-out forwards;
@@ -262,8 +264,8 @@
     }
   }
 
-  --drop-shadow-4xl: 0 35px 35px rgba(0, 0, 0, 0.25),
-    0 45px 65px rgba(0, 0, 0, 0.15);
+  --drop-shadow-4xl:
+    0 35px 35px rgba(0, 0, 0, 0.25), 0 45px 65px rgba(0, 0, 0, 0.15);
 
   --z-index-1: 1;
   --z-index-9: 9;
@@ -313,11 +315,11 @@
 }
 
 @utility menu-item {
-  @apply relative flex items-center w-full gap-3 px-3.5 py-2.5 font-medium rounded-xl text-theme-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)];
+  @apply relative flex items-center w-full gap-3 px-3.5 py-2.5 font-medium rounded-xl text-theme-sm transition-all duration-300 ease-in-out;
 }
 
 @utility action-menu-item {
-  @apply relative flex items-center w-full gap-3 px-4 py-3 font-semibold rounded-xl text-theme-base transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)];
+  @apply relative flex items-center w-full gap-3 px-4 py-3 font-semibold rounded-xl text-theme-base transition-all duration-300 ease-in-out;
 }
 
 @utility menu-item-active {
@@ -329,14 +331,14 @@
 }
 
 @utility menu-item-inactive {
-  @apply text-text-secondary hover:bg-gray-50/70 hover:text-unefa-blue dark:text-text-tertiary dark:hover:bg-white/[0.04] dark:hover:text-white transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)];
+  @apply text-text-secondary hover:bg-gray-50/70 hover:text-unefa-blue dark:text-text-tertiary dark:hover:bg-white/4 dark:hover:text-white transition-all duration-300 ease-in-out;
   &:hover {
     @apply -translate-y-[0.5px];
   }
 }
 
 @utility menu-item-icon {
-  @apply text-text-secondary transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] dark:text-text-tertiary;
+  @apply text-text-secondary transition-all duration-300 ease-in-out dark:text-text-tertiary;
 }
 
 @utility menu-item-icon-active {
@@ -553,44 +555,44 @@
 
 @layer utilities {
   /* Estilos para inputs de fecha nativos con estética mejorada */
-.custom-date-input {
-  position: relative;
-  min-height: 44px;
-}
+  .custom-date-input {
+    position: relative;
+    min-height: 44px;
+  }
 
-/* Ocultar el icono de calendario por defecto en Chrome/Edge/Safari */
-.custom-date-input::-webkit-calendar-picker-indicator {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: auto;
-  height: auto;
-  color: transparent;
-  background: transparent;
-  cursor: pointer;
-}
+  /* Ocultar el icono de calendario por defecto en Chrome/Edge/Safari */
+  .custom-date-input::-webkit-calendar-picker-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    height: auto;
+    color: transparent;
+    background: transparent;
+    cursor: pointer;
+  }
 
-/* Estilizar el placeholder y el texto del input nativo */
-.custom-date-input::-webkit-datetime-edit {
-  @apply text-text-primary dark:text-text-emphasis;
-}
+  /* Estilizar el placeholder y el texto del input nativo */
+  .custom-date-input::-webkit-datetime-edit {
+    @apply text-text-primary dark:text-text-emphasis;
+  }
 
-.custom-date-input::-webkit-datetime-edit-fields-wrapper {
-  padding: 0;
-}
+  .custom-date-input::-webkit-datetime-edit-fields-wrapper {
+    padding: 0;
+  }
 
-.custom-date-input:invalid::-webkit-datetime-edit {
-  @apply text-text-tertiary;
-}
+  .custom-date-input:invalid::-webkit-datetime-edit {
+    @apply text-text-tertiary;
+  }
 
-/* For Remove Time Icon */
-input[type="time"]::-webkit-inner-spin-button,
-input[type="time"]::-webkit-calendar-picker-indicator {
-  display: none;
-  -webkit-appearance: none;
-}
+  /* For Remove Time Icon */
+  input[type="time"]::-webkit-inner-spin-button,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    display: none;
+    -webkit-appearance: none;
+  }
 }
 
 .tableCheckbox:checked ~ span span {
@@ -800,9 +802,9 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 /* Styling for dropdown options (where supported by browser) */
- .flatpickr-monthDropdown-months option {
-   @apply bg-white dark:bg-bg-dark text-text-primary dark:text-white/90 py-2 font-outfit;
- }
+.flatpickr-monthDropdown-months option {
+  @apply bg-white dark:bg-bg-dark text-text-primary dark:text-white/90 py-2 font-outfit;
+}
 
 .flatpickr-current-month .numInputWrapper span {
   @apply border-l! border-border-medium! dark:border-border-dark!;
@@ -814,23 +816,23 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 /* Day Styling to match brand */
-.flatpickr-day.selected, 
-.flatpickr-day.startRange, 
-.flatpickr-day.endRange, 
-.flatpickr-day.selected.inRange, 
-.flatpickr-day.startRange.inRange, 
-.flatpickr-day.endRange.inRange, 
-.flatpickr-day.selected:focus, 
-.flatpickr-day.startRange:focus, 
-.flatpickr-day.endRange:focus, 
-.flatpickr-day.selected:hover, 
-.flatpickr-day.startRange:hover, 
-.flatpickr-day.endRange:hover, 
-.flatpickr-day.selected.prevMonthDay, 
-.flatpickr-day.startRange.prevMonthDay, 
-.flatpickr-day.endRange.prevMonthDay, 
-.flatpickr-day.selected.nextMonthDay, 
-.flatpickr-day.startRange.nextMonthDay, 
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange,
+.flatpickr-day.selected.inRange,
+.flatpickr-day.startRange.inRange,
+.flatpickr-day.endRange.inRange,
+.flatpickr-day.selected:focus,
+.flatpickr-day.startRange:focus,
+.flatpickr-day.endRange:focus,
+.flatpickr-day.selected:hover,
+.flatpickr-day.startRange:hover,
+.flatpickr-day.endRange:hover,
+.flatpickr-day.selected.prevMonthDay,
+.flatpickr-day.startRange.prevMonthDay,
+.flatpickr-day.endRange.prevMonthDay,
+.flatpickr-day.selected.nextMonthDay,
+.flatpickr-day.startRange.nextMonthDay,
 .flatpickr-day.endRange.nextMonthDay {
   @apply bg-brand-500! border-brand-500! text-white!;
 }
@@ -843,12 +845,12 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   @apply bg-brand-50! text-brand-600!;
 }
 
-.flatpickr-months .flatpickr-prev-month, 
+.flatpickr-months .flatpickr-prev-month,
 .flatpickr-months .flatpickr-next-month {
   @apply hover:text-brand-500! fill-text-tertiary! transition-colors! duration-200! flex! items-center! justify-center! p-1!;
 }
 
-.flatpickr-months .flatpickr-prev-month svg, 
+.flatpickr-months .flatpickr-prev-month svg,
 .flatpickr-months .flatpickr-next-month svg {
   @apply size-4!;
 }
@@ -1063,7 +1065,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .task {
   border-radius: 0.75rem;
-  box-shadow: 0px 1px 3px 0px rgba(16, 24, 40, 0.1),
+  box-shadow:
+    0px 1px 3px 0px rgba(16, 24, 40, 0.1),
     0px 1px 2px 0px rgba(16, 24, 40, 0.06);
   opacity: 0.8;
   cursor: grabbing; /* Changes the cursor to indicate dragging */
@@ -1136,7 +1139,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 /* Estilos de las opciones del dropdown - Referencia Filtro */
 .flatpickr-monthDropdown-months option {
   @apply bg-white dark:bg-bg-dark text-text-primary dark:text-text-emphasis;
-  font-family: 'Outfit', sans-serif !important;
+  font-family: "Outfit", sans-serif !important;
   font-size: 14px !important;
   padding: 10px 15px !important;
 }

@@ -51,6 +51,25 @@ const HeroSection: React.FC = () => {
           }
         `}
       </style>
+      {/* Animación de entrada para el título principal */}
+      <motion.div
+        initial={{ opacity: 0, y: -30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        className="mb-8 text-center"
+      >
+        <h1 className="text-4xl font-bold text-brand-600 dark:text-brand-400">Bienvenido a Prácticas UNEFA</h1>
+      </motion.div>
+      {/* Animación de zoom en el botón principal */}
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.7, delay: 0.2 }}
+        className="flex justify-center mb-6"
+      >
+        <Button>Comenzar</Button>
+      </motion.div>
+      {/* Animación de logos: ya tienen hover, se mantiene */}
 
       {/* Patrón de fondo con logo de la UNEFA animado */}
       <div

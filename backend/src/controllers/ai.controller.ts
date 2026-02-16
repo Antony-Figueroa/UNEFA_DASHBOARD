@@ -25,7 +25,7 @@ export const executeAIQuery = async (req: AIAuthRequest, res: Response) => {
       return res.status(400).json({
         success: false,
         message: 'Invalid query format',
-        errors: error.errors
+        errors: error.flatten().fieldErrors
       });
     }
 

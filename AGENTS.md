@@ -18,7 +18,9 @@
 
 ## 2. Tech Stack
 
+
 ### Frontend (`/`)
+
 - **Framework**: React 19 + Vite 6
 - **Lenguaje**: TypeScript 5.7.2 (strict mode)
 - **Styling**: Tailwind CSS v4 + Variables CSS Semánticas
@@ -29,7 +31,12 @@
 - **UI Libs**: ApexCharts, FullCalendar, Framer Motion, React Hot Toast, Lucide React
 - **PDF**: @react-pdf/renderer
 
+
+
+
+
 ### Backend (`/backend`)
+
 - **Runtime**: Node.js >= 18.x
 - **Framework**: Express.js 4.22
 - **Language**: TypeScript
@@ -37,21 +44,30 @@
 - **Database Client**: Supabase JS (PostgreSQL)
 - **Security**: Helmet, CORS
 
+
+
+
 ### Infrastructure
+
 - **Database**: Supabase (PostgreSQL managed)
 - **Containerization**: Docker + Docker Compose
 - **Deployment**: Vercel (Frontend), Railway/Render (Backend)
 - **Analytics**: Vercel Analytics
 
+
+
 ---
 
 ## 3. Architecture
 
-### Pattern: Feature-Based & Layered
+- **Runtime**: Node.js >= 18.x
+- **Framework**: Express.js 4.22
+- **Language**: TypeScript
+- **Auth**: JWT + Bcryptjs
+- **Database Client**: Supabase JS (PostgreSQL)
+- **Security**: Helmet, CORS
 
-El sistema usa un flujo de datos unidireccional estricto:
-
-```
+```text
 1. UI Components → Eventos del usuario
 2. Pages → Orchestación de features
 3. Hooks (features/*/hooks) → Estado y lógica de negocio
@@ -63,7 +79,34 @@ El sistema usa un flujo de datos unidireccional estricto:
 
 ### Directory Structure Key
 
-```
+src/
+├── features/          # Self-contained modules (16 features)
+│   ├── auth/
+│   ├── periods/
+│   ├── careers/
+│   ├── students/
+│   ├── tutors/
+│   ├── institutions/
+│   ├── enrollment/
+│   ├── pre-enrollment/
+│   ├── tracking/
+│   ├── users/
+│   ├── dashboard/
+│   ├── internship-home/
+│   ├── internship-types/
+│   ├── lists/
+│   ├── crudTemplate/
+│   └── types/
+│
+├── api/               # Centralized Axios instance + factories
+├── components/        # Shared components (UI, Form, Common)
+├── layout/            # Main layout shell (Sidebar, Header)
+├── pages/             # 37 route pages
+├── routes/            # Route definitions (lazy loaded)
+├── context/           # Global contexts (Auth, Theme, etc.)
+└── hooks/             # 9 shared hooks
+
+```text
 src/
 ├── features/          # Self-contained modules (16 features)
 │   ├── auth/
@@ -106,7 +149,7 @@ backend/src/
 ### Sistema de Módulos (16 Features)
 
 | Feature | Descripción | Endpoints | Componentes Clave |
-|---------|-------------|-----------|-------------------|
+| --------- | ------------- | ----------- | ------------------- |
 | **auth** | Autenticación y sesiones | `/api/auth/*` | AuthContext, ProtectedRoute |
 | **periods** | Periodos académicos | `/api/periodos` | PeriodModal, PeriodTable, DualCalendar |
 | **careers** | Carreras universitarias | `/api/careers` | CareerModal, CareerTable |
@@ -124,11 +167,12 @@ backend/src/
 | **crudTemplate** | Template para nuevos features | - | Ejemplo CRUD completo |
 | **types** | Tipos compartidos | - | TypeScript definitions |
 
+
 ### Estructura de un Feature (Patrón Estándar)
 
 Cada feature en `src/features/[feature-name]/` sigue esta estructura:
 
-```
+```text
 [feature-name]/
 ├── components/
 │   ├── [Feature]Modal.tsx        # Modal de creación/edición
@@ -171,12 +215,12 @@ VITE_API_URL=https://api.example.com npm run dev
 ### Adding a New Feature (Step-by-Step)
 
 1. **Create Feature Directory Structure**
-   ```bash
+```bash
    mkdir -p src/features/my-feature/{components,hooks,services,types}
    ```
 
 2. **Define Types** (`types/index.tsx`)
-   ```typescript
+```typescript
    export interface MyFeature {
      id: string;
      name: string;
@@ -185,7 +229,7 @@ VITE_API_URL=https://api.example.com npm run dev
    ```
 
 3. **Create Service** (`services/myFeatureService.tsx`)
-   ```typescript
+```typescript
    import apiClient from '@/api/apiClient';
    
    export const myFeatureService = {
@@ -197,10 +241,11 @@ VITE_API_URL=https://api.example.com npm run dev
    };
    ```
 
-4. **Create Hook** (`hooks/useMyFeature.tsx`)
-   ```typescript
-   import { useState, useEffect } from 'react';
-   import { myFeatureService } from '../services/myFeatureService';
+ - **Database**: Supabase (PostgreSQL managed)
+ - **Containerization**: Docker + Docker Compose
+ - **Deployment**: Vercel (Frontend), Railway/Render (Backend)
+ - **Analytics**: Vercel Analytics
+
    import toast from 'react-hot-toast';
    
    export const useMyFeature = () => {
@@ -241,9 +286,20 @@ VITE_API_URL=https://api.example.com npm run dev
 
 8. **Register Routes in App** (`backend/src/app.ts`)
 
-9. **Add Page** (`src/pages/MyFeature/MyFeature.tsx`)
 
-10. **Register Route** (`src/routes/index.tsx`)
+  ```text
+  1. UI Components → Eventos del usuario
+  2. Pages → Orchestación de features
+  3. Hooks (features/*/hooks) → Estado y lógica de negocio
+  4. Services (features/*/services) → Comunicación con API
+  5. Backend Routes (backend/src/routes) → Recepción de requests
+  6. Controllers (backend/src/controllers) → Ejecución de lógica
+  7. DB Layer → Interacción con Supabase
+  ```
+
+1. **Add Page** (`src/pages/MyFeature/MyFeature.tsx`)
+
+2. **Register Route** (`src/routes/index.tsx`)
 
 ---
 
@@ -252,6 +308,7 @@ VITE_API_URL=https://api.example.com npm run dev
 ### Code Style
 
 #### TypeScript
+
 - ✅ **Strict typing required**. Evitar `any` en todo momento
 - ✅ **Interfaces** para objetos, **Types** para unions/primitives
 - ✅ **Exports typed**: Todas las funciones públicas deben tener tipos explícitos
@@ -275,6 +332,7 @@ export const getUser = (id: any): any => {
 ```
 
 #### Naming Conventions
+
 - **Components**: `PascalCase` (e.g., `PeriodModal`, `StudentTable`)
 - **Hooks**: `camelCase` starting with `use` (e.g., `usePeriods`, `useAuth`)
 - **Functions/Variables**: `camelCase` (e.g., `fetchStudents`, `isLoading`)
@@ -282,10 +340,18 @@ export const getUser = (id: any): any => {
 - **Types/Interfaces**: `PascalCase` (e.g., `Period`, `StudentData`)
 
 #### File Naming
+
 - **Components**: `PascalCase.tsx` (e.g., `PeriodModal.tsx`)
 - **Hooks**: `camelCase.tsx` (e.g., `usePeriods.tsx`)
 - **Utils**: `camelCase.ts` (e.g., `formatDate.ts`)
-- **Services**: `camelCase.tsx` (e.g., `periodService.tsx`)
+```text
+backend/src/
+├── controllers/       # 14 controllers (business logic)
+├── routes/            # 14 route files (endpoints)
+├── middlewares/       # Auth, validation, error handling
+├── services/          # Email, external integrations
+└── lib/               # Supabase client, utilities
+```
 
 ### UX/UI (`technical-specs.md`)
 
@@ -306,10 +372,12 @@ export const getUser = (id: any): any => {
 ```
 
 #### Contrast
+
 - **Mínimo**: WCAG AA (4.5:1)
 - **Objetivo**: WCAG AAA (7:1)
 
 #### Consistency
+
 - Seguir definiciones de componentes en `components/ui/`
 - Usar componentes atómicos reutilizables
 - Aplicar spacing consistente (Tailwind classes)
@@ -348,7 +416,7 @@ const addPeriod = async (data: PeriodData) => {
 ## 7. Important Files & Directories
 
 | Path | Description |
-|------|-------------|
+| ------ | ------------- |
 | [`src/api/apiClient.ts`](file:///c:/Users/Server%20Admin/Documents/GitHub/UNEFA_DASHBOARD/src/api/apiClient.ts) | Cliente Axios con interceptores (auth, retries, errors) |
 | [`src/api/crudServiceFactory.ts`](file:///c:/Users/Server%20Admin/Documents/GitHub/UNEFA_DASHBOARD/src/api/crudServiceFactory.ts) | Factory para servicios CRUD genéricos |
 | [`src/context/AuthContext.tsx`](file:///c:/Users/Server%20Admin/Documents/GitHub/UNEFA_DASHBOARD/src/context/AuthContext.tsx) | Contexto global de autenticación |

@@ -29,6 +29,16 @@ export const AIQuerySchema = z.object({
 
 export type AIQuery = z.infer<typeof AIQuerySchema>;
 
+// Define the structure for the query result
+export interface QueryResult<T> {
+  data: T[] | null;
+  meta: {
+    total: number | null;
+    page: number;
+    limit: number;
+  };
+}
+
 // Internal audit function
 const logAudit = (requesterId: string | number, query: AIQuery, status: string, details?: string) => {
   const logEntry = {
@@ -45,9 +55,9 @@ const logAudit = (requesterId: string | number, query: AIQuery, status: string, 
 };
 
 // Main execution function
-const executeQuery = async (query: AIQuery, requesterId: string | number) => {
+const executeQuery = async <T>(query: AIQuery, requesterId: string | number): Promise<QueryResult<T>> => {
   const cacheKey = `ai_query:${JSON.stringify(query)}`;
-  const cachedResult = cacheManager.get(cacheKey);
+  const cachedResult = cacheManager.get(cacheKey) as QueryResult<T> | undefined;
 
   if (cachedResult) {
     logAudit(requesterId, query, 'CACHE_HIT');
@@ -103,7 +113,7 @@ const executeQuery = async (query: AIQuery, requesterId: string | number) => {
     throw new Error(`Database error: ${error.message}`);
   }
 
-  const result = { data, meta: { total: count, page: query.page, limit: query.limit } };
+  const result: QueryResult<T> = { data: data as T[] | null, meta: { total: count, page: query.page, limit: query.limit } };
 
   // Cache the result (TTL 5 minutes for AI queries)
   cacheManager.set(cacheKey, result, 5 * 60 * 1000);

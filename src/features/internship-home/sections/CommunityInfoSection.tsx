@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import Badge, { BadgeColor } from "../../../components/ui/badge/Badge";
 
 interface Sector {
@@ -33,20 +32,6 @@ const sectors: Sector[] = [
   },
 ];
 
-const CareerImage: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
-  const [error, setError] = useState(false);
-  const fallbackImage = "/unefa-img/unefa_fachada.jpeg";
-
-  return (
-    <img
-      src={error ? fallbackImage : src}
-      alt={alt}
-      onError={() => setError(true)}
-      className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-      loading="lazy"
-    />
-  );
-};
 
 const CommunityInfoSection: React.FC = () => {
   const allowedCareers = [
@@ -62,10 +47,10 @@ const CommunityInfoSection: React.FC = () => {
   return (
     <section id="ofertas" className="py-24 bg-gray-50 dark:bg-bg-dark/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
+        {/* Section Header animado */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div className="space-y-4">
-            <h2 className="text-3xl font-bold text-text-emphasis sm:text-4xl">
+            <h2 className="text-3xl font-bold text-text-emphasis sm:text-4xl transition-all duration-700 ease-in-out">
               Oferta Académica: Extensión Acarigua
             </h2>
             <p className="max-w-2xl text-lg text-text-secondary">
@@ -78,46 +63,22 @@ const CommunityInfoSection: React.FC = () => {
             </Badge>
           </div> */}
         </div>
-
-        {/* Categories / Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredSectors.map((sector, index) => (
-            <div
-              key={index}
-              className="group relative h-80 overflow-hidden rounded-2xl shadow-theme-md transition-all duration-500 hover:-translate-y-1 hover:shadow-theme-xl cursor-pointer"
-            >
-              {/* Background Image with Fallback */}
-              <CareerImage src={sector.image} alt={sector.title} />
-              
-              {/* Overlays */}
-              <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
-              <div className="absolute inset-0 border border-white/10 rounded-2xl" />
-
-              {/* Content */}
-              <div className="absolute inset-0 p-6 flex flex-col justify-end">
-                <div className="flex flex-wrap gap-2 mb-3">
-                  <Badge
-                    color={sector.color}
-                    variant="light"
-                    size="sm"
-                    className="backdrop-blur-md bg-white/10 text-white border-white/20"
-                  >
-                    {sector.extension}
-                  </Badge>
-                  <Badge
-                    color="dark"
-                    variant="outline"
-                    size="sm"
-                    shape="rounded"
-                    className="backdrop-blur-md bg-black/20 text-white border-white/20"
-                  >
-                    {sector.category}
-                  </Badge>
-                </div>
-                
-                <h3 className="text-xl font-bold text-white mb-2 tracking-tight">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {filteredSectors.map((sector) => (
+            <div key={sector.title} className="relative group rounded-2xl overflow-hidden shadow-theme-md bg-white dark:bg-bg-dark border border-border-light dark:border-border-dark">
+              <img
+                src={sector.image}
+                alt={sector.title}
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                loading="lazy"
+              />
+              <div className="absolute bottom-0 left-0 w-full p-4 bg-linear-to-t from-black/60 to-transparent">
+                <Badge color={sector.color} className="mb-2 transition-transform duration-200 group-hover:scale-110">
                   {sector.title}
-                </h3>
+                </Badge>
+                <p className="text-xs text-white font-semibold">
+                  {sector.extension} - {sector.category}
+                </p>
               </div>
             </div>
           ))}

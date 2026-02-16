@@ -15,13 +15,18 @@ const PartnerLogosSection: React.FC = () => {
   return (
     <section className="py-12 bg-bg-secondary/30 dark:bg-bg-dark/50 border-y border-border-light dark:border-border-dark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          className="text-center mb-8"
+        >
           <p className="text-sm font-semibold text-text-tertiary uppercase tracking-widest">
             Nuestra Presencia Digital
           </p>
-        </div>
-        
+        </motion.div>
         <div className="relative">
+          {/* Animación de logos: scale y rotate en hover */}
           <LogoLoop
             logos={unefaSocialLogos}
             speed={30}
@@ -32,6 +37,7 @@ const PartnerLogosSection: React.FC = () => {
             fadeOut
             fadeOutColor="transparent"
             ariaLabel="Redes Sociales UNEFA"
+            hoverEffect="scale-rotate"
           />
         </div>
       </div>

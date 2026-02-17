@@ -94,6 +94,7 @@ export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
       className="max-w-md overflow-hidden"
       showCloseButton
       size="md"
+      zIndex={2000}
     >
       <ModalBody className="flex flex-col items-center text-center px-6 pt-8 pb-4 sm:px-10 sm:pt-12 sm:pb-6">
         <div

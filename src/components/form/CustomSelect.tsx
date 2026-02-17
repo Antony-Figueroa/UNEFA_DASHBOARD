@@ -167,7 +167,7 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
 
     return (
       <ul
-        className="max-h-60 w-full overflow-auto rounded-xl border border-border-light bg-white py-1.5 shadow-theme-lg outline-none dark:border-border-dark dark:bg-bg-dark animate-in fade-in zoom-in-95 duration-200"
+        className="max-h-60 w-full overflow-auto rounded-xl border border-border-light bg-white py-1.5 shadow-theme-lg outline-none dark:border-border-dark dark:bg-bg-dark"
         role="listbox"
         style={{
           width: coords.width,
@@ -185,7 +185,7 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
                 role="option"
                 aria-selected={selectedValue === option.value}
                 className={cn(
-                  "relative cursor-pointer select-none px-4 py-2 text-sm transition-colors",
+                  "relative cursor-pointer select-none px-4 py-2 text-sm",
                   isOptionDisabled
                     ? "cursor-not-allowed bg-bg-secondary text-text-tertiary opacity-50 line-through dark:bg-gray-800/50"
                     : selectedValue === option.value
@@ -234,7 +234,7 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
         aria-expanded={isOpen}
         aria-disabled={disabled}
         className={cn(
-          "h-11 w-full flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm transition-all duration-200 outline-none",
+          "h-11 w-full flex items-center justify-between rounded-lg border px-4 py-2.5 text-sm outline-none",
           disabled
             ? "cursor-not-allowed bg-gray-100 opacity-50 border-border-medium dark:bg-bg-dark/50 dark:text-text-tertiary"
             : error
@@ -250,7 +250,7 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
         </span>
         <ChevronDownIcon
           className={cn(
-            "h-4 w-4 text-text-tertiary transition-transform duration-300 ease-in-out",
+            "h-4 w-4 text-text-tertiary",
             isOpen && "rotate-180 text-brand-500"
           )}
         />

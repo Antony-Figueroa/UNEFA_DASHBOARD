@@ -11,7 +11,6 @@ import {
   Student 
 } from "../types";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
-import Select from "../../../components/form/Select";
 import CustomSelect from "../../../components/form/CustomSelect";
 import FlatpickrDatePicker from "../../../components/form/FlatpickrDatePicker";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
@@ -19,6 +18,7 @@ import { useToast } from "../../../context/toast";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { useLists } from "../../lists/hooks/useLists";
 import { ListValue } from "../../lists/types";
+import * as listsService from "../../lists/services/listsService";
 import { 
   studentSchema, 
   StudentFormInput,
@@ -246,6 +246,75 @@ export default function StudentModal({
     }
   }, [studentType, setValue, watch]);
 
+  const [isValueModalOpen, setIsValueModalOpen] = useState(false);
+  const [valueModalTitle, setValueModalTitle] = useState<string>("");
+  const [targetListName, setTargetListName] = useState<string>("");
+  const [targetField, setTargetField] = useState<"civilStatus" | "phonePrefix" | "regime" | "militaryRank">("civilStatus");
+  const [newValueInput, setNewValueInput] = useState<string>("");
+  const [savingNewValue, setSavingNewValue] = useState(false);
+
+  useEffect(() => {
+    const handleSetCareerId = (e: Event) => {
+      const id = (e as CustomEvent).detail;
+      if (id !== undefined && id !== null) {
+        setValue("careerId", String(id), { shouldValidate: true, shouldDirty: true });
+      }
+    };
+    window.addEventListener("students:setCareerId", handleSetCareerId as EventListener);
+    return () => {
+      window.removeEventListener("students:setCareerId", handleSetCareerId as EventListener);
+    };
+  }, [setValue]);
+
+  const openAddValueModal = (listName: string, field: "civilStatus" | "phonePrefix" | "regime" | "militaryRank", title: string, preset: string = "") => {
+    setTargetListName(listName);
+    setTargetField(field);
+    setValueModalTitle(title);
+    setNewValueInput(preset);
+    setIsValueModalOpen(true);
+  };
+
+  const handleSaveNewValue = async () => {
+    const raw = newValueInput.trim();
+    if (!raw) return;
+    setSavingNewValue(true);
+    try {
+      const list = await listsService.getListByName(targetListName);
+      const upper = targetField === "phonePrefix" ? raw.replace(/\D/g, '').substring(0, 4) : raw.toUpperCase();
+      
+      // Evitar duplicados: si ya existe un valor con el mismo nombre/abreviación, seleccionarlo y salir
+      const existing = (list.values || []).find(v => {
+        const byName = String(v.name || "").toUpperCase() === upper;
+        const byAbbr = String(v.abbreviation || "").toUpperCase() === upper;
+        return byName || byAbbr;
+      });
+      if (existing) {
+        const selectValue = (targetListName === "Nacionalidad" && existing.abbreviation) 
+          ? String(existing.abbreviation).toUpperCase() 
+          : String(existing.name).toUpperCase();
+        setValue(targetField, selectValue, { shouldValidate: true, shouldDirty: true });
+        setIsValueModalOpen(false);
+        return;
+      }
+
+      const abbr = (targetListName === "Nacionalidad") ? upper : undefined;
+      const created = await listsService.createValue(list.id, upper, abbr);
+      const mapped = { value: (targetListName === "Nacionalidad" && created.abbreviation) ? created.abbreviation.toUpperCase() : upper, label: (targetListName === "Nacionalidad" && created.abbreviation) ? created.abbreviation.toUpperCase() : upper };
+      setOptions(prev => {
+        const next = { ...prev };
+        const arr = next[targetListName] || [];
+        next[targetListName] = [...arr, mapped];
+        return next;
+      });
+      setValue(targetField, mapped.value, { shouldValidate: true, shouldDirty: true });
+      setIsValueModalOpen(false);
+    } catch (e) {
+      console.error("[StudentModal] Error creando valor en lista:", e);
+    } finally {
+      setSavingNewValue(false);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       if (editingStudent) {
@@ -317,6 +386,7 @@ export default function StudentModal({
       // data ya ha sido validado y transformado por zodResolver, 
       // pero TS lo ve como StudentFormInput. Lo tratamos como el output validado.
       const validatedData = data as StudentFormOutput;
+      if (!window.confirm("¿Guardar la información del estudiante?")) return;
 
       const studentData: CreateStudentPayload = {
         identificationPrefix: validatedData.identificationPrefix.toUpperCase() as Student["identificationPrefix"],
@@ -508,15 +578,15 @@ export default function StudentModal({
                 name="sex"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                      id="sex"
-                      options={SEX_OPTIONS}
-                      placeholder="Seleccione Sexo"
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      value={field.value}
-                      error={!!errors.sex}
-                    />
+                  <CustomSelect
+                    id="sex"
+                    options={SEX_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                    placeholder="Seleccione Sexo"
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    value={String(field.value)}
+                    error={!!errors.sex}
+                  />
                 )}
               />
               {errors.sex && (
@@ -564,15 +634,17 @@ export default function StudentModal({
                 name="civilStatus"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                      id="civilStatus"
-                      options={CIVIL_STATUS_OPTIONS}
-                      placeholder="Seleccione Estado Civil"
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      value={field.value}
-                      error={!!errors.civilStatus}
-                    />
+                  <CustomSelect
+                    id="civilStatus"
+                    options={CIVIL_STATUS_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                    placeholder="Seleccione Estado Civil"
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    value={String(field.value)}
+                    onAddNew={() => openAddValueModal("Registro Civil", "civilStatus", "Agregar Estado Civil")}
+                    addNewLabel="Agregar Estado Civil"
+                    error={!!errors.civilStatus}
+                  />
                 )}
               />
               {errors.civilStatus && (
@@ -597,6 +669,8 @@ export default function StudentModal({
                         onBlur={field.onBlur}
                         value={field.value}
                         placeholder="Prefijo"
+                    onAddNew={() => openAddValueModal("CODIGOS_AREA", "phonePrefix", "Agregar Prefijo Telefónico")}
+                    addNewLabel="Agregar Prefijo"
                         error={!!errors.phonePrefix}
                       />
                     )}
@@ -672,16 +746,21 @@ export default function StudentModal({
                 name="careerId"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                      id="careerId"
-                      options={careerOptions.map((opt) => ({ value: String(opt.value), label: opt.label.toUpperCase() }))}
-                      placeholder="Seleccione Carrera"
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      value={String(field.value)}
-                      disabled={isLoading || (!!editingStudent && editingStudent.isInUse)}
-                      error={!!errors.careerId}
-                    />
+                  <CustomSelect
+                    id="careerId"
+                    options={careerOptions.map((opt) => ({ value: String(opt.value), label: opt.label.toUpperCase() }))}
+                    placeholder="Seleccione Carrera"
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    value={String(field.value)}
+                    disabled={isLoading || (!!editingStudent && editingStudent.isInUse)}
+                    onAddNew={() => {
+                      const evt = new CustomEvent("students:addCareer");
+                      window.dispatchEvent(evt);
+                    }}
+                    addNewLabel="Agregar Carrera"
+                    error={!!errors.careerId}
+                  />
                 )}
               />
               {errors.careerId && (
@@ -732,15 +811,17 @@ export default function StudentModal({
                 name="regime"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                      id="regime"
-                      options={REGIME_OPTIONS}
-                      placeholder="Seleccione Régimen"
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      value={field.value}
-                      error={!!errors.regime}
-                    />
+                  <CustomSelect
+                    id="regime"
+                    options={REGIME_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                    placeholder="Seleccione Régimen"
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    value={String(field.value)}
+                    onAddNew={() => openAddValueModal("Regimen/Turno", "regime", "Agregar Régimen")}
+                    addNewLabel="Agregar Régimen"
+                    error={!!errors.regime}
+                  />
                 )}
               />
               {errors.regime && (
@@ -756,15 +837,15 @@ export default function StudentModal({
                 name="studentType"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                      id="studentType"
-                      options={STUDENT_TYPE_OPTIONS}
-                      placeholder="Seleccione campo"
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      value={field.value}
-                      error={!!errors.studentType}
-                    />
+                  <CustomSelect
+                    id="studentType"
+                    options={STUDENT_TYPE_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                    placeholder="Seleccione campo"
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    value={String(field.value)}
+                    error={!!errors.studentType}
+                  />
                 )}
               />
               {errors.studentType && (
@@ -782,15 +863,16 @@ export default function StudentModal({
                   control={control}
                   render={({ field }) => {
                     const currentOptions = MILITARY_RANKS.filter(opt => opt.value !== "NO APLICA");
-
                     return (
-                      <Select
+                      <CustomSelect
                         id="militaryRank"
-                        options={currentOptions}
+                        options={currentOptions.map(opt => ({ value: String(opt.value), label: opt.label }))}
                         placeholder="Seleccione Rango"
                         onChange={field.onChange}
                         onBlur={field.onBlur}
-                        value={field.value}
+                        value={String(field.value)}
+                        onAddNew={() => openAddValueModal("Rango Militar", "militaryRank", "Agregar Rango Militar")}
+                        addNewLabel="Agregar Rango Militar"
                         error={!!errors.militaryRank}
                       />
                     );
@@ -811,13 +893,13 @@ export default function StudentModal({
                 name="works"
                 control={control}
                 render={({ field }) => (
-                  <Select
+                  <CustomSelect
                     id="works"
-                    options={WORKS_OPTIONS}
+                    options={WORKS_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
                     placeholder="Seleccione"
                     onChange={field.onChange}
                     onBlur={field.onBlur}
-                    value={field.value}
+                    value={String(field.value)}
                     error={!!errors.works}
                   />
                 )}
@@ -875,6 +957,65 @@ export default function StudentModal({
             }}
           >
             {editingStudent ? "Actualizar Registro" : "Guardar Estudiante"}
+          </AsyncButton>
+        </div>
+      </ModalFooter>
+    </Modal>
+
+    <Modal isOpen={isValueModalOpen} onClose={() => setIsValueModalOpen(false)}>
+      <ModalHeader>
+        <div className="w-full">
+          <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+            {valueModalTitle || "Agregar nuevo valor"}
+          </h5>
+          <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
+            Este valor se guardará en la lista: {targetListName}.
+          </p>
+        </div>
+      </ModalHeader>
+      <ModalBody>
+        <div className="space-y-4">
+          <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nuevo valor</label>
+          <Input
+            value={newValueInput}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (targetField === "phonePrefix") {
+                const digits = v.replace(/\D/g, "").slice(0, 4);
+                setNewValueInput(digits);
+              } else {
+                const up = v.toUpperCase();
+                const sanitized = up.replace(/[^A-ZÁÉÍÓÚÑ\s\-]/g, "");
+                setNewValueInput(sanitized);
+              }
+            }}
+            placeholder="Ingrese el nuevo valor"
+            autoComplete="off"
+            maxLength={targetField === "phonePrefix" ? 4 : 40}
+          />
+          {targetField === "phonePrefix" && (
+            <p className="text-xs text-text-tertiary">Solo dígitos (3-4). Ej: 0412, 0212</p>
+          )}
+        </div>
+      </ModalBody>
+      <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
+        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full">
+          <AsyncButton variant="outline" onClick={() => setIsValueModalOpen(false)} disabled={savingNewValue} className="w-full sm:w-auto min-h-12">
+            Cancelar
+          </AsyncButton>
+          <AsyncButton 
+            onClick={handleSaveNewValue} 
+            loading={savingNewValue} 
+            className="w-full sm:w-auto min-h-12"
+            disabled={
+              savingNewValue || (
+                targetField === "phonePrefix" 
+                  ? !(newValueInput && /^\d{3,4}$/.test(newValueInput))
+                  : !(newValueInput && newValueInput.trim().length > 0)
+              )
+            }
+          >
+            Guardar
           </AsyncButton>
         </div>
       </ModalFooter>

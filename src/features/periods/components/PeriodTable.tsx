@@ -139,7 +139,9 @@ const ActionButtons = ({
             )}
             {hasStatus && currentPeriodStatus !== 3 && onEdit && (
                 <AsyncActionButton
-                    onClick={async () => onEdit()}
+                    onClick={async () => {
+                        if (window.confirm("¿Editar este período académico?")) onEdit();
+                    }}
                     icon={<EditIcon />}
                     tooltip={currentPeriodStatus === 2 ? "Editar (Solo Fecha Fin)" : "Editar"}
                     label={isMobile ? (currentPeriodStatus === 2 ? "Editar Fecha Fin" : "Editar Período") : undefined}
@@ -149,7 +151,9 @@ const ActionButtons = ({
             )}
             {hasStatus && currentPeriodStatus === 1 && canActivate && onActivate && (
                 <AsyncActionButton
-                    onClick={async () => onActivate()}
+                    onClick={async () => {
+                        if (window.confirm("¿Activar este período académico?")) onActivate();
+                    }}
                     icon={<CheckCircleIcon />}
                     tooltip="Activar"
                     label={isMobile ? "Activar Período" : undefined}
@@ -159,7 +163,9 @@ const ActionButtons = ({
             )}
             {hasStatus && currentPeriodStatus === 2 && onCulminate && (
                 <AsyncActionButton
-                    onClick={async () => onCulminate()}
+                    onClick={async () => {
+                        if (window.confirm("¿Culminar este período académico?")) onCulminate();
+                    }}
                     icon={<CheckCircleIcon />}
                     tooltip="Culminar"
                     label={isMobile ? "Culminar Período" : undefined}
@@ -169,7 +175,9 @@ const ActionButtons = ({
             )}
             {!hasStatus && onRestore && (
                 <AsyncActionButton
-                    onClick={async () => onRestore()}
+                    onClick={async () => {
+                        if (window.confirm("¿Restaurar este período académico?")) onRestore();
+                    }}
                     icon={<RefreshIcon />}
                     tooltip="Restaurar"
                     label={isMobile ? "Restaurar Período" : undefined}
@@ -179,7 +187,9 @@ const ActionButtons = ({
             )}
             {hasStatus && currentPeriodStatus === 1 && onDelete && (
                 <AsyncActionButton
-                    onClick={async () => onDelete()}
+                    onClick={async () => {
+                        if (window.confirm("¿Eliminar este período académico?")) onDelete();
+                    }}
                     icon={<TrashIcon />}
                     tooltip={isDisabled ? disabledTooltip : "Eliminar"}
                     label={isMobile ? "Eliminar Período" : undefined}

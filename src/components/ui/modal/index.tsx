@@ -118,7 +118,7 @@ export const Modal: React.FC<ModalProps & { size?: "sm" | "md" | "lg" | "xl" | "
   const modalContent = (
     <div
       className={cn(
-        "fixed inset-0 z-[1000] flex items-center justify-center overflow-hidden",
+        "fixed inset-0 z-1000 flex items-center justify-center overflow-hidden",
         isFullscreen ? "p-0" : "p-4 sm:p-6"
       )}
       style={zIndex ? { zIndex } : undefined}

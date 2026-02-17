@@ -1,7 +1,7 @@
 import type { ReactNode, FormEvent } from "react";
 import { useState, useEffect } from "react";
 import InputField from "../../../components/form/input/InputField";
-import Select from "../../../components/form/Select";
+import CustomSelect from "../../../components/form/CustomSelect";
 import MultiSelect from "../../../components/form/MultiSelect";
 import Switch from "../../../components/form/switch/Switch";
 import Label from "../../../components/form/Label";
@@ -150,8 +150,18 @@ export function CrudForm({
     const hasErrors = Object.values(nextErrors).some((err) => err);
     if (hasErrors) return;
 
+    if (!window.confirm("¿Deseas guardar los cambios?")) return;
+
+    // Convertir strings a mayúsculas antes de enviar
+    const normalized: CrudFormValues = {};
+    Object.entries(values).forEach(([key, val]) => {
+      if (typeof val === "string") normalized[key] = val.toUpperCase();
+      else if (Array.isArray(val)) normalized[key] = val.map((v) => String(v).toUpperCase());
+      else normalized[key] = val as any;
+    });
+
     setIsInternalLoading(true);
-    onSubmit(values);
+    onSubmit(normalized);
   };
 
   const handleChange = (name: string, value: string | number | boolean | string[]) => {
@@ -203,11 +213,13 @@ export function CrudForm({
             return (
               <div key={field.name}>
                 <Label>{field.label}</Label>
-                <Select
+                <CustomSelect
+                  id={field.name}
                   placeholder={field.placeholder}
-                  defaultValue={String(value ?? "")}
-                  onChangeValue={(val) => handleChange(field.name, val)}
-                  options={field.options ?? []}
+                  value={String(value ?? "")}
+                  onChange={(val) => handleChange(field.name, val)}
+                  options={(field.options ?? []).map(opt => ({ value: String(opt.value), label: opt.label }))}
+                  error={!!error}
                 />
                 {error && (
                   <p
@@ -277,6 +289,17 @@ export function CrudForm({
         <Button
           type="submit"
           loading={isInternalLoading || isLoading}
+          disabled={
+            isInternalLoading || 
+            isLoading || 
+            Object.values(errors).some((e) => !!e) ||
+            !fields.every((f) => {
+              const v = values[f.name];
+              if (!f.required) return true;
+              if (f.type === "multi-select") return Array.isArray(v) && v.length > 0;
+              return String(v ?? "").trim().length > 0;
+            })
+          }
         >
           {submitLabel}
         </Button>

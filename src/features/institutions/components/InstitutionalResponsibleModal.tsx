@@ -11,7 +11,6 @@ import { Modal, ModalBody, ModalFooter, ModalHeader } from "../../../components/
 import Input from "../../../components/form/input/InputField";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
-import Select from "../../../components/form/Select";
 import CustomSelect from "../../../components/form/CustomSelect";
 import { 
   InstitutionalResponsible, 
@@ -226,10 +225,21 @@ export default function InstitutionalResponsibleModal({
    * @param data - The validated form data.
    */
   const onSubmit = (data: RespFormData) => {
+    if (!window.confirm("¿Guardar los cambios del responsable institucional?")) return;
     const { phonePrefix, phoneNumber, ...rest } = data;
     const commonData = {
       ...rest,
+      identificationPrefix: rest.identificationPrefix.toUpperCase(),
+      identificationNumber: rest.identificationNumber.toUpperCase(),
+      firstName: rest.firstName.toUpperCase(),
+      middleName: (rest.middleName || "").toUpperCase(),
+      lastName: rest.lastName.toUpperCase(),
+      secondLastName: (rest.secondLastName || "").toUpperCase(),
+      phonePrefix: phonePrefix.toUpperCase(),
+      phoneNumber: phoneNumber.toUpperCase(),
       phone: `${phonePrefix}${phoneNumber}`,
+      email: rest.email.toUpperCase(),
+      institutionId: rest.institutionId.toUpperCase(),
       status: editingResp?.status ?? true,
     };
 
@@ -295,10 +305,11 @@ export default function InstitutionalResponsibleModal({
                 name="institutionId"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    options={institutionOptions}
+                  <CustomSelect
+                    id="institutionId"
+                    options={institutionOptions.map(opt => ({ value: String(opt.value), label: opt.label }))}
                     onChange={field.onChange}
-                    defaultValue={field.value}
+                    value={String(field.value ?? "")}
                     placeholder="Seleccione una institución"
                   />
                 )}
@@ -361,10 +372,11 @@ export default function InstitutionalResponsibleModal({
                     name="phonePrefix"
                     control={control}
                     render={({ field }) => (
-                      <Select
-                        options={PHONE_PREFIX_OPTIONS}
+                      <CustomSelect
+                        id="phonePrefix"
+                        options={PHONE_PREFIX_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
                         onChange={field.onChange}
-                        value={field.value}
+                        value={String(field.value ?? "")}
                         placeholder="Prefijo"
                         error={!!errors.phonePrefix}
                       />
@@ -374,8 +386,14 @@ export default function InstitutionalResponsibleModal({
                 <div className="flex-1">
                   <Input 
                     placeholder="Ej: 1234567" 
-                    {...register("phoneNumber")} 
+                    {...register("phoneNumber", {
+                      onChange: (e) => {
+                        const digits = e.target.value.replace(/\D/g, "").slice(0, 7);
+                        e.target.value = digits;
+                      }
+                    })} 
                     error={!!errors.phoneNumber} 
+                    maxLength={7}
                   />
                 </div>
               </div>

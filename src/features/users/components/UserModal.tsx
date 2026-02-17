@@ -5,7 +5,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import Input from "../../../components/form/input/InputField";
-import Select from "../../../components/form/Select";
+import CustomSelect from "../../../components/form/CustomSelect";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { userSchema, UserFormData, UserFormOutput } from "../constants/validation";
 import { User, CreateUserPayload, UpdateUserPayload } from "../types";
@@ -96,13 +96,14 @@ const UserModal: React.FC<UserModalProps> = ({
    */
   const onSubmit = async (data: any) => {
     const validatedData = data as UserFormOutput;
+    if (!window.confirm("¿Guardar los cambios del usuario?")) return;
     if (user) {
       // Para actualización, enviamos el ID y los campos modificados
       const payload: UpdateUserPayload = {
         id: user.id,
-        name: validatedData.name,
-        surname: validatedData.surname,
-        email: validatedData.email,
+        name: validatedData.name.toUpperCase(),
+        surname: validatedData.surname.toUpperCase(),
+        email: validatedData.email.toUpperCase(),
         role: validatedData.role,
         status: validatedData.status
       };
@@ -110,10 +111,10 @@ const UserModal: React.FC<UserModalProps> = ({
     } else {
       // Para creación, enviamos todos los campos requeridos
       const payload: CreateUserPayload = {
-        userCi: validatedData.userCi,
-        name: validatedData.name,
-        surname: validatedData.surname,
-        email: validatedData.email,
+        userCi: validatedData.userCi.toUpperCase(),
+        name: validatedData.name.toUpperCase(),
+        surname: validatedData.surname.toUpperCase(),
+        email: validatedData.email.toUpperCase(),
         role: validatedData.role
       };
       await onSave(payload);
@@ -225,17 +226,18 @@ const UserModal: React.FC<UserModalProps> = ({
               </div>
               <div>
                 <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Rol del Sistema *</label>
-                <Select
+                <CustomSelect
+                  id="role"
                   value={String(watch("role") ?? "")}
-                  onChange={(e) => setValue("role", Number(e.target.value), { shouldDirty: true, shouldValidate: true })}
-                  className="h-11 rounded-lg border-gray-200 dark:border-gray-700"
-                  options={filteredRoleOptions.length > 0 ? filteredRoleOptions : [
+                  onChange={(val) => setValue("role", Number(val), { shouldDirty: true, shouldValidate: true })}
+                  options={(filteredRoleOptions.length > 0 ? filteredRoleOptions : [
                     ...(isMasterAdmin ? [{ value: "0", label: "MAESTRO (Administrador de Sistema)" }] : []),
                     { value: "1", label: "ADMIN (Gestión de Usuarios)" },
                     { value: "2", label: "ASISTENTE (Visualización y Registro)" }
-                  ]}
+                  ]).map(opt => ({ value: String(opt.value), label: opt.label }))}
+                  placeholder="Seleccione un rol"
+                  className="h-11 rounded-lg border-gray-200 dark:border-gray-700"
                   error={!!errors.role}
-                  hint={errors.role?.message}
                 />
               </div>
             </div>

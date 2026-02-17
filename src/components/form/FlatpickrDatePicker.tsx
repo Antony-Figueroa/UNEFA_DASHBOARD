@@ -202,6 +202,9 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
         const realMinDate = options?.minDate ? new Date(options.minDate) : undefined;
         const realMaxDate = options?.maxDate ? new Date(options.maxDate) : undefined;
 
+        // Determinar fecha inicial para la vista (si no hay valor)
+        const initialDefaultDate = value || defaultValue || options?.defaultDate || realMaxDate || realMinDate || undefined;
+
         // Definir un rango visual de años más amplio para el dropdown (ej: +/- 10 años)
         const currentYear = new Date().getFullYear();
         const visualMinYear = Math.min(realMinDate?.getFullYear() || currentYear, currentYear - 5);
@@ -267,7 +270,7 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
           allowInput: true,
           monthSelectorType: 'dropdown',
           yearSelectorType: 'dropdown',
-          defaultDate: value || defaultValue || undefined,
+          defaultDate: initialDefaultDate,
           disableMobile: true,
           animate: true,
           // Renderizar el calendario en el body para evitar problemas de overflow en el modal
@@ -321,6 +324,15 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
               altInput.addEventListener('keydown', (e: any) => handleKeyDown(e));
               altInput.addEventListener('blur', (e: any) => handleBlur(e));
               altInput.placeholder = placeholder;
+              altInput.setAttribute('autocomplete', 'bday');
+              altInput.setAttribute('name', 'bday');
+              altInput.setAttribute('inputmode', 'numeric');
+            }
+
+            // Posicionar la vista del calendario en el rango permitido (ej. maxDate) sin seleccionar
+            if (!value && !defaultValue) {
+              const jumpTarget = realMaxDate || realMinDate || new Date();
+              instance.jumpToDate(jumpTarget);
             }
 
             // Evitar que clics en el calendario cierren otros componentes o el mismo

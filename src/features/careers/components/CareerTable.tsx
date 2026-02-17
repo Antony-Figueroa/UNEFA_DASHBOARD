@@ -143,7 +143,10 @@ const ActionButtons = ({
 
       {onEdit && activeTab === "Activas" && (
         <AsyncActionButton
-          onClick={async (e) => { e.stopPropagation(); onEdit(); }}
+          onClick={async (e) => { 
+            e.stopPropagation(); 
+            if (window.confirm("¿Editar esta carrera?")) onEdit(); 
+          }}
           icon={<EditIcon />}
           tooltip="Editar"
           label={isMobile ? "Editar Carrera" : undefined}
@@ -154,7 +157,11 @@ const ActionButtons = ({
 
       {onToggleStatus && (
         <AsyncActionButton
-          onClick={async (e) => { e.stopPropagation(); onToggleStatus(); }}
+                    onClick={async (e) => { 
+                        e.stopPropagation(); 
+                        const msg = inactiveMode ? "¿Restaurar esta carrera?" : "¿Eliminar esta carrera?";
+                        if (window.confirm(msg)) onToggleStatus(); 
+                    }}
           icon={inactiveMode ? <RefreshIcon /> : <TrashIcon />}
           tooltip={isDisabled && !inactiveMode ? disabledTooltip : (inactiveMode ? "Restaurar" : "Eliminar")}
           label={isMobile ? (inactiveMode ? "Restaurar" : "Eliminar") : undefined}
@@ -162,8 +169,7 @@ const ActionButtons = ({
           fullWidth={isMobile}
           disabled={isDisabled && !inactiveMode}
         />
-      )}
-
+        )}
       {onDelete && activeTab === "Activas" && !onToggleStatus && (
         <AsyncActionButton
           onClick={async (e) => { e.stopPropagation(); onDelete(); }}

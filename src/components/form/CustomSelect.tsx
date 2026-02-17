@@ -48,6 +48,10 @@ export interface CustomSelectProps {
   onBlur?: () => void;
   /** Indica si hay un error en la validación. */
   error?: boolean;
+  /** Acción opcional para agregar un nuevo valor desde el selector. */
+  onAddNew?: () => void;
+  /** Etiqueta opcional para la acción de agregar nuevo. */
+  addNewLabel?: string;
 }
 
 /**
@@ -70,6 +74,8 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
   disabled = false,
   onBlur,
   error = false,
+  onAddNew,
+  addNewLabel,
 }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState<string>(value !== undefined ? value : defaultValue);
@@ -174,6 +180,24 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
           minWidth: '120px' // Asegurar un ancho mínimo para opciones cortas (como notas)
         }}
       >
+        {onAddNew && (
+          <li className="sticky top-0 z-10 bg-white dark:bg-bg-dark border-b border-border-light dark:border-border-dark">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+                onAddNew();
+              }}
+              className="w-full text-left px-4 py-2.5 text-sm text-brand-600 hover:bg-brand-50 font-medium flex items-center gap-2 dark:text-brand-400 dark:hover:bg-brand-900/20"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              {addNewLabel || "Agregar nuevo"}
+            </button>
+          </li>
+        )}
         {options.length > 0 ? (
           options.map((option) => {
             const isOptionDisabled = option.disabled;

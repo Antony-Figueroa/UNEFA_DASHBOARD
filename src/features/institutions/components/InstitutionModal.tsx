@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
 import TextArea from "../../../components/form/input/TextArea";
-import Select from "../../../components/form/Select";
+import CustomSelect from "../../../components/form/CustomSelect";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Institution, CreateInstitutionPayload, UpdateInstitutionPayload } from "../types";
 import Button from "../../../components/ui/button/Button";
@@ -331,6 +331,7 @@ export default function InstitutionModal({
    * @param data - The validated form data.
    */
   const onSubmit = (data: InstFormData) => {
+    if (!window.confirm("¿Guardar la información de la institución?")) return;
     const commonData = {
       rif: `${data.rifPrefix}-${data.rifNumber}`.toUpperCase(),
       name: data.name.toUpperCase(),
@@ -401,10 +402,11 @@ export default function InstitutionModal({
                   name="rifPrefix"
                   control={control}
                   render={({ field }) => (
-                     <Select
-                       options={RIF_PREFIXES}
+                     <CustomSelect
+                       id="rifPrefix"
+                       options={RIF_PREFIXES.map(opt => ({ value: String(opt.value), label: opt.label }))}
                        onChange={field.onChange}
-                       value={field.value}
+                       value={String(field.value ?? "")}
                        placeholder="Prefijo"
                        disabled={!!editingInst}
                      />
@@ -462,10 +464,11 @@ export default function InstitutionModal({
                   name="phonePrefix"
                   control={control}
                   render={({ field }) => (
-                    <Select
-                      options={VENEZUELA_PHONE_PREFIXES}
+                    <CustomSelect
+                      id="phonePrefix"
+                      options={VENEZUELA_PHONE_PREFIXES.map(opt => ({ value: String(opt.value), label: opt.label }))}
                       onChange={field.onChange}
-                      value={field.value}
+                      value={String(field.value ?? "")}
                       placeholder="Prefijo"
                       error={!!errors.phonePrefix}
                     />
@@ -496,10 +499,11 @@ export default function InstitutionModal({
               name="careerId"
               control={control}
               render={({ field }) => (
-                <Select
-                  options={careerOptions.map(opt => ({ ...opt, value: String(opt.value) }))}
+                <CustomSelect
+                  id="careerId"
+                  options={careerOptions.map(opt => ({ value: String(opt.value), label: opt.label }))}
                   onChange={field.onChange}
-                  value={String(field.value)}
+                  value={String(field.value ?? "")}
                   disabled={isLoading || hasProfessionalPractices}
                   placeholder="Seleccione carrera"
                 />
@@ -521,12 +525,12 @@ export default function InstitutionModal({
               name="practiceType"
               control={control}
               render={({ field }) => (
-                <Select
-                  options={practiceOptions}
+                <CustomSelect
+                  id="practiceType"
+                  options={practiceOptions.map(opt => ({ value: String(opt.value), label: opt.label }))}
                   onChange={field.onChange}
-                  value={field.value}
+                  value={String(field.value ?? "")}
                   disabled={hasProfessionalPractices}
-                  isLoading={isLoadingPractices}
                   placeholder="Seleccione tipo"
                 />
               )}
@@ -547,10 +551,11 @@ export default function InstitutionModal({
               name="region"
               control={control}
               render={({ field }) => (
-                <Select
-                  options={REGION_OPTIONS}
+                <CustomSelect
+                  id="region"
+                  options={REGION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
                   onChange={field.onChange}
-                  value={field.value}
+                  value={String(field.value ?? "")}
                   placeholder="Seleccione región"
                 />
               )}
@@ -566,10 +571,11 @@ export default function InstitutionModal({
               name="nucleus"
               control={control}
               render={({ field }) => (
-                <Select
-                  options={NUCLEUS_OPTIONS}
+                <CustomSelect
+                  id="nucleus"
+                  options={NUCLEUS_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
                   onChange={field.onChange}
-                  value={field.value}
+                  value={String(field.value ?? "")}
                   placeholder="Seleccione núcleo"
                 />
               )}
@@ -585,10 +591,11 @@ export default function InstitutionModal({
               name="extension"
               control={control}
               render={({ field }) => (
-                <Select
-                  options={EXTENSION_OPTIONS}
+                <CustomSelect
+                  id="extension"
+                  options={EXTENSION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
                   onChange={field.onChange}
-                  value={field.value}
+                  value={String(field.value ?? "")}
                   placeholder="Seleccione extensión"
                 />
               )}
@@ -604,10 +611,11 @@ export default function InstitutionModal({
               name="institutionType"
               control={control}
               render={({ field }) => (
-                <Select
-                  options={INSTITUTION_TYPE_OPTIONS}
+                <CustomSelect
+                  id="institutionType"
+                  options={INSTITUTION_TYPE_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
                   onChange={field.onChange}
-                  value={field.value}
+                  value={String(field.value ?? "")}
                   placeholder="Seleccione tipo"
                 />
               )}

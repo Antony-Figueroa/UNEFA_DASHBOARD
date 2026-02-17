@@ -346,6 +346,7 @@ export default function PeriodModal({
     */
    const onSubmit: SubmitHandler<PeriodFormData> = (data) => {
         try {
+            if (!window.confirm("¿Guardar información del período académico?")) return;
             let newDescription = `${data.periodoTipo}-${data.year}`;
             let startDateToUse = data.startDate;
 

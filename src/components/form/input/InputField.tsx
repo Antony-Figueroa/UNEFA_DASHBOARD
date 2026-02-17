@@ -43,10 +43,22 @@ const InputField = forwardRef<HTMLInputElement, InputProps>(
       hint,
       leftIcon,
       rightIcon,
+      onChange,
       ...props
     },
     ref
   ) => {
+    const shouldUppercase = type !== "password";
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const input = e.currentTarget;
+      if (shouldUppercase) {
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        input.value = input.value.toUpperCase();
+        if (start !== null && end !== null) input.setSelectionRange(start, end);
+      }
+      if (onChange) onChange(e);
+    };
     return (
       <div className="w-full space-y-1.5">
         <div className="relative group">
@@ -62,7 +74,7 @@ const InputField = forwardRef<HTMLInputElement, InputProps>(
             disabled={disabled}
             className={cn(
               // Clases base
-              "h-11 w-full rounded-lg border appearance-none text-sm shadow-theme-xs transition-all duration-200",
+              `h-11 w-full rounded-lg border appearance-none text-sm shadow-theme-xs transition-all duration-200 ${shouldUppercase ? 'uppercase' : ''}`,
               "placeholder:text-text-tertiary focus:outline-hidden focus:ring-3",
               "dark:bg-bg-dark dark:text-text-emphasis",
               
@@ -87,6 +99,7 @@ const InputField = forwardRef<HTMLInputElement, InputProps>(
             )}
             aria-invalid={error}
             aria-describedby={hint ? `${props.id}-hint` : undefined}
+            onChange={handleChange}
             {...props}
           />
 

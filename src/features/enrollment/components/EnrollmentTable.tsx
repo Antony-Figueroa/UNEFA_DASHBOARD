@@ -108,7 +108,9 @@ const ActionButtons = ({
       )}
       {onEdit && status && (
         <AsyncActionButton
-          onClick={async () => onEdit()}
+          onClick={async () => {
+            if (window.confirm("¿Editar esta inscripción?")) onEdit();
+          }}
           icon={<EditIcon />}
           tooltip="Editar"
           label={isMobile ? "Editar Inscripción" : undefined}
@@ -118,7 +120,10 @@ const ActionButtons = ({
       )}
       {onToggleStatus && (
         <AsyncActionButton
-          onClick={async () => onToggleStatus()}
+          onClick={async () => {
+            const msg = status ? "¿Eliminar esta inscripción?" : "¿Restaurar esta inscripción?";
+            if (window.confirm(msg)) onToggleStatus();
+          }}
           icon={status ? <TrashIcon /> : <RefreshIcon />}
           tooltip={status ? "Eliminar" : "Restaurar"}
           label={isMobile ? (status ? "Eliminar Inscripción" : "Restaurar Inscripción") : undefined}

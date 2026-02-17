@@ -7,7 +7,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/
 import { Enrollment, CreateEnrollmentPayload, UpdateEnrollmentPayload } from "../types";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
-import Select from "../../../components/form/Select";
+import CustomSelect from "../../../components/form/CustomSelect";
 import CustomSelect from "../../../components/form/CustomSelect";
 import { Student } from "../../students/types";
 import { getStudents } from "../../students/services/studentsService";
@@ -358,6 +358,7 @@ export default function EnrollmentModal({
    */
   const onSubmit = (data: EnrollmentFormData) => {
     if (preEnrollmentError) return;
+    if (!window.confirm("¿Guardar la inscripción del estudiante?")) return;
 
     const academicTutor = tutors.find(t => t.tutorId === data.academicTutorId);
     const methodologicalTutor = tutors.find(t => t.tutorId === data.methodologicalTutorId);
@@ -367,22 +368,30 @@ export default function EnrollmentModal({
     const baseData = {
       ...data,
       identificationPrefix: data.identificationPrefix as "V" | "E",
-      academicTutorName: academicTutor ? `${academicTutor.firstName} ${academicTutor.lastName}` : undefined,
-      methodologicalTutorName: methodologicalTutor ? `${methodologicalTutor.firstName} ${methodologicalTutor.lastName}` : undefined,
-      institutionName: institution?.name,
-      institutionResponsibleName: responsible ? `${responsible.firstName} ${responsible.lastName}` : undefined,
-      enrollmentCode: data.enrollmentCode,
+      academicTutorName: academicTutor ? `${academicTutor.firstName} ${academicTutor.lastName}`.toUpperCase() : undefined,
+      methodologicalTutorName: methodologicalTutor ? `${methodologicalTutor.firstName} ${methodologicalTutor.lastName}`.toUpperCase() : undefined,
+      institutionName: institution?.name ? institution.name.toUpperCase() : undefined,
+      institutionResponsibleName: responsible ? `${responsible.firstName} ${responsible.lastName}`.toUpperCase() : undefined,
+      enrollmentCode: typeof data.enrollmentCode === "string" ? data.enrollmentCode.toUpperCase() : data.enrollmentCode,
     };
+
+    const normalized = Object.fromEntries(
+      Object.entries(baseData).map(([k, v]) => {
+        if (typeof v === "string") return [k, v.toUpperCase()];
+        if (Array.isArray(v)) return [k, v.map((x) => (typeof x === "string" ? x.toUpperCase() : x))];
+        return [k, v];
+      })
+    ) as typeof baseData;
 
     if (editingEntry) {
       onSave({
-        ...baseData,
+        ...normalized,
         enrollmentId: editingEntry.enrollmentId,
         status: editingEntry.status,
       } as UpdateEnrollmentPayload);
     } else {
       onSave({
-        ...baseData,
+        ...normalized,
         status: true,
       } as CreateEnrollmentPayload);
     }
@@ -563,7 +572,7 @@ export default function EnrollmentModal({
                 name="academicTutorId"
                 control={control}
                 render={({ field }) => (
-                  <Select
+                  <CustomSelect
                     options={tutors
                       .filter(t => t.tutorId !== selectedMethodologicalTutorId)
                       .map(t => ({
@@ -572,7 +581,7 @@ export default function EnrollmentModal({
                       }))}
                     placeholder="Seleccione el tutor"
                     onChange={field.onChange}
-                    defaultValue={field.value}
+                    value={String(field.value)}
                   />
                 )}
               />
@@ -590,7 +599,7 @@ export default function EnrollmentModal({
                 name="methodologicalTutorId"
                 control={control}
                 render={({ field }) => (
-                  <Select
+                  <CustomSelect
                     options={tutors
                       .filter(t => t.tutorId !== selectedAcademicTutorId)
                       .map(t => ({
@@ -599,7 +608,7 @@ export default function EnrollmentModal({
                       }))}
                     placeholder="Seleccione el tutor"
                     onChange={field.onChange}
-                    defaultValue={field.value}
+                    value={String(field.value)}
                   />
                 )}
               />
@@ -617,7 +626,7 @@ export default function EnrollmentModal({
                 name="institutionId"
                 control={control}
                 render={({ field }) => (
-                  <Select
+                  <CustomSelect
                     options={institutions.map(i => ({
                       value: i.institutionId,
                       label: `${i.name}${i.region || i.nucleus ? ` (${[i.region, i.nucleus].filter(Boolean).join(' - ')})` : ''}`
@@ -627,7 +636,7 @@ export default function EnrollmentModal({
                       field.onChange(val);
                       setValue("institutionResponsibleId", ""); // Reset responsible when institution changes
                     }}
-                    defaultValue={field.value}
+                    value={String(field.value)}
                   />
                 )}
               />
@@ -645,14 +654,14 @@ export default function EnrollmentModal({
                 name="institutionResponsibleId"
                 control={control}
                 render={({ field }) => (
-                  <Select
+                  <CustomSelect
                     options={filteredResponsibles.map(r => ({
                       value: r.responsibleId,
                       label: `${r.firstName} ${r.lastName}`
                     }))}
                     placeholder={selectedInstitutionId ? "Seleccione el responsable" : "Seleccione primero la institución"}
                     onChange={field.onChange}
-                    defaultValue={field.value}
+                    value={String(field.value)}
                     disabled={!selectedInstitutionId}
                   />
                 )}

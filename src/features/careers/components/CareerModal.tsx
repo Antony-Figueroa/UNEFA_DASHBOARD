@@ -210,9 +210,10 @@ export default function CareerModal({
   }, [lastCreatedInternshipTypeId, onConsumeLastCreatedInternshipType, setValue, getValues]);
 
   const onSubmit = (data: CareerFormData) => {
+    if (!window.confirm("¿Guardar la información de la carrera?")) return;
     onSave({
       careerName: data.careerName.toUpperCase(),
-      careerCode: data.careerCode,
+      careerCode: data.careerCode.toUpperCase(),
       careerAbbreviation: data.careerAbbreviation.toUpperCase(),
       careerType: data.careerType,
       internshipTypeIds: data.internshipTypeIds || [],

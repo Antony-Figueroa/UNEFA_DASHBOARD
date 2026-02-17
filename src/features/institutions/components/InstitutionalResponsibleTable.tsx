@@ -101,7 +101,9 @@ const ActionButtons = ({
             )}
             {onEdit && activeTab === "Activas" && (
                 <AsyncActionButton
-                    onClick={async () => onEdit()}
+          onClick={async () => {
+            if (window.confirm("¿Editar este responsable?")) onEdit();
+          }}
                     icon={<EditIcon />}
                     tooltip="Editar"
                     label={isMobile ? "Editar Responsable" : undefined}
@@ -111,7 +113,10 @@ const ActionButtons = ({
             )}
             {onToggleStatus && (
                 <AsyncActionButton
-                    onClick={async () => onToggleStatus()}
+                    onClick={async () => {
+                        const msg = activeTab === "Inactivas" ? "¿Restaurar este responsable?" : "¿Eliminar este responsable?";
+                        if (window.confirm(msg)) onToggleStatus();
+                    }}
                     icon={activeTab === "Inactivas" ? <RefreshIcon /> : <TrashIcon />}
                     tooltip={activeTab === "Inactivas" ? "Restaurar" : "Eliminar"}
                     label={isMobile ? (activeTab === "Inactivas" ? "Restaurar Responsable" : "Eliminar Responsable") : undefined}

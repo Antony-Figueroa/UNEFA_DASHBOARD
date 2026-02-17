@@ -13,7 +13,7 @@ import Button from '../../../components/ui/button/Button';
 import AsyncButton from '../../../components/ui/button/AsyncButton';
 import InputField from '../../../components/form/input/InputField';
 import TextArea from '../../../components/form/input/TextArea';
-import Select from '../../../components/form/Select';
+import CustomSelect from '../../../components/form/CustomSelect';
 import { useStudents } from '../../students/hooks/useStudents';
 import { useLists } from '../../lists/hooks/useLists';
 import { useNavigate } from 'react-router';
@@ -166,13 +166,14 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
      */
     const onSubmit: SubmitHandler<TrackingFormData> = (data) => {
         try {
+            if (!window.confirm("¿Guardar el seguimiento del estudiante?")) return;
             const payload: CreateTrackingPayload | UpdateTrackingPayload = {
                 studentIdNumber: data.studentIdNumber,
-                studentName: data.studentName,
-                reportTitle: data.reportTitle,
+                studentName: (data.studentName || "").toUpperCase(),
+                reportTitle: (data.reportTitle || "").toUpperCase(),
                 transfer: data.transfer === 'true',
-                route: data.route,
-                observations: data.observations || '',
+                route: (data.route || "").toUpperCase(),
+                observations: (data.observations || '').toUpperCase(),
             };
             
             if (tracking) {
@@ -256,11 +257,12 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                                 name="transfer"
                                 control={control}
                                 render={({ field }) => (
-                                    <Select
+                                    <CustomSelect
+                                        id="transfer"
                                         disabled={isDisabled}
-                                        options={options['Traslado'] || TRANSFER_OPTIONS}
+                                        options={(options['Traslado'] || TRANSFER_OPTIONS).map(opt => ({ value: String(opt.value), label: opt.label }))}
                                         onChange={field.onChange}
-                                        defaultValue={field.value}
+                                        value={String(field.value)}
                                     />
                                 )}
                             />

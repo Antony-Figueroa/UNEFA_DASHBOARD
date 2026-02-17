@@ -22,6 +22,10 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
   placeholder?: string;
   /** Función que se llama cuando el valor cambia. */
   onChangeValue?: (value: string) => void;
+  /** Acción opcional para agregar un nuevo valor desde el selector. */
+  onAddNew?: () => void;
+  /** Etiqueta opcional para la acción de agregar nuevo. */
+  addNewLabel?: string;
   /** Indica si hay un error en la validación. */
   error?: boolean;
   /** Indica si los datos están cargando. */
@@ -58,8 +62,11 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
   error = false,
   isLoading = false,
   hint,
+  onAddNew,
+  addNewLabel,
   ...props
 }, ref) => {
+  const ADD_NEW_SENTINEL = "__ADD_NEW__";
   // Sincronizar estado si el valor o el valor por defecto cambian
   const [selectedValue, setSelectedValue] = useState<string>(
     value !== undefined ? String(value) : String(defaultValue)
@@ -83,6 +90,13 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
    */
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newValue = e.target.value;
+    if (onAddNew && newValue === ADD_NEW_SENTINEL) {
+      // Volver al placeholder y disparar la acción de agregar nuevo
+      setSelectedValue("");
+      onAddNew();
+      // No propagar cambio de valor normal
+      return;
+    }
     setSelectedValue(newValue);
 
     // Llamar a ambos manejadores si existen
@@ -122,6 +136,14 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
         >
           {placeholder}
         </option>
+        {onAddNew && (
+          <option
+            value={ADD_NEW_SENTINEL}
+            className="text-brand-600 bg-brand-50 dark:bg-brand-900/20 dark:text-brand-400"
+          >
+            {`➕ ${addNewLabel || "Agregar nuevo"}`}
+          </option>
+        )}
 
         {/* Mapeo de opciones */}
         {options.map((option) => (

@@ -141,8 +141,9 @@ export default function InternshipTypeModal({
    * Manejador de envío del formulario.
    */
   const onSubmit = (data: InternshipTypeFormData) => {
+    if (!window.confirm("¿Guardar el tipo de práctica profesional?")) return;
     onSave({
-      name: data.name,
+      name: data.name.toUpperCase(),
       priority: Number(data.priority),
       status: editingItem?.status ?? true,
     });

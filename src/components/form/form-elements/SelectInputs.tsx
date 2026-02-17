@@ -1,7 +1,7 @@
 import { useState } from "react";
 import ComponentCard from "../../common/ComponentCard";
 import Label from "../Label";
-import Select from "../Select";
+import CustomSelect from "../CustomSelect";
 import MultiSelect from "../MultiSelect";
 
 export default function SelectInputs() {
@@ -27,10 +27,10 @@ export default function SelectInputs() {
       <div className="space-y-6">
         <div>
           <Label>Select Input</Label>
-          <Select
-            options={options}
+          <CustomSelect
+            options={options.map(opt => ({ value: String(opt.value), label: opt.label }))}
             placeholder="Select Option"
-            onChangeValue={handleSelectChange}
+            onChange={(val) => handleSelectChange(val)}
             className="dark:bg-dark-900"
           />
         </div>

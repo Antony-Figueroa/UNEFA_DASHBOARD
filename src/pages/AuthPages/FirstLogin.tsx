@@ -8,7 +8,7 @@ import Button from "../../components/ui/button/Button";
 import * as authService from "../../features/auth/services/authService";
 import { SecurityQuestion, SecurityAnswer } from "../../features/auth/types";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
-import Select from "../../components/form/Select";
+import CustomSelect from "../../components/form/CustomSelect";
 
 import { useToast } from "../../context/toast";
 
@@ -233,11 +233,11 @@ export default function FirstLogin() {
                 {userQuestions.map((q, index) => (
                   <div key={index} className="mb-4 space-y-2">
                     <Label>Pregunta {index + 1}</Label>
-                    <Select
+                    <CustomSelect
                       options={presetQuestions.map(pq => ({ value: pq.id.toString(), label: pq.description }))}
                       placeholder="Seleccione una pregunta"
                       value={q.questionId ? q.questionId.toString() : ""}
-                      onChangeValue={(value) => handleQuestionChange(index, "questionId", value)}
+                      onChange={(value) => handleQuestionChange(index, "questionId", value)}
                     />
                     <Input
                       placeholder="Su respuesta"

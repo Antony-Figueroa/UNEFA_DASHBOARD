@@ -30,6 +30,8 @@ import {
     UpdateStudentPayload
 } from "../../features/students/types";
 import { useCareers } from "../../features/careers/hooks/useCareers";
+import { useInternshipTypes } from "../../features/internship-types/hooks/useInternshipTypes";
+import CareerModal from "../../features/careers/components/CareerModal";
 import { useLists } from "../../features/lists/hooks/useLists";
 import { ListValue } from "../../features/lists/types";
 import { formatDateTime } from "../../utils/date";
@@ -90,7 +92,8 @@ export default function StudentsPage() {
         bulkRestoreStudents,
     } = useStudents();
 
-    const { careers } = useCareers();
+    const { careers, addCareer } = useCareers();
+    const { activeOptions: activeInternshipOptions, fetchAll: fetchInternshipTypes } = useInternshipTypes();
 
     const careerOptions = useMemo(() =>
         careers.map(c => ({ value: c.careerId, label: c.careerName.toUpperCase() })),
@@ -106,6 +109,7 @@ export default function StudentsPage() {
     const [pdfSearchTerm, setPdfSearchTerm] = useState("");
     const [pdfCareerFilter, setPdfCareerFilter] = useState("");
     const [pdfRegimeFilter, setPdfRegimeFilter] = useState("");
+    const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
 
     type ConfirmationInfo = {
         isOpen: boolean;
@@ -155,6 +159,17 @@ export default function StudentsPage() {
         setIsModalOpen(true);
     };
 
+    useEffect(() => {
+        const handleAddCareer = () => setIsCareerModalOpen(true);
+        window.addEventListener("students:addCareer", handleAddCareer);
+        return () => {
+            window.removeEventListener("students:addCareer", handleAddCareer);
+        };
+    }, []);
+
+    useEffect(() => {
+        fetchInternshipTypes();
+    }, [fetchInternshipTypes]);
     /**
      * Inicia el flujo de edición para un estudiante seleccionado.
      * 
@@ -393,6 +408,31 @@ export default function StudentsPage() {
                 careerOptions={careerOptions}
                 dynamicLists={dynamicLists}
                 isLoading={loadingAction}
+            />
+            <CareerModal
+                isOpen={isCareerModalOpen}
+                onClose={() => setIsCareerModalOpen(false)}
+                onSave={async (payload) => {
+                    try {
+                        const created = await addCareer(payload);
+                        if (created?.careerId !== undefined) {
+                            const evt = new CustomEvent("students:setCareerId", { detail: String(created.careerId) });
+                            window.dispatchEvent(evt);
+                        }
+                        setIsCareerModalOpen(false);
+                    } catch (e) {
+                        console.error("[StudentsPage] Error creando carrera:", e);
+                    }
+                }}
+                editingCareer={null}
+                internshipOptions={activeInternshipOptions}
+                isLoading={loadingAction}
+                hasPendingEvaluations={false}
+                isInUse={false}
+                existingCareers={careers}
+                onAddInternshipType={() => {}}
+                lastCreatedInternshipTypeId={null}
+                onConsumeLastCreatedInternshipType={() => {}}
             />
 
                     <StudentViewModal

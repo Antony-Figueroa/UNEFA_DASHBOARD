@@ -437,19 +437,28 @@ export default function PreEnrollmentModal({
    */
   const onSubmit = (data: PreEnrollmentFormData) => {
     try {
+      if (!window.confirm("¿Guardar la pre-inscripción del estudiante?")) return;
+      const normalized = Object.fromEntries(
+        Object.entries(data).map(([k, v]) => {
+          if (typeof v === "string") return [k, v.toUpperCase()];
+          if (Array.isArray(v)) return [k, v.map((x) => (typeof x === "string" ? x.toUpperCase() : x))];
+          return [k, v];
+        })
+      ) as PreEnrollmentFormData;
+
       if (editingEntry) {
         const updatePayload: UpdatePreEnrollmentPayload = {
-          ...data,
-          identificationPrefix: data.identificationPrefix as "V" | "E",
+          ...normalized,
+          identificationPrefix: normalized.identificationPrefix as "V" | "E",
           preEnrollmentId: editingEntry.preEnrollmentId,
-          careerName: data.careerName || "",
+          careerName: normalized.careerName || "",
         };
         onSave(updatePayload);
       } else {
         const createPayload: CreatePreEnrollmentPayload = {
-          ...data,
-          identificationPrefix: data.identificationPrefix as "V" | "E",
-          careerName: data.careerName || "",
+          ...normalized,
+          identificationPrefix: normalized.identificationPrefix as "V" | "E",
+          careerName: normalized.careerName || "",
         };
         onSave(createPayload);
       }

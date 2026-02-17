@@ -7,7 +7,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/
 import { Tutor, CreateTutorPayload, UpdateTutorPayload } from "../types";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
-import Select from "../../../components/form/Select";
+import CustomSelect from "../../../components/form/CustomSelect";
 import MultiSelect from "../../../components/form/MultiSelect";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
@@ -305,21 +305,22 @@ export default function TutorModal({
 
   const onSubmit: SubmitHandler<TutorFormData> = (data) => {
     try {
+      if (!window.confirm("¿Guardar la información del tutor?")) return;
       const payload = {
         identificationPrefix: data.identificationPrefix as "V" | "E",
         identificationNumber: data.identificationNumber,
-        firstName: data.firstName,
-        middleName: data.middleName,
-        lastName: data.lastName,
-        secondLastName: data.secondLastName,
+        firstName: (data.firstName || "").toUpperCase(),
+        middleName: (data.middleName || "").toUpperCase(),
+        lastName: (data.lastName || "").toUpperCase(),
+        secondLastName: (data.secondLastName || "").toUpperCase(),
         sex: data.sex as "FEMENINO" | "MASCULINO",
         phone: `${data.phoneAreaCode}${data.phoneNumber}`,
-        email: data.email,
-        condition: data.condition,
-        dedication: data.dedication,
-        category: data.category,
-        profession: data.profession,
-        carreras: data.carreras,
+        email: (data.email || "").toUpperCase(),
+        condition: (data.condition || "").toUpperCase(),
+        dedication: (data.dedication || "").toUpperCase(),
+        category: (data.category || "").toUpperCase(),
+        profession: (data.profession || "").toUpperCase(),
+        carreras: Array.isArray(data.carreras) ? data.carreras.map((c) => String(c).toUpperCase()) : data.carreras,
       };
 
       onSave(payload);
@@ -364,10 +365,13 @@ export default function TutorModal({
                     name="identificationPrefix"
                     control={control}
                     render={({ field }) => (
-                      <Select
-                        {...field}
-                        options={NATIONALITY_OPTIONS}
+                      <CustomSelect
+                        id="identificationPrefix"
+                        options={NATIONALITY_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
                         placeholder="Tipo"
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        value={String(field.value)}
                         disabled={isInUse}
                         error={!!errors.identificationPrefix}
                       />
@@ -466,10 +470,13 @@ export default function TutorModal({
                 name="sex"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    {...field}
-                    options={SEX_OPTIONS}
+                  <CustomSelect
+                    id="sex"
+                    options={SEX_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
                     placeholder="Seleccione Sexo"
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    value={String(field.value)}
                     error={!!errors.sex}
                   />
                 )}
@@ -488,10 +495,13 @@ export default function TutorModal({
                     name="phoneAreaCode"
                     control={control}
                     render={({ field }) => (
-                      <Select
-                        {...field}
-                        options={PHONE_AREA_OPTIONS}
+                      <CustomSelect
+                        id="phoneAreaCode"
+                        options={PHONE_AREA_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
                         placeholder="Prefijo"
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        value={String(field.value)}
                         error={!!errors.phoneAreaCode}
                       />
                     )}
@@ -499,7 +509,12 @@ export default function TutorModal({
                 </div>
                 <div className="flex-1">
                   <Input
-                    {...register("phoneNumber")}
+                    {...register("phoneNumber", {
+                      onChange: (e) => {
+                        const digits = e.target.value.replace(/\D/g, "").slice(0, 7);
+                        e.target.value = digits;
+                      }
+                    })}
                     placeholder="INGRESE TELÉFONO"
                     error={!!errors.phoneNumber}
                     maxLength={7}
@@ -534,10 +549,13 @@ export default function TutorModal({
                 name="condition"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    {...field}
-                    options={CONDITION_OPTIONS}
+                  <CustomSelect
+                    id="condition"
+                    options={CONDITION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
                     placeholder="Seleccione Condición"
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    value={String(field.value)}
                     error={!!errors.condition}
                   />
                 )}
@@ -554,10 +572,13 @@ export default function TutorModal({
                 name="dedication"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    {...field}
-                    options={DEDICATION_OPTIONS}
+                  <CustomSelect
+                    id="dedication"
+                    options={DEDICATION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
                     placeholder="Seleccione Dedicación"
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    value={String(field.value)}
                     error={!!errors.dedication}
                   />
                 )}
@@ -574,10 +595,13 @@ export default function TutorModal({
                 name="category"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    {...field}
-                    options={CATEGORY_OPTIONS}
+                  <CustomSelect
+                    id="category"
+                    options={CATEGORY_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
                     placeholder="Seleccione Categoría"
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    value={String(field.value)}
                     error={!!errors.category}
                   />
                 )}
@@ -594,10 +618,13 @@ export default function TutorModal({
                 name="profession"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    {...field}
-                    options={PROFESSION_OPTIONS}
+                  <CustomSelect
+                    id="profession"
+                    options={PROFESSION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
                     placeholder="Seleccione Profesión"
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    value={String(field.value)}
                     error={!!errors.profession}
                   />
                 )}

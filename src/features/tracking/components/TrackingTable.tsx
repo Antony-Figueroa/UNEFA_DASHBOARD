@@ -17,7 +17,7 @@ import Badge from "../../../components/ui/badge/Badge";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
 import InputField from "../../../components/form/input/InputField";
-import Select from "../../../components/form/Select";
+import CustomSelect from "../../../components/form/CustomSelect";
 import {
     EditIcon,
     TrashIcon,
@@ -95,7 +95,9 @@ const ActionButtons = ({
             )}
             {onEdit && (
                 <AsyncActionButton
-                    onClick={async () => onEdit()}
+          onClick={async () => {
+            if (window.confirm("¿Editar este seguimiento?")) onEdit();
+          }}
                     icon={<EditIcon />}
                     tooltip="Editar"
                     label={isMobile ? "Editar Seguimiento" : undefined}
@@ -106,7 +108,9 @@ const ActionButtons = ({
             {status ? (
                 onDelete && (
                     <AsyncActionButton
-                        onClick={async () => onDelete()}
+                        onClick={async () => {
+                            if (window.confirm("¿Inactivar este seguimiento?")) onDelete();
+                        }}
                         icon={<TrashIcon />}
                         tooltip="Inactivar"
                         label={isMobile ? "Inactivar Seguimiento" : undefined}
@@ -117,7 +121,9 @@ const ActionButtons = ({
             ) : (
                 onRestore && (
                     <AsyncActionButton
-                        onClick={async () => onRestore()}
+                        onClick={async () => {
+                            if (window.confirm("¿Restaurar este seguimiento?")) onRestore();
+                        }}
                         icon={<RefreshIcon />}
                         tooltip="Restaurar"
                         label={isMobile ? "Restaurar Seguimiento" : undefined}
@@ -222,10 +228,12 @@ export default function TrackingTable({
                     <label className="text-xs font-medium text-text-secondary dark:text-text-tertiary px-1">
                         Traslado
                     </label>
-                    <Select
-                        options={[{ value: "", label: "Todos" }, ...transferOptions]}
-                        value={transferFilter}
-                        onChangeValue={(value) => setTransferFilter(value)}
+                    <CustomSelect
+                        id="transferFilter"
+                        options={[{ value: "", label: "Todos" }, ...transferOptions].map(opt => ({ value: String(opt.value), label: opt.label }))}
+                        value={String(transferFilter)}
+                        onChange={(value) => setTransferFilter(value)}
+                        placeholder="Filtrar por traslado"
                         className="bg-white dark:bg-white/5"
                     />
                 </div>

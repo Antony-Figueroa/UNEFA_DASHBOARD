@@ -15,6 +15,16 @@ import {
 import { useCrud } from "../../../hooks/useCrud";
 import * as internshipTypesService from "../services/internshipTypesService";
 
+const serviceAdapter = {
+  getAll: internshipTypesService.getAll,
+  create: internshipTypesService.create,
+  update: internshipTypesService.update,
+  delete: internshipTypesService.remove,
+  toggleStatus: internshipTypesService.toggleStatus,
+  bulkDelete: internshipTypesService.bulkDelete,
+  bulkRestore: internshipTypesService.bulkRestore,
+};
+
 /**
  * Hook useInternshipTypes.
  * 
@@ -37,15 +47,7 @@ export const useInternshipTypes = () => {
     bulkDelete: bulkRemove,
     bulkRestore: bulkRestore,
   } = useCrud<InternshipType, CreateInternshipTypePayload, UpdateInternshipTypePayload>(
-    {
-      getAll: internshipTypesService.getAll,
-      create: internshipTypesService.create,
-      update: internshipTypesService.update,
-      delete: internshipTypesService.remove,
-      toggleStatus: internshipTypesService.toggleStatus,
-      bulkDelete: internshipTypesService.bulkDelete,
-      bulkRestore: internshipTypesService.bulkRestore,
-    },
+    serviceAdapter,
     {
       resourceName: "Tipo de Práctica",
       idField: "id",

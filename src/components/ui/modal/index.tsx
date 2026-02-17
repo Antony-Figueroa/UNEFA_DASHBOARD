@@ -32,7 +32,7 @@ interface ModalProps {
  * </Modal>
  * ```
  */
-export const Modal: React.FC<ModalProps & { size?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl" | "7xl" }> = ({
+export const Modal: React.FC<ModalProps & { size?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl" | "7xl"; zIndex?: number }> = ({
   isOpen,
   onClose,
   onCloseAttempt,
@@ -41,6 +41,7 @@ export const Modal: React.FC<ModalProps & { size?: "sm" | "md" | "lg" | "xl" | "
   showCloseButton = true,
   isFullscreen = false,
   size = "md",
+  zIndex,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const handleClose = (typeof onCloseAttempt === 'function' ? onCloseAttempt : null) || onClose;
@@ -117,9 +118,10 @@ export const Modal: React.FC<ModalProps & { size?: "sm" | "md" | "lg" | "xl" | "
   const modalContent = (
     <div
       className={cn(
-        "fixed inset-0 z-1000 flex items-center justify-center overflow-hidden",
+        "fixed inset-0 z-[1000] flex items-center justify-center overflow-hidden",
         isFullscreen ? "p-0" : "p-4 sm:p-6"
       )}
+      style={zIndex ? { zIndex } : undefined}
       role="dialog"
       aria-modal="true"
     >

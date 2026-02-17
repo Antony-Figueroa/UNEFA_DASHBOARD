@@ -98,7 +98,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
         id={id}
         disabled={disabled || isLoading}
         className={cn(
-          "h-11 w-full appearance-none rounded-lg border bg-transparent px-4 py-2.5 pr-11 text-sm shadow-theme-xs transition-all",
+          "h-11 w-full appearance-none rounded-lg border bg-transparent px-4 py-2.5 pr-11 text-sm shadow-theme-xs",
           "placeholder:text-text-tertiary focus:outline-none focus:ring-3 focus:ring-brand-500/10",
           "disabled:bg-gray-100 disabled:opacity-70 disabled:cursor-not-allowed dark:disabled:bg-white/5",
           // Estados de error vs normal

@@ -43,6 +43,9 @@ interface CareerModalProps {
   isInUse?: boolean;
   /** Lista de carreras existentes para validación de duplicados */
   existingCareers?: Career[];
+  onAddInternshipType?: () => void;
+  lastCreatedInternshipTypeId?: string | number | null;
+  onConsumeLastCreatedInternshipType?: () => void;
 }
 
 /**
@@ -117,6 +120,9 @@ export default function CareerModal({
   hasPendingEvaluations = false,
   isInUse = false,
   existingCareers = [],
+  onAddInternshipType,
+  lastCreatedInternshipTypeId,
+  onConsumeLastCreatedInternshipType,
 }: CareerModalProps) {
   // Ref para evitar lecturas de estado desactualizadas durante la inicialización del modal
   const isInitializing = useRef(false);
@@ -128,6 +134,7 @@ export default function CareerModal({
     reset,
     watch,
     setValue,
+    getValues,
     formState: { errors, isDirty, isValid },
   } = useForm<CareerFormData>({
     resolver: zodResolver(createCareerSchema(existingCareers, editingCareer?.careerId)),
@@ -190,6 +197,17 @@ export default function CareerModal({
       isInitializing.current = false;
     }
   }, [editingCareer, isOpen, reset]);
+
+  useEffect(() => {
+    if (lastCreatedInternshipTypeId && onConsumeLastCreatedInternshipType) {
+      const currentIds = getValues("internshipTypeIds") || [];
+      const newIdStr = String(lastCreatedInternshipTypeId);
+      if (!currentIds.includes(newIdStr)) {
+        setValue("internshipTypeIds", [...currentIds, newIdStr], { shouldValidate: true, shouldDirty: true });
+      }
+      onConsumeLastCreatedInternshipType();
+    }
+  }, [lastCreatedInternshipTypeId, onConsumeLastCreatedInternshipType, setValue, getValues]);
 
   const onSubmit = (data: CareerFormData) => {
     onSave({
@@ -400,9 +418,11 @@ export default function CareerModal({
                       // Caso por defecto (deselección de ÚNICA o lista vacía)
                       field.onChange(selectedIds);
                     }}
-                    placeholder="Seleccione los tipos"
-                    disabled={isInUse}
+                    placeholder="Seleccione tipos de prácticas"
+                    disabled={hasPendingEvaluations || isInUse}
                     error={!!errors.internshipTypeIds}
+                    onAddNew={onAddInternshipType}
+                    addNewLabel="Nuevo tipo de práctica"
                   />
                 )}
               />

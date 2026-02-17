@@ -47,6 +47,10 @@ export interface MultiSelectProps {
   error?: boolean;
   /** Función que se llama cuando el componente pierde el foco. */
   onBlur?: () => void;
+  /** Función opcional para agregar un nuevo elemento desde el selector. */
+  onAddNew?: () => void;
+  /** Etiqueta personalizada para el botón de agregar nuevo. */
+  addNewLabel?: string;
 }
 
 /**
@@ -70,6 +74,8 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
   className = "",
   error = false,
   onBlur,
+  onAddNew,
+  addNewLabel,
 }, ref) => {
   const isControlled = value !== undefined;
   const [internalSelected, setInternalSelected] = useState<string[]>(defaultSelected);
@@ -256,7 +262,7 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
           >
             <div
               className={cn(
-                "mb-2 flex min-h-[44px] w-full rounded-lg border py-1.5 px-3 shadow-theme-xs outline-none transition-all focus-within:shadow-focus-ring dark:bg-bg-dark",
+                "mb-2 flex min-h-[44px] w-full rounded-lg border py-1.5 px-3 shadow-theme-xs outline-none focus-within:shadow-focus-ring dark:bg-bg-dark",
                 error
                   ? "border-error-500 focus-within:border-error-500 focus-within:shadow-error-100/50 dark:border-error-500/50"
                   : "border-border-medium focus-within:border-brand-300 dark:border-border-dark dark:focus-within:border-brand-300",
@@ -271,7 +277,7 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
                     return (
                       <div
                         key={val}
-                        className="group flex items-center justify-center rounded-full border border-transparent bg-bg-secondary py-1 px-3 text-xs font-medium text-text-primary hover:border-border-light dark:bg-white/10 dark:text-text-emphasis dark:hover:border-border-dark transition-all"
+                        className="group flex items-center justify-center rounded-full border border-transparent bg-bg-secondary py-1 px-3 text-xs font-medium text-text-primary hover:border-border-light dark:bg-white/10 dark:text-text-emphasis dark:hover:border-border-dark"
                       >
                         <span className="flex-initial max-w-full">{text}</span>
                         <button
@@ -281,7 +287,7 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
                             if (!disabled) handleRemove(e, val);
                           }}
                           disabled={disabled}
-                          className="ml-1.5 text-text-tertiary hover:text-text-secondary dark:text-text-tertiary transition-colors"
+                          className="ml-1.5 text-text-tertiary hover:text-text-secondary dark:text-text-tertiary"
                           aria-label={`Eliminar ${text}`}
                         >
                           <CloseIcon className="w-3.5 h-3.5" />
@@ -312,7 +318,7 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
           {isOpen && createPortal(
             <div
               ref={menuRef}
-              className="fixed mt-1 overflow-y-auto bg-bg-main rounded-lg shadow-xl max-h-60 dark:bg-bg-dark border border-border-light dark:border-border-dark animate-in fade-in zoom-in-95 duration-100"
+              className="fixed mt-1 overflow-y-auto bg-bg-main rounded-lg shadow-xl max-h-60 dark:bg-bg-dark border border-border-light dark:border-border-dark"
               style={{
                 top: coords.top,
                 left: coords.left,
@@ -323,6 +329,24 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
               role="listbox"
               aria-label={label}
             >
+              {onAddNew && (
+                <div className="sticky top-0 z-10 bg-bg-main dark:bg-bg-dark border-b border-border-light dark:border-border-dark mb-1">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsOpen(false);
+                      onAddNew();
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-brand-600 hover:bg-brand-50 font-medium flex items-center gap-2 dark:text-brand-400 dark:hover:bg-brand-900/20"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    {addNewLabel || "Agregar nuevo"}
+                  </button>
+                </div>
+              )}
               {options.length > 0 ? (
                 options.map((option, index) => {
                   const isSelected = selectedOptions.includes(option.value);

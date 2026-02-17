@@ -36,8 +36,12 @@ const AsyncButton: React.FC<AsyncButtonProps> = ({
   const isDisabled = disabled || isLoading;
 
   const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (isLoading || !onClick) {
+    if (isLoading) {
       e.preventDefault();
+      return;
+    }
+
+    if (!onClick) {
       return;
     }
 

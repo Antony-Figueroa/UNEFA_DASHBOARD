@@ -123,6 +123,7 @@ export default function CareersPage() {
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
   const [editingType, setEditingType] = useState<InternshipType | null>(null);
   const [viewType, setViewType] = useState<InternshipType | null>(null);
+  const [lastCreatedInternshipTypeId, setLastCreatedInternshipTypeId] = useState<string | number | null>(null);
 
   /**
    * Determina si un tipo de práctica está en uso (asignado a una carrera activa).
@@ -270,11 +271,17 @@ export default function CareersPage() {
       message: `¿Estás seguro de que deseas ${isEditing ? "guardar los cambios en" : "registrar"} este tipo de práctica?`,
       onConfirm: async () => {
         try {
+          let result;
           if (isEditing && editingType) {
-            await editInternshipType({ ...payload, id: editingType.id });
+            result = await editInternshipType({ ...payload, id: editingType.id });
           } else {
-            await addInternshipType(payload);
+            result = await addInternshipType(payload);
           }
+
+          if (!isEditing && result) {
+            setLastCreatedInternshipTypeId(result.id);
+          }
+
           setIsTypeModalOpen(false);
         } catch (e) {
           console.error(e);
@@ -595,6 +602,12 @@ export default function CareersPage() {
         hasPendingEvaluations={editingCareer?.hasPendingEvaluations}
         isInUse={editingCareer?.isInUse}
         existingCareers={careers}
+        onAddInternshipType={() => {
+          setEditingType(null);
+          setIsTypeModalOpen(true);
+        }}
+        lastCreatedInternshipTypeId={lastCreatedInternshipTypeId}
+        onConsumeLastCreatedInternshipType={() => setLastCreatedInternshipTypeId(null)}
       />
 
       <CareerViewModal

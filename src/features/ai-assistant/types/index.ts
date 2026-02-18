@@ -188,6 +188,7 @@ export interface ChatHeaderProps {
 export interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
+  isStreaming?: boolean;
   onActionClick?: (action: MessageAction) => void;
 }
 

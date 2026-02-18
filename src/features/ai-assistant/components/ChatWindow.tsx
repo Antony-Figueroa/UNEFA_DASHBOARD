@@ -80,6 +80,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = () => {
                     <MessageList
                         messages={messages}
                         isLoading={isLoading || isStreaming}
+                        isStreaming={isStreaming}
                         onActionClick={handleActionClick}
                     />
 

@@ -51,6 +51,8 @@ export default function TutorModal({
   const [careersLoading, setCareersLoading] = useState(false);
   const { fetchMultipleLists } = useLists();
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
+  const [pendingSave, setPendingSave] = useState<CreateTutorPayload | UpdateTutorPayload | null>(null);
 
   // Fallbacks for when t_list data is not available
   const NATIONALITY_OPTIONS = options["Nacionalidad"] || [
@@ -63,14 +65,7 @@ export default function TutorModal({
     { value: "MASCULINO", label: "MASCULINO" },
   ];
 
-  const PHONE_AREA_OPTIONS = options["CODIGOS_AREA"] || [
-    { value: "0412", label: "0412" },
-    { value: "0414", label: "0414" },
-    { value: "0424", label: "0424" },
-    { value: "0416", label: "0416" },
-    { value: "0426", label: "0426" },
-    { value: "0212", label: "0212" },
-  ];
+  const PHONE_AREA_OPTIONS = options["CODIGOS_AREA"] || [];
 
   const CONDITION_OPTIONS = options["Condición"] || [
     { value: "ORDINARIO", label: "ORDINARIO" },
@@ -305,7 +300,6 @@ export default function TutorModal({
 
   const onSubmit: SubmitHandler<TutorFormData> = (data) => {
     try {
-      if (!window.confirm("¿Guardar la información del tutor?")) return;
       const payload = {
         identificationPrefix: data.identificationPrefix as "V" | "E",
         identificationNumber: data.identificationNumber,
@@ -321,9 +315,9 @@ export default function TutorModal({
         category: (data.category || "").toUpperCase(),
         profession: (data.profession || "").toUpperCase(),
         carreras: Array.isArray(data.carreras) ? data.carreras.map((c) => String(c).toUpperCase()) : data.carreras,
-      };
-
-      onSave(payload);
+      } as CreateTutorPayload;
+      setPendingSave(payload);
+      setConfirmSaveOpen(true);
     } catch (error) {
       console.error("[TutorModal] Error al procesar el envío del formulario:", error);
     }
@@ -674,6 +668,23 @@ export default function TutorModal({
         </div>
       </ModalFooter>
     </Modal>
+
+    {confirmSaveOpen && (
+      <UnifiedDialog
+        isOpen={confirmSaveOpen}
+        onClose={() => setConfirmSaveOpen(false)}
+        onConfirm={() => {
+          if (pendingSave) {
+            onSave(pendingSave);
+          }
+          setConfirmSaveOpen(false);
+        }}
+        variant="confirm"
+        title={editingTutor ? "Confirmar actualización" : "Confirmar registro"}
+        message={editingTutor ? "¿Desea actualizar los datos del tutor?" : "¿Desea guardar el nuevo tutor?"}
+        confirmLabel={editingTutor ? "Actualizar" : "Guardar"}
+      />
+    )}
 
     <UnifiedDialog
       isOpen={showConfirmation}

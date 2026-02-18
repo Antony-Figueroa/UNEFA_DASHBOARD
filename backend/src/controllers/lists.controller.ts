@@ -20,6 +20,9 @@ const handleDbError = (res: Response, error: unknown) => {
   } else if (dbError.code === '404') {
     userMessage = dbError.message || 'Registro no encontrado';
     return res.status(404).json({ message: userMessage });
+  } else if (dbError.code === '400') {
+    userMessage = dbError.message || 'Solicitud incorrecta';
+    return res.status(400).json({ message: userMessage });
   }
 
   res.status(500).json({ 
@@ -100,6 +103,19 @@ export const updateList = async (req: Request, res: Response) => {
 };
 
 /**
+ * Delete a list
+ */
+export const deleteList = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await listsService.deleteList(id);
+    res.json({ message: 'Lista eliminada correctamente' });
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+/**
  * Toggle list status
  */
 export const toggleListStatus = async (req: Request, res: Response) => {
@@ -108,6 +124,19 @@ export const toggleListStatus = async (req: Request, res: Response) => {
     const { status } = req.body;
     await listsService.toggleListStatus(id, status);
     res.json({ message: 'Estado de la lista actualizado correctamente' });
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+/**
+ * Delete a value
+ */
+export const deleteValue = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await listsService.deleteValue(id);
+    res.json({ message: 'Valor eliminado correctamente' });
   } catch (error: unknown) {
     handleDbError(res, error);
   }

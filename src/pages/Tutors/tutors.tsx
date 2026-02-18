@@ -221,24 +221,27 @@ export default function TutorsPage() {
     const handleToggleStatus = (row: TutorRowData) => {
         const original = tutors.find((t) => t.tutorId === row.tutorId);
         if (!original) return;
-        const goingInactive = original.status === true;
-        setConfirmation({
-            isOpen: true,
-            title: goingInactive ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
-            message: goingInactive 
-                ? `¿Estás seguro de que deseas enviar al tutor "${original.firstName} ${original.lastName}" a Inactivos?`
-                : `¿Estás seguro de que deseas restaurar al tutor "${original.firstName} ${original.lastName}"?`,
-            onConfirm: async () => {
-                try {
-                    await toggleStatus(original);
-                } catch (e) { 
-                    console.error("[TutorsPage] Error al cambiar el estado del tutor:", e); 
-                }
-                finally { setConfirmation(null); }
-            },
-            confirmText: goingInactive ? "Confirmar" : "Restaurar",
-            variant: goingInactive ? "error" : "success",
-        });
+
+        if (original.status) {
+            setConfirmation({
+                isOpen: true,
+                title: "Confirmar Desactivación",
+                message: `¿Estás seguro de que deseas desactivar al tutor "${row.firstName} ${row.lastName}"?`,
+                onConfirm: async () => {
+                    try {
+                        await toggleStatus(original);
+                    } catch (error) {
+                        console.error("Error toggling tutor status:", error);
+                    } finally {
+                        setConfirmation(null);
+                    }
+                },
+                confirmText: "Desactivar",
+                variant: "error",
+            });
+        } else {
+            toggleStatus(original).catch(console.error);
+        }
     };
 
     /**
@@ -249,17 +252,18 @@ export default function TutorsPage() {
     const handleBulkDelete = (ids: string[]) => {
         setConfirmation({
             isOpen: true,
-            title: "Confirmar Envío a Inactivos (Masivo)",
-            message: `¿Estás seguro de que deseas enviar los ${ids.length} tutores seleccionados a Inactivos?`,
+            title: "Confirmar Desactivación Múltiple",
+            message: `¿Estás seguro de que deseas desactivar los ${ids.length} tutores seleccionados?`,
             onConfirm: async () => {
                 try {
                     await bulkRemoveTutors(ids);
-                } catch (e) { 
-                    console.error("[TutorsPage] Error al eliminar tutores masivamente:", e); 
+                } catch (error) {
+                    console.error("Error in bulk tutor inactivation:", error);
+                } finally {
+                    setConfirmation(null);
                 }
-                finally { setConfirmation(null); }
             },
-            confirmText: "Confirmar",
+            confirmText: "Desactivar",
             variant: "error",
         });
     };
@@ -270,21 +274,7 @@ export default function TutorsPage() {
      * @param ids - IDs de los tutores a restaurar
      */
     const handleBulkRestore = (ids: string[]) => {
-        setConfirmation({
-            isOpen: true,
-            title: "Confirmar Restauración Masiva",
-            message: `¿Estás seguro de que deseas restaurar los ${ids.length} tutores seleccionados?`,
-            onConfirm: async () => {
-                try {
-                    await bulkRestoreTutors(ids);
-                } catch (e) { 
-                    console.error("[TutorsPage] Error al restaurar tutores masivamente:", e); 
-                }
-                finally { setConfirmation(null); }
-            },
-            confirmText: "Restaurar",
-            variant: "success",
-        });
+        bulkRestoreTutors(ids).catch(console.error);
     };
 
     return (
@@ -460,15 +450,14 @@ export default function TutorsPage() {
                         ]}
                     />
 
-                    {/* Modal de Confirmación Global */}
                     <UnifiedDialog
-                        isOpen={!!confirmation}
-                        onClose={() => !loadingAction && setConfirmation(null)}
-                        onConfirm={confirmation?.onConfirm || (() => { })}
+                        isOpen={confirmation?.isOpen || false}
+                        onClose={() => setConfirmation(null)}
                         title={confirmation?.title || ""}
                         message={confirmation?.message || ""}
                         confirmLabel={confirmation?.confirmText || "Confirmar"}
                         variant={confirmation?.variant || "info"}
+                        onConfirm={confirmation?.onConfirm || (() => {})}
                         isLoading={loadingAction}
                     />
                 </div>

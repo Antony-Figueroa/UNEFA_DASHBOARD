@@ -222,24 +222,27 @@ export default function StudentsPage() {
     const handleToggleStatus = (student: StudentRowData) => {
         const original = Array.isArray(students) ? students.find((s) => s.studentId === student.studentId) : null;
         if (!original) return;
-        const goingInactive = !!original.status;
-        setConfirmation({
-            isOpen: true,
-            title: goingInactive ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
-            message: goingInactive 
-                ? `¿Estás seguro de que deseas enviar al estudiante "${original.firstName} ${original.lastName}" a Inactivos?`
-                : `¿Estás seguro de que deseas restaurar al estudiante "${original.firstName} ${original.lastName}"?`,
-            onConfirm: async () => {
-                try {
-                    await toggleStatus(original);
-                } catch (e) { 
-                    console.error("[StudentsPage] Error al cambiar estado:", e); 
-                }
-                finally { setConfirmation(null); }
-            },
-            confirmText: goingInactive ? "Confirmar" : "Restaurar",
-            variant: goingInactive ? "error" : "success",
-        });
+
+        if (original.status) {
+            setConfirmation({
+                isOpen: true,
+                title: "Confirmar Desactivación",
+                message: `¿Estás seguro de que deseas desactivar al estudiante "${student.fullNames}"?`,
+                onConfirm: async () => {
+                    try {
+                        await toggleStatus(original);
+                    } catch (error) {
+                        console.error("[StudentsPage] Error toggling status:", error);
+                    } finally {
+                        setConfirmation(null);
+                    }
+                },
+                confirmText: "Desactivar",
+                variant: "error",
+            });
+        } else {
+            toggleStatus(original).catch(console.error);
+        }
     };
 
     /**
@@ -250,19 +253,19 @@ export default function StudentsPage() {
     const handleBulkDelete = (ids: string[]) => {
         setConfirmation({
             isOpen: true,
-            title: "Confirmar Envío a Inactivos (Masivo)",
-            message: `¿Estás seguro de que deseas enviar los ${ids.length} estudiantes seleccionados a Inactivos?`,
+            title: "Confirmar Eliminación Masiva",
+            message: `¿Estás seguro de que deseas desactivar ${ids.length} estudiantes seleccionados?`,
             onConfirm: async () => {
                 try {
                     await bulkRemoveStudents(ids);
                     setSelectedIds([]);
                 } catch (e) {
                     console.error("[StudentsPage] Error en eliminación masiva:", e);
-                    setSelectedIds([]);
+                } finally {
+                    setConfirmation(null);
                 }
-                finally { setConfirmation(null); }
             },
-            confirmText: "Confirmar",
+            confirmText: "Desactivar Todos",
             variant: "error",
         });
     };
@@ -276,19 +279,19 @@ export default function StudentsPage() {
         setConfirmation({
             isOpen: true,
             title: "Confirmar Restauración Masiva",
-            message: `¿Estás seguro de que deseas restaurar los ${ids.length} estudiantes seleccionados?`,
+            message: `¿Estás seguro de que deseas restaurar ${ids.length} estudiantes seleccionados?`,
             onConfirm: async () => {
                 try {
                     await bulkRestoreStudents(ids);
                     setSelectedIds([]);
                 } catch (e) {
                     console.error("[StudentsPage] Error en restauración masiva:", e);
-                    setSelectedIds([]);
+                } finally {
+                    setConfirmation(null);
                 }
-                finally { setConfirmation(null); }
             },
-            confirmText: "Restaurar",
-            variant: "success",
+            confirmText: "Restaurar Todos",
+            variant: "info",
         });
     };
 

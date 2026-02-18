@@ -8,12 +8,15 @@ import { PlusCircleIcon } from "../../icons/actions";
 import { List, ListValue } from "../../features/lists/types";
 import * as listsService from "../../features/lists/services/listsService";
 import Badge from "../../components/ui/badge/Badge";
-import { PencilIcon, TrashBinIcon } from "../../icons";
+import { PencilIcon, TrashBinIcon, CheckCircleIcon } from "../../icons";
 import { Modal, ModalHeader, ModalBody } from "../../components/ui/modal";
 import { CrudForm, CrudFieldConfig, CrudFormValues } from "../../features/crudTemplate/components/CrudForm";
-import { CrudConfirmDialog, CrudConfirmState } from "../../features/crudTemplate/components/CrudConfirmDialog";
+import { UnifiedDialog } from "../../components/ui/dialog/UnifiedDialog";
+import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
+import { useToast } from "../../context/toast";
 
 const ListsConfiguration = () => {
+  const { addToast } = useToast();
   const [lists, setLists] = useState<List[]>([]);
   const [selectedList, setSelectedList] = useState<List | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,73 +27,163 @@ const ListsConfiguration = () => {
   const [isValueModalOpen, setIsValueModalOpen] = useState(false);
   const [editingValue, setEditingValue] = useState<ListValue | null>(null);
   
-  // Confirm states
-  const [confirmState, setConfirmState] = useState<CrudConfirmState | null>(null);
+  // Dirty states
+  const [isListDirty, setIsListDirty] = useState(false);
+  const [isValueDirty, setIsValueDirty] = useState(false);
+
+  // Delete Confirm states - Removed as part of redundant confirmation cleanup
+
+  /**
+   * Definición de tipos para el estado de confirmación.
+   */
+  type ConfirmationInfo = {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    confirmText?: string;
+    cancelText?: string;
+    variant?: "info" | "warning" | "error" | "success" | "confirm";
+  };
+
+  const [confirmation, setConfirmation] = useState<ConfirmationInfo | null>(null);
+
+  const {
+    showConfirmation: showListExitConfirm,
+    handleCloseAttempt: handleListCloseAttempt,
+    confirmClose: confirmListClose,
+    cancelClose: cancelListClose,
+  } = useUnsavedChanges(isListDirty, () => {
+    setIsListModalOpen(false);
+    setIsListDirty(false);
+  });
+
+  const {
+    showConfirmation: showValueExitConfirm,
+    handleCloseAttempt: handleValueCloseAttempt,
+    confirmClose: confirmValueClose,
+    cancelClose: cancelValueClose,
+  } = useUnsavedChanges(isValueDirty, () => {
+    setIsValueModalOpen(false);
+    setIsValueDirty(false);
+  });
+
 
   const loadLists = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await listsService.getAllLists();
       setLists(data);
-      if (data.length > 0 && !selectedList) {
-        setSelectedList(data[0]);
-      } else if (selectedList) {
-        const updated = data.find(l => l.id === selectedList.id);
-        if (updated) setSelectedList(updated);
-      }
+      
+      setSelectedList(prev => {
+        if (data.length === 0) return null;
+        if (prev) {
+          const found = data.find(l => l.id === prev.id);
+          if (found) return found;
+        }
+        return data[0] || null;
+      });
     } catch (error) {
       console.error("Error loading lists:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [selectedList]);
+  }, []);
 
   useEffect(() => {
     loadLists();
   }, [loadLists]);
 
   const handleToggleListStatus = async (list: List) => {
-    try {
-      await listsService.toggleListStatus(list.id, !list.status);
-      loadLists();
-    } catch (error) {
-      console.error("Error toggling list status:", error);
-    }
+    const isActivating = !list.status;
+    setConfirmation({
+      isOpen: true,
+      title: isActivating ? "Confirmar Activación" : "Confirmar Desactivación",
+      message: isActivating 
+        ? `¿Estás seguro de que deseas activar la lista "${list.name}"?` 
+        : `¿Estás seguro de que deseas desactivar la lista "${list.name}"?`,
+      confirmText: isActivating ? "Activar" : "Desactivar",
+      variant: isActivating ? "success" : "error",
+      onConfirm: async () => {
+        try {
+          await listsService.toggleListStatus(list.id, isActivating);
+          loadLists();
+          addToast({
+            variant: "success",
+            title: isActivating ? "Lista activada" : "Lista desactivada",
+            message: isActivating 
+              ? `La lista "${list.name}" ha sido activada correctamente.`
+              : `La lista "${list.name}" ha sido desactivada correctamente.`
+          });
+        } catch (error: any) {
+          console.error("Error toggling list status:", error);
+          addToast({
+            variant: "error",
+            title: "Error al cambiar estado",
+            message: error.response?.data?.message || error.message || "No se pudo cambiar el estado de la lista."
+          });
+        } finally {
+          setConfirmation(null);
+        }
+      }
+    });
   };
 
   const handleToggleValueStatus = async (value: ListValue) => {
-    try {
-      await listsService.toggleValueStatus(value.id, !value.status);
-      loadLists();
-    } catch (error) {
-      console.error("Error toggling value status:", error);
-    }
+    const isActivating = !value.status;
+    setConfirmation({
+      isOpen: true,
+      title: isActivating ? "Confirmar Activación" : "Confirmar Desactivación",
+      message: isActivating 
+        ? `¿Estás seguro de que deseas activar el valor "${value.name}"?` 
+        : `¿Estás seguro de que deseas desactivar el valor "${value.name}"?`,
+      confirmText: isActivating ? "Activar" : "Desactivar",
+      variant: isActivating ? "success" : "error",
+      onConfirm: async () => {
+        try {
+          await listsService.toggleValueStatus(value.id, isActivating);
+          loadLists();
+        } catch (error) {
+          console.error("Error toggling value status:", error);
+        } finally {
+          setConfirmation(null);
+        }
+      }
+    });
   };
 
-  const handleDeleteList = async (id: string) => {
-    try {
-      await listsService.deleteList(id);
-      if (selectedList?.id === id) {
-        setSelectedList(null);
-      }
-      loadLists();
-      setConfirmState(null);
-    } catch (error) {
-      console.error("Error deleting list:", error);
-    }
-  };
 
   const handleDeleteValue = async (id: string) => {
-    try {
-      await listsService.deleteValue(id);
-      loadLists();
-      setConfirmState(null);
-    } catch (error) {
-      console.error("Error deleting value:", error);
-    }
+    setConfirmation({
+      isOpen: true,
+      title: "Eliminar Valor",
+      message: "¿Estás seguro de que deseas eliminar este valor? Esta acción no se puede deshacer.",
+      confirmText: "Eliminar",
+      variant: "error",
+      onConfirm: async () => {
+        try {
+          await listsService.deleteValue(id);
+          loadLists();
+          addToast({
+            variant: "success",
+            title: "Valor eliminado",
+            message: "El valor ha sido eliminado correctamente."
+          });
+        } catch (error: any) {
+          console.error("Error deleting value:", error);
+          addToast({
+            variant: "error",
+            title: "Error al eliminar valor",
+            message: error.response?.data?.message || error.message || "No se pudo eliminar el valor."
+          });
+        } finally {
+          setConfirmation(null);
+        }
+      }
+    });
   };
 
-  const handleSaveList = async (values: CrudFormValues) => {
+  const performSaveList = async (values: CrudFormValues) => {
     try {
       if (editingList) {
         await listsService.updateList(editingList.id, values.name as string);
@@ -98,13 +191,14 @@ const ListsConfiguration = () => {
         await listsService.createList(values.name as string);
       }
       setIsListModalOpen(false);
+      setIsListDirty(false);
       loadLists();
     } catch (error) {
       console.error("Error saving list:", error);
     }
   };
 
-  const handleSaveValue = async (values: CrudFormValues) => {
+  const performSaveValue = async (values: CrudFormValues) => {
     if (!selectedList) return;
     try {
       if (editingValue) {
@@ -113,6 +207,7 @@ const ListsConfiguration = () => {
         await listsService.createValue(selectedList.id, values.name as string, values.abbreviation as string);
       }
       setIsValueModalOpen(false);
+      setIsValueDirty(false);
       loadLists();
     } catch (error) {
       console.error("Error saving value:", error);
@@ -163,7 +258,14 @@ const ListsConfiguration = () => {
           {/* Panel Izquierdo: Listas */}
           <div className="lg:col-span-1">
             <ComponentCard 
-              title="Listas Disponibles"
+              title={
+                <span className="flex items-center gap-2">
+                  Listas Disponibles
+                  <span className="text-sm font-normal text-text-tertiary dark:text-text-tertiary">
+                    ({lists.length})
+                  </span>
+                </span>
+              }
               headerAction={
                 <button 
                   className="text-brand-500 hover:text-brand-600 transition-colors"
@@ -214,23 +316,29 @@ const ListsConfiguration = () => {
                         >
                           <PencilIcon className="h-3.5 w-3.5" />
                         </button>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setConfirmState({
-                              isOpen: true,
-                              title: "¿Eliminar lista?",
-                              message: `¿Estás seguro de que deseas eliminar la lista "${list.name}"? Esta acción eliminará también todos sus valores asociados.`,
-                              confirmText: "Eliminar",
-                              variant: "error",
-                              onConfirm: () => handleDeleteList(list.id)
-                            });
-                          }}
-                          className="p-1 opacity-0 group-hover:opacity-100 hover:text-error-500 transition-all"
-                          title="Eliminar"
-                        >
-                          <TrashBinIcon className="h-3.5 w-3.5" />
-                        </button>
+                        {list.status ? (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleListStatus(list);
+                            }}
+                            className="p-1 opacity-0 group-hover:opacity-100 hover:text-error-500 transition-all"
+                            title="Desactivar"
+                          >
+                            <TrashBinIcon className="h-3.5 w-3.5" />
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleListStatus(list);
+                            }}
+                            className="p-1 opacity-0 group-hover:opacity-100 hover:text-success-500 transition-all"
+                            title="Activar"
+                          >
+                            <CheckCircleIcon className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -247,31 +355,34 @@ const ListsConfiguration = () => {
           {/* Panel Derecho: Valores de la Lista Seleccionada */}
           <div className="lg:col-span-2">
             <ComponentCard 
-              title={selectedList ? `Valores: ${selectedList.name}` : "Seleccione una lista"}
-              headerAction={
-                selectedList && (
-                  <div className="flex items-center gap-3">
-                    <Button 
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleToggleListStatus(selectedList)}
-                      className={selectedList.status ? "text-error-500 border-error-200" : "text-success-500 border-success-200"}
-                    >
-                      {selectedList.status ? "Desactivar Lista" : "Activar Lista"}
-                    </Button>
-                    <Button 
-                      size="sm"
-                      onClick={() => {
-                        setEditingValue(null);
-                        setIsValueModalOpen(true);
-                      }}
-                      startIcon={<PlusCircleIcon className="h-4 w-4" />}
-                    >
-                      Añadir Valor
-                    </Button>
-                  </div>
+              title={
+                selectedList ? (
+                  <span className="flex items-center gap-2">
+                    Valores: {selectedList.name}
+                    <span className="text-sm font-normal text-text-tertiary dark:text-text-tertiary">
+                      ({selectedList.values.length})
+                    </span>
+                  </span>
+                ) : (
+                  "Seleccione una lista"
                 )
               }
+              headerAction={
+                 selectedList && (
+                   <div className="flex items-center gap-3">
+                     <Button 
+                       size="sm"
+                       onClick={() => {
+                         setEditingValue(null);
+                         setIsValueModalOpen(true);
+                       }}
+                       startIcon={<PlusCircleIcon className="h-4 w-4" />}
+                     >
+                       Añadir Valor
+                     </Button>
+                   </div>
+                 )
+               }
             >
               <SkeletonLoader
                 isLoading={isLoading}
@@ -323,16 +434,7 @@ const ListsConfiguration = () => {
                                 <button 
                                   className="p-1.5 text-text-secondary hover:text-error-500 transition-colors"
                                   title="Eliminar"
-                                  onClick={() => {
-                                    setConfirmState({
-                                      isOpen: true,
-                                      title: "¿Eliminar valor?",
-                                      message: `¿Estás seguro de que deseas eliminar "${val.name}"? Esta acción no se puede deshacer.`,
-                                      confirmText: "Eliminar",
-                                      variant: "error",
-                                      onConfirm: () => handleDeleteValue(val.id)
-                                    });
-                                  }}
+                                  onClick={() => handleDeleteValue(val.id)}
                                 >
                                   <TrashBinIcon className="h-4 w-4" />
                                 </button>
@@ -363,38 +465,72 @@ const ListsConfiguration = () => {
       </div>
 
       {/* List Modal */}
-      <Modal isOpen={isListModalOpen} onClose={() => setIsListModalOpen(false)}>
+      <Modal isOpen={isListModalOpen} onClose={handleListCloseAttempt}>
         <ModalHeader>{editingList ? "Editar Lista" : "Nueva Lista"}</ModalHeader>
         <ModalBody>
           <CrudForm 
             fields={listFields}
             initialValues={editingList ? { name: editingList.name } : {}}
-            onSubmit={handleSaveList}
+            onSubmit={performSaveList}
             secondaryActionLabel="Cancelar"
-            onSecondaryAction={() => setIsListModalOpen(false)}
+            onSecondaryAction={handleListCloseAttempt}
+            onDirtyChange={setIsListDirty}
           />
         </ModalBody>
       </Modal>
 
       {/* Value Modal */}
-      <Modal isOpen={isValueModalOpen} onClose={() => setIsValueModalOpen(false)}>
+      <Modal isOpen={isValueModalOpen} onClose={handleValueCloseAttempt}>
         <ModalHeader>{editingValue ? "Editar Valor" : "Nuevo Valor"}</ModalHeader>
         <ModalBody>
           <CrudForm 
             fields={valueFields}
             initialValues={editingValue ? { name: editingValue.name, abbreviation: editingValue.abbreviation } : {}}
-            onSubmit={handleSaveValue}
+            onSubmit={performSaveValue}
             secondaryActionLabel="Cancelar"
-            onSecondaryAction={() => setIsValueModalOpen(false)}
+            onSecondaryAction={handleValueCloseAttempt}
+            onDirtyChange={setIsValueDirty}
           />
         </ModalBody>
       </Modal>
 
-      {/* Confirm Dialog */}
-      <CrudConfirmDialog 
-        state={confirmState}
-        onClose={() => setConfirmState(null)}
+      {/* Unsaved Changes Confirm Dialog - List */}
+      <UnifiedDialog
+        isOpen={showListExitConfirm}
+        onClose={cancelListClose}
+        onConfirm={confirmListClose}
+        title="Cambios no guardados"
+        message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
+        confirmLabel="Cerrar sin guardar"
+        cancelLabel="Continuar editando"
+        variant="warning"
       />
+
+      {/* Unsaved Changes Confirm Dialog - Value */}
+      <UnifiedDialog
+        isOpen={showValueExitConfirm}
+        onClose={cancelValueClose}
+        onConfirm={confirmValueClose}
+        title="Cambios no guardados"
+        message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
+        confirmLabel="Cerrar sin guardar"
+        cancelLabel="Continuar editando"
+        variant="warning"
+      />
+
+      {/* General Action Confirmation Dialog */}
+      {confirmation && (
+        <UnifiedDialog
+          isOpen={confirmation.isOpen}
+          onClose={() => setConfirmation(null)}
+          onConfirm={confirmation.onConfirm}
+          title={confirmation.title}
+          message={confirmation.message}
+          confirmLabel={confirmation.confirmText || "Confirmar"}
+          cancelLabel={confirmation.cancelText || "Cancelar"}
+          variant={confirmation.variant || "info"}
+        />
+      )}
     </>
   );
 };

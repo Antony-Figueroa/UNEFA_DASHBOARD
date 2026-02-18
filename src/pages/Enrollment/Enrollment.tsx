@@ -241,25 +241,29 @@ export default function EnrollmentPage() {
     const handleToggleStatus = (row: EnrollmentRowData) => {
         const original = enrollments.find((e) => e.enrollmentId === row.enrollmentId);
         if (!original) return;
-        const goingInactive = original.status === true;
-        setConfirmation({
-            isOpen: true,
-            title: goingInactive ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
-            message: goingInactive 
-                ? `¿Estás seguro de que deseas enviar la inscripción de "${original.studentName}" a Inactivos?`
-                : `¿Estás seguro de que deseas restaurar la inscripción de "${original.studentName}"?`,
-            onConfirm: async () => {
-                try {
-                    await toggleStatus(original);
-                } catch (e) { 
-                    console.error("[EnrollmentPage] Error toggling status:", e); 
-                } finally { 
-                    setConfirmation(null); 
-                }
-            },
-            confirmText: goingInactive ? "Confirmar" : "Restaurar",
-            variant: goingInactive ? "error" : "success",
-        });
+
+        // Si está activo y se va a desactivar, pedir confirmación
+        if (original.status) {
+            setConfirmation({
+                isOpen: true,
+                title: "Confirmar Desactivación",
+                message: `¿Estás seguro de que deseas desactivar la inscripción de ${row.studentName}?`,
+                onConfirm: async () => {
+                    try {
+                        await toggleStatus(original);
+                    } catch (error) {
+                        console.error("[EnrollmentPage] Error toggling status:", error);
+                    } finally {
+                        setConfirmation(null);
+                    }
+                },
+                confirmText: "Desactivar",
+                variant: "error",
+            });
+        } else {
+            // Si se va a activar, hacerlo directamente (o agregar confirmación si se desea)
+            toggleStatus(original).catch(console.error);
+        }
     };
 
     return (

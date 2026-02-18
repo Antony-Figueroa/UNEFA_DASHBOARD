@@ -302,21 +302,42 @@ export default function CareersPage() {
     const original = careers.find((c) => String(c.careerId) === String(careerId));
     if (!original) return;
     const goingInactive = original.status === true || original.status === 1;
-    setConfirmation({
-      isOpen: true,
-      title: goingInactive ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
-      message: goingInactive 
-        ? `¿Estás seguro de que deseas enviar la carrera "${original.careerName}" a Inactivos?`
-        : `¿Estás seguro de que deseas restaurar la carrera "${original.careerName}"?`,
-      onConfirm: async () => {
-        try {
-          await toggleStatus(careerId, !goingInactive);
-        } catch (e) { console.error(e); }
-        finally { setConfirmation(null); }
-      },
-      confirmText: goingInactive ? "Confirmar" : "Restaurar",
-      variant: goingInactive ? "error" : "success",
-    });
+
+    if (goingInactive) {
+      setConfirmation({
+        isOpen: true,
+        title: "Confirmar Desactivación",
+        message: `¿Estás seguro de que deseas desactivar la carrera "${original.careerName}"?`,
+        onConfirm: async () => {
+          try {
+            await toggleStatus(careerId, false);
+          } catch (e) {
+            console.error(e);
+          } finally {
+            setConfirmation(null);
+          }
+        },
+        confirmText: "Desactivar",
+        variant: "error",
+      });
+    } else {
+      setConfirmation({
+        isOpen: true,
+        title: "Confirmar Activación",
+        message: `¿Estás seguro de que deseas activar la carrera "${original.careerName}"?`,
+        onConfirm: async () => {
+          try {
+            await toggleStatus(careerId, true);
+          } catch (e) {
+            console.error(e);
+          } finally {
+            setConfirmation(null);
+          }
+        },
+        confirmText: "Activar",
+        variant: "success",
+      });
+    }
   };
 
   /**
@@ -326,21 +347,42 @@ export default function CareersPage() {
     const original = internshipTypes.find((t) => t.id === id);
     if (!original) return;
     const goingInactive = original.status;
-    setConfirmation({
-      isOpen: true,
-      title: goingInactive ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
-      message: goingInactive 
-        ? `¿Estás seguro de que deseas enviar el tipo de práctica "${original.name}" a Inactivos?`
-        : `¿Estás seguro de que deseas restaurar el tipo de práctica "${original.name}"?`,
-      onConfirm: async () => {
-        try {
-          await toggleTypeStatus(id, !goingInactive);
-        } catch (e) { console.error(e); }
-        finally { setConfirmation(null); }
-      },
-      confirmText: goingInactive ? "Confirmar" : "Restaurar",
-      variant: goingInactive ? "error" : "success",
-    });
+
+    if (goingInactive) {
+      setConfirmation({
+        isOpen: true,
+        title: "Confirmar Desactivación",
+        message: `¿Estás seguro de que deseas desactivar el tipo de práctica "${original.name}"?`,
+        onConfirm: async () => {
+          try {
+            await toggleTypeStatus(id, false);
+          } catch (e) {
+            console.error(e);
+          } finally {
+            setConfirmation(null);
+          }
+        },
+        confirmText: "Desactivar",
+        variant: "error",
+      });
+    } else {
+      setConfirmation({
+        isOpen: true,
+        title: "Confirmar Activación",
+        message: `¿Estás seguro de que deseas activar el tipo de práctica "${original.name}"?`,
+        onConfirm: async () => {
+          try {
+            await toggleTypeStatus(id, true);
+          } catch (e) {
+            console.error(e);
+          } finally {
+            setConfirmation(null);
+          }
+        },
+        confirmText: "Activar",
+        variant: "success",
+      });
+    }
   };
 
   /**
@@ -353,8 +395,8 @@ export default function CareersPage() {
 
     setConfirmation({
       isOpen: true,
-      title: "Confirmar Envío a Inactivos",
-      message: `¿Estás seguro de que deseas enviar la carrera "${original.careerName}" a Inactivos?`,
+      title: "Eliminar Carrera Permanentemente",
+      message: `¿Estás seguro de que deseas eliminar permanentemente la carrera "${original.careerName}"? Esta acción no se puede deshacer.`,
       onConfirm: async () => {
         try {
           await removeCareer(careerId);

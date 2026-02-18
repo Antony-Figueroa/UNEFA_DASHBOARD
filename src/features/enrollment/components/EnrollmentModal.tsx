@@ -8,7 +8,6 @@ import { Enrollment, CreateEnrollmentPayload, UpdateEnrollmentPayload } from "..
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import CustomSelect from "../../../components/form/CustomSelect";
-import CustomSelect from "../../../components/form/CustomSelect";
 import { Student } from "../../students/types";
 import { getStudents } from "../../students/services/studentsService";
 import { getPeriods } from "../../periods/services/periodService";
@@ -103,6 +102,8 @@ export default function EnrollmentModal({
   const [isLoadingPeriods, setIsLoadingPeriods] = useState(false);
   const [preEnrollmentError, setPreEnrollmentError] = useState<string | null>(null);
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingData, setPendingData] = useState<EnrollmentFormData | null>(null);
 
   const { responsibles } = useInstitutionalResponsibles();
   const { fetchMultipleLists } = useLists();
@@ -358,7 +359,13 @@ export default function EnrollmentModal({
    */
   const onSubmit = (data: EnrollmentFormData) => {
     if (preEnrollmentError) return;
-    if (!window.confirm("¿Guardar la inscripción del estudiante?")) return;
+    setPendingData(data);
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmSave = () => {
+    if (!pendingData) return;
+    const data = pendingData;
 
     const academicTutor = tutors.find(t => t.tutorId === data.academicTutorId);
     const methodologicalTutor = tutors.find(t => t.tutorId === data.methodologicalTutorId);
@@ -378,7 +385,6 @@ export default function EnrollmentModal({
     const normalized = Object.fromEntries(
       Object.entries(baseData).map(([k, v]) => {
         if (typeof v === "string") return [k, v.toUpperCase()];
-        if (Array.isArray(v)) return [k, v.map((x) => (typeof x === "string" ? x.toUpperCase() : x))];
         return [k, v];
       })
     ) as typeof baseData;
@@ -395,6 +401,9 @@ export default function EnrollmentModal({
         status: true,
       } as CreateEnrollmentPayload);
     }
+    
+    setShowConfirmDialog(false);
+    setPendingData(null);
   };
 
   /**
@@ -514,11 +523,11 @@ export default function EnrollmentModal({
                 name="practiceType"
                 control={control}
                 render={({ field }) => (
-                  <Select
+                  <CustomSelect
                     options={practiceOptions}
                     placeholder="Seleccione el tipo"
                     onChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                     disabled={!editingEntry}
                   />
                 )}
@@ -701,6 +710,19 @@ export default function EnrollmentModal({
       message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
       confirmLabel="Cerrar sin guardar"
       cancelLabel="Continuar editando"
+    />
+
+    <UnifiedDialog
+      isOpen={showConfirmDialog}
+      onClose={() => {
+        setShowConfirmDialog(false);
+        setPendingData(null);
+      }}
+      onConfirm={handleConfirmSave}
+      title={editingEntry ? "Actualizar Inscripción" : "Guardar Inscripción"}
+      message={`¿Estás seguro de que deseas ${editingEntry ? 'actualizar' : 'guardar'} la inscripción del estudiante?`}
+      variant="confirm"
+      confirmLabel={editingEntry ? "Actualizar" : "Guardar"}
     />
   </>
 );

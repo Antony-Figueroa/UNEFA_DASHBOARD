@@ -9,19 +9,17 @@ const TopBanner: React.FC = () => {
   const isHovered = sidebarContext?.isHovered ?? false;
   const isMobileOpen = sidebarContext?.isMobileOpen ?? false;
   
-  const [isVisible, setIsVisible] = useState(true);
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024);
-  const scrollRef = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const updateBannerHeight = useCallback(() => {
-    if (containerRef.current && isVisible && isLargeScreen) {
+    if (containerRef.current && isLargeScreen) {
       const height = containerRef.current.offsetHeight;
       document.documentElement.style.setProperty("--banner-height", `${height}px`);
     } else {
       document.documentElement.style.setProperty("--banner-height", "0px");
     }
-  }, [isVisible, isLargeScreen]);
+  }, [isLargeScreen]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -39,34 +37,6 @@ const TopBanner: React.FC = () => {
     : (isExpanded || isHovered ? "290px" : "90px");
 
   useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      // Use requestAnimationFrame for performance
-      if (scrollRef.current) {
-        cancelAnimationFrame(scrollRef.current);
-      }
-
-      scrollRef.current = requestAnimationFrame(() => {
-        // El banner solo es visible en la posición inicial (0) del scroll
-        if (currentScrollY <= 0) {
-          setIsVisible(true);
-        } else {
-          setIsVisible(false);
-        }
-      });
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (scrollRef.current) {
-        cancelAnimationFrame(scrollRef.current);
-      }
-    };
-  }, [sidebarContext]);
-
-  useEffect(() => {
     updateBannerHeight();
   }, [updateBannerHeight, sidebarWidth]);
 
@@ -77,9 +47,7 @@ const TopBanner: React.FC = () => {
         left: sidebarWidth,
         width: `calc(100% - ${sidebarWidth})`
       }}
-      className={`${!sidebarContext ? "relative" : "fixed top-0"} ${!isLargeScreen ? "hidden" : "flex"} bg-white dark:bg-bg-dark border-b border-border-light dark:border-border-dark overflow-hidden z-40 transition-all duration-300 ease-in-out items-center justify-start ${
-        isVisible ? "h-auto opacity-100" : "h-0 opacity-0 border-none"
-      }`}
+      className={`${!sidebarContext ? "relative" : "fixed top-0"} ${!isLargeScreen ? "hidden" : "flex"} bg-white dark:bg-bg-dark border-b border-border-light dark:border-border-dark overflow-hidden z-40 transition-all duration-300 ease-in-out items-center justify-start h-auto opacity-100`}
     >
       <img
         src="/unefa-img/menbrete-nuevo.jpg"

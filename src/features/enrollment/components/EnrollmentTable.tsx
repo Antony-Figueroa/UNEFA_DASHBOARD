@@ -68,27 +68,26 @@ type SortOrder = "asc" | "desc";
  * Props for the ActionButtons sub-component.
  */
 interface ActionButtonsProps {
-  /** Callback for the edit action */
-  onEdit?: () => void;
-  /** Callback for the toggle status action */
-  onToggleStatus?: () => void;
-  /** Callback for the view action */
   onView?: () => void;
-  /** Current active status of the item */
+  onEdit?: () => void;
+  onToggleStatus?: () => void;
   status: boolean;
-  /** Whether the component is rendered in a mobile view */
   isMobile?: boolean;
+  canEdit?: boolean;
+  canToggle?: boolean;
 }
 
 /**
  * Sub-component for rendering action buttons (view, edit, toggle status).
  */
 const ActionButtons = ({
+  onView,
   onEdit,
   onToggleStatus,
-  onView,
   status,
   isMobile = false,
+  canEdit = false,
+  canToggle = false,
 }: ActionButtonsProps) => {
   const containerClasses = isMobile 
     ? "flex flex-col gap-3 pt-2" 
@@ -106,11 +105,9 @@ const ActionButtons = ({
           fullWidth={isMobile}
         />
       )}
-      {onEdit && status && (
+      {canEdit && status && onEdit && (
         <AsyncActionButton
-          onClick={async () => {
-            if (window.confirm("¿Editar esta inscripción?")) onEdit();
-          }}
+          onClick={async () => onEdit()}
           icon={<EditIcon />}
           tooltip="Editar"
           label={isMobile ? "Editar Inscripción" : undefined}
@@ -118,12 +115,9 @@ const ActionButtons = ({
           fullWidth={isMobile}
         />
       )}
-      {onToggleStatus && (
+      {canToggle && onToggleStatus && (
         <AsyncActionButton
-          onClick={async () => {
-            const msg = status ? "¿Eliminar esta inscripción?" : "¿Restaurar esta inscripción?";
-            if (window.confirm(msg)) onToggleStatus();
-          }}
+          onClick={async () => onToggleStatus()}
           icon={status ? <TrashIcon /> : <RefreshIcon />}
           tooltip={status ? "Eliminar" : "Restaurar"}
           label={isMobile ? (status ? "Eliminar Inscripción" : "Restaurar Inscripción") : undefined}
@@ -574,6 +568,8 @@ export default function EnrollmentTable({
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
                                             status={s.status}
+                                            canEdit={!!onEdit}
+                                            canToggle={!!onToggleStatus}
                                         />
                                     </TableCell>
                                 </TableRow>
@@ -653,6 +649,8 @@ export default function EnrollmentTable({
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
                                             status={s.status}
+                                            canEdit={!!onEdit}
+                                            canToggle={!!onToggleStatus}
                                             isMobile={true}
                                         />
                                     </div>

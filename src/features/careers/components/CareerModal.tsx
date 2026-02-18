@@ -5,7 +5,7 @@
  * y protección contra pérdida de cambios no guardados.
  */
 
-import { useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -166,6 +166,10 @@ export default function CareerModal({
     cancelClose,
   } = useUnsavedChanges(isDirty, onClose);
 
+  // Estado para la confirmación de guardado
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [pendingData, setPendingData] = useState<CareerFormData | null>(null);
+
   useEffect(() => {
     if (isOpen) {
       isInitializing.current = true;
@@ -210,16 +214,23 @@ export default function CareerModal({
   }, [lastCreatedInternshipTypeId, onConsumeLastCreatedInternshipType, setValue, getValues]);
 
   const onSubmit = (data: CareerFormData) => {
-    if (!window.confirm("¿Guardar la información de la carrera?")) return;
-    onSave({
-      careerName: data.careerName.toUpperCase(),
-      careerCode: data.careerCode.toUpperCase(),
-      careerAbbreviation: data.careerAbbreviation.toUpperCase(),
-      careerType: data.careerType,
-      internshipTypeIds: data.internshipTypeIds || [],
-      minimumGrade: Number(data.minimumGrade),
-      status: editingCareer?.status ?? 1,
-    } as Omit<Career, "careerId" | "creationDate">);
+    setPendingData(data);
+    setShowSaveConfirmation(true);
+  };
+
+  const handleConfirmSave = () => {
+    if (pendingData) {
+      onSave({
+        careerName: pendingData.careerName.toUpperCase(),
+        careerCode: pendingData.careerCode.toUpperCase(),
+        careerAbbreviation: pendingData.careerAbbreviation.toUpperCase(),
+        careerType: pendingData.careerType,
+        internshipTypeIds: pendingData.internshipTypeIds || [],
+        minimumGrade: Number(pendingData.minimumGrade),
+        status: editingCareer?.status ?? 1,
+      } as Omit<Career, "careerId" | "creationDate">);
+      setShowSaveConfirmation(false);
+    }
   };
 
   // Mapear opciones para que el value sea el ID (necesario para MultiSelect en este modal)
@@ -451,15 +462,26 @@ export default function CareerModal({
     </Modal>
 
     <UnifiedDialog
-      isOpen={showConfirmation}
-      onClose={cancelClose}
-      onConfirm={confirmClose}
-      variant="warning"
-      title="Cambios no guardados"
-      message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
-      confirmLabel="Cerrar sin guardar"
-      cancelLabel="Continuar editando"
-    />
-  </>
-);
+        isOpen={showConfirmation}
+        onClose={cancelClose}
+        onConfirm={confirmClose}
+        variant="warning"
+        title="Cambios no guardados"
+        message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
+        confirmLabel="Cerrar sin guardar"
+        cancelLabel="Continuar editando"
+      />
+
+      <UnifiedDialog
+        isOpen={showSaveConfirmation}
+        onClose={() => setShowSaveConfirmation(false)}
+        onConfirm={handleConfirmSave}
+        variant="confirm"
+        title="¿Guardar cambios?"
+        message="¿Estás seguro de que deseas guardar la información de la carrera?"
+        confirmLabel="Guardar"
+        cancelLabel="Cancelar"
+      />
+    </>
+  );
 }

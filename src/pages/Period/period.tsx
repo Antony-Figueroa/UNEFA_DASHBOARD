@@ -168,28 +168,18 @@ export default function Period() {
      * 
      * @param payload - Datos del periodo (CreatePeriodPayload o UpdatePeriodPayload).
      */
-    const handleSave = (payload: CreatePeriodPayload | UpdatePeriodPayload) => {
+    const handleSave = async (payload: CreatePeriodPayload | UpdatePeriodPayload) => {
         const isEditing = 'periodId' in payload;
-        setConfirmation({
-            isOpen: true,
-            title: isEditing ? 'Confirmar Modificación' : 'Confirmar Registro',
-            message: `¿Estás seguro de que deseas ${isEditing ? 'guardar los cambios en' : 'registrar'} este periodo?`,
-            onConfirm: async () => {
-                try {
-                    if (isEditing) {
-                        await editPeriod(payload as UpdatePeriodPayload);
-                    } else {
-                        await addPeriod(payload as CreatePeriodPayload);
-                    }
-                    handleCloseCreateEditModal();
-                    setConfirmation(null);
-                } catch (e) {
-                    console.error("[PeriodPage] Error al guardar periodo:", e);
-                }
-            },
-            confirmText: isEditing ? 'Guardar' : 'Registrar',
-            variant: 'info'
-        });
+        try {
+            if (isEditing) {
+                await editPeriod(payload as UpdatePeriodPayload);
+            } else {
+                await addPeriod(payload as CreatePeriodPayload);
+            }
+            handleCloseCreateEditModal();
+        } catch (e) {
+            console.error("[PeriodPage] Error al guardar periodo:", e);
+        }
     };
 
     /**
@@ -252,25 +242,14 @@ export default function Period() {
      * @param periodoRow - Datos de la fila del periodo a restaurar.
      */
     const handleRestore = async (periodoRow: PeriodoRowData) => {
-        setConfirmation({
-            isOpen: true,
-            title: 'Confirmar Restauración',
-            message: `¿Estás seguro de que deseas restaurar el periodo "${periodoRow.description}"?`,
-            onConfirm: async () => {
-                try {
-                    const originalPeriodo = periodos.find(p => p.periodId === periodoRow.periodId);
-                    if (originalPeriodo) {
-                        await editPeriod({ ...originalPeriodo, status: true });
-                    }
-                } catch (e) {
-                    console.error("[PeriodPage] Error al restaurar periodo:", e);
-                } finally {
-                    setConfirmation(null);
-                }
-            },
-            confirmText: 'Restaurar',
-            variant: 'success'
-        });
+        try {
+            const originalPeriodo = periodos.find(p => p.periodId === periodoRow.periodId);
+            if (originalPeriodo) {
+                await editPeriod({ ...originalPeriodo, status: true });
+            }
+        } catch (e) {
+            console.error("[PeriodPage] Error al restaurar periodo:", e);
+        }
     };
 
     /**

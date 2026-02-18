@@ -17,7 +17,7 @@ import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import { useToast } from "../../../context/toast";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { useLists } from "../../lists/hooks/useLists";
-import { ListValue } from "../../lists/types";
+import { List, ListValue } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { 
   studentSchema, 
@@ -73,6 +73,8 @@ export default function StudentModal({
   const { fetchMultipleLists } = useLists();
   const { addToast } = useToast();
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
+  const [pendingSave, setPendingSave] = useState<CreateStudentPayload | UpdateStudentPayload | null>(null);
 
   useEffect(() => {
     const loadOptions = async () => {
@@ -139,14 +141,7 @@ export default function StudentModal({
     { value: "VIUDO/A", label: "VIUDO/A" },
   ];
 
-  const VENEZUELA_PHONE_PREFIXES = options.CODIGOS_AREA || [
-    { value: "0412", label: "0412" },
-    { value: "0414", label: "0414" },
-    { value: "0424", label: "0424" },
-    { value: "0416", label: "0416" },
-    { value: "0426", label: "0426" },
-    { value: "0212", label: "0212" },
-  ];
+  const VENEZUELA_PHONE_PREFIXES = options.CODIGOS_AREA || [];
 
   const REGIME_OPTIONS = options["Regimen/Turno"] || [
     { value: "DIURNO", label: "DIURNO" },
@@ -279,11 +274,28 @@ export default function StudentModal({
     if (!raw) return;
     setSavingNewValue(true);
     try {
-      const list = await listsService.getListByName(targetListName);
+      let list: List | null = null;
+      try {
+        list = await listsService.getListByName(targetListName);
+      } catch (err: unknown) {
+        const status = (err as any)?.response?.status;
+        if (status === 404) {
+          const allLists = await listsService.getAllLists();
+          const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[_\s]+/g, " ").trim().toUpperCase();
+          const targetNorm = normalize(targetListName);
+          list = allLists.find(l => normalize(l.name) === targetNorm || normalize(l.name).includes(targetNorm) || targetNorm.includes(normalize(l.name))) || null;
+          if (!list) {
+            const createdList = await listsService.createList(targetListName);
+            list = createdList;
+          }
+        } else {
+          throw err;
+        }
+      }
       const upper = targetField === "phonePrefix" ? raw.replace(/\D/g, '').substring(0, 4) : raw.toUpperCase();
       
       // Evitar duplicados: si ya existe un valor con el mismo nombre/abreviación, seleccionarlo y salir
-      const existing = (list.values || []).find(v => {
+      const existing = (list!.values || []).find((v: { name: any; abbreviation: any; }) => {
         const byName = String(v.name || "").toUpperCase() === upper;
         const byAbbr = String(v.abbreviation || "").toUpperCase() === upper;
         return byName || byAbbr;
@@ -298,7 +310,7 @@ export default function StudentModal({
       }
 
       const abbr = (targetListName === "Nacionalidad") ? upper : undefined;
-      const created = await listsService.createValue(list.id, upper, abbr);
+      const created = await listsService.createValue(list!.id, upper, abbr);
       const mapped = { value: (targetListName === "Nacionalidad" && created.abbreviation) ? created.abbreviation.toUpperCase() : upper, label: (targetListName === "Nacionalidad" && created.abbreviation) ? created.abbreviation.toUpperCase() : upper };
       setOptions(prev => {
         const next = { ...prev };
@@ -383,11 +395,7 @@ export default function StudentModal({
 
   const onSubmit = async (data: StudentFormInput) => {
     try {
-      // data ya ha sido validado y transformado por zodResolver, 
-      // pero TS lo ve como StudentFormInput. Lo tratamos como el output validado.
       const validatedData = data as StudentFormOutput;
-      if (!window.confirm("¿Guardar la información del estudiante?")) return;
-
       const studentData: CreateStudentPayload = {
         identificationPrefix: validatedData.identificationPrefix.toUpperCase() as Student["identificationPrefix"],
         identificationNumber: validatedData.identificationNumber,
@@ -409,15 +417,12 @@ export default function StudentModal({
         militaryRank: validatedData.militaryRank.toUpperCase(),
         works: validatedData.works.toUpperCase() as Student["works"],
       };
-      
       if (editingStudent) {
-        onSave({
-          ...studentData,
-          studentId: editingStudent.studentId
-        } as UpdateStudentPayload);
+        setPendingSave({ ...(studentData as any), studentId: editingStudent.studentId } as UpdateStudentPayload);
       } else {
-        onSave(studentData);
+        setPendingSave(studentData);
       }
+      setConfirmSaveOpen(true);
     } catch (error) {
       console.error("[StudentModal] Error en validación:", error);
       addToast({
@@ -1020,6 +1025,23 @@ export default function StudentModal({
         </div>
       </ModalFooter>
     </Modal>
+
+    {confirmSaveOpen && (
+      <UnifiedDialog
+        isOpen={confirmSaveOpen}
+        onClose={() => setConfirmSaveOpen(false)}
+        onConfirm={() => {
+          if (pendingSave) {
+            onSave(pendingSave);
+          }
+          setConfirmSaveOpen(false);
+        }}
+        variant="confirm"
+        title={editingStudent ? "Confirmar actualización" : "Confirmar registro"}
+        message={editingStudent ? "¿Desea actualizar los datos del estudiante?" : "¿Desea guardar el nuevo estudiante?"}
+        confirmLabel={editingStudent ? "Actualizar" : "Guardar"}
+      />
+    )}
 
     <UnifiedDialog
       isOpen={showConfirmation}

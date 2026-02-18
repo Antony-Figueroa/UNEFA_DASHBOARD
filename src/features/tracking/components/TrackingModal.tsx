@@ -75,6 +75,8 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
     const { addToast } = useToast();
     const [isEditing, setIsEditing] = useState(false);
     const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [pendingData, setPendingData] = useState<TrackingFormData | null>(null);
 
     // Cargar opciones dinámicas desde el servicio de listas
     useEffect(() => {
@@ -165,8 +167,15 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
      * @param data - Datos del formulario validados.
      */
     const onSubmit: SubmitHandler<TrackingFormData> = (data) => {
+        setPendingData(data);
+        setShowConfirmDialog(true);
+    };
+
+    const handleConfirmSave = () => {
+        if (!pendingData) return;
+        const data = pendingData;
+        
         try {
-            if (!window.confirm("¿Guardar el seguimiento del estudiante?")) return;
             const payload: CreateTrackingPayload | UpdateTrackingPayload = {
                 studentIdNumber: data.studentIdNumber,
                 studentName: (data.studentName || "").toUpperCase(),
@@ -190,6 +199,8 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                 message: "Por favor, revise los datos ingresados en el formulario."
             });
         }
+        setShowConfirmDialog(false);
+        setPendingData(null);
     };
 
     /**
@@ -340,6 +351,19 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                 message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
                 confirmLabel="Cerrar sin guardar"
                 cancelLabel="Continuar editando"
+            />
+
+            <UnifiedDialog
+                isOpen={showConfirmDialog}
+                onClose={() => {
+                    setShowConfirmDialog(false);
+                    setPendingData(null);
+                }}
+                onConfirm={handleConfirmSave}
+                title={tracking ? "Actualizar Seguimiento" : "Registrar Seguimiento"}
+                message={`¿Estás seguro de que deseas ${tracking ? 'actualizar' : 'guardar'} el seguimiento del estudiante?`}
+                variant="confirm"
+                confirmLabel={tracking ? "Actualizar" : "Guardar"}
             />
         </>
     );

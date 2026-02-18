@@ -196,32 +196,36 @@ export default function PreEnrollmentPage() {
 
     /**
      * Maneja el cambio de estado (activar/desactivar) de una pre-inscripción.
-     * Muestra un diálogo de confirmación antes de proceder.
+     * Muestra un diálogo de confirmación antes de proceder con la desactivación.
      * 
      * @param item - Registro de la fila seleccionada.
      */
     const handleToggleStatus = (item: PreEnrollmentRowData) => {
         const original = preEnrollments.find((p) => p.preEnrollmentId === item.preEnrollmentId);
         if (!original) return;
-        const goingInactive = original.status === true;
-        setConfirmation({
-            isOpen: true,
-            title: goingInactive ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
-            message: goingInactive 
-                ? `¿Estás seguro de que deseas enviar la pre-inscripción de "${original.studentName}" a Inactivos?`
-                : `¿Estás seguro de que deseas restaurar la pre-inscripción de "${original.studentName}"?`,
-            onConfirm: async () => {
-                try {
-                    await toggleStatus(original);
-                } catch (error) { 
-                    console.error("[PreEnrollmentPage] Error al cambiar estado:", error); 
-                } finally { 
-                    setConfirmation(null); 
+
+        // Si está activo y vamos a desactivar, pedir confirmación
+        if (original.status) {
+            setConfirmation({
+                isOpen: true,
+                title: "Confirmar Desactivación",
+                message: `¿Estás seguro de que deseas desactivar la pre-inscripción de ${item.studentName}?`,
+                confirmText: "Desactivar",
+                variant: "error",
+                onConfirm: async () => {
+                    try {
+                        await toggleStatus(original);
+                    } catch (error) {
+                        console.error(error);
+                    } finally {
+                        setConfirmation(null);
+                    }
                 }
-            },
-            confirmText: goingInactive ? "Confirmar" : "Restaurar",
-            variant: goingInactive ? "error" : "success",
-        });
+            });
+        } else {
+            // Restauración directa o pedir confirmación si se desea
+            toggleStatus(original).catch(console.error);
+        }
     };
 
     /**
@@ -233,18 +237,18 @@ export default function PreEnrollmentPage() {
         setConfirmation({
             isOpen: true,
             title: "Confirmar Desactivación Masiva",
-            message: `¿Estás seguro de que deseas desactivar ${ids.length} pre-inscripciones seleccionadas?`,
+            message: `¿Estás seguro de que deseas desactivar las ${ids.length} pre-inscripciones seleccionadas?`,
+            confirmText: "Desactivar",
+            variant: "error",
             onConfirm: async () => {
                 try {
                     await bulkToggleStatus(ids, false);
-                } catch (e) {
-                    console.error("[PreEnrollmentPage] Error en desactivación masiva:", e);
+                } catch (error) {
+                    console.error(error);
                 } finally {
                     setConfirmation(null);
                 }
-            },
-            confirmText: "Confirmar",
-            variant: "error",
+            }
         });
     };
 
@@ -257,18 +261,18 @@ export default function PreEnrollmentPage() {
         setConfirmation({
             isOpen: true,
             title: "Confirmar Restauración Masiva",
-            message: `¿Estás seguro de que deseas restaurar ${ids.length} pre-inscripciones seleccionadas?`,
+            message: `¿Estás seguro de que deseas restaurar las ${ids.length} pre-inscripciones seleccionadas?`,
+            confirmText: "Restaurar",
+            variant: "success",
             onConfirm: async () => {
                 try {
                     await bulkToggleStatus(ids, true);
-                } catch (e) {
-                    console.error("[PreEnrollmentPage] Error en restauración masiva:", e);
+                } catch (error) {
+                    console.error(error);
                 } finally {
                     setConfirmation(null);
                 }
-            },
-            confirmText: "Restaurar",
-            variant: "success",
+            }
         });
     };
 

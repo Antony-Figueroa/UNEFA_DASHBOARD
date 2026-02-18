@@ -103,6 +103,8 @@ export default function PreEnrollmentModal({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingData, setPendingData] = useState<PreEnrollmentFormData | null>(null);
   const { fetchMultipleLists } = useLists();
   const { addToast } = useToast();
 
@@ -436,12 +438,18 @@ export default function PreEnrollmentModal({
    * @param data - Datos validados del formulario.
    */
   const onSubmit = (data: PreEnrollmentFormData) => {
+    setPendingData(data);
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmSave = () => {
+    if (!pendingData) return;
+    const data = pendingData;
+
     try {
-      if (!window.confirm("¿Guardar la pre-inscripción del estudiante?")) return;
       const normalized = Object.fromEntries(
         Object.entries(data).map(([k, v]) => {
           if (typeof v === "string") return [k, v.toUpperCase()];
-          if (Array.isArray(v)) return [k, v.map((x) => (typeof x === "string" ? x.toUpperCase() : x))];
           return [k, v];
         })
       ) as PreEnrollmentFormData;
@@ -470,6 +478,8 @@ export default function PreEnrollmentModal({
         message: "Ocurrió un error inesperado al procesar el formulario.",
       });
     }
+    setShowConfirmDialog(false);
+    setPendingData(null);
   };
 
   /**
@@ -746,6 +756,16 @@ export default function PreEnrollmentModal({
       message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
       confirmLabel="Cerrar sin guardar"
       cancelLabel="Continuar editando"
+    />
+
+    <UnifiedDialog
+      isOpen={showConfirmDialog}
+      onClose={() => setShowConfirmDialog(false)}
+      onConfirm={handleConfirmSave}
+      title={editingEntry ? "Actualizar Preinscripción" : "Guardar Preinscripción"}
+      message={`¿Estás seguro de que deseas ${editingEntry ? 'actualizar' : 'guardar'} la pre-inscripción del estudiante?`}
+      confirmLabel={editingEntry ? "Actualizar" : "Guardar"}
+      variant="confirm"
     />
   </>
 );

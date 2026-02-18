@@ -7,7 +7,7 @@
  * @module features/internship-types/components
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -90,6 +90,9 @@ export default function InternshipTypeModal({
 }: InternshipTypeModalProps) {
   const isInitializing = useRef(false);
 
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [pendingData, setPendingData] = useState<InternshipTypeFormData | null>(null);
+
   const {
     handleSubmit,
     reset,
@@ -141,12 +144,21 @@ export default function InternshipTypeModal({
    * Manejador de envío del formulario.
    */
   const onSubmit = (data: InternshipTypeFormData) => {
-    if (!window.confirm("¿Guardar el tipo de práctica profesional?")) return;
+    setPendingData(data);
+    setShowSaveConfirmation(true);
+  };
+
+  const handleConfirmSave = () => {
+    if (!pendingData) return;
+    
     onSave({
-      name: data.name.toUpperCase(),
-      priority: Number(data.priority),
+      name: pendingData.name.toUpperCase(),
+      priority: Number(pendingData.priority),
       status: editingItem?.status ?? true,
     });
+    
+    setShowSaveConfirmation(false);
+    setPendingData(null);
   };
 
   return (
@@ -264,6 +276,18 @@ export default function InternshipTypeModal({
         message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
         confirmLabel="Cerrar sin guardar"
         cancelLabel="Continuar editando"
+      />
+      <UnifiedDialog
+        isOpen={showSaveConfirmation}
+        onClose={() => {
+          setShowSaveConfirmation(false);
+          setPendingData(null);
+        }}
+        onConfirm={handleConfirmSave}
+        title={editingItem ? "Actualizar Tipo de Práctica" : "Guardar Tipo de Práctica"}
+        message={`¿Estás seguro de que deseas ${editingItem ? 'actualizar' : 'guardar'} el tipo de práctica profesional?`}
+        variant="confirm"
+        confirmLabel={editingItem ? "Actualizar" : "Guardar"}
       />
     </>
   );

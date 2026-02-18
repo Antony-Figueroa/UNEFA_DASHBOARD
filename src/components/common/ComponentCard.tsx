@@ -5,7 +5,7 @@ import { cn } from "../../utils/cn";
  */
 interface ComponentCardProps {
   /** The title of the card. */
-  title: string;
+  title: React.ReactNode;
   /** The content to be displayed inside the card body. */
   children: React.ReactNode;
   /** Additional CSS classes for the card container. */

@@ -111,14 +111,7 @@ export default function InstitutionalResponsibleModal({
     { value: "E", label: "E" },
   ];
 
-  const PHONE_PREFIX_OPTIONS = options["CODIGOS_AREA"] || [
-    { value: "0412", label: "0412" },
-    { value: "0414", label: "0414" },
-    { value: "0424", label: "0424" },
-    { value: "0416", label: "0416" },
-    { value: "0426", label: "0426" },
-    { value: "0212", label: "0212" },
-  ];
+  const PHONE_PREFIX_OPTIONS = options["CODIGOS_AREA"] || [];
 
   const {
     register,
@@ -149,6 +142,8 @@ export default function InstitutionalResponsibleModal({
     confirmClose,
     cancelClose,
   } = useUnsavedChanges(isDirty, onClose);
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
+  const [pendingSave, setPendingSave] = useState<CreateInstitutionalResponsiblePayload | UpdateInstitutionalResponsiblePayload | null>(null);
 
   useEffect(() => {
     const loadOptions = async () => {
@@ -225,7 +220,6 @@ export default function InstitutionalResponsibleModal({
    * @param data - The validated form data.
    */
   const onSubmit = (data: RespFormData) => {
-    if (!window.confirm("¿Guardar los cambios del responsable institucional?")) return;
     const { phonePrefix, phoneNumber, ...rest } = data;
     const commonData = {
       ...rest,
@@ -242,15 +236,12 @@ export default function InstitutionalResponsibleModal({
       institutionId: rest.institutionId.toUpperCase(),
       status: editingResp?.status ?? true,
     };
-
     if (editingResp) {
-      onSave({
-        ...commonData,
-        responsibleId: editingResp.responsibleId,
-      } as UpdateInstitutionalResponsiblePayload);
+      setPendingSave({ ...(commonData as any), responsibleId: editingResp.responsibleId } as UpdateInstitutionalResponsiblePayload);
     } else {
-      onSave(commonData as CreateInstitutionalResponsiblePayload);
+      setPendingSave(commonData as CreateInstitutionalResponsiblePayload);
     }
+    setConfirmSaveOpen(true);
   };
 
   return (
@@ -439,6 +430,23 @@ export default function InstitutionalResponsibleModal({
         </ModalFooter>
       </form>
     </Modal>
+
+    {confirmSaveOpen && (
+      <UnifiedDialog
+        isOpen={confirmSaveOpen}
+        onClose={() => setConfirmSaveOpen(false)}
+        onConfirm={() => {
+          if (pendingSave) {
+            onSave(pendingSave);
+          }
+          setConfirmSaveOpen(false);
+        }}
+        variant="confirm"
+        title={editingResp ? "Confirmar actualización" : "Confirmar registro"}
+        message={editingResp ? "¿Desea actualizar los datos del responsable?" : "¿Desea guardar el nuevo responsable?"}
+        confirmLabel={editingResp ? "Actualizar" : "Guardar"}
+      />
+    )}
 
     <UnifiedDialog
       isOpen={showConfirmation}

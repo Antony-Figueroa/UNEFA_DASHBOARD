@@ -26,7 +26,7 @@ El Asistente de IA de UNEFA es un chatbot integrado al dashboard que responde pr
 2. El backend **detecta la intencion** del mensaje (quiere datos de estudiantes)
 3. El backend **consulta la base de datos** y obtiene los datos reales
 4. Los datos se **inyectan en el prompt** como contexto
-5. Se envia todo al modelo de IA (Gemini) que genera la respuesta
+5. Se envia todo al modelo de IA (Groq o Google Gemini) que genera la respuesta
 6. La respuesta llega en **streaming** (texto en tiempo real)
 
 **Diferencia con el sistema anterior:**
@@ -46,7 +46,7 @@ El Asistente de IA de UNEFA es un chatbot integrado al dashboard que responde pr
 │       │                                    streaming text    │
 │       ▼                                         │            │
 │  ChatHistoryService ──> API /ai/sessions        │            │
-│                                                  ▼            │
+│                                                 ▼            │
 │  ChatWindow ◄── MessageList ◄── MessageBubble (render)       │
 └──────────────────────────┬──────────────────────────────────┘
                            │ POST /api/ai/chat
@@ -160,11 +160,12 @@ ChatHistoryService.saveSession()
 
 ## 4. Componentes del sistema
 
-### Backend (4 servicios principales)
+### Backend (5 servicios principales)
 
 | Servicio | Archivo | Responsabilidad |
 |----------|---------|-----------------|
 | **Google AI** | `google-ai.service.ts` | Comunicacion con Gemini (streaming y no-streaming) |
+| **Groq AI** | `groq-ai.service.ts` | Fallback con Groq (Llama 3.1) cuando Google falla |
 | **Intent Detection** | `intent-detection.service.ts` | Detectar que quiere el usuario y ejecutar query a BD |
 | **AI Query** | `ai.service.ts` | Ejecutar consultas seguras a la BD con cache |
 | **Chat Sessions** | `chat-sessions.service.ts` | CRUD de sesiones de chat en PostgreSQL |
@@ -260,13 +261,35 @@ Cada consulta se registra en consola con:
 
 ### Modelo
 
+El sistema puede usar **dos proveedores** de IA. Por defecto usa **Groq** si esta configurado, si no usa **Google Gemini**.
+
+#### Proveedor principal: Groq (recomendado)
+
+| Propiedad | Valor |
+|-----------|-------|
+| Proveedor | Groq (groq.com) |
+| Modelo | `llama-3.3-70b-versatile` |
+| Max tokens | 4096 |
+| Temperatura | 0.7 |
+| Ventajas | **Muy rapido**, quota gratuita muy generosa (500+ req/min) |
+
+#### Proveedor secundario: Google Gemini
+
 | Propiedad | Valor |
 |-----------|-------|
 | Proveedor | Google Generative AI |
-| Modelo | `gemini-1.5-flash` (configurable via `.env`) |
+| Modelo | `gemini-2.0-flash-lite` (configurable via `.env`) |
 | Max tokens | 4096 |
 | Temperatura | 0.7 |
 | Context window | 1,000,000 tokens |
+
+#### Logica de seleccion
+
+El backend verifica la variable `GROQ_API_KEY`:
+- **Si esta configurada**: Usa Groq (Llama 3.1) - recomendado
+- **Si no esta**: Usa Google Gemini como fallback
+
+Si la quota de Google se agota, puedes configurar solo `GROQ_API_KEY` para seguir usando el chat sin interrupciones.
 
 ### Estructura del System Prompt
 
@@ -402,8 +425,12 @@ backend/src/
 ├── routes/
 │   └── ai.routes.ts              # Definicion de rutas /api/ai/*
 ├── services/
-│   ├── google-ai.service.ts      # SDK de Google Generative AI (streaming)
+│   ├── google-ai.service.ts      # SDK de Google Gemini (streaming)
+│   ├── groq-ai.service.ts        # SDK de Groq (Llama 3.1) - proveedor principal
 │   ├── intent-detection.service.ts # Deteccion de intencion + fetch de contexto
+│   ├── ai.service.ts             # Queries seguras a la BD con cache
+│   └── chat-sessions.service.ts  # CRUD de sesiones en PostgreSQL
+└── middlewares/
 │   ├── ai.service.ts             # Queries seguras a la BD con cache
 │   └── chat-sessions.service.ts  # CRUD de sesiones en PostgreSQL
 └── middlewares/
@@ -438,7 +465,7 @@ DB-chat-sessions.sql              # Script SQL para crear la tabla de sesiones
 
 | Aspecto | Implementacion |
 |---------|---------------|
-| **API Key** | Solo en el backend (`GOOGLE_AI_KEY` en `.env`), nunca expuesta al frontend |
+| **API Keys** | Solo en el backend (`GROQ_API_KEY` y/o `GOOGLE_AI_KEY` en `.env`), nunca expuestas al frontend |
 | **Autenticacion** | Cookie `auth_token` validada por `authenticateToken` middleware |
 | **Tablas permitidas** | Whitelist de 8 tablas en `ALLOWED_ENTITIES` |
 | **Rate limiting** | 30 req/min para chat, 60 req/min para queries directas |
@@ -450,12 +477,24 @@ DB-chat-sessions.sql              # Script SQL para crear la tabla de sesiones
 
 ## 12. Configuracion
 
+### Proveedores de IA disponibles
+
+El sistema soporta dos proveedores. Se recomienda **Groq** por su velocidad y quota generosa.
+
+| Proveedor | API Key | Ventajas |
+|-----------|---------|----------|
+| **Groq** (recomendado) | console.groq.com | Muy rapido, 500+ req/min gratis |
+| **Google Gemini** | ai.google.dev | 1M tokens contexto |
+
 ### Variables de entorno del backend (`backend/.env`)
 
 ```bash
-# Requeridas para el chat de IA
+# Groq (recomendado - mas rapido y quota generosa)
+GROQ_API_KEY=tu_api_key_de_groq
+
+# Google Gemini (fallback si no hay Groq)
 GOOGLE_AI_KEY=tu_api_key_de_google_ai
-GOOGLE_AI_MODEL=gemini-1.5-flash    # Modelo a usar
+GOOGLE_AI_MODEL=gemini-2.0-flash-lite
 
 # Ya existentes (necesarias para que funcione la BD)
 SUPABASE_URL=...

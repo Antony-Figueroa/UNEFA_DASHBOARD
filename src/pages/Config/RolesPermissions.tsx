@@ -15,68 +15,15 @@ import { TableSkeleton } from "../../components/ui/skeleton";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/modal";
 import InputField from "../../components/form/input/InputField";
-
-interface Permission {
-  id: string;
-  module: string;
-  action: string;
-  description: string;
-}
-
-interface Role {
-  id: number;
-  name: string;
-  description: string;
-  userCount: number;
-  permissions: string[];
-  status: "active" | "inactive";
-  isSystem: boolean;
-}
-
-const MOCK_PERMISSIONS: Permission[] = [
-  { id: "users.view", module: "Usuarios", action: "Ver", description: "Ver listado de usuarios" },
-  { id: "users.create", module: "Usuarios", action: "Crear", description: "Crear nuevos usuarios" },
-  { id: "users.edit", module: "Usuarios", action: "Editar", description: "Editar usuarios existentes" },
-  { id: "users.delete", module: "Usuarios", action: "Eliminar", description: "Eliminar usuarios" },
-  { id: "students.view", module: "Estudiantes", action: "Ver", description: "Ver listado de estudiantes" },
-  { id: "students.create", module: "Estudiantes", action: "Crear", description: "Registrar estudiantes" },
-  { id: "students.edit", module: "Estudiantes", action: "Editar", description: "Editar datos de estudiantes" },
-  { id: "enrollments.view", module: "Inscripciones", action: "Ver", description: "Ver inscripciones" },
-  { id: "enrollments.manage", module: "Inscripciones", action: "Gestionar", description: "Gestionar inscripciones" },
-  { id: "tracking.view", module: "Seguimiento", action: "Ver", description: "Ver seguimientos" },
-  { id: "tracking.manage", module: "Seguimiento", action: "Gestionar", description: "Registrar visitas" },
-  { id: "reports.view", module: "Reportes", action: "Ver", description: "Ver reportes" },
-  { id: "reports.export", module: "Reportes", action: "Exportar", description: "Exportar reportes" },
-  { id: "config.access", module: "Configuración", action: "Acceder", description: "Acceder a configuración" },
-];
-
-const MOCK_ROLES: Role[] = [
-  {
-    id: 1,
-    name: "ADMIN",
-    description: "Administrador con acceso total al sistema",
-    userCount: 4,
-    permissions: MOCK_PERMISSIONS.map((p) => p.id),
-    status: "active",
-    isSystem: true,
-  },
-  {
-    id: 2,
-    name: "ASISTENTE",
-    description: "Asistente administrativo con acceso limitado",
-    userCount: 5,
-    permissions: ["students.view", "students.create", "students.edit", "enrollments.view", "tracking.view", "reports.view"],
-    status: "active",
-    isSystem: true,
-  },
-];
-
-const MODULES = [...new Set(MOCK_PERMISSIONS.map((p) => p.module))];
+import { rolesService, Permission, Role } from "../../features/roles/services/rolesService";
+import toast from "react-hot-toast";
 
 export default function RolesPermissionsPage() {
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<Role[]>([]);
-  const [permissions] = useState<Permission[]>(MOCK_PERMISSIONS);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [modules, setModules] = useState<string[]>([]);
+  const [stats, setStats] = useState({ rolesCount: 0, permissionsCount: 0, usersWithRoles: 0 });
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -92,12 +39,35 @@ export default function RolesPermissionsPage() {
     permissions: [] as string[],
   });
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setRoles(MOCK_ROLES);
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [rolesRes, permissionsRes, statsRes] = await Promise.all([
+        rolesService.getAll(),
+        rolesService.getPermissions(),
+        rolesService.getStats()
+      ]);
+
+      if (rolesRes.success) {
+        setRoles(rolesRes.data);
+      }
+      if (permissionsRes.success) {
+        setPermissions(permissionsRes.data);
+        setModules(permissionsRes.modules);
+      }
+      if (statsRes.success) {
+        setStats(statsRes.data);
+      }
+    } catch (error) {
+      console.error('Error fetching roles data:', error);
+      toast.error('Error al cargar los datos');
+    } finally {
       setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
 
   const handleEditRole = (role: Role) => {
@@ -122,7 +92,7 @@ export default function RolesPermissionsPage() {
   const handleToggleModule = (module: string) => {
     const modulePermissions = permissions.filter((p) => p.module === module).map((p) => p.id);
     const allSelected = modulePermissions.every((p) => editForm.permissions.includes(p));
-    
+
     if (allSelected) {
       setEditForm((prev) => ({
         ...prev,
@@ -136,23 +106,27 @@ export default function RolesPermissionsPage() {
     }
   };
 
-  const handleSaveRole = () => {
+  const handleSaveRole = async () => {
     if (!selectedRole) return;
-    
+
     setConfirmDialog({
       isOpen: true,
       title: "Guardar Cambios",
       message: `¿Está seguro de guardar los cambios en el rol ${selectedRole.name}?`,
-      onConfirm: () => {
-        setRoles((prev) =>
-          prev.map((r) =>
-            r.id === selectedRole.id
-              ? { ...r, name: editForm.name, description: editForm.description, permissions: editForm.permissions }
-              : r
-          )
-        );
-        setIsEditModalOpen(false);
-        setConfirmDialog(null);
+      onConfirm: async () => {
+        try {
+          await rolesService.update(selectedRole.id, {
+            name: editForm.name,
+            description: editForm.description
+          });
+          toast.success('Rol actualizado correctamente');
+          setIsEditModalOpen(false);
+          fetchData();
+        } catch (error) {
+          toast.error('Error al actualizar el rol');
+        } finally {
+          setConfirmDialog(null);
+        }
       },
     });
   };
@@ -203,7 +177,7 @@ export default function RolesPermissionsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-text-primary dark:text-text-emphasis">
-                  {roles.length}
+                  {stats.rolesCount}
                 </p>
                 <p className="text-xs text-text-tertiary">Roles configurados</p>
               </div>
@@ -218,7 +192,7 @@ export default function RolesPermissionsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-text-primary dark:text-text-emphasis">
-                  {permissions.length}
+                  {stats.permissionsCount}
                 </p>
                 <p className="text-xs text-text-tertiary">Permisos disponibles</p>
               </div>
@@ -233,7 +207,7 @@ export default function RolesPermissionsPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-text-primary dark:text-text-emphasis">
-                  {roles.reduce((sum, r) => sum + r.userCount, 0)}
+                  {stats.usersWithRoles}
                 </p>
                 <p className="text-xs text-text-tertiary">Usuarios con roles</p>
               </div>
@@ -281,10 +255,7 @@ export default function RolesPermissionsPage() {
                         <div className="flex items-center gap-2">
                           <div className="flex flex-wrap gap-1">
                             {role.permissions.slice(0, 3).map((p) => (
-                              <span
-                                key={p}
-                                className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded bg-gray-100 dark:bg-gray-800 text-text-tertiary"
-                              >
+                              <span key={p} className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded bg-gray-100 dark:bg-gray-800 text-text-tertiary">
                                 {p.split(".")[1]}
                               </span>
                             ))}
@@ -297,11 +268,7 @@ export default function RolesPermissionsPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditRole(role)}
-                        >
+                        <Button size="sm" variant="outline" onClick={() => handleEditRole(role)}>
                           Editar
                         </Button>
                       </TableCell>
@@ -314,15 +281,10 @@ export default function RolesPermissionsPage() {
 
           <div className="md:hidden flex flex-col gap-4">
             {roles.map((role) => (
-              <div
-                key={role.id}
-                className="bg-bg-surface dark:bg-bg-dark-surface rounded-lg border border-border-default dark:border-border-dark p-4"
-              >
+              <div key={role.id} className="bg-bg-surface dark:bg-bg-dark-surface rounded-lg border border-border-default dark:border-border-dark p-4">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-text-primary dark:text-text-emphasis">
-                      {role.name}
-                    </span>
+                    <span className="font-medium text-text-primary dark:text-text-emphasis">{role.name}</span>
                     {role.isSystem && (
                       <Badge color="primary" variant="light" shape="rounded" className="text-[10px]">
                         Sistema
@@ -333,12 +295,8 @@ export default function RolesPermissionsPage() {
                     Editar
                   </Button>
                 </div>
-                <p className="text-xs text-text-secondary dark:text-text-tertiary mb-2">
-                  {role.description}
-                </p>
-                <p className="text-xs text-text-tertiary">
-                  {role.permissions.length} permisos • {role.userCount} usuarios
-                </p>
+                <p className="text-xs text-text-secondary dark:text-text-tertiary mb-2">{role.description}</p>
+                <p className="text-xs text-text-tertiary">{role.permissions.length} permisos • {role.userCount} usuarios</p>
               </div>
             ))}
           </div>
@@ -364,7 +322,7 @@ export default function RolesPermissionsPage() {
             </div>
           </div>
         </ModalHeader>
-        
+
         <ModalBody className="max-h-[60vh] overflow-y-auto">
           <div className="space-y-6 py-2">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -413,38 +371,27 @@ export default function RolesPermissionsPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-white/5 border-b border-border-light dark:border-white/10">
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-40">
-                        Módulo
-                      </th>
-                      <th className="text-left py-3 px-4 text-xs font-semibold text-text-tertiary uppercase tracking-wider">
-                        Permisos
-                      </th>
-                      <th className="text-center py-3 px-4 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-24">
-                        Estado
-                      </th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-40">Módulo</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-text-tertiary uppercase tracking-wider">Permisos</th>
+                      <th className="text-center py-3 px-4 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-24">Estado</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-light dark:divide-white/5">
-                    {MODULES.map((module) => {
+                    {modules.map((module) => {
                       const modulePermissions = permissions.filter((p) => p.module === module);
                       const selectedCount = getModuleSelectedCount(module);
                       const totalCount = getModuleTotalCount(module);
                       const isFullySelected = isModuleFullySelected(module);
                       const isPartiallySelected = isModulePartiallySelected(module);
-                      
+
                       return (
                         <tr key={module} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
                           <td className="py-3 px-4">
-                            <button
-                              onClick={() => handleToggleModule(module)}
-                              className="flex items-center gap-2 text-left w-full group"
-                            >
+                            <button onClick={() => handleToggleModule(module)} className="flex items-center gap-2 text-left w-full group">
                               <input
                                 type="checkbox"
                                 checked={isFullySelected}
-                                ref={(el) => {
-                                  if (el) el.indeterminate = isPartiallySelected;
-                                }}
+                                ref={(el) => { if (el) el.indeterminate = isPartiallySelected; }}
                                 onChange={() => {}}
                                 className="w-4 h-4 rounded border-border-light dark:border-white/10 text-brand-500 focus:ring-brand-500/20 shrink-0"
                               />
@@ -458,14 +405,11 @@ export default function RolesPermissionsPage() {
                               {modulePermissions.map((permission) => (
                                 <label
                                   key={permission.id}
-                                  className={`
-                                    inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer
-                                    transition-all duration-200
-                                    ${editForm.permissions.includes(permission.id)
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer transition-all duration-200 ${
+                                    editForm.permissions.includes(permission.id)
                                       ? "bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 ring-1 ring-brand-200 dark:ring-brand-500/30"
                                       : "bg-gray-100 dark:bg-gray-800 text-text-tertiary hover:bg-gray-200 dark:hover:bg-gray-700"
-                                    }
-                                  `}
+                                  }`}
                                   title={permission.description}
                                 >
                                   <input
@@ -487,15 +431,13 @@ export default function RolesPermissionsPage() {
                             </div>
                           </td>
                           <td className="py-3 px-4 text-center">
-                            <span className={`
-                              inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                              ${isFullySelected 
-                                ? "bg-success-100 dark:bg-success-500/20 text-success-700 dark:text-success-400" 
-                                : isPartiallySelected 
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                              isFullySelected
+                                ? "bg-success-100 dark:bg-success-500/20 text-success-700 dark:text-success-400"
+                                : isPartiallySelected
                                   ? "bg-warning-100 dark:bg-warning-500/20 text-warning-700 dark:text-warning-400"
                                   : "bg-gray-100 dark:bg-gray-800 text-text-tertiary"
-                              }
-                            `}>
+                            }`}>
                               {selectedCount}/{totalCount}
                             </span>
                           </td>

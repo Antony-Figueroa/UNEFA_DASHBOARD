@@ -18,21 +18,8 @@ import InputField from "../../components/form/input/InputField";
 import CustomSelect from "../../components/form/CustomSelect";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DownloadIcon, CheckCircleIcon } from "../../icons";
-
-interface CulminationRecord {
-  id: string;
-  studentCi: string;
-  studentName: string;
-  careerName: string;
-  institutionName: string;
-  period: string;
-  practiceType: string;
-  startDate: string;
-  endDate: string;
-  totalHours: number;
-  status: "pending" | "approved" | "certified";
-  certificateNumber?: string;
-}
+import { culminationService, CulminationRecord, CulminationMeta } from "../../features/culmination/services/culminationService";
+import toast from "react-hot-toast";
 
 const STATUS_CONFIG = {
   pending: { label: "Pendiente", color: "warning" as const },
@@ -40,52 +27,10 @@ const STATUS_CONFIG = {
   certified: { label: "Certificado", color: "primary" as const },
 };
 
-const MOCK_DATA: CulminationRecord[] = [
-  {
-    id: "1",
-    studentCi: "V-28123456",
-    studentName: "María García López",
-    careerName: "INGENIERÍA INFORMÁTICA",
-    institutionName: "TecnoSoluciones C.A.",
-    period: "2025-I",
-    practiceType: "ORDINARIA",
-    startDate: "2025-01-15",
-    endDate: "2025-06-15",
-    totalHours: 480,
-    status: "certified",
-    certificateNumber: "CERT-2025-001",
-  },
-  {
-    id: "2",
-    studentCi: "V-28789123",
-    studentName: "Carlos Rodríguez Pérez",
-    careerName: "INGENIERÍA AGROINDUSTRIAL",
-    institutionName: "AgroVenezuela",
-    period: "2025-I",
-    practiceType: "ORDINARIA",
-    startDate: "2025-01-20",
-    endDate: "2025-06-20",
-    totalHours: 480,
-    status: "approved",
-  },
-  {
-    id: "3",
-    studentCi: "V-28456789",
-    studentName: "Ana Martínez Silva",
-    careerName: "TSU EN ENFERMERÍA",
-    institutionName: "Hospital Central",
-    period: "2025-II",
-    practiceType: "ESPECIAL",
-    startDate: "2025-06-01",
-    endDate: "2025-09-30",
-    totalHours: 360,
-    status: "pending",
-  },
-];
-
 export default function CulminationPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<CulminationRecord[]>([]);
+  const [meta, setMeta] = useState<CulminationMeta>({ total: 0, pending: 0, approved: 0, certified: 0 });
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -99,31 +44,39 @@ export default function CulminationPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setData(MOCK_DATA);
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const response = await culminationService.getRecords({
+        status: statusFilter || undefined,
+        period: periodFilter || undefined,
+        search: searchTerm || undefined
+      });
+      
+      if (response.success) {
+        setData(response.data);
+        setMeta(response.meta);
+      }
+    } catch (error) {
+      console.error('Error fetching culmination data:', error);
+      toast.error('Error al cargar los datos');
+    } finally {
       setLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, []);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [statusFilter, periodFilter]);
 
   const filteredData = useMemo(() => {
-    return data.filter((item) => {
-      const matchesSearch = !searchTerm ||
-        item.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.studentCi.includes(searchTerm) ||
-        item.institutionName.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = !statusFilter || item.status === statusFilter;
-      const matchesPeriod = !periodFilter || item.period === periodFilter;
-      return matchesSearch && matchesStatus && matchesPeriod;
-    });
-  }, [data, searchTerm, statusFilter, periodFilter]);
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+    if (!searchTerm) return data;
+    return data.filter((item) =>
+      item.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.studentCi.includes(searchTerm) ||
+      item.institutionName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [data, searchTerm]);
 
   const periodOptions = useMemo(() => {
     const periods = [...new Set(data.map((d) => d.period))];
@@ -133,11 +86,18 @@ export default function CulminationPage() {
     ];
   }, [data]);
 
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const paginatedData = filteredData.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("");
     setPeriodFilter("");
     setCurrentPage(1);
+    fetchData();
   };
 
   const handleApprove = (item: CulminationRecord) => {
@@ -145,11 +105,16 @@ export default function CulminationPage() {
       isOpen: true,
       title: "Aprobar Culminación",
       message: `¿Está seguro de aprobar la culminación de prácticas de ${item.studentName}?`,
-      onConfirm: () => {
-        setData((prev) =>
-          prev.map((d) => (d.id === item.id ? { ...d, status: "approved" as const } : d))
-        );
-        setConfirmDialog(null);
+      onConfirm: async () => {
+        try {
+          await culminationService.approve(item.id);
+          toast.success('Culminación aprobada exitosamente');
+          fetchData();
+        } catch (error) {
+          toast.error('Error al aprobar culminación');
+        } finally {
+          setConfirmDialog(null);
+        }
       },
     });
   };
@@ -159,18 +124,18 @@ export default function CulminationPage() {
       isOpen: true,
       title: "Generar Certificado",
       message: `¿Desea generar el certificado de prácticas para ${item.studentName}?`,
-      onConfirm: () => {
-        const certNumber = `CERT-${new Date().getFullYear()}-${String(
-          Math.floor(Math.random() * 1000)
-        ).padStart(3, "0")}`;
-        setData((prev) =>
-          prev.map((d) =>
-            d.id === item.id
-              ? { ...d, status: "certified" as const, certificateNumber: certNumber }
-              : d
-          )
-        );
-        setConfirmDialog(null);
+      onConfirm: async () => {
+        try {
+          const response = await culminationService.generateCertificate(item.id);
+          if (response.success) {
+            toast.success(`Certificado generado: ${response.certificate.number}`);
+            fetchData();
+          }
+        } catch (error) {
+          toast.error('Error al generar certificado');
+        } finally {
+          setConfirmDialog(null);
+        }
       },
     });
   };
@@ -190,6 +155,12 @@ export default function CulminationPage() {
               Gestiona la culminación y certificación de prácticas profesionales
             </p>
           </div>
+          <Button variant="outline" onClick={fetchData}>
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Actualizar
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -202,7 +173,7 @@ export default function CulminationPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-text-primary dark:text-text-emphasis">
-                  {data.filter((d) => d.status === "pending").length}
+                  {meta.pending}
                 </p>
                 <p className="text-xs text-text-tertiary">Pendientes</p>
               </div>
@@ -215,7 +186,7 @@ export default function CulminationPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-text-primary dark:text-text-emphasis">
-                  {data.filter((d) => d.status === "approved").length}
+                  {meta.approved}
                 </p>
                 <p className="text-xs text-text-tertiary">Aprobados</p>
               </div>
@@ -230,7 +201,7 @@ export default function CulminationPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-text-primary dark:text-text-emphasis">
-                  {data.filter((d) => d.status === "certified").length}
+                  {meta.certified}
                 </p>
                 <p className="text-xs text-text-tertiary">Certificados</p>
               </div>
@@ -322,29 +293,17 @@ export default function CulminationPage() {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               {item.status === "pending" && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleApprove(item)}
-                                >
+                                <Button size="sm" variant="outline" onClick={() => handleApprove(item)}>
                                   Aprobar
                                 </Button>
                               )}
                               {item.status === "approved" && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleGenerateCertificate(item)}
-                                  startIcon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-                                >
+                                <Button size="sm" onClick={() => handleGenerateCertificate(item)}>
                                   Certificar
                                 </Button>
                               )}
                               {item.status === "certified" && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  startIcon={<DownloadIcon className="w-4 h-4" />}
-                                >
+                                <Button size="sm" variant="outline" startIcon={<DownloadIcon className="w-4 h-4" />}>
                                   PDF
                                 </Button>
                               )}
@@ -361,20 +320,13 @@ export default function CulminationPage() {
                 {paginatedData.map((item) => {
                   const statusConfig = STATUS_CONFIG[item.status];
                   return (
-                    <div
-                      key={item.id}
-                      className="bg-bg-surface dark:bg-bg-dark-surface rounded-lg border border-border-default dark:border-border-dark p-4"
-                    >
+                    <div key={item.id} className="bg-bg-surface dark:bg-bg-dark-surface rounded-lg border border-border-default dark:border-border-dark p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div>
-                          <p className="font-medium text-text-primary dark:text-text-emphasis">
-                            {item.studentName}
-                          </p>
+                          <p className="font-medium text-text-primary dark:text-text-emphasis">{item.studentName}</p>
                           <p className="text-xs text-text-tertiary">{item.studentCi}</p>
                         </div>
-                        <Badge color={statusConfig.color} variant="light" shape="rounded">
-                          {statusConfig.label}
-                        </Badge>
+                        <Badge color={statusConfig.color} variant="light" shape="rounded">{statusConfig.label}</Badge>
                       </div>
                       <div className="space-y-1 text-xs text-text-secondary dark:text-text-tertiary mb-3">
                         <p><span className="font-medium">Carrera:</span> {item.careerName}</p>
@@ -388,19 +340,13 @@ export default function CulminationPage() {
                       )}
                       <div className="pt-3 border-t border-border-default dark:border-border-dark">
                         {item.status === "pending" && (
-                          <Button size="sm" variant="outline" onClick={() => handleApprove(item)}>
-                            Aprobar
-                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handleApprove(item)}>Aprobar</Button>
                         )}
                         {item.status === "approved" && (
-                          <Button size="sm" onClick={() => handleGenerateCertificate(item)}>
-                            Generar Certificado
-                          </Button>
+                          <Button size="sm" onClick={() => handleGenerateCertificate(item)}>Generar Certificado</Button>
                         )}
                         {item.status === "certified" && (
-                          <Button size="sm" variant="outline" startIcon={<DownloadIcon className="w-4 h-4" />}>
-                            Descargar PDF
-                          </Button>
+                          <Button size="sm" variant="outline" startIcon={<DownloadIcon className="w-4 h-4" />}>Descargar PDF</Button>
                         )}
                       </div>
                     </div>

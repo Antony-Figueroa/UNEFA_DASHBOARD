@@ -9,7 +9,6 @@ import CustomSelect from "../../../components/form/CustomSelect";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { userSchema, UserFormData, UserFormOutput } from "../constants/validation";
 import { User, CreateUserPayload, UpdateUserPayload } from "../types";
-import { useAuth } from "../../../context/auth";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 
@@ -43,8 +42,6 @@ const UserModal: React.FC<UserModalProps> = ({
   isSubmitting,
   roleOptions
 }) => {
-  const { user: currentUser } = useAuth();
-
   const {
     register,
     handleSubmit,

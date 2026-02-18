@@ -1,4 +1,5 @@
 import React from "react";
+import { motion } from "framer-motion";
 import LogoLoop from "../components/LogoLoop";
 import { FaFacebook, FaInstagram, FaYoutube, FaGlobe } from "react-icons/fa6";
 import { FaXTwitter } from "react-icons/fa6";
@@ -37,7 +38,6 @@ const PartnerLogosSection: React.FC = () => {
             fadeOut
             fadeOutColor="transparent"
             ariaLabel="Redes Sociales UNEFA"
-            hoverEffect="scale-rotate"
           />
         </div>
       </div>

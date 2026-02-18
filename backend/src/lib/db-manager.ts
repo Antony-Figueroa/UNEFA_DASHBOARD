@@ -179,7 +179,7 @@ export class DatabaseManager {
       } catch (error: unknown) {
         lastError = error;
         const duration = Date.now() - startTime;
-        console.warn(`[DatabaseManager] [${new Date().toISOString()}] Attempt ${attempt} for ${operationName} failed after ${duration}ms. Retrying...`);
+        console.debug(`[DatabaseManager] [${new Date().toISOString()}] Attempt ${attempt} for ${operationName} failed after ${duration}ms. Retrying...`);
         
         // Si el error es de conexión, forzar reconexión en el próximo intento
         this.connectionStatus = 'disconnected';
@@ -191,7 +191,7 @@ export class DatabaseManager {
     }
 
     const totalDuration = Date.now() - startTime;
-    console.error(`[DatabaseManager] [${new Date().toISOString()}] All ${this.config.maxRetries} attempts failed for ${operationName} after ${totalDuration}ms.`);
+    console.warn(`[DatabaseManager] [${new Date().toISOString()}] All ${this.config.maxRetries} attempts failed for ${operationName} after ${totalDuration}ms.`);
     throw lastError;
   }
 }

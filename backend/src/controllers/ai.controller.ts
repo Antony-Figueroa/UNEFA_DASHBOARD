@@ -88,7 +88,11 @@ export const executeAIQuery = async (req: AIAuthRequest, res: Response) => {
 
 export const chatWithAI = async (req: AuthRequest, res: Response) => {
   try {
+    console.log('[AI Chat] Request received');
+    console.log('[AI Chat] User:', req.user);
+    
     const { messages } = req.body as { messages: ChatMessage[] };
+    console.log('[AI Chat] Messages received:', messages?.length);
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({
@@ -106,11 +110,14 @@ export const chatWithAI = async (req: AuthRequest, res: Response) => {
     }
 
     const intent = detectIntent(lastUserMessage.content);
+    console.log('[AI] Intent detected:', intent);
     let ragContext: string | null = null;
 
     if (intent.entity && intent.action !== 'none') {
       console.log(`[RAG] Intent detected: ${intent.action} on ${intent.entity}`);
       ragContext = await fetchContextForIntent(intent, req.user?.userId || 'ai-chat');
+    } else {
+      console.log('[RAG] No intent detected, using base prompt only');
     }
 
     const systemPrompt = buildSystemPrompt(
@@ -131,20 +138,31 @@ export const chatWithAI = async (req: AuthRequest, res: Response) => {
     const streamChat = USE_GROQ ? streamChatGroq : streamChatGoogle;
     console.log(`[AI] Using provider: ${USE_GROQ ? 'Groq (Llama 3.3)' : 'Google Gemini'}`);
     console.log(`[AI] GROQ_API_KEY set: ${!!process.env.GROQ_API_KEY}`);
+    console.log('[AI] About to call streamChat with', messages.length, 'messages');
 
-    await streamChat(
-      {
-        messages,
-        systemInstruction: systemPrompt,
-        maxTokens: 4096,
-        temperature: 0.7,
-      },
-      (chunk: string) => {
-        if (!aborted.value) {
-          res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+    try {
+      await streamChat(
+        {
+          messages,
+          systemInstruction: systemPrompt,
+          maxTokens: 4096,
+          temperature: 0.7,
+        },
+        (chunk: string) => {
+          if (!aborted.value) {
+            res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+          }
         }
+      );
+      console.log('[AI] streamChat completed successfully');
+    } catch (streamError: any) {
+      console.error('[AI] streamChat error:', streamError.message);
+      if (!aborted.value) {
+        res.write(`data: ${JSON.stringify({ error: streamError.message })}\n\n`);
+        res.end();
       }
-    );
+      return;
+    }
 
     if (!aborted.value) {
       res.write(`data: [DONE]\n\n`);

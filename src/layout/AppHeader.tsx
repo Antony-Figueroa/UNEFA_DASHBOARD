@@ -72,8 +72,8 @@ const AppHeader: React.FC = () => {
       }}
       className="flex w-full bg-white border-b border-border-light z-40 dark:border-white/10 dark:bg-bg-dark transition-all duration-300 shadow-theme-md after:absolute after:-bottom-2.5 after:left-0 after:h-2.5 after:w-full after:content-[''] after:pointer-events-none after:bg-linear-to-b after:from-white/50 after:to-transparent dark:after:from-bg-dark/50"
     >
-      <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-6">
-        <div className="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-border-light dark:border-white/10 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
+      <div className="flex flex-col items-center justify-between grow lg:flex-row lg:px-4">
+        <div className="flex items-center justify-between w-full gap-2 px-3 py-2 border-b border-border-light dark:border-white/10 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-2">
           <button
             className="items-center justify-center w-10 h-10 text-text-secondary border-border-light rounded-lg z-40 dark:border-white/10 lg:flex dark:text-text-tertiary lg:h-11 lg:w-11 lg:border"
             onClick={handleToggle}
@@ -187,7 +187,7 @@ const AppHeader: React.FC = () => {
         </div>
         <div
           className={`${isApplicationMenuOpen ? "flex" : "hidden"
-            } items-center justify-between w-full gap-4 px-5 py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
+            } items-center justify-between w-full gap-4 px-5 py-2 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
         >
           <div className="flex items-center gap-2 2xsm:gap-3">
             {/* <!-- Dark Mode Toggler --> */}

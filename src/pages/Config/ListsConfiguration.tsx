@@ -153,35 +153,7 @@ const ListsConfiguration = () => {
   };
 
 
-  const handleDeleteValue = async (id: string) => {
-    setConfirmation({
-      isOpen: true,
-      title: "Eliminar Valor",
-      message: "¿Estás seguro de que deseas eliminar este valor? Esta acción no se puede deshacer.",
-      confirmText: "Eliminar",
-      variant: "error",
-      onConfirm: async () => {
-        try {
-          await listsService.deleteValue(id);
-          loadLists();
-          addToast({
-            variant: "success",
-            title: "Valor eliminado",
-            message: "El valor ha sido eliminado correctamente."
-          });
-        } catch (error: any) {
-          console.error("Error deleting value:", error);
-          addToast({
-            variant: "error",
-            title: "Error al eliminar valor",
-            message: error.response?.data?.message || error.message || "No se pudo eliminar el valor."
-          });
-        } finally {
-          setConfirmation(null);
-        }
-      }
-    });
-  };
+
 
   const performSaveList = async (values: CrudFormValues) => {
     try {
@@ -431,13 +403,23 @@ const ListsConfiguration = () => {
                                 >
                                   <PencilIcon className="h-4 w-4" />
                                 </button>
-                                <button 
-                                  className="p-1.5 text-text-secondary hover:text-error-500 transition-colors"
-                                  title="Eliminar"
-                                  onClick={() => handleDeleteValue(val.id)}
-                                >
-                                  <TrashBinIcon className="h-4 w-4" />
-                                </button>
+                                {val.status ? (
+                                  <button 
+                                    className="p-1.5 text-text-secondary hover:text-error-500 transition-colors"
+                                    title="Desactivar"
+                                    onClick={() => handleToggleValueStatus(val)}
+                                  >
+                                    <TrashBinIcon className="h-4 w-4" />
+                                  </button>
+                                ) : (
+                                  <button 
+                                    className="p-1.5 text-text-secondary hover:text-success-500 transition-colors"
+                                    title="Activar"
+                                    onClick={() => handleToggleValueStatus(val)}
+                                  >
+                                    <CheckCircleIcon className="h-4 w-4" />
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>

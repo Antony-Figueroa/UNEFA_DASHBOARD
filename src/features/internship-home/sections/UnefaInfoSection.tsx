@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { unefaInfoService, UnefaInfo } from "../../../services/unefaInfoService";
 import Button from "../../../components/ui/button/Button";
 import { RefreshIcon } from "../../../icons/actions";
+import { Skeleton } from "../../../components/ui/skeleton";
 
 interface UnefaInfoSectionProps {
   updateIntervalMs?: number; // Tiempo de actualización automática en ms
@@ -66,10 +67,10 @@ const UnefaInfoSection: React.FC<UnefaInfoSectionProps> = ({
                   exit={{ opacity: 0 }}
                   className="space-y-4"
                 >
-                  <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded w-3/4 animate-pulse" />
-                  <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-full animate-pulse" />
-                  <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-full animate-pulse" />
-                  <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-2/3 animate-pulse" />
+                  <Skeleton height={32} className="w-3/4" />
+                  <Skeleton height={16} className="w-full" />
+                  <Skeleton height={16} className="w-full" />
+                  <Skeleton height={16} className="w-2/3" />
                 </motion.div>
               ) : info ? (
                 <motion.div

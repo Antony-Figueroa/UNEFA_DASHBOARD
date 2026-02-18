@@ -10,7 +10,7 @@ import {
 import Badge from "../../../components/ui/badge/Badge";
 import Button from "../../../components/ui/button/Button";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
-import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
+import { TableSkeleton } from "../../../components/ui/skeleton";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import CustomSelect from "../../../components/form/CustomSelect";
 import InputField from "../../../components/form/input/InputField";

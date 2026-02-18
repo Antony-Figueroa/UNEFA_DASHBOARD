@@ -34,7 +34,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   width,
   height,
   circle = false,
-  animation = "pulse",
+  animation = "shimmer",
 }) => {
   const style: React.CSSProperties = {
     width: width,
@@ -44,9 +44,9 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   return (
     <div
       className={cn(
-        "relative overflow-hidden bg-bg-secondary dark:bg-white/5",
+        "relative overflow-hidden bg-gray-200 dark:bg-white/5",
         animation === "pulse" && "animate-pulse",
-        animation === "shimmer" && "before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-linear-to-r before:from-transparent before:via-white/10 before:to-transparent dark:before:via-white/5",
+        animation === "shimmer" && "before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-linear-to-r before:from-transparent before:via-white/50 before:to-transparent dark:before:via-white/5",
         circle ? "rounded-full" : "rounded-md",
         className
       )}
@@ -193,23 +193,43 @@ export const BreadcrumbSkeleton: React.FC = () => {
 /**
  * Skeleton para una tabla de datos genérica.
  */
-export const TableSkeleton: React.FC<{ rows?: number }> = ({ rows = 4 }) => {
+export const TableSkeleton: React.FC<{ rows?: number; columns?: number; hasFilters?: boolean; className?: string }> = ({ 
+  rows = 5, 
+  columns = 5, 
+  hasFilters = true,
+  className = ""
+}) => {
   return (
-    <div className="bg-white dark:bg-white/5 rounded-2xl border border-border-light dark:border-border-dark p-6 space-y-6">
-      <div className="flex gap-4 mb-4 opacity-50">
-        <Skeleton height={20} className="w-1/4" />
-        <Skeleton height={20} className="w-1/4" />
-        <Skeleton height={20} className="w-1/4" />
-        <Skeleton height={20} className="w-1/4" />
-      </div>
-      <div className="h-px bg-border-light dark:bg-border-dark" />
-      {[...Array(rows)].map((_, i) => (
-        <div key={i} className="flex gap-4 items-center">
-          <Skeleton height={48} className="flex-1 rounded-xl" />
-          <Skeleton height={48} className="flex-1 rounded-xl" />
-          <Skeleton height={48} className="flex-1 rounded-xl" />
+    <div className={cn("w-full space-y-4", className)} aria-hidden="true">
+      {hasFilters && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} height={44} className="w-full rounded-lg" />
+          ))}
         </div>
-      ))}
+      )}
+      
+      <div className="border border-border-light dark:border-border-dark rounded-xl overflow-hidden bg-white dark:bg-transparent">
+        <div className="h-12 border-b border-border-light dark:border-border-dark bg-gray-50/50 dark:bg-white/5 flex items-center px-6">
+             <Skeleton height={20} width="40%" className="opacity-50" />
+        </div>
+        {[...Array(rows)].map((_, i) => (
+          <div 
+            key={i} 
+            className="h-16 border-b border-border-light dark:border-border-dark last:border-0 flex items-center px-6 gap-4 bg-white dark:bg-transparent"
+          >
+            {[...Array(columns)].map((_, j) => (
+              <Skeleton 
+                key={j} 
+                height={16}
+                className={cn(
+                  j === 0 ? 'w-8' : j === 1 ? 'w-32' : 'flex-1'
+                )}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

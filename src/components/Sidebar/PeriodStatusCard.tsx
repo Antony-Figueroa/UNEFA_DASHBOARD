@@ -87,7 +87,7 @@ const PeriodStatusCard: React.FC = () => {
                 "mx-4 mb-8 p-4 rounded-2xl border transition-all duration-300 shadow-sm hover:shadow-md group",
                 isCurrent
                     ? "bg-success-50/30 border-success-100/50 dark:bg-success-500/5 dark:border-success-500/20"
-                    : "bg-unefa-gold/[0.03] border-unefa-gold/20 dark:bg-unefa-gold/5 dark:border-unefa-gold/15"
+                    : "bg-unefa-gold/3 border-unefa-gold/20 dark:bg-unefa-gold/5 dark:border-unefa-gold/15"
             )}
         >
             <div className="flex items-start gap-3">

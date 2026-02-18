@@ -87,43 +87,45 @@ export const executeAIQuery = async (req: AIAuthRequest, res: Response) => {
 };
 
 export const chatWithAI = async (req: AuthRequest, res: Response) => {
+  console.log('[AI Chat] Request received');
   try {
-    console.log('[AI Chat] Request received');
-    console.log('[AI Chat] User:', req.user);
-    
     const { messages } = req.body as { messages: ChatMessage[] };
-    console.log('[AI Chat] Messages received:', messages?.length);
+    console.log('[AI Chat] Messages count:', messages?.length);
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      console.log('[AI Chat] Invalid messages');
       return res.status(400).json({
         success: false,
         message: 'Se requiere un array de mensajes'
       });
     }
 
-    const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
-    if (!lastUserMessage) {
-      return res.status(400).json({
-        success: false,
-        message: 'Se requiere al menos un mensaje del usuario'
-      });
+    const lastUserMessage = messages[messages.length - 1];
+    console.log('[AI Chat] Last message:', lastUserMessage?.content?.substring(0, 50));
+    
+    if (lastUserMessage.role !== 'user') {
+       console.log('[AI Chat] Last message is not user');
+       // Handle edge case or just proceed? 
+       // Generally last message should be user.
     }
 
+    console.log('[AI Chat] Detecting intent...');
     const intent = detectIntent(lastUserMessage.content);
-    console.log('[AI] Intent detected:', intent);
+    console.log('[AI Chat] Intent detected:', intent?.action, intent?.entity);
+    
     let ragContext: string | null = null;
 
     if (intent.entity && intent.action !== 'none') {
-      console.log(`[RAG] Intent detected: ${intent.action} on ${intent.entity}`);
+      console.log('[AI Chat] Fetching context for intent...');
       ragContext = await fetchContextForIntent(intent, req.user?.userId || 'ai-chat');
-    } else {
-      console.log('[RAG] No intent detected, using base prompt only');
+      console.log('[AI Chat] Context fetched, length:', ragContext?.length);
     }
 
     const systemPrompt = buildSystemPrompt(
       req.user ? { name: req.user.userCi, role: req.user.role } : null,
       ragContext
     );
+    console.log('[AI Chat] System prompt built');
 
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
@@ -131,47 +133,39 @@ export const chatWithAI = async (req: AuthRequest, res: Response) => {
       'Connection': 'keep-alive',
       'X-Accel-Buffering': 'no',
     });
+    console.log('[AI Chat] Headers sent');
 
     const aborted = { value: false };
     req.on('close', () => { aborted.value = true; });
 
     const streamChat = USE_GROQ ? streamChatGroq : streamChatGoogle;
-    console.log(`[AI] Using provider: ${USE_GROQ ? 'Groq (Llama 3.3)' : 'Google Gemini'}`);
-    console.log(`[AI] GROQ_API_KEY set: ${!!process.env.GROQ_API_KEY}`);
-    console.log('[AI] About to call streamChat with', messages.length, 'messages');
-
-    try {
-      await streamChat(
-        {
-          messages,
-          systemInstruction: systemPrompt,
-          maxTokens: 4096,
-          temperature: 0.7,
-        },
-        (chunk: string) => {
-          if (!aborted.value) {
-            res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
-          }
+    console.log('[AI Chat] Starting stream with provider:', USE_GROQ ? 'GROQ' : 'Google');
+    
+    await streamChat(
+      {
+        messages,
+        systemInstruction: systemPrompt,
+        maxTokens: 4096,
+        temperature: 0.7,
+      },
+      (chunk: string) => {
+        if (!aborted.value) {
+          // console.log('[AI Chat] Writing chunk, length:', chunk.length);
+          res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
         }
-      );
-      console.log('[AI] streamChat completed successfully');
-    } catch (streamError: any) {
-      console.error('[AI] streamChat error:', streamError.message);
-      if (!aborted.value) {
-        res.write(`data: ${JSON.stringify({ error: streamError.message })}\n\n`);
-        res.end();
       }
-      return;
-    }
+    );
+    console.log('[AI Chat] Stream finished');
 
     if (!aborted.value) {
       res.write(`data: [DONE]\n\n`);
       res.end();
     }
-  } catch (error: any) {
-    console.error('[AI Chat] Error:', error.message);
-    console.error('[AI Chat] Stack:', error.stack);
 
+  } catch (error: any) {
+    console.error('[AI Chat] Error CRASH:', error);
+    console.error('[AI Chat] Stack:', error.stack);
+    
     if (!res.headersSent) {
       return res.status(500).json({
         success: false,

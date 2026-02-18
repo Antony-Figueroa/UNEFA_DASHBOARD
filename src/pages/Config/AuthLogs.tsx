@@ -51,21 +51,21 @@ interface User {
   userCi: string;
 }
 
-const ACTION_CONFIGS: Record<string, { label: string; color: "success" | "error" | "warning" | "brand" }> = {
+const ACTION_CONFIGS: Record<string, { label: string; color: "success" | "error" | "warning" | "primary" }> = {
   'LOGIN_SUCCESS': { label: 'Login', color: 'success' },
   'LOGIN_FAILED': { label: 'Fallido', color: 'error' },
-  'LOGOUT': { label: 'Logout', color: 'brand' },
+  'LOGOUT': { label: 'Logout', color: 'primary' },
   'SESSION_EXPIRED': { label: 'Expirada', color: 'warning' },
   'ACCOUNT_LOCKED': { label: 'Bloqueado', color: 'error' },
   'PASSWORD_RESET_REQUESTED': { label: 'Reset solicitado', color: 'warning' },
   'PASSWORD_RESET_COMPLETED': { label: 'Reset completado', color: 'success' },
   'CREATE_USER': { label: 'Usuario creado', color: 'success' },
-  'UPDATE_USER': { label: 'Actualizado', color: 'brand' },
+  'UPDATE_USER': { label: 'Actualizado', color: 'primary' },
   'DELETE_USER': { label: 'Eliminado', color: 'warning' },
 };
 
 const getActionConfig = (action: string) => {
-  return ACTION_CONFIGS[action] || { label: action, color: 'brand' as const };
+  return ACTION_CONFIGS[action] || { label: action, color: 'primary' as const };
 };
 
 const formatDate = (dateStr: string) => {
@@ -83,6 +83,8 @@ export default function AuthLogsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [users, setUsers] = useState<User[]>([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPagesFromBackend, setTotalPagesFromBackend] = useState(0);
   
   const [searchTerm, setSearchTerm] = useState("");
   const [actionFilter, setActionFilter] = useState("");
@@ -132,6 +134,8 @@ export default function AuthLogsPage() {
       const data: LogsResponse = await response.json();
       if (data.success) {
         setLogs(data.data);
+        setTotalItems(data.meta.total);
+        setTotalPagesFromBackend(data.meta.totalPages);
       } else {
         setError(new Error('Error al cargar los registros'));
       }
@@ -170,12 +174,6 @@ export default function AuthLogsPage() {
       return matchesSearch && matchesAction;
     });
   }, [logs, searchTerm, actionFilter]);
-
-  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
-  const paginatedLogs = filteredLogs.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -224,7 +222,7 @@ export default function AuthLogsPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">
-              {filteredLogs.length.toLocaleString()} registros encontrados
+              {totalItems.toLocaleString()} registros en total
             </p>
           </div>
 
@@ -246,7 +244,7 @@ export default function AuthLogsPage() {
               type="text"
               placeholder="Buscar..."
               value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              onChange={(e) => { setSearchTerm(e.target.value); }}
             />
           </div>
           
@@ -276,7 +274,7 @@ export default function AuthLogsPage() {
               { value: "DELETE_USER", label: "Eliminado" },
             ]}
             value={actionFilter}
-            onChange={(e) => { setActionFilter(e as unknown as string); setCurrentPage(1); }}
+            onChange={(e) => { setActionFilter(e as unknown as string); }}
             placeholder="Filtrar por acción"
             className="w-full sm:w-48"
           />
@@ -303,7 +301,7 @@ export default function AuthLogsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedLogs.map((log) => {
+                  {filteredLogs.map((log) => {
                     const config = getActionConfig(log.ACTION);
                     return (
                       <TableRow key={log.ID} className="hover:bg-bg-subtle/50 dark:hover:bg-bg-dark-subtle/50 transition-colors">
@@ -336,7 +334,7 @@ export default function AuthLogsPage() {
             </div>
 
             <div className="md:hidden flex flex-col gap-4">
-              {paginatedLogs.map((log) => {
+              {filteredLogs.map((log) => {
                 const config = getActionConfig(log.ACTION);
                 return (
                   <div 
@@ -369,11 +367,11 @@ export default function AuthLogsPage() {
               })}
             </div>
 
-            {totalPages > 1 && (
+            {totalPagesFromBackend > 1 && (
               <Pagination
                 currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={filteredLogs.length}
+                totalPages={totalPagesFromBackend}
+                totalItems={totalItems}
                 itemsPerPage={itemsPerPage}
                 onPageChange={handlePageChange}
                 onItemsPerPageChange={handleItemsPerPageChange}

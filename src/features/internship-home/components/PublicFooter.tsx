@@ -1,5 +1,5 @@
 import React from "react";
-// import { Link } from "react-router";
+import { Link } from "react-router";
 
 import { smoothScrollTo } from "../../../utils/scrollUtils";
 
@@ -51,33 +51,34 @@ const PublicFooter: React.FC = () => {
             <h4 className="font-bold mb-4 text-white">Plataforma</h4>
             <ul className="space-y-2 text-sm text-gray-400">
               <li>
-                <a 
-                  href="#inicio" 
-                  onClick={(e) => handleScroll(e, "inicio")}
-                  className="hover:text-brand-400 transition-colors"
-                >
+                <Link to="/" className="hover:text-brand-400 transition-colors">
                   Inicio
-                </a>
+                </Link>
+              </li>
+              <li>
+                <Link to="/nosotros" className="hover:text-brand-400 transition-colors">
+                  Nosotros
+                </Link>
+              </li>
+              <li>
+                <Link to="/carreras" className="hover:text-brand-400 transition-colors">
+                  Carreras
+                </Link>
+              </li>
+              <li>
+                <Link to="/pasantias" className="hover:text-brand-400 transition-colors">
+                  Pasantías
+                </Link>
               </li>
               <li>
                 <a 
-                  href="#mision-vision" 
-                  onClick={(e) => handleScroll(e, "mision-vision")}
+                  href="#faq" 
+                  onClick={(e) => handleScroll(e, "faq")}
                   className="hover:text-brand-400 transition-colors"
                 >
-                  Comunidad
+                  Preguntas Frecuentes
                 </a>
               </li>
-              <li>
-                <a 
-                  href="#procesos" 
-                  onClick={(e) => handleScroll(e, "procesos")}
-                  className="hover:text-brand-400 transition-colors"
-                >
-                  Procesos
-                </a>
-              </li>
-              {/* <li><Link to="#" className="hover:text-brand-400 transition-colors">Preguntas Frecuentes</Link></li> */}
             </ul>
           </div>
 

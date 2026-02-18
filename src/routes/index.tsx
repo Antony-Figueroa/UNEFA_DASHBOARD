@@ -48,6 +48,11 @@ const BarChart = lazy(() => import("../pages/Charts/BarChart"));
 const AIAssistant = lazy(() => import("../pages/AIAssistant/AIAssistant"));
 const NotFound = lazy(() => import("../pages/OtherPage/NotFound"));
 
+// Public Pages
+const NosotrosPage = lazy(() => import("../pages/Public/NosotrosPage"));
+const CarrerasPage = lazy(() => import("../pages/Public/CarrerasPage"));
+const PasantiasPage = lazy(() => import("../pages/Public/PasantiasPage"));
+
 export const AppRoutes = () => {
   const isRender = typeof window !== 'undefined' && window.location.hostname.includes('onrender.com');
 
@@ -59,6 +64,11 @@ export const AppRoutes = () => {
         <Routes>
           {/* Public Landing Page */}
           <Route path="/" element={<InternshipHome />} />
+          
+          {/* Public Info Pages */}
+          <Route path="/nosotros" element={<NosotrosPage />} />
+          <Route path="/carreras" element={<CarrerasPage />} />
+          <Route path="/pasantias" element={<PasantiasPage />} />
 
           {/* Auth Routes (Public but restricted for logged-in users) */}
           <Route

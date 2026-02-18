@@ -13,6 +13,7 @@ import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import CustomSelect from "../../../components/form/CustomSelect";
+import InputField from "../../../components/form/input/InputField";
 import {
     EditIcon,
     TrashIcon,
@@ -44,6 +45,23 @@ type SortKey = keyof PeriodoRowData;
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
+
+/**
+ * Verifica si un valor es una fecha válida.
+ */
+const isValidDate = (date: any): boolean => {
+    if (!date) return false;
+    const d = new Date(date);
+    return !isNaN(d.getTime());
+};
+
+/**
+ * Formatea una fecha de forma segura.
+ */
+const formatDateSafe = (date: any): string => {
+    if (!isValidDate(date)) return "Fecha inválida";
+    return new Date(date).toLocaleDateString();
+};
 
 /**
  * Obtiene el estatus numérico de un periodo de forma segura.
@@ -396,16 +414,35 @@ const PeriodTable = ({
         const aValue = a[sortKey];
         const bValue = b[sortKey];
 
-        if (aValue === bValue) return 0;
-        if (aValue === undefined || aValue === null) return 1;
-        if (bValue === undefined || bValue === null) return -1;
-
         // Manejo especial para fechas y estatus
         if (sortKey === "periodStatus") {
              const statusA = getSafePeriodStatus(a);
              const statusB = getSafePeriodStatus(b);
              return sortOrder === "asc" ? statusA - statusB : statusB - statusA;
         }
+
+        // Manejo especial para fechas (startDate, endDate)
+        if (sortKey === "startDate" || sortKey === "endDate") {
+            const dateA = new Date(a[sortKey]);
+            const dateB = new Date(b[sortKey]);
+            
+            const isValidA = !isNaN(dateA.getTime());
+            const isValidB = !isNaN(dateB.getTime());
+
+            if (!isValidA && !isValidB) return 0;
+            if (!isValidA) return 1; // Inválidos al final
+            if (!isValidB) return -1;
+
+            if (sortOrder === "asc") {
+                return dateA.getTime() - dateB.getTime();
+            } else {
+                return dateB.getTime() - dateA.getTime();
+            }
+        }
+
+        if (aValue === bValue) return 0;
+        if (aValue === undefined || aValue === null) return 1;
+        if (bValue === undefined || bValue === null) return -1;
 
         if (sortOrder === "asc") {
             // @ts-ignore
@@ -434,13 +471,14 @@ const PeriodTable = ({
             {/* Filtros */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <input
-                        type="text"
-                        placeholder="Buscar periodo..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="input-field w-full sm:w-64"
-                    />
+                    <div className="w-full sm:w-64">
+                        <InputField
+                            type="text"
+                            placeholder="Buscar periodo..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                     <CustomSelect
                         options={[
                             { value: "", label: "Todos los estatus" },

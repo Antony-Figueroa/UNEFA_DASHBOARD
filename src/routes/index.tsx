@@ -17,6 +17,11 @@ const UserProfiles = lazy(() => import("../pages/UserProfiles"));
 const UserManagementPage = lazy(() => import("../pages/Config/UserManagementPage"));
 const ListsConfiguration = lazy(() => import("../pages/Config/ListsConfiguration"));
 const AuthLogs = lazy(() => import("../pages/Config/AuthLogs"));
+const RolesPermissions = lazy(() => import("../pages/Config/RolesPermissions"));
+const Maintenance = lazy(() => import("../pages/Config/Maintenance"));
+const Culmination = lazy(() => import("../pages/Culmination/Culmination"));
+const Reports = lazy(() => import("../pages/Reports/Reports"));
+const Manuals = lazy(() => import("../pages/Manuals/Manuals"));
 const Calendar = lazy(() => import("../pages/Calendar"));
 const Blank = lazy(() => import("../pages/Blank"));
 const Students = lazy(() => import("../pages/Students/students"));
@@ -128,6 +133,13 @@ export const AppRoutes = () => {
             <Route path="/enrollment" element={<EnrollmentPage />} />
             <Route path="/tracking" element={<TrackingPage />} />
             <Route path="/visit-registration" element={<VisitRegistration />} />
+            <Route path="/culmination" element={<Culmination />} />
+
+            {/* Reports */}
+            <Route path="/reports" element={<Reports />} />
+
+            {/* Manuals */}
+            <Route path="/manuals" element={<Manuals />} />
 
             {/* Configuration - Only for Admin (Role 1) and Master (Role 0) */}
             <Route
@@ -146,11 +158,27 @@ export const AppRoutes = () => {
                 </ProtectedRoute>
               }
             />
-            <Route
+             <Route
               path="/configure/logs"
               element={
                 <ProtectedRoute allowedRoles={[0, 1]}>
                   <AuthLogs />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/configure/roles"
+              element={
+                <ProtectedRoute allowedRoles={[0, 1]}>
+                  <RolesPermissions />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/configure/maintenance"
+              element={
+                <ProtectedRoute allowedRoles={[0, 1]}>
+                  <Maintenance />
                 </ProtectedRoute>
               }
             />

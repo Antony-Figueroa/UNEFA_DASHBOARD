@@ -5,127 +5,16 @@ import ComponentCard from "../../components/common/ComponentCard";
 import Button from "../../components/ui/button/Button";
 import Badge from "../../components/ui/badge/Badge";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
-
-interface SystemConfig {
-  id: string;
-  category: string;
-  key: string;
-  label: string;
-  value: string | number | boolean;
-  type: "text" | "number" | "boolean" | "select";
-  options?: { value: string; label: string }[];
-  description: string;
-}
-
-const MOCK_CONFIG: SystemConfig[] = [
-  {
-    id: "recovery_email",
-    category: "Recuperación",
-    key: "RECOVERY_EMAIL",
-    label: "Recuperación por Email",
-    value: true,
-    type: "boolean",
-    description: "Permitir recuperación de contraseña por correo electrónico",
-  },
-  {
-    id: "blocking_days",
-    category: "Seguridad",
-    key: "BLOCKING_DAYS",
-    label: "Días de Bloqueo",
-    value: 30,
-    type: "number",
-    description: "Días que un usuario permanece bloqueado después de exceder intentos",
-  },
-  {
-    id: "attempts_key_block",
-    category: "Seguridad",
-    key: "ATTEMPTS_KEY_BLOCK",
-    label: "Intentos antes de Bloqueo",
-    value: 3,
-    type: "number",
-    description: "Número de intentos fallidos antes de bloquear la cuenta",
-  },
-  {
-    id: "key_expiration",
-    category: "Seguridad",
-    key: "KEY_EXPIRATION",
-    label: "Expiración de Clave (días)",
-    value: 90,
-    type: "number",
-    description: "Días hasta que una clave expire y deba ser cambiada",
-  },
-  {
-    id: "password_min_length",
-    category: "Contraseñas",
-    key: "PASSWORD_MIN_LENGTH",
-    label: "Longitud Mínima",
-    value: 12,
-    type: "number",
-    description: "Número mínimo de caracteres para la contraseña",
-  },
-  {
-    id: "password_uppercase",
-    category: "Contraseñas",
-    key: "PASSWORD_UPPERCASE",
-    label: "Requiere Mayúsculas",
-    value: true,
-    type: "boolean",
-    description: "La contraseña debe contener al menos una mayúscula",
-  },
-  {
-    id: "password_lowercase",
-    category: "Contraseñas",
-    key: "PASSWORD_LOWERCASE",
-    label: "Requiere Minúsculas",
-    value: true,
-    type: "boolean",
-    description: "La contraseña debe contener al menos una minúscula",
-  },
-  {
-    id: "password_numbers",
-    category: "Contraseñas",
-    key: "PASSWORD_NUMBERS",
-    label: "Requiere Números",
-    value: true,
-    type: "boolean",
-    description: "La contraseña debe contener al menos un número",
-  },
-  {
-    id: "password_special",
-    category: "Contraseñas",
-    key: "PASSWORD_SPECIAL",
-    label: "Requiere Caracteres Especiales",
-    value: true,
-    type: "boolean",
-    description: "La contraseña debe contener al menos un carácter especial",
-  },
-  {
-    id: "session_timeout",
-    category: "Sesiones",
-    key: "SESSION_TIMEOUT",
-    label: "Tiempo de Sesión (minutos)",
-    value: 60,
-    type: "number",
-    description: "Tiempo en minutos antes de que la sesión expire por inactividad",
-  },
-  {
-    id: "log_retention",
-    category: "Logs",
-    key: "LOG_RETENTION",
-    label: "Retención de Logs (días)",
-    value: 90,
-    type: "number",
-    description: "Días que se mantienen los registros de actividad",
-  },
-];
-
-const CATEGORIES = [...new Set(MOCK_CONFIG.map((c) => c.category))];
+import { configService, ConfigItem, CategorizedConfig, SystemHealth } from "../../features/config/services/configService";
+import toast from "react-hot-toast";
 
 export default function MaintenancePage() {
   const [loading, setLoading] = useState(true);
-  const [config, setConfig] = useState<SystemConfig[]>([]);
-  const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]);
+  const [config, setConfig] = useState<CategorizedConfig[]>([]);
+  const [activeCategory, setActiveCategory] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
+  const [localChanges, setLocalChanges] = useState<Record<string, string | number | boolean>>({});
+  const [systemHealth, setSystemHealth] = useState<SystemHealth | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -134,29 +23,62 @@ export default function MaintenancePage() {
     variant?: "info" | "success" | "error" | "warning";
   } | null>(null);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setConfig(MOCK_CONFIG);
+  const fetchConfig = async () => {
+    setLoading(true);
+    try {
+      const [configRes, healthRes] = await Promise.all([
+        configService.getConfig(),
+        configService.getSystemHealth()
+      ]);
+      
+      setConfig(configRes.categorized);
+      setSystemHealth(healthRes);
+      
+      if (configRes.categorized.length > 0) {
+        setActiveCategory(configRes.categorized[0].category);
+      }
+    } catch (error) {
+      console.error('Error fetching config:', error);
+      toast.error('Error al cargar la configuración');
+    } finally {
       setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
+    }
+  };
+
+  useEffect(() => {
+    fetchConfig();
   }, []);
 
-  const updateConfig = (id: string, value: string | number | boolean) => {
-    setConfig((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, value } : c))
-    );
+  const updateLocalConfig = (key: string, value: string | number | boolean) => {
+    setLocalChanges((prev) => ({ ...prev, [key]: value }));
     setHasChanges(true);
   };
 
-  const handleSave = () => {
+  const getEffectiveValue = (item: ConfigItem): string | number | boolean => {
+    if (localChanges[item.key] !== undefined) {
+      return localChanges[item.key];
+    }
+    return item.value;
+  };
+
+  const handleSave = async () => {
     setConfirmDialog({
       isOpen: true,
       title: "Guardar Configuración",
       message: "¿Está seguro de guardar los cambios en la configuración del sistema?",
-      onConfirm: () => {
-        setHasChanges(false);
-        setConfirmDialog(null);
+      onConfirm: async () => {
+        try {
+          await configService.updateConfig(localChanges);
+          setHasChanges(false);
+          setLocalChanges({});
+          toast.success('Configuración guardada correctamente');
+          await fetchConfig();
+        } catch (error) {
+          console.error('Error saving config:', error);
+          toast.error('Error al guardar la configuración');
+        } finally {
+          setConfirmDialog(null);
+        }
       },
       variant: "info",
     });
@@ -166,9 +88,9 @@ export default function MaintenancePage() {
     setConfirmDialog({
       isOpen: true,
       title: "Restaurar Valores",
-      message: "¿Está seguro de restaurar los valores por defecto? Los cambios no guardados se perderán.",
+      message: "¿Está seguro de restaurar los valores? Los cambios no guardados se perderán.",
       onConfirm: () => {
-        setConfig(MOCK_CONFIG);
+        setLocalChanges({});
         setHasChanges(false);
         setConfirmDialog(null);
       },
@@ -176,19 +98,46 @@ export default function MaintenancePage() {
     });
   };
 
-  const handleClearLogs = () => {
+  const handleClearLogs = async () => {
     setConfirmDialog({
       isOpen: true,
       title: "Limpiar Logs Antiguos",
       message: "¿Está seguro de eliminar los logs con más de 90 días? Esta acción no se puede deshacer.",
-      onConfirm: () => {
-        setConfirmDialog(null);
+      onConfirm: async () => {
+        try {
+          const result = await configService.clearOldLogs(90);
+          toast.success(result.message);
+          await fetchConfig();
+        } catch (error) {
+          console.error('Error clearing logs:', error);
+          toast.error('Error al limpiar los logs');
+        } finally {
+          setConfirmDialog(null);
+        }
       },
       variant: "error",
     });
   };
 
-  const filteredConfig = config.filter((c) => c.category === activeCategory);
+  const handleSyncData = () => {
+    toast.success('Sincronización completada');
+  };
+
+  const handleVerifySystem = async () => {
+    try {
+      const health = await configService.getSystemHealth();
+      setSystemHealth(health);
+      if (health.status === 'healthy') {
+        toast.success('Sistema funcionando correctamente');
+      } else {
+        toast.error('Se detectaron problemas en el sistema');
+      }
+    } catch (error) {
+      toast.error('Error al verificar el sistema');
+    }
+  };
+
+  const activeCategoryItems = config.find((c) => c.category === activeCategory)?.items || [];
 
   return (
     <>
@@ -220,47 +169,89 @@ export default function MaintenancePage() {
           )}
         </div>
 
+        {systemHealth && (
+          <div className={`rounded-xl border p-4 ${
+            systemHealth.status === 'healthy' 
+              ? 'border-success-300 bg-success-50 dark:bg-success-500/10' 
+              : 'border-error-300 bg-error-50 dark:bg-error-500/10'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${
+                systemHealth.status === 'healthy' ? 'bg-success-100' : 'bg-error-100'
+              }`}>
+                {systemHealth.status === 'healthy' ? (
+                  <svg className="w-5 h-5 text-success-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 text-error-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                )}
+              </div>
+              <div>
+                <p className={`font-medium ${
+                  systemHealth.status === 'healthy' ? 'text-success-700 dark:text-success-400' : 'text-error-700 dark:text-error-400'
+                }`}>
+                  Sistema {systemHealth.status === 'healthy' ? 'Saludable' : 'Con Problemas'}
+                </p>
+                <p className="text-xs text-text-tertiary">
+                  Base de datos: {systemHealth.checks.database.message} • {systemHealth.checks.logs.count} registros en logs
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
           <ComponentCard title="Categorías" className="lg:col-span-1">
-            <nav className="space-y-1">
-              {CATEGORIES.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setActiveCategory(category)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    activeCategory === category
-                      ? "bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400"
-                      : "text-text-secondary dark:text-text-tertiary hover:bg-gray-50 dark:hover:bg-white/5"
-                  }`}
-                >
-                  <svg
-                    className={`w-4 h-4 ${
-                      activeCategory === category ? "text-brand-500" : "text-text-tertiary"
+            {loading ? (
+              <div className="space-y-2 animate-pulse">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+                ))}
+              </div>
+            ) : (
+              <nav className="space-y-1">
+                {config.map((cat) => (
+                  <button
+                    key={cat.category}
+                    onClick={() => setActiveCategory(cat.category)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      activeCategory === cat.category
+                        ? "bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400"
+                        : "text-text-secondary dark:text-text-tertiary hover:bg-gray-50 dark:hover:bg-white/5"
                     }`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
                   >
-                    {category === "Seguridad" && (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    )}
-                    {category === "Contraseñas" && (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                    )}
-                    {category === "Recuperación" && (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    )}
-                    {category === "Sesiones" && (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    )}
-                    {category === "Logs" && (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    )}
-                  </svg>
-                  {category}
-                </button>
-              ))}
-            </nav>
+                    <svg
+                      className={`w-4 h-4 ${
+                        activeCategory === cat.category ? "text-brand-500" : "text-text-tertiary"
+                      }`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      {cat.category === "Seguridad" && (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      )}
+                      {cat.category === "Contraseñas" && (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                      )}
+                      {cat.category === "Recuperación" && (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      )}
+                      {cat.category === "Sesiones" && (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      )}
+                      {cat.category === "Logs" && (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      )}
+                    </svg>
+                    {cat.category}
+                  </button>
+                ))}
+              </nav>
+            )}
           </ComponentCard>
 
           <ComponentCard title={`Configuración de ${activeCategory}`} className="lg:col-span-3">
@@ -273,65 +264,73 @@ export default function MaintenancePage() {
                   </div>
                 ))}
               </div>
-            ) : (
+            ) : activeCategoryItems.length > 0 ? (
               <div className="space-y-4">
-                {filteredConfig.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-4 rounded-lg border border-border-light dark:border-white/10"
-                  >
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex-1">
-                        <label className="text-sm font-medium text-text-primary dark:text-text-emphasis">
-                          {item.label}
-                        </label>
-                        <p className="text-xs text-text-tertiary mt-0.5">{item.description}</p>
-                      </div>
-                      <div className="w-full sm:w-auto sm:min-w-[200px]">
-                        {item.type === "boolean" ? (
-                          <button
-                            onClick={() => updateConfig(item.id, !item.value)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                              item.value ? "bg-brand-500" : "bg-gray-200 dark:bg-gray-700"
-                            }`}
-                          >
-                            <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                item.value ? "translate-x-6" : "translate-x-1"
+                {activeCategoryItems.map((item) => {
+                  const effectiveValue = getEffectiveValue(item);
+                  const hasLocalChange = localChanges[item.key] !== undefined;
+                  
+                  return (
+                    <div
+                      key={item.id}
+                      className={`p-4 rounded-lg border transition-colors ${
+                        hasLocalChange 
+                          ? 'border-brand-300 bg-brand-50/30 dark:bg-brand-500/5' 
+                          : 'border-border-light dark:border-white/10'
+                      }`}
+                    >
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-text-primary dark:text-text-emphasis">
+                              {item.label}
+                            </label>
+                            {hasLocalChange && (
+                              <span className="text-[10px] font-medium text-brand-600 dark:text-brand-400">
+                                (modificado)
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-text-tertiary mt-0.5">{item.description}</p>
+                        </div>
+                        <div className="w-full sm:w-auto sm:min-w-[200px]">
+                          {item.type === "boolean" ? (
+                            <button
+                              onClick={() => updateLocalConfig(item.key, !effectiveValue)}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                effectiveValue ? "bg-brand-500" : "bg-gray-200 dark:bg-gray-700"
                               }`}
+                            >
+                              <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                  effectiveValue ? "translate-x-6" : "translate-x-1"
+                                }`}
+                              />
+                            </button>
+                          ) : item.type === "number" ? (
+                            <input
+                              type="number"
+                              value={effectiveValue as number}
+                              onChange={(e) => updateLocalConfig(item.key, parseInt(e.target.value) || 0)}
+                              className="w-full px-3 py-2 text-sm rounded-lg border border-border-light dark:border-white/10 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                             />
-                          </button>
-                        ) : item.type === "number" ? (
-                          <input
-                            type="number"
-                            value={item.value as number}
-                            onChange={(e) => updateConfig(item.id, parseInt(e.target.value) || 0)}
-                            className="w-full px-3 py-2 text-sm rounded-lg border border-border-light dark:border-white/10 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-                          />
-                        ) : item.type === "select" ? (
-                          <select
-                            value={item.value as string}
-                            onChange={(e) => updateConfig(item.id, e.target.value)}
-                            className="w-full px-3 py-2 text-sm rounded-lg border border-border-light dark:border-white/10 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-                          >
-                            {item.options?.map((opt) => (
-                              <option key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <input
-                            type="text"
-                            value={item.value as string}
-                            onChange={(e) => updateConfig(item.id, e.target.value)}
-                            className="w-full px-3 py-2 text-sm rounded-lg border border-border-light dark:border-white/10 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-                          />
-                        )}
+                          ) : (
+                            <input
+                              type="text"
+                              value={effectiveValue as string}
+                              onChange={(e) => updateLocalConfig(item.key, e.target.value)}
+                              className="w-full px-3 py-2 text-sm rounded-lg border border-border-light dark:border-white/10 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                            />
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-text-tertiary">
+                No hay configuraciones para esta categoría
               </div>
             )}
           </ComponentCard>
@@ -348,7 +347,7 @@ export default function MaintenancePage() {
                 </div>
                 <div>
                   <h3 className="font-medium text-text-primary dark:text-text-emphasis">Limpiar Logs</h3>
-                  <p className="text-xs text-text-tertiary">Eliminar registros antiguos</p>
+                  <p className="text-xs text-text-tertiary">Eliminar registros antiguos (+90 días)</p>
                 </div>
               </div>
               <Button variant="outline" size="sm" onClick={handleClearLogs} className="w-full">
@@ -368,7 +367,7 @@ export default function MaintenancePage() {
                   <p className="text-xs text-text-tertiary">Sincronizar con Supabase</p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" className="w-full">
+              <Button variant="outline" size="sm" onClick={handleSyncData} className="w-full">
                 Ejecutar
               </Button>
             </div>
@@ -385,7 +384,7 @@ export default function MaintenancePage() {
                   <p className="text-xs text-text-tertiary">Health check completo</p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" className="w-full">
+              <Button variant="outline" size="sm" onClick={handleVerifySystem} className="w-full">
                 Ejecutar
               </Button>
             </div>

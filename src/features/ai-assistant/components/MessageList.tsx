@@ -79,8 +79,8 @@ export const MessageList: React.FC<MessageListProps> = ({
                         />
                     ))}
 
-                    {/* Loading indicator - Mostrar mientras carga o streaming */}
-                    {(isLoading || isStreaming) && (
+                    {/* Loading/Streaming indicator - Mostrar solo si NO hay mensaje de streaming */}
+                    {(isLoading || isStreaming) && !messages.some(m => m.status === 'streaming') && (
                         <div className="flex justify-start">
                             <TypingIndicator />
                         </div>

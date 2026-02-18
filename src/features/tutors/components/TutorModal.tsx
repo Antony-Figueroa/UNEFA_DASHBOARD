@@ -24,7 +24,7 @@ interface TutorModalProps {
   /** Function to call when closing the modal */
   onClose: () => void;
   /** Function to call when saving the tutor data */
-  onSave: (tutor: CreateTutorPayload | UpdateTutorPayload) => void;
+  onSave: (tutor: CreateTutorPayload | UpdateTutorPayload) => Promise<void> | void;
   /** The tutor object to edit, or null for creating a new one */
   editingTutor?: Tutor | null;
   /** Whether the modal is in a loading state */

@@ -1,5 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
+import { useState, useEffect, useMemo } from "react";
 import {
     Table,
     TableBody,
@@ -202,7 +201,7 @@ interface PeriodTableProps {
     /** Array de datos de periodos */
     data: PeriodoRowData[];
     /** Estado de carga/error */
-    status: "loading" | "success" | "error";
+    status: "loading" | "success" | "error" | "idle";
     /** Objeto de error si existe */
     error: Error | null;
     /** Callback para editar */
@@ -217,7 +216,7 @@ interface PeriodTableProps {
     onRestore?: (periodo: PeriodoRowData) => void;
     /** Callback para ver detalles */
     onView?: (periodo: PeriodoRowData) => void;
-    /** Tab activa (filtro) */
+    /** Tab activa (filtro) - Obsoleto */
     activeTab?: string;
     /** Indica si hay carga externa */
     externalLoading?: boolean;
@@ -239,7 +238,6 @@ const PeriodTable = ({
     onActivate,
     onRestore,
     onView,
-    activeTab = "Activos",
     externalLoading = false,
 }: PeriodTableProps) => {
     // ============================================
@@ -394,11 +392,14 @@ const PeriodTable = ({
     });
 
     const sortedData = [...filteredData].sort((a, b) => {
+        // Manejo seguro de nulos
         const aValue = a[sortKey];
         const bValue = b[sortKey];
 
         if (aValue === bValue) return 0;
-        
+        if (aValue === undefined || aValue === null) return 1;
+        if (bValue === undefined || bValue === null) return -1;
+
         // Manejo especial para fechas y estatus
         if (sortKey === "periodStatus") {
              const statusA = getSafePeriodStatus(a);
@@ -407,8 +408,10 @@ const PeriodTable = ({
         }
 
         if (sortOrder === "asc") {
+            // @ts-ignore
             return aValue > bValue ? 1 : -1;
         } else {
+            // @ts-ignore
             return aValue < bValue ? 1 : -1;
         }
     });
@@ -423,7 +426,7 @@ const PeriodTable = ({
     // RENDER
     // ============================================
     if (data.length === 0) {
-        return <EmptyState message="No hay periodos registrados" />;
+        return <EmptyState title="No hay periodos registrados" />;
     }
 
     return (
@@ -446,7 +449,7 @@ const PeriodTable = ({
                             { value: "3", label: "Culminado" },
                         ]}
                         value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
+                        onChange={(e) => setStatusFilter(e as unknown as string)}
                         placeholder="Filtrar por estatus"
                         className="w-full sm:w-48"
                     />
@@ -508,7 +511,6 @@ const PeriodTable = ({
                             paginatedData.map((periodo) => {
                                 const periodStatus = getSafePeriodStatus(periodo);
                                 const progress = getSafeProgress(periodo);
-                                const isCurrent = periodStatus === 2;
                                 
                                 // Determinar si este periodo específico se puede activar
                                 const canActivate = nextActivatablePeriodId === periodo.periodId;
@@ -672,7 +674,7 @@ const PeriodTable = ({
                         );
                     })
                 ) : (
-                    <EmptyState message="No hay periodos registrados" />
+                    <EmptyState title="No hay periodos registrados" />
                 )}
             </div>
 

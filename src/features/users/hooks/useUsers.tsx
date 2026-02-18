@@ -32,13 +32,14 @@ const USER_LABELS: Record<string, string> = {
 export const useUsers = (filters: any = {}, activeTab: "Activos" | "Inactivos" = "Activos", page: number = 1, limit: number = 10) => {
     const [users, setUsers] = useState<User[]>([]);
     const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+    const [isBulkLoading, setIsBulkLoading] = useState(false);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
     const { addToast } = useToast();
 
     // Utilizamos useCrud para las acciones de mutación
     const {
-        loadingAction,
+        loadingAction: crudLoading,
         error: crudError,
         createItem: baseAddUser,
         updateItem: baseEditUser,
@@ -189,6 +190,7 @@ export const useUsers = (filters: any = {}, activeTab: "Activos" | "Inactivos" =
      * Realiza una acción masiva de cambio de estado.
      */
     const bulkToggleStatus = async (ids: number[], newStatus: number) => {
+        setIsBulkLoading(true);
         try {
             // Nota: userService.bulkDelete o similar podría ser usado si la API lo soporta.
             // Por ahora mantenemos la lógica de Promise.all pero con notificaciones estandarizadas.
@@ -208,13 +210,15 @@ export const useUsers = (filters: any = {}, activeTab: "Activos" | "Inactivos" =
                 message: "No se pudieron procesar algunos usuarios seleccionados."
             });
             throw err;
+        } finally {
+            setIsBulkLoading(false);
         }
     };
 
     return {
         users,
         status,
-        loadingAction,
+        loadingAction: crudLoading || isBulkLoading,
         error: crudError,
         totalPages,
         totalItems,

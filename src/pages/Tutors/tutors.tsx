@@ -12,7 +12,6 @@ import ComponentCard from "../../components/common/ComponentCard";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
-import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
 import { DownloadIcon } from "../../icons";
@@ -222,26 +221,28 @@ export default function TutorsPage() {
         const original = tutors.find((t) => t.tutorId === row.tutorId);
         if (!original) return;
 
-        if (original.status) {
-            setConfirmation({
-                isOpen: true,
-                title: "Confirmar Desactivación",
-                message: `¿Estás seguro de que deseas desactivar al tutor "${row.firstName} ${row.lastName}"?`,
-                onConfirm: async () => {
-                    try {
-                        await toggleStatus(original);
-                    } catch (error) {
-                        console.error("Error toggling tutor status:", error);
-                    } finally {
-                        setConfirmation(null);
-                    }
-                },
-                confirmText: "Desactivar",
-                variant: "error",
-            });
-        } else {
-            toggleStatus(original).catch(console.error);
-        }
+        const isDeactivating = original.status;
+        const actionVerb = isDeactivating ? "desactivar" : "activar";
+        const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Activación";
+        const variant = isDeactivating ? "error" : "success";
+        const confirmText = isDeactivating ? "Desactivar" : "Activar";
+
+        setConfirmation({
+            isOpen: true,
+            title: confirmTitle,
+            message: `¿Estás seguro de que deseas ${actionVerb} al tutor "${row.firstName} ${row.lastName}"?`,
+            onConfirm: async () => {
+                try {
+                    await toggleStatus(original);
+                } catch (error) {
+                    console.error("Error toggling tutor status:", error);
+                } finally {
+                    setConfirmation(null);
+                }
+            },
+            confirmText: confirmText,
+            variant: variant as DialogVariant,
+        });
     };
 
     /**
@@ -274,7 +275,22 @@ export default function TutorsPage() {
      * @param ids - IDs de los tutores a restaurar
      */
     const handleBulkRestore = (ids: string[]) => {
-        bulkRestoreTutors(ids).catch(console.error);
+        setConfirmation({
+            isOpen: true,
+            title: "Confirmar Restauración Múltiple",
+            message: `¿Estás seguro de que deseas restaurar los ${ids.length} tutores seleccionados?`,
+            onConfirm: async () => {
+                try {
+                    await bulkRestoreTutors(ids);
+                } catch (error) {
+                    console.error("Error in bulk tutor restoration:", error);
+                } finally {
+                    setConfirmation(null);
+                }
+            },
+            confirmText: "Restaurar",
+            variant: "success",
+        });
     };
 
     return (
@@ -284,8 +300,6 @@ export default function TutorsPage() {
             <SkeletonLoader isLoading={pageLoading} skeleton={<BreadcrumbSkeleton />} id="tutors-breadcrumb">
                 <PageBreadcrumb pageTitle="Tutores" />
             </SkeletonLoader>
-
-            {loadingAction && <FullScreenLoader label="Procesando..." />}
 
             <div className="stagger-delay">
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

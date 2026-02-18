@@ -171,7 +171,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
         setShowConfirmDialog(true);
     };
 
-    const handleConfirmSave = () => {
+    const handleConfirmSave = async () => {
         if (!pendingData) return;
         const data = pendingData;
         
@@ -189,8 +189,10 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                 (payload as UpdateTrackingPayload).trackingId = tracking.trackingId;
             }
             
-            onSave(payload);
+            await onSave(payload);
             setIsEditing(false);
+            setShowConfirmDialog(false);
+            setPendingData(null);
         } catch (error) {
             console.error("[TrackingModal] Error al procesar el envío del formulario:", error);
             addToast({
@@ -199,8 +201,6 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                 message: "Por favor, revise los datos ingresados en el formulario."
             });
         }
-        setShowConfirmDialog(false);
-        setPendingData(null);
     };
 
     /**
@@ -364,6 +364,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                 message={`¿Estás seguro de que deseas ${tracking ? 'actualizar' : 'guardar'} el seguimiento del estudiante?`}
                 variant="confirm"
                 confirmLabel={tracking ? "Actualizar" : "Guardar"}
+                isLoading={isLoading}
             />
         </>
     );

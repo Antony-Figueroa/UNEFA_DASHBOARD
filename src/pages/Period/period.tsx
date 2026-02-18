@@ -17,7 +17,6 @@ import PeriodModal from "../../features/periods/components/PeriodModal";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
-import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import PeriodViewModal from "../../features/periods/components/PeriodViewModal";
@@ -342,8 +341,6 @@ export default function Period() {
                     <PageBreadcrumb pageTitle="Períodos" />
                 </SkeletonLoader>
 
-                {loadingAction && <FullScreenLoader label="Procesando..." />}
-
                 <div className="stagger-delay">
                     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
@@ -405,7 +402,7 @@ export default function Period() {
                                         onView={handleOpenViewModal}
                                         onDelete={handleDelete}
                                         onRestore={handleRestore}
-                                        loading={loadingAction}
+                                        externalLoading={loadingAction}
                                     />
                                 </SkeletonLoader>
                             </div>

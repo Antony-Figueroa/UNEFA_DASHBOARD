@@ -11,7 +11,6 @@ import ComponentCard from "../../components/common/ComponentCard";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
-import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
 
@@ -204,28 +203,28 @@ export default function PreEnrollmentPage() {
         const original = preEnrollments.find((p) => p.preEnrollmentId === item.preEnrollmentId);
         if (!original) return;
 
-        // Si está activo y vamos a desactivar, pedir confirmación
-        if (original.status) {
-            setConfirmation({
-                isOpen: true,
-                title: "Confirmar Desactivación",
-                message: `¿Estás seguro de que deseas desactivar la pre-inscripción de ${item.studentName}?`,
-                confirmText: "Desactivar",
-                variant: "error",
-                onConfirm: async () => {
-                    try {
-                        await toggleStatus(original);
-                    } catch (error) {
-                        console.error(error);
-                    } finally {
-                        setConfirmation(null);
-                    }
+        const isDeactivating = original.status;
+        const actionVerb = isDeactivating ? "desactivar" : "activar";
+        const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Activación";
+        const variant = isDeactivating ? "error" : "success";
+        const confirmText = isDeactivating ? "Desactivar" : "Activar";
+
+        setConfirmation({
+            isOpen: true,
+            title: confirmTitle,
+            message: `¿Estás seguro de que deseas ${actionVerb} la pre-inscripción de ${item.studentName}?`,
+            confirmText: confirmText,
+            variant: variant as any,
+            onConfirm: async () => {
+                try {
+                    await toggleStatus(original);
+                } catch (error) {
+                    console.error(error);
+                } finally {
+                    setConfirmation(null);
                 }
-            });
-        } else {
-            // Restauración directa o pedir confirmación si se desea
-            toggleStatus(original).catch(console.error);
-        }
+            }
+        });
     };
 
     /**
@@ -292,8 +291,6 @@ export default function PreEnrollmentPage() {
             <SkeletonLoader isLoading={pageLoading} skeleton={<BreadcrumbSkeleton />} id="pre-enrollment-breadcrumb">
                 <PageBreadcrumb pageTitle="Pre-Inscripción" />
             </SkeletonLoader>
-
-            {loadingAction && <FullScreenLoader label="Procesando..." />}
 
             <div className="stagger-delay">
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

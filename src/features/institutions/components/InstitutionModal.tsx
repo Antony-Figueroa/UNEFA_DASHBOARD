@@ -29,7 +29,7 @@ interface InstitutionModalProps {
   /** Callback to close the modal */
   onClose: () => void;
   /** Callback fired when the form is submitted successfully */
-  onSave: (inst: CreateInstitutionPayload | UpdateInstitutionPayload) => void;
+  onSave: (inst: CreateInstitutionPayload | UpdateInstitutionPayload) => Promise<void> | void;
   /** The institution record being edited, or null if creating a new one */
   editingInst?: Institution | null;
   /** Options for the career selection dropdown */
@@ -631,9 +631,9 @@ export default function InstitutionModal({
       <UnifiedDialog
         isOpen={confirmSaveOpen}
         onClose={() => setConfirmSaveOpen(false)}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (pendingSave) {
-            onSave(pendingSave);
+            await onSave(pendingSave);
           }
           setConfirmSaveOpen(false);
         }}
@@ -641,6 +641,7 @@ export default function InstitutionModal({
         title={editingInst ? "Confirmar actualización" : "Confirmar registro"}
         message={editingInst ? "¿Desea actualizar los datos de la institución?" : "¿Desea guardar la nueva institución?"}
         confirmLabel={editingInst ? "Actualizar" : "Guardar"}
+        isLoading={isLoading}
       />
     )}
 

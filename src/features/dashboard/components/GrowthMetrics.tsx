@@ -31,12 +31,12 @@ interface GrowthMetricsProps {
 const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
   if (loading) {
     return (
-      <div className="h-full animate-pulse rounded-xl border border-border-light bg-white p-6 shadow-sm dark:bg-gray-900">
-        <div className="mb-4 h-6 w-1/2 rounded bg-gray-200 dark:bg-gray-800"></div>
-        <div className="mb-6 h-10 w-1/3 rounded bg-gray-200 dark:bg-gray-800"></div>
+      <div className="h-full rounded-xl border border-border-light bg-white p-6 shadow-sm dark:bg-gray-900">
+        <Skeleton height={24} width="50%" className="mb-4" />
+        <Skeleton height={40} width="33%" className="mb-6" />
         <div className="space-y-4">
-          <div className="h-20 rounded bg-gray-100 dark:bg-gray-800"></div>
-          <div className="h-20 rounded bg-gray-100 dark:bg-gray-800"></div>
+          <Skeleton height={80} className="rounded" />
+          <Skeleton height={80} className="rounded" />
         </div>
       </div>
     );

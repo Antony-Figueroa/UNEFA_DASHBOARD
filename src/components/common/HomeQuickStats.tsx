@@ -1,6 +1,7 @@
 import React from "react";
 import { MoreDotIcon } from "../../icons";
 import { DashboardStats } from "../../features/dashboard/types";
+import { Skeleton } from "../ui/skeleton";
 
 interface QuickStatItemProps {
   icon: React.ReactNode;

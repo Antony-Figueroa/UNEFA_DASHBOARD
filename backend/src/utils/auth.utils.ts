@@ -28,3 +28,11 @@ export const verifyToken = (token: string): string | jwt.JwtPayload | null => {
     return null;
   }
 };
+
+export const decodeToken = (token: string): jwt.JwtPayload | null => {
+  try {
+    return jwt.decode(token) as jwt.JwtPayload | null;
+  } catch {
+    return null;
+  }
+};

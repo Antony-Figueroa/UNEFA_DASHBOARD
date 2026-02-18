@@ -26,6 +26,7 @@ import { dbManager } from './lib/db-manager.js';
 import { performanceMiddleware } from './lib/performance-middleware.js';
 import { authenticateToken, restrictAsistente } from './middlewares/auth.middleware.js';
 import * as listsService from './services/lists.service.js';
+import * as usersService from './services/users.service.js';
 
 dotenv.config();
 
@@ -52,6 +53,7 @@ dbManager.connect().catch(err => {
   console.error('[Main] Failed to connect to database on startup:', err.message);
 });
 listsService.ensurePhonePrefixesSeeded().catch(() => {});
+usersService.ensureRolesSeeded().catch(() => {});
 
 // Security config (dev friendly)
 app.use(helmet({

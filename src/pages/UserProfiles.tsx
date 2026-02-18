@@ -1,6 +1,8 @@
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import UserMetaCard from "../components/UserProfile/UserMetaCard";
 import UserInfoCard from "../components/UserProfile/UserInfoCard";
+import UserPasswordCard from "../components/UserProfile/UserPasswordCard";
+import UserLoginHistoryCard from "../components/UserProfile/UserLoginHistoryCard";
 import PageMeta from "../components/common/PageMeta";
 import { SkeletonLoader, ProfileSkeleton, BreadcrumbSkeleton } from "../components/ui/skeleton";
 import { useAuth } from "../context/auth";
@@ -11,7 +13,7 @@ export default function UserProfiles() {
   return (
     <>
       <PageMeta
-        title="Configuración de Perfil de Usuario"
+        title="Mi Perfil"
         description="Configuración de Perfil de Usuario"
       />
 
@@ -20,7 +22,7 @@ export default function UserProfiles() {
         id="profile-breadcrumb"
         skeleton={<BreadcrumbSkeleton />}
       >
-        <PageBreadcrumb pageTitle="Perfil" />
+        <PageBreadcrumb pageTitle="Mi Perfil" />
       </SkeletonLoader>
 
       <SkeletonLoader
@@ -28,8 +30,16 @@ export default function UserProfiles() {
         id="profile-content"
         skeleton={<ProfileSkeleton />}
       >
-        <UserMetaCard />
-        <UserInfoCard />
+        <div className="space-y-6">
+          <UserMetaCard />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <UserPasswordCard />
+            <UserLoginHistoryCard />
+          </div>
+          
+          <UserInfoCard />
+        </div>
       </SkeletonLoader>
     </>
   );

@@ -16,6 +16,7 @@ const PasswordRecovery = lazy(() => import("../pages/AuthPages/PasswordRecovery"
 const UserProfiles = lazy(() => import("../pages/UserProfiles"));
 const UserManagementPage = lazy(() => import("../pages/Config/UserManagementPage"));
 const ListsConfiguration = lazy(() => import("../pages/Config/ListsConfiguration"));
+const AuthLogs = lazy(() => import("../pages/Config/AuthLogs"));
 const Calendar = lazy(() => import("../pages/Calendar"));
 const Blank = lazy(() => import("../pages/Blank"));
 const Students = lazy(() => import("../pages/Students/students"));
@@ -137,11 +138,19 @@ export const AppRoutes = () => {
                 </ProtectedRoute>
               }
             />
-            <Route
+<Route
               path="/configure/lists"
               element={
                 <ProtectedRoute allowedRoles={[0, 1]}>
                   <ListsConfiguration />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/configure/logs"
+              element={
+                <ProtectedRoute allowedRoles={[0, 1]}>
+                  <AuthLogs />
                 </ProtectedRoute>
               }
             />

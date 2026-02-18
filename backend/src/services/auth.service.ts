@@ -1,7 +1,38 @@
 import { dbManager } from '../lib/db-manager.js';
-import { comparePassword, hashPassword, generateToken } from '../utils/auth.utils.js';
+import { comparePassword, hashPassword, generateToken, verifyToken as verifyJWT } from '../utils/auth.utils.js';
 import { sendLoginNotification, sendSecurityAlert, sendPasswordRecoveryEmail, sendPasswordChangedNotification } from '../utils/email.utils.js';
 import crypto from 'crypto';
+
+const tokenBlacklist = new Map<string, { userId: number; userCi: string; expiresAt: number }>();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [hash, data] of tokenBlacklist.entries()) {
+    if (data.expiresAt < now) {
+      tokenBlacklist.delete(hash);
+    }
+  }
+}, 60 * 60 * 1000);
+
+export const revokeToken = (token: string, userId: number, userCi: string) => {
+  const hash = crypto.createHash('sha256').update(token).digest('hex');
+  const decoded = verifyJWT(token) as { exp?: number } | null;
+  const expiresAt = decoded?.exp ? decoded.exp * 1000 : Date.now() + 3600000;
+  tokenBlacklist.set(hash, { userId, userCi, expiresAt });
+};
+
+export const isTokenRevoked = (token: string): { revoked: boolean; data?: { userId: number; userCi: string } } => {
+  const hash = crypto.createHash('sha256').update(token).digest('hex');
+  const data = tokenBlacklist.get(hash);
+  if (data) {
+    if (data.expiresAt < Date.now()) {
+      tokenBlacklist.delete(hash);
+      return { revoked: false };
+    }
+    return { revoked: true, data };
+  }
+  return { revoked: false };
+};
 
 export const logAuthAction = async (userId: number | null, userCi: string | null, action: string, ip: string, userAgent: string, details: string) => {
   try {
@@ -225,9 +256,9 @@ export const verifyMaster = async (userId: number, password: string, ip: string,
 
     const user = userData as unknown as UserRow;
 
-    // 2. Verificar rol (Debe ser MASTER_ADMIN = 0 o ADMIN = 1)
+    // 2. Verificar rol (Debe ser ADMIN = 1)
     const userRole = user.t_user_roles?.[0]?.ID_ROLES;
-    if (userRole !== 0 && userRole !== 1) {
+    if (userRole !== 1) {
       return { success: false, message: 'Acceso denegado: Se requieren permisos administrativos' };
     }
 
@@ -685,5 +716,39 @@ export const generateRefreshToken = (payload: { userId: number; userCi: string; 
     userCi: payload.userCi, 
     role: payload.role 
   }, '1h');
+};
+
+export const getLoginHistory = async (userId: number, limit: number = 10) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { data, error } = await supabase
+      .from('t_auth_log')
+      .select('*')
+      .eq('USER_ID', userId)
+      .in('ACTION', ['LOGIN_SUCCESS', 'LOGIN_FAILED', 'LOGOUT'])
+      .order('CREATED_AT', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data || [];
+  });
+};
+
+export const getAllAuthLogs = async (limit: number = 100, offset: number = 0, userId?: number) => {
+  return await dbManager.withRetry(async (supabase) => {
+    let query = supabase
+      .from('t_auth_log')
+      .select('*, t_user(USER_CI, NAME, SURNAME)', { count: 'exact' });
+
+    if (userId) {
+      query = query.eq('USER_ID', userId);
+    }
+
+    const { data, error, count } = await query
+      .order('CREATED_AT', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+    return { data: data || [], total: count || 0 };
+  });
 };
 

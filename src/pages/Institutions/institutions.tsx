@@ -217,58 +217,100 @@ export default function InstitutionsPage() {
     const original = institutions.find(i => i.institutionId === inst.institutionId);
     if (!original) return;
 
-    setConfirmation({
-      isOpen: true,
-      title: original.status ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
-      message: original.status 
-        ? `¿Estás seguro de que deseas enviar la institución "${original.name}" a Inactivos?`
-        : `¿Estás seguro de que deseas restaurar la institución "${original.name}"?`,
-      variant: original.status ? "error" : "success",
-      confirmText: original.status ? "Confirmar" : "Restaurar",
-      onConfirm: () => toggleInstStatus(original),
-    });
+    if (original.status) {
+      setConfirmation({
+        isOpen: true,
+        title: "Confirmar Desactivación",
+        message: `¿Estás seguro de que deseas desactivar la institución "${inst.name}"?`,
+        onConfirm: async () => {
+          try {
+            await toggleInstStatus(original);
+          } catch (error) {
+            console.error("Error toggling institution status:", error);
+          } finally {
+            setConfirmation(prev => ({ ...prev, isOpen: false }));
+          }
+        },
+        confirmText: "Desactivar",
+        variant: "error",
+      });
+      return;
+    }
+
+    toggleInstStatus(original).catch(console.error);
   };
 
   const handleToggleRespStatus = (resp: InstitutionalResponsibleRowData) => {
     const original = responsibles.find(r => r.responsibleId === resp.responsibleId);
     if (!original) return;
 
-    setConfirmation({
-      isOpen: true,
-      title: original.status ? "Confirmar Envío a Inactivos" : "Confirmar Restauración",
-      message: original.status 
-        ? `¿Estás seguro de que deseas enviar al responsable "${original.firstName} ${original.lastName}" a Inactivos?`
-        : `¿Estás seguro de que deseas restaurar al responsable "${original.firstName} ${original.lastName}"?`,
-      variant: original.status ? "error" : "success",
-      confirmText: original.status ? "Confirmar" : "Restaurar",
-      onConfirm: () => toggleRespStatus(original),
-    });
+    if (original.status) {
+      setConfirmation({
+        isOpen: true,
+        title: "Confirmar Desactivación",
+        message: `¿Estás seguro de que deseas desactivar al responsable "${resp.firstName} ${resp.lastName}"?`,
+        onConfirm: async () => {
+          try {
+            await toggleRespStatus(original);
+          } catch (error) {
+            console.error("Error toggling responsible status:", error);
+          } finally {
+            setConfirmation(prev => ({ ...prev, isOpen: false }));
+          }
+        },
+        confirmText: "Desactivar",
+        variant: "error",
+      });
+      return;
+    }
+
+    toggleRespStatus(original);
   };
 
   const handleBulkInstAction = (ids: string[], action: "inactivate" | "restore") => {
-    setConfirmation({
-      isOpen: true,
-      title: action === "inactivate" ? "Confirmar Envío a Inactivos (Masivo)" : "Confirmar Restauración Masiva",
-      message: action === "inactivate" 
-        ? `¿Estás seguro de que deseas enviar las ${ids.length} instituciones seleccionadas a Inactivos?`
-        : `¿Estás seguro de que deseas restaurar ${ids.length} instituciones seleccionadas?`,
-      variant: action === "inactivate" ? "error" : "success",
-      confirmText: action === "inactivate" ? "Confirmar" : "Restaurar",
-      onConfirm: () => action === "inactivate" ? bulkRemoveInstitutions(ids) : bulkRestoreInstitutions(ids),
-    });
+    if (action === "inactivate") {
+      setConfirmation({
+        isOpen: true,
+        title: "Confirmar Desactivación Múltiple",
+        message: `¿Estás seguro de que deseas desactivar las ${ids.length} instituciones seleccionadas?`,
+        onConfirm: async () => {
+          try {
+            await bulkRemoveInstitutions(ids);
+          } catch (error) {
+            console.error("Error in bulk institution inactivation:", error);
+          } finally {
+            setConfirmation(prev => ({ ...prev, isOpen: false }));
+          }
+        },
+        confirmText: "Desactivar",
+        variant: "error",
+      });
+    } else {
+      bulkRestoreInstitutions(ids);
+    }
   };
 
   const handleBulkRespAction = (ids: string[], action: "inactivate" | "restore") => {
-    setConfirmation({
-      isOpen: true,
-      title: action === "inactivate" ? "Confirmar Envío a Inactivos (Masivo)" : "Confirmar Restauración Masiva",
-      message: action === "inactivate" 
-        ? `¿Estás seguro de que deseas enviar los ${ids.length} responsables seleccionados a Inactivos?`
-        : `¿Estás seguro de que deseas restaurar ${ids.length} responsables seleccionados?`,
-      variant: action === "inactivate" ? "error" : "success",
-      confirmText: action === "inactivate" ? "Confirmar" : "Restaurar",
-      onConfirm: () => action === "inactivate" ? bulkRemoveResponsibles(ids) : bulkRestoreResponsibles(ids),
-    });
+    if (action === "inactivate") {
+      setConfirmation({
+        isOpen: true,
+        title: "Confirmar Desactivación Múltiple",
+        message: `¿Estás seguro de que deseas desactivar los ${ids.length} responsables seleccionados?`,
+        onConfirm: async () => {
+          try {
+            await bulkRemoveResponsibles(ids);
+          } catch (error) {
+            console.error("Error in bulk responsible inactivation:", error);
+          } finally {
+            setConfirmation(prev => ({ ...prev, isOpen: false }));
+          }
+        },
+        confirmText: "Desactivar",
+        variant: "error",
+      });
+    } else {
+      bulkRestoreResponsibles(ids);
+    }
   };
 
   return (

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
@@ -10,6 +10,8 @@ import Checkbox from "../../../components/form/input/Checkbox";
 import { userSchema, UserFormData, UserFormOutput } from "../constants/validation";
 import { User, CreateUserPayload, UpdateUserPayload } from "../types";
 import { useAuth } from "../../../context/auth";
+import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
+import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 
 /**
  * Propiedades para el componente UserModal.
@@ -91,46 +93,56 @@ const UserModal: React.FC<UserModalProps> = ({
     }
   }, [user, reset, isOpen]);
 
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [pendingData, setPendingData] = useState<UserFormOutput | null>(null);
+
+  const {
+    showConfirmation,
+    handleCloseAttempt,
+    confirmClose,
+    cancelClose,
+  } = useUnsavedChanges(isDirty, onClose);
+
   /**
    * Maneja el envío del formulario.
    */
-  const onSubmit = async (data: any) => {
+  const onSubmit = (data: any) => {
     const validatedData = data as UserFormOutput;
-    if (!window.confirm("¿Guardar los cambios del usuario?")) return;
-    if (user) {
-      // Para actualización, enviamos el ID y los campos modificados
-      const payload: UpdateUserPayload = {
-        id: user.id,
-        name: validatedData.name.toUpperCase(),
-        surname: validatedData.surname.toUpperCase(),
-        email: validatedData.email.toUpperCase(),
-        role: validatedData.role,
-        status: validatedData.status
-      };
-      await onSave(payload);
-    } else {
-      // Para creación, enviamos todos los campos requeridos
-      const payload: CreateUserPayload = {
-        userCi: validatedData.userCi.toUpperCase(),
-        name: validatedData.name.toUpperCase(),
-        surname: validatedData.surname.toUpperCase(),
-        email: validatedData.email.toUpperCase(),
-        role: validatedData.role
-      };
-      await onSave(payload);
-    }
+    setPendingData(validatedData);
+    setShowSaveConfirm(true);
   };
 
-  /**
-   * Intento de cierre del modal, verificando si hay cambios sin guardar.
-   */
-  const handleCloseAttempt = () => {
-    if (isDirty && !isSubmitting) {
-      if (window.confirm("¿Cerrar sin guardar? Se perderán los cambios realizados.")) {
-        onClose();
+  const handleConfirmSave = async () => {
+    if (!pendingData) return;
+    
+    try {
+      if (user) {
+        // Para actualización, enviamos el ID y los campos modificados
+        const payload: UpdateUserPayload = {
+          id: user.id,
+          name: pendingData.name.toUpperCase(),
+          surname: pendingData.surname.toUpperCase(),
+          email: pendingData.email.toUpperCase(),
+          role: pendingData.role,
+          status: pendingData.status
+        };
+        await onSave(payload);
+      } else {
+        // Para creación, enviamos todos los campos requeridos
+        const payload: CreateUserPayload = {
+          userCi: pendingData.userCi.toUpperCase(),
+          name: pendingData.name.toUpperCase(),
+          surname: pendingData.surname.toUpperCase(),
+          email: pendingData.email.toUpperCase(),
+          role: pendingData.role
+        };
+        await onSave(payload);
       }
-    } else {
-      onClose();
+    } catch (error) {
+      console.error("Error al guardar usuario:", error);
+    } finally {
+      setShowSaveConfirm(false);
+      setPendingData(null);
     }
   };
 
@@ -140,6 +152,7 @@ const UserModal: React.FC<UserModalProps> = ({
     : roleOptions.filter(opt => opt.label !== "MAESTRO");
 
   return (
+    <>
     <Modal 
       isOpen={isOpen} 
       onClose={handleCloseAttempt}
@@ -298,6 +311,29 @@ const UserModal: React.FC<UserModalProps> = ({
         </div>
       </ModalFooter>
     </Modal>
+
+    <UnifiedDialog
+      isOpen={showConfirmation}
+      onClose={cancelClose}
+      onConfirm={confirmClose}
+      variant="warning"
+      title="Cambios no guardados"
+      message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
+      confirmLabel="Cerrar sin guardar"
+      cancelLabel="Continuar editando"
+    />
+
+    <UnifiedDialog
+      isOpen={showSaveConfirm}
+      onClose={() => setShowSaveConfirm(false)}
+      onConfirm={handleConfirmSave}
+      title={user ? "Actualizar Usuario" : "Crear Usuario"}
+      message={`¿Estás seguro de que deseas ${user ? 'actualizar los datos del' : 'crear este nuevo'} usuario?`}
+      confirmLabel={user ? "Actualizar" : "Crear"}
+      variant="confirm"
+      isLoading={isSubmitting}
+    />
+    </>
   );
 };
 

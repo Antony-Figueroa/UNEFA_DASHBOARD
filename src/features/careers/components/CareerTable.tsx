@@ -143,10 +143,7 @@ const ActionButtons = ({
 
       {onEdit && activeTab === "Activas" && (
         <AsyncActionButton
-          onClick={async (e) => { 
-            e.stopPropagation(); 
-            if (window.confirm("¿Editar esta carrera?")) onEdit(); 
-          }}
+          onClick={(e) => { e.stopPropagation(); onEdit(); }}
           icon={<EditIcon />}
           tooltip="Editar"
           label={isMobile ? "Editar Carrera" : undefined}
@@ -157,11 +154,7 @@ const ActionButtons = ({
 
       {onToggleStatus && (
         <AsyncActionButton
-                    onClick={async (e) => { 
-                        e.stopPropagation(); 
-                        const msg = inactiveMode ? "¿Restaurar esta carrera?" : "¿Eliminar esta carrera?";
-                        if (window.confirm(msg)) onToggleStatus(); 
-                    }}
+          onClick={(e) => { e.stopPropagation(); onToggleStatus(); }}
           icon={inactiveMode ? <RefreshIcon /> : <TrashIcon />}
           tooltip={isDisabled && !inactiveMode ? disabledTooltip : (inactiveMode ? "Restaurar" : "Eliminar")}
           label={isMobile ? (inactiveMode ? "Restaurar" : "Eliminar") : undefined}
@@ -169,10 +162,10 @@ const ActionButtons = ({
           fullWidth={isMobile}
           disabled={isDisabled && !inactiveMode}
         />
-        )}
+      )}
       {onDelete && activeTab === "Activas" && !onToggleStatus && (
         <AsyncActionButton
-          onClick={async (e) => { e.stopPropagation(); onDelete(); }}
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
           icon={<TrashIcon />}
           tooltip={isDisabled ? disabledTooltip : "Eliminar Carrera"}
           label={isMobile ? "Eliminar Carrera" : undefined}

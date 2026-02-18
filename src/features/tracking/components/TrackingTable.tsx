@@ -52,30 +52,33 @@ interface TrackingTableProps {
  * Propiedades del componente interno ActionButtons.
  */
 interface ActionButtonsProps {
-    /** Callback para editar */
-    onEdit?: () => void;
-    /** Callback para eliminar */
-    onDelete?: () => void;
-    /** Callback para restaurar */
-    onRestore?: () => void;
-    /** Callback para ver detalles */
+    /** Callback for requesting a confirmation dialog */
+    onRequestConfirm: (type: 'edit' | 'delete' | 'restore') => void;
+    /** Callback for ver detalles */
     onView?: () => void;
     /** Estado actual del registro (activo/inactivo) */
     status: boolean;
     /** Indica si se debe renderizar en modo móvil */
     isMobile?: boolean;
+    /** Whether editing is allowed */
+    canEdit?: boolean;
+    /** Whether deleting is allowed */
+    canDelete?: boolean;
+    /** Whether restoring is allowed */
+    canRestore?: boolean;
 }
 
 /**
  * Componente interno para renderizar los botones de acción de cada fila.
  */
 const ActionButtons = ({
-    onEdit,
-    onDelete,
-    onRestore,
+    onRequestConfirm,
     onView,
     status,
     isMobile = false,
+    canEdit = false,
+    canDelete = false,
+    canRestore = false,
 }: ActionButtonsProps) => {
     const containerClasses = isMobile 
         ? "flex flex-col gap-3 pt-2" 
@@ -93,11 +96,9 @@ const ActionButtons = ({
                     fullWidth={isMobile}
                 />
             )}
-            {onEdit && (
+            {canEdit && (
                 <AsyncActionButton
-          onClick={async () => {
-            if (window.confirm("¿Editar este seguimiento?")) onEdit();
-          }}
+                    onClick={async () => onRequestConfirm('edit')}
                     icon={<EditIcon />}
                     tooltip="Editar"
                     label={isMobile ? "Editar Seguimiento" : undefined}
@@ -106,11 +107,9 @@ const ActionButtons = ({
                 />
             )}
             {status ? (
-                onDelete && (
+                canDelete && (
                     <AsyncActionButton
-                        onClick={async () => {
-                            if (window.confirm("¿Inactivar este seguimiento?")) onDelete();
-                        }}
+                        onClick={async () => onRequestConfirm('delete')}
                         icon={<TrashIcon />}
                         tooltip="Inactivar"
                         label={isMobile ? "Inactivar Seguimiento" : undefined}
@@ -119,11 +118,9 @@ const ActionButtons = ({
                     />
                 )
             ) : (
-                onRestore && (
+                canRestore && (
                     <AsyncActionButton
-                        onClick={async () => {
-                            if (window.confirm("¿Restaurar este seguimiento?")) onRestore();
-                        }}
+                        onClick={async () => onRequestConfirm('restore')}
                         icon={<RefreshIcon />}
                         tooltip="Restaurar"
                         label={isMobile ? "Restaurar Seguimiento" : undefined}
@@ -157,6 +154,17 @@ export default function TrackingTable({
     const [idFilter, setIdFilter] = useState("");
     const [nameFilter, setNameFilter] = useState("");
     const [transferFilter, setTransferFilter] = useState("");
+
+    const handleRequestConfirm = (type: 'edit' | 'delete' | 'restore', item: TrackingRowData) => {
+        // Direct action without confirmation dialog
+        if (type === 'edit' && onEdit) {
+            onEdit(item);
+        } else if (type === 'delete' && onDelete) {
+            onDelete(item);
+        } else if (type === 'restore' && onRestore) {
+            onRestore(item);
+        }
+    };
 
     // Filtrado de datos
     const filteredData = useMemo(() => {
@@ -276,10 +284,11 @@ export default function TrackingTable({
                                 <TableCell className="table-cell text-right">
                                     <ActionButtons
                                         onView={onView ? () => onView(item) : undefined}
-                                        onEdit={onEdit ? () => onEdit(item) : undefined}
-                                        onDelete={onDelete ? () => onDelete(item) : undefined}
-                                        onRestore={onRestore ? () => onRestore(item) : undefined}
+                                        onRequestConfirm={(type) => handleRequestConfirm(type, item)}
                                         status={item.status}
+                                        canEdit={!!onEdit}
+                                        canDelete={!!onDelete}
+                                        canRestore={!!onRestore}
                                     />
                                 </TableCell>
                             </TableRow>
@@ -298,6 +307,8 @@ export default function TrackingTable({
                     onItemsPerPageChange={setItemsPerPage}
                 />
             )}
+
+
         </div>
     );
 }

@@ -82,7 +82,7 @@ export const toggleListStatus = async (id: string, status: boolean): Promise<voi
  * @returns Promise with the created value entry.
  */
 export const createValue = async (listId: string, name: string, abbreviation?: string): Promise<List['values'][0]> => {
-  const payload: any = { listId, name };
+  const payload: { listId: string; name: string; abbreviation?: string } = { listId, name };
   if (abbreviation !== undefined) payload.abbreviation = abbreviation;
   const response = await apiClient.post<List['values'][0]>(`${API_URL}/values`, payload);
   return response.data;

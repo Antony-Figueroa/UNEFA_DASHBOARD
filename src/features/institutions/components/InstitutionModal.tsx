@@ -144,15 +144,17 @@ export default function InstitutionModal({
       institutionType: "",
     },
   });
-
+  
   const {
     showConfirmation,
     handleCloseAttempt,
     confirmClose,
     cancelClose,
   } = useUnsavedChanges(isDirty, onClose);
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
+  const [pendingSave, setPendingSave] = useState<CreateInstitutionPayload | UpdateInstitutionPayload | null>(null);
 
-  const { options: practiceOptions, fetchByCareer, isLoading: isLoadingPractices } = useInternshipTypes();
+  const { options: practiceOptions, fetchByCareer } = useInternshipTypes();
   const watchedCareerId = useWatch({ control, name: "careerId" });
 
   useEffect(() => {
@@ -240,17 +242,7 @@ export default function InstitutionModal({
 
   const VENEZUELA_PHONE_PREFIXES = useMemo(() => {
     const dbPrefixes = optionsCodigosArea || [];
-    if (dbPrefixes.length > 0) return dbPrefixes.sort((a, b) => a.label.localeCompare(b.label));
-    
-    // Fallback si no hay datos en la BD
-    return [
-      { value: "0412", label: "0412" },
-      { value: "0414", label: "0414" },
-      { value: "0424", label: "0424" },
-      { value: "0416", label: "0416" },
-      { value: "0426", label: "0426" },
-      { value: "0212", label: "0212" },
-    ];
+    return dbPrefixes.sort((a, b) => a.label.localeCompare(b.label));
   }, [optionsCodigosArea]);
 
   const RIF_PREFIXES = useMemo(() => {
@@ -331,7 +323,6 @@ export default function InstitutionModal({
    * @param data - The validated form data.
    */
   const onSubmit = (data: InstFormData) => {
-    if (!window.confirm("¿Guardar la información de la institución?")) return;
     const commonData = {
       rif: `${data.rifPrefix}-${data.rifNumber}`.toUpperCase(),
       name: data.name.toUpperCase(),
@@ -345,15 +336,12 @@ export default function InstitutionModal({
       institutionType: data.institutionType.toUpperCase(),
       status: editingInst?.status ?? true,
     };
-
     if (editingInst) {
-      onSave({
-        ...commonData,
-        institutionId: editingInst.institutionId,
-      } as UpdateInstitutionPayload);
+      setPendingSave({ ...(commonData as any), institutionId: editingInst.institutionId } as UpdateInstitutionPayload);
     } else {
-      onSave(commonData as CreateInstitutionPayload);
+      setPendingSave(commonData as CreateInstitutionPayload);
     }
+    setConfirmSaveOpen(true);
   };
 
   /**
@@ -638,6 +626,23 @@ export default function InstitutionModal({
         </AsyncButton>
       </ModalFooter>
     </Modal>
+
+    {confirmSaveOpen && (
+      <UnifiedDialog
+        isOpen={confirmSaveOpen}
+        onClose={() => setConfirmSaveOpen(false)}
+        onConfirm={() => {
+          if (pendingSave) {
+            onSave(pendingSave);
+          }
+          setConfirmSaveOpen(false);
+        }}
+        variant="confirm"
+        title={editingInst ? "Confirmar actualización" : "Confirmar registro"}
+        message={editingInst ? "¿Desea actualizar los datos de la institución?" : "¿Desea guardar la nueva institución?"}
+        confirmLabel={editingInst ? "Actualizar" : "Guardar"}
+      />
+    )}
 
     <UnifiedDialog
       isOpen={showConfirmation}

@@ -166,25 +166,24 @@ export default function TrackingPage() {
     };
 
     /**
-     * Maneja la inactivación de un registro con confirmación previa.
+     * Maneja la inactivación de un registro.
      * 
      * @param item - Datos de la fila de seguimiento a inactivar.
      */
     const handleDelete = (item: TrackingRowData) => {
         if (!item.trackingId) return;
         
-        const tracking = trackings.find(t => t.trackingId === item.trackingId);
-        if (!tracking) return;
-
         setConfirmation({
             isOpen: true,
             title: 'Confirmar Inactivación',
-            message: `¿Estás seguro de que deseas inactivar el seguimiento de "${tracking.studentName}"?`,
+            message: `¿Estás seguro de que deseas inactivar el seguimiento de "${item.studentName}"?`,
             variant: 'error',
             onConfirm: async () => {
                 try {
-                    await removeTracking(item.trackingId!);
+                    await removeTracking(item.trackingId);
                     loadStats(true);
+                } catch (error) {
+                    console.error("[TrackingPage] Error al inactivar:", error);
                 } finally {
                     setConfirmation(null);
                 }

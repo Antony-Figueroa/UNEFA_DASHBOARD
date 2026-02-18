@@ -61,27 +61,33 @@ type SortKey = keyof InstitutionalResponsible;
  * Props for the ActionButtons sub-component.
  */
 interface ActionButtonsProps {
+  /** Callback for view action */
+  onView?: () => void;
   /** Callback for edit action */
   onEdit?: () => void;
   /** Callback for toggle status action */
   onToggleStatus?: () => void;
-  /** Callback for view action */
-  onView?: () => void;
   /** Current active tab filter */
   activeTab: "Activas" | "Inactivas";
   /** Whether the buttons are rendered in a mobile view */
   isMobile?: boolean;
+  /** Whether editing is allowed */
+  canEdit?: boolean;
+  /** Whether status toggling is allowed */
+  canToggle?: boolean;
 }
 
 /**
  * Renders action buttons (view, edit, delete/restore) for a table row.
  */
 const ActionButtons = ({
+  onView,
   onEdit,
   onToggleStatus,
-  onView,
   activeTab,
   isMobile = false,
+  canEdit = false,
+  canToggle = false,
 }: ActionButtonsProps) => {
     const containerClasses = isMobile 
         ? "flex flex-col gap-3 pt-2" 
@@ -99,11 +105,9 @@ const ActionButtons = ({
                     fullWidth={isMobile}
                 />
             )}
-            {onEdit && activeTab === "Activas" && (
+            {canEdit && activeTab === "Activas" && onEdit && (
                 <AsyncActionButton
-          onClick={async () => {
-            if (window.confirm("¿Editar este responsable?")) onEdit();
-          }}
+                    onClick={async () => onEdit()}
                     icon={<EditIcon />}
                     tooltip="Editar"
                     label={isMobile ? "Editar Responsable" : undefined}
@@ -111,12 +115,9 @@ const ActionButtons = ({
                     fullWidth={isMobile}
                 />
             )}
-            {onToggleStatus && (
+            {canToggle && onToggleStatus && (
                 <AsyncActionButton
-                    onClick={async () => {
-                        const msg = activeTab === "Inactivas" ? "¿Restaurar este responsable?" : "¿Eliminar este responsable?";
-                        if (window.confirm(msg)) onToggleStatus();
-                    }}
+                    onClick={async () => onToggleStatus()}
                     icon={activeTab === "Inactivas" ? <RefreshIcon /> : <TrashIcon />}
                     tooltip={activeTab === "Inactivas" ? "Restaurar" : "Eliminar"}
                     label={isMobile ? (activeTab === "Inactivas" ? "Restaurar Responsable" : "Eliminar Responsable") : undefined}
@@ -496,6 +497,8 @@ export default function InstitutionalResponsibleTable({
                       onEdit={onEdit ? () => onEdit(item) : undefined}
                       onToggleStatus={onToggleStatus ? () => onToggleStatus(item) : undefined}
                       activeTab={activeTab}
+                      canEdit={!!onEdit}
+                      canToggle={!!onToggleStatus}
                     />
                   </TableCell>
                 </TableRow>
@@ -584,6 +587,8 @@ export default function InstitutionalResponsibleTable({
                       onEdit={onEdit ? () => onEdit(item) : undefined}
                       onToggleStatus={onToggleStatus ? () => onToggleStatus(item) : undefined}
                       activeTab={activeTab}
+                      canEdit={!!onEdit}
+                      canToggle={!!onToggleStatus}
                       isMobile={true}
                     />
                   </div>

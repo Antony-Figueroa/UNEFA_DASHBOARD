@@ -38,6 +38,7 @@ export interface CrudFormProps {
   onSecondaryAction?: () => void;
   renderFooterExtra?: ReactNode;
   isLoading?: boolean;
+  onDirtyChange?: (isDirty: boolean) => void;
 }
 
 type CrudFormErrors = Record<string, string | null>;
@@ -60,9 +61,11 @@ export function CrudForm({
   onSecondaryAction,
   renderFooterExtra,
   isLoading = false,
+  onDirtyChange,
 }: CrudFormProps) {
   const [isInternalLoading, setIsInternalLoading] = useState(false);
-  const [values, setValues] = useState<CrudFormValues>(() => {
+  // Store initial values for dirty checking
+  const [initialState] = useState<CrudFormValues>(() => {
     const result: CrudFormValues = {};
     fields.forEach((field) => {
       const existing = initialValues[field.name];
@@ -78,6 +81,8 @@ export function CrudForm({
     });
     return result;
   });
+
+  const [values, setValues] = useState<CrudFormValues>(initialState);
 
   const [errors, setErrors] = useState<CrudFormErrors>({});
 
@@ -150,8 +155,6 @@ export function CrudForm({
     const hasErrors = Object.values(nextErrors).some((err) => err);
     if (hasErrors) return;
 
-    if (!window.confirm("¿Deseas guardar los cambios?")) return;
-
     // Convertir strings a mayúsculas antes de enviar
     const normalized: CrudFormValues = {};
     Object.entries(values).forEach(([key, val]) => {
@@ -165,14 +168,30 @@ export function CrudForm({
   };
 
   const handleChange = (name: string, value: string | number | boolean | string[]) => {
-    setValues((prev) => ({
-      ...prev,
+    const nextValues = {
+      ...values,
       [name]: value,
-    }) as CrudFormValues);
+    } as CrudFormValues;
+
+    setValues(nextValues);
+
     const field = fields.find((f) => f.name === name);
     if (field) {
       const error = validateField(field, value);
       setErrors((prev) => ({ ...prev, [name]: error }));
+    }
+
+    if (onDirtyChange) {
+      const isDirty = fields.some((f) => {
+        const curr = nextValues[f.name];
+        const init = initialState[f.name];
+        if (Array.isArray(curr) && Array.isArray(init)) {
+          if (curr.length !== init.length) return true;
+          return JSON.stringify([...curr].sort()) !== JSON.stringify([...init].sort());
+        }
+        return curr !== init;
+      });
+      onDirtyChange(isDirty);
     }
   };
 

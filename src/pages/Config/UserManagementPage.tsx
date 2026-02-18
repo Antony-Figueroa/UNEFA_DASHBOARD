@@ -44,19 +44,15 @@ const UserManagementPage = () => {
   });
 
   // Diálogo de confirmación
-  const [confirmDialog, setConfirmDialog] = useState<{
+  const [confirmation, setConfirmation] = useState<{
     isOpen: boolean;
     title: string;
     message: string;
     onConfirm: () => void;
+    confirmText: string;
     variant: DialogVariant;
-  }>({
-    isOpen: false,
-    title: "",
-    message: "",
-    onConfirm: () => {},
-    variant: "confirm"
-  });
+  } | null>(null);
+
 
   const { fetchMultipleLists } = useLists();
   
@@ -132,39 +128,54 @@ const UserManagementPage = () => {
   };
 
   const handleToggleStatus = (user: User) => {
-    const newStatus = user.status === 1 ? 0 : 1;
-    const actionLabel = newStatus === 1 ? "activar" : "desactivar";
-    
-    setConfirmDialog({
+    const isDeactivating = user.status;
+    const actionVerb = isDeactivating ? "desactivar" : "activar";
+    const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Activación";
+    const variant = isDeactivating ? "error" : "success";
+    const confirmText = isDeactivating ? "Desactivar" : "Activar";
+
+    setConfirmation({
       isOpen: true,
-      title: `¿Confirma ${actionLabel} usuario?`,
-      message: `El usuario ${user.name} ${user.surname} será marcado como ${newStatus === 1 ? "Activo" : "Inactivo"}.`,
-      variant: newStatus === 1 ? "success" : "warning",
+      title: confirmTitle,
+      message: `¿Estás seguro de que deseas ${actionVerb} al usuario "${user.name} ${user.surname}"?`,
       onConfirm: async () => {
         try {
           await toggleUserStatus(user);
+        } catch (error) {
+          console.error("[UserManagementPage] Error toggling status:", error);
         } finally {
-          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+          setConfirmation(null);
         }
-      }
+      },
+      confirmText: confirmText,
+      variant: variant as any,
     });
   };
 
   const handleBulkAction = () => {
     const newStatus = activeTab === "Activos" ? 0 : 1;
-    setConfirmDialog({
+    const isDeactivating = activeTab === "Activos";
+    const actionVerb = isDeactivating ? "desactivar" : "activar";
+    const confirmTitle = isDeactivating ? "Confirmar Desactivación Masiva" : "Confirmar Activación Masiva";
+    const variant = isDeactivating ? "error" : "success";
+    const confirmText = isDeactivating ? "Desactivar Todos" : "Activar Todos";
+    
+    setConfirmation({
       isOpen: true,
-      title: "Confirmar Acción Masiva",
-      message: `¿Estás seguro de que deseas ${activeTab === "Activos" ? "desactivar" : "activar"} ${selectedIds.length} usuarios?`,
-      variant: activeTab === "Activos" ? "warning" : "success",
+      title: confirmTitle,
+      message: `¿Estás seguro de que deseas ${actionVerb} los ${selectedIds.length} usuarios seleccionados?`,
       onConfirm: async () => {
         try {
           await bulkToggleStatus(selectedIds, newStatus);
           setSelectedIds([]);
+        } catch (e) {
+          console.error("[UserManagementPage] Error en acción masiva:", e);
         } finally {
-          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+          setConfirmation(null);
         }
-      }
+      },
+      confirmText: confirmText,
+      variant: variant as any,
     });
   };
 
@@ -327,15 +338,16 @@ const UserManagementPage = () => {
         roleOptions={rolesOptions}
       />
 
-      {/* Diálogo de Confirmación */}
+      {/* Diálogo de confirmación */}
       <UnifiedDialog
-        isOpen={confirmDialog.isOpen}
-        onClose={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
-        onConfirm={confirmDialog.onConfirm}
-        variant={confirmDialog.variant}
-        title={confirmDialog.title}
-        message={confirmDialog.message}
-        confirmLabel="Confirmar"
+        isOpen={!!confirmation}
+        onClose={() => setConfirmation(null)}
+        title={confirmation?.title || ""}
+        message={confirmation?.message || ""}
+        onConfirm={confirmation?.onConfirm || (() => {})}
+        confirmLabel={confirmation?.confirmText || "Confirmar"}
+        variant={confirmation?.variant || "info"}
+        isLoading={loadingAction}
       />
     </>
   );

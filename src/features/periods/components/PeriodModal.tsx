@@ -4,7 +4,7 @@
  * `react-flatpickr` para una selección de fechas estilizada y consistente.
  */
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Periodo, CreatePeriodPayload, UpdatePeriodPayload } from '../types';
@@ -62,6 +62,9 @@ export default function PeriodModal({
     // Obtener valores actuales para reactividad al inicio para evitar ReferenceError en useMemo
     const yearValue = watch('year');
     const startDateValue = watch('startDate');
+
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const [pendingData, setPendingData] = useState<PeriodFormData | null>(null);
 
     const {
         showConfirmation,
@@ -345,8 +348,15 @@ export default function PeriodModal({
     * Maneja el envío del formulario, valida las fechas y llama a la función onSave.
     */
    const onSubmit: SubmitHandler<PeriodFormData> = (data) => {
+        setPendingData(data);
+        setShowConfirmDialog(true);
+    };
+
+    const handleConfirmSave = () => {
+        if (!pendingData) return;
+        const data = pendingData;
+        
         try {
-            if (!window.confirm("¿Guardar información del período académico?")) return;
             let newDescription = `${data.periodoTipo}-${data.year}`;
             let startDateToUse = data.startDate;
 
@@ -380,6 +390,8 @@ export default function PeriodModal({
         } catch (error) {
             console.error("[PeriodModal] Error al procesar el envío del formulario:", error);
         }
+        setShowConfirmDialog(false);
+        setPendingData(null);
     };
 
     return (
@@ -545,6 +557,19 @@ export default function PeriodModal({
             message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
             confirmLabel="Cerrar sin guardar"
             cancelLabel="Continuar editando"
+        />
+
+        <UnifiedDialog
+            isOpen={showConfirmDialog}
+            onClose={() => {
+                setShowConfirmDialog(false);
+                setPendingData(null);
+            }}
+            onConfirm={handleConfirmSave}
+            title={periodo ? "Actualizar Período" : "Registrar Período"}
+            message={`¿Estás seguro de que deseas ${periodo ? 'actualizar' : 'registrar'} este período académico?`}
+            variant="confirm"
+            confirmLabel={periodo ? "Actualizar" : "Registrar"}
         />
     </>
 );

@@ -67,9 +67,7 @@ const ActionButtons = ({
             )}
             {onEdit && activeTab === "Activas" && (
                 <AsyncActionButton
-          onClick={async () => {
-            if (window.confirm("¿Editar esta institución?")) onEdit();
-          }}
+                    onClick={async () => onEdit && onEdit()}
                     icon={<EditIcon />}
                     tooltip="Editar"
                     label={isMobile ? "Editar Institución" : undefined}
@@ -80,9 +78,8 @@ const ActionButtons = ({
             {onToggleStatus && (
                 <AsyncActionButton
                     onClick={async () => {
-                        const msg = activeTab === "Inactivas" ? "¿Restaurar esta institución?" : "¿Eliminar esta institución?";
                         if (isInUse && activeTab === "Activas") return;
-                        if (window.confirm(msg)) onToggleStatus();
+                        onToggleStatus();
                     }}
                     icon={activeTab === "Inactivas" ? <RefreshIcon /> : <TrashIcon />}
                     tooltip={activeTab === "Inactivas" ? "Restaurar" : (isInUse ? "Esta institución está en uso y no se puede eliminar" : "Eliminar")}

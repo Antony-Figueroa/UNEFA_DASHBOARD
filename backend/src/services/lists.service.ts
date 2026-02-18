@@ -7,6 +7,32 @@ const VALUES_TABLE = 't_value_list';
 const CACHE_PREFIX = 'lists:';
 const CACHE_TTL = 3600000;
 
+const PROTECTED_LISTS = [
+  'Sexo', 
+  'Registro Civil', 
+  'Nacionalidad', 
+  'Regimen/Turno', 
+  'Trabajo', 
+  'Tipo de empresa', 
+  'Rif', 
+  'Tipo de Practica', 
+  'Condicion', 
+  'Dedicacion', 
+  'Categoria', 
+  'Tipo de estudiante', 
+  'Rango Militar', 
+  'Estatus Pasantia', 
+  'Estatus Periodo', 
+  'Region', 
+  'Nucleo', 
+  'Extensión', 
+  'Traslado', 
+  'Profesión', 
+  'Carrera', 
+  'Roles', 
+  'CODIGOS_AREA'
+];
+
 /**
  * Mapea un objeto de valor de la base de datos al formato de la aplicación.
  * @param v Objeto de valor de la base de datos (ValueListDB).
@@ -34,15 +60,13 @@ export const getAllLists = async (): Promise<AppList[]> => {
     const { data: lists, error: listsError } = await supabase
       .from(LISTS_TABLE)
       .select('LIST_ID, NAME, STATUS')
-      .eq('STATUS', 1)
       .order('NAME', { ascending: true });
 
     if (listsError) throw listsError;
 
     const { data: values, error: valuesError } = await supabase
       .from(VALUES_TABLE)
-      .select('VALUE_LIST_ID, NAME, ABBREVIATION, LIST_ID, STATUS')
-      .eq('STATUS', 1);
+      .select('VALUE_LIST_ID, NAME, ABBREVIATION, LIST_ID, STATUS');
 
     if (valuesError) throw valuesError;
 
@@ -142,6 +166,64 @@ export const toggleListStatus = async (id: string, status: boolean): Promise<voi
 };
 
 /**
+ * Elimina una lista y todos sus valores asociados.
+ * Invalida el caché global de listas.
+ * @param id ID de la lista a eliminar.
+ */
+export const deleteList = async (id: string): Promise<void> => {
+  await dbManager.withRetry(async (supabase) => {
+    // Verificar si la lista es protegida
+    const { data: listData, error: listError } = await supabase
+      .from(LISTS_TABLE)
+      .select('NAME')
+      .eq('LIST_ID', id)
+      .single();
+
+    if (listError) throw listError;
+    
+    if (PROTECTED_LISTS.includes(listData.NAME)) {
+      // Usar código 400 o un error personalizado para que el frontend lo maneje
+      const error: any = new Error(`No se puede eliminar la lista '${listData.NAME}' porque es una lista del sistema.`);
+      error.code = '400';
+      throw error;
+    }
+
+    // Primero eliminar valores asociados
+    const { error: valuesError } = await supabase
+      .from(VALUES_TABLE)
+      .delete()
+      .eq('LIST_ID', id);
+      
+    if (valuesError) throw valuesError;
+
+    const { error } = await supabase
+      .from(LISTS_TABLE)
+      .delete()
+      .eq('LIST_ID', id);
+
+    if (error) throw error;
+  }, 'deleteList');
+  cacheManager.delete(`${CACHE_PREFIX}all`);
+};
+
+/**
+ * Elimina un valor de lista específico.
+ * Invalida el caché global de listas.
+ * @param valueId ID del valor a eliminar.
+ */
+export const deleteValue = async (valueId: string): Promise<void> => {
+  await dbManager.withRetry(async (supabase) => {
+    const { error } = await supabase
+      .from(VALUES_TABLE)
+      .delete()
+      .eq('VALUE_LIST_ID', valueId);
+
+    if (error) throw error;
+  }, 'deleteValue');
+  cacheManager.delete(`${CACHE_PREFIX}all`);
+};
+
+/**
  * Crea un nuevo valor dentro de una lista específica.
  * Invalida el caché global de listas.
  * @param listId ID de la lista a la que pertenecerá el valor.
@@ -153,7 +235,7 @@ export const createValue = async (listId: string, name: string, abbreviation?: s
   const data = await dbManager.withRetry(async (supabase) => {
     const { data, error } = await supabase
       .from(VALUES_TABLE)
-      .insert([{ LIST_ID: listId, NAME: name, ABBREVIATION: abbreviation, STATUS: 1 }])
+      .insert([{ LIST_ID: Number(listId), NAME: name, ABBREVIATION: abbreviation, STATUS: 1 }])
       .select()
       .single();
 
@@ -246,6 +328,31 @@ export const getListByName = async (name: string) => {
     status: listData.STATUS === 1,
     values: (listData.t_value_list || []).map(mapValue)
   };
+};
+
+export const ensurePhonePrefixesSeeded = async (): Promise<void> => {
+  try {
+    let list: AppList | null = null;
+    try {
+      list = await getListByName('CODIGOS_AREA') as unknown as AppList;
+    } catch (e: unknown) {
+      const code = (e as any)?.code;
+      if (code === '404') {
+        list = await createList('CODIGOS_AREA');
+      } else {
+        throw e;
+      }
+    }
+    const existing = (list?.values || []).map(v => String(v.name).toUpperCase());
+    const prefixes = ['0412','0414','0424','0416','0426','0212'];
+    for (const p of prefixes) {
+      if (!existing.includes(p.toUpperCase())) {
+        await createValue(list!.id, p);
+      }
+    }
+    cacheManager.delete(`${CACHE_PREFIX}all`);
+  } catch {
+  }
 };
 
 /**

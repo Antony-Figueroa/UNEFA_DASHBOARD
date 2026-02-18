@@ -7,6 +7,7 @@
 import React from 'react';
 import { FiArrowUp, FiArrowDown, FiTrendingUp } from 'react-icons/fi';
 import { DashboardStats } from '../types';
+import { Skeleton } from '../../../components/ui/skeleton';
 
 /**
  * Props for the GrowthMetrics component.

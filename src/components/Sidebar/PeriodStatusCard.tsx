@@ -3,6 +3,7 @@ import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import { useSidebar } from "../../context/sidebar";
 import { CalenderIcon, TimeIcon, AlertIcon } from "../../icons";
 import { cn } from "../../utils/cn";
+import { Skeleton } from "../ui/skeleton";
 
 /**
  * Tarjeta que muestra el estatus del periodo académico actual o próximo.
@@ -34,9 +35,9 @@ const PeriodStatusCard: React.FC = () => {
 
     if (status === "loading" && showContent) {
         return (
-            <div className="mx-4 mb-6 p-4 rounded-2xl bg-bg-secondary/50 animate-pulse border border-border-light dark:border-white/5">
-                <div className="h-4 w-24 bg-gray-200 dark:bg-white/10 rounded mb-3"></div>
-                <div className="h-3 w-32 bg-gray-200 dark:bg-white/10 rounded"></div>
+            <div className="mx-4 mb-6 p-4 rounded-2xl bg-bg-secondary/50 border border-border-light dark:border-white/5">
+                <Skeleton height={16} width={96} className="mb-3" />
+                <Skeleton height={12} width={128} />
             </div>
         );
     }

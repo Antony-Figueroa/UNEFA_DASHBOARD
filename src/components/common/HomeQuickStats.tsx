@@ -22,7 +22,7 @@ const QuickStatItem: React.FC<QuickStatItemProps> = ({ icon, label, value, color
             {label}
           </span>
           {loading ? (
-            <div className="h-4 w-12 animate-pulse rounded bg-gray-200 dark:bg-gray-700"></div>
+            <Skeleton height={16} width={48} className="mt-1" />
           ) : (
             <h4 className="text-xs font-bold leading-tight text-text-primary dark:text-white">
               {value}

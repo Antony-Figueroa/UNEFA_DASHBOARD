@@ -1,4 +1,5 @@
 import React from "react";
+import { motion } from "framer-motion";
 import { FaBullseye, FaEye } from "react-icons/fa6";
 
 const MissionVisionSection: React.FC = () => {

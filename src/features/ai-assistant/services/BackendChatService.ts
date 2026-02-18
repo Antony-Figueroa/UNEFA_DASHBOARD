@@ -6,6 +6,9 @@ export const streamChatFromBackend = async (
   messages: Message[],
   onChunk: (text: string) => void
 ): Promise<void> => {
+  console.log('[Frontend] Sending request to:', `${API_BASE}/ai/chat`);
+  console.log('[Frontend] Messages:', messages.map(m => ({ role: m.role, content: m.content.substring(0, 50) })));
+  
   const response = await fetch(`${API_BASE}/ai/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -18,8 +21,12 @@ export const streamChatFromBackend = async (
     }),
   });
 
+  console.log('[Frontend] Response status:', response.status);
+  console.log('[Frontend] Response ok:', response.ok);
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    console.error('[Frontend] Error response:', errorData);
     throw new Error(errorData.message || `Error del servidor: ${response.status}`);
   }
 

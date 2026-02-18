@@ -2,10 +2,13 @@ import { Request, Response } from 'express';
 import { aiService, AIQuerySchema } from '../services/ai.service.js';
 import { z } from 'zod';
 import { AIAuthRequest } from '../middlewares/ai-auth.middleware.js';
-import { streamChat, ChatMessage } from '../services/google-ai.service.js';
+import { streamChat as streamChatGoogle, ChatMessage } from '../services/google-ai.service.js';
+import { streamChat as streamChatGroq } from '../services/groq-ai.service.js';
 import { detectIntent, fetchContextForIntent } from '../services/intent-detection.service.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import * as chatSessionsService from '../services/chat-sessions.service.js';
+
+const USE_GROQ = !!process.env.GROQ_API_KEY;
 
 const BASE_SYSTEM_PROMPT = `### REGLA DE ORO DE IDIOMA: responde EXCLUSIVAMENTE EN ESPAÑOL. ###
 Está TERMINANTEMENTE PROHIBIDO hablar en inglés, usar palabras en inglés o cerrar el mensaje en inglés. 100% ESPAÑOL.
@@ -124,6 +127,9 @@ export const chatWithAI = async (req: AuthRequest, res: Response) => {
 
     const aborted = { value: false };
     req.on('close', () => { aborted.value = true; });
+
+    const streamChat = USE_GROQ ? streamChatGroq : streamChatGoogle;
+    console.log(`[AI] Using provider: ${USE_GROQ ? 'Groq (Llama 3.1)' : 'Google Gemini'}`);
 
     await streamChat(
       {

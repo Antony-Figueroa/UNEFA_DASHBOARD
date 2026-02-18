@@ -11,6 +11,7 @@ import { ChatIcon } from '../../../icons';
 export const MessageList: React.FC<MessageListProps> = ({
     messages,
     isLoading,
+    isStreaming,
     onActionClick
 }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -78,8 +79,8 @@ export const MessageList: React.FC<MessageListProps> = ({
                         />
                     ))}
 
-                    {/* Loading indicator - Solo mostrar si NO hay mensajes con estado 'streaming' */}
-                    {isLoading && !messages.some(m => m.status === 'streaming') && (
+                    {/* Loading indicator - Mostrar mientras carga o streaming */}
+                    {(isLoading || isStreaming) && (
                         <div className="flex justify-start">
                             <TypingIndicator />
                         </div>

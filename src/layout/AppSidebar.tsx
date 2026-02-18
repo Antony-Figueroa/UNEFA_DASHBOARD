@@ -56,26 +56,24 @@ const navItems: NavItem[] = [
       { name: "Pre-Inscripción", path: "/pre-enrollment" },
       { name: "Inscripción", path: "/enrollment" },
       { name: "Seguimiento", path: "/tracking" },
-      { name: "Culminación Prácticas Profesionales", path: "/blank" },
+      { name: "Culminación", path: "/culmination" },
     ],
   },
   {
     name: "Reportes",
     icon: <PieChartIcon />,
-    subItems: [
-      { name: "Reportes Generales", path: "/blank" },
-    ],
+    path: "/reports",
   },
   {
     name: "Configuración",
     icon: <PlugInIcon />,
-    roles: [0, 1], // Maestro y Admin
+    roles: [0, 1],
     subItems: [
       { name: "Usuarios", path: "/configure/users" },
       { name: "Configuración de Combos", path: "/configure/lists" },
       { name: "Registro de Actividad", path: "/configure/logs" },
-      { name: "Roles y Permisos", path: "/blank" },
-      { name: "Mantenimiento", path: "/blank" },
+      { name: "Roles y Permisos", path: "/configure/roles" },
+      { name: "Mantenimiento", path: "/configure/maintenance" },
     ],
   },
   {
@@ -86,7 +84,7 @@ const navItems: NavItem[] = [
   {
     icon: <DocsIcon />,
     name: "Manuales",
-    path: "/blank",
+    path: "/manuals",
   },
 ];
 

@@ -41,7 +41,7 @@ interface EnrollmentModalProps {
    * Callback to save the enrollment data.
    * Handles both creation and update based on editingEntry.
    */
-  onSave: (data: CreateEnrollmentPayload | UpdateEnrollmentPayload) => void;
+  onSave: (data: CreateEnrollmentPayload | UpdateEnrollmentPayload) => Promise<void> | void;
   /** The enrollment entry being edited, if any */
   editingEntry?: Enrollment | null;
   /** Whether the save operation is in progress */
@@ -723,6 +723,7 @@ export default function EnrollmentModal({
       message={`¿Estás seguro de que deseas ${editingEntry ? 'actualizar' : 'guardar'} la inscripción del estudiante?`}
       variant="confirm"
       confirmLabel={editingEntry ? "Actualizar" : "Guardar"}
+      isLoading={isLoading}
     />
   </>
 );

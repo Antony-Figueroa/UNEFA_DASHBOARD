@@ -25,7 +25,7 @@ interface PeriodModalProps {
     /** Función para cerrar el modal */
     onClose: () => void;
     /** Función para guardar los cambios (creación o actualización) */
-    onSave: (payload: CreatePeriodPayload | UpdatePeriodPayload) => void;
+    onSave: (payload: CreatePeriodPayload | UpdatePeriodPayload) => Promise<void> | void;
     /** Periodo a editar (null para creación) */
     periodo: Periodo | null;
     /** Indica si hay una operación de guardado en curso */
@@ -570,6 +570,7 @@ export default function PeriodModal({
             message={`¿Estás seguro de que deseas ${periodo ? 'actualizar' : 'registrar'} este período académico?`}
             variant="confirm"
             confirmLabel={periodo ? "Actualizar" : "Registrar"}
+            isLoading={isLoading}
         />
     </>
 );

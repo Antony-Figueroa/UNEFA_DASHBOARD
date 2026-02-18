@@ -30,7 +30,7 @@ interface CareerModalProps {
   /** Función para cerrar el modal */
   onClose: () => void;
   /** Función que se llama al guardar los datos (crear o editar) */
-  onSave: (career: Omit<Career, "careerId" | "creationDate">) => void;
+  onSave: (career: Omit<Career, "careerId" | "creationDate">) => Promise<void> | void;
   /** Objeto de la carrera en edición (null si es creación) */
   editingCareer?: Career | null;
   /** Opciones de tipos de pasantías disponibles */
@@ -218,9 +218,9 @@ export default function CareerModal({
     setShowSaveConfirmation(true);
   };
 
-  const handleConfirmSave = () => {
+  const handleConfirmSave = async () => {
     if (pendingData) {
-      onSave({
+      await onSave({
         careerName: pendingData.careerName.toUpperCase(),
         careerCode: pendingData.careerCode.toUpperCase(),
         careerAbbreviation: pendingData.careerAbbreviation.toUpperCase(),
@@ -481,6 +481,7 @@ export default function CareerModal({
         message="¿Estás seguro de que deseas guardar la información de la carrera?"
         confirmLabel="Guardar"
         cancelLabel="Cancelar"
+        isLoading={isLoading}
       />
     </>
   );

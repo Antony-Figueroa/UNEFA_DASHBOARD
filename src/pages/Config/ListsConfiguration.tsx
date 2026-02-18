@@ -40,7 +40,7 @@ const ListsConfiguration = () => {
     isOpen: boolean;
     title: string;
     message: string;
-    onConfirm: () => void;
+    onConfirm: () => Promise<void> | void;
     confirmText?: string;
     cancelText?: string;
     variant?: "info" | "warning" | "error" | "success" | "confirm";

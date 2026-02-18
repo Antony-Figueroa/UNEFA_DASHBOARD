@@ -34,7 +34,7 @@ interface StudentModalProps {
   /** Función para cerrar el modal */
   onClose: () => void;
   /** Función para guardar los datos del estudiante (creación o actualización) */
-  onSave: (student: CreateStudentPayload | UpdateStudentPayload) => void;
+  onSave: (student: CreateStudentPayload | UpdateStudentPayload) => Promise<void> | void;
   /** Estudiante en edición (null si es creación) */
   editingStudent?: Student | null;
   /** Opciones de carreras para el selector */
@@ -1030,9 +1030,9 @@ export default function StudentModal({
       <UnifiedDialog
         isOpen={confirmSaveOpen}
         onClose={() => setConfirmSaveOpen(false)}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (pendingSave) {
-            onSave(pendingSave);
+            await onSave(pendingSave);
           }
           setConfirmSaveOpen(false);
         }}
@@ -1040,6 +1040,7 @@ export default function StudentModal({
         title={editingStudent ? "Confirmar actualización" : "Confirmar registro"}
         message={editingStudent ? "¿Desea actualizar los datos del estudiante?" : "¿Desea guardar el nuevo estudiante?"}
         confirmLabel={editingStudent ? "Actualizar" : "Guardar"}
+        isLoading={isLoading}
       />
     )}
 

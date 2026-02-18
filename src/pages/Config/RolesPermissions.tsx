@@ -13,7 +13,7 @@ import {
 } from "../../components/ui/table";
 import { TableSkeleton } from "../../components/ui/skeleton";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
-import { Modal } from "../../components/ui/modal";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/modal";
 import InputField from "../../components/form/input/InputField";
 
 interface Permission {
@@ -43,6 +43,8 @@ const MOCK_PERMISSIONS: Permission[] = [
   { id: "students.edit", module: "Estudiantes", action: "Editar", description: "Editar datos de estudiantes" },
   { id: "enrollments.view", module: "Inscripciones", action: "Ver", description: "Ver inscripciones" },
   { id: "enrollments.manage", module: "Inscripciones", action: "Gestionar", description: "Gestionar inscripciones" },
+  { id: "tracking.view", module: "Seguimiento", action: "Ver", description: "Ver seguimientos" },
+  { id: "tracking.manage", module: "Seguimiento", action: "Gestionar", description: "Registrar visitas" },
   { id: "reports.view", module: "Reportes", action: "Ver", description: "Ver reportes" },
   { id: "reports.export", module: "Reportes", action: "Exportar", description: "Exportar reportes" },
   { id: "config.access", module: "Configuración", action: "Acceder", description: "Acceder a configuración" },
@@ -50,29 +52,20 @@ const MOCK_PERMISSIONS: Permission[] = [
 
 const MOCK_ROLES: Role[] = [
   {
-    id: 0,
-    name: "MAESTRO",
-    description: "Acceso total al sistema",
-    userCount: 1,
-    permissions: MOCK_PERMISSIONS.map((p) => p.id),
-    status: "active",
-    isSystem: true,
-  },
-  {
     id: 1,
     name: "ADMIN",
-    description: "Administrador del sistema",
-    userCount: 3,
-    permissions: MOCK_PERMISSIONS.filter((p) => !p.id.includes("delete")).map((p) => p.id),
+    description: "Administrador con acceso total al sistema",
+    userCount: 4,
+    permissions: MOCK_PERMISSIONS.map((p) => p.id),
     status: "active",
     isSystem: true,
   },
   {
     id: 2,
     name: "ASISTENTE",
-    description: "Asistente administrativo",
+    description: "Asistente administrativo con acceso limitado",
     userCount: 5,
-    permissions: ["students.view", "students.create", "enrollments.view", "reports.view"],
+    permissions: ["students.view", "students.create", "students.edit", "enrollments.view", "tracking.view", "reports.view"],
     status: "active",
     isSystem: true,
   },
@@ -175,6 +168,14 @@ export default function RolesPermissionsPage() {
     return selected.length > 0 && selected.length < modulePermissions.length;
   };
 
+  const getModuleSelectedCount = (module: string) => {
+    return permissions.filter((p) => p.module === module && editForm.permissions.includes(p.id)).length;
+  };
+
+  const getModuleTotalCount = (module: string) => {
+    return permissions.filter((p) => p.module === module).length;
+  };
+
   return (
     <>
       <PageMeta title="Roles y Permisos" description="Configuración de roles y permisos del sistema" />
@@ -242,7 +243,7 @@ export default function RolesPermissionsPage() {
 
         <ComponentCard title="Roles del Sistema">
           {loading ? (
-            <TableSkeleton columns={5} rows={3} />
+            <TableSkeleton columns={5} rows={2} />
           ) : (
             <div className="hidden md:block overflow-hidden rounded-lg border border-border-default dark:border-border-dark">
               <Table>
@@ -277,20 +278,22 @@ export default function RolesPermissionsPage() {
                         {role.userCount}
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {role.permissions.slice(0, 3).map((p) => (
-                            <span
-                              key={p}
-                              className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded bg-gray-100 dark:bg-gray-800 text-text-tertiary"
-                            >
-                              {p.split(".")[1]}
-                            </span>
-                          ))}
-                          {role.permissions.length > 3 && (
-                            <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded bg-gray-100 dark:bg-gray-800 text-text-tertiary">
-                              +{role.permissions.length - 3} más
-                            </span>
-                          )}
+                        <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap gap-1">
+                            {role.permissions.slice(0, 3).map((p) => (
+                              <span
+                                key={p}
+                                className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded bg-gray-100 dark:bg-gray-800 text-text-tertiary"
+                              >
+                                {p.split(".")[1]}
+                              </span>
+                            ))}
+                            {role.permissions.length > 3 && (
+                              <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                                +{role.permissions.length - 3} más
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -342,97 +345,185 @@ export default function RolesPermissionsPage() {
         </ComponentCard>
       </div>
 
-      <Modal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        title={`Editar Rol: ${selectedRole?.name}`}
-        size="lg"
-      >
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} size="4xl">
+        <ModalHeader>
+          <div className="flex items-center justify-between w-full pr-8">
             <div>
-              <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">
-                Nombre del Rol
-              </label>
-              <InputField
-                value={editForm.name}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
-                disabled={selectedRole?.isSystem}
-              />
+              <h3 className="text-lg font-semibold text-text-primary dark:text-text-emphasis">
+                Editar Rol: {selectedRole?.name}
+              </h3>
+              <p className="text-sm text-text-tertiary mt-0.5">
+                {selectedRole?.isSystem ? "Rol del sistema - nombre no editable" : "Configura los permisos del rol"}
+              </p>
             </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-text-tertiary">Permisos activos:</span>
+              <Badge color="success" variant="light" shape="rounded">
+                {editForm.permissions.length} / {permissions.length}
+              </Badge>
+            </div>
+          </div>
+        </ModalHeader>
+        
+        <ModalBody className="max-h-[60vh] overflow-y-auto">
+          <div className="space-y-6 py-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">
+                  Nombre del Rol
+                </label>
+                <InputField
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                  disabled={selectedRole?.isSystem}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">
+                  Descripción
+                </label>
+                <InputField
+                  value={editForm.description}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
+                />
+              </div>
+            </div>
+
             <div>
-              <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">
-                Descripción
-              </label>
-              <InputField
-                value={editForm.description}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest">
+                  Matriz de Permisos
+                </label>
+                <button
+                  onClick={() => {
+                    const allSelected = editForm.permissions.length === permissions.length;
+                    if (allSelected) {
+                      setEditForm((prev) => ({ ...prev, permissions: [] }));
+                    } else {
+                      setEditForm((prev) => ({ ...prev, permissions: permissions.map((p) => p.id) }));
+                    }
+                  }}
+                  className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+                >
+                  {editForm.permissions.length === permissions.length ? "Desmarcar todos" : "Marcar todos"}
+                </button>
+              </div>
+
+              <div className="rounded-xl border border-border-light dark:border-white/10 overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-white/5 border-b border-border-light dark:border-white/10">
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-40">
+                        Módulo
+                      </th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-text-tertiary uppercase tracking-wider">
+                        Permisos
+                      </th>
+                      <th className="text-center py-3 px-4 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-24">
+                        Estado
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border-light dark:divide-white/5">
+                    {MODULES.map((module) => {
+                      const modulePermissions = permissions.filter((p) => p.module === module);
+                      const selectedCount = getModuleSelectedCount(module);
+                      const totalCount = getModuleTotalCount(module);
+                      const isFullySelected = isModuleFullySelected(module);
+                      const isPartiallySelected = isModulePartiallySelected(module);
+                      
+                      return (
+                        <tr key={module} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+                          <td className="py-3 px-4">
+                            <button
+                              onClick={() => handleToggleModule(module)}
+                              className="flex items-center gap-2 text-left w-full group"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isFullySelected}
+                                ref={(el) => {
+                                  if (el) el.indeterminate = isPartiallySelected;
+                                }}
+                                onChange={() => {}}
+                                className="w-4 h-4 rounded border-border-light dark:border-white/10 text-brand-500 focus:ring-brand-500/20 shrink-0"
+                              />
+                              <span className="font-medium text-sm text-text-primary dark:text-text-emphasis group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                                {module}
+                              </span>
+                            </button>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex flex-wrap gap-2">
+                              {modulePermissions.map((permission) => (
+                                <label
+                                  key={permission.id}
+                                  className={`
+                                    inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium cursor-pointer
+                                    transition-all duration-200
+                                    ${editForm.permissions.includes(permission.id)
+                                      ? "bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 ring-1 ring-brand-200 dark:ring-brand-500/30"
+                                      : "bg-gray-100 dark:bg-gray-800 text-text-tertiary hover:bg-gray-200 dark:hover:bg-gray-700"
+                                    }
+                                  `}
+                                  title={permission.description}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={editForm.permissions.includes(permission.id)}
+                                    onChange={() => handleTogglePermission(permission.id)}
+                                    className="sr-only"
+                                  />
+                                  <svg
+                                    className={`w-3 h-3 transition-opacity ${editForm.permissions.includes(permission.id) ? "opacity-100" : "opacity-0"}`}
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                  {permission.action}
+                                </label>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className={`
+                              inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                              ${isFullySelected 
+                                ? "bg-success-100 dark:bg-success-500/20 text-success-700 dark:text-success-400" 
+                                : isPartiallySelected 
+                                  ? "bg-warning-100 dark:bg-warning-500/20 text-warning-700 dark:text-warning-400"
+                                  : "bg-gray-100 dark:bg-gray-800 text-text-tertiary"
+                              }
+                            `}>
+                              {selectedCount}/{totalCount}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
+        </ModalBody>
 
-          <div>
-            <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-3">
-              Permisos
-            </label>
-            <div className="space-y-4">
-              {MODULES.map((module) => (
-                <div key={module} className="rounded-lg border border-border-light dark:border-white/10 overflow-hidden">
-                  <div
-                    className="flex items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-white/5 cursor-pointer hover:bg-gray-100 dark:hover:bg-white/10"
-                    onClick={() => handleToggleModule(module)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isModuleFullySelected(module)}
-                      ref={(el) => {
-                        if (el) el.indeterminate = isModulePartiallySelected(module);
-                      }}
-                      onChange={() => {}}
-                      className="w-4 h-4 rounded border-border-light dark:border-white/10 text-brand-500 focus:ring-brand-500/20"
-                    />
-                    <span className="font-medium text-text-primary dark:text-text-emphasis text-sm">
-                      {module}
-                    </span>
-                    <span className="text-xs text-text-tertiary ml-auto">
-                      {permissions.filter((p) => p.module === module && editForm.permissions.includes(p.id)).length} / {permissions.filter((p) => p.module === module).length}
-                    </span>
-                  </div>
-                  <div className="p-3 space-y-2">
-                    {permissions.filter((p) => p.module === module).map((permission) => (
-                      <label
-                        key={permission.id}
-                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={editForm.permissions.includes(permission.id)}
-                          onChange={() => handleTogglePermission(permission.id)}
-                          className="w-4 h-4 rounded border-border-light dark:border-white/10 text-brand-500 focus:ring-brand-500/20"
-                        />
-                        <div>
-                          <span className="text-sm text-text-primary dark:text-text-emphasis">
-                            {permission.action}
-                          </span>
-                          <p className="text-xs text-text-tertiary">{permission.description}</p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ))}
+        <ModalFooter>
+          <div className="flex items-center justify-between w-full">
+            <p className="text-xs text-text-tertiary">
+              {editForm.permissions.length} de {permissions.length} permisos seleccionados
+            </p>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSaveRole}>
+                Guardar Cambios
+              </Button>
             </div>
           </div>
-
-          <div className="flex justify-end gap-3 pt-4 border-t border-border-light dark:border-white/10">
-            <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSaveRole}>
-              Guardar Cambios
-            </Button>
-          </div>
-        </div>
+        </ModalFooter>
       </Modal>
 
       <UnifiedDialog

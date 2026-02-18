@@ -96,7 +96,6 @@ export default function ManualsPage() {
   const [manuals, setManuals] = useState<Manual[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
-  const [selectedManual, setSelectedManual] = useState<Manual | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -137,11 +136,11 @@ export default function ManualsPage() {
   };
 
   const getCategoryColor = (category: string) => {
-    const colors: Record<string, "primary" | "success" | "warning" | "error" | "brand"> = {
+    const colors: Record<string, "primary" | "success" | "warning" | "error"> = {
       "General": "primary",
       "Inscripciones": "success",
       "Seguimiento": "warning",
-      "Reportes": "brand",
+      "Reportes": "primary",
       "Configuración": "error",
       "Videos": "primary",
     };
@@ -246,7 +245,6 @@ export default function ManualsPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setSelectedManual(manual)}
                   >
                     Ver
                   </Button>

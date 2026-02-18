@@ -59,17 +59,30 @@ interface PeriodoApiDTO {
 
 /**
  * Parsea un valor de fecha (string o timestamp) a un objeto Date.
+ * Maneja formatos ISO y timestamps.
  * 
  * @param value - Valor a parsear.
- * @returns Objeto Date.
+ * @returns Objeto Date (puede ser inválido si el input es incorrecto).
  */
 const parseDate = (value: number | string | undefined): Date => {
-  if (!value) return new Date();
+  if (!value) {
+    // Retornar una fecha inválida para que la UI lo detecte
+    return new Date("Invalid Date"); 
+  }
+  
   if (typeof value === "number") {
     // Unix timestamp en ms o segundos
     const ms = value < 1e12 ? value * 1000 : value;
     return new Date(ms);
   }
+
+  // Manejo especial para fechas YYYY-MM-DD para evitar desplazamiento de zona horaria
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [year, month, day] = value.split('-').map(Number);
+      // Crear fecha local a mediodía para evitar problemas de bordes de zona horaria
+      return new Date(year, month - 1, day, 12, 0, 0);
+  }
+  
   return new Date(value);
 };
 

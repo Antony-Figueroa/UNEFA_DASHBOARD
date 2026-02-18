@@ -11,7 +11,7 @@ import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIc
 import { PreEnrollmentRowData } from "../types";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { useCareers } from "../../careers/hooks/useCareers";
-import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
+import { TableSkeleton } from "../../../components/ui/skeleton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import Button from "../../../components/ui/button/Button";
 import Checkbox from "../../../components/form/input/Checkbox";

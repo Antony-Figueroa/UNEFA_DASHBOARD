@@ -8,7 +8,7 @@ import { getCareers } from "../../careers/services/careersService";
 import { Student } from "../../students/types";
 import { Career } from "../../careers/types";
 import { useDebounce } from "../../../hooks/useDebounce";
-import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
+import { TableSkeleton } from "../../../components/ui/skeleton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { generateMatricula } from "../../../utils/matricula";
 

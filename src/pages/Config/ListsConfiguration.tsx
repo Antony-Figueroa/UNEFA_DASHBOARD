@@ -3,7 +3,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import Button from "../../components/ui/button/Button";
-import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
+import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton, Skeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
 import { List, ListValue } from "../../features/lists/types";
 import * as listsService from "../../features/lists/services/listsService";
@@ -254,7 +254,12 @@ const ListsConfiguration = () => {
               <SkeletonLoader
                 isLoading={isLoading}
                 id="lists-sidebar-loader"
-                skeleton={<div className="space-y-2"><div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-full"></div><div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-full"></div></div>}
+                skeleton={
+                  <div className="space-y-2">
+                    <Skeleton height={40} className="w-full" />
+                    <Skeleton height={40} className="w-full" />
+                  </div>
+                }
               >
                 <div className="flex flex-col gap-1 max-h-150 overflow-y-auto pr-2 custom-scrollbar">
                   {lists.map((list) => (

@@ -13,7 +13,7 @@ import {
   Pagination,
 } from "../../../components/ui/table";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
-import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
+import { TableSkeleton } from "../../../components/ui/skeleton";
 import {
   ChevronDownIcon,
   EditIcon,

@@ -15,7 +15,7 @@ import {
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import Badge from "../../../components/ui/badge/Badge";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
-import { TableSkeleton } from "../../../components/ui/table/TableSkeleton";
+import { TableSkeleton } from "../../../components/ui/skeleton";
 import InputField from "../../../components/form/input/InputField";
 import CustomSelect from "../../../components/form/CustomSelect";
 import {

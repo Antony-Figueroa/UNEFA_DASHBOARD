@@ -6,6 +6,7 @@ import {
 } from "../../icons";
 import Badge from "../ui/badge/Badge";
 import { DashboardStats } from "../../features/dashboard/types";
+import { Skeleton } from "../ui/skeleton";
 
 interface EcommerceMetricsProps {
   stats: DashboardStats | null;
@@ -27,7 +28,7 @@ export default function EcommerceMetrics({ stats, loading }: EcommerceMetricsPro
               Estudiantes
             </span>
             {loading ? (
-              <div className="mt-2 h-7 w-20 animate-pulse rounded bg-gray-200 dark:bg-gray-700"></div>
+              <Skeleton height={28} width={80} className="mt-2" />
             ) : (
               <h4 className="mt-2 font-bold text-text-emphasis text-title-sm dark:text-text-emphasis">
                 {stats?.totalStudents.toLocaleString() || "0"}
@@ -53,7 +54,7 @@ export default function EcommerceMetrics({ stats, loading }: EcommerceMetricsPro
               Inscripciones
             </span>
             {loading ? (
-              <div className="mt-2 h-7 w-20 animate-pulse rounded bg-gray-200 dark:bg-gray-700"></div>
+              <Skeleton height={28} width={80} className="mt-2" />
             ) : (
               <h4 className="mt-2 font-bold text-text-emphasis text-title-sm dark:text-text-emphasis">
                 {stats?.totalEnrollments.toLocaleString() || "0"}

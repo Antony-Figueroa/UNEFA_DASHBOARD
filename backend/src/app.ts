@@ -24,6 +24,9 @@ import aiRoutes from './routes/ai.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import reportsRoutes from './routes/reports.routes.js';
 import configRoutes from './routes/config.routes.js';
+import culminationRoutes from './routes/culmination.routes.js';
+import manualsRoutes from './routes/manuals.routes.js';
+import rolesRoutes from './routes/roles.routes.js';
 import { dbManager } from './lib/db-manager.js';
 import { performanceMiddleware } from './lib/performance-middleware.js';
 import { authenticateToken, restrictAsistente } from './middlewares/auth.middleware.js';
@@ -181,6 +184,9 @@ app.use('/api/lists', listsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/config', configRoutes);
+app.use('/api/culmination', culminationRoutes);
+app.use('/api/manuals', manualsRoutes);
+app.use('/api/roles', rolesRoutes);
 
 // Servir archivos estáticos del frontend (Vite build)
 // Intentar encontrar la carpeta dist en lugares comunes

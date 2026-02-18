@@ -129,7 +129,8 @@ export const chatWithAI = async (req: AuthRequest, res: Response) => {
     req.on('close', () => { aborted.value = true; });
 
     const streamChat = USE_GROQ ? streamChatGroq : streamChatGoogle;
-    console.log(`[AI] Using provider: ${USE_GROQ ? 'Groq (Llama 3.1)' : 'Google Gemini'}`);
+    console.log(`[AI] Using provider: ${USE_GROQ ? 'Groq (Llama 3.3)' : 'Google Gemini'}`);
+    console.log(`[AI] GROQ_API_KEY set: ${!!process.env.GROQ_API_KEY}`);
 
     await streamChat(
       {
@@ -151,6 +152,7 @@ export const chatWithAI = async (req: AuthRequest, res: Response) => {
     }
   } catch (error: any) {
     console.error('[AI Chat] Error:', error.message);
+    console.error('[AI Chat] Stack:', error.stack);
 
     if (!res.headersSent) {
       return res.status(500).json({

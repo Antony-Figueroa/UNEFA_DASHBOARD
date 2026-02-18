@@ -38,7 +38,7 @@ interface PreEnrollmentModalProps {
   /** Función para cerrar el modal */
   onClose: () => void;
   /** Función que se ejecuta al guardar los datos */
-  onSave: (payload: CreatePreEnrollmentPayload | UpdatePreEnrollmentPayload) => void;
+  onSave: (payload: CreatePreEnrollmentPayload | UpdatePreEnrollmentPayload) => Promise<void> | void;
   /** Registro que se está editando (opcional) */
   editingEntry?: PreEnrollment | null;
   /** Estado de carga de la operación de guardado */
@@ -442,7 +442,7 @@ export default function PreEnrollmentModal({
     setShowConfirmDialog(true);
   };
 
-  const handleConfirmSave = () => {
+  const handleConfirmSave = async () => {
     if (!pendingData) return;
     const data = pendingData;
 
@@ -461,15 +461,17 @@ export default function PreEnrollmentModal({
           preEnrollmentId: editingEntry.preEnrollmentId,
           careerName: normalized.careerName || "",
         };
-        onSave(updatePayload);
+        await onSave(updatePayload);
       } else {
         const createPayload: CreatePreEnrollmentPayload = {
           ...normalized,
           identificationPrefix: normalized.identificationPrefix as "V" | "E",
           careerName: normalized.careerName || "",
         };
-        onSave(createPayload);
+        await onSave(createPayload);
       }
+      setShowConfirmDialog(false);
+      setPendingData(null);
     } catch (error) {
       console.error("[PreEnrollmentModal] Error al procesar el formulario:", error);
       addToast({
@@ -478,8 +480,6 @@ export default function PreEnrollmentModal({
         message: "Ocurrió un error inesperado al procesar el formulario.",
       });
     }
-    setShowConfirmDialog(false);
-    setPendingData(null);
   };
 
   /**
@@ -766,6 +766,7 @@ export default function PreEnrollmentModal({
       message={`¿Estás seguro de que deseas ${editingEntry ? 'actualizar' : 'guardar'} la pre-inscripción del estudiante?`}
       confirmLabel={editingEntry ? "Actualizar" : "Guardar"}
       variant="confirm"
+      isLoading={isLoading}
     />
   </>
 );

@@ -29,7 +29,7 @@ interface InternshipTypeModalProps {
   /** Función para cerrar el modal */
   onClose: () => void;
   /** Función que se llama al guardar los datos (crear o editar) */
-  onSave: (item: CreateInternshipTypePayload) => void;
+  onSave: (item: CreateInternshipTypePayload) => Promise<void> | void;
   /** Objeto de tipo de práctica que se está editando, null si es creación */
   editingItem?: InternshipType | null;
   /** Lista de tipos de práctica existentes para validaciones de unicidad */
@@ -288,6 +288,7 @@ export default function InternshipTypeModal({
         message={`¿Estás seguro de que deseas ${editingItem ? 'actualizar' : 'guardar'} el tipo de práctica profesional?`}
         variant="confirm"
         confirmLabel={editingItem ? "Actualizar" : "Guardar"}
+        isLoading={isLoading}
       />
     </>
   );

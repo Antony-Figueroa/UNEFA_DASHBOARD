@@ -34,7 +34,7 @@ export interface CrudFormProps {
   initialValues?: Partial<CrudFormValues>;
   submitLabel?: string;
   secondaryActionLabel?: string;
-  onSubmit: (values: CrudFormValues) => void;
+  onSubmit: (values: CrudFormValues) => void | Promise<void>;
   onSecondaryAction?: () => void;
   renderFooterExtra?: ReactNode;
   isLoading?: boolean;
@@ -164,7 +164,24 @@ export function CrudForm({
     });
 
     setIsInternalLoading(true);
-    onSubmit(normalized);
+    
+    // Manejar onSubmit asíncrono
+    const result = onSubmit(normalized);
+    if (result && result instanceof Promise) {
+      result.finally(() => {
+        if (!isLoading) { // Solo resetear si no hay control externo de carga
+          setIsInternalLoading(false);
+        }
+      });
+    } else {
+      // Si es síncrono, no reseteamos inmediatamente si hay isLoading externo,
+      // pero si no hay, asumimos que terminó. 
+      // Sin embargo, para mantener compatibilidad con comportamiento anterior,
+      // y dado que no sabemos si la operación síncrona desencadena algo asíncrono fuera,
+      // mejor no resetear aquí si no estamos seguros.
+      // Pero el timeout de 30s está ahí por seguridad.
+      // La corrección principal es para promesas.
+    }
   };
 
   const handleChange = (name: string, value: string | number | boolean | string[]) => {

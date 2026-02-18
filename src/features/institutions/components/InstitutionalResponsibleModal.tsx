@@ -71,7 +71,7 @@ interface InstitutionalResponsibleModalProps {
   /** Callback to close the modal */
   onClose: () => void;
   /** Callback fired when the form is submitted successfully */
-  onSave: (data: CreateInstitutionalResponsiblePayload | UpdateInstitutionalResponsiblePayload) => void;
+  onSave: (data: CreateInstitutionalResponsiblePayload | UpdateInstitutionalResponsiblePayload) => Promise<void> | void;
   /** The responsible record being edited, or null if creating a new one */
   editingResp?: InstitutionalResponsible | null;
   /** Options for the institution selection dropdown */
@@ -435,9 +435,9 @@ export default function InstitutionalResponsibleModal({
       <UnifiedDialog
         isOpen={confirmSaveOpen}
         onClose={() => setConfirmSaveOpen(false)}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (pendingSave) {
-            onSave(pendingSave);
+            await onSave(pendingSave);
           }
           setConfirmSaveOpen(false);
         }}
@@ -445,6 +445,7 @@ export default function InstitutionalResponsibleModal({
         title={editingResp ? "Confirmar actualización" : "Confirmar registro"}
         message={editingResp ? "¿Desea actualizar los datos del responsable?" : "¿Desea guardar el nuevo responsable?"}
         confirmLabel={editingResp ? "Actualizar" : "Guardar"}
+        isLoading={isLoading}
       />
     )}
 

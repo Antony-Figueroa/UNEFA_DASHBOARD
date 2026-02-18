@@ -14,7 +14,6 @@ import ComponentCard from "../../components/common/ComponentCard";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
-import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { Tabs } from "../../components/ui/tabs/Tabs";
 import { PlusCircleIcon } from "../../icons/actions";
@@ -228,70 +227,49 @@ export default function CareersPage() {
   };
 
   /**
-   * Procesa el guardado (Crear o Actualizar) de una carrera con confirmación previa.
+   * Procesa el guardado (Crear o Actualizar) de una carrera.
+   * La confirmación es manejada internamente por el modal.
    * 
    * @param {Omit<Career, "careerId" | "creationDate">} payload - Datos validados del formulario.
-   * @warning Esta función es asíncrona y maneja estados globales de confirmación.
    */
-  const handleSave = (
+  const handleSave = async (
     payload: Omit<Career, "careerId" | "creationDate">
   ) => {
     const isEditing = !!editingCareer;
-    setConfirmation({
-      isOpen: true,
-      title: isEditing ? "Confirmar Modificación" : "Confirmar Registro",
-      message: `¿Estás seguro de que deseas ${isEditing ? "guardar los cambios en" : "registrar"} esta carrera?`,
-      onConfirm: async () => {
-        try {
-          if (isEditing && editingCareer) {
-            await editCareer({ ...editingCareer, ...payload } as UpdateCareerPayload);
-          } else {
-            await addCareer(payload as CreateCareerPayload);
-          }
-          setIsModalOpen(false);
-        } catch (e) {
-          console.error(e);
-        } finally {
-          setConfirmation(null);
-        }
-      },
-      confirmText: isEditing ? "Guardar" : "Registrar",
-      variant: "info",
-    });
+    try {
+      if (isEditing && editingCareer) {
+        await editCareer({ ...editingCareer, ...payload } as UpdateCareerPayload);
+      } else {
+        await addCareer(payload as CreateCareerPayload);
+      }
+      setIsModalOpen(false);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   /**
    * Procesa el guardado de un tipo de práctica.
+   * La confirmación es manejada internamente por el modal.
    */
-  const handleSaveType = (payload: CreateInternshipTypePayload) => {
+  const handleSaveType = async (payload: CreateInternshipTypePayload) => {
     const isEditing = !!editingType;
-    setConfirmation({
-      isOpen: true,
-      title: isEditing ? "Confirmar Modificación" : "Confirmar Registro",
-      message: `¿Estás seguro de que deseas ${isEditing ? "guardar los cambios en" : "registrar"} este tipo de práctica?`,
-      onConfirm: async () => {
-        try {
-          let result;
-          if (isEditing && editingType) {
-            result = await editInternshipType({ ...payload, id: editingType.id });
-          } else {
-            result = await addInternshipType(payload);
-          }
+    try {
+      let result;
+      if (isEditing && editingType) {
+        result = await editInternshipType({ ...payload, id: editingType.id });
+      } else {
+        result = await addInternshipType(payload);
+      }
 
-          if (!isEditing && result) {
-            setLastCreatedInternshipTypeId(result.id);
-          }
+      if (!isEditing && result) {
+        setLastCreatedInternshipTypeId(result.id);
+      }
 
-          setIsTypeModalOpen(false);
-        } catch (e) {
-          console.error(e);
-        } finally {
-          setConfirmation(null);
-        }
-      },
-      confirmText: isEditing ? "Guardar" : "Registrar",
-      variant: "info",
-    });
+      setIsTypeModalOpen(false);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   /**
@@ -522,8 +500,6 @@ export default function CareersPage() {
       <SkeletonLoader isLoading={pageLoading} skeleton={<BreadcrumbSkeleton />} id="careers-breadcrumb">
         <PageBreadcrumb pageTitle={mainTab} />
       </SkeletonLoader>
-
-      {loadingAction && <FullScreenLoader label="Procesando..." />}
 
       <div className="stagger-delay">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

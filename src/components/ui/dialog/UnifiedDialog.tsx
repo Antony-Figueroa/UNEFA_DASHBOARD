@@ -23,7 +23,7 @@ export interface UnifiedDialogProps {
   /** Función que se llama cuando el diálogo debe cerrarse. */
   onClose: () => void;
   /** Función opcional que se llama cuando se confirma la acción. */
-  onConfirm?: () => void;
+  onConfirm?: () => void | Promise<void>;
   /** Variante del diálogo (success, error, warning, info, confirm). */
   variant: DialogVariant;
   /** Título del diálogo. */
@@ -65,8 +65,48 @@ export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
   cancelLabel = "Cancelar",
   isLoading = false,
 }) => {
+  const [internalLoading, setInternalLoading] = React.useState(false);
+  const isMounted = React.useRef(false);
+
+  React.useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   const colors = DIALOG_COLORS[variant];
   const layout = DIALOG_LAYOUT;
+
+  // Reset internal loading state when dialog opens/closes
+  React.useEffect(() => {
+    if (isOpen && isMounted.current) {
+      setInternalLoading(false);
+    }
+  }, [isOpen]);
+
+  const handleConfirm = async () => {
+    if (!onConfirm) return;
+
+    try {
+      if (isMounted.current) setInternalLoading(true);
+      
+      const result = onConfirm();
+      
+      // If onConfirm returns a promise, wait for it
+      if (result instanceof Promise) {
+        await result;
+      }
+    } catch (error) {
+      console.error("Error in UnifiedDialog confirmation:", error);
+    } finally {
+      if (isMounted.current) {
+        setInternalLoading(false);
+      }
+    }
+  };
+
+  const showLoading = isLoading || internalLoading;
 
   /**
    * Obtiene el icono correspondiente a la variante del diálogo.
@@ -129,17 +169,17 @@ export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
               variant="outline"
               onClick={onClose}
               className="flex-1 h-12 rounded-xl border-border-light text-text-primary font-semibold hover:bg-bg-secondary transition-all"
-              disabled={isLoading}
+              disabled={showLoading}
             >
               {cancelLabel}
             </Button>
             <Button
-              onClick={onConfirm}
+              onClick={handleConfirm}
               className={cn(
                 "flex-1 h-12 rounded-xl border-none text-white font-semibold shadow-lg shadow-current/10 transition-all active:scale-95",
                 colors.button
               )}
-              loading={isLoading}
+              loading={showLoading}
             >
               {confirmLabel || "Confirmar"}
             </Button>

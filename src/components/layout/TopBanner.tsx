@@ -34,7 +34,7 @@ const TopBanner: React.FC = () => {
   // Si no hay contexto de sidebar (páginas públicas), el ancho es siempre 0px
   const sidebarWidth = !sidebarContext || !isLargeScreen || isMobileOpen 
     ? "0px" 
-    : (isExpanded || isHovered ? "290px" : "90px");
+    : (isExpanded || isHovered ? "240px" : "70px");
 
   useEffect(() => {
     updateBannerHeight();

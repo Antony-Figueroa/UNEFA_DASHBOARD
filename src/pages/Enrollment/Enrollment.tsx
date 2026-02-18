@@ -11,7 +11,6 @@ import ComponentCard from "../../components/common/ComponentCard";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
-import { FullScreenLoader } from "../../components/ui/loader";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
 import { DownloadIcon } from "../../icons";
@@ -242,28 +241,28 @@ export default function EnrollmentPage() {
         const original = enrollments.find((e) => e.enrollmentId === row.enrollmentId);
         if (!original) return;
 
-        // Si está activo y se va a desactivar, pedir confirmación
-        if (original.status) {
-            setConfirmation({
-                isOpen: true,
-                title: "Confirmar Desactivación",
-                message: `¿Estás seguro de que deseas desactivar la inscripción de ${row.studentName}?`,
-                onConfirm: async () => {
-                    try {
-                        await toggleStatus(original);
-                    } catch (error) {
-                        console.error("[EnrollmentPage] Error toggling status:", error);
-                    } finally {
-                        setConfirmation(null);
-                    }
-                },
-                confirmText: "Desactivar",
-                variant: "error",
-            });
-        } else {
-            // Si se va a activar, hacerlo directamente (o agregar confirmación si se desea)
-            toggleStatus(original).catch(console.error);
-        }
+        const isDeactivating = original.status;
+        const actionVerb = isDeactivating ? "desactivar" : "activar";
+        const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Activación";
+        const variant = isDeactivating ? "error" : "success";
+        const confirmText = isDeactivating ? "Desactivar" : "Activar";
+
+        setConfirmation({
+            isOpen: true,
+            title: confirmTitle,
+            message: `¿Estás seguro de que deseas ${actionVerb} la inscripción de ${row.studentName}?`,
+            onConfirm: async () => {
+                try {
+                    await toggleStatus(original);
+                } catch (error) {
+                    console.error("[EnrollmentPage] Error toggling status:", error);
+                } finally {
+                    setConfirmation(null);
+                }
+            },
+            confirmText: confirmText,
+            variant: variant as DialogVariant,
+        });
     };
 
     return (
@@ -273,8 +272,6 @@ export default function EnrollmentPage() {
             <SkeletonLoader isLoading={pageLoading} skeleton={<BreadcrumbSkeleton />} id="enrollment-breadcrumb">
                 <PageBreadcrumb pageTitle="Inscripción" />
             </SkeletonLoader>
-
-            {loadingAction && <FullScreenLoader label="Procesando..." />}
 
             <div className="stagger-delay">
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

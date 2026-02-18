@@ -44,7 +44,6 @@ const UserModal: React.FC<UserModalProps> = ({
   roleOptions
 }) => {
   const { user: currentUser } = useAuth();
-  const isMasterAdmin = currentUser?.role === 0;
 
   const {
     register,
@@ -146,10 +145,8 @@ const UserModal: React.FC<UserModalProps> = ({
     }
   };
 
-  // Filtrar roles si no es Master Admin
-  const filteredRoleOptions = isMasterAdmin 
-    ? roleOptions 
-    : roleOptions.filter(opt => opt.label !== "MAESTRO");
+  // El admin puede asignar cualquier rol
+  const filteredRoleOptions = roleOptions;
 
   return (
     <>
@@ -244,9 +241,8 @@ const UserModal: React.FC<UserModalProps> = ({
                   value={String(watch("role") ?? "")}
                   onChange={(val) => setValue("role", Number(val), { shouldDirty: true, shouldValidate: true })}
                   options={(filteredRoleOptions.length > 0 ? filteredRoleOptions : [
-                    ...(isMasterAdmin ? [{ value: "0", label: "MAESTRO (Administrador de Sistema)" }] : []),
-                    { value: "1", label: "ADMIN (Gestión de Usuarios)" },
-                    { value: "2", label: "ASISTENTE (Visualización y Registro)" }
+                    { value: "0", label: "ADMIN (Administrador)" },
+                    { value: "2", label: "ASISTENTE (Solo lectura)" }
                   ]).map(opt => ({ value: String(opt.value), label: opt.label }))}
                   placeholder="Seleccione un rol"
                   className="h-11 rounded-lg border-gray-200 dark:border-gray-700"

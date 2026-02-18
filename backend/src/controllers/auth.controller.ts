@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as authService from '../services/auth.service.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { validatePassword } from '../utils/security.utils.js';
 
 const handleAuthError = (res: Response, error: unknown) => {
   console.error('Auth Error:', error);
@@ -216,9 +217,27 @@ export const resetPasswordWithToken = async (req: Request, res: Response) => {
   }
 };
 
-export const logout = async (_req: Request, res: Response) => {
-  res.clearCookie('auth_token');
-  res.json({ message: 'Sesión cerrada correctamente' });
+export const logout = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const userCi = req.user?.userCi;
+    const ip = req.ip || '';
+    const userAgent = req.headers['user-agent'] || '';
+    const token = req.cookies?.auth_token;
+
+    if (userId && userCi) {
+      await authService.logAuthAction(userId, userCi, 'LOGOUT', ip, userAgent, 'Cierre de sesión manual');
+      if (token) {
+        authService.revokeToken(token, userId, userCi);
+      }
+    }
+
+    res.clearCookie('auth_token');
+    res.json({ success: true, message: 'Sesión cerrada correctamente' });
+  } catch (error) {
+    res.clearCookie('auth_token');
+    res.json({ success: true, message: 'Sesión cerrada' });
+  }
 };
 
 export const refreshSession = async (req: AuthRequest, res: Response) => {
@@ -262,6 +281,11 @@ export const changePassword = async (req: Request, res: Response) => {
     return res.status(400).json({ message: 'ID de usuario y nueva contraseña son requeridos' });
   }
 
+  const passwordValidation = validatePassword(newPassword);
+  if (!passwordValidation.isValid) {
+    return res.status(400).json({ message: passwordValidation.message });
+  }
+
   try {
     const result = await authService.changePassword(userId, newPassword, securityQuestions);
     res.json(result);
@@ -277,6 +301,11 @@ export const resetPassword = async (req: Request, res: Response) => {
     return res.status(400).json({ message: 'ID de usuario y nueva contraseña son requeridos' });
   }
 
+  const passwordValidation = validatePassword(newPassword);
+  if (!passwordValidation.isValid) {
+    return res.status(400).json({ message: passwordValidation.message });
+  }
+
   try {
     const result = await authService.resetPassword(userId, newPassword);
     res.json(result);
@@ -290,6 +319,45 @@ export const getPresetQuestions = async (_req: Request, res: Response) => {
     const result = await authService.getPresetQuestions();
     res.json(result);
   } catch (error) {
+    handleAuthError(res, error);
+  }
+};
+
+export const getLoginHistory = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    console.log('[Auth] getLoginHistory called for userId:', userId);
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Sesión no válida' });
+    }
+
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    const history = await authService.getLoginHistory(userId, limit);
+    console.log('[Auth] getLoginHistory result:', history?.length, 'records');
+    
+    res.json({ success: true, data: history });
+  } catch (error: any) {
+    console.error('[Auth] getLoginHistory error:', error.message);
+    handleAuthError(res, error);
+  }
+};
+
+export const getAllAuthLogs = async (req: AuthRequest, res: Response) => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+    const page = req.query.page ? parseInt(req.query.page as string) : 1;
+    const offset = (page - 1) * limit;
+    const userId = req.query.userId ? parseInt(req.query.userId as string) : undefined;
+
+    const result = await authService.getAllAuthLogs(limit, offset, userId);
+    res.json({ 
+      success: true, 
+      data: result.data,
+      meta: { total: result.total, page, limit, totalPages: Math.ceil(result.total / limit) }
+    });
+  } catch (error: any) {
+    console.error('[Auth] getAllAuthLogs error:', error.message);
     handleAuthError(res, error);
   }
 };

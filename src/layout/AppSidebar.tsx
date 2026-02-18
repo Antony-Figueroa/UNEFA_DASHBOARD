@@ -73,9 +73,8 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Usuarios", path: "/configure/users" },
       { name: "Configuración de Combos", path: "/configure/lists" },
-      { name: "Configuración", path: "/blank" },
+      { name: "Registro de Actividad", path: "/configure/logs" },
       { name: "Roles y Permisos", path: "/blank" },
-      { name: "Logs de Actividad", path: "/blank" },
       { name: "Mantenimiento", path: "/blank" },
     ],
   },

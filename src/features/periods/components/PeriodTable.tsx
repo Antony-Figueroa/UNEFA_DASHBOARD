@@ -46,22 +46,6 @@ type SortKey = keyof PeriodoRowData;
 // HELPER FUNCTIONS
 // ============================================
 
-/**
- * Verifica si un valor es una fecha válida.
- */
-const isValidDate = (date: any): boolean => {
-    if (!date) return false;
-    const d = new Date(date);
-    return !isNaN(d.getTime());
-};
-
-/**
- * Formatea una fecha de forma segura.
- */
-const formatDateSafe = (date: any): string => {
-    if (!isValidDate(date)) return "Fecha inválida";
-    return new Date(date).toLocaleDateString();
-};
 
 /**
  * Obtiene el estatus numérico de un periodo de forma segura.

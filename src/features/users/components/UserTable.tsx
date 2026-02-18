@@ -256,7 +256,7 @@ export default function UserTable({
                                     <TableCell className="table-cell uppercase">{user.name} {user.surname}</TableCell>
                                     <TableCell className="table-cell lowercase">{user.email}</TableCell>
                                     <TableCell className="table-cell">
-                                        <Badge color={user.role === 0 ? "error" : user.role === 1 ? "warning" : "info"} variant="light" size="sm">
+                                    <Badge color={user.role === 1 ? "error" : "info"} variant="light" size="sm">
                                             {rolesMap[user.role] || "USUARIO"}
                                         </Badge>
                                     </TableCell>

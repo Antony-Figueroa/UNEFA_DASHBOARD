@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../../components/ui/table";
+import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { ActionButton } from "../../../components/common/ActionButton";
 import type { CrudColumn, CrudFilterConfig, CrudFilterState, CrudActionConfig, CrudRowAction } from "../types";
@@ -512,114 +512,16 @@ export function CrudTable<TItem extends { id: string }>({
         </Table>
       </div>
 
-      {sortedItems.length > 0 && (
-        <div className="flex items-center justify-between border-t border-border-light px-4 py-3 text-sm text-text-secondary dark:border-border-dark dark:text-text-tertiary sm:px-6">
-          <div className="flex flex-1 justify-between sm:hidden">
-            <button
-              type="button"
-              onClick={async () => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="relative inline-flex items-center rounded-md border border-border-medium bg-bg-main px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-50 dark:border-border-dark dark:bg-bg-dark dark:text-text-tertiary"
-            >
-              Anterior
-            </button>
-            <button
-              type="button"
-              onClick={async () => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="relative ml-3 inline-flex items-center rounded-md border border-border-medium bg-bg-main px-4 py-2 text-sm font-medium text-text-secondary hover:bg-bg-secondary disabled:opacity-50 dark:border-border-dark dark:bg-bg-dark dark:text-text-tertiary"
-            >
-              Siguiente
-            </button>
-          </div>
-
-          <div className="hidden w-full items-center justify-between gap-4 sm:flex">
-            <div className="flex items-center gap-3">
-              <p>
-                Mostrando{" "}
-                <span className="font-medium text-text-primary dark:text-text-emphasis">
-                  {startIndex + 1}
-                </span>{" "}
-                a{" "}
-                <span className="font-medium text-text-primary dark:text-text-emphasis">
-                  {Math.min(startIndex + itemsPerPage, sortedItems.length)}
-                </span>{" "}
-                de{" "}
-                <span className="font-medium text-text-primary dark:text-text-emphasis">
-                  {sortedItems.length}
-                </span>{" "}
-                resultados
-              </p>
-              <div className="flex items-center gap-2">
-                <span>Por página</span>
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => {
-                    const next = Number(e.target.value);
-                    setItemsPerPage(next);
-                    setCurrentPage(1);
-                  }}
-                  className="rounded border border-border-medium bg-transparent py-1 px-2 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis"
-                >
-                  {pageSizeOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <nav
-              className="isolate inline-flex -space-x-px rounded-md shadow-sm"
-              aria-label="Paginación"
-            >
-              <button
-                type="button"
-                onClick={async () => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="relative inline-flex items-center rounded-l-md px-2 py-2 text-text-tertiary ring-1 ring-inset ring-border-medium hover:bg-bg-secondary focus:z-20 focus:outline-offset-0 disabled:opacity-50 dark:ring-border-dark dark:hover:bg-white/5"
-              >
-                <span className="sr-only">Anterior</span>
-                <svg
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-              <span className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-text-secondary ring-1 ring-inset ring-border-medium dark:text-text-tertiary dark:ring-border-dark">
-                Página {currentPage} de {totalPages}
-              </span>
-              <button
-                type="button"
-                onClick={async () => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="relative inline-flex items-center rounded-r-md px-2 py-2 text-text-tertiary ring-1 ring-inset ring-border-medium hover:bg-bg-secondary focus:z-20 focus:outline-offset-0 disabled:opacity-50 dark:ring-border-dark dark:hover:bg-white/5"
-              >
-                <span className="sr-only">Siguiente</span>
-                <svg
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-            </nav>
-          </div>
-        </div>
+      {sortedItems.length > 0 && totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={sortedItems.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={handlePageChange}
+          onItemsPerPageChange={(items) => { setItemsPerPage(items); setCurrentPage(1); }}
+          itemsPerPageOptions={pageSizeOptions}
+        />
       )}
     </div>
   );

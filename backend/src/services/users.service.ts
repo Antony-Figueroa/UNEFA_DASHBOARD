@@ -214,7 +214,18 @@ export const updateUser = async (userId: number, userData: UserData) => {
 
     return updatedUser;
   });
-}
+};
+
+export const deleteUser = async (userId: number): Promise<void> => {
+  await dbManager.withRetry(async (supabase) => {
+    const { error } = await supabase
+      .from('t_user')
+      .update({ STATUS: 0 })
+      .eq('USER_ID', userId);
+
+    if (error) throw error;
+  });
+};
 
 export const saveSecurityQuestions = async (userId: number, questions: { questionId: number, answer: string }[]) => {
   return await dbManager.withRetry(async (supabase) => {
@@ -232,4 +243,37 @@ export const saveSecurityQuestions = async (userId: number, questions: { questio
     
     return true;
   });
+};
+
+export const ensureRolesSeeded = async (): Promise<void> => {
+  try {
+    const rolesToSeed = [
+      { id: 1, name: 'ADMIN', description: 'Administrador con acceso total al sistema' },
+      { id: 2, name: 'ASISTENTE', description: 'Asistente con permisos de solo lectura' },
+    ];
+
+    for (const role of rolesToSeed) {
+      await dbManager.withRetry(async (supabase) => {
+        const { error } = await supabase
+          .from('t_roles')
+          .upsert({
+            ID_ROLS: role.id,
+            NAME: role.name,
+            DESCRIPTION: role.description,
+            STATUS: 1,
+            MODIF_USER_ID: 0,
+            MODIF_USER_DATE: new Date().toISOString(),
+            ELIM_USER_ID: 0,
+            ELIM_USER_DATE: new Date().toISOString(),
+            REST_USER_ID: 0,
+            REST_USER_DATE: new Date().toISOString(),
+          }, { onConflict: 'ID_ROLS' });
+        
+        if (error && error.code !== 'PGRST116') throw error;
+      });
+    }
+    console.log('[Users] Roles seeded successfully');
+  } catch (error) {
+    console.error('[Users] Error seeding roles:', error);
+  }
 };

@@ -116,6 +116,34 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const deleteUser = async (req: AuthRequest, res: Response) => {
+  try {
+    const adminId = req.user?.userId;
+    const { id } = req.params;
+    
+    if (adminId === Number(id)) {
+      return res.status(400).json({ message: 'No puedes eliminar tu propia cuenta' });
+    }
+
+    await usersService.deleteUser(Number(id));
+    
+    await dbManager.withRetry(async (supabase) => {
+      await supabase.from('t_auth_log').insert({
+        USER_ID: adminId,
+        ACTION: 'DELETE_USER',
+        IP_ADDRESS: req.ip,
+        USER_AGENT: req.headers['user-agent'],
+        DETAILS: `Eliminación (soft delete) de usuario ID: ${id}`
+      });
+    });
+
+    res.json({ message: 'Usuario eliminado exitosamente' });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    res.status(500).json({ message: 'Error eliminando usuario', error: errorMessage });
+  }
+};
+
 export const saveSecurityQuestions = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;

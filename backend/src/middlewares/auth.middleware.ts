@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyToken } from '../utils/auth.utils.js';
+import { verifyToken, decodeToken } from '../utils/auth.utils.js';
+import * as authService from '../services/auth.service.js';
 
 export interface UserPayload {
   userId: number;
@@ -12,21 +13,37 @@ export interface AuthRequest extends Request {
 }
 
 export const ROLES = {
-  MASTER_ADMIN: 0, // Nuevo rol de Administrador Maestro
   ADMIN: 1,
-  ASISTENTE: 2
+  ASISTENTE: 2,
 };
+
+const expiredTokensLogged = new Set<string>();
 
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
   const token = req.cookies?.auth_token;
+  const ip = req.ip || '';
+  const userAgent = req.headers['user-agent'] || '';
 
   if (!token) {
     return res.status(401).json({ message: 'Sesión no iniciada' });
   }
 
+  const { revoked, data } = authService.isTokenRevoked(token);
+  if (revoked) {
+    return res.status(403).json({ message: 'Sesión cerrada', code: 'SESSION_REVOKED' });
+  }
+
   const payload = verifyToken(token);
   if (!payload) {
-    return res.status(403).json({ message: 'Sesión inválida o expirada' });
+    const decoded = decodeToken(token) as { userId?: number; userCi?: string } | null;
+    if (decoded?.userId && decoded?.userCi) {
+      const tokenHash = token.substring(0, 16);
+      if (!expiredTokensLogged.has(tokenHash)) {
+        expiredTokensLogged.add(tokenHash);
+        authService.logAuthAction(decoded.userId, decoded.userCi, 'SESSION_EXPIRED', ip, userAgent, 'Sesión expirada por inactividad');
+      }
+    }
+    return res.status(403).json({ message: 'Sesión expirada', code: 'SESSION_EXPIRED' });
   }
 
   req.user = payload as unknown as UserPayload;
@@ -49,8 +66,8 @@ export const requireMaster2FA = (req: AuthRequest, res: Response, next: NextFunc
     return res.status(401).json({ message: 'Sesión no iniciada' });
   }
 
-  // 2. Verificar que sea Administrador Maestro o Administrador
-  if (req.user.role !== ROLES.MASTER_ADMIN && req.user.role !== ROLES.ADMIN) {
+  // 2. Verificar que sea Administrador
+  if (req.user.role !== ROLES.ADMIN) {
     return res.status(403).json({ message: 'Acceso denegado: Se requieren permisos administrativos' });
   }
 

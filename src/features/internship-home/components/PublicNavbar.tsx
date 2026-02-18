@@ -59,18 +59,12 @@ const PublicNavbar: React.FC = () => {
   }, [isOpen]);
 
   const navLinks = [
-    { name: "Inicio", href: "#inicio" },
-    { name: "Ofertas", href: "#ofertas" },
-    { name: "Procesos", href: "#procesos" },
-    { name: "Contacto e Información", href: "#contacto" },
+    { name: "Inicio", href: "/" },
+    { name: "Nosotros", href: "/nosotros" },
+    { name: "Carreras", href: "/carreras" },
+    { name: "Pasantías", href: "/pasantias" },
   ];
 
-  /**
-   * Maneja el scroll suave hacia una sección específica.
-   * 
-   * @param e - Evento de click del ratón.
-   * @param href - El identificador de la sección (ej. '#inicio').
-   */
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (href.startsWith("#")) {
       e.preventDefault();

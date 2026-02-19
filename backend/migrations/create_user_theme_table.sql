@@ -1,0 +1,22 @@
+-- Tabla para almacenar preferencias de tema por usuario
+-- Permite personalizar el color primario del sistema
+
+CREATE TABLE IF NOT EXISTS "t_user_theme" (
+  "USER_THEME_ID" SERIAL PRIMARY KEY,
+  "USER_ID" INTEGER NOT NULL,
+  "BRAND_COLOR" VARCHAR(20) NOT NULL DEFAULT 'blue',
+  "CREATION_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "MODIF_USER_ID" INTEGER NOT NULL DEFAULT 0,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "ELIM_USER_ID" INTEGER NOT NULL DEFAULT 0,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "REST_USER_ID" INTEGER NOT NULL DEFAULT 0,
+  "REST_USER_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "STATUS" SMALLINT NOT NULL DEFAULT 1,
+  CONSTRAINT "fk_user_theme_user" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID") ON DELETE CASCADE,
+  CONSTRAINT "uq_user_theme_user" UNIQUE ("USER_ID")
+);
+
+-- Comentario descriptivo
+COMMENT ON TABLE "t_user_theme" IS 'Preferencias de tema/apariencia por usuario';
+COMMENT ON COLUMN "t_user_theme"."BRAND_COLOR" IS 'Clave del color primario: blue, green, purple, orange, red, pink, teal, indigo';

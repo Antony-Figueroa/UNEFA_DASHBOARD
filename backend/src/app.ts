@@ -33,6 +33,8 @@ import adminRequestsRoutes from './routes/admin-requests.routes.js';
 import notificationsRoutes from './routes/notifications.routes.js';
 import evaluationRoutes from './routes/evaluation.routes.js';
 import backupRoutes from './routes/backup.routes.js';
+import userThemeRoutes from './routes/user-theme.routes.js';
+import visitsRoutes from './routes/visits.routes.js';
 import { subscribeToNotifications } from './services/sse.service.js';
 import { dbManager } from './lib/db-manager.js';
 import { performanceMiddleware } from './lib/performance-middleware.js';
@@ -200,6 +202,8 @@ app.use('/api/requests', adminRequestsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/backups', backupRoutes);
+app.use('/api/user/theme', userThemeRoutes);
+app.use('/api/visits', visitsRoutes);
 app.get('/api/notifications/stream', subscribeToNotifications);
 
 // Servir archivos estáticos del frontend (Vite build)

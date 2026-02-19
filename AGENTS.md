@@ -146,7 +146,7 @@ backend/src/
 
 ## 4. Features Map
 
-### Sistema de Módulos (16 Features)
+### Sistema de Módulos (18 Features)
 
 | Feature | Descripción | Endpoints | Componentes Clave |
 | --------- | ------------- | ----------- | ------------------- |
@@ -159,12 +159,14 @@ backend/src/
 | **enrollment** | Inscripciones | `/api/enrollments` | EnrollmentForm, EnrollmentTable |
 | **pre-enrollment** | Pre-inscripciones | `/api/pre-enrollments` | PreEnrollmentForm |
 | **tracking** | Seguimiento de pasantías | `/api/tracking` | TrackingTable, VisitForm |
+| **evaluations** | Evaluaciones de prácticas | `/api/evaluations` | EvaluationModal, EvaluationsList |
 | **users** | Gestión de usuarios | `/api/users` | UserModal, UserTable |
 | **dashboard** | Estadísticas y métricas | `/api/dashboard` | StatCards, Charts |
+| **tutor** | Panel de tutor | `/api/tutor/*` | TutorDashboard, TutorStudents |
+| **student** | Panel de estudiante | `/api/student/*` | StudentDashboard, StudentRequests |
 | **internship-home** | Landing page pública | - | HeroSection, Features |
 | **internship-types** | Tipos de pasantías | `/api/internship-types` | TypeModal, TypeTable |
 | **lists** | Configuración de listas | `/api/lists` | ListConfig |
-| **crudTemplate** | Template para nuevos features | - | Ejemplo CRUD completo |
 | **types** | Tipos compartidos | - | TypeScript definitions |
 
 

@@ -59,7 +59,7 @@ export default function TutorViewModal({
     if (!tutor) return null;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} isFullscreen={true} showCloseButton>
+        <Modal isOpen={isOpen} onClose={onClose} size="5xl" showCloseButton>
             <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">Detalles Completos del Tutor</ModalHeader>
             <ModalBody className="overflow-y-auto custom-scrollbar grow px-6 sm:px-12 py-8">
                 <div className="space-y-12 max-w-5xl mx-auto py-2">

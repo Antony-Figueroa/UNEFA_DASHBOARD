@@ -46,7 +46,7 @@ export default function InternshipTypeViewModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} isFullscreen={true} showCloseButton>
+    <Modal isOpen={isOpen} onClose={onClose} size="5xl" showCloseButton>
       <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">Detalles del Tipo de Práctica</ModalHeader>
       
       <ModalBody className="overflow-y-auto custom-scrollbar grow px-6 sm:px-12 py-8">

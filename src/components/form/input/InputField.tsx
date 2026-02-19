@@ -15,6 +15,8 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   leftIcon?: React.ReactNode;
   /** Icono opcional a la derecha del input. */
   rightIcon?: React.ReactNode;
+  /** Indica si es un campo de contraseña (preserva mayúsculas/minúsculas incluso cuando se muestra) */
+  isPassword?: boolean;
 }
 
 /**
@@ -43,12 +45,13 @@ const InputField = forwardRef<HTMLInputElement, InputProps>(
       hint,
       leftIcon,
       rightIcon,
+      isPassword = false,
       onChange,
       ...props
     },
     ref
   ) => {
-    const shouldUppercase = type !== "password";
+    const shouldUppercase = type !== "password" && !isPassword;
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const input = e.currentTarget;
       if (shouldUppercase) {

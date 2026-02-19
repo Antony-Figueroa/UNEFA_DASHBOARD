@@ -106,7 +106,7 @@ const documentosRequeridos = [
 const AnimatedBackground: React.FC = () => {
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
-      <div className="absolute inset-0 bg-gradient-to-br from-bg-main via-white to-brand-50/30 dark:from-bg-dark dark:via-gray-900 dark:to-brand-950/20" />
+      <div className="absolute inset-0 bg-linear-to-br from-bg-main via-white to-brand-50/30 dark:from-bg-dark dark:via-gray-900 dark:to-brand-950/20" />
       
       <motion.div
         className="absolute top-0 right-1/4 w-[450px] h-[450px] rounded-full opacity-20 dark:opacity-8"
@@ -153,7 +153,7 @@ const PasantiasPage: React.FC = React.memo(() => {
 
       <main role="main" aria-label="Contenido principal">
         <SectionWrapper>
-          <section className="py-20 bg-gradient-to-br from-brand-500/10 via-brand-600/5 to-transparent">
+          <section className="py-20 bg-linear-to-br from-brand-500/10 via-brand-600/5 to-transparent">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
               <motion.h1 
                 className="text-4xl md:text-5xl font-bold text-text-emphasis mb-4"
@@ -193,7 +193,7 @@ const PasantiasPage: React.FC = React.memo(() => {
               </motion.div>
 
               <div className="relative">
-                <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-brand-500 via-brand-400 to-brand-500 opacity-20"></div>
+                <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-0.5 bg-linear-to-b from-brand-500 via-brand-400 to-brand-500 opacity-20"></div>
                 
                 <div className="space-y-12">
                   {pasosProceso.map((paso, index) => (

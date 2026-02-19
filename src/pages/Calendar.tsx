@@ -171,9 +171,9 @@ const Calendar: React.FC = () => {
         >
           <ModalHeader>
             <div>
-              <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+              <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
                 {selectedEvent ? "Editar Evento" : "Añadir Evento"}
-              </h5>
+              </span>
               <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
                 Planifica tu próximo gran momento: programa o edita un evento para mantenerte al día
               </p>

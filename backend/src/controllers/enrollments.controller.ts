@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
 import { cacheManager } from '../lib/cache-manager.js';
 
@@ -466,11 +467,13 @@ export const deleteEnrollment = async (req: Request, res: Response) => {
   }
 };
 
-export const getPracticesForEvaluation = async (req: Request, res: Response) => {
+export const getPracticesForEvaluation = async (req: AuthRequest, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
+    const userRole = req.user?.role;
+    const userId = req.user?.userId;
     
-    const { data, error } = await supabase
+    let query = supabase
       .from(TABLE_NAME)
       .select(`
         PROFESSIONAL_PRACTICE_ID,
@@ -485,14 +488,20 @@ export const getPracticesForEvaluation = async (req: Request, res: Response) => 
         ),
         t_institution (
           INSTITUTION_NAME
+        ),
+        t_professional_practices_tutor (
+          TUTOR_ID,
+          TUTOR_TYPE
         )
       `)
       .eq('STATUS', 1)
       .eq('PRACTICES_STATUS', 2);
 
+    const { data: allPractices, error } = await query;
+
     if (error) throw error;
 
-    const practices = (data || []).map((p: any) => {
+    let practices = (allPractices || []).map((p: any) => {
       const student = p.t_students;
       const studentName = student 
         ? `${student.NAME || ''} ${student.SECOND_NAME || ''} ${student.SURNAME || ''} ${student.SECOND_SURNAME || ''}`.trim().replace(/\s+/g, ' ')
@@ -504,9 +513,34 @@ export const getPracticesForEvaluation = async (req: Request, res: Response) => 
         studentName,
         institutionName: p.t_institution?.INSTITUTION_NAME || 'Sin institución',
         evaluationStatus: p.EVALUATION_STATUS || 'pending',
-        grade: p.GRADE
+        grade: p.GRADE,
+        tutorAssignments: p.t_professional_practices_tutor || []
       };
     });
+
+    if (userRole === 3 && userId) {
+      const { data: tutorData } = await supabase
+        .from('t_tutors')
+        .select('TUTOR_ID')
+        .eq('USER_ID', userId)
+        .single();
+      
+      if (tutorData) {
+        const tutorId = tutorData.TUTOR_ID;
+        practices = practices.filter((p: any) => 
+          p.tutorAssignments.some((t: any) => t.TUTOR_ID === tutorId)
+        );
+        practices = practices.map((p: any) => {
+          const { tutorAssignments, ...rest } = p;
+          return rest;
+        });
+      }
+    } else {
+      practices = practices.map((p: any) => {
+        const { tutorAssignments, ...rest } = p;
+        return rest;
+      });
+    }
 
     res.json({ success: true, data: practices });
   } catch (error) {

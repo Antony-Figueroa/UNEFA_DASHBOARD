@@ -425,9 +425,9 @@ export default function CrudExample() {
       >
         <ModalHeader>
           <div className="w-full">
-            <h4 className="mb-1 text-2xl font-semibold text-text-primary dark:text-white/90">
+            <span className="mb-1 text-2xl font-semibold text-text-primary dark:text-white/90">
               {editingItem ? "Editar registro" : "Nuevo registro"}
-            </h4>
+            </span>
             <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
               Completa la información del registro.
             </p>

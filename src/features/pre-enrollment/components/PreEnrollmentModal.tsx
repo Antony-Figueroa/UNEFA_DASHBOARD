@@ -585,9 +585,9 @@ export default function PreEnrollmentModal({
       <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl">
         <ModalHeader>
         <div className="max-w-4xl mx-auto w-full">
-          <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+          <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
             {editingEntry ? "Editar Preinscripción" : "Nueva Preinscripción"}
-          </h5>
+          </span>
           <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
             {editingEntry ? "Solo se puede modificar el período de la pre-inscripción." : "Ingresa los detalles para la nueva pre-inscripción."}
           </p>

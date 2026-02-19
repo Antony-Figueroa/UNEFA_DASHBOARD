@@ -155,9 +155,9 @@ const UserModal: React.FC<UserModalProps> = ({
     >
       <ModalHeader>
         <div className="max-w-4xl mx-auto w-full">
-          <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+          <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
             {user ? "Editar Usuario del Sistema" : "Registrar Nuevo Usuario"}
-          </h5>
+          </span>
           <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
             {user 
               ? "Modifica los detalles del usuario del sistema." 

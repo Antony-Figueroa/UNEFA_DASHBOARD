@@ -438,9 +438,9 @@ export default function StudentModal({
       <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl">
         <ModalHeader>
           <div className="w-full">
-            <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+            <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
               {editingStudent ? "Editar Estudiante" : "Registrar Estudiante"}
-            </h5>
+            </span>
             <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
               {editingStudent ? "Modifica los detalles del estudiante." : "Ingresa los detalles del nuevo estudiante."}
             </p>
@@ -970,9 +970,9 @@ export default function StudentModal({
     <Modal isOpen={isValueModalOpen} onClose={() => setIsValueModalOpen(false)}>
       <ModalHeader>
         <div className="w-full">
-          <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+          <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
             {valueModalTitle || "Agregar nuevo valor"}
-          </h5>
+          </span>
           <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
             Este valor se guardará en la lista: {targetListName}.
           </p>

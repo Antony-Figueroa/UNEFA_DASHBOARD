@@ -506,9 +506,9 @@ export default function EnrollmentModal({
       <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl">
         <ModalHeader>
         <div className="max-w-4xl mx-auto w-full">
-          <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+          <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
             {editingEntry ? "Editar Inscripción" : "Nueva Inscripción"}
-          </h5>
+          </span>
           <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
             {editingEntry ? "Modifica los detalles de la inscripción." : "Ingresa los detalles para la nueva inscripción."}
           </p>

@@ -80,6 +80,7 @@ const navItems: NavItem[] = [
       { name: "Pre-Inscripción", path: "/pre-enrollment" },
       { name: "Inscripción", path: "/enrollment" },
       { name: "Seguimiento", path: "/tracking" },
+      { name: "Evaluaciones", path: "/evaluations" },
       { name: "Culminación", path: "/culmination" },
     ],
   },

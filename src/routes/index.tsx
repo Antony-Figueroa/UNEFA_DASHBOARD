@@ -34,6 +34,8 @@ const StudentRequests = lazy(() => import("../pages/Student/StudentRequests"));
 
 const AdminRequests = lazy(() => import("../pages/Admin/AdminRequests"));
 
+const EvaluationsList = lazy(() => import("../pages/Evaluations/EvaluationsList"));
+
 const Calendar = lazy(() => import("../pages/Calendar"));
 const Blank = lazy(() => import("../pages/Blank"));
 const Students = lazy(() => import("../pages/Students/students"));
@@ -156,6 +158,7 @@ export const AppRoutes = () => {
             <Route path="/tracking" element={<TrackingPage />} />
             <Route path="/visit-registration" element={<VisitRegistration />} />
             <Route path="/culmination" element={<Culmination />} />
+            <Route path="/evaluations" element={<EvaluationsList />} />
 
             {/* Reports */}
             <Route path="/reports" element={<Reports />} />

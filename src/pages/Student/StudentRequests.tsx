@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
-import studentService, { StudentRequest, RequestType } from "../../features/student/services/studentService";
+import studentService from "../../features/student/services/studentService";
+import type { StudentRequest, RequestType } from "../../features/student/types";
 import Badge from "../../components/ui/badge/Badge";
 import Button from "../../components/ui/button/Button";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/modal";

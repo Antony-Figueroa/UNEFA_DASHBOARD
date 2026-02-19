@@ -4,7 +4,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import Button from "../../components/ui/button/Button";
 import CustomSelect from "../../components/form/CustomSelect";
-import { reportsService, CareerData, PeriodData, RecentReport } from "../../features/reports/services/reportsService";
+import { reportsService, CareerData, PeriodData, RecentReport, TutorAcademicReportRow } from "../../features/reports/services/reportsService";
 import toast from "react-hot-toast";
 
 interface ReportMetric {
@@ -24,6 +24,7 @@ export default function ReportsPage() {
   const [periodFilter, setPeriodFilter] = useState("");
   const [reportType, setReportType] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [exportingAnexo4, setExportingAnexo4] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -67,6 +68,75 @@ export default function ReportsPage() {
       toast.error('Error al generar el reporte');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleExportAnexo4 = async () => {
+    setExportingAnexo4(true);
+    try {
+      const response = await reportsService.getTutorsAcademicReport();
+      
+      if (!response.success || response.data.length === 0) {
+        toast.error('No hay datos para exportar');
+        return;
+      }
+
+      const data = response.data;
+      
+      const csvContent = [
+        [
+          'N°',
+          'REGIÓN',
+          'NÚCLEO',
+          'EXTENSIÓN',
+          'CARRERA',
+          'NOMBRE DEL TUTOR(A)',
+          'APELLIDO DEL TUTOR(A)',
+          'CÉDULA',
+          'CONDICIÓN',
+          'DEDICACIÓN',
+          'CATEGORÍA',
+          'TELÉFONO',
+          'CORREO ELECTRÓNICO',
+          'CANTIDAD DE ESTUDIANTES ATENDIDOS'
+        ].join('\t'),
+        ...data.map((row: TutorAcademicReportRow) => [
+          row.nro,
+          row.region,
+          row.nucleo,
+          row.extension,
+          row.carrera,
+          row.nombreTutor,
+          row.apellidoTutor,
+          row.cedula,
+          row.condicion,
+          row.dedicacion,
+          row.categoria,
+          row.telefono,
+          row.correo,
+          row.cantidadEstudiantes
+        ].join('\t'))
+      ].join('\n');
+
+      const BOM = '\uFEFF';
+      const blob = new Blob([BOM + csvContent], { type: 'text/vnd.ms-excel;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `ANEXO_4_RELACION_TUTORES_ACADEMICOS_${new Date().toISOString().split('T')[0]}.xls`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      await reportsService.generateReport('tutores-academicos', periodFilter, 'EXCEL');
+      toast.success('Reporte ANEXO 4 exportado exitosamente');
+      fetchData();
+    } catch (error) {
+      console.error('Error exporting ANEXO 4:', error);
+      toast.error('Error al exportar reporte ANEXO 4');
+    } finally {
+      setExportingAnexo4(false);
     }
   };
 
@@ -243,6 +313,7 @@ export default function ReportsPage() {
                     { value: "tracking", label: "Seguimiento" },
                     { value: "certificates", label: "Certificados" },
                     { value: "institutions", label: "Instituciones" },
+                    { value: "tutores-academicos", label: "ANEXO 4 - Tutores Académicos" },
                   ]}
                   value={reportType}
                   onChange={(e) => setReportType(e as unknown as string)}
@@ -266,13 +337,23 @@ export default function ReportsPage() {
                   className="w-full"
                 />
               </div>
-              <Button 
-                className="w-full" 
-                disabled={!reportType || generating}
-                onClick={handleGenerateReport}
-              >
-                {generating ? 'Generando...' : 'Generar Reporte'}
-              </Button>
+              {reportType === 'tutores-academicos' ? (
+                <Button 
+                  className="w-full" 
+                  disabled={exportingAnexo4}
+                  onClick={handleExportAnexo4}
+                >
+                  {exportingAnexo4 ? 'Exportando...' : 'Exportar ANEXO 4 (Excel)'}
+                </Button>
+              ) : (
+                <Button 
+                  className="w-full" 
+                  disabled={!reportType || generating}
+                  onClick={handleGenerateReport}
+                >
+                  {generating ? 'Generando...' : 'Generar Reporte'}
+                </Button>
+              )}
             </div>
           </ComponentCard>
 

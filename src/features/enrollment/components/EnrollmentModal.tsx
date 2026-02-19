@@ -28,6 +28,8 @@ import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import * as enrollmentService from "../services/enrollmentService";
 import { useLists } from "../../lists/hooks/useLists";
 import { generateMatricula } from "../../../utils/matricula";
+import { List } from "../../lists/types";
+import * as listsService from "../../lists/services/listsService";
 
 /**
  * Props for the EnrollmentModal component.
@@ -108,6 +110,14 @@ export default function EnrollmentModal({
   const { responsibles } = useInstitutionalResponsibles();
   const { fetchMultipleLists } = useLists();
 
+  // Estado para agregar nuevos valores a las listas
+  const [isValueModalOpen, setIsValueModalOpen] = useState(false);
+  const [valueModalTitle, setValueModalTitle] = useState<string>("");
+  const [targetListName, setTargetListName] = useState<string>("");
+  const [targetField, setTargetField] = useState<keyof EnrollmentFormData | "">("");
+  const [newValueInput, setNewValueInput] = useState<string>("");
+  const [savingNewValue, setSavingNewValue] = useState(false);
+
   const NATIONALITY_OPTIONS = options["Nacionalidad"] || [
     { value: "V", label: "V" },
     { value: "E", label: "E" },
@@ -178,6 +188,80 @@ export default function EnrollmentModal({
       loadOptions();
     }
   }, [isOpen, fetchMultipleLists]);
+
+  // Funciones para agregar nuevos valores a las listas
+  const openAddValueModal = (listName: string, field: keyof EnrollmentFormData, title: string) => {
+    setTargetListName(listName);
+    setTargetField(field);
+    setValueModalTitle(title);
+    setNewValueInput("");
+    setIsValueModalOpen(true);
+  };
+
+  const handleSaveNewValue = async () => {
+    const raw = newValueInput.trim();
+    if (!raw) return;
+    setSavingNewValue(true);
+    try {
+      let list: List | null = null;
+      try {
+        list = await listsService.getListByName(targetListName);
+      } catch (err: unknown) {
+        const status = (err as any)?.response?.status;
+        if (status === 404) {
+          const allLists = await listsService.getAllLists();
+          const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[_\s]+/g, " ").trim().toUpperCase();
+          const targetNorm = normalize(targetListName);
+          list = allLists.find(l => normalize(l.name) === targetNorm || normalize(l.name).includes(targetNorm) || targetNorm.includes(normalize(l.name))) || null;
+          if (!list) {
+            const createdList = await listsService.createList(targetListName);
+            list = createdList;
+          }
+        } else {
+          throw err;
+        }
+      }
+
+      const upper = raw.toUpperCase();
+
+      // Evitar duplicados
+      const existing = (list!.values || []).find((v: { name: any; abbreviation: any; }) => {
+        const byName = String(v.name || "").toUpperCase() === upper;
+        const byAbbr = String(v.abbreviation || "").toUpperCase() === upper;
+        return byName || byAbbr;
+      });
+
+      if (existing) {
+        const selectValue = (targetListName === "Nacionalidad" && existing.abbreviation)
+          ? String(existing.abbreviation).toUpperCase()
+          : String(existing.name).toUpperCase();
+        setValue(targetField as keyof EnrollmentFormData, selectValue, { shouldValidate: true, shouldDirty: true });
+        setIsValueModalOpen(false);
+        return;
+      }
+
+      const abbr = (targetListName === "Nacionalidad") ? upper : undefined;
+      const created = await listsService.createValue(list!.id, upper, abbr);
+      const mapped = {
+        value: (targetListName === "Nacionalidad" && created.abbreviation) ? created.abbreviation.toUpperCase() : upper,
+        label: (targetListName === "Nacionalidad" && created.abbreviation) ? created.abbreviation.toUpperCase() : upper
+      };
+
+      setOptions(prev => {
+        const next = { ...prev };
+        const arr = next[targetListName] || [];
+        next[targetListName] = [...arr, mapped];
+        return next;
+      });
+
+      setValue(targetField as keyof EnrollmentFormData, mapped.value, { shouldValidate: true, shouldDirty: true });
+      setIsValueModalOpen(false);
+    } catch (e) {
+      console.error("[EnrollmentModal] Error creando valor en lista:", e);
+    } finally {
+      setSavingNewValue(false);
+    }
+  };
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -454,6 +538,8 @@ export default function EnrollmentModal({
                         placeholder="Tipo"
                         disabled={!!editingEntry || !!initialData}
                         error={!!errors.identificationPrefix}
+                        onAddNew={() => openAddValueModal("Nacionalidad", "identificationPrefix", "Agregar Nacionalidad")}
+                        addNewLabel="Nueva opción"
                       />
                     )}
                   />
@@ -725,6 +811,52 @@ export default function EnrollmentModal({
       confirmLabel={editingEntry ? "Actualizar" : "Guardar"}
       isLoading={isLoading}
     />
+
+    {/* Modal para agregar nueva opción a la lista */}
+    <Modal
+      isOpen={isValueModalOpen}
+      onClose={() => setIsValueModalOpen(false)}
+      size="md"
+    >
+      <ModalHeader>{valueModalTitle}</ModalHeader>
+      <ModalBody>
+        <div className="space-y-4">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Nuevo valor
+          </label>
+          <Input
+            value={newValueInput}
+            onChange={(e) => setNewValueInput(e.target.value)}
+            placeholder="Ingrese el nuevo valor"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && newValueInput.trim() && !savingNewValue) {
+                handleSaveNewValue();
+              }
+            }}
+            autoFocus
+          />
+          <p className="text-xs text-gray-500">
+            Presione Enter o haga clic en Guardar para agregar el valor.
+          </p>
+        </div>
+      </ModalBody>
+      <ModalFooter>
+        <Button
+          variant="outline"
+          onClick={() => setIsValueModalOpen(false)}
+          disabled={savingNewValue}
+        >
+          Cancelar
+        </Button>
+        <AsyncButton
+          onClick={handleSaveNewValue}
+          loading={savingNewValue}
+          disabled={!newValueInput.trim()}
+        >
+          Guardar
+        </AsyncButton>
+      </ModalFooter>
+    </Modal>
   </>
 );
 }

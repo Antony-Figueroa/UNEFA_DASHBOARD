@@ -1,6 +1,6 @@
 # UNEFA Dashboard — Sistema de Gestión Académica 🎓
 
-[![Version](https://img.shields.io/badge/version-2.0.2-blue.svg)](https://github.com/Antony-Figueroa/UNEFA_DASHBOARD)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/Antony-Figueroa/UNEFA_DASHBOARD)
 [![React](https://img.shields.io/badge/React-19.0.0-61dafb.svg?logo=react)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7.2-3178c6.svg?logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.1.0-646cff.svg?logo=vite)](https://vitejs.dev/)
@@ -253,6 +253,22 @@ npm run storybook            # Iniciar Storybook (componentes UI)
 ---
 
 ## 📝 Changelog (Últimas Actualizaciones)
+
+### [2.1.0] - 2026-02-19
+
+#### Added
+- ✨ Sistema de Evaluaciones de Prácticas Profesionales
+  - 3 tipos de evaluación: Institucional (40%), Académico (30%), Comité (30%)
+  - 55 criterios de evaluación predefinidos (20 + 20 + 15 ítems)
+  - Escala de calificación 0-20 por criterio
+  - Cálculo automático de nota final ponderada
+  - Estado de evaluación por práctica (pendiente/parcial/completo)
+- ✨ Roles de TUTOR y ESTUDIANTE con dashboards dedicados
+- ✨ Sistema de notificaciones en tiempo real
+
+#### Changed
+- 🔄 Corregido culmination.controller para usar tabla correcta
+- 🔄 Agregado endpoint getPracticesForEvaluation
 
 ### [2.0.2] - 2026-02-15
 

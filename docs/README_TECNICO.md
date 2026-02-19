@@ -84,3 +84,43 @@ console.error("[FeatureName:ActionName]", error);
 - **Performance:** Minimización de re-renders mediante el uso estratégico de hooks.
 
 ---
+
+## 📋 Sistema de Evaluaciones de Prácticas
+
+El sistema incluye un módulo completo para la gestión de evaluaciones de prácticas profesionales.
+
+### Tipos de Evaluación
+
+| Tipo | Ponderación | Criterios | Descripción |
+|------|-------------|-----------|-------------|
+| **Institucional** | 40% | 20 ítems | Evaluación del tutor de la institución |
+| **Académico** | 30% | 20 ítems | Evaluación del tutor académico de la universidad |
+| **Comité** | 30% | 15 ítems | Evaluación del comité durante la defensa oral |
+
+### Estructura de Tablas
+
+```sql
+t_evaluation_criteria  -- Catálogo de 55 criterios predefinidos
+t_evaluation           -- Evaluaciones principales
+t_evaluation_detail    -- Detalles de cada ítem evaluado
+```
+
+### Escala de Calificación
+
+- **Rango**: 0 a 20 puntos por criterio
+- **Nota Final**: Promedio ponderado de las 3 evaluaciones
+- **Cálculo**: (Institucional × 0.40) + (Académico × 0.30) + (Comité × 0.30)
+
+### Endpoints del Sistema
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/api/evaluations/criteria` | Obtener criterios por tipo |
+| GET | `/api/evaluations` | Listar evaluaciones |
+| GET | `/api/evaluations/:id` | Obtener evaluación con detalles |
+| POST | `/api/evaluations` | Crear nueva evaluación |
+| PUT | `/api/evaluations/:id` | Actualizar evaluación |
+| DELETE | `/api/evaluations/:id` | Eliminar evaluación (soft delete) |
+| GET | `/api/evaluations/practice/:id/status` | Estado de evaluación por práctica |
+
+---

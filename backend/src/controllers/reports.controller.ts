@@ -212,7 +212,7 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
     const { periodId, careerId } = req.query;
     const supabase = dbManager.getConnection();
 
-    let practicesQuery = supabase
+    const { data: tutorPractices, error } = await supabase
       .from('t_professional_practices_tutor')
       .select(`
         TUTOR_ID,
@@ -234,25 +234,32 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
           PROFESSIONAL_PRACTICE_ID,
           PERIOD_ID,
           PRACTICES_STATUS,
-          t_career (
-            CAREER_ID,
-            CAREER_NAME,
-            CAREER_ABBREVIATION
-          ),
+          INSTITUTION_ID,
+          STUDENTS_ID,
           t_institution (
             INSTITUTION_ID,
             INSTITUTION_NAME,
             REGION,
             NUCLEUS,
             EXTENSION
+          ),
+          t_students (
+            STUDENTS_ID,
+            CAREER_ID,
+            t_career (
+              CAREER_ID,
+              CAREER_NAME,
+              CAREER_ABBREVIATION
+            )
           )
         )
       `)
       .eq('TUTOR_TYPE', 'ACADEMICO');
 
-    const { data: tutorPractices, error } = await practicesQuery;
-
-    if (error) throw error;
+    if (error) {
+      console.error('Error in query:', error);
+      throw error;
+    }
 
     const tutorMap = new Map<number, {
       tutor: any;
@@ -263,10 +270,11 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
       studentCount: number;
     }>();
 
-    (tutorPractices as any[])?.forEach((tp) => {
+    (tutorPractices as unknown as any[])?.forEach((tp) => {
       const tutor = tp.t_tutors;
       const practice = tp.t_professional_practices;
-      const career = practice?.t_career;
+      const student = practice?.t_students;
+      const career = student?.t_career;
       const institution = practice?.t_institution;
 
       if (!tutor || !practice) return;

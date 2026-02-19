@@ -15,21 +15,15 @@ const PeriodStatusCard: React.FC = () => {
 
     const showContent = isExpanded || isHovered || isMobileOpen;
 
-    // Lógica para encontrar el periodo actual o el próximo pendiente
+    // Lógica para encontrar SOLO el periodo actual "En Curso"
     const displayPeriod = useMemo(() => {
         if (!periodos || periodos.length === 0) return null;
 
-        // 1. Buscar periodo "En Curso" (periodStatus === 2)
+        // Buscar SOLO periodo "En Curso" (periodStatus === 2)
         const current = periodos.find((p) => p.periodStatus === 2 && p.status);
         if (current) return { ...current, type: 'current' as const };
 
-        // 2. Buscar el próximo "Pendiente" (periodStatus === 1)
-        const pending = [...periodos]
-            .filter((p) => p.periodStatus === 1 && p.status)
-            .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
-
-        if (pending.length > 0) return { ...pending[0], type: 'next' as const };
-
+        // Si no hay período en curso, retornar null (consistente con HomeQuickStats)
         return null;
     }, [periodos]);
 
@@ -49,15 +43,13 @@ const PeriodStatusCard: React.FC = () => {
                 <div
                     className={cn(
                         "p-2.5 rounded-xl border transition-colors",
-                        displayPeriod?.type === 'current'
+                        displayPeriod
                             ? "bg-success-50 border-success-100 text-success-600 dark:bg-success-500/10 dark:border-success-500/20 dark:text-success-400"
-                            : displayPeriod?.type === 'next'
-                                ? "bg-brand-50 border-brand-100 text-brand-600 dark:bg-brand-500/10 dark:border-brand-500/20 dark:text-brand-400"
-                                : "bg-gray-50 border-gray-100 text-gray-400 dark:bg-white/5 dark:border-white/10"
+                            : "bg-gray-50 border-gray-100 text-gray-400 dark:bg-white/5 dark:border-white/10"
                     )}
-                    title={displayPeriod ? (displayPeriod.type === 'current' ? `En Curso: ${displayPeriod.description}` : `Próximo: ${displayPeriod.description}`) : "Sin periodos"}
+                    title={displayPeriod ? `En Curso: ${displayPeriod.description}` : "Sin período en curso"}
                 >
-                    {displayPeriod?.type === 'current' ? <TimeIcon className="w-5 h-5" /> : <CalenderIcon className="w-5 h-5" />}
+                    {displayPeriod ? <TimeIcon className="w-5 h-5" /> : <CalenderIcon className="w-5 h-5" />}
                 </div>
             </div>
         );
@@ -71,35 +63,29 @@ const PeriodStatusCard: React.FC = () => {
                         <AlertIcon className="w-[18px] h-[18px]" />
                     </div>
                     <div>
-                        <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Periodo</p>
-                        <p className="text-sm font-medium text-gray-400 mt-0.5">No hay periodos activos</p>
+                        <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Período en curso</p>
+                        <p className="text-sm font-medium text-gray-400 mt-0.5">Sin período activo</p>
                     </div>
                 </div>
             </div>
         );
     }
 
-    const isCurrent = displayPeriod.type === 'current';
-
     return (
         <div
             className={cn(
                 "mx-4 mb-8 p-4 rounded-2xl border transition-all duration-300 shadow-sm hover:shadow-md group",
-                isCurrent
-                    ? "bg-success-50/30 border-success-100/50 dark:bg-success-500/5 dark:border-success-500/20"
-                    : "bg-unefa-gold/3 border-unefa-gold/20 dark:bg-unefa-gold/5 dark:border-unefa-gold/15"
+                "bg-success-50/30 border-success-100/50 dark:bg-success-500/5 dark:border-success-500/20"
             )}
         >
             <div className="flex items-start gap-3">
                 <div
                     className={cn(
                         "p-2.5 rounded-xl transition-transform group-hover:scale-110 duration-300",
-                        isCurrent
-                            ? "bg-success-100/80 text-success-700 dark:bg-success-500/20 dark:text-success-400"
-                            : "bg-unefa-gold/10 text-unefa-gold dark:bg-unefa-gold/20 dark:text-unefa-gold-light"
+                        "bg-success-100/80 text-success-700 dark:bg-success-500/20 dark:text-success-400"
                     )}
                 >
-                    {isCurrent ? <TimeIcon className="w-5 h-5" /> : <CalenderIcon className="w-5 h-5" />}
+                    <TimeIcon className="w-5 h-5" />
                 </div>
 
                 <div className="flex-1 min-w-0">
@@ -107,17 +93,15 @@ const PeriodStatusCard: React.FC = () => {
                         <p
                             className={cn(
                                 "text-[10px] font-bold uppercase tracking-widest",
-                                isCurrent ? "text-success-700 dark:text-success-400" : "text-unefa-gold dark:text-unefa-gold-light"
+                                "text-success-700 dark:text-success-400"
                             )}
                         >
-                            {isCurrent ? "Período Actual" : "Próximo Período"}
+                            Período en curso
                         </p>
-                        {isCurrent && (
-                            <span className="flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-success-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-success-500"></span>
-                            </span>
-                        )}
+                        <span className="flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-success-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-success-500"></span>
+                        </span>
                     </div>
 
                     <h4 className="text-sm font-bold text-text-primary dark:text-white mt-1 truncate">

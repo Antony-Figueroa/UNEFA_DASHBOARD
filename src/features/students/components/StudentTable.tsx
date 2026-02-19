@@ -8,6 +8,7 @@ import { useDebounce } from "../../../hooks/useDebounce";
 import Badge from "../../../components/ui/badge/Badge";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { CrudStatus } from "../../../hooks/useCrud";
+import { maskIdentification, maskPhone } from "../../../utils/maskData";
 
 /**
  * Genera un color consistente basado en el nombre de la carrera.
@@ -641,12 +642,12 @@ export default function StudentTable({
                                         </Tooltip>
                                     </TableCell>
                                     <TableCell className="table-cell font-medium text-text-primary dark:text-text-emphasis">
-                                        {s.identificationPrefix}-{s.identificationNumber}
+                                        {s.identificationPrefix}-{maskIdentification(s.identificationNumber)}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary font-semibold uppercase">
                                         {s.fullNames}
                                     </TableCell>
-                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary whitespace-nowrap">{s.phone}</TableCell>
+                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary whitespace-nowrap">{maskPhone(s.phone)}</TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">{s.email}</TableCell>
                                     <TableCell className="table-cell">
                                         {s.careerName ? (
@@ -715,7 +716,7 @@ export default function StudentTable({
                                             <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8">
                                                 {s.fullNames}
                                             </h3>
-                                            <p className="text-xs text-text-secondary dark:text-text-tertiary mt-1 truncate">{s.identificationPrefix}-{s.identificationNumber}</p>
+                                            <p className="text-xs text-text-secondary dark:text-text-tertiary mt-1 truncate">{s.identificationPrefix}-{maskIdentification(s.identificationNumber)}</p>
                                         </div>
                                         <button
                                             onClick={async () => toggleRowExpansion(rowId)}

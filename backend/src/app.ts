@@ -27,6 +27,11 @@ import configRoutes from './routes/config.routes.js';
 import culminationRoutes from './routes/culmination.routes.js';
 import manualsRoutes from './routes/manuals.routes.js';
 import rolesRoutes from './routes/roles.routes.js';
+import tutorDashboardRoutes from './routes/tutor-dashboard.routes.js';
+import studentDashboardRoutes from './routes/student-dashboard.routes.js';
+import adminRequestsRoutes from './routes/admin-requests.routes.js';
+import notificationsRoutes from './routes/notifications.routes.js';
+import { subscribeToNotifications } from './services/sse.service.js';
 import { dbManager } from './lib/db-manager.js';
 import { performanceMiddleware } from './lib/performance-middleware.js';
 import { authenticateToken, restrictAsistente } from './middlewares/auth.middleware.js';
@@ -187,6 +192,11 @@ app.use('/api/config', configRoutes);
 app.use('/api/culmination', culminationRoutes);
 app.use('/api/manuals', manualsRoutes);
 app.use('/api/roles', rolesRoutes);
+app.use('/api/tutor', tutorDashboardRoutes);
+app.use('/api/student', studentDashboardRoutes);
+app.use('/api/requests', adminRequestsRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.get('/api/notifications/stream', subscribeToNotifications);
 
 // Servir archivos estáticos del frontend (Vite build)
 // Intentar encontrar la carpeta dist en lugares comunes

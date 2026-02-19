@@ -1,11 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactElement } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import Button from "../../components/ui/button/Button";
 import CustomSelect from "../../components/form/CustomSelect";
 import { reportsService, CareerData, PeriodData, RecentReport, TutorAcademicReportRow } from "../../features/reports/services/reportsService";
+import { TablePreviewModal } from "../../components/ui/table/TablePreviewModal";
+import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
+import { StudentPDF } from "../../components/ui/pdf/templates/StudentPDF";
+import { TutorPDF } from "../../components/ui/pdf/templates/TutorPDF";
+import { InstitutionPDF } from "../../components/ui/pdf/templates/InstitutionPDF";
+import { EnrollmentPDF } from "../../components/ui/pdf/templates/EnrollmentPDF";
+import { getStudents } from "../../features/students/services/studentsService";
+import { getInstitutions } from "../../features/institutions/services/institutionsService";
+import { getEnrollments } from "../../features/enrollment/services/enrollmentService";
 import toast from "react-hot-toast";
+import { DocumentProps } from "@react-pdf/renderer";
 
 interface ReportMetric {
   label: string;
@@ -13,6 +23,8 @@ interface ReportMetric {
   change?: number;
   trend?: "up" | "down" | "stable";
 }
+
+type ReportType = "students" | "enrollments" | "tracking" | "certificates" | "institutions" | "tutores-academicos" | "";
 
 export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
@@ -22,9 +34,16 @@ export default function ReportsPage() {
   const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
   
   const [periodFilter, setPeriodFilter] = useState("");
-  const [reportType, setReportType] = useState("");
-  const [generating, setGenerating] = useState(false);
-  const [exportingAnexo4, setExportingAnexo4] = useState(false);
+  const [reportType, setReportType] = useState<ReportType>("");
+  
+  const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+  const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
+  const [tableData, setTableData] = useState<TutorAcademicReportRow[]>([]);
+  const [pdfData, setPdfData] = useState<unknown[]>([]);
+  const [pdfTemplate, setPdfTemplate] = useState<((data: unknown[]) => ReactElement<DocumentProps>) | null>(null);
+  const [tableSearchTerm, setTableSearchTerm] = useState("");
+  const [pdfSearchTerm, setPdfSearchTerm] = useState("");
+  const [loadingReport, setLoadingReport] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -52,95 +71,167 @@ export default function ReportsPage() {
     fetchData();
   }, [periodFilter]);
 
-  const handleGenerateReport = async () => {
+  const reportConfig: Record<Exclude<ReportType, "">, {
+    title: string;
+    subtitle: string;
+    loadTable?: () => Promise<TutorAcademicReportRow[]>;
+    loadPDF?: () => Promise<unknown[]>;
+    pdfTemplate: (data: unknown[]) => ReactElement<DocumentProps>;
+    columns: { header: string; accessor: keyof TutorAcademicReportRow | ((item: TutorAcademicReportRow) => React.ReactNode); className?: string }[];
+  }> = {
+    "students": {
+      title: "Reporte de Estudiantes",
+      subtitle: "Listado de estudiantes activos en el sistema",
+      loadPDF: async () => {
+        const response = await getStudents();
+        return response.data.filter((s: any) => s.status === true);
+      },
+      pdfTemplate: (data) => <StudentPDF data={data as any[]} />,
+      columns: [
+        { header: "Cédula", accessor: (s: any) => `${s.identificationPrefix}-${s.identificationNumber}` },
+        { header: "Nombre", accessor: (s: any) => `${s.firstName} ${s.lastName}` },
+        { header: "Carrera", accessor: "careerName" as any },
+      ]
+    },
+    "tutores-academicos": {
+      title: "ANEXO 4 - Relación de Tutores Académicos",
+      subtitle: "Reporte de tutores académicos y estudiantes atendidos",
+      loadTable: async () => {
+        const response = await reportsService.getTutorsAcademicReport();
+        return response.data;
+      },
+      pdfTemplate: (data) => <TutorPDF data={data as any[]} />,
+      columns: [
+        { header: "N°", accessor: "nro", className: "w-12 text-center" },
+        { header: "Región", accessor: "region" },
+        { header: "Núcleo", accessor: "nucleo" },
+        { header: "Extensión", accessor: "extension" },
+        { header: "Carrera", accessor: "carrera" },
+        { header: "Nombre", accessor: "nombreTutor" },
+        { header: "Apellido", accessor: "apellidoTutor" },
+        { header: "Cédula", accessor: "cedula" },
+        { header: "Condición", accessor: "condicion" },
+        { header: "Dedicación", accessor: "dedicacion" },
+        { header: "Categoría", accessor: "categoria" },
+        { header: "Teléfono", accessor: "telefono" },
+        { header: "Correo", accessor: "correo" },
+        { header: "Estudiantes", accessor: (row: TutorAcademicReportRow) => row.cantidadEstudiantes, className: "text-center font-bold" },
+      ]
+    },
+    "institutions": {
+      title: "Reporte de Instituciones",
+      subtitle: "Listado de instituciones registradas",
+      loadPDF: async () => {
+        const data = await getInstitutions();
+        return data.filter((i: any) => i.status === true);
+      },
+      pdfTemplate: (data) => <InstitutionPDF data={data as any[]} />,
+      columns: [
+        { header: "RIF", accessor: "institutionRif" as any },
+        { header: "Nombre", accessor: "institutionName" as any },
+        { header: "Región", accessor: "region" as any },
+      ]
+    },
+    "enrollments": {
+      title: "Reporte de Inscripciones",
+      subtitle: "Listado de inscripciones activas",
+      loadPDF: async () => {
+        const data = await getEnrollments();
+        return data.filter((e: any) => e.status === true);
+      },
+      pdfTemplate: (data) => <EnrollmentPDF data={data as any[]} />,
+      columns: [
+        { header: "Estudiante", accessor: "studentName" as any },
+        { header: "Carrera", accessor: "careerName" as any },
+        { header: "Período", accessor: "period" as any },
+      ]
+    },
+    "tracking": {
+      title: "Reporte de Seguimiento",
+      subtitle: "Seguimiento de prácticas profesionales",
+      loadPDF: async () => [],
+      pdfTemplate: (data) => <StudentPDF data={data as any[]} />,
+      columns: []
+    },
+    "certificates": {
+      title: "Reporte de Certificados",
+      subtitle: "Certificados emitidos",
+      loadPDF: async () => [],
+      pdfTemplate: (data) => <StudentPDF data={data as any[]} />,
+      columns: []
+    }
+  };
+
+  const handleOpenReport = async () => {
     if (!reportType) {
       toast.error('Selecciona un tipo de reporte');
       return;
     }
 
-    setGenerating(true);
+    const config = reportConfig[reportType];
+    if (!config) {
+      toast.error('Tipo de reporte no válido');
+      return;
+    }
+
+    setLoadingReport(true);
     try {
-      await reportsService.generateReport(reportType, periodFilter, 'PDF');
-      toast.success('Reporte generado exitosamente');
+      await reportsService.generateReport(reportType, periodFilter, config.loadTable ? 'EXCEL' : 'PDF');
+      
+      if (config.loadTable) {
+        const data = await config.loadTable();
+        setTableData(data);
+        setIsTableModalOpen(true);
+      } else if (config.loadPDF) {
+        const data = await config.loadPDF();
+        setPdfData(data);
+        setPdfTemplate(() => config.pdfTemplate);
+        setIsPDFModalOpen(true);
+      }
       fetchData();
     } catch (error) {
-      console.error('Error generating report:', error);
-      toast.error('Error al generar el reporte');
+      console.error('Error loading report:', error);
+      toast.error('Error al cargar el reporte');
     } finally {
-      setGenerating(false);
+      setLoadingReport(false);
     }
   };
 
-  const handleExportAnexo4 = async () => {
-    setExportingAnexo4(true);
-    try {
-      const response = await reportsService.getTutorsAcademicReport();
-      
-      if (!response.success || response.data.length === 0) {
-        toast.error('No hay datos para exportar');
-        return;
-      }
+  const exportTableToExcel = (data: TutorAcademicReportRow[], fileName: string) => {
+    const currentReportType = reportType;
+    const config = currentReportType ? reportConfig[currentReportType] : null;
+    if (!config) return;
 
-      const data = response.data;
-      
-      const csvContent = [
-        [
-          'N°',
-          'REGIÓN',
-          'NÚCLEO',
-          'EXTENSIÓN',
-          'CARRERA',
-          'NOMBRE DEL TUTOR(A)',
-          'APELLIDO DEL TUTOR(A)',
-          'CÉDULA',
-          'CONDICIÓN',
-          'DEDICACIÓN',
-          'CATEGORÍA',
-          'TELÉFONO',
-          'CORREO ELECTRÓNICO',
-          'CANTIDAD DE ESTUDIANTES ATENDIDOS'
-        ].join('\t'),
-        ...data.map((row: TutorAcademicReportRow) => [
-          row.nro,
-          row.region,
-          row.nucleo,
-          row.extension,
-          row.carrera,
-          row.nombreTutor,
-          row.apellidoTutor,
-          row.cedula,
-          row.condicion,
-          row.dedicacion,
-          row.categoria,
-          row.telefono,
-          row.correo,
-          row.cantidadEstudiantes
-        ].join('\t'))
-      ].join('\n');
+    const headers = config.columns.map(col => col.header);
+    const rows = data.map((row) => {
+      return config.columns.map(col => {
+        const value = typeof col.accessor === "function" ? col.accessor(row) : row[col.accessor as keyof TutorAcademicReportRow];
+        return value ?? "";
+      });
+    });
 
-      const BOM = '\uFEFF';
-      const blob = new Blob([BOM + csvContent], { type: 'text/vnd.ms-excel;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `ANEXO_4_RELACION_TUTORES_ACADEMICOS_${new Date().toISOString().split('T')[0]}.xls`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+    const csvContent = [
+      headers.join('\t'),
+      ...rows.map(row => row.join('\t'))
+    ].join('\n');
 
-      await reportsService.generateReport('tutores-academicos', periodFilter, 'EXCEL');
-      toast.success('Reporte ANEXO 4 exportado exitosamente');
-      fetchData();
-    } catch (error) {
-      console.error('Error exporting ANEXO 4:', error);
-      toast.error('Error al exportar reporte ANEXO 4');
-    } finally {
-      setExportingAnexo4(false);
-    }
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${fileName}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success('Reporte exportado exitosamente');
   };
 
   const maxValue = periodData.length > 0 ? Math.max(...periodData.map((d) => d.value)) : 1;
+
+  const currentConfig = reportType ? reportConfig[reportType] : null;
 
   return (
     <>
@@ -316,7 +407,7 @@ export default function ReportsPage() {
                     { value: "tutores-academicos", label: "ANEXO 4 - Tutores Académicos" },
                   ]}
                   value={reportType}
-                  onChange={(e) => setReportType(e as unknown as string)}
+                  onChange={(e) => setReportType(e as unknown as ReportType)}
                   className="w-full"
                 />
               </div>
@@ -337,23 +428,13 @@ export default function ReportsPage() {
                   className="w-full"
                 />
               </div>
-              {reportType === 'tutores-academicos' ? (
-                <Button 
-                  className="w-full" 
-                  disabled={exportingAnexo4}
-                  onClick={handleExportAnexo4}
-                >
-                  {exportingAnexo4 ? 'Exportando...' : 'Exportar ANEXO 4 (Excel)'}
-                </Button>
-              ) : (
-                <Button 
-                  className="w-full" 
-                  disabled={!reportType || generating}
-                  onClick={handleGenerateReport}
-                >
-                  {generating ? 'Generando...' : 'Generar Reporte'}
-                </Button>
-              )}
+              <Button 
+                className="w-full" 
+                disabled={!reportType || loadingReport}
+                onClick={handleOpenReport}
+              >
+                {loadingReport ? 'Cargando...' : `Ver Reporte de ${currentConfig?.title.split(' - ')[0] || '...'}`}
+              </Button>
             </div>
           </ComponentCard>
 
@@ -400,6 +481,34 @@ export default function ReportsPage() {
             )}
           </ComponentCard>
         </div>
+
+        {currentConfig && (
+          <TablePreviewModal<TutorAcademicReportRow>
+            isOpen={isTableModalOpen}
+            onClose={() => setIsTableModalOpen(false)}
+            title={currentConfig.title}
+            subtitle={currentConfig.subtitle}
+            data={tableData}
+            searchTerm={tableSearchTerm}
+            onSearchChange={setTableSearchTerm}
+            fileName={`${reportType}_${new Date().toISOString().split('T')[0]}`}
+            exportToExcel={exportTableToExcel}
+            columns={currentConfig.columns as any[]}
+          />
+        )}
+
+        {currentConfig && pdfTemplate && (
+          <PDFPreviewModal
+            isOpen={isPDFModalOpen}
+            onClose={() => setIsPDFModalOpen(false)}
+            title={currentConfig.title}
+            data={pdfData as any[]}
+            template={pdfTemplate as any}
+            fileName={`${reportType}_${new Date().toISOString().split('T')[0]}.pdf`}
+            searchTerm={pdfSearchTerm}
+            onSearchChange={setPdfSearchTerm}
+          />
+        )}
       </div>
     </>
   );

@@ -11,7 +11,8 @@ import Button from '../../components/ui/button/Button';
 import { PlusIcon } from '../../icons';
 
 export default function ActivityLogPage() {
-  const { practiceId } = useParams<{ practiceId: string }>();
+  const params = useParams();
+  const practiceId = params.practiceId as string | undefined;
   const { logs, loading, fetchLogs, createLog, updateLog, deleteLog, approveLog, stats } = useActivityLogs();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLog, setEditingLog] = useState<ActivityLog | null>(null);

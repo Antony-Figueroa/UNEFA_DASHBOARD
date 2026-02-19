@@ -147,8 +147,8 @@ export default function VisitRegistration() {
         <Button
           onClick={() => handleOpenModal()}
           className="flex items-center gap-2"
+          startIcon={<PlusIcon />}
         >
-          <PlusIcon className="w-5 h-5" />
           Nueva Visita
         </Button>
       </div>
@@ -288,6 +288,7 @@ export default function VisitRegistration() {
         practiceId={parseInt(id || '0')}
         tutorId={1}
         loading={loading}
+        mode="edit"
       />
 
       <UnifiedDialog

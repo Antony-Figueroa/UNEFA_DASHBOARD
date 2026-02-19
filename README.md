@@ -15,8 +15,9 @@
 - 🏢 **Gestión de Instituciones** - Control de instituciones asociadas y responsables
 - 📝 **Sistema de Inscripciones** - Pre-inscripciones e inscripciones con validaciones
 - 📊 **Seguimiento de Pasantías** - Tracking completo de visitas y actividades
+- 📋 **Sistema de Evaluaciones** - Evaluaciones ponderadas (Institucional 40%, Académico 30%, Comité 30%)
 - 🎓 **Gestión de Carreras** - Administración de programas académicos
-- 👥 **Sistema de Usuarios y Roles** - Control de acceso basado en roles
+- 👥 **Sistema de Usuarios y Roles** - Control de acceso basado en roles (Admin, Asistente, Tutor, Estudiante)
 - 📈 **Dashboard Analítico** - Visualización de estadísticas y métricas
 - 🎨 **Sistema de Diseño Moderno** - UI/UX premium con dark mode
 - 🔐 **Autenticación Segura** - JWT con cookies HTTP-only
@@ -81,12 +82,13 @@ UNEFA_DASHBOARD/
 │   │   ├── ui/             # Componentes atómicos (Button, Input, etc.)
 │   │   ├── form/           # Componentes de formulario
 │   │   └── common/         # Componentes compartidos
-│   ├── features/           # Módulos por funcionalidad (16 features)
+│   ├── features/           # Módulos por funcionalidad (18 features)
 │   │   ├── auth/           # Autenticación
 │   │   ├── periods/        # Periodos académicos
 │   │   ├── careers/        # Carreras
 │   │   ├── students/       # Estudiantes
 │   │   ├── enrollment/     # Inscripciones
+│   │   ├── evaluations/    # Sistema de evaluaciones
 │   │   └── ...             # Otros features
 │   ├── context/            # Contextos globales (Auth, Theme)
 │   ├── pages/              # Páginas de la aplicación

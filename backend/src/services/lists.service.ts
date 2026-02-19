@@ -7,36 +7,35 @@ const VALUES_TABLE = 't_value_list';
 const CACHE_PREFIX = 'lists:';
 const CACHE_TTL = 3600000;
 
-const PROTECTED_LISTS = [
-  'Sexo', 
-  'Registro Civil', 
-  'Nacionalidad', 
-  'Regimen/Turno', 
-  'Trabajo', 
-  'Tipo de empresa', 
-  'Rif', 
-  'Tipo de Practica', 
-  'Condicion', 
-  'Dedicacion', 
-  'Categoria', 
-  'Tipo de estudiante', 
-  'Rango Militar', 
-  'Estatus Pasantia', 
-  'Estatus Periodo', 
-  'Region', 
-  'Nucleo', 
-  'Extensión', 
-  'Traslado', 
-  'Profesión', 
-  'Carrera', 
-  'Roles', 
+// Nombres protegidos en mayúsculas para comparación case-insensitive
+const PROTECTED_LISTS_UPPER = [
+  'SEXO', 
+  'REGISTRO CIVIL', 
+  'NACIONALIDAD', 
+  'REGIMEN/TURNO', 
+  'TRABAJO', 
+  'TIPO DE EMPRESA', 
+  'RIF', 
+  'TIPO DE PRACTICA', 
+  'CONDICION', 
+  'DEDICACION', 
+  'CATEGORIA', 
+  'TIPO DE ESTUDIANTE', 
+  'RANGO MILITAR', 
+  'ESTATUS PASANTIA', 
+  'ESTATUS PERIODO', 
+  'REGION', 
+  'NUCLEO', 
+  'EXTENSION', 
+  'TRASLADO', 
+  'PROFESION', 
+  'CARRERA', 
+  'ROLES', 
   'CODIGOS_AREA'
 ];
 
 /**
  * Mapea un objeto de valor de la base de datos al formato de la aplicación.
- * @param v Objeto de valor de la base de datos (ValueListDB).
- * @returns Objeto de valor formateado para la aplicación.
  */
 const mapValue = (v: ValueListDB) => ({
   id: String(v.VALUE_LIST_ID),
@@ -47,9 +46,91 @@ const mapValue = (v: ValueListDB) => ({
 });
 
 /**
- * Obtiene todas las listas activas junto con sus valores.
- * Utiliza caché para mejorar el rendimiento.
- * @returns Promesa que resuelve a un array de AppList.
+ * Helper: Determina si un string es un ID numérico
+ */
+const isNumericId = (value: string): boolean => {
+  return /^\d+$/.test(value);
+};
+
+/**
+ * Helper: Busca una lista por ID o nombre (case-insensitive)
+ */
+const findListByIdentifier = async (supabase: any, identifier: string): Promise<ListDB | null> => {
+  // Si es numérico, buscar por ID
+  if (isNumericId(identifier)) {
+    const { data, error } = await supabase
+      .from(LISTS_TABLE)
+      .select('*')
+      .eq('LIST_ID', Number(identifier))
+      .limit(1);
+    
+    if (error) return null;
+    return (data && data.length > 0) ? data[0] : null;
+  }
+  
+  // Si no es numérico, buscar por nombre (case-insensitive)
+  const { data, error } = await supabase
+    .from(LISTS_TABLE)
+    .select('*')
+    .ilike('NAME', identifier)
+    .limit(1);
+  
+  if (error) return null;
+  return (data && data.length > 0) ? data[0] : null;
+};
+
+/**
+ * Helper: Busca múltiples listas por IDs o nombres (case-insensitive)
+ */
+const findListsByIdentifiers = async (supabase: any, identifiers: string[]): Promise<ListDB[]> => {
+  const numericIds: number[] = [];
+  const names: string[] = [];
+  
+  identifiers.forEach(id => {
+    if (isNumericId(id)) {
+      numericIds.push(Number(id));
+    } else {
+      names.push(id.toUpperCase());
+    }
+  });
+  
+  const results: ListDB[] = [];
+  
+  // Buscar por IDs numéricos
+  if (numericIds.length > 0) {
+    const { data, error } = await supabase
+      .from(LISTS_TABLE)
+      .select('LIST_ID, NAME, STATUS')
+      .in('LIST_ID', numericIds);
+    
+    if (!error && data) {
+      results.push(...data);
+    }
+  }
+  
+  // Buscar por nombres (case-insensitive usando ILIKE individual)
+  for (const name of names) {
+    const { data, error } = await supabase
+      .from(LISTS_TABLE)
+      .select('LIST_ID, NAME, STATUS')
+      .ilike('NAME', name);
+    
+    if (!error && data && data.length > 0) {
+      // Solo agregar si no está ya en los resultados
+      data.forEach((list: Pick<ListDB, 'LIST_ID' | 'NAME' | 'STATUS'>) => {
+        if (!results.find(r => r.LIST_ID === list.LIST_ID)) {
+          results.push(list as ListDB);
+        }
+      });
+    }
+  }
+  
+  return results;
+};
+
+/**
+ * Obtiene todas las listas junto con sus valores.
+ * Incluye tanto activas como inactivas para gestión.
  */
 export const getAllLists = async (): Promise<AppList[]> => {
   const cacheKey = `${CACHE_PREFIX}all`;
@@ -91,9 +172,6 @@ export const getAllLists = async (): Promise<AppList[]> => {
 
 /**
  * Crea una nueva lista en la base de datos.
- * Invalida el caché global de listas.
- * @param name Nombre de la nueva lista.
- * @returns Promesa que resuelve a la lista creada.
  */
 export const createList = async (name: string): Promise<AppList> => {
   const now = new Date().toISOString();
@@ -101,7 +179,7 @@ export const createList = async (name: string): Promise<AppList> => {
     const { data, error } = await supabase
       .from(LISTS_TABLE)
       .insert([{ 
-        NAME: name, 
+        NAME: name.toUpperCase(), 
         STATUS: 1,
         CREATION_DATE: now,
         MODIF_USER_ID: 0,
@@ -130,10 +208,6 @@ export const createList = async (name: string): Promise<AppList> => {
 
 /**
  * Actualiza el nombre de una lista existente.
- * Invalida el caché global de listas.
- * @param id ID de la lista a actualizar.
- * @param name Nuevo nombre para la lista.
- * @returns Promesa que resuelve a la lista actualizada.
  */
 export const updateList = async (id: string, name: string): Promise<AppList> => {
   const now = new Date().toISOString();
@@ -141,7 +215,7 @@ export const updateList = async (id: string, name: string): Promise<AppList> => 
     const { data, error } = await supabase
       .from(LISTS_TABLE)
       .update({ 
-        NAME: name,
+        NAME: name.toUpperCase(),
         MODIF_USER_ID: 0,
         MODIF_USER_DATE: now
       })
@@ -165,9 +239,6 @@ export const updateList = async (id: string, name: string): Promise<AppList> => 
 
 /**
  * Cambia el estado (activo/inactivo) de una lista.
- * Invalida el caché global de listas.
- * @param id ID de la lista.
- * @param status Nuevo estado de la lista.
  */
 export const toggleListStatus = async (id: string, status: boolean): Promise<void> => {
   const now = new Date().toISOString();
@@ -188,12 +259,10 @@ export const toggleListStatus = async (id: string, status: boolean): Promise<voi
 
 /**
  * Elimina una lista y todos sus valores asociados.
- * Invalida el caché global de listas.
- * @param id ID de la lista a eliminar.
  */
 export const deleteList = async (id: string): Promise<void> => {
   await dbManager.withRetry(async (supabase) => {
-    // Verificar si la lista es protegida
+    // Verificar si la lista es protegida (case-insensitive)
     const { data: listData, error: listError } = await supabase
       .from(LISTS_TABLE)
       .select('NAME')
@@ -202,14 +271,13 @@ export const deleteList = async (id: string): Promise<void> => {
 
     if (listError) throw listError;
     
-    if (PROTECTED_LISTS.includes(listData.NAME)) {
-      // Usar código 400 o un error personalizado para que el frontend lo maneje
+    if (PROTECTED_LISTS_UPPER.includes(listData.NAME.toUpperCase())) {
       const error: any = new Error(`No se puede eliminar la lista '${listData.NAME}' porque es una lista del sistema.`);
       error.code = '400';
       throw error;
     }
 
-    // Primero eliminar valores asociados
+    // Eliminar valores asociados
     const { error: valuesError } = await supabase
       .from(VALUES_TABLE)
       .delete()
@@ -229,8 +297,6 @@ export const deleteList = async (id: string): Promise<void> => {
 
 /**
  * Elimina un valor de lista específico.
- * Invalida el caché global de listas.
- * @param valueId ID del valor a eliminar.
  */
 export const deleteValue = async (valueId: string): Promise<void> => {
   await dbManager.withRetry(async (supabase) => {
@@ -246,21 +312,25 @@ export const deleteValue = async (valueId: string): Promise<void> => {
 
 /**
  * Crea un nuevo valor dentro de una lista específica.
- * Invalida el caché global de listas.
- * @param listId ID de la lista a la que pertenecerá el valor.
- * @param name Nombre del valor.
- * @param abbreviation Abreviación opcional del valor.
- * @returns Promesa que resuelve al valor creado.
+ * @param listIdOrName ID o nombre de la lista (case-insensitive)
  */
-export const createValue = async (listId: string, name: string, abbreviation?: string): Promise<AppList['values'][0]> => {
+export const createValue = async (listIdOrName: string, name: string, abbreviation?: string): Promise<AppList['values'][0]> => {
   const now = new Date().toISOString();
+  
   const data = await dbManager.withRetry(async (supabase) => {
+    // Buscar la lista por ID o nombre
+    const list = await findListByIdentifier(supabase, listIdOrName);
+    
+    if (!list) {
+      throw { code: '404', message: `Lista '${listIdOrName}' no encontrada` };
+    }
+
     const { data, error } = await supabase
       .from(VALUES_TABLE)
       .insert([{ 
-        LIST_ID: Number(listId), 
-        NAME: name, 
-        ABBREVIATION: abbreviation, 
+        LIST_ID: list.LIST_ID, 
+        NAME: name.toUpperCase(), 
+        ABBREVIATION: abbreviation?.toUpperCase(), 
         STATUS: 1,
         CREATION_DATE: now,
         MODIF_USER_ID: 0,
@@ -283,11 +353,6 @@ export const createValue = async (listId: string, name: string, abbreviation?: s
 
 /**
  * Actualiza un valor existente en una lista.
- * Invalida el caché global de listas.
- * @param valueId ID del valor a actualizar.
- * @param name Nuevo nombre para el valor.
- * @param abbreviation Nueva abreviación opcional.
- * @returns Promesa que resuelve al valor actualizado.
  */
 export const updateValue = async (valueId: string, name: string, abbreviation?: string): Promise<AppList['values'][0]> => {
   const now = new Date().toISOString();
@@ -295,8 +360,8 @@ export const updateValue = async (valueId: string, name: string, abbreviation?: 
     const { data, error } = await supabase
       .from(VALUES_TABLE)
       .update({ 
-        NAME: name, 
-        ABBREVIATION: abbreviation,
+        NAME: name.toUpperCase(), 
+        ABBREVIATION: abbreviation?.toUpperCase(),
         MODIF_USER_ID: 0,
         MODIF_USER_DATE: now
       })
@@ -314,9 +379,6 @@ export const updateValue = async (valueId: string, name: string, abbreviation?: 
 
 /**
  * Cambia el estado (activo/inactivo) de un valor de lista.
- * Invalida el caché global de listas.
- * @param valueId ID del valor.
- * @param status Nuevo estado del valor.
  */
 export const toggleValueStatus = async (valueId: string, status: boolean): Promise<void> => {
   const now = new Date().toISOString();
@@ -336,23 +398,16 @@ export const toggleValueStatus = async (valueId: string, status: boolean): Promi
 };
 
 /**
- * Obtiene una lista y sus valores filtrando por el nombre de la lista.
- * @param name Nombre de la lista a buscar.
- * @returns Promesa que resuelve a la lista encontrada con sus valores.
- * @throws Error 404 si la lista no existe.
+ * Obtiene una lista y sus valores por ID o nombre.
+ * @param idOrName ID numérico o nombre de la lista (case-insensitive)
  */
-export const getListByName = async (name: string) => {
+export const getListByName = async (idOrName: string) => {
   const data = await dbManager.withRetry(async (supabase) => {
-    const { data: list, error: listError } = await supabase
-      .from(LISTS_TABLE)
-      .select('*')
-      .eq('NAME', name)
-      .eq('STATUS', 1)
-      .single();
+    // Buscar por ID o nombre (case-insensitive)
+    const list = await findListByIdentifier(supabase, idOrName);
 
-    if (listError) {
-      if (listError.code === 'PGRST116') throw { code: '404', message: `Lista '${name}' no encontrada` };
-      throw listError;
+    if (!list) {
+      throw { code: '404', message: `Lista '${idOrName}' no encontrada` };
     }
 
     const { data: values, error: valuesError } = await supabase
@@ -365,6 +420,44 @@ export const getListByName = async (name: string) => {
 
     return { ...list, t_value_list: values || [] } as ListDB;
   }, 'getListByName');
+
+  const listData = data as ListDB;
+  return {
+    id: String(listData.LIST_ID),
+    name: listData.NAME,
+    status: listData.STATUS === 1,
+    values: (listData.t_value_list || []).map(mapValue)
+  };
+};
+
+/**
+ * Obtiene una lista por su ID.
+ */
+export const getListById = async (id: string): Promise<AppList | null> => {
+  const data = await dbManager.withRetry(async (supabase) => {
+    const { data: list, error: listError } = await supabase
+      .from(LISTS_TABLE)
+      .select('*')
+      .eq('LIST_ID', Number(id))
+      .single();
+
+    if (listError) {
+      if (listError.code === 'PGRST116') return null;
+      throw listError;
+    }
+
+    const { data: values, error: valuesError } = await supabase
+      .from(VALUES_TABLE)
+      .select('*')
+      .eq('LIST_ID', list.LIST_ID)
+      .eq('STATUS', 1);
+
+    if (valuesError) throw valuesError;
+
+    return { ...list, t_value_list: values || [] } as ListDB;
+  }, 'getListById');
+
+  if (!data) return null;
 
   const listData = data as ListDB;
   return {
@@ -397,31 +490,25 @@ export const ensurePhonePrefixesSeeded = async (): Promise<void> => {
     }
     cacheManager.delete(`${CACHE_PREFIX}all`);
   } catch {
+    // Silenciar errores
   }
 };
 
 /**
- * Obtiene múltiples listas por sus nombres de forma eficiente.
- * Utiliza caché basado en los nombres solicitados.
- * @param names Array de nombres de listas a buscar.
- * @returns Promesa que resuelve a un objeto con los nombres de las listas como llaves y sus valores como contenido.
+ * Obtiene múltiples listas por sus IDs o nombres.
+ * @param identifiers Array de IDs numéricos o nombres de listas (case-insensitive)
  */
-// Cache invalidation trigger - Fixed lists status in DB
-export const getMultipleListsByNames = async (names: string[]) => {
-  const cacheKey = `${CACHE_PREFIX}multiple:${names.sort().join(',')}`;
+export const getMultipleListsByNames = async (identifiers: string[]) => {
+  const cacheKey = `${CACHE_PREFIX}multiple:${identifiers.sort().join(',')}`;
   const cached = cacheManager.get<Record<string, AppList['values']> | null>(cacheKey);
   if (cached) return cached;
 
   const data = await dbManager.withRetry(async (supabase) => {
-    const { data: lists, error: listsError } = await supabase
-      .from(LISTS_TABLE)
-      .select('LIST_ID, NAME, STATUS')
-      .in('NAME', names)
-      .eq('STATUS', 1);
+    // Buscar listas por IDs o nombres
+    const lists = await findListsByIdentifiers(supabase, identifiers);
 
-    if (listsError) throw listsError;
-
-    const listIds = (lists || []).map((l: ListDB) => l.LIST_ID);
+    const listIds = lists.map((l: ListDB) => l.LIST_ID);
+    
     const { data: values, error: valuesError } = await supabase
       .from(VALUES_TABLE)
       .select('VALUE_LIST_ID, NAME, ABBREVIATION, LIST_ID, STATUS')
@@ -430,7 +517,7 @@ export const getMultipleListsByNames = async (names: string[]) => {
 
     if (valuesError) throw valuesError;
 
-    const mappedLists = (lists || []).map((list: ListDB) => ({
+    const mappedLists = lists.map((list: ListDB) => ({
       ...list,
       t_value_list: (values || []).filter((v: ValueListDB) => v.LIST_ID === list.LIST_ID)
     }));
@@ -439,8 +526,19 @@ export const getMultipleListsByNames = async (names: string[]) => {
   }, 'getMultipleListsByNames');
 
   const result: Record<string, AppList['values']> = {};
+  
+  // Mapear resultados a los identificadores originales
   (data as ListDB[]).forEach(list => {
-    result[list.NAME] = (list.t_value_list || []).map(mapValue);
+    // Buscar el identificador original que coincide
+    const originalIdentifier = identifiers.find(id => {
+      if (isNumericId(id)) {
+        return String(list.LIST_ID) === id;
+      }
+      return id.toUpperCase() === list.NAME.toUpperCase();
+    });
+    
+    const keyToUse = originalIdentifier || list.NAME;
+    result[keyToUse] = (list.t_value_list || []).map(mapValue);
   });
 
   cacheManager.set(cacheKey, result, CACHE_TTL);

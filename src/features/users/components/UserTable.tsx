@@ -9,6 +9,7 @@ import { EditIcon, TrashIcon, RefreshIcon, ChevronDownIcon } from "../../../icon
 import { UserRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import Badge from "../../../components/ui/badge/Badge";
+import { maskEmail } from "../../../utils/maskData";
 
 /**
  * Propiedades para el componente UserTable.
@@ -254,7 +255,7 @@ export default function UserTable({
                                     </TableCell>
                                     <TableCell className="table-cell font-medium uppercase">{user.userCi}</TableCell>
                                     <TableCell className="table-cell uppercase">{user.name} {user.surname}</TableCell>
-                                    <TableCell className="table-cell lowercase">{user.email}</TableCell>
+                                    <TableCell className="table-cell lowercase">{maskEmail(user.email)}</TableCell>
                                     <TableCell className="table-cell">
                                     <Badge color={user.role === 1 ? "error" : "info"} variant="light" size="sm">
                                             {rolesMap[user.role] || "USUARIO"}

@@ -15,6 +15,8 @@ export interface AuthRequest extends Request {
 export const ROLES = {
   ADMIN: 1,
   ASISTENTE: 2,
+  TUTOR: 3,
+  ESTUDIANTE: 4,
 };
 
 const expiredTokensLogged = new Set<string>();

@@ -149,6 +149,14 @@ const AppSidebar: React.FC = () => {
     [location.pathname]
   );
 
+  const hasActiveSubItem = useCallback(
+    (nav: NavItem) => {
+      if (!nav.subItems) return false;
+      return nav.subItems.some((subItem) => isActive(subItem.path));
+    },
+    [isActive]
+  );
+
   useEffect(() => {
     let submenuMatched = false;
     navItems.forEach((nav, index) => {
@@ -194,16 +202,22 @@ const AppSidebar: React.FC = () => {
           {nav.subItems ? (
             <button
               onClick={() => handleSubmenuToggle(index)}
-              className={`menu-item group ${openSubmenu === index
-                ? "menu-item-open"
-                : "menu-item-inactive"
+              className={`menu-item group ${
+                hasActiveSubItem(nav)
+                  ? "menu-item-has-active"
+                  : openSubmenu === index
+                  ? "menu-item-open"
+                  : "menu-item-inactive"
                 } cursor-pointer ${!isExpanded && !isHovered
                   ? "lg:justify-center"
                   : "lg:justify-start"
                 }`}
             >
               <span
-                className={`menu-item-icon-size  ${openSubmenu === index
+                className={`menu-item-icon-size  ${
+                  hasActiveSubItem(nav)
+                  ? "text-brand-600 dark:text-brand-300"
+                  : openSubmenu === index
                   ? "text-unefa-blue dark:text-white"
                   : "menu-item-icon-inactive"
                   }`}
@@ -215,7 +229,10 @@ const AppSidebar: React.FC = () => {
               )}
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
-                  className={`ml-auto icon-sm transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${openSubmenu === index
+                  className={`ml-auto icon-sm transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                    hasActiveSubItem(nav)
+                    ? "rotate-180 text-brand-600 dark:text-brand-300"
+                    : openSubmenu === index
                     ? "rotate-180 text-unefa-blue dark:text-white"
                     : ""
                     }`}

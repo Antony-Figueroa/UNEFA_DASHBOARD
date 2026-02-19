@@ -459,9 +459,9 @@ export default function InstitutionModal({
     <>
       <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl">
         <ModalHeader>
-          <h5 className="text-xl font-semibold text-text-primary dark:text-white/90">
+          <span className="text-xl font-semibold text-text-primary dark:text-white/90">
             {editingInst ? "Editar Institución" : "Registrar Institución"}
-          </h5>
+          </span>
           <p className="text-sm text-text-secondary">Complete la información de la institución.</p>
         </ModalHeader>
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">

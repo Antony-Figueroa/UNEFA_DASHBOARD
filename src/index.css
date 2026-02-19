@@ -330,6 +330,10 @@
   @apply bg-gray-50/80 text-unefa-blue border border-gray-100 dark:bg-white/5 dark:text-white dark:border-white/5;
 }
 
+@utility menu-item-has-active {
+  @apply bg-brand-50 text-brand-600 border border-brand-200 dark:bg-brand-900/30 dark:text-brand-300 dark:border-brand-700/50;
+}
+
 @utility menu-item-inactive {
   @apply text-text-secondary hover:bg-gray-50/70 hover:text-unefa-blue dark:text-text-tertiary dark:hover:bg-white/4 dark:hover:text-white transition-all duration-300 ease-in-out;
   &:hover {

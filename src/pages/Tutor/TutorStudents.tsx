@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import tutorService, { TutorStudent } from "../../features/tutor/services/tutorService";
 import Badge from "../../components/ui/badge/Badge";
-import { Search, Eye } from "lucide-react";
-import { Modal, ModalHeader, ModalBody } from "../../components/ui/modal";
+import Button from "../../components/ui/button/Button";
+import { Search, Eye, Calendar, FileText, ClipboardCheck } from "lucide-react";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/modal";
 
 const statusColors: Record<string, "success" | "warning" | "info" | "error" | "light"> = {
   "active": "success",
@@ -23,6 +25,7 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function TutorStudents() {
+  const navigate = useNavigate();
   const [students, setStudents] = useState<TutorStudent[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<TutorStudent[]>([]);
   const [loading, setLoading] = useState(true);

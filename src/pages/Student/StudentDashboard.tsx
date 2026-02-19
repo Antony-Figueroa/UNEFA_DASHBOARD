@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
-import studentService, { DashboardData } from "../../features/student/services/studentService";
+import studentService from "../../features/student/services/studentService";
+import type { DashboardData } from "../../features/student/types";
 import { User, Briefcase, FileText, Clock } from "lucide-react";
 import Badge from "../../components/ui/badge/Badge";
 

@@ -26,6 +26,7 @@ interface VisitModalProps {
   practiceId: number;
   tutorId: number;
   loading?: boolean;
+  mode?: 'edit' | 'view';
 }
 
 export default function VisitModal({
@@ -35,9 +36,10 @@ export default function VisitModal({
   visit,
   practiceId,
   tutorId,
-  loading = false
+  loading = false,
+  mode = 'edit'
 }: VisitModalProps) {
-  const isEditing = !!visit;
+  const isEditing = !!visit && mode === 'edit';
 
   const {
     register,

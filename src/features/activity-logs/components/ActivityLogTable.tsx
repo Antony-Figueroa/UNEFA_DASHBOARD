@@ -1,21 +1,27 @@
 import Badge from '../../../components/ui/badge/Badge';
 import type { BadgeColor } from '../../../components/ui/badge/Badge';
+import Button from '../../../components/ui/button/Button';
 import { ActivityLog } from '../types';
+import { EditIcon, TrashIcon, EyeIcon, CheckCircleIcon } from '../../../icons/actions';
 
 interface ActivityLogTableProps {
-  logs: ActivityLog[];
+  data: ActivityLog[];
   loading?: boolean;
   onEdit?: (log: ActivityLog) => void;
-  onDelete?: (id: number) => void;
-  onApprove?: (id: number) => void;
+  onDelete?: (log: ActivityLog) => void;
+  onView?: (log: ActivityLog) => void;
+  onApprove?: (log: ActivityLog) => void;
+  showStudent?: boolean;
 }
 
 export default function ActivityLogTable({ 
-  logs, 
+  data, 
   loading = false, 
   onEdit, 
   onDelete, 
-  onApprove 
+  onView,
+  onApprove,
+  showStudent = false
 }: ActivityLogTableProps) {
   
   const formatDate = (dateString: string) => {
@@ -43,7 +49,7 @@ export default function ActivityLogTable({
     );
   }
 
-  if (logs.length === 0) {
+  if (!data || data.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500 dark:text-gray-400">
@@ -58,96 +64,62 @@ export default function ActivityLogTable({
       <table className="w-full">
         <thead>
           <tr className="border-b border-gray-200 dark:border-gray-700">
-            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">
-              Fecha
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">
-              Estudiante
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">
-              Tipo
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">
-              Horas
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">
-              Descripción
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600 dark:text-gray-300">
-              Estado
-            </th>
-            <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600 dark:text-gray-300">
-              Acciones
-            </th>
+            {showStudent && (
+              <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Estudiante</th>
+            )}
+            <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Fecha</th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Semana</th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Tipo</th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Horas</th>
+            <th className="text-left py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Estado</th>
+            <th className="text-right py-3 px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Acciones</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-          {logs.map((log) => {
+        <tbody>
+          {data.map((log) => {
             const typeBadge = getTypeBadge(log.activityType);
-            
             return (
-              <tr 
-                key={log.activityLogId}
-                className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-              >
-                <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                  {formatDate(log.activityDate)}
+              <tr key={log.activityLogId} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                {showStudent && (
+                  <td className="py-3 px-4">
+                    <div className="font-medium">{log.studentName || 'Estudiante'}</div>
+                    <div className="text-xs text-gray-500">{log.studentCi}</div>
+                  </td>
+                )}
+                <td className="py-3 px-4">{formatDate(log.activityDate)}</td>
+                <td className="py-3 px-4">{log.weekNumber || '-'}</td>
+                <td className="py-3 px-4">
+                  <Badge color={typeBadge.color} variant="light">{typeBadge.label}</Badge>
                 </td>
-                <td className="px-4 py-3">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                      {log.studentName || 'Sin nombre'}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {log.studentCi || ''}
-                    </p>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <Badge color={typeBadge.color}>
-                    {typeBadge.label}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                  {log.hoursWorked}h
-                </td>
-                <td className="px-4 py-3">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-xs">
-                    {log.activityDescription}
-                  </p>
-                </td>
-                <td className="px-4 py-3">
+                <td className="py-3 px-4 font-semibold text-brand-500">{log.hoursWorked}h</td>
+                <td className="py-3 px-4">
                   {log.supervisorApproved ? (
-                    <Badge color="success">Aprobado</Badge>
+                    <Badge color="success" variant="light">Aprobado</Badge>
                   ) : (
-                    <Badge color="warning">Pendiente</Badge>
+                    <Badge color="warning" variant="light">Pendiente</Badge>
                   )}
                 </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center justify-end gap-2">
-                    {onEdit && !log.supervisorApproved && (
-                      <button
-                        onClick={() => onEdit(log)}
-                        className="text-brand-600 hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-300 text-sm font-medium"
-                      >
-                        Editar
-                      </button>
+                <td className="py-3 px-4">
+                  <div className="flex justify-end gap-2">
+                    {onView && (
+                      <Button size="sm" variant="outline" onClick={() => onView(log)}>
+                        <EyeIcon className="w-4 h-4" />
+                      </Button>
                     )}
-                    {onApprove && !log.supervisorApproved && (
-                      <button
-                        onClick={() => onApprove(log.activityLogId)}
-                        className="text-success-600 hover:text-success-800 dark:text-success-400 dark:hover:text-success-300 text-sm font-medium"
-                      >
-                        Aprobar
-                      </button>
+                    {!log.supervisorApproved && onApprove && (
+                      <Button size="sm" variant="outline" onClick={() => onApprove(log)} className="text-green-600">
+                        <CheckCircleIcon className="w-4 h-4" />
+                      </Button>
                     )}
-                    {onDelete && !log.supervisorApproved && (
-                      <button
-                        onClick={() => onDelete(log.activityLogId)}
-                        className="text-error-600 hover:text-error-800 dark:text-error-400 dark:hover:text-error-300 text-sm font-medium"
-                      >
-                        Eliminar
-                      </button>
+                    {onEdit && (
+                      <Button size="sm" variant="outline" onClick={() => onEdit(log)}>
+                        <EditIcon className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {onDelete && (
+                      <Button size="sm" variant="outline" onClick={() => onDelete(log)} className="text-red-600">
+                        <TrashIcon className="w-4 h-4" />
+                      </Button>
                     )}
                   </div>
                 </td>

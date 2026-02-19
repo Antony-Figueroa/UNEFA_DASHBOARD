@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import * as authService from '../services/auth.service.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { validatePassword } from '../utils/security.utils.js';
+import { getConfig } from '../services/config.service.js';
 
 const handleAuthError = (res: Response, error: unknown) => {
   console.error('Auth Error:', error);
@@ -10,6 +11,12 @@ const handleAuthError = (res: Response, error: unknown) => {
     message: 'Error en el proceso de autenticación',
     error: errorMessage
   });
+};
+
+const getSessionMaxAge = async (): Promise<number> => {
+  const config = await getConfig();
+  const minutes = config?.KEY_LEGTH || 60;
+  return minutes * 60 * 1000;
 };
 
 export const login = async (req: Request, res: Response) => {
@@ -44,11 +51,13 @@ export const login = async (req: Request, res: Response) => {
     if (result.token) {
       console.log(`[Auth] Generando cookie de sesión para CI: ${userCi}`);
       
+      const maxAge = await getSessionMaxAge();
+      
       res.cookie('auth_token', result.token, {
         httpOnly: true,
-        secure: true, // Siempre true para permitir cross-site en HTTPS
-        sameSite: 'none', // Requerido para que Vercel pueda enviar la cookie a Render
-        maxAge: 60 * 60 * 1000, // 1 hora
+        secure: true,
+        sameSite: 'none',
+        maxAge,
         path: '/'
       });
     }
@@ -187,6 +196,15 @@ export const requestPasswordReset = async (req: Request, res: Response) => {
   }
 
   try {
+    const config = await getConfig();
+    
+    if (config?.RECOVERY_EMAIL !== 1) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'La recuperación de contraseña por correo electrónico está deshabilitada. Contacte al administrador.' 
+      });
+    }
+
     const result = await authService.requestPasswordReset(email, ip, userAgent);
     if (!result.success) {
       return res.status(result.status || 400).json(result);
@@ -250,23 +268,25 @@ export const refreshSession = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ success: false, message: 'Sesión no válida' });
     }
 
-    // Generar nuevo token con tiempo extendido
     const newToken = authService.generateRefreshToken({ userId, userCi, role });
+    const maxAge = await getSessionMaxAge();
 
-    // Actualizar cookie
     res.cookie('auth_token', newToken, {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
-      maxAge: 60 * 60 * 1000, // 1 hora
+      maxAge,
       path: '/'
     });
+
+    const config = await getConfig();
+    const sessionMinutes = config?.KEY_LEGTH || 60;
 
     console.log(`[Auth] Sesión renovada para CI: ${userCi}`);
     res.json({ 
       success: true, 
       message: 'Sesión renovada exitosamente',
-      expiresIn: '1h'
+      expiresIn: `${sessionMinutes}m`
     });
   } catch (error) {
     console.error(`[Auth] Error al renovar sesión:`, error);
@@ -281,7 +301,7 @@ export const changePassword = async (req: Request, res: Response) => {
     return res.status(400).json({ message: 'ID de usuario y nueva contraseña son requeridos' });
   }
 
-  const passwordValidation = validatePassword(newPassword);
+  const passwordValidation = await validatePassword(newPassword);
   if (!passwordValidation.isValid) {
     return res.status(400).json({ message: passwordValidation.message });
   }
@@ -301,7 +321,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     return res.status(400).json({ message: 'ID de usuario y nueva contraseña son requeridos' });
   }
 
-  const passwordValidation = validatePassword(newPassword);
+  const passwordValidation = await validatePassword(newPassword);
   if (!passwordValidation.isValid) {
     return res.status(400).json({ message: passwordValidation.message });
   }

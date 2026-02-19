@@ -144,16 +144,22 @@ export const login = async (userCi: string, password: string, ip: string, userAg
 
     if (!isMatch) {
       const newFailedAttempts = (user.FAILED_ATTEMPTS || 0) + 1;
-      const MAX_ATTEMPTS = 5; 
+      
+      const { data: configData } = await supabase
+        .from('t_config')
+        .select('ATTEMPTS_KEY_BLOCK, BLOCKING_DAYS')
+        .eq('CONFIG_ID', 1)
+        .single();
+      
+      const MAX_ATTEMPTS = (configData as any)?.ATTEMPTS_KEY_BLOCK || 5;
+      const BLOCKING_DAYS = (configData as any)?.BLOCKING_DAYS || 1;
       const attemptsRemaining = MAX_ATTEMPTS - newFailedAttempts;
       
-      // Intentar actualizar intentos fallidos solo si la columna existe
       try {
         if (newFailedAttempts >= MAX_ATTEMPTS) {
-          const lockUntil = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+          const lockUntil = new Date(Date.now() + BLOCKING_DAYS * 24 * 60 * 60 * 1000).toISOString();
           const updateData: Partial<UserRow> = { STATUS: 0 };
           
-          // Solo agregar columnas si existen (basado en el error previo o verificando esquema)
           if ('FAILED_ATTEMPTS' in user) updateData.FAILED_ATTEMPTS = newFailedAttempts;
           if ('LOCK_DATE' in user) updateData.LOCK_DATE = lockUntil;
           
@@ -161,13 +167,13 @@ export const login = async (userCi: string, password: string, ip: string, userAg
           
           await logAuthAction(user.USER_ID, userCi, 'ACCOUNT_LOCKED', ip, userAgent, `Máximo de intentos alcanzado. Bloqueado hasta ${lockUntil}`);
           
-          // Notificar bloqueo de cuenta
           sendSecurityAlert(user.EMAIL, user.NAME, 'ACCOUNT_LOCKED', ip).catch(console.error);
 
+          const daysText = BLOCKING_DAYS === 1 ? '1 día' : `${BLOCKING_DAYS} días`;
           return { 
             success: false, 
             status: 403, 
-            message: 'Cuenta bloqueada por demasiados intentos fallidos. Intente de nuevo en 30 minutos.' 
+            message: `Cuenta bloqueada por demasiados intentos fallidos. Intente de nuevo en ${daysText}.` 
           };
         } else {
           if ('FAILED_ATTEMPTS' in user) {
@@ -175,7 +181,6 @@ export const login = async (userCi: string, password: string, ip: string, userAg
           }
           await logAuthAction(user.USER_ID, userCi, 'LOGIN_FAILED', ip, userAgent, `Intento fallido ${newFailedAttempts}/${MAX_ATTEMPTS}`);
           
-          // Notificar intento fallido (opcional, tal vez solo después de N intentos)
           if (newFailedAttempts >= 3) {
             sendSecurityAlert(user.EMAIL, user.NAME, 'FAILED_ATTEMPT', ip).catch(console.error);
           }

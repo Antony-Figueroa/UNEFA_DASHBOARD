@@ -56,6 +56,11 @@ export const configService = {
   getSystemHealth: async () => {
     const response = await apiClient.get('/config/health');
     return response.data as SystemHealth;
+  },
+
+  syncData: async () => {
+    const response = await apiClient.post('/config/sync');
+    return response.data as { success: boolean; message: string; tables: Record<string, { count: number; status: string }>; timestamp: string };
   }
 };
 

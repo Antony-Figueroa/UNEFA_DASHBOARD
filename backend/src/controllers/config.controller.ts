@@ -152,3 +152,59 @@ export const getSystemHealth = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error al verificar sistema', error });
   }
 };
+
+export const syncData = async (req: Request, res: Response) => {
+  try {
+    const supabase = dbManager.getConnection();
+    
+    const tables = [
+      't_students',
+      't_tutors', 
+      't_institution',
+      't_enrollment',
+      't_career',
+      't_internships_period',
+      't_tracking',
+      't_list'
+    ];
+    
+    const results: Record<string, { count: number; status: string }> = {};
+    
+    for (const table of tables) {
+      try {
+        const { count, error } = await supabase
+          .from(table)
+          .select('*', { count: 'exact', head: true });
+        
+        if (error) {
+          results[table] = { count: 0, status: 'error' };
+        } else {
+          results[table] = { count: count || 0, status: 'ok' };
+        }
+      } catch {
+        results[table] = { count: 0, status: 'error' };
+      }
+    }
+    
+    const userId = (req as any).user?.id;
+    await dbManager.getConnection()
+      .from('t_auth_log')
+      .insert({
+        USER_ID: userId,
+        ACTION: 'DATA_SYNC',
+        DETAILS: 'Sincronización de datos completada',
+        CREATED_AT: new Date().toISOString()
+      });
+
+    res.json({
+      success: true,
+      message: 'Sincronización completada exitosamente',
+      tables: results,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Sync Data Error:', error);
+    res.status(500).json({ message: 'Error al sincronizar datos', error });
+  }
+};

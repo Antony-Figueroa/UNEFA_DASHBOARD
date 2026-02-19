@@ -143,7 +143,7 @@ export default function UserPasswordCard() {
 
       <Modal isOpen={isOpen} onClose={handleClose} className="max-w-md">
         <ModalHeader>
-          <h2 className="text-lg font-semibold text-text-emphasis dark:text-white">Nueva Contraseña</h2>
+          Nueva Contraseña
         </ModalHeader>
         
         <ModalBody>
@@ -243,7 +243,7 @@ export default function UserPasswordCard() {
           </div>
         </ModalBody>
 
-        <ModalFooter className="!pt-2">
+        <ModalFooter className="pt-2!">
           <Button variant="outline" onClick={handleClose} disabled={loading}>Cancelar</Button>
           <Button 
             onClick={handleSaveAttempt} 

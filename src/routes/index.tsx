@@ -22,6 +22,18 @@ const Maintenance = lazy(() => import("../pages/Config/Maintenance"));
 const Culmination = lazy(() => import("../pages/Culmination/Culmination"));
 const Reports = lazy(() => import("../pages/Reports/Reports"));
 const Manuals = lazy(() => import("../pages/Manuals/Manuals"));
+
+const TutorDashboard = lazy(() => import("../pages/Tutor/TutorDashboard"));
+const TutorStudents = lazy(() => import("../pages/Tutor/TutorStudents"));
+const TutorTracking = lazy(() => import("../pages/Tutor/TutorTracking"));
+const TutorGrades = lazy(() => import("../pages/Tutor/TutorGrades"));
+const TutorReports = lazy(() => import("../pages/Tutor/TutorReports"));
+
+const StudentDashboard = lazy(() => import("../pages/Student/StudentDashboard"));
+const StudentRequests = lazy(() => import("../pages/Student/StudentRequests"));
+
+const AdminRequests = lazy(() => import("../pages/Admin/AdminRequests"));
+
 const Calendar = lazy(() => import("../pages/Calendar"));
 const Blank = lazy(() => import("../pages/Blank"));
 const Students = lazy(() => import("../pages/Students/students"));
@@ -148,8 +160,78 @@ export const AppRoutes = () => {
             {/* Reports */}
             <Route path="/reports" element={<Reports />} />
 
-            {/* Manuals */}
+{/* Manuals */}
             <Route path="/manuals" element={<Manuals />} />
+
+            {/* Tutor Dashboard - Only for Tutor role (3) */}
+            <Route
+              path="/tutor"
+              element={
+                <ProtectedRoute allowedRoles={[3]}>
+                  <TutorDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tutor/students"
+              element={
+                <ProtectedRoute allowedRoles={[3]}>
+                  <TutorStudents />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tutor/tracking"
+              element={
+                <ProtectedRoute allowedRoles={[3]}>
+                  <TutorTracking />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tutor/grades"
+              element={
+                <ProtectedRoute allowedRoles={[3]}>
+                  <TutorGrades />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tutor/reports"
+              element={
+                <ProtectedRoute allowedRoles={[3]}>
+                  <TutorReports />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Student Dashboard - Only for Student role (4) */}
+            <Route
+              path="/student"
+              element={
+                <ProtectedRoute allowedRoles={[4]}>
+                  <StudentDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/requests"
+              element={
+                <ProtectedRoute allowedRoles={[4]}>
+                  <StudentRequests />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Admin Requests - For Admin (1) and Asistente (2) */}
+            <Route
+              path="/admin/requests"
+              element={
+                <ProtectedRoute allowedRoles={[0, 1, 2]}>
+                  <AdminRequests />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Configuration - Only for Admin (Role 1) and Master (Role 0) */}
             <Route

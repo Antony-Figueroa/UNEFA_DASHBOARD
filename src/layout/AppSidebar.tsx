@@ -33,8 +33,30 @@ const navItems: NavItem[] = [
     path: "/dashboard",
   },
   {
+    name: "Panel de Tutor",
+    icon: <UserCircleIcon />,
+    roles: [3],
+    subItems: [
+      { name: "Dashboard", path: "/tutor" },
+      { name: "Mis Estudiantes", path: "/tutor/students" },
+      { name: "Seguimiento", path: "/tutor/tracking" },
+      { name: "Cargar Notas", path: "/tutor/grades" },
+      { name: "Reportes", path: "/tutor/reports" },
+    ],
+  },
+  {
+    name: "Panel de Estudiante",
+    icon: <UserCircleIcon />,
+    roles: [4],
+    subItems: [
+      { name: "Dashboard", path: "/student" },
+      { name: "Mis Solicitudes", path: "/student/requests" },
+    ],
+  },
+  {
     name: "Gestión",
     icon: <TableIcon />,
+    roles: [0, 1, 2],
     subItems: [
       { name: "Período", path: "/period" },
       { name: "Carrera", path: "/careers" },
@@ -43,6 +65,7 @@ const navItems: NavItem[] = [
   {
     name: "Registro",
     icon: <UserCircleIcon />,
+    roles: [0, 1, 2],
     subItems: [
       { name: "Estudiante", path: "/students" },
       { name: "Tutor", path: "/tutors" },
@@ -52,6 +75,7 @@ const navItems: NavItem[] = [
   {
     name: "Prácticas Profesionales",
     icon: <BoxCubeIcon />,
+    roles: [0, 1, 2],
     subItems: [
       { name: "Pre-Inscripción", path: "/pre-enrollment" },
       { name: "Inscripción", path: "/enrollment" },
@@ -60,8 +84,15 @@ const navItems: NavItem[] = [
     ],
   },
   {
+    name: "Solicitudes",
+    icon: <DocsIcon />,
+    roles: [0, 1, 2],
+    path: "/admin/requests",
+  },
+  {
     name: "Reportes",
     icon: <PieChartIcon />,
+    roles: [0, 1, 2],
     path: "/reports",
   },
   {

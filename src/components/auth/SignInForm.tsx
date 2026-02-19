@@ -150,6 +150,7 @@ export default function SignInForm() {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       autoComplete="current-password"
+                      isPassword
                     />
                     <button
                       type="button"

@@ -31,6 +31,7 @@ import tutorDashboardRoutes from './routes/tutor-dashboard.routes.js';
 import studentDashboardRoutes from './routes/student-dashboard.routes.js';
 import adminRequestsRoutes from './routes/admin-requests.routes.js';
 import notificationsRoutes from './routes/notifications.routes.js';
+import evaluationRoutes from './routes/evaluation.routes.js';
 import { subscribeToNotifications } from './services/sse.service.js';
 import { dbManager } from './lib/db-manager.js';
 import { performanceMiddleware } from './lib/performance-middleware.js';
@@ -196,6 +197,7 @@ app.use('/api/tutor', tutorDashboardRoutes);
 app.use('/api/student', studentDashboardRoutes);
 app.use('/api/requests', adminRequestsRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/evaluations', evaluationRoutes);
 app.get('/api/notifications/stream', subscribeToNotifications);
 
 // Servir archivos estáticos del frontend (Vite build)

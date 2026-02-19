@@ -465,3 +465,55 @@ export const deleteEnrollment = async (req: Request, res: Response) => {
     handleDbError(res, error);
   }
 };
+
+export const getPracticesForEvaluation = async (req: Request, res: Response) => {
+  try {
+    const supabase = dbManager.getConnection();
+    
+    const { data, error } = await supabase
+      .from(TABLE_NAME)
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        GRADE,
+        EVALUATION_STATUS,
+        t_students (
+          STUDENTS_CI,
+          NAME,
+          SECOND_NAME,
+          SURNAME,
+          SECOND_SURNAME
+        ),
+        t_institution (
+          INSTITUTION_NAME
+        )
+      `)
+      .eq('STATUS', 1)
+      .eq('PRACTICES_STATUS', 2);
+
+    if (error) throw error;
+
+    const practices = (data || []).map((p: any) => {
+      const student = p.t_students;
+      const studentName = student 
+        ? `${student.NAME || ''} ${student.SECOND_NAME || ''} ${student.SURNAME || ''} ${student.SECOND_SURNAME || ''}`.trim().replace(/\s+/g, ' ')
+        : 'Sin estudiante';
+      
+      return {
+        professionalPracticeId: p.PROFESSIONAL_PRACTICE_ID,
+        studentCi: student?.STUDENTS_CI || '',
+        studentName,
+        institutionName: p.t_institution?.INSTITUTION_NAME || 'Sin institución',
+        evaluationStatus: p.EVALUATION_STATUS || 'pending',
+        grade: p.GRADE
+      };
+    });
+
+    res.json({ success: true, data: practices });
+  } catch (error) {
+    console.error('[Enrollments] Error fetching practices for evaluation:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al obtener prácticas para evaluación' 
+    });
+  }
+};

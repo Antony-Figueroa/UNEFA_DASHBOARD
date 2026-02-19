@@ -22,19 +22,50 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
     const supabase = dbManager.getConnection();
     const { status, period, search } = req.query;
 
-    // 1. Obtener inscripciones activas
-    const { data: enrollments, error: enrollmentError } = await supabase
-      .from('t_enrollment')
-      .select('*')
+    const { data: practices, error: practicesError } = await supabase
+      .from('t_professional_practices')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        START_DATE,
+        END_DATE,
+        GRADE,
+        PRACTICES_STATUS,
+        EVALUATION_STATUS,
+        PERIOD_ID,
+        INSTITUTION_ID,
+        STUDENTS_ID,
+        INTERNSHIP_TYPE_ID,
+        STATUS,
+        t_students (
+          STUDENTS_CI,
+          NAME,
+          SECOND_NAME,
+          SURNAME,
+          SECOND_SURNAME,
+          CAREER_ID,
+          t_career (
+            CAREER_NAME
+          )
+        ),
+        t_institution (
+          INSTITUTION_NAME
+        ),
+        t_internships_period (
+          DESCRIPTION
+        ),
+        t_internship_type (
+          NAME
+        )
+      `)
       .eq('STATUS', 1);
 
-    if (enrollmentError) {
-      console.error('[Culmination] Error fetching enrollments:', enrollmentError);
-      res.status(500).json({ message: 'Error al obtener inscripciones', error: enrollmentError.message });
+    if (practicesError) {
+      console.error('[Culmination] Error fetching practices:', practicesError);
+      res.status(500).json({ message: 'Error al obtener prácticas', error: practicesError.message });
       return;
     }
 
-    if (!enrollments || enrollments.length === 0) {
+    if (!practices || practices.length === 0) {
       res.json({
         success: true,
         data: [],
@@ -43,110 +74,55 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
       return;
     }
 
-    // 2. Obtener IDs únicos para consultas relacionadas
-    const studentIds = [...new Set(enrollments.map((e: any) => e.STUDENT_ID).filter(Boolean))];
-    const careerIds = [...new Set(enrollments.map((e: any) => e.CAREER_ID).filter(Boolean))];
-    const institutionIds = [...new Set(enrollments.map((e: any) => e.INSTITUTION_ID).filter(Boolean))];
-    const periodIds = [...new Set(enrollments.map((e: any) => e.PERIOD_ID).filter(Boolean))];
-    const practiceTypeIds = [...new Set(enrollments.map((e: any) => e.PRACTICE_TYPE_ID).filter(Boolean))];
-    const enrollmentIds = enrollments.map((e: any) => e.ENROLLMENT_ID);
+    const practiceIds = practices.map((p: any) => p.PROFESSIONAL_PRACTICE_ID);
 
-    // 3. Consultas en paralelo
-    const [
-      studentsResult,
-      careersResult,
-      institutionsResult,
-      periodsResult,
-      practiceTypesResult,
-      trackingResult,
-      certificatesResult
-    ] = await Promise.all([
-      studentIds.length > 0 
-        ? supabase.from('t_students').select('STUDENT_ID, STUDENT_CI, NAME, SURNAME').in('STUDENT_ID', studentIds)
-        : { data: [], error: null },
-      careerIds.length > 0
-        ? supabase.from('t_career').select('CAREER_ID, CAREER_NAME').in('CAREER_ID', careerIds)
-        : { data: [], error: null },
-      institutionIds.length > 0
-        ? supabase.from('t_institution').select('INSTITUTION_ID, INSTITUTION_NAME').in('INSTITUTION_ID', institutionIds)
-        : { data: [], error: null },
-      periodIds.length > 0
-        ? supabase.from('t_internships_period').select('PERIOD_ID, DESCRIPTION').in('PERIOD_ID', periodIds)
-        : { data: [], error: null },
-      practiceTypeIds.length > 0
-        ? supabase.from('t_internship_type').select('INTERNSHIP_TYPE_ID, NAME').in('INTERNSHIP_TYPE_ID', practiceTypeIds)
-        : { data: [], error: null },
-      enrollmentIds.length > 0
-        ? supabase.from('t_tracking').select('ENROLLMENT_ID, HOURS_WORKED, TRACKING_DATE').eq('STATUS', 1).in('ENROLLMENT_ID', enrollmentIds)
-        : { data: [], error: null },
-      supabase.from('t_auth_log').select('USER_ID, DETAILS, CREATED_AT').eq('ACTION', 'CERTIFICATE_GENERATED')
-    ]);
+    const { data: tracking } = await supabase
+      .from('t_tracking')
+      .select('PROFESSIONAL_PRACTICE_ID, HOURS_WORKED, TRACKING_DATE')
+      .eq('STATUS', 1)
+      .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
 
-    // 4. Crear mapas para acceso rápido
-    const studentsMap = new Map((studentsResult.data || []).map((s: any) => [s.STUDENT_ID, s]));
-    const careersMap = new Map((careersResult.data || []).map((c: any) => [c.CAREER_ID, c]));
-    const institutionsMap = new Map((institutionsResult.data || []).map((i: any) => [i.INSTITUTION_ID, i]));
-    const periodsMap = new Map((periodsResult.data || []).map((p: any) => [p.PERIOD_ID, p]));
-    const practiceTypesMap = new Map((practiceTypesResult.data || []).map((pt: any) => [pt.INTERNSHIP_TYPE_ID, pt]));
-
-    // 5. Calcular horas por inscripción
     const hoursMap = new Map<number, { total: number; lastDate: string }>();
-    (trackingResult.data || []).forEach((t: any) => {
-      const existing = hoursMap.get(t.ENROLLMENT_ID) || { total: 0, lastDate: '' };
+    (tracking || []).forEach((t: any) => {
+      const existing = hoursMap.get(t.PROFESSIONAL_PRACTICE_ID) || { total: 0, lastDate: '' };
       existing.total += t.HOURS_WORKED || 0;
       if (t.TRACKING_DATE && (!existing.lastDate || t.TRACKING_DATE > existing.lastDate)) {
         existing.lastDate = t.TRACKING_DATE;
       }
-      hoursMap.set(t.ENROLLMENT_ID, existing);
+      hoursMap.set(t.PROFESSIONAL_PRACTICE_ID, existing);
     });
 
-    // 6. Crear mapa de certificados
-    const certificateMap = new Map<number, { number: string; date: string }>();
-    (certificatesResult.data || []).forEach((c: any) => {
-      const match = c.DETAILS?.match(/Certificado:\s*([A-Z0-9-]+)/);
-      if (match && c.USER_ID) {
-        certificateMap.set(c.USER_ID, {
-          number: match[1],
-          date: c.CREATED_AT
-        });
-      }
-    });
-
-    // 7. Construir registros
-    let records: CulminationRecord[] = enrollments.map((e: any) => {
-      const student = studentsMap.get(e.STUDENT_ID);
-      const career = careersMap.get(e.CAREER_ID);
-      const institution = institutionsMap.get(e.INSTITUTION_ID);
-      const periodData = periodsMap.get(e.PERIOD_ID);
-      const practiceType = practiceTypesMap.get(e.PRACTICE_TYPE_ID);
-      const tracking = hoursMap.get(e.ENROLLMENT_ID) || { total: 0, lastDate: '' };
-      const cert = student ? certificateMap.get(student.STUDENT_ID) : null;
+    let records: CulminationRecord[] = practices.map((p: any) => {
+      const student = p.t_students;
+      const career = student?.t_career;
+      const trackingData = hoursMap.get(p.PROFESSIONAL_PRACTICE_ID) || { total: 0, lastDate: '' };
+      
+      const studentName = student 
+        ? `${student.NAME || ''} ${student.SECOND_NAME || ''} ${student.SURNAME || ''} ${student.SECOND_SURNAME || ''}`.trim().replace(/\s+/g, ' ')
+        : '';
 
       let recordStatus: 'pending' | 'approved' | 'certified' = 'pending';
-      if (cert) {
-        recordStatus = 'certified';
-      } else if (tracking.total >= 360) {
+      if (p.EVALUATION_STATUS === 'completed' && p.GRADE && p.GRADE > 0) {
+        recordStatus = 'approved';
+      } else if (trackingData.total >= 360) {
         recordStatus = 'approved';
       }
 
       return {
-        id: String(e.ENROLLMENT_ID),
-        studentCi: student?.STUDENT_CI || '',
-        studentName: `${student?.NAME || ''} ${student?.SURNAME || ''}`.trim(),
+        id: String(p.PROFESSIONAL_PRACTICE_ID),
+        studentCi: student?.STUDENTS_CI || '',
+        studentName,
         careerName: career?.CAREER_NAME || '',
-        institutionName: institution?.INSTITUTION_NAME || '',
-        period: periodData?.DESCRIPTION || '',
-        practiceType: practiceType?.NAME || '',
-        startDate: e.ENROLLMENT_DATE || '',
-        endDate: tracking.lastDate || '',
-        totalHours: tracking.total,
-        status: recordStatus,
-        certificateNumber: cert?.number,
-        certifiedAt: cert?.date
+        institutionName: p.t_institution?.INSTITUTION_NAME || '',
+        period: p.t_internships_period?.DESCRIPTION || '',
+        practiceType: p.t_internship_type?.NAME || '',
+        startDate: p.START_DATE || '',
+        endDate: p.END_DATE || trackingData.lastDate || '',
+        totalHours: trackingData.total,
+        status: recordStatus
       };
     });
 
-    // 8. Aplicar filtros
     if (status && status !== 'all') {
       records = records.filter(r => r.status === status);
     }
@@ -162,7 +138,6 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
       );
     }
 
-    // 9. Responder
     res.json({
       success: true,
       data: records,
@@ -187,32 +162,28 @@ export const approveCulmination = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
     const { enrollmentId } = req.params;
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.userId;
 
-    // Obtener la inscripción
-    const { data: enrollment, error: fetchError } = await supabase
-      .from('t_enrollment')
-      .select('ENROLLMENT_ID, STUDENT_ID')
-      .eq('ENROLLMENT_ID', enrollmentId)
+    const { data: practice, error: fetchError } = await supabase
+      .from('t_professional_practices')
+      .select('PROFESSIONAL_PRACTICE_ID, STUDENTS_ID')
+      .eq('PROFESSIONAL_PRACTICE_ID', enrollmentId)
       .single();
 
-    if (fetchError || !enrollment) {
-      res.status(404).json({ message: 'Inscripción no encontrada' });
+    if (fetchError || !practice) {
+      res.status(404).json({ message: 'Práctica no encontrada' });
       return;
     }
 
-    // Registrar la aprobación
-    const { error: logError } = await supabase
-      .from('t_auth_log')
-      .insert({
-        USER_ID: (enrollment as any).STUDENT_ID || userId,
-        ACTION: 'CULMINATION_APPROVED',
-        DETAILS: `Práctica aprobada para inscripción ${enrollmentId}`,
-        CREATED_AT: new Date().toISOString()
-      });
+    const { error: updateError } = await supabase
+      .from('t_professional_practices')
+      .update({ PRACTICES_STATUS: 3 })
+      .eq('PROFESSIONAL_PRACTICE_ID', enrollmentId);
 
-    if (logError) {
-      console.error('[Culmination] Error logging approval:', logError);
+    if (updateError) {
+      console.error('[Culmination] Error updating practice:', updateError);
+      res.status(500).json({ message: 'Error al aprobar práctica' });
+      return;
     }
 
     res.json({
@@ -233,67 +204,53 @@ export const generateCertificate = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
     const { enrollmentId } = req.params;
-    const userId = (req as any).user?.id;
 
-    // Obtener datos de la inscripción
-    const { data: enrollment, error: fetchError } = await supabase
-      .from('t_enrollment')
-      .select('*')
-      .eq('ENROLLMENT_ID', enrollmentId)
+    const { data: practice, error: fetchError } = await supabase
+      .from('t_professional_practices')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        GRADE,
+        START_DATE,
+        END_DATE,
+        t_students (
+          STUDENTS_CI,
+          NAME,
+          SECOND_NAME,
+          SURNAME,
+          SECOND_SURNAME,
+          t_career ( CAREER_NAME )
+        ),
+        t_institution ( INSTITUTION_NAME ),
+        t_internships_period ( DESCRIPTION )
+      `)
+      .eq('PROFESSIONAL_PRACTICE_ID', enrollmentId)
       .single();
 
-    if (fetchError || !enrollment) {
-      res.status(404).json({ message: 'Inscripción no encontrada' });
+    if (fetchError || !practice) {
+      res.status(404).json({ message: 'Práctica no encontrada' });
       return;
     }
 
-    // Obtener datos relacionados
-    const studentId = (enrollment as any).STUDENT_ID;
-    const careerId = (enrollment as any).CAREER_ID;
-    const institutionId = (enrollment as any).INSTITUTION_ID;
-    const periodId = (enrollment as any).PERIOD_ID;
+    const student = (practice as any).t_students;
+    const studentName = student 
+      ? `${student.NAME || ''} ${student.SECOND_NAME || ''} ${student.SURNAME || ''} ${student.SECOND_SURNAME || ''}`.trim().replace(/\s+/g, ' ')
+      : '';
 
-    const [studentRes, careerRes, institutionRes, periodRes] = await Promise.all([
-      studentId ? supabase.from('t_students').select('STUDENT_ID, STUDENT_CI, NAME, SURNAME').eq('STUDENT_ID', studentId).single() : { data: null },
-      careerId ? supabase.from('t_career').select('CAREER_NAME').eq('CAREER_ID', careerId).single() : { data: null },
-      institutionId ? supabase.from('t_institution').select('INSTITUTION_NAME').eq('INSTITUTION_ID', institutionId).single() : { data: null },
-      periodId ? supabase.from('t_internships_period').select('DESCRIPTION').eq('PERIOD_ID', periodId).single() : { data: null }
-    ]);
-
-    const student = studentRes.data as any;
-    const career = careerRes.data as any;
-    const institution = institutionRes.data as any;
-    const period = periodRes.data as any;
-
-    // Generar número de certificado
     const year = new Date().getFullYear();
     const random = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
     const certificateNumber = `CERT-${year}-${random}`;
-
-    // Registrar el certificado
-    const { error: logError } = await supabase
-      .from('t_auth_log')
-      .insert({
-        USER_ID: student?.STUDENT_ID || userId,
-        ACTION: 'CERTIFICATE_GENERATED',
-        DETAILS: `Certificado: ${certificateNumber} - Estudiante: ${student?.NAME || ''} ${student?.SURNAME || ''} - Carrera: ${career?.CAREER_NAME || ''} - Institución: ${institution?.INSTITUTION_NAME || ''} - Período: ${period?.DESCRIPTION || ''}`,
-        CREATED_AT: new Date().toISOString()
-      });
-
-    if (logError) {
-      console.error('[Culmination] Error logging certificate:', logError);
-    }
 
     res.json({
       success: true,
       message: 'Certificado generado exitosamente',
       certificate: {
         number: certificateNumber,
-        studentName: `${student?.NAME || ''} ${student?.SURNAME || ''}`.trim(),
-        studentCi: student?.STUDENT_CI || '',
-        career: career?.CAREER_NAME || '',
-        institution: institution?.INSTITUTION_NAME || '',
-        period: period?.DESCRIPTION || '',
+        studentName,
+        studentCi: student?.STUDENTS_CI || '',
+        career: student?.t_career?.CAREER_NAME || '',
+        institution: (practice as any).t_institution?.INSTITUTION_NAME || '',
+        period: (practice as any).t_internships_period?.DESCRIPTION || '',
+        grade: (practice as any).GRADE,
         generatedAt: new Date().toISOString()
       }
     });

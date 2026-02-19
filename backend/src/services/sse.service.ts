@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/supabase.js";
 
 const clients: Map<number, Set<Response>> = new Map();
 
@@ -89,6 +89,30 @@ export const sendNotificationToUser = async (
   }
 };
 
+interface NotificationInsert {
+  USER_ID: number;
+  TYPE: string;
+  TITLE: string;
+  MESSAGE: string;
+  DATA: Record<string, unknown> | null;
+  READ: boolean;
+}
+
+interface NotificationRow {
+  NOTIFICATION_ID: number;
+  USER_ID: number;
+  TYPE: string;
+  TITLE: string;
+  MESSAGE: string;
+  DATA: Record<string, unknown> | null;
+  READ: boolean;
+  CREATED_AT: string;
+}
+
+interface UserRow {
+  USER_ID: number;
+}
+
 export const sendNotificationToMultipleUsers = async (
   userIds: number[],
   type: string,
@@ -97,7 +121,7 @@ export const sendNotificationToMultipleUsers = async (
   data?: Record<string, unknown>
 ) => {
   try {
-    const notifications = userIds.map((userId) => ({
+    const notifications: NotificationInsert[] = userIds.map((userId) => ({
       USER_ID: userId,
       TYPE: type,
       TITLE: title,
@@ -106,7 +130,7 @@ export const sendNotificationToMultipleUsers = async (
       READ: false,
     }));
 
-    const { data, error } = await supabase
+    const { data: insertedData, error } = await supabase
       .from("t_notifications")
       .insert(notifications)
       .select();
@@ -132,7 +156,7 @@ export const sendNotificationToMultipleUsers = async (
     });
 
     console.log(`[SSE] Bulk notifications sent to ${userIds.length} users`);
-    return data;
+    return insertedData;
   } catch (error) {
     console.error("[SSE] Error sending bulk notifications:", error);
     return null;
@@ -157,7 +181,7 @@ export const sendNotificationByRole = async (
       return null;
     }
 
-    const userIds = users.map((u) => u.USER_ID);
+    const userIds = users.map((u: UserRow) => u.USER_ID);
     return sendNotificationToMultipleUsers(userIds, type, title, message, data);
   } catch (error) {
     console.error("[SSE] Error sending notification by role:", error);

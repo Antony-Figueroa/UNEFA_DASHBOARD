@@ -21,7 +21,7 @@ export default function PeriodViewModal({ isOpen, onClose, periodo }: PeriodView
     const endDate = new Date(periodo.endDate);
 
     return (
-                <Modal isOpen={isOpen} onClose={onClose} showCloseButton className="max-w-5xl w-full max-h-[95vh] flex flex-col">
+                <Modal isOpen={isOpen} onClose={onClose} size="5xl" showCloseButton>
                     <div className="flex flex-col h-full overflow-hidden bg-white dark:bg-bg-dark rounded-3xl">
                 <ModalHeader className="shrink-0 pt-6 px-6 sm:pt-10 sm:px-12 bg-white dark:bg-bg-dark border-b border-border-light dark:border-border-dark">
                     <div className="max-w-5xl mx-auto w-full">

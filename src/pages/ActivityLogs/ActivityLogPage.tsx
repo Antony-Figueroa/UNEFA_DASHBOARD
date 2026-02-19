@@ -1,3 +1,4 @@
+import type { ActivityLog, CreateActivityLogPayload, UpdateActivityLogPayload } from '../../features/activity-logs/types';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
@@ -6,7 +7,6 @@ import PageMeta from '../../components/common/PageMeta';
 import ActivityLogTable from '../../features/activity-logs/components/ActivityLogTable';
 import ActivityLogModal from '../../features/activity-logs/components/ActivityLogModal';
 import { useActivityLogs } from '../../features/activity-logs/hooks/useActivityLogs';
-import { ActivityLog } from '../../features/activity-logs/types';
 import Button from '../../components/ui/button/Button';
 import { PlusIcon } from '../../icons';
 
@@ -38,16 +38,15 @@ export default function ActivityLogPage() {
     setEditingLog(null);
   };
 
-  const handleSave = async (payload: any) => {
+  const handleSave = async (payload: CreateActivityLogPayload | UpdateActivityLogPayload): Promise<boolean> => {
     if (editingLog) {
-      return await updateLog(editingLog.activityLogId, payload);
-    } else {
-      return await createLog({
-        ...payload,
-        professionalPracticeId: Number(practiceId),
-        studentId: 0
-      });
+      return await updateLog(editingLog.activityLogId, payload as UpdateActivityLogPayload);
     }
+    return await createLog({
+      ...(payload as CreateActivityLogPayload),
+      professionalPracticeId: Number(practiceId),
+      studentId: 0
+    });
   };
 
   const handleDelete = async (id: number) => {

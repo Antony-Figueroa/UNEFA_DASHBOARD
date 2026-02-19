@@ -56,3 +56,48 @@ export function formatDateTime(
     .replace(/^(\d{2}:\d{2}).*$/, "$1");
   return `${datePart} ${timePart}`;
 }
+
+const MINUTE = 60 * 1000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+const WEEK = 7 * DAY;
+const MONTH = 30 * DAY;
+const YEAR = 365 * DAY;
+
+export function formatDistanceToNow(
+  value: DateInput,
+  options: { addSuffix?: boolean } = {}
+): string {
+  const d = normalizeToDate(value);
+  if (!d) return "-";
+
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const absDiff = Math.abs(diff);
+
+  const suffix = diff > 0 ? (options.addSuffix ? "hace" : "") : (options.addSuffix ? "dentro de" : "");
+
+  if (absDiff < MINUTE) return "ahora mismo";
+  if (absDiff < HOUR) {
+    const mins = Math.floor(absDiff / MINUTE);
+    return `${suffix} ${mins} min${mins > 1 ? "s" : ""}`.trim();
+  }
+  if (absDiff < DAY) {
+    const hours = Math.floor(absDiff / HOUR);
+    return `${suffix} ${hours} hora${hours > 1 ? "s" : ""}`.trim();
+  }
+  if (absDiff < WEEK) {
+    const days = Math.floor(absDiff / DAY);
+    return `${suffix} ${days} día${days > 1 ? "s" : ""}`.trim();
+  }
+  if (absDiff < MONTH) {
+    const weeks = Math.floor(absDiff / WEEK);
+    return `${suffix} ${weeks} semana${weeks > 1 ? "s" : ""}`.trim();
+  }
+  if (absDiff < YEAR) {
+    const months = Math.floor(absDiff / MONTH);
+    return `${suffix} ${months} mes${months > 1 ? "es" : ""}`.trim();
+  }
+  const years = Math.floor(absDiff / YEAR);
+  return `${suffix} ${years} año${years > 1 ? "s" : ""}`.trim();
+}

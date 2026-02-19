@@ -16,6 +16,7 @@ import { EmptyState } from "../../../components/ui/table/EmptyState";
 import Button from "../../../components/ui/button/Button";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
+import { maskIdentification } from "../../../utils/maskData";
 
 /**
  * Representa una opción de filtrado en la tabla.
@@ -587,7 +588,7 @@ export default function PreEnrollmentTable({
                                         </Tooltip>
                                     </TableCell>
                                     <TableCell className="table-cell font-medium text-text-primary dark:text-text-emphasis">
-                                        {s.identificationPrefix}-{s.identificationNumber}
+                                        {s.identificationPrefix}-{maskIdentification(s.identificationNumber)}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                         {s.studentName}
@@ -660,7 +661,7 @@ export default function PreEnrollmentTable({
                                             <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8 uppercase">
                                                 {s.studentName}
                                             </h3>
-                                            <p className="text-xs text-text-secondary mt-1 truncate uppercase">{s.identificationPrefix}-{s.identificationNumber}</p>
+                                            <p className="text-xs text-text-secondary mt-1 truncate uppercase">{s.identificationPrefix}-{maskIdentification(s.identificationNumber)}</p>
                                         </div>
                                         <button
                                             onClick={async () => toggleRowExpansion(preEnrollmentId)}

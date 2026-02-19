@@ -31,7 +31,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
   try {
     const adminId = req.user?.userId;
     const userData = req.body;
-    const tempPass = generateSecurePassword();
+    const tempPass = await generateSecurePassword();
     
     const newUser = await usersService.createUser(userData, tempPass);
     

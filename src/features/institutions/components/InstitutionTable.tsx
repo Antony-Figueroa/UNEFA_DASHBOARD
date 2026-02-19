@@ -14,6 +14,7 @@ import Badge from "../../../components/ui/badge/Badge";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { InternshipType } from "../../internship-types/types";
+import { maskRIF, maskPhone } from "../../../utils/maskData";
 
 interface InstitutionTableProps {
   data: Institution[];
@@ -452,10 +453,10 @@ export default function InstitutionTable({
                             </Tooltip>
                         </TableCell>
                         <TableCell className="font-medium text-text-primary dark:text-white/90">
-                            {i.rif}
+                            {maskRIF(i.rif)}
                         </TableCell>
                         <TableCell className="text-text-secondary dark:text-text-tertiary font-semibold">{i.name}</TableCell>
-                        <TableCell className="text-text-secondary dark:text-text-tertiary whitespace-nowrap">{i.phone}</TableCell>
+                        <TableCell className="text-text-secondary dark:text-text-tertiary whitespace-nowrap">{maskPhone(i.phone)}</TableCell>
                         <TableCell>
                     <Badge 
                         color={

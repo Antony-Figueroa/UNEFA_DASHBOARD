@@ -19,6 +19,7 @@ const ListsConfiguration = lazy(() => import("../pages/Config/ListsConfiguration
 const AuthLogs = lazy(() => import("../pages/Config/AuthLogs"));
 const RolesPermissions = lazy(() => import("../pages/Config/RolesPermissions"));
 const Maintenance = lazy(() => import("../pages/Config/Maintenance"));
+const Backups = lazy(() => import("../pages/Config/Backups"));
 const Culmination = lazy(() => import("../pages/Culmination/Culmination"));
 const Reports = lazy(() => import("../pages/Reports/Reports"));
 const Manuals = lazy(() => import("../pages/Manuals/Manuals"));
@@ -274,6 +275,14 @@ export const AppRoutes = () => {
               element={
                 <ProtectedRoute allowedRoles={[0, 1]}>
                   <Maintenance />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/configure/backups"
+              element={
+                <ProtectedRoute allowedRoles={[0, 1]}>
+                  <Backups />
                 </ProtectedRoute>
               }
             />

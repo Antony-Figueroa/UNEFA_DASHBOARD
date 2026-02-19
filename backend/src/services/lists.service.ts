@@ -96,10 +96,21 @@ export const getAllLists = async (): Promise<AppList[]> => {
  * @returns Promesa que resuelve a la lista creada.
  */
 export const createList = async (name: string): Promise<AppList> => {
+  const now = new Date().toISOString();
   const data = await dbManager.withRetry(async (supabase) => {
     const { data, error } = await supabase
       .from(LISTS_TABLE)
-      .insert([{ NAME: name, STATUS: 1 }])
+      .insert([{ 
+        NAME: name, 
+        STATUS: 1,
+        CREATION_DATE: now,
+        MODIF_USER_ID: 0,
+        MODIF_USER_DATE: now,
+        ELIM_USER_ID: 0,
+        ELIM_USER_DATE: now,
+        REST_USER_ID: 0,
+        REST_USER_DATE: now
+      }])
       .select()
       .single();
 
@@ -125,10 +136,15 @@ export const createList = async (name: string): Promise<AppList> => {
  * @returns Promesa que resuelve a la lista actualizada.
  */
 export const updateList = async (id: string, name: string): Promise<AppList> => {
+  const now = new Date().toISOString();
   const data = await dbManager.withRetry(async (supabase) => {
     const { data, error } = await supabase
       .from(LISTS_TABLE)
-      .update({ NAME: name })
+      .update({ 
+        NAME: name,
+        MODIF_USER_ID: 0,
+        MODIF_USER_DATE: now
+      })
       .eq('LIST_ID', id)
       .select()
       .single();
@@ -154,10 +170,15 @@ export const updateList = async (id: string, name: string): Promise<AppList> => 
  * @param status Nuevo estado de la lista.
  */
 export const toggleListStatus = async (id: string, status: boolean): Promise<void> => {
+  const now = new Date().toISOString();
   await dbManager.withRetry(async (supabase) => {
     const { error } = await supabase
       .from(LISTS_TABLE)
-      .update({ STATUS: status ? 1 : 0 })
+      .update({ 
+        STATUS: status ? 1 : 0,
+        MODIF_USER_ID: 0,
+        MODIF_USER_DATE: now
+      })
       .eq('LIST_ID', id);
 
     if (error) throw error;
@@ -232,10 +253,23 @@ export const deleteValue = async (valueId: string): Promise<void> => {
  * @returns Promesa que resuelve al valor creado.
  */
 export const createValue = async (listId: string, name: string, abbreviation?: string): Promise<AppList['values'][0]> => {
+  const now = new Date().toISOString();
   const data = await dbManager.withRetry(async (supabase) => {
     const { data, error } = await supabase
       .from(VALUES_TABLE)
-      .insert([{ LIST_ID: Number(listId), NAME: name, ABBREVIATION: abbreviation, STATUS: 1 }])
+      .insert([{ 
+        LIST_ID: Number(listId), 
+        NAME: name, 
+        ABBREVIATION: abbreviation, 
+        STATUS: 1,
+        CREATION_DATE: now,
+        MODIF_USER_ID: 0,
+        MODIF_USER_DATE: now,
+        ELIM_USER_ID: 0,
+        ELIM_USER_DATE: now,
+        REST_USER_ID: 0,
+        REST_USER_DATE: now
+      }])
       .select()
       .single();
 
@@ -256,10 +290,16 @@ export const createValue = async (listId: string, name: string, abbreviation?: s
  * @returns Promesa que resuelve al valor actualizado.
  */
 export const updateValue = async (valueId: string, name: string, abbreviation?: string): Promise<AppList['values'][0]> => {
+  const now = new Date().toISOString();
   const data = await dbManager.withRetry(async (supabase) => {
     const { data, error } = await supabase
       .from(VALUES_TABLE)
-      .update({ NAME: name, ABBREVIATION: abbreviation })
+      .update({ 
+        NAME: name, 
+        ABBREVIATION: abbreviation,
+        MODIF_USER_ID: 0,
+        MODIF_USER_DATE: now
+      })
       .eq('VALUE_LIST_ID', valueId)
       .select()
       .single();
@@ -279,10 +319,15 @@ export const updateValue = async (valueId: string, name: string, abbreviation?: 
  * @param status Nuevo estado del valor.
  */
 export const toggleValueStatus = async (valueId: string, status: boolean): Promise<void> => {
+  const now = new Date().toISOString();
   await dbManager.withRetry(async (supabase) => {
     const { error } = await supabase
       .from(VALUES_TABLE)
-      .update({ STATUS: status ? 1 : 0 })
+      .update({ 
+        STATUS: status ? 1 : 0,
+        MODIF_USER_ID: 0,
+        MODIF_USER_DATE: now
+      })
       .eq('VALUE_LIST_ID', valueId);
 
     if (error) throw error;

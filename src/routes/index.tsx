@@ -46,6 +46,7 @@ const PreEnrollmentPage = lazy(() => import("../pages/PreEnrollment/PreEnrollmen
 const EnrollmentPage = lazy(() => import("../pages/Enrollment/Enrollment"));
 const TrackingPage = lazy(() => import("../pages/Tracking/Tracking"));
 const VisitRegistration = lazy(() => import("../pages/Tracking/VisitRegistration"));
+const ActivityLogPage = lazy(() => import("../pages/ActivityLogs/ActivityLogPage"));
 const FormElements = lazy(() => import("../pages/Forms/FormElements"));
 const BasicTables = lazy(() => import("../pages/Tables/BasicTables"));
 const Period = lazy(() => import("../pages/Period/period"));
@@ -157,7 +158,8 @@ export const AppRoutes = () => {
             <Route path="/pre-enrollment" element={<PreEnrollmentPage />} />
             <Route path="/enrollment" element={<EnrollmentPage />} />
             <Route path="/tracking" element={<TrackingPage />} />
-            <Route path="/visit-registration" element={<VisitRegistration />} />
+            <Route path="/visit-registration/:id" element={<VisitRegistration />} />
+            <Route path="/activity-logs/:practiceId" element={<ActivityLogPage />} />
             <Route path="/culmination" element={<Culmination />} />
             <Route path="/evaluations" element={<EvaluationsList />} />
 

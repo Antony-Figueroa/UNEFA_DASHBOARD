@@ -38,6 +38,7 @@
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
     "flatpickr": "^4.6.13",
+    "framer-motion": "^12.34.2",
     "helmet": "^8.1.0",
     "lucide-react": "^0.563.0",
     "maplibre-gl": "^5.16.0",
@@ -96,16 +97,11 @@
     "vitest": "^4.0.16"
   },
   "overrides": {
-    "react-helmet-async": {
-      "react": "^16.8.0 || ^17 || ^18 || ^19"
-    },
-    "@react-jvectormap/core": {
-      "react": "^16.8.0 || ^17 || ^18 || ^19",
-      "react-dom": "^16.8.0 || ^17 || ^18 || ^19"
-    },
-    "@react-jvectormap/world": {
-      "react": "^16.8.0 || ^17 || ^18 || ^19",
-      "react-dom": "^16.8.0 || ^17 || ^18 || ^19"
-    }
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "resolutions": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   }
 }

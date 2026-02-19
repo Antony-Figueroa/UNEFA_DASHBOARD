@@ -19,6 +19,8 @@ import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { useLists } from "../../lists/hooks/useLists";
 import * as enrollmentService from "../../enrollment/services/enrollmentService";
+import { List } from "../../lists/types";
+import * as listsService from "../../lists/services/listsService";
 
 /**
  * Props for the InstitutionModal component.
@@ -116,6 +118,14 @@ export default function InstitutionModal({
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const [hasProfessionalPractices, setHasProfessionalPractices] = useState(false);
   const { fetchMultipleLists } = useLists();
+
+  // Estado para agregar nuevos valores a las listas
+  const [isValueModalOpen, setIsValueModalOpen] = useState(false);
+  const [valueModalTitle, setValueModalTitle] = useState<string>("");
+  const [targetListName, setTargetListName] = useState<string>("");
+  const [targetField, setTargetField] = useState<keyof InstFormData | "">("");
+  const [newValueInput, setNewValueInput] = useState<string>("");
+  const [savingNewValue, setSavingNewValue] = useState(false);
 
   const instSchema = useMemo(() => createInstSchema(existingInstitutions, editingInst || null), [existingInstitutions, editingInst]);
 
@@ -240,6 +250,80 @@ export default function InstitutionModal({
   const optionsTipoEmpresa = options["Tipo de empresa"];
   const optionsCodigosArea = options.CODIGOS_AREA;
 
+  // Funciones para agregar nuevos valores a las listas
+  const openAddValueModal = (listName: string, field: keyof InstFormData, title: string) => {
+    setTargetListName(listName);
+    setTargetField(field);
+    setValueModalTitle(title);
+    setNewValueInput("");
+    setIsValueModalOpen(true);
+  };
+
+  const handleSaveNewValue = async () => {
+    const raw = newValueInput.trim();
+    if (!raw) return;
+    setSavingNewValue(true);
+    try {
+      let list: List | null = null;
+      try {
+        list = await listsService.getListByName(targetListName);
+      } catch (err: unknown) {
+        const status = (err as any)?.response?.status;
+        if (status === 404) {
+          const allLists = await listsService.getAllLists();
+          const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[_\s]+/g, " ").trim().toUpperCase();
+          const targetNorm = normalize(targetListName);
+          list = allLists.find(l => normalize(l.name) === targetNorm || normalize(l.name).includes(targetNorm) || targetNorm.includes(normalize(l.name))) || null;
+          if (!list) {
+            const createdList = await listsService.createList(targetListName);
+            list = createdList;
+          }
+        } else {
+          throw err;
+        }
+      }
+
+      const upper = targetField === "phonePrefix" ? raw.replace(/\D/g, '').substring(0, 4) : raw.toUpperCase();
+
+      // Evitar duplicados
+      const existing = (list!.values || []).find((v: { name: any; abbreviation: any; }) => {
+        const byName = String(v.name || "").toUpperCase() === upper;
+        const byAbbr = String(v.abbreviation || "").toUpperCase() === upper;
+        return byName || byAbbr;
+      });
+
+      if (existing) {
+        const selectValue = (targetListName === "Rif" && existing.abbreviation)
+          ? String(existing.abbreviation).toUpperCase()
+          : String(existing.name).toUpperCase();
+        setValue(targetField as keyof InstFormData, selectValue, { shouldValidate: true, shouldDirty: true });
+        setIsValueModalOpen(false);
+        return;
+      }
+
+      const abbr = (targetListName === "Rif") ? upper : undefined;
+      const created = await listsService.createValue(list!.id, upper, abbr);
+      const mapped = {
+        value: (targetListName === "Rif" && created.abbreviation) ? created.abbreviation.toUpperCase() : upper,
+        label: (targetListName === "Rif" && created.abbreviation) ? created.abbreviation.toUpperCase() : upper
+      };
+
+      setOptions(prev => {
+        const next = { ...prev };
+        const arr = next[targetListName] || [];
+        next[targetListName] = [...arr, mapped];
+        return next;
+      });
+
+      setValue(targetField as keyof InstFormData, mapped.value, { shouldValidate: true, shouldDirty: true });
+      setIsValueModalOpen(false);
+    } catch (e) {
+      console.error("[InstitutionModal] Error creando valor en lista:", e);
+    } finally {
+      setSavingNewValue(false);
+    }
+  };
+
   const VENEZUELA_PHONE_PREFIXES = useMemo(() => {
     const dbPrefixes = optionsCodigosArea || [];
     return dbPrefixes.sort((a, b) => a.label.localeCompare(b.label));
@@ -282,12 +366,12 @@ export default function InstitutionModal({
   useEffect(() => {
     if (isOpen) {
       if (editingInst) {
-        const [rifP, rifN] = editingInst.rif ? editingInst.rif.split("-") : ["", ""];
+        const rifParts = editingInst.rif ? editingInst.rif.split("-") : ["", ""];
         const [phoneP, phoneN] = editingInst.phone ? editingInst.phone.split("-") : ["", ""];
 
         reset({
-          rifPrefix: rifP || "",
-          rifNumber: rifN || "",
+          rifPrefix: rifParts[0] || "",
+          rifNumber: rifParts[1] || "",
           name: editingInst.name,
           fiscalAddress: editingInst.fiscalAddress,
           phonePrefix: phoneP || "",
@@ -397,22 +481,24 @@ export default function InstitutionModal({
                        value={String(field.value ?? "")}
                        placeholder="Prefijo"
                        disabled={!!editingInst}
+                       onAddNew={() => openAddValueModal("Rif", "rifPrefix", "Agregar Prefijo RIF")}
+                       addNewLabel="Nueva opción"
                      />
                    )}
                  />
                </div>
-               <div className="flex-1">
-                 <Input 
-                   placeholder="12345678" 
-                   className="uppercase"
-                   {...register("rifNumber", {
-                     onChange: handleNumbersOnlyChange
-                   })} 
-                   error={!!errors.rifNumber} 
-                   disabled={!!editingInst}
-                 />
-               </div>
-             </div>
+                <div className="flex-1">
+                  <Input 
+                    placeholder="123456789" 
+                    className="uppercase"
+                    {...register("rifNumber", {
+                      onChange: handleNumbersOnlyChange
+                    })} 
+                    error={!!errors.rifNumber} 
+                    disabled={!!editingInst}
+                  />
+                </div>
+              </div>
             {errors.rifNumber && (
               <p className="mt-1 text-xs text-red-500">
                 {errors.rifNumber.message}
@@ -459,6 +545,8 @@ export default function InstitutionModal({
                       value={String(field.value ?? "")}
                       placeholder="Prefijo"
                       error={!!errors.phonePrefix}
+                      onAddNew={() => openAddValueModal("CODIGOS_AREA", "phonePrefix", "Agregar Código de Área")}
+                      addNewLabel="Nueva opción"
                     />
                   )}
                 />
@@ -545,6 +633,8 @@ export default function InstitutionModal({
                   onChange={field.onChange}
                   value={String(field.value ?? "")}
                   placeholder="Seleccione región"
+                  onAddNew={() => openAddValueModal("Region", "region", "Agregar Región")}
+                  addNewLabel="Nueva opción"
                 />
               )}
             />
@@ -565,6 +655,8 @@ export default function InstitutionModal({
                   onChange={field.onChange}
                   value={String(field.value ?? "")}
                   placeholder="Seleccione núcleo"
+                  onAddNew={() => openAddValueModal("Nucleo", "nucleus", "Agregar Núcleo")}
+                  addNewLabel="Nueva opción"
                 />
               )}
             />
@@ -585,6 +677,8 @@ export default function InstitutionModal({
                   onChange={field.onChange}
                   value={String(field.value ?? "")}
                   placeholder="Seleccione extensión"
+                  onAddNew={() => openAddValueModal("Extensión", "extension", "Agregar Extensión")}
+                  addNewLabel="Nueva opción"
                 />
               )}
             />
@@ -605,6 +699,8 @@ export default function InstitutionModal({
                   onChange={field.onChange}
                   value={String(field.value ?? "")}
                   placeholder="Seleccione tipo"
+                  onAddNew={() => openAddValueModal("Tipo de empresa", "institutionType", "Agregar Tipo de Empresa")}
+                  addNewLabel="Nueva opción"
                 />
               )}
             />
@@ -655,6 +751,52 @@ export default function InstitutionModal({
       confirmLabel="Cerrar sin guardar"
       cancelLabel="Continuar editando"
     />
+
+    {/* Modal para agregar nueva opción a la lista */}
+    <Modal
+      isOpen={isValueModalOpen}
+      onClose={() => setIsValueModalOpen(false)}
+      size="md"
+    >
+      <ModalHeader>{valueModalTitle}</ModalHeader>
+      <ModalBody>
+        <div className="space-y-4">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Nuevo valor
+          </label>
+          <Input
+            value={newValueInput}
+            onChange={(e) => setNewValueInput(e.target.value)}
+            placeholder="Ingrese el nuevo valor"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && newValueInput.trim() && !savingNewValue) {
+                handleSaveNewValue();
+              }
+            }}
+            autoFocus
+          />
+          <p className="text-xs text-gray-500">
+            Presione Enter o haga clic en Guardar para agregar el valor.
+          </p>
+        </div>
+      </ModalBody>
+      <ModalFooter>
+        <Button
+          variant="outline"
+          onClick={() => setIsValueModalOpen(false)}
+          disabled={savingNewValue}
+        >
+          Cancelar
+        </Button>
+        <AsyncButton
+          onClick={handleSaveNewValue}
+          loading={savingNewValue}
+          disabled={!newValueInput.trim()}
+        >
+          Guardar
+        </AsyncButton>
+      </ModalFooter>
+    </Modal>
   </>
 );
 }

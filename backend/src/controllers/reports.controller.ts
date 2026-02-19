@@ -182,7 +182,8 @@ export const generateReport = async (req: Request, res: Response) => {
       'enrollments': 'Inscripciones',
       'tracking': 'Seguimiento',
       'certificates': 'Certificados',
-      'institutions': 'Instituciones'
+      'institutions': 'Instituciones',
+      'tutores-academicos': 'Relación de Tutores Académicos'
     };
 
     await dbManager.getConnection()
@@ -205,3 +206,148 @@ export const generateReport = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error al generar reporte', error });
   }
 };
+
+export const getTutorsAcademicReport = async (req: Request, res: Response) => {
+  try {
+    const { periodId, careerId } = req.query;
+    const supabase = dbManager.getConnection();
+
+    let practicesQuery = supabase
+      .from('t_professional_practices_tutor')
+      .select(`
+        TUTOR_ID,
+        TUTOR_TYPE,
+        t_tutors (
+          TUTOR_ID,
+          NAME,
+          SECOND_NAME,
+          SURNAME,
+          SECOND_SURNAME,
+          TUTOR_CI,
+          CONDITION,
+          DEDICATION,
+          CATEGORY,
+          CONTACT_PHONE,
+          EMAIL
+        ),
+        t_professional_practices (
+          PROFESSIONAL_PRACTICE_ID,
+          PERIOD_ID,
+          PRACTICES_STATUS,
+          t_career (
+            CAREER_ID,
+            CAREER_NAME,
+            CAREER_ABBREVIATION
+          ),
+          t_institution (
+            INSTITUTION_ID,
+            INSTITUTION_NAME,
+            REGION,
+            NUCLEUS,
+            EXTENSION
+          )
+        )
+      `)
+      .eq('TUTOR_TYPE', 'ACADEMICO');
+
+    const { data: tutorPractices, error } = await practicesQuery;
+
+    if (error) throw error;
+
+    const tutorMap = new Map<number, {
+      tutor: any;
+      career: string;
+      region: string;
+      nucleus: string;
+      extension: string;
+      studentCount: number;
+    }>();
+
+    (tutorPractices as any[])?.forEach((tp) => {
+      const tutor = tp.t_tutors;
+      const practice = tp.t_professional_practices;
+      const career = practice?.t_career;
+      const institution = practice?.t_institution;
+
+      if (!tutor || !practice) return;
+
+      if (periodId && practice.PERIOD_ID !== parseInt(periodId as string)) return;
+      if (careerId && career?.CAREER_ID !== parseInt(careerId as string)) return;
+
+      const tutorKey = tutor.TUTOR_ID;
+
+      if (tutorMap.has(tutorKey)) {
+        tutorMap.get(tutorKey)!.studentCount++;
+      } else {
+        tutorMap.set(tutorKey, {
+          tutor: {
+            name: tutor.NAME,
+            secondName: tutor.SECOND_NAME || '',
+            surname: tutor.SURNAME,
+            secondSurname: tutor.SECOND_SURNAME || '',
+            ci: tutor.TUTOR_CI,
+            condition: tutor.CONDITION,
+            dedication: tutor.DEDICATION,
+            category: tutor.CATEGORY,
+            phone: tutor.CONTACT_PHONE,
+            email: tutor.EMAIL
+          },
+          career: career?.CAREER_NAME || '',
+          region: getRegionName(institution?.REGION),
+          nucleus: institution?.NUCLEUS || '',
+          extension: institution?.EXTENSION || '',
+          studentCount: 1
+        });
+      }
+    });
+
+    const reportData = Array.from(tutorMap.values())
+      .filter(t => t.studentCount > 0)
+      .sort((a, b) => {
+        const nameA = `${a.tutor.surname} ${a.tutor.name}`.toLowerCase();
+        const nameB = `${b.tutor.surname} ${b.tutor.name}`.toLowerCase();
+        return nameA.localeCompare(nameB);
+      })
+      .map((item, index) => ({
+        nro: index + 1,
+        region: item.region,
+        nucleo: item.nucleus,
+        extension: item.extension,
+        carrera: item.career,
+        nombreTutor: `${item.tutor.name} ${item.tutor.secondName}`.trim(),
+        apellidoTutor: `${item.tutor.surname} ${item.tutor.secondSurname}`.trim(),
+        cedula: item.tutor.ci,
+        condicion: item.tutor.condition,
+        dedicacion: item.tutor.dedication,
+        categoria: item.tutor.category,
+        telefono: item.tutor.phone,
+        correo: item.tutor.email,
+        cantidadEstudiantes: item.studentCount
+      }));
+
+    res.json({
+      success: true,
+      data: reportData,
+      meta: {
+        total: reportData.length,
+        totalEstudiantes: reportData.reduce((sum, t) => sum + t.cantidadEstudiantes, 0)
+      }
+    });
+
+  } catch (error) {
+    console.error('Tutors Academic Report Error:', error);
+    res.status(500).json({ message: 'Error al obtener reporte de tutores académicos', error });
+  }
+};
+
+function getRegionName(code: string | undefined): string {
+  const regionMap: Record<string, string> = {
+    'LOS_LLANOS': 'LOS LLANOS',
+    'CENTRAL': 'CENTRAL',
+    'GUayana': 'GUAYANA',
+    'ANDES': 'ANDES',
+    'OCCIDENTAL': 'OCCIDENTAL',
+    'ORIENTAL': 'ORIENTAL'
+  };
+  return regionMap[code || ''] || code || '';
+}

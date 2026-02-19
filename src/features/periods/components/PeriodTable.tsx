@@ -24,6 +24,8 @@ import {
     ChevronUpIcon,
 } from "../../../icons/actions";
 import { PeriodoRowData } from "../types";
+import PeriodTimeline from "./PeriodTimeline";
+import CurrentPeriodCard from "./CurrentPeriodCard";
 
 // ============================================
 // CONSTANTS
@@ -253,6 +255,12 @@ const PeriodTable = ({
     const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [inUseIds, setInUseIds] = useState<Set<string>>(new Set());
+    const [viewMode, setViewMode] = useState<"timeline" | "table">("table");
+
+    // Período actual (en curso)
+    const currentPeriod = useMemo(() => {
+        return data.find(p => getSafePeriodStatus(p) === 2) || null;
+    }, [data]);
 
     useEffect(() => {
         const used = new Set<string>();
@@ -452,8 +460,49 @@ const PeriodTable = ({
 
     return (
         <div className="space-y-4 animate-fadeIn">
-            {/* Filtros */}
+            {/* Período Actual Destacado */}
+            {currentPeriod && (
+                <CurrentPeriodCard 
+                    period={currentPeriod}
+                    onEdit={onEdit ? () => onEdit(currentPeriod) : undefined}
+                    onView={onView ? () => onView(currentPeriod) : undefined}
+                    onCulminate={onCulminate ? () => onCulminate(currentPeriod) : undefined}
+                />
+            )}
+
+            {/* Toggle Vista + Filtros */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                {/* Toggle de vista */}
+                <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    <button
+                        onClick={() => setViewMode("table")}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                            viewMode === "table" 
+                                ? "bg-white dark:bg-gray-700 shadow-sm text-brand-600 dark:text-brand-400" 
+                                : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
+                        }`}
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                        </svg>
+                        Tabla
+                    </button>
+                    <button
+                        onClick={() => setViewMode("timeline")}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                            viewMode === "timeline" 
+                                ? "bg-white dark:bg-gray-700 shadow-sm text-brand-600 dark:text-brand-400" 
+                                : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
+                        }`}
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Timeline
+                    </button>
+                </div>
+
+                {/* Filtros */}
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <div className="w-full sm:w-64">
                         <InputField
@@ -487,8 +536,19 @@ const PeriodTable = ({
                 </div>
             </div>
 
+            {/* Timeline View */}
+            {viewMode === "timeline" && (
+                <div className="p-6 bg-white dark:bg-gray-900 rounded-xl border border-border-light dark:border-border-dark">
+                    <PeriodTimeline 
+                        periods={filteredData} 
+                        activePeriodId={currentPeriod?.periodId}
+                        onPeriodClick={(period) => onView?.(period)}
+                    />
+                </div>
+            )}
+
             {/* Tabla Desktop */}
-            <div className="hidden md:block overflow-hidden rounded-lg border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface shadow-sm">
+            <div className={`${viewMode === "timeline" ? "hidden" : ""} md:block overflow-hidden rounded-lg border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface shadow-sm`}>
                 <Table>
                     <TableHeader>
                         <TableRow>

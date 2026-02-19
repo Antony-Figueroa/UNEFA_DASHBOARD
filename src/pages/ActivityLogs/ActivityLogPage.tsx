@@ -12,7 +12,7 @@ import { PlusIcon } from '../../icons';
 
 export default function ActivityLogPage() {
   const params = useParams();
-  const practiceId = params.practiceId as string | undefined;
+  const practiceId = params.practiceId;
   const { logs, loading, fetchLogs, createLog, updateLog, deleteLog, approveLog, stats } = useActivityLogs();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLog, setEditingLog] = useState<ActivityLog | null>(null);

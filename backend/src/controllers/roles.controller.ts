@@ -43,8 +43,8 @@ export const getRoles = async (req: Request, res: Response) => {
     const supabase = dbManager.getConnection();
 
     const { data: rolesData, error: rolesError } = await supabase
-      .from('t_user_roles')
-      .select('ROLE_ID, ROLE_NAME, ROLE_DESCRIPTION, STATUS');
+      .from('t_roles')
+      .select('ID_ROLS, NAME, DESCRIPTION, STATUS');
 
     if (rolesError) {
       console.error('Error fetching roles:', rolesError);
@@ -53,33 +53,32 @@ export const getRoles = async (req: Request, res: Response) => {
     }
 
     const { data: usersData } = await supabase
-      .from('t_user')
-      .select('ROLE_ID')
-      .eq('STATUS', 1);
+      .from('t_user_roles')
+      .select('ID_ROLES');
 
     const userCountMap = new Map<number, number>();
-    (usersData || []).forEach((u: any) => {
-      userCountMap.set(u.ROLE_ID, (userCountMap.get(u.ROLE_ID) || 0) + 1);
+    (usersData || []).forEach((u: { ID_ROLES: number }) => {
+      userCountMap.set(u.ID_ROLES, (userCountMap.get(u.ID_ROLES) || 0) + 1);
     });
 
     const roles: Role[] = (rolesData || [])
-      .filter((r: any) => r.STATUS === 1)
-      .map((r: any) => {
+      .filter((r: { STATUS: number }) => r.STATUS === 1)
+      .map((r: { ID_ROLS: number; NAME: string; DESCRIPTION: string | null; STATUS: number }) => {
         let permissions: string[] = [];
-        if (r.ROLE_ID === 1) {
+        if (r.ID_ROLS === 1) {
           permissions = ADMIN_PERMISSIONS;
-        } else if (r.ROLE_ID === 2) {
+        } else if (r.ID_ROLS === 2) {
           permissions = ASISTENTE_PERMISSIONS;
         }
 
         return {
-          id: r.ROLE_ID,
-          name: r.ROLE_NAME,
-          description: r.ROLE_DESCRIPTION || '',
-          userCount: userCountMap.get(r.ROLE_ID) || 0,
+          id: r.ID_ROLS,
+          name: r.NAME,
+          description: r.DESCRIPTION || '',
+          userCount: userCountMap.get(r.ID_ROLS) || 0,
           permissions,
           status: r.STATUS === 1 ? 'active' : 'inactive',
-          isSystem: r.ROLE_ID === 1 || r.ROLE_ID === 2
+          isSystem: r.ID_ROLS === 1 || r.ID_ROLS === 2
         };
       });
 
@@ -114,9 +113,9 @@ export const getRoleById = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const { data: roleData, error } = await supabase
-      .from('t_user_roles')
-      .select('ROLE_ID, ROLE_NAME, ROLE_DESCRIPTION, STATUS')
-      .eq('ROLE_ID', id)
+      .from('t_roles')
+      .select('ID_ROLS, NAME, DESCRIPTION, STATUS')
+      .eq('ID_ROLS', id)
       .single();
 
     if (error || !roleData) {
@@ -125,26 +124,25 @@ export const getRoleById = async (req: Request, res: Response) => {
     }
 
     const { data: usersData } = await supabase
-      .from('t_user')
-      .select('USER_ID')
-      .eq('ROLE_ID', id)
-      .eq('STATUS', 1);
+      .from('t_user_roles')
+      .select('ID_USER')
+      .eq('ID_ROLES', id);
 
     let permissions: string[] = [];
-    if (roleData.ROLE_ID === 1) {
+    if (roleData.ID_ROLS === 1) {
       permissions = ADMIN_PERMISSIONS;
-    } else if (roleData.ROLE_ID === 2) {
+    } else if (roleData.ID_ROLS === 2) {
       permissions = ASISTENTE_PERMISSIONS;
     }
 
     const role: Role = {
-      id: roleData.ROLE_ID,
-      name: roleData.ROLE_NAME,
-      description: roleData.ROLE_DESCRIPTION || '',
+      id: roleData.ID_ROLS,
+      name: roleData.NAME,
+      description: roleData.DESCRIPTION || '',
       userCount: usersData?.length || 0,
       permissions,
       status: roleData.STATUS === 1 ? 'active' : 'inactive',
-      isSystem: roleData.ROLE_ID === 1 || roleData.ROLE_ID === 2
+      isSystem: roleData.ID_ROLS === 1 || roleData.ID_ROLS === 2
     };
 
     res.json({
@@ -162,7 +160,7 @@ export const updateRole = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
     const { id } = req.params;
-    const { name, description, permissions } = req.body;
+    const { name, description } = req.body;
 
     const roleId = parseInt(id);
     
@@ -171,15 +169,15 @@ export const updateRole = async (req: Request, res: Response) => {
       return;
     }
 
-    const updates: Record<string, any> = {};
-    if (name) updates.ROLE_NAME = name;
-    if (description !== undefined) updates.ROLE_DESCRIPTION = description;
+    const updates: Record<string, unknown> = {};
+    if (name) updates.NAME = name;
+    if (description !== undefined) updates.DESCRIPTION = description;
 
     if (Object.keys(updates).length > 0) {
       const { error } = await supabase
-        .from('t_user_roles')
+        .from('t_roles')
         .update(updates)
-        .eq('ROLE_ID', roleId);
+        .eq('ID_ROLS', roleId);
 
       if (error) {
         console.error('Error updating role:', error);
@@ -207,8 +205,8 @@ export const getRoleStats = async (req: Request, res: Response) => {
       { count: rolesCount },
       { count: usersCount }
     ] = await Promise.all([
-      supabase.from('t_user_roles').select('*', { count: 'exact', head: true }).eq('STATUS', 1),
-      supabase.from('t_user').select('*', { count: 'exact', head: true }).eq('STATUS', 1)
+      supabase.from('t_roles').select('*', { count: 'exact', head: true }).eq('STATUS', 1),
+      supabase.from('t_user_roles').select('*', { count: 'exact', head: true })
     ]);
 
     res.json({

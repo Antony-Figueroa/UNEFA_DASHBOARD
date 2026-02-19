@@ -23,6 +23,7 @@ import {
     TrashIcon,
     EyeIcon,
     RefreshIcon,
+    CalendarIcon,
 } from "../../../icons/actions";
 import { TrackingRowData } from "../types";
 
@@ -44,6 +45,10 @@ interface TrackingTableProps {
     onRestore?: (tracking: TrackingRowData) => void;
     /** Función llamada al solicitar ver detalles de un registro */
     onView?: (tracking: TrackingRowData) => void;
+    /** Función llamada al solicitar ir a registro de visitas */
+    onVisitRegistration?: (tracking: TrackingRowData) => void;
+    /** Función llamada al solicitar ir a registro de actividades */
+    onActivityLogs?: (tracking: TrackingRowData) => void;
     /** Opciones para el filtro de traslado */
     transferOptions?: { value: string; label: string }[];
 }
@@ -56,6 +61,10 @@ interface ActionButtonsProps {
     onRequestConfirm: (type: 'edit' | 'delete' | 'restore') => void;
     /** Callback for ver detalles */
     onView?: () => void;
+    /** Callback for ir a registro de visitas */
+    onVisitRegistration?: () => void;
+    /** Callback for ir a registro de actividades */
+    onActivityLogs?: () => void;
     /** Estado actual del registro (activo/inactivo) */
     status: boolean;
     /** Indica si se debe renderizar en modo móvil */
@@ -74,6 +83,8 @@ interface ActionButtonsProps {
 const ActionButtons = ({
     onRequestConfirm,
     onView,
+    onVisitRegistration,
+    onActivityLogs,
     status,
     isMobile = false,
     canEdit = false,
@@ -81,8 +92,8 @@ const ActionButtons = ({
     canRestore = false,
 }: ActionButtonsProps) => {
     const containerClasses = isMobile 
-        ? "flex flex-col gap-3 pt-2" 
-        : "flex justify-end gap-3";
+        ? "flex flex-col gap-2 pt-2" 
+        : "flex justify-end gap-2";
 
     return (
         <div className={containerClasses}>
@@ -129,6 +140,26 @@ const ActionButtons = ({
                     />
                 )
             )}
+            {onVisitRegistration && (
+                <AsyncActionButton
+                    onClick={async () => onVisitRegistration()}
+                    icon={<CalendarIcon />}
+                    tooltip="Registro de Visitas"
+                    label={isMobile ? "Visitas" : undefined}
+                    variant="info"
+                    fullWidth={isMobile}
+                />
+            )}
+            {onActivityLogs && (
+                <AsyncActionButton
+                    onClick={async () => onActivityLogs()}
+                    icon={<CalendarIcon />}
+                    tooltip="Registro de Actividades"
+                    label={isMobile ? "Actividades" : undefined}
+                    variant="warning"
+                    fullWidth={isMobile}
+                />
+            )}
         </div>
     );
 };
@@ -147,6 +178,8 @@ export default function TrackingTable({
     onDelete,
     onRestore,
     onView,
+    onVisitRegistration,
+    onActivityLogs,
     transferOptions = [],
 }: TrackingTableProps) {
     const [currentPage, setCurrentPage] = useState(1);
@@ -284,6 +317,8 @@ export default function TrackingTable({
                                 <TableCell className="table-cell text-right">
                                     <ActionButtons
                                         onView={onView ? () => onView(item) : undefined}
+                                        onVisitRegistration={onVisitRegistration ? () => onVisitRegistration(item) : undefined}
+                                        onActivityLogs={onActivityLogs ? () => onActivityLogs(item) : undefined}
                                         onRequestConfirm={(type) => handleRequestConfirm(type, item)}
                                         status={item.status}
                                         canEdit={!!onEdit}

@@ -4,6 +4,7 @@
  */
 
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
@@ -33,6 +34,7 @@ export default function TrackingPage() {
     const [pageLoading, setPageLoading] = useState(true);
     const { fetchMultipleLists } = useLists();
     const { addToast } = useToast();
+    const navigate = useNavigate();
     const [lists, setLists] = useState<Record<string, { value: string; label: string }[]>>({});
     const [stats, setStats] = useState<TrackingStats | null>(null);
     const [statsLoading, setStatsLoading] = useState(true);
@@ -294,6 +296,8 @@ export default function TrackingPage() {
                                         onView={handleOpenViewModal}
                                         onDelete={handleDelete}
                                         onRestore={handleRestore}
+                                        onVisitRegistration={(item) => navigate(`/visit-registration/${item.trackingId}`)}
+                                        onActivityLogs={(item) => navigate(`/activity-logs/${item.trackingId}`)}
                                         transferOptions={lists['Traslado'] || TRANSFER_OPTIONS}
                                     />
                                 </SkeletonLoader>

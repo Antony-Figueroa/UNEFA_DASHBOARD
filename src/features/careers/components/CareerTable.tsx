@@ -37,6 +37,7 @@ import { InternshipTypeOption } from "../../internship-types/types";
 import { CrudStatus } from "../../../hooks/useCrud";
 import Checkbox from "../../../components/form/input/Checkbox";
 import Badge from "../../../components/ui/badge/Badge";
+import CareerCards from "./CareerCards";
 
 /**
  * Genera un color consistente basado en el nombre de la carrera para badges/iconos.
@@ -199,6 +200,7 @@ export default function CareerTable({
   const [expandedRows, setExpandedRows] = useState<Set<string | number>>(new Set());
   const { status: dbStatus } = useDbStatus();
   const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
+  const [viewMode, setViewMode] = useState<"cards" | "table">("table");
 
   useEffect(() => {
     const used = new Set<string | number>();
@@ -378,6 +380,38 @@ export default function CareerTable({
 
       {/* Cabecera reorganizada: filtros y búsqueda */}
       <div className="p-4 border-b border-border-light dark:border-border-dark space-y-4">
+        {/* Toggle Vista */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <button
+              onClick={() => setViewMode("table")}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                viewMode === "table" 
+                  ? "bg-white dark:bg-gray-700 shadow-sm text-brand-600 dark:text-brand-400" 
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+              Tabla
+            </button>
+            <button
+              onClick={() => setViewMode("cards")}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                viewMode === "cards" 
+                  ? "bg-white dark:bg-gray-700 shadow-sm text-brand-600 dark:text-brand-400" 
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              Cards
+            </button>
+          </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <div className="relative flex-1 max-w-md">
             <input
@@ -481,9 +515,24 @@ export default function CareerTable({
         </div>
       </div>
 
+      {/* Vista de Cards */}
+      {viewMode === "cards" && (
+        <div className="p-4">
+          <CareerCards
+            careers={paged}
+            practiceOptions={practiceOptions}
+            onEdit={onEdit}
+            onToggleStatus={onToggleStatus}
+            onView={onView}
+            inactiveMode={inactiveMode}
+          />
+        </div>
+      )}
+
       {/* Vista de Escritorio (Tabla) */}
-      <div className="hidden md:block max-w-full overflow-x-auto table-scrollbar">
-        <Table className="table-root">
+      {viewMode === "table" && (
+        <div className="hidden md:block max-w-full overflow-x-auto table-scrollbar">
+          <Table className="table-root">
           <TableHeader className="table-header-row">
             <TableRow>
               <TableCell isHeader className="table-header-cell w-10">
@@ -621,7 +670,8 @@ export default function CareerTable({
             )}
           </TableBody>
         </Table>
-      </div>
+        </div>
+      )}
 
       {/* Vista Móvil (Cards) */}
       <div className="md:hidden divide-y divide-border-light dark:divide-border-dark">

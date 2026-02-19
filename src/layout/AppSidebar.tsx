@@ -106,6 +106,7 @@ const navItems: NavItem[] = [
       { name: "Registro de Actividad", path: "/configure/logs" },
       { name: "Roles y Permisos", path: "/configure/roles" },
       { name: "Mantenimiento", path: "/configure/maintenance" },
+      { name: "Respaldos", path: "/configure/backups" },
     ],
   },
   {

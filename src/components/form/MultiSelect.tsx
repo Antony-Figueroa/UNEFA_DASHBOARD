@@ -83,25 +83,36 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
 
-  /** 
+  /**
    * Estado para el posicionamiento dinámico del menú desplegable.
+   * Incluye detección de posición (arriba/abajo) según el espacio disponible.
    */
-  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, height: 0, position: 'bottom' as 'bottom' | 'top' });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   /**
    * Calcula y actualiza las coordenadas del menú basándose en el elemento combobox.
+   * Detecta si hay espacio suficiente abajo, si no, muestra el menú arriba.
    * Se ejecuta al abrir y ante cualquier evento de scroll/resize.
    */
   const updateCoords = () => {
     if (dropdownRef.current) {
       const comboRect = dropdownRef.current.querySelector('[role="combobox"]')?.getBoundingClientRect();
       if (comboRect) {
+        const menuEstimatedHeight = Math.min(options.length * 40 + (onAddNew ? 50 : 0), 240);
+        const spaceBelow = window.innerHeight - comboRect.bottom;
+        const spaceAbove = comboRect.top;
+        
+        // Si no hay suficiente espacio abajo pero sí arriba, mostrar arriba
+        const shouldShowAbove = spaceBelow < menuEstimatedHeight && spaceAbove > menuEstimatedHeight;
+        
         setCoords({
-          top: comboRect.bottom,
+          top: shouldShowAbove ? comboRect.top : comboRect.bottom,
           left: comboRect.left,
-          width: comboRect.width
+          width: comboRect.width,
+          height: comboRect.height,
+          position: shouldShowAbove ? 'top' : 'bottom'
         });
       }
     }
@@ -318,12 +329,17 @@ const MultiSelect = forwardRef<HTMLDivElement, MultiSelectProps>(({
           {isOpen && createPortal(
             <div
               ref={menuRef}
-              className="fixed mt-1 overflow-y-auto bg-bg-main rounded-lg shadow-xl max-h-60 dark:bg-bg-dark border border-border-light dark:border-border-dark"
+              className="fixed overflow-y-auto bg-bg-main rounded-lg shadow-xl dark:bg-bg-dark border border-border-light dark:border-border-dark"
               style={{
-                top: coords.top,
+                top: coords.position === 'top' ? coords.top - 4 : coords.top + 4,
                 left: coords.left,
                 width: coords.width,
-                zIndex: 9999, // Usar zIndex numérico para evitar errores de linter con clases arbitrarias
+                zIndex: 9999,
+                transform: coords.position === 'top' ? 'translateY(-100%)' : 'none',
+                transformOrigin: coords.position === 'top' ? 'bottom' : 'top',
+                maxHeight: coords.position === 'top' 
+                  ? Math.min(240, coords.top - 20) 
+                  : Math.min(240, window.innerHeight - coords.top - 20),
               }}
               onClick={(e) => e.stopPropagation()}
               role="listbox"

@@ -30,6 +30,32 @@ export interface RecentReport {
   user?: string;
 }
 
+export interface TutorAcademicReportRow {
+  nro: number;
+  region: string;
+  nucleo: string;
+  extension: string;
+  carrera: string;
+  nombreTutor: string;
+  apellidoTutor: string;
+  cedula: string;
+  condicion: string;
+  dedicacion: string;
+  categoria: string;
+  telefono: string;
+  correo: string;
+  cantidadEstudiantes: number;
+}
+
+export interface TutorAcademicReportResponse {
+  success: boolean;
+  data: TutorAcademicReportRow[];
+  meta: {
+    total: number;
+    totalEstudiantes: number;
+  };
+}
+
 export const reportsService = {
   getStats: async (period?: string) => {
     const params = period ? `?period=${period}` : '';
@@ -50,6 +76,14 @@ export const reportsService = {
   getRecentReports: async () => {
     const response = await apiClient.get('/reports/recent');
     return response.data as RecentReport[];
+  },
+
+  getTutorsAcademicReport: async (periodId?: number, careerId?: number) => {
+    const params = new URLSearchParams();
+    if (periodId) params.append('periodId', periodId.toString());
+    if (careerId) params.append('careerId', careerId.toString());
+    const response = await apiClient.get(`/reports/tutores-academicos?${params.toString()}`);
+    return response.data as TutorAcademicReportResponse;
   },
 
   generateReport: async (type: string, period?: string, format?: string) => {

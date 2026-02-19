@@ -82,23 +82,33 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
 
   /** 
    * Estado para almacenar las coordenadas y dimensiones del input.
-   * Se usa para posicionar el menú desplegable (Portal) exactamente debajo del botón.
+   * Se usa para posicionar el menú desplegable (Portal) exactamente debajo o arriba del botón.
    */
-  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, height: 0, position: 'bottom' as 'bottom' | 'top' });
   const containerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   /**
    * Actualiza la posición del menú desplegable basándose en la posición actual del contenedor en el viewport.
+   * Detecta si hay espacio suficiente abajo, si no, muestra el menú arriba.
    * Esto asegura que el menú "siga" al input si este se desplaza (ej. scroll en el modal).
    */
   const updateCoords = () => {
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
+      const menuEstimatedHeight = Math.min(options.length * 40 + (onAddNew ? 50 : 0), 240); // 240px max-height
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      
+      // Si no hay suficiente espacio abajo pero sí arriba, mostrar arriba
+      const shouldShowAbove = spaceBelow < menuEstimatedHeight && spaceAbove > menuEstimatedHeight;
+      
       setCoords({
-        top: rect.bottom,
+        top: shouldShowAbove ? rect.top : rect.bottom,
         left: rect.left,
-        width: rect.width // Usar rect.width en lugar de offsetWidth
+        width: rect.width,
+        height: rect.height,
+        position: shouldShowAbove ? 'top' : 'bottom'
       });
     }
   };
@@ -165,19 +175,31 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
 
   const selectedOption = options.find((opt) => opt.value === selectedValue);
 
+  // Calcular la altura máxima disponible para el menú
+  const getMaxHeight = () => {
+    if (coords.position === 'top') {
+      return Math.min(240, coords.top - 20); // 20px de margen
+    } else {
+      return Math.min(240, window.innerHeight - coords.top - 20);
+    }
+  };
+
   /**
    * Contenido del menú desplegable. Se define por separado para ser usado con createPortal.
    */
   const renderMenu = () => {
     if (!isOpen || disabled) return null;
 
+    const maxHeight = getMaxHeight();
+
     return (
       <ul
-        className="max-h-60 w-full overflow-auto rounded-xl border border-border-light bg-white py-1.5 shadow-theme-lg outline-none dark:border-border-dark dark:bg-bg-dark"
+        className="w-full overflow-auto rounded-xl border border-border-light bg-white py-1.5 shadow-theme-lg outline-none dark:border-border-dark dark:bg-bg-dark"
         role="listbox"
         style={{
+          maxHeight: `${maxHeight}px`,
           width: coords.width,
-          minWidth: '120px' // Asegurar un ancho mínimo para opciones cortas (como notas)
+          minWidth: '120px'
         }}
       >
         {onAddNew && (
@@ -286,10 +308,12 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
           ref={menuRef}
           className="fixed"
           style={{
-            top: coords.top + 4,
+            top: coords.position === 'top' ? coords.top - 4 : coords.top + 4,
             left: coords.left,
             width: coords.width,
-            zIndex: 9999, // Usar zIndex numérico para evitar errores de linter con clases arbitrarias
+            zIndex: 9999,
+            transform: coords.position === 'top' ? 'translateY(-100%)' : 'none',
+            transformOrigin: coords.position === 'top' ? 'bottom' : 'top',
           }}
         >
           {renderMenu()}

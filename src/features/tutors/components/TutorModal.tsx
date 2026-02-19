@@ -14,6 +14,8 @@ import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { getCareers } from "../../careers/services/careersService";
 import { Career } from "../../careers/types";
 import { useLists } from "../../lists/hooks/useLists";
+import { List } from "../../lists/types";
+import * as listsService from "../../lists/services/listsService";
 
 /**
  * Props for the TutorModal component.
@@ -53,6 +55,14 @@ export default function TutorModal({
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState<CreateTutorPayload | UpdateTutorPayload | null>(null);
+
+  // Estado para agregar nuevos valores a las listas
+  const [isValueModalOpen, setIsValueModalOpen] = useState(false);
+  const [valueModalTitle, setValueModalTitle] = useState<string>("");
+  const [targetListName, setTargetListName] = useState<string>("");
+  const [targetField, setTargetField] = useState<keyof TutorFormData | "">("");
+  const [newValueInput, setNewValueInput] = useState<string>("");
+  const [savingNewValue, setSavingNewValue] = useState(false);
 
   // Fallbacks for when t_list data is not available
   const NATIONALITY_OPTIONS = options["Nacionalidad"] || [
@@ -129,6 +139,80 @@ export default function TutorModal({
     }
   }, [isOpen, fetchMultipleLists]);
 
+  // Funciones para agregar nuevos valores a las listas
+  const openAddValueModal = (listName: string, field: keyof TutorFormData, title: string) => {
+    setTargetListName(listName);
+    setTargetField(field);
+    setValueModalTitle(title);
+    setNewValueInput("");
+    setIsValueModalOpen(true);
+  };
+
+  const handleSaveNewValue = async () => {
+    const raw = newValueInput.trim();
+    if (!raw) return;
+    setSavingNewValue(true);
+    try {
+      let list: List | null = null;
+      try {
+        list = await listsService.getListByName(targetListName);
+      } catch (err: unknown) {
+        const status = (err as any)?.response?.status;
+        if (status === 404) {
+          const allLists = await listsService.getAllLists();
+          const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[_\s]+/g, " ").trim().toUpperCase();
+          const targetNorm = normalize(targetListName);
+          list = allLists.find(l => normalize(l.name) === targetNorm || normalize(l.name).includes(targetNorm) || targetNorm.includes(normalize(l.name))) || null;
+          if (!list) {
+            const createdList = await listsService.createList(targetListName);
+            list = createdList;
+          }
+        } else {
+          throw err;
+        }
+      }
+      
+      const upper = targetField === "phoneAreaCode" ? raw.replace(/\D/g, '').substring(0, 4) : raw.toUpperCase();
+      
+      // Evitar duplicados
+      const existing = (list!.values || []).find((v: { name: any; abbreviation: any; }) => {
+        const byName = String(v.name || "").toUpperCase() === upper;
+        const byAbbr = String(v.abbreviation || "").toUpperCase() === upper;
+        return byName || byAbbr;
+      });
+      
+      if (existing) {
+        const selectValue = (targetListName === "Nacionalidad" && existing.abbreviation) 
+          ? String(existing.abbreviation).toUpperCase() 
+          : String(existing.name).toUpperCase();
+        setValue(targetField as keyof TutorFormData, selectValue, { shouldValidate: true, shouldDirty: true });
+        setIsValueModalOpen(false);
+        return;
+      }
+
+      const abbr = (targetListName === "Nacionalidad") ? upper : undefined;
+      const created = await listsService.createValue(list!.id, upper, abbr);
+      const mapped = { 
+        value: (targetListName === "Nacionalidad" && created.abbreviation) ? created.abbreviation.toUpperCase() : upper, 
+        label: (targetListName === "Nacionalidad" && created.abbreviation) ? created.abbreviation.toUpperCase() : upper 
+      };
+      
+      setOptions(prev => {
+        const next = { ...prev };
+        const arr = next[targetListName] || [];
+        next[targetListName] = [...arr, mapped];
+        return next;
+      });
+
+      setValue(targetField as keyof TutorFormData, mapped.value, { shouldValidate: true, shouldDirty: true });
+      setIsValueModalOpen(false);
+    } catch (e) {
+      console.error("[TutorModal] Error creando valor en lista:", e);
+    } finally {
+      setSavingNewValue(false);
+    }
+  };
+
   const tutorSchema = useMemo(() => z.object({
     identificationPrefix: z.string().min(1, "Seleccione el tipo"),
     identificationNumber: z.string()
@@ -200,6 +284,7 @@ export default function TutorModal({
     handleSubmit,
     control,
     reset,
+    setValue,
     formState: { errors, isDirty, isValid },
   } = useForm<TutorFormData>({
     resolver: zodResolver(tutorSchema),
@@ -368,6 +453,8 @@ export default function TutorModal({
                         value={String(field.value)}
                         disabled={isInUse}
                         error={!!errors.identificationPrefix}
+                        onAddNew={() => openAddValueModal("Nacionalidad", "identificationPrefix", "Agregar Nacionalidad")}
+                        addNewLabel="Nueva opción"
                       />
                     )}
                   />
@@ -497,6 +584,8 @@ export default function TutorModal({
                         onBlur={field.onBlur}
                         value={String(field.value)}
                         error={!!errors.phoneAreaCode}
+                        onAddNew={() => openAddValueModal("CODIGOS_AREA", "phoneAreaCode", "Agregar Código de Área")}
+                        addNewLabel="Nueva opción"
                       />
                     )}
                   />
@@ -551,6 +640,8 @@ export default function TutorModal({
                     onBlur={field.onBlur}
                     value={String(field.value)}
                     error={!!errors.condition}
+                    onAddNew={() => openAddValueModal("Condición", "condition", "Agregar Condición")}
+                    addNewLabel="Nueva opción"
                   />
                 )}
               />
@@ -574,6 +665,8 @@ export default function TutorModal({
                     onBlur={field.onBlur}
                     value={String(field.value)}
                     error={!!errors.dedication}
+                    onAddNew={() => openAddValueModal("Dedicación", "dedication", "Agregar Dedicación")}
+                    addNewLabel="Nueva opción"
                   />
                 )}
               />
@@ -597,6 +690,8 @@ export default function TutorModal({
                     onBlur={field.onBlur}
                     value={String(field.value)}
                     error={!!errors.category}
+                    onAddNew={() => openAddValueModal("Categoría", "category", "Agregar Categoría")}
+                    addNewLabel="Nueva opción"
                   />
                 )}
               />
@@ -620,6 +715,8 @@ export default function TutorModal({
                     onBlur={field.onBlur}
                     value={String(field.value)}
                     error={!!errors.profession}
+                    onAddNew={() => openAddValueModal("Profesión", "profession", "Agregar Profesión")}
+                    addNewLabel="Nueva opción"
                   />
                 )}
               />
@@ -696,6 +793,52 @@ export default function TutorModal({
       confirmLabel="Cerrar sin guardar"
       cancelLabel="Continuar editando"
     />
+
+    {/* Modal para agregar nueva opción a la lista */}
+    <Modal
+      isOpen={isValueModalOpen}
+      onClose={() => setIsValueModalOpen(false)}
+      size="md"
+    >
+      <ModalHeader>{valueModalTitle}</ModalHeader>
+      <ModalBody>
+        <div className="space-y-4">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Nuevo valor
+          </label>
+          <Input
+            value={newValueInput}
+            onChange={(e) => setNewValueInput(e.target.value)}
+            placeholder="Ingrese el nuevo valor"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && newValueInput.trim() && !savingNewValue) {
+                handleSaveNewValue();
+              }
+            }}
+            autoFocus
+          />
+          <p className="text-xs text-gray-500">
+            Presione Enter o haga clic en Guardar para agregar el valor.
+          </p>
+        </div>
+      </ModalBody>
+      <ModalFooter>
+        <Button
+          variant="outline"
+          onClick={() => setIsValueModalOpen(false)}
+          disabled={savingNewValue}
+        >
+          Cancelar
+        </Button>
+        <AsyncButton
+          onClick={handleSaveNewValue}
+          loading={savingNewValue}
+          disabled={!newValueInput.trim()}
+        >
+          Guardar
+        </AsyncButton>
+      </ModalFooter>
+    </Modal>
   </>
   );
 }

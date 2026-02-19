@@ -119,8 +119,29 @@ export default function MaintenancePage() {
     });
   };
 
-  const handleSyncData = () => {
-    toast.success('Sincronización completada');
+  const handleSyncData = async () => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Sincronizar Datos",
+      message: "¿Está seguro de sincronizar los datos con Supabase? Esto verificará la integridad de las tablas principales.",
+      onConfirm: async () => {
+        try {
+          const result = await configService.syncData();
+          if (result.success) {
+            toast.success(result.message);
+            await fetchConfig();
+          } else {
+            toast.error('Error en la sincronización');
+          }
+        } catch (error) {
+          console.error('Error syncing data:', error);
+          toast.error('Error al sincronizar datos');
+        } finally {
+          setConfirmDialog(null);
+        }
+      },
+      variant: "info",
+    });
   };
 
   const handleVerifySystem = async () => {

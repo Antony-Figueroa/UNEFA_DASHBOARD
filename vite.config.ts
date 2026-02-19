@@ -14,14 +14,16 @@ export default defineConfig(() => {
       }),
     ],
     build: {
-      chunkSizeWarningLimit: 1000, // Aumentar ligeramente el límite para el PDF que es pesado por naturaleza
+      chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
           manualChunks(id) {
-            // Split React and core vendor libraries
             if (id.includes("node_modules")) {
-              if (id.includes("react") || id.includes("react-dom") || id.includes("react-router")) {
-                return "vendor-core";
+              if (id.includes("react") || id.includes("react-dom") || id.includes("scheduler")) {
+                return "vendor-react";
+              }
+              if (id.includes("react-router")) {
+                return "vendor-router";
               }
               if (id.includes("@react-pdf") || id.includes("pdfkit") || id.includes("fontkit")) {
                 return "vendor-pdf";
@@ -32,7 +34,9 @@ export default defineConfig(() => {
               if (id.includes("lucide-react") || id.includes("icons")) {
                 return "vendor-icons";
               }
-              // Other node_modules go to a generic vendor chunk
+              if (id.includes("motion") || id.includes("framer-motion")) {
+                return "vendor-motion";
+              }
               return "vendor";
             }
           },

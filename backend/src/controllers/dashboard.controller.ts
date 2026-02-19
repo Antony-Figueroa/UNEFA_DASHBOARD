@@ -17,7 +17,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       supabase.from('t_students').select('*', { count: 'exact', head: true }).eq('STATUS', 1),
       supabase.from('t_institution').select('*', { count: 'exact', head: true }),
       supabase.from('t_institution').select('*', { count: 'exact', head: true }).eq('STATUS', 1),
-      supabase.from('t_internships_period').select('*').eq('PERIOD_STATUS', '1').eq('STATUS', 1).order('START_DATE', { ascending: false }).limit(1).single()
+      supabase.from('t_internships_period').select('*').eq('PERIOD_STATUS', '2').eq('STATUS', 1).order('START_DATE', { ascending: false }).limit(1).single()
     ]);
 
     // 2. Career Distribution

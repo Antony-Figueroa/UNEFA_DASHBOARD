@@ -3,6 +3,7 @@ import UserMetaCard from "../components/UserProfile/UserMetaCard";
 import UserInfoCard from "../components/UserProfile/UserInfoCard";
 import UserPasswordCard from "../components/UserProfile/UserPasswordCard";
 import UserLoginHistoryCard from "../components/UserProfile/UserLoginHistoryCard";
+import UserThemeCard from "../components/UserProfile/UserThemeCard";
 import PageMeta from "../components/common/PageMeta";
 import { SkeletonLoader, ProfileSkeleton, BreadcrumbSkeleton } from "../components/ui/skeleton";
 import { useAuth } from "../context/auth";
@@ -35,7 +36,12 @@ export default function UserProfiles() {
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <UserPasswordCard />
+            <UserThemeCard />
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <UserLoginHistoryCard />
+            <div></div>
           </div>
           
           <UserInfoCard />

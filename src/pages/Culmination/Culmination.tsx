@@ -19,6 +19,7 @@ import CustomSelect from "../../components/form/CustomSelect";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DownloadIcon, CheckCircleIcon } from "../../icons";
 import { culminationService, CulminationRecord, CulminationMeta } from "../../features/culmination/services/culminationService";
+import { generateCertificatePDF } from "../../components/ui/pdf/templates/CertificatePDF";
 import toast from "react-hot-toast";
 
 const STATUS_CONFIG = {
@@ -138,6 +139,49 @@ export default function CulminationPage() {
         }
       },
     });
+  };
+
+  const handleDownloadPdf = async (item: CulminationRecord) => {
+    try {
+      toast.loading('Generando PDF...', { id: 'pdf-download' });
+      
+      const pdfData: CulminationRecord = {
+        id: item.id,
+        studentCi: item.studentCi,
+        studentName: item.studentName,
+        careerId: item.careerId,
+        careerName: item.careerName,
+        institutionId: item.institutionId,
+        institutionName: item.institutionName,
+        period: item.period,
+        practiceType: item.practiceType,
+        startDate: item.startDate,
+        endDate: item.endDate,
+        totalHours: item.totalHours,
+        status: item.status,
+        certificateNumber: item.certificateNumber,
+        certifiedAt: item.certifiedAt
+      };
+
+      const blob = await generateCertificatePDF(
+        pdfData, 
+        item.certificateNumber || 'N/A'
+      );
+      
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Certificado_${item.studentName.replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success('PDF descargado exitosamente', { id: 'pdf-download' });
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast.error('Error al descargar el PDF', { id: 'pdf-download' });
+    }
   };
 
   return (
@@ -303,7 +347,7 @@ export default function CulminationPage() {
                                 </Button>
                               )}
                               {item.status === "certified" && (
-                                <Button size="sm" variant="outline" startIcon={<DownloadIcon className="w-4 h-4" />}>
+                                <Button size="sm" variant="outline" onClick={() => handleDownloadPdf(item)} startIcon={<DownloadIcon className="w-4 h-4" />}>
                                   PDF
                                 </Button>
                               )}
@@ -346,7 +390,7 @@ export default function CulminationPage() {
                           <Button size="sm" onClick={() => handleGenerateCertificate(item)}>Generar Certificado</Button>
                         )}
                         {item.status === "certified" && (
-                          <Button size="sm" variant="outline" startIcon={<DownloadIcon className="w-4 h-4" />}>Descargar PDF</Button>
+                          <Button size="sm" variant="outline" onClick={() => handleDownloadPdf(item)} startIcon={<DownloadIcon className="w-4 h-4" />}>Descargar PDF</Button>
                         )}
                       </div>
                     </div>

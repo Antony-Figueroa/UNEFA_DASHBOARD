@@ -86,9 +86,9 @@ export default function UserAddressCard() {
         <div className="flex flex-col h-full bg-bg-main dark:bg-bg-dark">
           <ModalHeader className="shrink-0 pt-6 px-6 sm:pt-10 sm:px-12 bg-bg-main dark:bg-bg-dark border-b border-border-light dark:border-border-dark">
             <div className="w-full">
-              <h4 className="mb-1 text-2xl font-semibold text-text-emphasis dark:text-text-emphasis">
+              <span className="mb-1 text-2xl font-semibold text-text-emphasis dark:text-text-emphasis">
                 Edit Address
-              </h4>
+              </span>
               <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
                 Update your details to keep your profile up-to-date.
               </p>

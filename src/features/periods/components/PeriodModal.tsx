@@ -399,9 +399,9 @@ export default function PeriodModal({
             <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton>
                 <ModalHeader>
                 <div className="max-w-3xl mx-auto w-full">
-                    <h5 className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+                    <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
                         {periodo ? 'Editar Período' : 'Registrar Período'}
-                    </h5>
+                    </span>
                     <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
                         {periodo ? 'Modifica los detalles del período académico.' : 'Ingresa los detalles del nuevo período académico.'}
                     </p>

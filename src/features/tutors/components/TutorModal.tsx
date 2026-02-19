@@ -420,9 +420,9 @@ export default function TutorModal({
         size="4xl"
       >
         <ModalHeader>
-          <h5 className="text-xl font-semibold text-text-primary dark:text-white/90">
+          <span className="text-xl font-semibold text-text-primary dark:text-white/90">
             {editingTutor ? "Editar Tutor" : "Registrar Tutor"}
-          </h5>
+          </span>
           <p className="text-sm text-text-secondary">Complete la información del tutor académico.</p>
           {isInUse && (
             <div className="mt-2 text-xs font-medium text-warning-700 dark:text-warning-400 bg-warning-50 dark:bg-warning-900/20 p-2.5 rounded-md border border-warning-200 dark:border-warning-800/50 flex items-start gap-2">

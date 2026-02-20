@@ -9,7 +9,7 @@ import TopBanner from "../components/layout/TopBanner";
 import { useSessionTimeout } from "../hooks/useSessionTimeout";
 
 const LayoutContent: React.FC = () => {
-  const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+  const { isExpanded, isMobileOpen } = useSidebar();
   useSessionTimeout();
 
   return (
@@ -23,7 +23,7 @@ const LayoutContent: React.FC = () => {
         <Backdrop />
       </div>
       <div
-        className={`flex flex-col min-h-screen transition-all duration-300 ease-in-out ${isExpanded || isHovered ? "lg:pl-[290px]" : "lg:pl-[90px]"
+        className={`flex flex-col min-h-screen transition-all duration-300 ease-in-out ${isExpanded ? "lg:pl-72" : "lg:pl-[72px]"
           } ${isMobileOpen ? "pl-0" : ""}`}
       >
         <div

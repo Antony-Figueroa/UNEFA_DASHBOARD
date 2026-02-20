@@ -14,76 +14,125 @@ export interface BackupRecord {
 }
 
 class BackupService {
-  private readonly TABLES_TO_BACKUP = [
-    't_activity_log',
-    't_activity_logs',
-    't_auth_log',
+  private readonly EXCLUDED_TABLES = [
     't_backups',
-    't_career',
-    't_career_internship_type',
-    't_change_log',
-    't_chat_sessions',
-    't_columns',
-    't_config',
-    't_evaluation',
-    't_evaluation_criteria',
-    't_evaluation_detail',
-    't_institution',
-    't_institution_career',
-    't_institution_internship_type',
-    't_institution_manager',
-    't_internships_period',
-    't_internship_type',
-    't_key_history',
-    't_list',
-    't_notifications',
-    't_operation',
-    't_password_history',
-    't_permissions',
-    't_preset_questions',
-    't_practice_visits',
-    't_professional_practices',
-    't_professional_practices_tutor',
-    't_recovery_tokens',
-    't_request_types',
-    't_roles',
-    't_roles_permissions',
-    't_security_questions',
-    't_session',
-    't_session_attempts',
-    't_session_history',
-    't_student_documents',
-    't_student_requests',
-    't_students',
-    't_tables',
-    't_tutor_career',
-    't_tutors',
-    't_user',
-    't_user_key',
-    't_user_questions',
-    't_user_roles',
-    't_user_theme',
-    't_value_list',
-    't_visit'
+    'pg_%',
+    'information_schema%',
+    'auth.%',
+    'storage.%',
+    '_realtime%',
+    'extensions%',
+    'graphql%',
+    'pgsodium%',
+    'pgbouncer%',
+    'pg_tle%'
   ];
+
+  async getAllTables(): Promise<string[]> {
+    const supabaseClient = dbManager.getConnection();
+    
+    try {
+      const { data, error } = await supabaseClient.rpc('get_all_tables');
+      
+      if (error) {
+        console.warn('[Backup] RPC get_all_tables no disponible, usando lista por defecto');
+        return this.getDefaultTables();
+      }
+      
+      return (data || []).map((row: any) => row.table_name || row).filter(Boolean);
+    } catch (error) {
+      console.warn('[Backup] Error obteniendo tablas dinámicamente:', error);
+      return this.getDefaultTables();
+    }
+  }
+
+  private getDefaultTables(): string[] {
+    return [
+      't_activity_log',
+      't_activity_logs',
+      't_auth_log',
+      't_backups',
+      't_career',
+      't_career_internship_type',
+      't_change_log',
+      't_chat_sessions',
+      't_columns',
+      't_config',
+      't_evaluation',
+      't_evaluation_criteria',
+      't_evaluation_detail',
+      't_institution',
+      't_institution_career',
+      't_institution_internship_type',
+      't_institution_manager',
+      't_internship_type',
+      't_internships_period',
+      't_key_history',
+      't_list',
+      't_notifications',
+      't_operation',
+      't_password_history',
+      't_permissions',
+      't_preset_questions',
+      't_practice_visits',
+      't_professional_practices',
+      't_professional_practices_tutor',
+      't_recovery_tokens',
+      't_request_types',
+      't_roles',
+      't_roles_permissions',
+      't_security_questions',
+      't_session',
+      't_session_attempts',
+      't_session_history',
+      't_student_documents',
+      't_student_requests',
+      't_students',
+      't_tables',
+      't_tutor_career',
+      't_tutors',
+      't_user',
+      't_user_key',
+      't_user_questions',
+      't_user_roles',
+      't_user_theme',
+      't_value_list',
+      't_visit'
+    ];
+  }
 
   async createBackup(userId: string, name?: string, description?: string, format: 'json' | 'sql' = 'sql'): Promise<BackupRecord> {
     const supabaseClient = dbManager.getConnection();
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupName = name || `backup-${timestamp}`;
     
+    const allTables = await this.getAllTables();
+    const totalTablesDetected = allTables.length;
+    
     const tablesData: Record<string, any[]> = {};
     const backedUpTables: string[] = [];
     const failedTables: string[] = [];
 
-    for (const tableName of this.TABLES_TO_BACKUP) {
+    for (const tableName of allTables) {
+      if (this.EXCLUDED_TABLES.some(excluded => {
+        if (excluded.includes('%')) {
+          return tableName.match(new RegExp(excluded.replace(/%/g, '.*')));
+        }
+        return tableName === excluded;
+      })) {
+        continue;
+      }
+
       try {
         const { data, error } = await supabaseClient
           .from(tableName)
-          .select('*');
+          .select('*')
+          .limit(50000);
 
         if (error) {
-          console.warn(`[Backup] Tabla ${tableName} no disponible:`, error.message);
+          if (!error.message.includes('does not exist') && !error.message.includes('relation')) {
+            console.warn(`[Backup] Tabla ${tableName} error:`, error.message);
+          }
           failedTables.push(tableName);
           continue;
         }
@@ -92,17 +141,19 @@ class BackupService {
           tablesData[tableName] = data;
         }
         backedUpTables.push(tableName);
-      } catch (error) {
-        console.warn(`[Backup] Error procesando ${tableName}:`, error);
+      } catch (error: any) {
+        console.warn(`[Backup] Error procesando ${tableName}:`, error?.message || error);
         failedTables.push(tableName);
       }
     }
 
     let fileContent: string;
     let fileName: string;
+    const tablesWithData = Object.keys(tablesData).length;
+    const totalRecords = Object.values(tablesData).reduce((sum: number, arr) => sum + arr.length, 0);
 
     if (format === 'sql') {
-      fileContent = this.generateSQL(backupName, tablesData, backedUpTables, failedTables);
+      fileContent = this.generateSQL(backupName, tablesData, backedUpTables, failedTables, totalTablesDetected);
       fileName = `${backupName}.sql`;
     } else {
       const jsonData = {
@@ -111,10 +162,12 @@ class BackupService {
           description: description || '',
           createdAt: new Date().toISOString(),
           createdBy: userId,
-          version: '3.0',
+          version: '4.0',
           format: 'json',
-          totalTables: this.TABLES_TO_BACKUP.length,
-          successfulTables: backedUpTables.length,
+          totalTablesDetected,
+          tablesConsulted: backedUpTables.length,
+          tablesWithData,
+          totalRecords,
           failedTables
         },
         tables: tablesData
@@ -136,8 +189,9 @@ class BackupService {
         created_by: parseInt(userId),
         data: format === 'json' ? JSON.parse(fileContent) : { 
           sql: fileContent,
-          tablesWithData: Object.keys(tablesData),
-          totalRecords: Object.values(tablesData).reduce((sum, arr) => sum + arr.length, 0)
+          tablesWithData,
+          totalRecords,
+          tablesList: Object.keys(tablesData)
         }
       })
       .select()
@@ -160,7 +214,13 @@ class BackupService {
     };
   }
 
-  private generateSQL(backupName: string, tablesData: Record<string, any[]>, backedUpTables: string[], failedTables: string[]): string {
+  private generateSQL(
+    backupName: string, 
+    tablesData: Record<string, any[]>, 
+    backedUpTables: string[], 
+    failedTables: string[],
+    totalTablesDetected: number
+  ): string {
     const lines: string[] = [];
     const tablesWithData = Object.keys(tablesData).length;
     const totalRecords = Object.values(tablesData).reduce((sum: number, arr) => sum + arr.length, 0);
@@ -169,15 +229,18 @@ class BackupService {
     lines.push(`-- UNEFA Dashboard - Respaldo de Base de Datos`);
     lines.push(`-- Nombre: ${backupName}`);
     lines.push(`-- Fecha: ${new Date().toISOString()}`);
+    lines.push(`-- Tablas detectadas en BD: ${totalTablesDetected}`);
+    lines.push(`-- Tablas consultadas: ${backedUpTables.length}`);
     lines.push(`-- Tablas con datos: ${tablesWithData}`);
     lines.push(`-- Total de registros: ${totalRecords}`);
-    lines.push(`-- Tablas consultadas: ${backedUpTables.length} | Fallidas: ${failedTables.length}`);
     lines.push('-- ================================================================================');
     lines.push('');
     lines.push('BEGIN;');
     lines.push('');
 
-    for (const [tableName, rows] of Object.entries(tablesData)) {
+    const sortedTables = Object.entries(tablesData).sort((a, b) => a[0].localeCompare(b[0]));
+
+    for (const [tableName, rows] of sortedTables) {
       if (rows.length === 0) continue;
 
       lines.push(`-- --------------------------------------------------------`);
@@ -196,15 +259,19 @@ class BackupService {
     lines.push('-- --------------------------------------------------------');
     lines.push('-- Resumen del respaldo');
     lines.push('-- --------------------------------------------------------');
+    lines.push(`-- Tablas detectadas en BD: ${totalTablesDetected}`);
+    lines.push(`-- Tablas consultadas exitosamente: ${backedUpTables.length}`);
     lines.push(`-- Tablas con datos: ${tablesWithData}`);
     lines.push(`-- Total de registros: ${totalRecords}`);
-    lines.push(`-- Tablas consultadas exitosamente: ${backedUpTables.length}`);
-    lines.push(`-- Tablas fallidas (no existen): ${failedTables.length}`);
-    if (failedTables.length > 0) {
-      lines.push(`-- Lista de fallidas: ${failedTables.join(', ')}`);
+    lines.push(`-- Tablas vacías (sin datos): ${backedUpTables.length - tablesWithData}`);
+    lines.push(`-- Tablas con error: ${failedTables.length}`);
+    if (failedTables.length > 0 && failedTables.length <= 10) {
+      lines.push(`-- Errores en: ${failedTables.join(', ')}`);
     }
     lines.push('');
     lines.push('COMMIT;');
+    lines.push('-- ================================================================================');
+    lines.push('-- Fin del respaldo');
     lines.push('-- ================================================================================');
 
     return lines.join('\n');
@@ -219,6 +286,9 @@ class BackupService {
     }
     if (typeof value === 'boolean') {
       return value ? 'TRUE' : 'FALSE';
+    }
+    if (value instanceof Date) {
+      return `'${value.toISOString()}'`;
     }
     if (typeof value === 'object') {
       return `'${JSON.stringify(value).replace(/'/g, "''")}'`;

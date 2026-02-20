@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken, decodeToken } from '../utils/auth.utils.js';
 import * as authService from '../services/auth.service.js';
+import { permissionService } from '../services/permission.service.js';
 
 export interface UserPayload {
   userId: number;
@@ -127,4 +128,68 @@ export const restrictAsistente = (req: AuthRequest, res: Response, next: NextFun
     }
   }
   next();
+};
+
+/**
+ * Middleware para verificar permisos específicos.
+ * Los ADMIN (rol 1) tienen todos los permisos automáticamente.
+ */
+export const requirePermission = (permission: string) => {
+  return async (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Sesión no iniciada' });
+    }
+
+    // ADMIN tiene todos los permisos
+    if (req.user.role === ROLES.ADMIN) {
+      return next();
+    }
+
+    try {
+      const hasPermission = await permissionService.hasPermission(req.user.role, permission);
+      
+      if (!hasPermission) {
+        return res.status(403).json({ 
+          message: `Acceso denegado: No tiene el permiso '${permission}'` 
+        });
+      }
+      
+      next();
+    } catch (error) {
+      console.error('[Auth] Error verificando permiso:', error);
+      // En caso de error, denegar acceso por seguridad
+      return res.status(403).json({ message: 'Error al verificar permisos' });
+    }
+  };
+};
+
+/**
+ * Middleware para verificar múltiples permisos (cualquiera de ellos)
+ */
+export const requireAnyPermission = (permissions: string[]) => {
+  return async (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Sesión no iniciada' });
+    }
+
+    // ADMIN tiene todos los permisos
+    if (req.user.role === ROLES.ADMIN) {
+      return next();
+    }
+
+    try {
+      const hasPermission = await permissionService.hasAnyPermission(req.user.role, permissions);
+      
+      if (!hasPermission) {
+        return res.status(403).json({ 
+          message: `Acceso denegado: Se requiere uno de estos permisos: ${permissions.join(', ')}` 
+        });
+      }
+      
+      next();
+    } catch (error) {
+      console.error('[Auth] Error verificando permisos:', error);
+      return res.status(403).json({ message: 'Error al verificar permisos' });
+    }
+  };
 };

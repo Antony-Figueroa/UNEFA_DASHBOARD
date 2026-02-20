@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { useAuth } from "../context/auth";
-
-// Assume these icons are imported from an icon library
 import {
   BoxCubeIcon,
   ChevronDownIcon,
@@ -23,7 +21,8 @@ type NavItem = {
   icon: React.ReactNode;
   path?: string;
   roles?: number[];
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean; roles?: number[] }[];
+  badge?: string | number;
+  subItems?: { name: string; path: string; pro?: boolean; new?: boolean; roles?: number[]; badge?: string | number }[];
 };
 
 const navItems: NavItem[] = [
@@ -49,7 +48,7 @@ const navItems: NavItem[] = [
     name: "Panel de Estudiante",
     icon: <UserCircleIcon />,
     roles: [4],
-subItems: [
+    subItems: [
       { name: "Dashboard", path: "/student" },
       { name: "Mis Solicitudes", path: "/student/requests" },
       { name: "Mis Evaluaciones", path: "/student/evaluations" },
@@ -57,26 +56,26 @@ subItems: [
     ],
   },
   {
-    name: "Gestión",
+    name: "Académico",
     icon: <TableIcon />,
     roles: [0, 1, 2],
     subItems: [
       { name: "Período", path: "/period" },
-      { name: "Carrera", path: "/careers" },
+      { name: "Carreras", path: "/careers" },
     ],
   },
   {
-    name: "Registro",
+    name: "Registros",
     icon: <UserCircleIcon />,
     roles: [0, 1, 2],
     subItems: [
-      { name: "Estudiante", path: "/students" },
-      { name: "Tutor", path: "/tutors" },
-      { name: "Institución", path: "/institutions" },
+      { name: "Estudiantes", path: "/students" },
+      { name: "Tutores", path: "/tutors" },
+      { name: "Instituciones", path: "/institutions" },
     ],
   },
   {
-    name: "Prácticas Profesionales",
+    name: "Prácticas",
     icon: <BoxCubeIcon />,
     roles: [0, 1, 2],
     subItems: [
@@ -105,8 +104,8 @@ subItems: [
     roles: [0, 1],
     subItems: [
       { name: "Usuarios", path: "/configure/users" },
-      { name: "Configuración de Combos", path: "/configure/lists" },
-      { name: "Registro de Actividad", path: "/configure/logs" },
+      { name: "Listas", path: "/configure/lists" },
+      { name: "Registro", path: "/configure/logs" },
       { name: "Roles y Permisos", path: "/configure/roles" },
       { name: "Mantenimiento", path: "/configure/maintenance" },
       { name: "Respaldos", path: "/configure/backups" },
@@ -114,7 +113,7 @@ subItems: [
   },
   {
     icon: <SparklesIcon />,
-    name: "Asistente de IA",
+    name: "IA",
     path: "/ai-assistant",
   },
   {
@@ -124,10 +123,19 @@ subItems: [
   },
 ];
 
+const COLLAPSED_WIDTH = 72;
+const EXPANDED_WIDTH = 288;
+
 const AppSidebar: React.FC = () => {
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { isExpanded, isMobileOpen, setIsMobileOpen } = useSidebar();
   const { user } = useAuth();
   const location = useLocation();
+
+  const [openSubmenus, setOpenSubmenus] = useState<Set<string>>(new Set());
+  const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
+  const [isHoveringSidebar, setIsHoveringSidebar] = useState(false);
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
 
   const filteredNavItems = navItems.filter(item => {
     if (item.roles && user && !item.roles.includes(user.role)) return false;
@@ -140,13 +148,6 @@ const AppSidebar: React.FC = () => {
     })
   }));
 
-  const [openSubmenu, setOpenSubmenu] = useState<number | null>(null);
-  const [subMenuHeight, setSubMenuHeight] = useState<Record<number, number>>(
-    {}
-  );
-  const subMenuRefs = useRef<Record<number, HTMLDivElement | null>>({});
-
-  // const isActive = (path: string) => location.pathname === path;
   const isActive = useCallback(
     (path: string) => location.pathname === path,
     [location.pathname]
@@ -161,199 +162,313 @@ const AppSidebar: React.FC = () => {
   );
 
   useEffect(() => {
-    let submenuMatched = false;
-    navItems.forEach((nav, index) => {
-      if (nav.subItems) {
-        nav.subItems.forEach((subItem) => {
-          if (isActive(subItem.path)) {
-            setOpenSubmenu(index);
-            submenuMatched = true;
-          }
-        });
+    const openMenus = new Set<string>();
+    filteredNavItems.forEach((nav) => {
+      if (nav.subItems && hasActiveSubItem(nav)) {
+        openMenus.add(nav.name);
       }
     });
+    setOpenSubmenus(openMenus);
+  }, [location.pathname, hasActiveSubItem, filteredNavItems]);
 
-    if (!submenuMatched) {
-      setOpenSubmenu(null);
-    }
-  }, [location, isActive]);
-
-  useEffect(() => {
-    if (openSubmenu !== null) {
-      if (subMenuRefs.current[openSubmenu]) {
-        setSubMenuHeight((prevHeights) => ({
-          ...prevHeights,
-          [openSubmenu]: subMenuRefs.current[openSubmenu]?.scrollHeight || 0,
-        }));
+  const handleSubmenuToggle = (menuName: string) => {
+    setOpenSubmenus(prev => {
+      const next = new Set(prev);
+      if (next.has(menuName)) {
+        next.delete(menuName);
+      } else {
+        next.add(menuName);
       }
-    }
-  }, [openSubmenu]);
-
-  const handleSubmenuToggle = (index: number) => {
-    setOpenSubmenu((prevOpenSubmenu) => {
-      if (prevOpenSubmenu === index) {
-        return null;
-      }
-      return index;
+      return next;
     });
   };
 
-  const renderMenuItems = (items: NavItem[]) => (
-    <ul className="flex flex-col gap-4">
-      {items.map((nav, index) => (
-        <li key={nav.name}>
-          {nav.subItems ? (
-            <button
-              onClick={() => handleSubmenuToggle(index)}
-              className={`menu-item group ${
-                hasActiveSubItem(nav)
-                  ? "menu-item-has-active"
-                  : openSubmenu === index
-                  ? "menu-item-open"
-                  : "menu-item-inactive"
-                } cursor-pointer ${!isExpanded && !isHovered
-                  ? "lg:justify-center"
-                  : "lg:justify-start"
-                }`}
+  const handleMouseEnter = useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    setIsHoveringSidebar(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsHoveringSidebar(false);
+      setHoveredMenu(null);
+    }, 150);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const showExpanded = isExpanded || isHoveringSidebar || isMobileOpen;
+  const sidebarWidth = showExpanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH;
+
+  const MenuItem: React.FC<{
+    item: NavItem;
+    isCollapsed: boolean;
+    forceShowSubmenu?: boolean;
+    onHover?: (name: string | null) => void;
+    isHovered?: boolean;
+  }> = ({ item, isCollapsed, forceShowSubmenu = false, onHover, isHovered }) => {
+    const hasSubmenu = item.subItems && item.subItems.length > 0;
+    const isSubmenuOpen = openSubmenus.has(item.name) || forceShowSubmenu;
+    const hasActiveChild = hasActiveSubItem(item);
+    const isDirectActive = item.path ? isActive(item.path) : false;
+
+    if (isCollapsed && hasSubmenu) {
+      return (
+        <div 
+          className="relative"
+          onMouseEnter={() => onHover?.(item.name)}
+          onMouseLeave={() => onHover?.(null)}
+        >
+          <button
+            className={`group relative flex items-center justify-center w-full gap-3 px-3 py-2.5 rounded-xl text-theme-sm font-medium transition-all duration-200 ${
+              hasActiveChild
+                ? "bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400"
+                : "text-text-secondary hover:bg-gray-50/70 hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/[0.03] dark:hover:text-white"
+            }`}
+            title={item.name}
+          >
+            <span className={`shrink-0 ${
+              hasActiveChild
+                ? "text-brand-500"
+                : "text-text-tertiary group-hover:text-text-primary dark:group-hover:text-white"
+            }`}>
+              {item.icon}
+            </span>
+          </button>
+
+          {isHovered && (
+            <div 
+              className="absolute left-full top-0 ml-2 w-56 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-border-light/50 dark:border-white/10 z-[60] overflow-hidden"
+              style={{ marginTop: '-4px' }}
             >
-              <span
-                className={`menu-item-icon-size  ${
-                  hasActiveSubItem(nav)
-                  ? "text-brand-600 dark:text-brand-300"
-                  : openSubmenu === index
-                  ? "text-unefa-blue dark:text-white"
-                  : "menu-item-icon-inactive"
-                  }`}
-              >
-                {nav.icon}
-              </span>
-              {(isExpanded || isHovered || isMobileOpen) && (
-                <span className="menu-item-text">{nav.name}</span>
-              )}
-              {(isExpanded || isHovered || isMobileOpen) && (
-                <ChevronDownIcon
-                  className={`ml-auto icon-sm transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${
-                    hasActiveSubItem(nav)
-                    ? "rotate-180 text-brand-600 dark:text-brand-300"
-                    : openSubmenu === index
-                    ? "rotate-180 text-unefa-blue dark:text-white"
-                    : ""
-                    }`}
-                />
-              )}
-            </button>
-          ) : (
-            nav.path && (
-              <Link
-                to={nav.path}
-                className={`menu-item group ${isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
-                  }`}
-              >
-                <span
-                  className={`menu-item-icon-size ${isActive(nav.path)
-                    ? "menu-item-icon-active"
-                    : "menu-item-icon-inactive"
-                    }`}
-                >
-                  {nav.icon}
-                </span>
-                {(isExpanded || isHovered || isMobileOpen) && (
-                  <span className="menu-item-text">{nav.name}</span>
-                )}
-              </Link>
-            )
-          )}
-          {nav.subItems && (isExpanded || isHovered || isMobileOpen) && (
-            <div
-              ref={(el) => {
-                subMenuRefs.current[index] = el;
-              }}
-              className="overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
-              style={{
-                height:
-                  openSubmenu === index
-                    ? `${subMenuHeight[index]}px`
-                    : "0px",
-              }}
-            >
-              <ul className="mt-1.5 space-y-1 ml-6 border-l border-border-light/40 dark:border-white/5 pl-4">
-                {nav.subItems.map((subItem) => (
-                  <li key={subItem.name}>
-                    <Link
-                      to={subItem.path}
-                      className={`menu-dropdown-item flex items-center group/sub ${isActive(subItem.path)
-                        ? "menu-dropdown-item-active"
-                        : "menu-dropdown-item-inactive"
+              <div className="py-2">
+                <div className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-text-tertiary border-b border-border-light/50 dark:border-white/5">
+                  {item.name}
+                </div>
+                <ul className="py-1">
+                  {item.subItems?.map((subItem) => (
+                    <li key={subItem.name}>
+                      <Link
+                        to={subItem.path}
+                        onClick={() => setIsMobileOpen(false)}
+                        className={`flex items-center gap-2 px-4 py-2 text-theme-sm transition-all duration-200 ${
+                          isActive(subItem.path)
+                            ? "text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/30"
+                            : "text-text-secondary hover:text-text-primary hover:bg-gray-50 dark:text-text-tertiary dark:hover:text-white dark:hover:bg-white/[0.03]"
                         }`}
-                    >
-                      <div className={`size-1.5 rounded-full mr-2 transition-all duration-300 ${isActive(subItem.path) ? "bg-white scale-125" : "bg-text-tertiary/40 group-hover/sub:bg-brand-500"}`} />
-                      <span className="truncate">{subItem.name}</span>
-                      <span className="flex items-center gap-1 ml-auto">
-                        {subItem.new && (
-                          <span className="px-1.5 py-0.5 text-[8px] font-bold uppercase rounded bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400">new</span>
-                        )}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                          isActive(subItem.path)
+                            ? "bg-brand-500"
+                            : "bg-text-tertiary/40"
+                        }`} />
+                        <span className="truncate">{subItem.name}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (hasSubmenu) {
+      return (
+        <div>
+          <button
+            onClick={() => handleSubmenuToggle(item.name)}
+            className={`group relative flex items-center w-full gap-3 px-3 py-2.5 rounded-xl text-theme-sm font-medium transition-all duration-200 ${
+              hasActiveChild
+                ? "bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400"
+                : isSubmenuOpen
+                ? "bg-gray-50 text-text-primary dark:bg-white/5 dark:text-white"
+                : "text-text-secondary hover:bg-gray-50/70 hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/[0.03] dark:hover:text-white"
+            }`}
+            title={isCollapsed ? item.name : undefined}
+          >
+            <span className={`shrink-0 transition-colors duration-200 ${
+              hasActiveChild
+                ? "text-brand-500"
+                : isSubmenuOpen
+                ? "text-text-primary dark:text-white"
+                : "text-text-tertiary group-hover:text-text-primary dark:group-hover:text-white"
+            }`}>
+              {item.icon}
+            </span>
+            <span className="flex-1 text-left truncate">{item.name}</span>
+            <ChevronDownIcon
+              className={`size-4 shrink-0 transition-transform duration-200 ease-out ${
+                isSubmenuOpen ? "rotate-180" : ""
+              } ${
+                hasActiveChild
+                  ? "text-brand-400"
+                  : "text-text-tertiary"
+              }`}
+            />
+          </button>
+
+          <div
+            className="overflow-hidden transition-all duration-200 ease-out"
+            style={{
+              height: isSubmenuOpen ? 'auto' : "0px",
+              opacity: isSubmenuOpen ? 1 : 0,
+            }}
+          >
+            <ul className="py-1 pl-4 ml-3 border-l-2 border-border-light/50 dark:border-white/5">
+              {item.subItems?.map((subItem) => (
+                <li key={subItem.name}>
+                  <Link
+                    to={subItem.path}
+                    onClick={() => setIsMobileOpen(false)}
+                    className={`group/sub relative flex items-center gap-2 px-3 py-2 text-theme-sm rounded-lg transition-all duration-200 ${
+                      isActive(subItem.path)
+                        ? "text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/20"
+                        : "text-text-secondary hover:text-text-primary hover:bg-gray-50 dark:text-text-tertiary dark:hover:text-white dark:hover:bg-white/[0.03]"
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all duration-200 ${
+                      isActive(subItem.path)
+                        ? "bg-brand-500 scale-125"
+                        : "bg-text-tertiary/40 group-hover/sub:bg-brand-400"
+                    }`} />
+                    <span className="truncate">{subItem.name}</span>
+                    {subItem.new && (
+                      <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-brand-500 text-white">
+                        NUEVO
                       </span>
-                    </Link>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <Link
+        to={item.path!}
+        onClick={() => setIsMobileOpen(false)}
+        className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-theme-sm font-medium transition-all duration-200 ${
+          isDirectActive
+            ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
+            : "text-text-secondary hover:bg-gray-50/70 hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/[0.03] dark:hover:text-white"
+        } ${isCollapsed ? "justify-center" : ""}`}
+        title={isCollapsed ? item.name : undefined}
+      >
+        <span className={`shrink-0 ${
+          isDirectActive
+            ? "text-white"
+            : "text-text-tertiary group-hover:text-text-primary dark:group-hover:text-white"
+        }`}>
+          {item.icon}
+        </span>
+        {!isCollapsed && (
+          <>
+            <span className="flex-1 truncate">{item.name}</span>
+            {item.badge && (
+              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-warning-500 text-white">
+                {item.badge}
+              </span>
+            )}
+          </>
+        )}
+      </Link>
+    );
+  };
+
+  return (
+    <>
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      <aside
+        ref={sidebarRef}
+        className={`fixed flex flex-col left-0 bg-white dark:bg-bg-dark text-text-primary transition-all duration-300 ease-out z-50 border-r border-border-light/50 dark:border-white/5
+          ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+        `}
+        style={{ 
+          width: sidebarWidth,
+          height: '100vh',
+          top: 0
+        }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <div className={`py-5 flex items-center border-b border-border-light/30 dark:border-white/5 ${!showExpanded ? "justify-center px-0" : "px-4"}`}>
+          <Link to="/dashboard" className="flex items-center gap-3 group">
+            <div className="relative shrink-0">
+              <img 
+                src="/logo-nuevo.png" 
+                alt="UNEFA" 
+                className="size-9 object-contain transition-transform duration-300 group-hover:scale-105" 
+              />
+              <div className="absolute -inset-1 bg-brand-500/10 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </div>
+            {showExpanded && (
+              <div className="flex flex-col min-w-0">
+                <span className="text-base font-bold leading-tight tracking-tight text-unefa-blue dark:text-white truncate">
+                  UNEFA
+                </span>
+                <span className="text-[10px] font-medium uppercase tracking-wider text-text-tertiary">
+                  Dashboard
+                </span>
+              </div>
+            )}
+          </Link>
+        </div>
+
+        <div className="flex-1 flex flex-col px-3 overflow-y-auto no-scrollbar py-4">
+          <nav className="flex-1">
+            <div className="space-y-1">
+              {!showExpanded && (
+                <header className="flex justify-center py-2 mb-2">
+                  <HorizontaLDots className="size-4 text-text-tertiary/40" />
+                </header>
+              )}
+              {showExpanded && (
+                <header className="px-3 mb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-text-tertiary/60">
+                    Navegación
+                  </span>
+                </header>
+              )}
+              <ul className="flex flex-col gap-1">
+                {filteredNavItems.map((nav) => (
+                  <li key={nav.name}>
+                    <MenuItem 
+                      item={nav} 
+                      isCollapsed={!showExpanded}
+                      onHover={!showExpanded ? setHoveredMenu : undefined}
+                      isHovered={hoveredMenu === nav.name}
+                    />
                   </li>
                 ))}
               </ul>
             </div>
-          )}
-        </li>
-      ))}
-    </ul>
-  );
+          </nav>
 
-  return (
-    <aside
-      className={`fixed flex flex-col left-0 bg-white dark:bg-bg-dark text-text-primary transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-50 border-r border-border-light/60 dark:border-white/5
-        ${isExpanded || isHovered || isMobileOpen ? "w-72.5 shadow-xl shadow-gray-200/20 dark:shadow-none" : "w-22.5"}
-        ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-      `}
-      style={{ height: '100vh', top: 0 }}
-      onMouseEnter={() => !isExpanded && setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className={`py-8 px-6 flex items-center ${!isExpanded && !isHovered ? "justify-center" : "justify-start"}`}>
-        <Link to="/dashboard" className="flex items-center gap-4 group">
-          <div className="relative">
-            <img src="/logo-nuevo.png" alt="UNEFA" className="size-10 object-contain transition-transform duration-300 group-hover:scale-110" />
-            <div className="absolute -inset-1 bg-brand-500/10 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="mt-auto pt-4 border-t border-border-light/30 dark:border-white/5">
+            <PeriodStatusCard />
           </div>
-          {(isExpanded || isHovered || isMobileOpen) && (
-            <div className="flex flex-col">
-              <span className="text-lg font-bold leading-tight tracking-tight text-unefa-blue dark:text-white">
-                UNEFA
-              </span>
-              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-text-tertiary">
-                Dashboard
-              </span>
-            </div>
-          )}
-        </Link>
-      </div>
-
-      <div className="flex-1 flex flex-col px-4 overflow-y-auto no-scrollbar py-2">
-        <nav className="flex-1">
-          <div className="space-y-6">
-            <div>
-              <header className={`px-3 mb-3 flex items-center ${!isExpanded && !isHovered ? "justify-center" : "justify-start"}`}>
-                {isExpanded || isHovered || isMobileOpen ? (
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-text-tertiary/70">Principal</span>
-                ) : (
-                  <HorizontaLDots className="size-4 text-text-tertiary/40" />
-                )}
-              </header>
-              {renderMenuItems(filteredNavItems as NavItem[])}
-            </div>
-          </div>
-        </nav>
-
-        <div className="mt-auto py-6">
-          <PeriodStatusCard />
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 };
 

@@ -55,6 +55,11 @@ import MoreDotIcon from "./moredot.svg?react";
 import AlertHexaIcon from "./alert-hexa.svg?react";
 import ErrorHexaIcon from "./info-hexa.svg?react";
 import SparklesIcon from "./sparkles.svg?react";
+import SearchIcon from "./search.svg?react";
+import CheckIcon from "./check.svg?react";
+import UsersIcon from "./users.svg?react";
+import ShieldCheckIcon from "./shield-check.svg?react";
+import KeyRoundIcon from "./key.svg?react";
 
 export {
   ErrorHexaIcon,
@@ -114,4 +119,9 @@ export {
   AngleLeftIcon,
   AngleRightIcon,
   SparklesIcon,
+  SearchIcon,
+  CheckIcon,
+  UsersIcon,
+  ShieldCheckIcon,
+  KeyRoundIcon,
 };

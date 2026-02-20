@@ -4,7 +4,7 @@ import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import studentService from "../../features/student/services/studentService";
 import type { DashboardData } from "../../features/student/types";
-import { User, Briefcase, FileText, Clock, Plus, Calendar, CheckCircle, AlertCircle } from "lucide-react";
+import { User, Briefcase, FileText, Clock, Plus, Calendar, CheckCircle, AlertCircle, FileUp } from "lucide-react";
 import Badge from "../../components/ui/badge/Badge";
 import Button from "../../components/ui/button/Button";
 
@@ -318,15 +318,25 @@ export default function StudentDashboard() {
               {data?.internship?.professionalPracticeId && (
                 <Link
                   to={`/student/activity-logs/${data.internship.professionalPracticeId}`}
-                  className="flex items-center gap-3 p-4 rounded-lg border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors sm:col-span-2"
+                  className="flex items-center gap-3 p-4 rounded-lg border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                 >
                   <Calendar className="w-5 h-5 text-purple-500" />
                   <div>
-                    <span className="font-medium">Bitacora de Actividades</span>
-                    <p className="text-xs text-text-secondary">Registra tus actividades semanales</p>
+                    <span className="font-medium">Bitacora</span>
+                    <p className="text-xs text-text-secondary">Actividades semanales</p>
                   </div>
                 </Link>
               )}
+              <Link
+                to="/student/documents"
+                className="flex items-center gap-3 p-4 rounded-lg border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+              >
+                <FileUp className="w-5 h-5 text-teal-500" />
+                <div>
+                  <span className="font-medium">Documentos</span>
+                  <p className="text-xs text-text-secondary">Subir cartas e informes</p>
+                </div>
+              </Link>
             </div>
           </ComponentCard>
         </div>

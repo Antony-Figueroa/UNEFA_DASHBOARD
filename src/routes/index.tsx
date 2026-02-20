@@ -37,6 +37,7 @@ const StudentRequests = lazy(() => import("../pages/Student/StudentRequests"));
 const StudentProfile = lazy(() => import("../pages/Student/StudentProfile"));
 const StudentActivityLogs = lazy(() => import("../pages/Student/StudentActivityLogs"));
 const StudentDocuments = lazy(() => import("../pages/Student/StudentDocuments"));
+const StudentEvaluations = lazy(() => import("../pages/Student/StudentEvaluations"));
 
 const AdminRequests = lazy(() => import("../pages/Admin/AdminRequests"));
 
@@ -265,11 +266,19 @@ export const AppRoutes = () => {
                 </ProtectedRoute>
               }
             />
-            <Route
+<Route
               path="/student/documents"
               element={
                 <ProtectedRoute allowedRoles={[4]}>
                   <StudentDocuments />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/student/evaluations"
+              element={
+                <ProtectedRoute allowedRoles={[4]}>
+                  <StudentEvaluations />
                 </ProtectedRoute>
               }
             />

@@ -5,9 +5,10 @@ import PageMeta from '../../components/common/PageMeta';
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton } from '../../components/ui/skeleton';
 import { useEvaluations } from '../../features/evaluations/hooks/useEvaluations';
 import { EvaluationModal } from '../../features/evaluations/components/EvaluationModal';
+import EvaluationDetailModal from '../../features/evaluations/components/EvaluationDetailModal';
 import { EvaluatorType, EVALUATION_WEIGHTS, EvaluationStatus } from '../../features/evaluations/types';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
-import { CheckCircleIcon, TimeIcon, AlertIcon } from '../../icons';
+import { CheckCircleIcon, TimeIcon, AlertIcon, EyeIcon } from '../../icons';
 import apiClient from '../../api/apiClient';
 import toast from 'react-hot-toast';
 
@@ -34,6 +35,8 @@ export default function EvaluationsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [practiceStatuses, setPracticeStatuses] = useState<Record<number, EvaluationStatus>>({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedEvaluationId, setSelectedEvaluationId] = useState<number | null>(null);
 
   const { getPracticeStatus } = useEvaluations();
 
@@ -93,6 +96,11 @@ export default function EvaluationsPage() {
     setModalOpen(true);
   };
 
+  const handleViewDetails = (evaluationId: number) => {
+    setSelectedEvaluationId(evaluationId);
+    setDetailModalOpen(true);
+  };
+
   const handleEvaluationSuccess = () => {
     if (selectedPractice) {
       getPracticeStatus(selectedPractice.professionalPracticeId).then(status => {
@@ -112,13 +120,23 @@ export default function EvaluationsPage() {
 
     if (evaluation?.completed) {
       return (
-        <button
-          onClick={() => handleOpenEvaluation(practice, type)}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
-        >
-          <CheckCircleIcon className="w-4 h-4" />
-          <span>{evaluation.score.toFixed(1)}</span>
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => handleViewDetails(evaluation.evaluationId)}
+            className="flex items-center gap-1 px-2 py-1.5 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+            title="Ver detalles"
+          >
+            <EyeIcon className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => handleOpenEvaluation(practice, type)}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+            title="Editar evaluación"
+          >
+            <CheckCircleIcon className="w-4 h-4" />
+            <span>{evaluation.score.toFixed(1)}</span>
+          </button>
+        </div>
       );
     }
 
@@ -338,6 +356,15 @@ export default function EvaluationsPage() {
             onSuccess={handleEvaluationSuccess}
           />
         )}
+
+        <EvaluationDetailModal
+          isOpen={detailModalOpen}
+          onClose={() => {
+            setDetailModalOpen(false);
+            setSelectedEvaluationId(null);
+          }}
+          evaluationId={selectedEvaluationId}
+        />
       </>
     </ErrorBoundary>
   );

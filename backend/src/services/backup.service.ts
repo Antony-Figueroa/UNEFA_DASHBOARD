@@ -113,37 +113,52 @@ class BackupService {
     const backedUpTables: string[] = [];
     const failedTables: string[] = [];
 
-    for (const tableName of allTables) {
-      if (this.EXCLUDED_TABLES.some(excluded => {
-        if (excluded.includes('%')) {
-          return tableName.match(new RegExp(excluded.replace(/%/g, '.*')));
-        }
-        return tableName === excluded;
-      })) {
-        continue;
-      }
-
-      try {
-        const { data, error } = await supabaseClient
-          .from(tableName)
-          .select('*')
-          .limit(50000);
-
-        if (error) {
-          if (!error.message.includes('does not exist') && !error.message.includes('relation')) {
-            console.warn(`[Backup] Tabla ${tableName} error:`, error.message);
+    // Procesar tablas en lotes de 5 en paralelo para mayor velocidad
+    const batchSize = 5;
+    for (let i = 0; i < allTables.length; i += batchSize) {
+      const batch = allTables.slice(i, i + batchSize);
+      
+      const results = await Promise.allSettled(
+        batch.map(async (tableName) => {
+          if (this.EXCLUDED_TABLES.some(excluded => {
+            if (excluded.includes('%')) {
+              return tableName.match(new RegExp(excluded.replace(/%/g, '.*')));
+            }
+            return tableName === excluded;
+          })) {
+            return { tableName, success: false, skipped: true };
           }
-          failedTables.push(tableName);
-          continue;
-        }
 
-        if (data && data.length > 0) {
-          tablesData[tableName] = data;
+          try {
+            const { data, error } = await supabaseClient
+              .from(tableName)
+              .select('*')
+              .limit(10000);
+
+            if (error) {
+              return { tableName, success: false, error: error.message };
+            }
+
+            return { tableName, success: true, data: data || [] };
+          } catch (error: any) {
+            return { tableName, success: false, error: error?.message };
+          }
+        })
+      );
+
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          const { tableName, success, data, skipped, error } = result.value as any;
+          if (skipped) continue;
+          if (success) {
+            if (data && data.length > 0) {
+              tablesData[tableName] = data;
+            }
+            backedUpTables.push(tableName);
+          } else {
+            failedTables.push(tableName);
+          }
         }
-        backedUpTables.push(tableName);
-      } catch (error: any) {
-        console.warn(`[Backup] Error procesando ${tableName}:`, error?.message || error);
-        failedTables.push(tableName);
       }
     }
 

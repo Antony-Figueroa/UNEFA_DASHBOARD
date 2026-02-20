@@ -25,13 +25,16 @@ export const backupService = {
   },
 
   createBackup: async (data: CreateBackupRequest): Promise<BackupRecord> => {
-    const response = await apiClient.post<{ backup: BackupRecord }>('/backups', data);
+    const response = await apiClient.post<{ backup: BackupRecord }>('/backups', data, {
+      timeout: 180000, // 3 minutos para backup completo
+    });
     return response.data.backup;
   },
 
   downloadBackup: async (id: string): Promise<Blob> => {
     const response = await apiClient.get(`/backups/${id}/download`, {
       responseType: 'blob',
+      timeout: 60000,
     });
     return response.data;
   },

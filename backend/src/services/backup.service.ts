@@ -170,6 +170,21 @@ class BackupService {
 
     const size = Buffer.byteLength(fileContent, 'utf8');
 
+    let dataToSave: any;
+    if (format === 'json') {
+      dataToSave = JSON.parse(fileContent);
+    } else {
+      dataToSave = { 
+        fullSql: fileContent,
+        metadata: {
+          includesStructure: tableDefinitions.length > 0,
+          tablesWithData,
+          totalRecords,
+          totalTables: allTables.length
+        }
+      };
+    }
+
     const { data: backupRecord, error: insertError } = await supabaseClient
       .from('t_backups')
       .insert({
@@ -179,13 +194,7 @@ class BackupService {
         size: size,
         tables: backedUpTables,
         created_by: parseInt(userId),
-        data: { 
-          sqlPreview: fileContent.substring(0, 5000),
-          includesStructure: tableDefinitions.length > 0,
-          tablesWithData,
-          totalRecords,
-          allTablesList: allTables
-        }
+        data: dataToSave
       })
       .select()
       .single();

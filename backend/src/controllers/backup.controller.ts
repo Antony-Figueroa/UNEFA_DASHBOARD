@@ -58,7 +58,11 @@ export const downloadBackup = async (req: Request, res: Response) => {
     }
     res.setHeader('Content-Disposition', `attachment; filename="${backup.fileName}"`);
     
-    if (isSQL && backup.data?.sql) {
+    // El SQL completo está en backup.data.fullSql
+    if (isSQL && backup.data?.fullSql) {
+      res.send(backup.data.fullSql);
+    } else if (isSQL && backup.data?.sql) {
+      // Compatibilidad con backups antiguos
       res.send(backup.data.sql);
     } else {
       res.send(backup.data);

@@ -11,6 +11,9 @@ export default function BackupsPage() {
   const [backups, setBackups] = useState<BackupRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [backupFormat, setBackupFormat] = useState<'sql' | 'json'>('sql');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [backupName, setBackupName] = useState('');
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -37,26 +40,26 @@ export default function BackupsPage() {
   }, []);
 
   const handleCreateBackup = () => {
-    setConfirmDialog({
-      isOpen: true,
-      title: "Crear Respaldo",
-      message: "¿Está seguro de crear un nuevo respaldo de la base de datos? Esta acción puede tomar unos segundos.",
-      onConfirm: async () => {
-        setCreating(true);
-        try {
-          const backup = await backupService.createBackup({});
-          setBackups(prev => [backup, ...prev]);
-          toast.success('Respaldo creado exitosamente');
-        } catch (error) {
-          console.error('Error creating backup:', error);
-          toast.error('Error al crear el respaldo');
-        } finally {
-          setCreating(false);
-          setConfirmDialog(null);
-        }
-      },
-      variant: "info",
-    });
+    setShowCreateModal(true);
+  };
+
+  const confirmCreateBackup = async () => {
+    setCreating(true);
+    try {
+      const backup = await backupService.createBackup({ 
+        name: backupName || undefined,
+        format: backupFormat 
+      });
+      setBackups((prev: BackupRecord[]) => [backup, ...prev]);
+      toast.success('Respaldo creado exitosamente');
+      setShowCreateModal(false);
+      setBackupName('');
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      toast.error('Error al crear el respaldo');
+    } finally {
+      setCreating(false);
+    }
   };
 
   const handleDownload = async (backup: BackupRecord) => {
@@ -85,7 +88,7 @@ export default function BackupsPage() {
       onConfirm: async () => {
         try {
           await backupService.deleteBackup(backup.id);
-          setBackups(prev => prev.filter(b => b.id !== backup.id));
+          setBackups((prev: BackupRecord[]) => prev.filter((b: BackupRecord) => b.id !== backup.id));
           toast.success('Respaldo eliminado');
         } catch (error) {
           console.error('Error deleting backup:', error);
@@ -196,6 +199,14 @@ export default function BackupsPage() {
                         <span className="text-xs text-text-tertiary">
                           {backup.tables?.length || 0} tablas
                         </span>
+                        <span className="text-xs text-text-tertiary">•</span>
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          backup.format === 'sql' || backup.fileName?.endsWith('.sql')
+                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                            : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                        }`}>
+                          {backup.format === 'sql' || backup.fileName?.endsWith('.sql') ? 'SQL' : 'JSON'}
+                        </span>
                       </div>
                       {backup.description && (
                         <p className="text-xs text-text-tertiary mt-1">
@@ -243,8 +254,9 @@ export default function BackupsPage() {
                   Acerca de los respaldos
                 </h4>
                 <ul className="mt-2 text-xs text-brand-600 dark:text-brand-400 space-y-1">
-                  <li>• Los respaldos incluyen todas las tablas principales del sistema</li>
-                  <li>• Los archivos se descargan en formato JSON</li>
+                  <li>• Los respaldos incluyen 51 tablas del sistema</li>
+                  <li>• <strong>Formato SQL:</strong> Archivo .sql con INSERT statements (recomendado para restaurar)</li>
+                  <li>• <strong>Formato JSON:</strong> Archivo .json estructurado (recomendado para análisis)</li>
                   <li>• Solo administradores pueden crear y eliminar respaldos</li>
                   <li>• Se recomienda crear respaldos regularmente</li>
                 </ul>
@@ -253,6 +265,61 @@ export default function BackupsPage() {
           </div>
         </ComponentCard>
       </div>
+
+      <UnifiedDialog
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        title="Crear Nuevo Respaldo"
+        confirmLabel={creating ? "Creando..." : "Crear"}
+        onConfirm={confirmCreateBackup}
+        variant="info"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-text-primary dark:text-white mb-1">
+              Nombre del respaldo (opcional)
+            </label>
+            <input
+              type="text"
+              value={backupName}
+              onChange={(e) => setBackupName(e.target.value)}
+              placeholder="Ej: respaldo-pre-limpieza"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-text-primary dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-primary dark:text-white mb-2">
+              Formato del respaldo
+            </label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="format"
+                  value="sql"
+                  checked={backupFormat === 'sql'}
+                  onChange={() => setBackupFormat('sql')}
+                  className="w-4 h-4 text-brand-600 focus:ring-brand-500"
+                />
+                <span className="text-sm text-text-primary dark:text-white">SQL (.sql)</span>
+                <span className="text-xs text-text-tertiary">- Recomendado para restaurar</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="format"
+                  value="json"
+                  checked={backupFormat === 'json'}
+                  onChange={() => setBackupFormat('json')}
+                  className="w-4 h-4 text-brand-600 focus:ring-brand-500"
+                />
+                <span className="text-sm text-text-primary dark:text-white">JSON (.json)</span>
+                <span className="text-xs text-text-tertiary">- Para análisis</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </UnifiedDialog>
 
       <UnifiedDialog
         isOpen={!!confirmDialog}

@@ -134,7 +134,11 @@ class BackupService {
         size: size,
         tables: backedUpTables,
         created_by: parseInt(userId),
-        data: format === 'json' ? JSON.parse(fileContent) : { sql: fileContent.substring(0, 10000) }
+        data: format === 'json' ? JSON.parse(fileContent) : { 
+          sql: fileContent,
+          tablesWithData: Object.keys(tablesData),
+          totalRecords: Object.values(tablesData).reduce((sum, arr) => sum + arr.length, 0)
+        }
       })
       .select()
       .single();
@@ -158,12 +162,16 @@ class BackupService {
 
   private generateSQL(backupName: string, tablesData: Record<string, any[]>, backedUpTables: string[], failedTables: string[]): string {
     const lines: string[] = [];
+    const tablesWithData = Object.keys(tablesData).length;
+    const totalRecords = Object.values(tablesData).reduce((sum: number, arr) => sum + arr.length, 0);
     
     lines.push('-- ================================================================================');
     lines.push(`-- UNEFA Dashboard - Respaldo de Base de Datos`);
     lines.push(`-- Nombre: ${backupName}`);
     lines.push(`-- Fecha: ${new Date().toISOString()}`);
-    lines.push(`-- Tablas respaldadas: ${backedUpTables.length}/${this.TABLES_TO_BACKUP.length}`);
+    lines.push(`-- Tablas con datos: ${tablesWithData}`);
+    lines.push(`-- Total de registros: ${totalRecords}`);
+    lines.push(`-- Tablas consultadas: ${backedUpTables.length} | Fallidas: ${failedTables.length}`);
     lines.push('-- ================================================================================');
     lines.push('');
     lines.push('BEGIN;');
@@ -188,10 +196,12 @@ class BackupService {
     lines.push('-- --------------------------------------------------------');
     lines.push('-- Resumen del respaldo');
     lines.push('-- --------------------------------------------------------');
-    lines.push(`-- Tablas exitosas: ${backedUpTables.length}`);
-    lines.push(`-- Tablas fallidas: ${failedTables.length}`);
+    lines.push(`-- Tablas con datos: ${tablesWithData}`);
+    lines.push(`-- Total de registros: ${totalRecords}`);
+    lines.push(`-- Tablas consultadas exitosamente: ${backedUpTables.length}`);
+    lines.push(`-- Tablas fallidas (no existen): ${failedTables.length}`);
     if (failedTables.length > 0) {
-      lines.push(`-- Fallidas: ${failedTables.join(', ')}`);
+      lines.push(`-- Lista de fallidas: ${failedTables.join(', ')}`);
     }
     lines.push('');
     lines.push('COMMIT;');

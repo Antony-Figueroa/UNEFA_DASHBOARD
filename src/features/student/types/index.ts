@@ -16,9 +16,36 @@ export interface StudentInternship {
   status: string;
   grade: number;
   totalHours: number;
+  requiredHours: number;
   tutorName: string;
   tutorPhone: string;
   tutorEmail: string;
+  professionalPracticeId: number | null;
+}
+
+export interface ActivityLogSummary {
+  totalHours: number;
+  totalLogs: number;
+  approvedLogs: number;
+  pendingLogs: number;
+  recentLogs: Array<{
+    id: number;
+    date: string;
+    hours: number;
+    description: string;
+    type: string;
+    approved: boolean;
+  }>;
+}
+
+export interface DashboardStats {
+  hasActiveInternship: boolean;
+  pendingRequests: number;
+  hoursProgress: {
+    completed: number;
+    required: number;
+    percentage: number;
+  };
 }
 
 export interface StudentProfile {
@@ -74,10 +101,8 @@ export interface DashboardData {
     phone: string;
   };
   internship: StudentInternship | null;
-  stats: {
-    hasActiveInternship: boolean;
-    pendingRequests: number;
-  };
+  activityLogs: ActivityLogSummary;
+  stats: DashboardStats;
 }
 
 export interface CreateRequestPayload {

@@ -20,9 +20,11 @@ interface StudentInternship {
   status: string;
   grade: number;
   totalHours: number;
+  requiredHours: number;
   tutorName: string;
   tutorPhone: string;
   tutorEmail: string;
+  professionalPracticeId: number | null;
 }
 
 interface RequestType {
@@ -41,6 +43,31 @@ interface StudentRequest {
   response: string | null;
   createdAt: string;
   processedAt: string | null;
+}
+
+interface ActivityLogSummary {
+  totalHours: number;
+  totalLogs: number;
+  approvedLogs: number;
+  pendingLogs: number;
+  recentLogs: Array<{
+    id: number;
+    date: string;
+    hours: number;
+    description: string;
+    type: string;
+    approved: boolean;
+  }>;
+}
+
+interface DashboardStats {
+  hasActiveInternship: boolean;
+  pendingRequests: number;
+  hoursProgress: {
+    completed: number;
+    required: number;
+    percentage: number;
+  };
 }
 
 export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
@@ -78,7 +105,7 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
         INSTITUTION_ID,
         INTERNSHIP_TYPE_ID,
         t_internships_period (DESCRIPTION),
-        t_internship_type (NAME),
+        t_internship_type (NAME, HOURS_REQUIRED),
         t_institution (
           INSTITUTION_NAME,
           INSTITUTION_ADDRESS,
@@ -108,14 +135,24 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
     };
 
     let internship: StudentInternship | null = null;
+    let activityLogs: ActivityLogSummary = {
+      totalHours: 0,
+      totalLogs: 0,
+      approvedLogs: 0,
+      pendingLogs: 0,
+      recentLogs: []
+    };
     
     if (enrollment) {
+      const practiceId = (enrollment as any).PROFESSIONAL_PRACTICE_ID;
       const academicTutor = (enrollment as any).t_professional_practices_tutor?.find(
         (t: any) => t.TUTOR_TYPE === 'ACADEMICO'
       );
 
+      const requiredHours = (enrollment as any).t_internship_type?.HOURS_REQUIRED || 120;
+
       internship = {
-        enrollmentId: String((enrollment as any).PROFESSIONAL_PRACTICE_ID),
+        enrollmentId: String(practiceId),
         studentCi: studentData.STUDENTS_CI,
         studentName: `${studentData.NAME} ${studentData.SURNAME}`,
         studentEmail: studentData.EMAIL,
@@ -132,9 +169,11 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
         status: statusMap[(enrollment as any).PRACTICES_STATUS] || 'unknown',
         grade: (enrollment as any).GRADE || 0,
         totalHours: 0,
+        requiredHours: requiredHours,
         tutorName: academicTutor ? `${academicTutor.t_tutors?.NAME || ''} ${academicTutor.t_tutors?.SURNAME || ''}`.trim() : '',
         tutorPhone: academicTutor?.t_tutors?.CONTACT_PHONE || '',
-        tutorEmail: academicTutor?.t_tutors?.EMAIL || ''
+        tutorEmail: academicTutor?.t_tutors?.EMAIL || '',
+        professionalPracticeId: practiceId
       };
 
       if (studentData.CAREER_ID) {
@@ -145,6 +184,34 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
           .single();
         internship.careerName = career?.CAREER_NAME || '';
       }
+
+      const { data: logsData } = await supabase
+        .from('t_activity_logs')
+        .select('ACTIVITY_LOG_ID, ACTIVITY_DATE, HOURS_WORKED, ACTIVITY_DESCRIPTION, ACTIVITY_TYPE, SUPERVISOR_APPROVED')
+        .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+        .order('ACTIVITY_DATE', { ascending: false });
+
+      if (logsData && logsData.length > 0) {
+        const totalHours = logsData.reduce((sum: number, log: any) => sum + (parseFloat(log.HOURS_WORKED) || 0), 0);
+        const approvedLogs = logsData.filter((log: any) => log.SUPERVISOR_APPROVED).length;
+        
+        activityLogs = {
+          totalHours,
+          totalLogs: logsData.length,
+          approvedLogs,
+          pendingLogs: logsData.length - approvedLogs,
+          recentLogs: logsData.slice(0, 5).map((log: any) => ({
+            id: log.ACTIVITY_LOG_ID,
+            date: log.ACTIVITY_DATE,
+            hours: parseFloat(log.HOURS_WORKED) || 0,
+            description: log.ACTIVITY_DESCRIPTION,
+            type: log.ACTIVITY_TYPE,
+            approved: log.SUPERVISOR_APPROVED || false
+          }))
+        };
+
+        internship.totalHours = totalHours;
+      }
     }
 
     const { count: pendingRequests } = await supabase
@@ -152,6 +219,16 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
       .select('*', { count: 'exact', head: true })
       .eq('STUDENT_ID', studentId)
       .eq('STATUS', 'pending');
+
+    const stats: DashboardStats = {
+      hasActiveInternship: !!internship && internship.status === 'active',
+      pendingRequests: pendingRequests || 0,
+      hoursProgress: {
+        completed: activityLogs.totalHours,
+        required: internship?.requiredHours || 120,
+        percentage: internship ? Math.min(100, Math.round((activityLogs.totalHours / internship.requiredHours) * 100)) : 0
+      }
+    };
 
     res.json({
       success: true,
@@ -165,10 +242,8 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
           phone: studentData.CONTACT_PHONE
         },
         internship,
-        stats: {
-          hasActiveInternship: !!internship && internship.status === 'active',
-          pendingRequests: pendingRequests || 0
-        }
+        activityLogs,
+        stats
       }
     });
 

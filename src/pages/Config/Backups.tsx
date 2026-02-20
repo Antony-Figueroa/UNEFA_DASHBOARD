@@ -17,8 +17,6 @@ export default function BackupsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showRestoreModal, setShowRestoreModal] = useState(false);
   const [selectedBackup, setSelectedBackup] = useState<BackupRecord | null>(null);
-  const [restorePassword, setRestorePassword] = useState('');
-  const [restoreStep, setRestoreStep] = useState<'password' | 'confirm'>('password');
   const [backupName, setBackupName] = useState('');
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -383,52 +381,16 @@ export default function BackupsPage() {
         </div>
       </UnifiedDialog>
 
-      <UnifiedDialog
+      <RestoreDialog
         isOpen={showRestoreModal}
         onClose={() => {
           setShowRestoreModal(false);
-          setRestorePassword('');
+          setSelectedBackup(null);
         }}
-        title={restoreStep === 'password' ? "Verificar Contraseña" : "Confirmar Restauración"}
-        confirmLabel={restoring ? "Procesando..." : restoreStep === 'password' ? "Verificar" : "RESTAURAR AHORA"}
-        onConfirm={restoreStep === 'password' ? verifyPassword : confirmRestore}
-        variant="warning"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-text-secondary dark:text-text-tertiary">
-            <strong>Respaldo:</strong> {selectedBackup?.name}
-          </p>
-          
-          {restoreStep === 'password' ? (
-            <div>
-              <label className="block text-sm font-medium text-text-primary dark:text-white mb-1">
-                Ingrese su contraseña para continuar
-              </label>
-              <input
-                type="password"
-                value={restorePassword}
-                onChange={(e) => setRestorePassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-text-primary dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-              />
-            </div>
-          ) : (
-            <div className="p-4 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30">
-              <p className="text-sm font-medium text-red-700 dark:text-red-300 mb-2">
-                ⚠️ ADVERTENCIA: Esta acción es irreversible
-              </p>
-              <ul className="text-xs text-red-600 dark:text-red-400 space-y-1">
-                <li>• Se eliminarán <strong>TODOS</strong> los datos actuales</li>
-                <li>• Se restaurarán los datos del respaldo seleccionado</li>
-                <li>• Se creará un backup automático antes de restaurar</li>
-              </ul>
-              <p className="mt-3 text-sm font-bold text-red-700 dark:text-red-300">
-                ¿Está ABSOLUTAMENTE seguro de continuar?
-              </p>
-            </div>
-          )}
-        </div>
-      </UnifiedDialog>
+        onConfirm={confirmRestore}
+        backup={selectedBackup}
+        isLoading={restoring}
+      />
 
       <UnifiedDialog
         isOpen={!!confirmDialog}

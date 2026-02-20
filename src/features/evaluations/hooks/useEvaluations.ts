@@ -4,6 +4,7 @@ import {
   Evaluation,
   EvaluationCriteria,
   EvaluationStatus,
+  EvaluationWithDetails,
   CreateEvaluationPayload,
   UpdateEvaluationPayload,
   EvaluatorType
@@ -17,6 +18,7 @@ interface UseEvaluationsReturn {
   error: string | null;
   fetchEvaluations: (practiceId?: number) => Promise<void>;
   fetchCriteria: (type?: EvaluatorType) => Promise<void>;
+  getEvaluationById: (id: number) => Promise<EvaluationWithDetails | null>;
   createEvaluation: (data: CreateEvaluationPayload) => Promise<{ evaluationId: number; totalScore: number } | null>;
   updateEvaluation: (id: number, data: UpdateEvaluationPayload) => Promise<boolean>;
   deleteEvaluation: (id: number) => Promise<boolean>;
@@ -127,6 +129,21 @@ export const useEvaluations = (): UseEvaluationsReturn => {
     }
   }, []);
 
+  const getEvaluationById = useCallback(async (id: number) => {
+    try {
+      setLoading(true);
+      setError(null);
+      return await evaluationService.getEvaluationById(id);
+    } catch (err: any) {
+      const message = err.response?.data?.message || 'Error al obtener evaluación';
+      setError(message);
+      toast.error(message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     evaluations,
     criteria,
@@ -134,6 +151,7 @@ export const useEvaluations = (): UseEvaluationsReturn => {
     error,
     fetchEvaluations,
     fetchCriteria,
+    getEvaluationById,
     createEvaluation,
     updateEvaluation,
     deleteEvaluation,

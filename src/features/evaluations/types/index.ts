@@ -62,6 +62,7 @@ export interface EvaluationStatus {
       completed: boolean;
       score: number;
       evaluatorName: string;
+      evaluationId?: number;
     };
   };
   finalGrade: string;

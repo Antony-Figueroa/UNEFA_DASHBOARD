@@ -13,6 +13,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.90.1",
+    "@types/multer": "^2.0.0",
     "axios": "^1.7.9",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
@@ -22,6 +23,7 @@
     "groq-sdk": "^0.37.0",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.3",
+    "multer": "^2.0.2",
     "nodemailer": "^7.0.12",
     "zod": "^3.23.8"
   },

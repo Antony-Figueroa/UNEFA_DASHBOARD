@@ -15,22 +15,47 @@ export interface BackupRecord {
 class BackupService {
   private readonly TABLES_TO_BACKUP = [
     't_user',
+    't_user_key',
+    't_user_roles',
+    't_user_questions',
+    't_roles',
+    't_roles_permissions',
+    't_permissions',
+    't_config',
+    't_list',
+    't_value_list',
+    't_preset_questions',
+    't_security_questions',
     't_career',
-    't_institution',
+    't_career_internship_type',
+    't_internship_type',
     't_internships_period',
     't_students',
     't_tutors',
-    't_enrollment',
-    't_tracking',
-    't_evaluation',
-    't_list',
-    't_roles',
-    't_config',
-    't_notification',
-    't_chat_session',
+    't_tutor_career',
+    't_institution',
+    't_institution_career',
+    't_institution_internship_type',
+    't_institution_manager',
+    't_professional_practices',
+    't_professional_practices_tutor',
     't_visit',
-    't_internship_type',
-    't_professional_practice'
+    't_activity_logs',
+    't_evaluation',
+    't_evaluation_criteria',
+    't_evaluation_detail',
+    't_request_types',
+    't_student_requests',
+    't_recovery_tokens',
+    't_auth_log',
+    't_session',
+    't_session_attempts',
+    't_session_history',
+    't_key_history',
+    't_password_history',
+    't_chat_sessions',
+    't_notifications',
+    't_documents'
   ];
 
   async createBackup(userId: string, name?: string, description?: string): Promise<BackupRecord> {
@@ -45,14 +70,14 @@ class BackupService {
         description: description || '',
         createdAt: new Date().toISOString(),
         createdBy: userId,
-        version: '1.0'
+        version: '2.0'
       },
       tables: {}
     };
 
     const backedUpTables: string[] = [];
+    const failedTables: string[] = [];
 
-    // Exportar cada tabla
     for (const tableName of this.TABLES_TO_BACKUP) {
       try {
         const { data, error } = await supabaseClient
@@ -60,22 +85,26 @@ class BackupService {
           .select('*');
 
         if (error) {
-          console.warn(`Error al exportar tabla ${tableName}:`, error);
+          console.warn(`[Backup] Tabla ${tableName} no disponible:`, error.message);
+          failedTables.push(tableName);
           continue;
         }
 
         backupData.tables[tableName] = data || [];
         backedUpTables.push(tableName);
       } catch (error) {
-        console.warn(`Error al procesar tabla ${tableName}:`, error);
+        console.warn(`[Backup] Error procesando ${tableName}:`, error);
+        failedTables.push(tableName);
       }
     }
 
-    // Calcular tamaño
+    backupData.metadata.totalTables = this.TABLES_TO_BACKUP.length;
+    backupData.metadata.successfulTables = backedUpTables.length;
+    backupData.metadata.failedTables = failedTables;
+
     const jsonData = JSON.stringify(backupData, null, 2);
     const size = Buffer.byteLength(jsonData, 'utf8');
 
-    // Guardar en la tabla de backups
     const { data: backupRecord, error: insertError } = await supabaseClient
       .from('t_backups')
       .insert({

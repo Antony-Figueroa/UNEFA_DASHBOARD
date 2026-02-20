@@ -1,14 +1,11 @@
 import { Request, Response } from 'express';
 import { backupService } from '../services/backup.service.js';
-
-interface AuthRequest extends Request {
-  user?: { id: string };
-}
+import { AuthRequest } from '../middlewares/auth.middleware.js';
 
 export const createBackup = async (req: AuthRequest, res: Response) => {
   try {
     const { name, description } = req.body;
-    const userId = req.user?.id;
+    const userId = String(req.user?.userId || '');
 
     if (!userId) {
       return res.status(401).json({ message: 'Usuario no autenticado' });

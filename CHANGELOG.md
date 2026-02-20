@@ -7,6 +7,51 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [2.2.0] - 2026-02-20
+
+### Added
+- ✨ **Sistema de Documentos para Estudiantes** - Upload, revisión y gestión de documentos
+- ✨ **Personalización de Tema** - 8 colores de marca seleccionables por usuario
+- ✨ **Dashboard de Estudiante Completo** - Progreso de horas, bitácora, documentos, solicitudes
+- ✨ **Sistema de Solicitudes** - Estudiantes pueden crear solicitudes a coordinación
+- ✨ **Tipos de Solicitud** - 8 tipos predefinidos (cambio empresa, tutor, prórroga, etc.)
+- ✨ **Bitácora de Actividades** - Registro diario/semanal para estudiantes
+- ✨ **Notificaciones en Tiempo Real** - SSE para alertas instantáneas
+
+### Changed
+- 🔄 Sidebar mejorado - Menú padre se resalta cuando subpágina está activa
+- 🔄 Búsqueda case-insensitive en listas (por ID y nombre)
+- 🔄 StudentDashboard rediseñado con barra de progreso de horas
+
+### Fixed
+- 🐛 Corregido error TypeScript en `EvaluationDetailModal.tsx` (imports no usados)
+- 🐛 Corregido error TypeScript en `Backups.tsx` (UnifiedDialog children)
+- 🐛 Corregido error TypeScript en `EvaluationsList.tsx` (null check)
+- 🐛 Corregido error TypeScript en `StudentEvaluations.tsx` (prop title)
+
+### Documentation
+- 📚 README.md actualizado a versión 2.2.0
+- 📚 docs/API.md con endpoints de documentos, tema, notificaciones
+- 📚 Migraciones SQL para nuevas tablas (documents, theme, notifications, requests)
+
+---
+
+## [2.1.0] - 2026-02-18
+
+### Added
+- ✨ **Módulo de Evaluaciones Completo** - 3 tipos ponderados (Institucional 40%, Académico 30%, Comité 30%)
+- ✨ **Criterios de Evaluación Dinámicos** - Por tipo de evaluador
+- ✨ **Panel de Tutor** - Estudiantes asignados, seguimientos, evaluaciones
+- ✨ **Rutas protegidas por rol** - Acceso diferenciado admin/tutor/estudiante
+- ✨ **Migraciones SQL** - Sistema de evaluaciones, visitas, activity logs
+
+### Changed
+- 🔄 Refactorización de rutas de estudiante
+- 🔄 Servicios separados para admin y student requests
+- 🔄 Tipos centralizados en `features/student/types/`
+
+---
+
 ## [2.0.2] - 2026-02-15
 
 ### Added

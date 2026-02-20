@@ -236,6 +236,36 @@ La mayoría de endpoints requieren autenticación JWT via cookie `auth_token`.
 | POST | `/read-all` | Marcar todas como leídas |
 | GET | `/stream` | SSE para notificaciones en tiempo real |
 
+### 📁 Documentos (`/api/documents`)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/` | Listar documentos del estudiante |
+| GET | `/:id` | Obtener documento por ID |
+| POST | `/` | Subir documento |
+| PUT | `/:id` | Actualizar documento |
+| PUT | `/:id/review` | Revisar documento (admin) |
+| DELETE | `/:id` | Eliminar documento |
+
+### 📓 Bitácora (`/api/activity-logs`)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/` | Listar registros de bitácora |
+| GET | `/:id` | Obtener registro por ID |
+| POST | `/` | Crear registro |
+| PUT | `/:id` | Actualizar registro |
+| DELETE | `/:id` | Eliminar registro |
+
+### 📋 Solicitudes de Estudiante (`/api/student/requests`)
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/` | Listar solicitudes del estudiante |
+| GET | `/types` | Listar tipos de solicitud disponibles |
+| POST | `/` | Crear solicitud |
+| GET | `/:id` | Obtener solicitud por ID |
+
 ### 📖 Manuales (`/api/manuals`)
 
 | Método | Endpoint | Descripción |

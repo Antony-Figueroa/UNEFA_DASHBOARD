@@ -4,25 +4,11 @@ import PageMeta from "../../../components/common/PageMeta";
 import PageBreadcrumb from "../../../components/common/PageBreadCrumb";
 import ComponentCard from "../../../components/common/ComponentCard";
 import Button from "../../../components/ui/button/Button";
-import TextArea from "../../../components/form/input/TextArea";
 import { AngleLeftIcon } from "../../../icons";
 import toast from "react-hot-toast";
 import apiClient from "../../../api/apiClient";
-
-interface EvaluationData {
-  attendance: number;
-  punctuality: number;
-  responsibility: number;
-  initiative: number;
-  teamwork: number;
-  communication: number;
-  technicalSkills: number;
-  problemSolving: number;
-  adaptability: number;
-  overallPerformance: number;
-  comments: string;
-  recommendations: string;
-}
+import { useEvaluations } from "../../../features/evaluations/hooks/useEvaluations";
+import { EvaluatorType, EVALUATOR_TYPE_LABELS, SCORE_RANGE } from "../../../features/evaluations/types";
 
 interface StudentInfo {
   studentName: string;
@@ -31,28 +17,30 @@ interface StudentInfo {
   careerName: string;
 }
 
+interface ExistingEvaluation {
+  evaluationId: number;
+  totalScore: number;
+  observations: string;
+  evaluatorName: string;
+  items: Array<{
+    criteriaId: number;
+    itemNumber: number;
+    score: number;
+  }>;
+}
+
 export default function TutorEvaluation() {
   const { enrollmentId } = useParams<{ enrollmentId: string }>();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+  const { criteria, fetchCriteria, createEvaluation, updateEvaluation, loading: evalLoading } = useEvaluations();
+
+  const [pageLoading, setPageLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
-  const [existingEvaluation, setExistingEvaluation] = useState<EvaluationData | null>(null);
-
-  const [formData, setFormData] = useState<EvaluationData>({
-    attendance: 0,
-    punctuality: 0,
-    responsibility: 0,
-    initiative: 0,
-    teamwork: 0,
-    communication: 0,
-    technicalSkills: 0,
-    problemSolving: 0,
-    adaptability: 0,
-    overallPerformance: 0,
-    comments: "",
-    recommendations: ""
-  });
+  const [existingEvaluation, setExistingEvaluation] = useState<ExistingEvaluation | null>(null);
+  const [itemScores, setItemScores] = useState<Record<number, number>>({});
+  const [evaluatorName, setEvaluatorName] = useState("");
+  const [observations, setObservations] = useState("");
 
   useEffect(() => {
     if (enrollmentId) {
@@ -60,14 +48,25 @@ export default function TutorEvaluation() {
     }
   }, [enrollmentId]);
 
+  useEffect(() => {
+    fetchCriteria("ACADEMICO" as EvaluatorType);
+  }, [fetchCriteria]);
+
+  useEffect(() => {
+    if (criteria.length > 0 && Object.keys(itemScores).length === 0) {
+      const initialScores: Record<number, number> = {};
+      criteria.forEach(c => {
+        initialScores[c.criteriaId] = 10;
+      });
+      setItemScores(initialScores);
+    }
+  }, [criteria]);
+
   const fetchData = async () => {
     try {
-      setLoading(true);
-      const [practiceRes, evaluationRes] = await Promise.all([
-        apiClient.get(`/tutor/practice/${enrollmentId}`),
-        apiClient.get(`/evaluations/practice/${enrollmentId}`).catch(() => ({ data: { data: null } }))
-      ]);
-
+      setPageLoading(true);
+      
+      const practiceRes = await apiClient.get(`/tutor/practice/${enrollmentId}`);
       if (practiceRes.data?.data) {
         setStudentInfo({
           studentName: practiceRes.data.data.studentName || "Estudiante",
@@ -77,84 +76,84 @@ export default function TutorEvaluation() {
         });
       }
 
-      if (evaluationRes.data?.data) {
-        setExistingEvaluation(evaluationRes.data.data);
-        setFormData({
-          attendance: evaluationRes.data.data.attendance || 0,
-          punctuality: evaluationRes.data.data.punctuality || 0,
-          responsibility: evaluationRes.data.data.responsibility || 0,
-          initiative: evaluationRes.data.data.initiative || 0,
-          teamwork: evaluationRes.data.data.teamwork || 0,
-          communication: evaluationRes.data.data.communication || 0,
-          technicalSkills: evaluationRes.data.data.technicalSkills || 0,
-          problemSolving: evaluationRes.data.data.problemSolving || 0,
-          adaptability: evaluationRes.data.data.adaptability || 0,
-          overallPerformance: evaluationRes.data.data.overallPerformance || 0,
-          comments: evaluationRes.data.data.comments || "",
-          recommendations: evaluationRes.data.data.recommendations || ""
-        });
+      const evalStatusRes = await apiClient.get(`/evaluations/practice/${enrollmentId}/status`).catch(() => null);
+      if (evalStatusRes?.data?.data?.evaluations?.ACADEMICO?.completed) {
+        const evalId = evalStatusRes.data.data.evaluations.ACADEMICO.evaluationId;
+        if (evalId) {
+          const detailRes = await apiClient.get(`/evaluations/${evalId}`);
+          if (detailRes.data?.data) {
+            setExistingEvaluation(detailRes.data.data);
+            setEvaluatorName(detailRes.data.data.evaluatorName || "");
+            setObservations(detailRes.data.data.observations || "");
+            
+            if (detailRes.data.data.items) {
+              const scores: Record<number, number> = {};
+              detailRes.data.data.items.forEach((item: { criteriaId: number; score: number }) => {
+                scores[item.criteriaId] = item.score;
+              });
+              setItemScores(scores);
+            }
+          }
+        }
       }
     } catch (error) {
       console.error("[TutorEvaluation] Error fetching data:", error);
       toast.error("Error al cargar datos");
     } finally {
-      setLoading(false);
+      setPageLoading(false);
     }
   };
 
-  const handleInputChange = (field: keyof EvaluationData, value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const handleScoreChange = (criteriaId: number, score: number) => {
+    if (score >= SCORE_RANGE.MIN && score <= SCORE_RANGE.MAX) {
+      setItemScores(prev => ({
+        ...prev,
+        [criteriaId]: score
+      }));
+    }
   };
 
   const calculateAverage = () => {
-    const criteria = [
-      formData.attendance,
-      formData.punctuality,
-      formData.responsibility,
-      formData.initiative,
-      formData.teamwork,
-      formData.communication,
-      formData.technicalSkills,
-      formData.problemSolving,
-      formData.adaptability
-    ];
-    const sum = criteria.reduce((acc, val) => acc + (Number(val) || 0), 0);
-    return (sum / criteria.length).toFixed(1);
+    if (criteria.length === 0) return "0.00";
+    const scores = criteria.map(c => itemScores[c.criteriaId] ?? 10);
+    const sum = scores.reduce((a, b) => a + b, 0);
+    return (sum / scores.length).toFixed(2);
   };
 
   const handleSubmit = async () => {
     if (!enrollmentId) return;
-
-    const criteria = [
-      { key: "attendance", label: "Asistencia" },
-      { key: "punctuality", label: "Puntualidad" },
-      { key: "responsibility", label: "Responsabilidad" },
-      { key: "initiative", label: "Iniciativa" },
-      { key: "teamwork", label: "Trabajo en equipo" },
-      { key: "communication", label: "Comunicación" },
-      { key: "technicalSkills", label: "Habilidades técnicas" },
-      { key: "problemSolving", label: "Resolución de problemas" },
-      { key: "adaptability", label: "Adaptabilidad" }
-    ];
-
-    for (const criterion of criteria) {
-      const value = formData[criterion.key as keyof EvaluationData];
-      if (typeof value === "number" && (value < 0 || value > 20)) {
-        toast.error(`${criterion.label} debe estar entre 0 y 20`);
-        return;
-      }
+    if (!evaluatorName.trim()) {
+      toast.error("El nombre del evaluador es requerido");
+      return;
     }
+
+    const items = criteria.map(c => ({
+      criteriaId: c.criteriaId,
+      itemNumber: c.itemNumber,
+      score: itemScores[c.criteriaId] ?? 10
+    }));
 
     try {
       setSaving(true);
-      await apiClient.post(`/evaluations/practice/${enrollmentId}`, {
-        ...formData,
-        overallPerformance: parseFloat(calculateAverage())
-      });
-      toast.success(existingEvaluation ? "Evaluación actualizada" : "Evaluación guardada");
+
+      if (existingEvaluation) {
+        await updateEvaluation(existingEvaluation.evaluationId, {
+          evaluatorName,
+          observations,
+          items
+        });
+        toast.success("Evaluación actualizada exitosamente");
+      } else {
+        await createEvaluation({
+          professionalPracticeId: parseInt(enrollmentId),
+          evaluatorType: "ACADEMICO" as EvaluatorType,
+          evaluatorName,
+          observations,
+          items
+        });
+        toast.success("Evaluación guardada exitosamente");
+      }
+      
       navigate("/tutor/students");
     } catch (error) {
       console.error("[TutorEvaluation] Error saving:", error);
@@ -164,34 +163,14 @@ export default function TutorEvaluation() {
     }
   };
 
-  const renderCriteriaInput = (field: keyof EvaluationData, label: string) => (
-    <div className="space-y-1">
-      <label className="block text-sm font-medium text-text-primary dark:text-white">
-        {label} (0-20)
-      </label>
-      <div className="flex items-center gap-3">
-        <input
-          type="range"
-          min="0"
-          max="20"
-          step="1"
-          value={formData[field] as number}
-          onChange={(e) => handleInputChange(field, parseInt(e.target.value))}
-          className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
-        />
-        <input
-          type="number"
-          min="0"
-          max="20"
-          value={formData[field] as number}
-          onChange={(e) => handleInputChange(field, parseInt(e.target.value) || 0)}
-          className="w-20 px-3 py-2 border border-border-light dark:border-white/10 rounded-lg bg-white dark:bg-gray-800 text-center"
-        />
-      </div>
-    </div>
-  );
+  const getScoreInputClass = (criteriaId: number) => {
+    const score = itemScores[criteriaId] ?? 10;
+    if (score < 10) return "border-red-400 focus:border-red-500 dark:border-red-500";
+    if (score >= 16) return "border-green-400 focus:border-green-500 dark:border-green-500";
+    return "border-yellow-400 focus:border-yellow-500 dark:border-yellow-500";
+  };
 
-  if (loading) {
+  if (pageLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
@@ -202,10 +181,10 @@ export default function TutorEvaluation() {
   return (
     <>
       <PageMeta
-        title="Evaluación de Estudiante"
-        description="Evaluación de desempeño del estudiante en práctica profesional"
+        title="Evaluación Académica"
+        description="Evaluación académica de estudiante en práctica profesional"
       />
-      <PageBreadcrumb pageTitle="Evaluación de Estudiante" />
+      <PageBreadcrumb pageTitle="Evaluación Académica" />
 
       <div className="mb-6">
         <Button
@@ -234,60 +213,114 @@ export default function TutorEvaluation() {
               <p className="text-xs font-bold uppercase tracking-wider text-text-tertiary mb-1">Empresa</p>
               <p className="text-lg font-semibold text-text-primary dark:text-text-emphasis">{studentInfo.institutionName}</p>
             </div>
-            <div className="p-4 rounded-lg bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20">
-              <p className="text-xs font-bold uppercase tracking-wider text-green-600 dark:text-green-400 mb-1">Promedio</p>
-              <p className="text-lg font-semibold text-text-primary dark:text-text-emphasis">{calculateAverage()}/20</p>
+            <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/20">
+              <p className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-1">Tipo</p>
+              <p className="text-lg font-semibold text-text-primary dark:text-text-emphasis">
+                {EVALUATOR_TYPE_LABELS["ACADEMICO"]}
+              </p>
             </div>
           </div>
         </ComponentCard>
       )}
 
-      <ComponentCard title="Criterios de Evaluación" className="mb-6">
-        <p className="text-sm text-text-secondary dark:text-text-tertiary mb-6">
-          Califique cada criterio del 0 al 20, donde 0 es la calificación más baja y 20 la más alta.
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {renderCriteriaInput("attendance", "Asistencia")}
-          {renderCriteriaInput("punctuality", "Puntualidad")}
-          {renderCriteriaInput("responsibility", "Responsabilidad")}
-          {renderCriteriaInput("initiative", "Iniciativa")}
-          {renderCriteriaInput("teamwork", "Trabajo en Equipo")}
-          {renderCriteriaInput("communication", "Comunicación")}
-          {renderCriteriaInput("technicalSkills", "Habilidades Técnicas")}
-          {renderCriteriaInput("problemSolving", "Resolución de Problemas")}
-          {renderCriteriaInput("adaptability", "Adaptabilidad")}
+      <ComponentCard title="Datos del Evaluador" className="mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-text-primary dark:text-white mb-1">
+              Nombre del Evaluador *
+            </label>
+            <input
+              type="text"
+              value={evaluatorName}
+              onChange={(e) => setEvaluatorName(e.target.value)}
+              className="w-full px-4 py-2 border border-border-light dark:border-white/10 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500"
+              placeholder="Su nombre completo"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-primary dark:text-white mb-1">
+              Observaciones Generales
+            </label>
+            <input
+              type="text"
+              value={observations}
+              onChange={(e) => setObservations(e.target.value)}
+              className="w-full px-4 py-2 border border-border-light dark:border-white/10 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-brand-500"
+              placeholder="Comentarios sobre el estudiante..."
+            />
+          </div>
         </div>
       </ComponentCard>
 
-      <ComponentCard title="Comentarios Adicionales" className="mb-6">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Comentarios sobre el desempeño</label>
-            <TextArea
-              placeholder="Describa el desempeño general del estudiante durante su practica profesional..."
-              value={formData.comments}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange("comments", e.target.value)}
-              rows={4}
-            />
+      <ComponentCard 
+        title="Criterios de Evaluación" 
+        className="mb-6"
+        headerAction={
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-text-secondary dark:text-text-tertiary">Promedio:</span>
+            <span className="text-2xl font-bold text-brand-500">{calculateAverage()}</span>
+            <span className="text-sm text-text-secondary dark:text-text-tertiary">/ {SCORE_RANGE.MAX}</span>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Recomendaciones</label>
-            <TextArea
-              placeholder="Recomendaciones para el desarrollo profesional del estudiante..."
-              value={formData.recommendations}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange("recommendations", e.target.value)}
-              rows={4}
-            />
+        }
+      >
+        <p className="text-sm text-text-secondary dark:text-text-tertiary mb-4">
+          Califique cada criterio del {SCORE_RANGE.MIN} al {SCORE_RANGE.MAX}.
+          <span className="ml-2 text-red-500">Rojo (&lt;10)</span>,
+          <span className="ml-1 text-yellow-500">Amarillo (10-15)</span>,
+          <span className="ml-1 text-green-500">Verde (≥16)</span>
+        </p>
+
+        {criteria.length === 0 ? (
+          <div className="text-center py-8 text-text-secondary dark:text-text-tertiary">
+            {evalLoading ? "Cargando criterios de evaluación..." : "No hay criterios disponibles"}
           </div>
-        </div>
+        ) : (
+          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+            {criteria.map((criterion) => (
+              <div
+                key={criterion.criteriaId}
+                className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div className="flex-1">
+                    <span className="text-sm font-medium text-text-secondary dark:text-text-tertiary mr-2">
+                      {criterion.itemNumber}.
+                    </span>
+                    <span className="text-sm text-text-primary dark:text-white">
+                      {criterion.description}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min={SCORE_RANGE.MIN}
+                      max={SCORE_RANGE.MAX}
+                      step="1"
+                      value={itemScores[criterion.criteriaId] ?? 10}
+                      onChange={(e) => handleScoreChange(criterion.criteriaId, parseInt(e.target.value))}
+                      className="flex-1 sm:w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <input
+                      type="number"
+                      min={SCORE_RANGE.MIN}
+                      max={SCORE_RANGE.MAX}
+                      value={itemScores[criterion.criteriaId] ?? 10}
+                      onChange={(e) => handleScoreChange(criterion.criteriaId, parseInt(e.target.value) || 0)}
+                      className={`w-16 px-2 py-1 text-center border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white ${getScoreInputClass(criterion.criteriaId)}`}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </ComponentCard>
 
       <div className="flex justify-end gap-4">
         <Button variant="outline" onClick={() => navigate("/tutor/students")}>
           Cancelar
         </Button>
-        <Button onClick={handleSubmit} disabled={saving}>
+        <Button onClick={handleSubmit} disabled={saving || criteria.length === 0}>
           {saving ? "Guardando..." : existingEvaluation ? "Actualizar Evaluación" : "Guardar Evaluación"}
         </Button>
       </div>

@@ -408,13 +408,13 @@ export const getPracticeEvaluationStatus = async (req: AuthRequest, res: Respons
 
     const { data: evaluations, error: evalError } = await supabase
       .from('t_evaluation')
-      .select('EVALUATOR_TYPE, TOTAL_SCORE, EVALUATOR_NAME')
+      .select('EVALUATION_ID, EVALUATOR_TYPE, TOTAL_SCORE, EVALUATOR_NAME')
       .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
       .eq('STATUS', 1);
 
     if (evalError) throw evalError;
 
-    const statusMap: Record<string, { completed: boolean; score: number; evaluatorName: string }> = {
+    const statusMap: Record<string, { completed: boolean; score: number; evaluatorName: string; evaluationId?: number }> = {
       'INSTITUCIONAL': { completed: false, score: 0, evaluatorName: '' },
       'ACADEMICO': { completed: false, score: 0, evaluatorName: '' },
       'COMITE': { completed: false, score: 0, evaluatorName: '' }
@@ -425,7 +425,8 @@ export const getPracticeEvaluationStatus = async (req: AuthRequest, res: Respons
         statusMap[e.EVALUATOR_TYPE] = {
           completed: true,
           score: e.TOTAL_SCORE,
-          evaluatorName: e.EVALUATOR_NAME
+          evaluatorName: e.EVALUATOR_NAME,
+          evaluationId: e.EVALUATION_ID
         };
       }
     });

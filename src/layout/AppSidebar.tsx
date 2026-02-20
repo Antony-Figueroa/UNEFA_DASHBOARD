@@ -42,6 +42,7 @@ const navItems: NavItem[] = [
       { name: "Seguimiento", path: "/tutor/tracking" },
       { name: "Cargar Notas", path: "/tutor/grades" },
       { name: "Reportes", path: "/tutor/reports" },
+      { name: "Mi Perfil", path: "/tutor/profile" },
     ],
   },
   {

@@ -599,3 +599,112 @@ export const getTutorProfile = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+export const getTutorPractice = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const { practiceId } = req.params;
+    const supabase = dbManager.getConnection();
+
+    const { data: tutorData, error: tutorError } = await supabase
+      .from('t_tutors')
+      .select('TUTOR_ID')
+      .eq('USER_ID', userId)
+      .single();
+
+    if (tutorError || !tutorData) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Tutor no encontrado' 
+      });
+    }
+
+    const tutorId = tutorData.TUTOR_ID;
+
+    const { data: tutorPractice, error: tutorPracticeError } = await supabase
+      .from('t_professional_practices_tutor')
+      .select('PROFESSIONAL_PRACTICE_ID')
+      .eq('TUTOR_ID', tutorId)
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .single();
+
+    if (tutorPracticeError || !tutorPractice) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tiene permiso para acceder a esta práctica'
+      });
+    }
+
+    const { data: practice, error: practiceError } = await supabase
+      .from('t_professional_practices')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        START_DATE,
+        END_DATE,
+        REGISTRATION_DATE,
+        GRADE,
+        PRACTICES_STATUS,
+        STATUS,
+        t_students (
+          STUDENTS_CI,
+          NAME,
+          SURNAME,
+          EMAIL,
+          CONTACT_PHONE,
+          t_career (CAREER_NAME)
+        ),
+        t_institution (
+          INSTITUTION_NAME
+        ),
+        t_internships_period (
+          DESCRIPTION
+        ),
+        t_internship_type (
+          NAME
+        )
+      `)
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .eq('STATUS', 1)
+      .single();
+
+    if (practiceError || !practice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Práctica no encontrada'
+      });
+    }
+
+    const student = practice.t_students as any;
+    const institution = practice.t_institution as any;
+    const period = practice.t_internships_period as any;
+    const practiceType = practice.t_internship_type as any;
+
+    res.json({
+      success: true,
+      data: {
+        practiceId: practice.PROFESSIONAL_PRACTICE_ID,
+        studentCi: student?.STUDENTS_CI || '',
+        studentName: `${student?.NAME || ''} ${student?.SURNAME || ''}`.trim(),
+        studentEmail: student?.EMAIL || '',
+        studentPhone: student?.CONTACT_PHONE || '',
+        careerName: student?.t_career?.CAREER_NAME || '',
+        institutionName: institution?.INSTITUTION_NAME || '',
+        period: period?.DESCRIPTION || '',
+        practiceType: practiceType?.NAME || '',
+        startDate: practice.START_DATE || '',
+        endDate: practice.END_DATE || '',
+        registrationDate: practice.REGISTRATION_DATE || '',
+        grade: practice.GRADE || 0,
+        status: practice.PRACTICES_STATUS
+      }
+    });
+
+  } catch (error) {
+    console.error('[TutorDashboard] Error getting practice:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener práctica',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};

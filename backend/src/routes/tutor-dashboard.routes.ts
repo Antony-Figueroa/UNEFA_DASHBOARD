@@ -6,7 +6,8 @@ import {
   getTutorTracking,
   updateStudentGrade,
   getTutorReports,
-  getTutorProfile
+  getTutorProfile,
+  getTutorPractice
 } from '../controllers/tutor-dashboard.controller.js';
 
 const router = Router();
@@ -17,6 +18,7 @@ router.use(authorizeRole([ROLES.TUTOR]));
 router.get('/dashboard', getTutorDashboard);
 router.get('/students', getTutorStudents);
 router.get('/tracking', getTutorTracking);
+router.get('/practice/:practiceId', getTutorPractice);
 router.put('/grades/:enrollmentId', updateStudentGrade);
 router.get('/reports', getTutorReports);
 router.get('/profile', getTutorProfile);

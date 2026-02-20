@@ -4,9 +4,8 @@ import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import tutorService, { TutorStudent } from "../../features/tutor/services/tutorService";
 import Badge from "../../components/ui/badge/Badge";
-import Button from "../../components/ui/button/Button";
 import { Search, Eye, Calendar, FileText, ClipboardCheck } from "lucide-react";
-import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/modal";
+import { Modal, ModalHeader, ModalBody } from "../../components/ui/modal";
 
 const statusColors: Record<string, "success" | "warning" | "info" | "error" | "light"> = {
   "active": "success",
@@ -192,13 +191,40 @@ export default function TutorStudents() {
                         {student.grade > 0 ? student.grade.toFixed(1) : "-"}
                       </td>
                       <td className="px-4 py-4">
-                        <button
-                          onClick={() => setSelectedStudent(student)}
-                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                          title="Ver detalles"
-                        >
-                          <Eye className="w-4 h-4 text-text-secondary" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setSelectedStudent(student)}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            title="Ver detalles"
+                          >
+                            <Eye className="w-4 h-4 text-text-secondary" />
+                          </button>
+                          {student.status === 'active' && (
+                            <>
+                              <button
+                                onClick={() => navigate(`/visit-registration/${student.enrollmentId}`)}
+                                className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                title="Registro de Visitas"
+                              >
+                                <Calendar className="w-4 h-4 text-blue-500" />
+                              </button>
+                              <button
+                                onClick={() => navigate(`/activity-logs/${student.enrollmentId}`)}
+                                className="p-2 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
+                                title="Registro de Actividades"
+                              >
+                                <FileText className="w-4 h-4 text-orange-500" />
+                              </button>
+                              <button
+                                onClick={() => navigate(`/tutor/evaluations/${student.enrollmentId}`)}
+                                className="p-2 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                                title="Cargar Evaluación"
+                              >
+                                <ClipboardCheck className="w-4 h-4 text-green-500" />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

@@ -4,14 +4,15 @@ import { AuthRequest } from '../middlewares/auth.middleware.js';
 
 export const createBackup = async (req: AuthRequest, res: Response) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, format } = req.body;
     const userId = String(req.user?.userId || '');
 
     if (!userId) {
       return res.status(401).json({ message: 'Usuario no autenticado' });
     }
 
-    const backup = await backupService.createBackup(userId, name, description);
+    const backupFormat = format === 'json' ? 'json' : 'sql';
+    const backup = await backupService.createBackup(userId, name, description, backupFormat);
     
     res.status(201).json({
       message: 'Backup creado exitosamente',
@@ -48,9 +49,20 @@ export const downloadBackup = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Backup no encontrado' });
     }
 
-    res.setHeader('Content-Type', 'application/json');
+    const isSQL = backup.format === 'sql' || backup.fileName.endsWith('.sql');
+    
+    if (isSQL) {
+      res.setHeader('Content-Type', 'application/sql');
+    } else {
+      res.setHeader('Content-Type', 'application/json');
+    }
     res.setHeader('Content-Disposition', `attachment; filename="${backup.fileName}"`);
-    res.send(backup.data);
+    
+    if (isSQL && backup.data?.sql) {
+      res.send(backup.data.sql);
+    } else {
+      res.send(backup.data);
+    }
   } catch (error: any) {
     console.error('Error downloading backup:', error);
     res.status(500).json({ 

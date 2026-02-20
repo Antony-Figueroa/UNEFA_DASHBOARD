@@ -9,11 +9,13 @@ export interface BackupRecord {
   tables: string[];
   createdBy: string;
   createdAt: string;
+  format?: 'json' | 'sql';
 }
 
 export interface CreateBackupRequest {
   name?: string;
   description?: string;
+  format?: 'json' | 'sql';
 }
 
 export const backupService = {

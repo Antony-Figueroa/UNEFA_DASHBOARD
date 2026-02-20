@@ -9,7 +9,7 @@
 **UNEFA Dashboard** es un sistema de gestión académica completo diseñado para universidades.
 
 - **Tipo**: Full-stack Web Application (Admin Dashboard)
-- **Versión**: 2.0.2
+- **Versión**: 2.2.0
 - **Core Value**: Arquitectura robusta y escalable para gestión académica integral
 - **Language**: Global Spanish (es)
 - **Licencia**: MIT
@@ -80,7 +80,7 @@
 ### Directory Structure Key
 
 src/
-├── features/          # Self-contained modules (16 features)
+├── features/          # Self-contained modules (24 features)
 │   ├── auth/
 │   ├── periods/
 │   ├── careers/
@@ -90,55 +90,37 @@ src/
 │   ├── enrollment/
 │   ├── pre-enrollment/
 │   ├── tracking/
+│   ├── evaluations/
+│   ├── activity-logs/
+│   ├── documents/
+│   ├── student-requests/
+│   ├── notifications/
+│   ├── theme/
 │   ├── users/
 │   ├── dashboard/
+│   ├── tutor/
+│   ├── student/
 │   ├── internship-home/
 │   ├── internship-types/
 │   ├── lists/
-│   ├── crudTemplate/
+│   ├── backups/
 │   └── types/
 │
 ├── api/               # Centralized Axios instance + factories
-├── components/        # Shared components (UI, Form, Common)
+├── components/        # Shared components (UI, Form, Common, Theme)
 ├── layout/            # Main layout shell (Sidebar, Header)
-├── pages/             # 37 route pages
+├── pages/             # 40+ route pages
 ├── routes/            # Route definitions (lazy loaded)
 ├── context/           # Global contexts (Auth, Theme, etc.)
-└── hooks/             # 9 shared hooks
-
-```text
-src/
-├── features/          # Self-contained modules (16 features)
-│   ├── auth/
-│   ├── periods/
-│   ├── careers/
-│   ├── students/
-│   ├── tutors/
-│   ├── institutions/
-│   ├── enrollment/
-│   ├── pre-enrollment/
-│   ├── tracking/
-│   ├── users/
-│   ├── dashboard/
-│   ├── internship-home/
-│   ├── internship-types/
-│   ├── lists/
-│   ├── crudTemplate/
-│   └── types/
-│
-├── api/               # Centralized Axios instance + factories
-├── components/        # Shared components (UI, Form, Common)
-├── layout/            # Main layout shell (Sidebar, Header)
-├── pages/             # 37 route pages
-├── routes/            # Route definitions (lazy loaded)
-├── context/           # Global contexts (Auth, Theme, etc.)
-└── hooks/             # 9 shared hooks
+├── hooks/             # 9 shared hooks
+└── theme/             # Brand colors system (8 palettes)
 
 backend/src/
-├── controllers/       # 14 controllers (business logic)
-├── routes/            # 14 route files (endpoints)
+├── controllers/       # 20 controllers (business logic)
+├── routes/            # 20 route files (endpoints)
 ├── middlewares/       # Auth, validation, error handling
-├── services/          # Email, external integrations
+├── services/          # Email, SSE, external integrations
+├── migrations/        # SQL migrations
 └── lib/               # Supabase client, utilities
 ```
 
@@ -146,7 +128,7 @@ backend/src/
 
 ## 4. Features Map
 
-### Sistema de Módulos (18 Features)
+### Sistema de Módulos (24 Features)
 
 | Feature | Descripción | Endpoints | Componentes Clave |
 | --------- | ------------- | ----------- | ------------------- |
@@ -159,14 +141,20 @@ backend/src/
 | **enrollment** | Inscripciones | `/api/enrollments` | EnrollmentForm, EnrollmentTable |
 | **pre-enrollment** | Pre-inscripciones | `/api/pre-enrollments` | PreEnrollmentForm |
 | **tracking** | Seguimiento de pasantías | `/api/tracking` | TrackingTable, VisitForm |
-| **evaluations** | Evaluaciones de prácticas | `/api/evaluations` | EvaluationModal, EvaluationsList |
+| **evaluations** | Evaluaciones de prácticas | `/api/evaluations` | EvaluationModal, EvaluationsList, EvaluationCriteria |
+| **activity-logs** | Bitácora de actividades | `/api/activity-logs` | ActivityLogModal, ActivityLogTable |
+| **documents** | Documentos de estudiantes | `/api/documents` | DocumentsList, DocumentUpload |
+| **student-requests** | Solicitudes de estudiantes | `/api/student/requests` | RequestForm, RequestsTable |
+| **notifications** | Notificaciones en tiempo real | `/api/notifications` | NotificationBell, NotificationList |
+| **theme** | Personalización de tema | `/api/user/theme` | ThemeColorPicker, UserThemeCard |
 | **users** | Gestión de usuarios | `/api/users` | UserModal, UserTable |
 | **dashboard** | Estadísticas y métricas | `/api/dashboard` | StatCards, Charts |
 | **tutor** | Panel de tutor | `/api/tutor/*` | TutorDashboard, TutorStudents |
-| **student** | Panel de estudiante | `/api/student/*` | StudentDashboard, StudentRequests |
+| **student** | Panel de estudiante | `/api/student/*` | StudentDashboard, StudentProfile |
 | **internship-home** | Landing page pública | - | HeroSection, Features |
 | **internship-types** | Tipos de pasantías | `/api/internship-types` | TypeModal, TypeTable |
 | **lists** | Configuración de listas | `/api/lists` | ListConfig |
+| **backups** | Respaldos de BD | `/api/backups` | BackupList, BackupCreate |
 | **types** | Tipos compartidos | - | TypeScript definitions |
 
 
@@ -243,12 +231,11 @@ VITE_API_URL=https://api.example.com npm run dev
    };
    ```
 
- - **Database**: Supabase (PostgreSQL managed)
- - **Containerization**: Docker + Docker Compose
- - **Deployment**: Vercel (Frontend), Railway/Render (Backend)
- - **Analytics**: Vercel Analytics
-
+4. **Create Hook** (`hooks/useMyFeature.tsx`)
+```typescript
+   import { useState } from 'react';
    import toast from 'react-hot-toast';
+   import { myFeatureService } from '../services/myFeatureService';
    
    export const useMyFeature = () => {
      const [items, setItems] = useState([]);
@@ -288,20 +275,9 @@ VITE_API_URL=https://api.example.com npm run dev
 
 8. **Register Routes in App** (`backend/src/app.ts`)
 
+9. **Add Page** (`src/pages/MyFeature/MyFeature.tsx`)
 
-  ```text
-  1. UI Components → Eventos del usuario
-  2. Pages → Orchestación de features
-  3. Hooks (features/*/hooks) → Estado y lógica de negocio
-  4. Services (features/*/services) → Comunicación con API
-  5. Backend Routes (backend/src/routes) → Recepción de requests
-  6. Controllers (backend/src/controllers) → Ejecución de lógica
-  7. DB Layer → Interacción con Supabase
-  ```
-
-1. **Add Page** (`src/pages/MyFeature/MyFeature.tsx`)
-
-2. **Register Route** (`src/routes/index.tsx`)
+10. **Register Route** (`src/routes/index.tsx`)
 
 ---
 
@@ -346,14 +322,6 @@ export const getUser = (id: any): any => {
 - **Components**: `PascalCase.tsx` (e.g., `PeriodModal.tsx`)
 - **Hooks**: `camelCase.tsx` (e.g., `usePeriods.tsx`)
 - **Utils**: `camelCase.ts` (e.g., `formatDate.ts`)
-```text
-backend/src/
-├── controllers/       # 14 controllers (business logic)
-├── routes/            # 14 route files (endpoints)
-├── middlewares/       # Auth, validation, error handling
-├── services/          # Email, external integrations
-└── lib/               # Supabase client, utilities
-```
 
 ### UX/UI (`technical-specs.md`)
 

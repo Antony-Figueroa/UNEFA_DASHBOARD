@@ -74,7 +74,7 @@ export default function StudentEvaluations() {
     const label = EVALUATOR_TYPE_LABELS[type];
 
     return (
-      <ComponentCard key={type}>
+      <ComponentCard key={type} title={label}>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-text-primary dark:text-white">

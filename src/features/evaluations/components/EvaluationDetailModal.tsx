@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Modal, ModalHeader, ModalBody } from "../../../components/ui/modal";
 import Badge from "../../../components/ui/badge/Badge";
-import { EVALUATOR_TYPE_LABELS, EvaluationWithDetails, EvaluationCriteria } from "../types";
+import { EVALUATOR_TYPE_LABELS, EvaluationWithDetails } from "../types";
 import { useEvaluations } from "../hooks/useEvaluations";
 
 interface EvaluationDetailModalProps {
@@ -42,11 +42,6 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
   const getCriteriaDescription = (criteriaId: number): string => {
     const found = criteria.find(c => c.criteriaId === criteriaId);
     return found?.description || `Criterio ${criteriaId}`;
-  };
-
-  const getCriteriaItemNumber = (criteriaId: number): number => {
-    const found = criteria.find(c => c.criteriaId === criteriaId);
-    return found?.itemNumber || 0;
   };
 
   const getScoreColor = (score: number): string => {

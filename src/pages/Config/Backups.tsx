@@ -4,6 +4,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import Button from "../../components/ui/button/Button";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
+import RestoreDialog from "../../components/ui/dialog/RestoreDialog";
 import { backupService, BackupRecord } from "../../features/backup/services/backupService";
 import toast from "react-hot-toast";
 
@@ -11,8 +12,13 @@ export default function BackupsPage() {
   const [backups, setBackups] = useState<BackupRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const [backupFormat, setBackupFormat] = useState<'sql' | 'json'>('sql');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [selectedBackup, setSelectedBackup] = useState<BackupRecord | null>(null);
+  const [restorePassword, setRestorePassword] = useState('');
+  const [restoreStep, setRestoreStep] = useState<'password' | 'confirm'>('password');
   const [backupName, setBackupName] = useState('');
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
@@ -80,6 +86,33 @@ export default function BackupsPage() {
     }
   };
 
+  const handleRestore = (backup: BackupRecord) => {
+    if (backup.format !== 'sql' && !backup.fileName?.endsWith('.sql')) {
+      toast.error('Solo se pueden restaurar respaldos en formato SQL');
+      return;
+    }
+    setSelectedBackup(backup);
+    setShowRestoreModal(true);
+  };
+
+  const confirmRestore = async () => {
+    if (!selectedBackup) return;
+    
+    setRestoring(true);
+    try {
+      const result = await backupService.restoreBackup(selectedBackup.id);
+      toast.success(result.message);
+      setShowRestoreModal(false);
+      setSelectedBackup(null);
+      fetchBackups();
+    } catch (error: any) {
+      console.error('Error restoring backup:', error);
+      toast.error(error?.response?.data?.message || 'Error al restaurar el respaldo');
+    } finally {
+      setRestoring(false);
+    }
+  };
+
   const handleDelete = (backup: BackupRecord) => {
     setConfirmDialog({
       isOpen: true,
@@ -135,7 +168,7 @@ export default function BackupsPage() {
               Respaldos de Base de Datos
             </h1>
             <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">
-              Crear, descargar y eliminar respaldos de la base de datos
+              Crear, descargar, restaurar y eliminar respaldos
             </p>
           </div>
           <Button onClick={handleCreateBackup} disabled={creating}>
@@ -216,6 +249,19 @@ export default function BackupsPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {(backup.format === 'sql' || backup.fileName?.endsWith('.sql')) && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-amber-600 border-amber-200 hover:bg-amber-50 hover:border-amber-300 dark:border-amber-700 dark:hover:bg-amber-900/20"
+                        onClick={() => handleRestore(backup)}
+                      >
+                        <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Restaurar
+                      </Button>
+                    )}
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -254,11 +300,27 @@ export default function BackupsPage() {
                   Acerca de los respaldos
                 </h4>
                 <ul className="mt-2 text-xs text-brand-600 dark:text-brand-400 space-y-1">
-                  <li>• Los respaldos incluyen 51 tablas del sistema</li>
-                  <li>• <strong>Formato SQL:</strong> Archivo .sql con INSERT statements (recomendado para restaurar)</li>
-                  <li>• <strong>Formato JSON:</strong> Archivo .json estructurado (recomendado para análisis)</li>
-                  <li>• Solo administradores pueden crear y eliminar respaldos</li>
+                  <li>• Los respaldos incluyen estructura (CREATE TABLE) y datos (INSERT)</li>
+                  <li>• <strong>Formato SQL:</strong> Recomendado para restaurar</li>
+                  <li>• <strong>Formato JSON:</strong> Recomendado para análisis</li>
+                  <li>• <strong>Restaurar:</strong> Solo administradores con verificación de contraseña</li>
                   <li>• Se recomienda crear respaldos regularmente</li>
+                </ul>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-500/10">
+              <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div>
+                <h4 className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                  Advertencia sobre restauración
+                </h4>
+                <ul className="mt-2 text-xs text-amber-600 dark:text-amber-400 space-y-1">
+                  <li>• <strong>Restaurar eliminará todos los datos actuales</strong></li>
+                  <li>• Se creará un backup automático antes de restaurar</li>
+                  <li>• Solo use esta opción en caso de emergencia</li>
+                  <li>• Alternativa segura: Descargar SQL y ejecutar manualmente en Supabase</li>
                 </ul>
               </div>
             </div>
@@ -302,7 +364,7 @@ export default function BackupsPage() {
                   className="w-4 h-4 text-brand-600 focus:ring-brand-500"
                 />
                 <span className="text-sm text-text-primary dark:text-white">SQL (.sql)</span>
-                <span className="text-xs text-text-tertiary">- Recomendado para restaurar</span>
+                <span className="text-xs text-text-tertiary">- Recomendado</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -318,6 +380,53 @@ export default function BackupsPage() {
               </label>
             </div>
           </div>
+        </div>
+      </UnifiedDialog>
+
+      <UnifiedDialog
+        isOpen={showRestoreModal}
+        onClose={() => {
+          setShowRestoreModal(false);
+          setRestorePassword('');
+        }}
+        title={restoreStep === 'password' ? "Verificar Contraseña" : "Confirmar Restauración"}
+        confirmLabel={restoring ? "Procesando..." : restoreStep === 'password' ? "Verificar" : "RESTAURAR AHORA"}
+        onConfirm={restoreStep === 'password' ? verifyPassword : confirmRestore}
+        variant="warning"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-text-secondary dark:text-text-tertiary">
+            <strong>Respaldo:</strong> {selectedBackup?.name}
+          </p>
+          
+          {restoreStep === 'password' ? (
+            <div>
+              <label className="block text-sm font-medium text-text-primary dark:text-white mb-1">
+                Ingrese su contraseña para continuar
+              </label>
+              <input
+                type="password"
+                value={restorePassword}
+                onChange={(e) => setRestorePassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-text-primary dark:text-white focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+              />
+            </div>
+          ) : (
+            <div className="p-4 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30">
+              <p className="text-sm font-medium text-red-700 dark:text-red-300 mb-2">
+                ⚠️ ADVERTENCIA: Esta acción es irreversible
+              </p>
+              <ul className="text-xs text-red-600 dark:text-red-400 space-y-1">
+                <li>• Se eliminarán <strong>TODOS</strong> los datos actuales</li>
+                <li>• Se restaurarán los datos del respaldo seleccionado</li>
+                <li>• Se creará un backup automático antes de restaurar</li>
+              </ul>
+              <p className="mt-3 text-sm font-bold text-red-700 dark:text-red-300">
+                ¿Está ABSOLUTAMENTE seguro de continuar?
+              </p>
+            </div>
+          )}
         </div>
       </UnifiedDialog>
 

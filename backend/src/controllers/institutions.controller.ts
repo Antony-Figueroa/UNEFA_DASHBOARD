@@ -1,10 +1,18 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { cacheManager } from '../lib/cache-manager.js';
+import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { auditCreate, auditUpdate, auditDelete, auditStatusChange } from '../utils/audit-helpers.js';
 
 const TABLE_NAME = 't_institution';
 const CACHE_PREFIX = 'institutions:';
-const CACHE_TTL = 3600000; // 1 hour for institutions
+const CACHE_TTL = 3600000;
+
+const INSTITUTION_COLUMNS_TO_AUDIT = [
+  'INSTITUTION_NAME', 'INSTITUTION_ADDRESS', 'INSTITUTION_CONTACT', 'PRACTICE_TYPE',
+  'REGION', 'NUCLEUS', 'EXTENSION', 'INSTITUTION_TYPE', 'STATUS', 'RIF', 'CAREER_ID'
+];
+
 const INSTITUTION_COLUMNS = 'INSTITUTION_ID, INSTITUTION_NAME, INSTITUTION_ADDRESS, INSTITUTION_CONTACT, PRACTICE_TYPE, REGION, NUCLEUS, EXTENSION, CREATION_DATE, INSTITUTION_TYPE, STATUS, RIF, CAREER_ID, t_professional_practices(INSTITUTION_ID)';
 
 interface AppError extends Error {
@@ -213,7 +221,7 @@ export const getInstitutionById = async (req: Request, res: Response) => {
   }
 };
 
-export const createInstitution = async (req: Request, res: Response) => {
+export const createInstitution = async (req: AuthRequest, res: Response) => {
   try {
     const i = req.body;
     const dbData = {
@@ -282,7 +290,8 @@ export const createInstitution = async (req: Request, res: Response) => {
       } as DBInstitution;
     }, 'createInstitution');
 
-    // Invalidar caché
+    await auditCreate(req, 't_institution', dbData, INSTITUTION_COLUMNS_TO_AUDIT);
+
     cacheManager.deleteByPrefix(CACHE_PREFIX);
 
     res.status(201).json(mapDBToFrontend(data));
@@ -291,7 +300,7 @@ export const createInstitution = async (req: Request, res: Response) => {
   }
 };
 
-export const updateInstitution = async (req: Request, res: Response) => {
+export const updateInstitution = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const i = req.body;
@@ -310,6 +319,12 @@ export const updateInstitution = async (req: Request, res: Response) => {
     if (i.careerId !== undefined) dbData.CAREER_ID = parseInt(i.careerId);
 
     const data = await dbManager.withRetry(async (supabase) => {
+      const { data: oldData } = await supabase
+        .from(TABLE_NAME)
+        .select('*')
+        .eq('INSTITUTION_ID', id)
+        .single();
+
       const { data: inst, error } = await supabase
         .from(TABLE_NAME)
         .update(dbData)
@@ -318,6 +333,10 @@ export const updateInstitution = async (req: Request, res: Response) => {
         .single();
 
       if (error) throw error;
+
+      if (oldData) {
+        await auditUpdate(req, 't_institution', oldData as Record<string, any>, dbData, INSTITUTION_COLUMNS_TO_AUDIT);
+      }
 
       // Fetch career name manually since there's no FK relationship
       let careerName: string | undefined;
@@ -370,12 +389,11 @@ export const updateInstitution = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteInstitution = async (req: Request, res: Response) => {
+export const deleteInstitution = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     
     await dbManager.withRetry(async (supabase) => {
-      // 1. Verificar si tiene responsables asociados
       const { count, error: countError } = await supabase
         .from('t_institution_manager')
         .select('*', { count: 'exact', head: true })
@@ -392,16 +410,24 @@ export const deleteInstitution = async (req: Request, res: Response) => {
         };
       }
 
-      // 2. Proceder con la eliminación lógica
+      const { data: oldData } = await supabase
+        .from(TABLE_NAME)
+        .select('*')
+        .eq('INSTITUTION_ID', id)
+        .single();
+
       const { error } = await supabase
         .from(TABLE_NAME)
         .update({ STATUS: 0 })
         .eq('INSTITUTION_ID', id);
 
       if (error) throw error;
+
+      if (oldData) {
+        await auditStatusChange(req, 't_institution', id, oldData.STATUS, 0);
+      }
     }, 'deleteInstitution');
 
-    // Invalidar caché
     cacheManager.deleteByPrefix(CACHE_PREFIX);
 
     res.status(204).send();
@@ -414,13 +440,12 @@ export const deleteInstitution = async (req: Request, res: Response) => {
   }
 };
 
-export const toggleInstitutionStatus = async (req: Request, res: Response) => {
+export const toggleInstitutionStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
     
     const data = await dbManager.withRetry(async (supabase) => {
-      // Si se intenta desactivar (status = false), verificar responsables
       if (!status) {
         const { count, error: countError } = await supabase
           .from('t_institution_manager')
@@ -439,6 +464,12 @@ export const toggleInstitutionStatus = async (req: Request, res: Response) => {
         }
       }
 
+      const { data: oldData } = await supabase
+        .from(TABLE_NAME)
+        .select('STATUS')
+        .eq('INSTITUTION_ID', id)
+        .single();
+
       const { data: inst, error } = await supabase
         .from(TABLE_NAME)
         .update({ STATUS: status ? 1 : 0 })
@@ -447,6 +478,10 @@ export const toggleInstitutionStatus = async (req: Request, res: Response) => {
         .single();
 
       if (error) throw error;
+
+      if (oldData && oldData.STATUS !== (status ? 1 : 0)) {
+        await auditStatusChange(req, 't_institution', id, oldData.STATUS, status ? 1 : 0);
+      }
 
       // Fetch career name manually since there's no FK relationship
       let careerName: string | undefined;

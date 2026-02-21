@@ -53,12 +53,13 @@ export const useSessionTimeout = () => {
         warningToastIdRef.current = null;
       }
 
+      // Guardar razón antes de limpiar
+      sessionStorage.setItem('auth_redirect_reason', 'expired');
+      
       await signOut();
       
-      navigate('/signin', { 
-        state: { message: 'Su sesión ha expirado por inactividad prolongada (15 minutos).' }, 
-        replace: true 
-      });
+      // No pasar message en state porque SignInForm ya muestra toast basado en auth_redirect_reason
+      navigate('/signin', { replace: true });
     } catch (error) {
       console.error('[SessionTimeout] Error durante el cierre automático:', error);
       navigate('/signin', { replace: true });

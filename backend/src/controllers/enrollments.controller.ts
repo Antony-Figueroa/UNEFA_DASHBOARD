@@ -2,10 +2,17 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
 import { cacheManager } from '../lib/cache-manager.js';
+import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-helpers.js';
 
 const TABLE_NAME = 't_professional_practices';
 const CACHE_PREFIX = 'enrollments:';
-const CACHE_TTL = 300000; // 5 minutes for enrollments
+const CACHE_TTL = 300000;
+
+const ENROLLMENT_COLUMNS_TO_AUDIT = [
+  'INSTITUTION_ID', 'MANAGER_ID', 'PERIOD_ID', 'INTERNSHIP_TYPE_ID',
+  'PRACTICES_STATUS', 'INTERNSHIP_STATUS', 'STATUS', 'OBSERVATION'
+];
+
 const ENROLLMENT_COLUMNS = 'PROFESSIONAL_PRACTICE_ID, START_DATE, END_DATE, REPORT_TITLE, REGISTRATION_DATE, GRADE, PRACTICES_STATUS, TRANSFER, TOUR, PERIOD_ID, INSTITUTION_ID, STUDENTS_ID, STATUS, MANAGER_ID, OBSERVATION, ENROLLMENT, INTERNSHIP_STATUS, INTERNSHIP_TYPE_ID';
 
 const handleDbError = (res: Response, error: unknown) => {
@@ -206,7 +213,7 @@ export const getEnrollments = async (req: Request, res: Response) => {
   }
 };
 
-export const createEnrollment = async (req: Request, res: Response) => {
+export const createEnrollment = async (req: AuthRequest, res: Response) => {
   try {
     const {
       identificationPrefix,
@@ -255,7 +262,7 @@ export const createEnrollment = async (req: Request, res: Response) => {
         throw new Error('No existe una pre-inscripción activa para el estudiante');
       }
 
-      const updateData: Partial<ProfessionalPractice> = {
+      const updateData: Partial<ProfessionalPractice> & { ENROLLMENT?: string } = {
         REGISTRATION_DATE: now,
         PRACTICES_STATUS: 2,
         INSTITUTION_ID: parseInt(institutionId),
@@ -266,8 +273,14 @@ export const createEnrollment = async (req: Request, res: Response) => {
       
       const body: { enrollmentCode?: string } = req.body as { enrollmentCode?: string };
       if (body.enrollmentCode) {
-        (updateData as unknown as { ENROLLMENT: string }).ENROLLMENT = body.enrollmentCode;
+        updateData.ENROLLMENT = body.enrollmentCode;
       }
+
+      const { data: oldData } = await supabase
+        .from(TABLE_NAME)
+        .select('*')
+        .eq('PROFESSIONAL_PRACTICE_ID', preEnrollmentRow.PROFESSIONAL_PRACTICE_ID)
+        .single();
 
       const { data: practice, error: practiceError } = await supabase
         .from(TABLE_NAME)
@@ -277,6 +290,10 @@ export const createEnrollment = async (req: Request, res: Response) => {
         .single();
 
       if (practiceError) throw practiceError;
+
+      if (oldData) {
+        await auditUpdate(req, 't_professional_practices', oldData as Record<string, any>, updateData as Record<string, any>, ENROLLMENT_COLUMNS_TO_AUDIT);
+      }
 
       const tutorsToInsert = [
         {
@@ -360,7 +377,7 @@ export const createEnrollment = async (req: Request, res: Response) => {
   }
 };
 
-export const updateEnrollment = async (req: Request, res: Response) => {
+export const updateEnrollment = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const {
@@ -373,7 +390,6 @@ export const updateEnrollment = async (req: Request, res: Response) => {
     } = req.body;
 
     const result = await dbManager.withRetry(async (supabase) => {
-      // 1. Buscar Periodo y Tipo si cambiaron
       let periodId, internshipTypeId;
       
       if (period) {
@@ -386,12 +402,17 @@ export const updateEnrollment = async (req: Request, res: Response) => {
         internshipTypeId = t?.INTERNSHIP_TYPE_ID;
       }
 
-      // 2. Actualizar t_professional_practices
       const updateData: Partial<ProfessionalPractice> = {};
       if (institutionId) updateData.INSTITUTION_ID = parseInt(institutionId);
       if (institutionResponsibleId) updateData.MANAGER_ID = parseInt(institutionResponsibleId);
       if (periodId) updateData.PERIOD_ID = periodId;
       if (internshipTypeId) updateData.INTERNSHIP_TYPE_ID = internshipTypeId;
+
+      const { data: oldData } = await supabase
+        .from(TABLE_NAME)
+        .select('*')
+        .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id))
+        .single();
 
       const { data: practice, error: practiceError } = await supabase
         .from(TABLE_NAME)
@@ -401,6 +422,10 @@ export const updateEnrollment = async (req: Request, res: Response) => {
         .single();
 
       if (practiceError) throw practiceError;
+
+      if (oldData) {
+        await auditUpdate(req, 't_professional_practices', oldData as Record<string, any>, updateData as Record<string, any>, ENROLLMENT_COLUMNS_TO_AUDIT);
+      }
 
       // 3. Actualizar Tutores (borrar y volver a insertar es más simple)
       if (academicTutorId || methodologicalTutorId) {
@@ -446,16 +471,26 @@ export const updateEnrollment = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteEnrollment = async (req: Request, res: Response) => {
+export const deleteEnrollment = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     await dbManager.withRetry(async (supabase) => {
+      const { data: oldData } = await supabase
+        .from(TABLE_NAME)
+        .select('PROFESSIONAL_PRACTICE_ID, STATUS')
+        .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id))
+        .single();
+
       const { error } = await supabase
         .from(TABLE_NAME)
         .update({ STATUS: 0 })
         .eq('PROFESSIONAL_PRACTICE_ID', parseInt(id));
 
       if (error) throw error;
+
+      if (oldData) {
+        await auditStatusChange(req, 't_professional_practices', id, oldData.STATUS, 0);
+      }
     }, 'deleteEnrollment');
 
     // Invalidar caché

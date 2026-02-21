@@ -30,6 +30,8 @@ export interface UnifiedDialogProps {
   title?: string;
   /** Mensaje o contenido del diálogo. */
   message?: React.ReactNode;
+  /** Contenido hijo alternativo al message. */
+  children?: React.ReactNode;
   /** Etiqueta para el botón de confirmar. */
   confirmLabel?: string;
   /** Etiqueta para el botón de cancelar. Por defecto "Cancelar". */
@@ -61,6 +63,7 @@ export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
   variant,
   title,
   message,
+  children,
   confirmLabel,
   cancelLabel = "Cancelar",
   isLoading = false,
@@ -158,7 +161,7 @@ export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
           layout.messageSize,
           "text-text-secondary dark:text-text-tertiary max-w-[320px] leading-relaxed"
         )}>
-          {message}
+          {children || message}
         </div>
       </ModalBody>
 

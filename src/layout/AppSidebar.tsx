@@ -39,24 +39,24 @@ type PopupMenuProps = {
 };
 
 const popupVariants = {
-  hidden: { 
-    opacity: 0, 
+  hidden: {
+    opacity: 0,
     scale: 0.95,
-    x: -8 
+    x: -8
   },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     scale: 1,
     x: 0,
     transition: {
-      type: "spring",
+      type: "spring" as const,
       stiffness: 400,
       damping: 30,
       mass: 0.8
     }
   },
-  exit: { 
-    opacity: 0, 
+  exit: {
+    opacity: 0,
     scale: 0.95,
     x: -8,
     transition: {
@@ -72,7 +72,7 @@ const itemVariants = {
     x: 0,
     transition: {
       delay: i * 0.03,
-      type: "spring",
+      type: "spring" as const,
       stiffness: 400,
       damping: 25
     }
@@ -90,7 +90,7 @@ const PopupMenu: React.FC<PopupMenuProps> = ({ isOpen, position, title, items, i
           animate="visible"
           exit="exit"
           className="fixed w-56 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-border-light/50 dark:border-white/10 overflow-hidden"
-          style={{ 
+          style={{
             top: position.top,
             left: position.left,
             zIndex: 99999
@@ -100,7 +100,7 @@ const PopupMenu: React.FC<PopupMenuProps> = ({ isOpen, position, title, items, i
           layoutId={`popup-${title}`}
         >
           <div className="py-2">
-            <motion.div 
+            <motion.div
               className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-text-tertiary border-b border-border-light/50 dark:border-white/5"
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
@@ -110,7 +110,7 @@ const PopupMenu: React.FC<PopupMenuProps> = ({ isOpen, position, title, items, i
             </motion.div>
             <ul className="py-1">
               {items.map((subItem, i) => (
-                <motion.li 
+                <motion.li
                   key={subItem.name}
                   custom={i}
                   variants={itemVariants}
@@ -120,13 +120,12 @@ const PopupMenu: React.FC<PopupMenuProps> = ({ isOpen, position, title, items, i
                   <Link
                     to={subItem.path}
                     onClick={onNavigate}
-                    className={`flex items-center gap-2 px-4 py-2 text-theme-sm transition-all duration-200 ${
-                      isActive(subItem.path)
+                    className={`flex items-center gap-2 px-4 py-2 text-theme-sm transition-all duration-200 ${isActive(subItem.path)
                         ? "text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/30"
                         : "text-text-secondary hover:text-text-primary hover:bg-gray-50 dark:text-text-tertiary dark:hover:text-white dark:hover:bg-white/3"
-                    }`}
+                      }`}
                   >
-                    <motion.span 
+                    <motion.span
                       className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive(subItem.path) ? "bg-brand-500" : "bg-text-tertiary/40"}`}
                       whileHover={{ scale: 1.5 }}
                       transition={{ type: "spring", stiffness: 500 }}
@@ -167,7 +166,7 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    name: "Académico", icon: <TableIcon />, roles: [0, 1, 2],
+    name: "Gestión", icon: <TableIcon />, roles: [0, 1, 2],
     subItems: [
       { name: "Período", path: "/period" },
       { name: "Carreras", path: "/careers" },
@@ -182,7 +181,7 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    name: "Prácticas", icon: <BoxCubeIcon />, roles: [0, 1, 2],
+    name: "Prácticas Profesionales", icon: <BoxCubeIcon />, roles: [0, 1, 2],
     subItems: [
       { name: "Pre-Inscripción", path: "/pre-enrollment" },
       { name: "Inscripción", path: "/enrollment" },
@@ -308,17 +307,17 @@ const AppSidebar: React.FC = () => {
     const isHovered = hoveredItem === nav.name;
 
     const buttonBaseClass = `group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-theme-sm font-medium transition-all duration-200 w-full`;
-    
+
     if (isCollapsed) {
-      const popupItems = hasSubmenu 
-        ? nav.subItems || [] 
+      const popupItems = hasSubmenu
+        ? nav.subItems || []
         : nav.path ? [{ name: nav.name, path: nav.path }] : [];
 
       const ButtonContent = (
-        <span className={`shrink-0 ${hasActiveChild || isDirectActive 
+        <span className={`shrink-0 ${hasActiveChild || isDirectActive
           ? hasSubmenu ? "text-brand-500" : "text-white"
           : "text-text-tertiary group-hover:text-text-primary dark:group-hover:text-white"
-        }`}>
+          }`}>
           {nav.icon}
         </span>
       );
@@ -328,7 +327,7 @@ const AppSidebar: React.FC = () => {
           ? "bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400"
           : "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
         : "text-text-secondary hover:bg-gray-50/70 hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/3 dark:hover:text-white"
-      }`;
+        }`;
 
       return (
         <div
@@ -377,14 +376,14 @@ const AppSidebar: React.FC = () => {
               : isSubmenuOpen
                 ? "bg-gray-50 text-text-primary dark:bg-white/5 dark:text-white"
                 : "text-text-secondary hover:bg-gray-50/70 hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/3 dark:hover:text-white"
-            }`}
+              }`}
           >
             <span className={`shrink-0 transition-colors duration-200 ${hasActiveChild
               ? "text-brand-500"
               : isSubmenuOpen
                 ? "text-text-primary dark:text-white"
                 : "text-text-tertiary group-hover:text-text-primary dark:group-hover:text-white"
-            }`}>
+              }`}>
               {nav.icon}
             </span>
             <span className="flex-1 text-left truncate">{nav.name}</span>
@@ -398,11 +397,10 @@ const AppSidebar: React.FC = () => {
                   <Link
                     to={subItem.path}
                     onClick={() => setIsMobileOpen(false)}
-                    className={`group/sub relative flex items-center gap-2 px-3 py-2 text-theme-sm rounded-lg transition-all duration-200 ${
-                      isActive(subItem.path)
+                    className={`group/sub relative flex items-center gap-2 px-3 py-2 text-theme-sm rounded-lg transition-all duration-200 ${isActive(subItem.path)
                         ? "text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/20"
                         : "text-text-secondary hover:text-text-primary hover:bg-gray-50 dark:text-text-tertiary dark:hover:text-white dark:hover:bg-white/3"
-                    }`}
+                      }`}
                   >
                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all duration-200 ${isActive(subItem.path) ? "bg-brand-500 scale-125" : "bg-text-tertiary/40 group-hover/sub:bg-brand-400"}`} />
                     <span className="truncate">{subItem.name}</span>
@@ -423,7 +421,7 @@ const AppSidebar: React.FC = () => {
         className={`${buttonBaseClass} ${isDirectActive
           ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
           : "text-text-secondary hover:bg-gray-50/70 hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/3 dark:hover:text-white"
-        }`}
+          }`}
       >
         <span className={`shrink-0 ${isDirectActive ? "text-white" : "text-text-tertiary group-hover:text-text-primary dark:group-hover:text-white"}`}>
           {nav.icon}

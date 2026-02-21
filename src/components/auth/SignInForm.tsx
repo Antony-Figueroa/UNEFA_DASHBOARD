@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router";
-import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
-import Label from "../form/Label";
-import Input from "../form/input/InputField";
+import { motion } from "framer-motion";
+import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Button from "../ui/button/Button";
 import * as authService from "../../features/auth/services/authService";
 import { useAuth } from "../../context/auth";
-
 import { useToast } from "../../context/toast";
 
 export default function SignInForm() {
@@ -28,7 +26,6 @@ export default function SignInForm() {
       });
     }
 
-    // Verificar si venimos de una redirección por expiración
     const reason = sessionStorage.getItem('auth_redirect_reason');
     if (reason === 'expired') {
       addToast({
@@ -59,7 +56,7 @@ export default function SignInForm() {
       }
 
       if (data.user) {
-        await checkAuth(); // Actualizar el estado global del usuario
+        await checkAuth();
         addToast({
           variant: "success",
           title: "Bienvenido",
@@ -99,109 +96,162 @@ export default function SignInForm() {
   };
 
   return (
-    <div className="flex flex-col flex-1">
-      <div className="w-full max-w-md pt-10 mx-auto">
+    <div className="w-full">
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="mb-8"
+      >
         <Link
           to="/"
-          className="inline-flex items-center text-sm text-text-secondary transition-colors hover:text-text-emphasis dark:text-text-tertiary dark:hover:text-text-secondary"
+          className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400 transition-colors group"
         >
-          <ChevronLeftIcon className="size-5" />
+          <svg className="size-4 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
           Volver al inicio
         </Link>
-      </div>
-      <div className="flex flex-col justify-center flex-1 w-full max-w-md mx-auto">
-        <div>
-          <div className="mb-5 sm:mb-8">
-            <h1 className="mb-2 font-semibold text-text-emphasis text-title-sm dark:text-text-emphasis sm:text-title-md">
-              Iniciar Sesión
-            </h1>
-            <p className="text-sm text-text-secondary dark:text-text-tertiary">
-              Ingrese su cédula y contraseña para acceder al sistema.
-            </p>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="mb-10"
+      >
+        <div className="flex items-center gap-3 mb-5">
+          <div className="flex items-center justify-center size-11 rounded-xl bg-brand-50 dark:bg-brand-500/10">
+            <svg className="size-5 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+            </svg>
           </div>
-
-          <div>
-            <form onSubmit={handleSignIn}>
-              <div className="space-y-6">
-                <div>
-                  <Label htmlFor="userCi">
-                    Cédula <span className="text-error-500">*</span>{" "}
-                  </Label>
-                  <Input
-                    id="userCi"
-                    type="text"
-                    placeholder="Ingrese su cédula"
-                    value={userCi}
-                    onChange={(e) => setUserCi(e.target.value)}
-                    required
-                    autoComplete="username"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="password">
-                    Contraseña <span className="text-error-500">*</span>{" "}
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Ingrese su contraseña"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      autoComplete="current-password"
-                      isPassword
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute z-30 -translate-y-1/2 right-4 top-1/2"
-                      aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                    >
-                      {showPassword ? (
-                        <EyeIcon className="fill-text-secondary dark:fill-text-tertiary size-5" />
-                      ) : (
-                        <EyeCloseIcon className="fill-text-secondary dark:fill-text-tertiary size-5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <Link
-                    to="/password-recovery"
-                    className="text-sm font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300"
-                  >
-                    ¿Olvidó su contraseña?
-                  </Link>
-                </div>
-                <div className="mt-6">
-                  <Button
-                    className="w-full"
-                    size="md"
-                    type="submit"
-                    disabled={loading}
-                  >
-                    {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
-                  </Button>
-                </div>
-              </div>
-            </form>
-
-            {/* <div className="mt-5">
-              <p className="text-sm font-normal text-center text-text-tertiary dark:text-text-tertiary">
-                ¿No tiene una cuenta?{" "}
-                <Link
-                  to="/signup"
-                  className="font-medium text-brand-500 hover:text-brand-600"
-                >
-                  Regístrese
-                </Link>
-              </p>
-            </div> */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 dark:bg-green-500/10 border border-green-100 dark:border-green-500/20">
+            <div className="size-1.5 rounded-full bg-green-500" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-green-600 dark:text-green-400">
+              Sistema Activo
+            </span>
           </div>
         </div>
-      </div>
+
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
+          Bienvenido
+        </h1>
+        <p className="text-base text-gray-500 dark:text-gray-400 leading-relaxed">
+          Ingresa tu cédula y contraseña para acceder al Sistema de Gestión de Prácticas Profesionales.
+        </p>
+      </motion.div>
+
+      <motion.form
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        onSubmit={handleSignIn}
+        className="space-y-5"
+      >
+        <div>
+          <label htmlFor="userCi" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Cédula de Identidad
+          </label>
+          <input
+            id="userCi"
+            type="text"
+            placeholder="Ejemplo: V-12345678"
+            value={userCi}
+            onChange={(e) => setUserCi(e.target.value)}
+            required
+            autoComplete="username"
+            className="w-full px-4 py-3.5 text-base text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Contraseña
+          </label>
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Ingresa tu contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+              className="w-full px-4 py-3.5 text-base text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200 pr-12"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            >
+              {showPassword ? (
+                <EyeIcon className="size-5" />
+              ) : (
+                <EyeCloseIcon className="size-5" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end">
+          <Link
+            to="/password-recovery"
+            className="text-sm font-medium text-gray-500 hover:text-brand-600 dark:text-gray-400 dark:hover:text-brand-400 transition-colors"
+          >
+            ¿Olvidó su contraseña?
+          </Link>
+        </div>
+
+        <div className="pt-3">
+          <Button
+            className="w-full h-12 text-base font-semibold rounded-xl"
+            size="lg"
+            type="submit"
+            disabled={loading || !userCi || !password}
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin size-5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Verificando...
+              </span>
+            ) : (
+              "Iniciar Sesión"
+            )}
+          </Button>
+        </div>
+      </motion.form>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+        className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800"
+      >
+        <p className="text-xs text-center text-gray-400 dark:text-gray-500">
+          Al iniciar sesión, aceptas nuestros términos de uso y políticas de privacidad.
+        </p>
+
+        <div className="mt-4 flex items-center justify-center gap-5 text-xs text-gray-400 dark:text-gray-500">
+          <div className="flex items-center gap-1.5">
+            <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Conexión Segura
+          </div>
+          <div className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+          <div className="flex items-center gap-1.5">
+            <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            Datos Protegidos
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
-

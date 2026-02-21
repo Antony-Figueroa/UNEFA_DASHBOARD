@@ -56,7 +56,7 @@ export default function UserDropdown() {
         onClick={toggleDropdown}
         className="flex items-center gap-2.5 py-1.5 px-2 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-all duration-200"
       >
-        <div className="flex items-center justify-center overflow-hidden rounded-full size-9 bg-linear-to-br from-brand-400 to-brand-600 text-white font-semibold text-sm">
+        <div className="flex items-center justify-center overflow-hidden rounded-full w-9 h-9 min-w-9 min-h-9 bg-linear-to-br from-brand-400 to-brand-600 text-white font-semibold text-sm shrink-0">
           {user ? `${user.name?.charAt(0)}${user.surname?.charAt(0)}` : "U"}
         </div>
 
@@ -89,7 +89,7 @@ export default function UserDropdown() {
       >
         <div className="px-3 py-3  border-border-light/50 dark:border-white/5">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center size-10 rounded-full bg-linear-to-br from-brand-400 to-brand-600 text-white font-semibold">
+            <div className="flex items-center justify-center w-10 h-10 min-w-10 min-h-10 rounded-full bg-linear-to-br from-brand-400 to-brand-600 text-white font-semibold shrink-0">
               {user ? `${user.name?.charAt(0)}${user.surname?.charAt(0)}` : "U"}
             </div>
             <div className="flex-1 min-w-0">

@@ -171,8 +171,8 @@ export const restoreBackup = async (req: AuthRequest, res: Response) => {
     // Dividir el SQL en statements individuales y ejecutar
     const statements = sqlContent
       .split(';')
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
+      .map((s: string) => s.trim())
+      .filter((s: string) => s.length > 0 && !s.startsWith('--'));
 
     let executedStatements = 0;
     let errors = 0;

@@ -6,7 +6,7 @@
  * @module shared/context/AuthProvider
  */
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import * as authService from "../features/auth/services/authService";
 import { AuthContext, type AuthUser } from "./auth";
 import { UnifiedDialog } from "../components/ui/dialog/UnifiedDialog";
@@ -23,6 +23,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isExpired, setIsExpired] = useState(false);
+  
+  // Ref para prevenir múltiples ejecuciones del logout
+  const isLoggingOutRef = useRef(false);
+  // Ref para prevenir múltiples eventos de sesión expirada
+  const hasHandledExpirationRef = useRef(false);
 
   // Activar renovación automática de sesión cuando el usuario está autenticado
   useSessionRefresh();
@@ -60,6 +65,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuth();
   }, [checkAuth]);
 
+  /**
+   * Cierra la sesión del usuario, limpia el almacenamiento local y redirige al login.
+   * Notifica a otras pestañas mediante un evento de storage.
+   */
+  const signOut = useCallback(async (reason?: string) => {
+    // Prevenir múltiples ejecuciones simultáneas
+    if (isLoggingOutRef.current) return;
+    isLoggingOutRef.current = true;
+    
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error("[AuthContext] Error durante el cierre de sesión:", error);
+    } finally {
+      setUser(null);
+      // Limpieza exhaustiva de datos locales
+      const savedReason = reason || sessionStorage.getItem('auth_redirect_reason');
+      localStorage.clear();
+      sessionStorage.clear();
+
+      if (savedReason) {
+        sessionStorage.setItem('auth_redirect_reason', savedReason);
+      }
+
+      // Emitir evento para sincronizar cierre en otras pestañas
+      localStorage.setItem('auth_logout', Date.now().toString());
+
+      // Redirección física para resetear el estado de toda la SPA
+      window.location.replace('/signin');
+    }
+  }, []);
+
+  const handleConfirmExpiration = useCallback(() => {
+    if (isLoggingOutRef.current) return;
+    setIsExpired(false);
+    signOut('expired');
+  }, [signOut]);
+
   // Sincronización de sesión entre pestañas y detección de expiración
   useEffect(() => {
     /**
@@ -75,11 +118,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     /**
      * Maneja el evento de expiración de sesión emitido por el apiClient.
+     * Incluye protección contra múltiples disparos.
      */
     const handleSessionExpired = () => {
+      // Prevenir múltiples manejo del mismo evento
+      if (hasHandledExpirationRef.current) return;
+      hasHandledExpirationRef.current = true;
+      
       console.warn("[AuthContext] Sesión expirada detectada via evento.");
+      sessionStorage.setItem('auth_redirect_reason', 'expired');
       setIsExpired(true);
-      sessionStorage.setItem('auth_redirect_reason', 'expired'); // Set reason before redirect
+      
+      // Resetear el flag después de un tiempo para permitir futuras expiraciones
+      setTimeout(() => {
+        hasHandledExpirationRef.current = false;
+      }, 2000);
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -90,39 +143,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       window.removeEventListener('unefa:auth:session-expired', handleSessionExpired as EventListener);
     };
   }, []);
-
-  /**
-   * Cierra la sesión del usuario, limpia el almacenamiento local y redirige al login.
-   * Notifica a otras pestañas mediante un evento de storage.
-   */
-  const signOut = useCallback(async () => {
-    try {
-      await authService.logout();
-    } catch (error) {
-      console.error("[AuthContext] Error durante el cierre de sesión:", error);
-    } finally {
-      setUser(null);
-      // Limpieza exhaustiva de datos locales
-      const reason = sessionStorage.getItem('auth_redirect_reason');
-      localStorage.clear();
-      sessionStorage.clear();
-
-      if (reason) {
-        sessionStorage.setItem('auth_redirect_reason', reason);
-      }
-
-      // Emitir evento para sincronizar cierre en otras pestañas
-      localStorage.setItem('auth_logout', Date.now().toString());
-
-      // Redirección física para resetear el estado de toda la SPA
-      window.location.replace('/signin');
-    }
-  }, []);
-
-  const handleConfirmExpiration = () => {
-    setIsExpired(false);
-    signOut();
-  };
 
   return (
     <AuthContext.Provider value={{ user, loading, signOut, checkAuth }}>

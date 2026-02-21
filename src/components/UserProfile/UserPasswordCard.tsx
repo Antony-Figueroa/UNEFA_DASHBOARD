@@ -180,8 +180,8 @@ export default function UserPasswordCard() {
       updated[index] = {
         ...updated[index],
         questionType: type,
-        presetQuestionId: type === 'PRESET' ? null : undefined,
-        customQuestion: type === 'CUSTOM' ? '' : undefined
+        presetQuestionId: type === 'PRESET' ? null : null,
+        customQuestion: type === 'CUSTOM' ? '' : ''
       };
       return updated;
     });

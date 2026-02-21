@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Modal, ModalBody, ModalFooter } from "../modal";
 import Button from "../button/Button";
-import { BackupRecord } from "../../../features/backup/services/backupService";
+import { BackupRecord, backupService } from "../../../features/backup/services/backupService";
 
 interface RestoreDialogProps {
   isOpen: boolean;
@@ -29,8 +29,7 @@ export const RestoreDialog: React.FC<RestoreDialogProps> = ({
       }
       setVerifying(true);
       try {
-        const { verifyRestorePassword } = await import("../../../features/backup/services/backupService");
-        const result = await verifyRestorePassword(password);
+        const result = await backupService.verifyRestorePassword(password);
         if (result.valid) {
           setStep('confirm');
         } else {

@@ -4,6 +4,7 @@ import { SidebarContext } from "./sidebar";
 export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -24,9 +25,11 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
       value={{
         isExpanded,
         isMobileOpen,
+        isHovered,
         toggleSidebar,
         toggleMobileSidebar,
         setIsMobileOpen,
+        setIsHovered,
       }}
     >
       {children}

@@ -1,20 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import Button from "../../../components/ui/button/Button";
 import { ThemeToggleButton } from "../../../components/common/ThemeToggleButton";
 import { motion, AnimatePresence } from "motion/react";
 import { smoothScrollTo } from "../../../utils/scrollUtils";
 
-/**
- * Componente de navegación principal para la landing page pública.
- * Incluye barra de progreso de scroll, menú responsive, cambio de tema
- * y enlaces de navegación suave (smooth scroll).
- * 
- * @component
- */
 const PublicNavbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const updateNavHeight = () => {
+      if (navRef.current) {
+        const height = navRef.current.offsetHeight;
+        document.documentElement.style.setProperty("--navbar-height", `${height}px`);
+      }
+    };
+
+    updateNavHeight();
+    window.addEventListener("resize", updateNavHeight);
+    return () => window.removeEventListener("resize", updateNavHeight);
+  }, []);
 
   /**
    * Actualiza la barra de progreso de scroll basada en la posición actual de la página.
@@ -74,7 +81,12 @@ const PublicNavbar: React.FC = () => {
   };
 
   return (
-    <nav className="w-full bg-bg-main/80 backdrop-blur-md border-b border-border-light dark:bg-bg-dark/80 dark:border-border-dark sticky top-0 z-9999" role="navigation" aria-label="Navegación principal">
+    <nav 
+      ref={navRef}
+      className="w-full bg-bg-main/80 backdrop-blur-md border-b border-border-light dark:bg-bg-dark/80 dark:border-border-dark" 
+      role="navigation" 
+      aria-label="Navegación principal"
+    >
       {/* Barra de Progreso de Scroll */}
       <div 
         className="absolute bottom-0 left-0 h-0.5 bg-brand-500 transition-all duration-150 ease-out z-10"

@@ -126,11 +126,46 @@ export const resetPassword = async (userId: number, newPassword: string): Promis
 
 /**
  * Requests a password recovery link to be sent to the user's email.
- * @param email - User's email address.
+ * @param userCi - User's identification number.
  * @returns A promise with the action response.
  */
-export const requestRecovery = async (email: string): Promise<AuthActionResponse> => {
-  const response = await apiClient.post<AuthActionResponse>("/auth/request-recovery", { email });
+export const requestRecovery = async (userCi: string): Promise<AuthActionResponse> => {
+  const response = await apiClient.post<AuthActionResponse>("/auth/request-recovery", { userCi });
+  return response.data;
+};
+
+/**
+ * Gets recovery questions for a user by their CI.
+ * @param userCi - User's identification number.
+ * @returns A promise with the questions response.
+ */
+export const getRecoveryQuestions = async (userCi: string): Promise<{
+  success: boolean;
+  message?: string;
+  questions?: Array<{ id: number; questionText: string }>;
+  email?: string;
+}> => {
+  const response = await apiClient.get(`/auth/recovery-questions/${userCi}`);
+  return response.data;
+};
+
+/**
+ * Verifies security answers and resets the password.
+ * @param userCi - User's identification number.
+ * @param answers - Array of question IDs and answers.
+ * @param newPassword - The new password.
+ * @returns A promise with the action response.
+ */
+export const verifyAnswersAndReset = async (
+  userCi: string,
+  answers: Array<{ questionId: number; answer: string }>,
+  newPassword: string
+): Promise<AuthActionResponse> => {
+  const response = await apiClient.post<AuthActionResponse>("/auth/verify-answers-reset", {
+    userCi,
+    answers,
+    newPassword,
+  });
   return response.data;
 };
 
@@ -168,6 +203,8 @@ export const authService = {
   getPresetQuestions,
   resetPassword,
   requestRecovery,
+  getRecoveryQuestions,
+  verifyAnswersAndReset,
   resetWithToken,
   refreshSession,
   validateToken: async (_token: string): Promise<AuthUser> => {

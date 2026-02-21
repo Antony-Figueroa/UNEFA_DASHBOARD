@@ -1,59 +1,32 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { SidebarContext } from "./sidebar";
 
-export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-  const [activeItem, setActiveItem] = useState<string | null>(null);
-  const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
 
   useEffect(() => {
     const handleResize = () => {
-      const mobile = window.innerWidth < 768;
-      setIsMobile(mobile);
-      if (!mobile) {
+      if (window.innerWidth >= 768) {
         setIsMobileOpen(false);
       }
     };
-
     handleResize();
     window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const toggleSidebar = () => {
-    setIsExpanded((prev) => !prev);
-  };
-
-  const toggleMobileSidebar = () => {
-    setIsMobileOpen((prev) => !prev);
-  };
-
-  const toggleSubmenu = (item: string) => {
-    setOpenSubmenu((prev) => (prev === item ? null : item));
-  };
+  const toggleSidebar = useCallback(() => setIsExpanded(prev => !prev), []);
+  const toggleMobileSidebar = useCallback(() => setIsMobileOpen(prev => !prev), []);
 
   return (
     <SidebarContext.Provider
       value={{
-        isExpanded: isMobile ? false : isExpanded,
+        isExpanded,
         isMobileOpen,
-        isHovered,
-        activeItem,
-        openSubmenu,
         toggleSidebar,
         toggleMobileSidebar,
-        setIsHovered,
         setIsMobileOpen,
-        setActiveItem,
-        toggleSubmenu,
       }}
     >
       {children}

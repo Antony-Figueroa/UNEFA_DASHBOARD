@@ -757,3 +757,187 @@ export const getAllAuthLogs = async (limit: number = 100, offset: number = 0, us
   });
 };
 
+/**
+ * Solicita recuperación de contraseña por cédula
+ */
+export const requestPasswordResetByCi = async (userCi: string, ip: string, userAgent: string) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { data: user, error: userError } = await supabase
+      .from('t_user')
+      .select('USER_ID, NAME, EMAIL, USER_CI, STATUS')
+      .eq('USER_CI', userCi)
+      .single();
+
+    if (userError || !user) {
+      return { 
+        success: false, 
+        status: 404,
+        message: 'La cédula no se encuentra registrada en el sistema.' 
+      };
+    }
+
+    if (user.STATUS === 0) {
+      return { 
+        success: false, 
+        status: 403,
+        message: 'Esta cuenta se encuentra bloqueada o inactiva. Por favor, contacte al administrador.' 
+      };
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+    const { error: tokenError } = await supabase
+      .from('t_recovery_tokens')
+      .insert({
+        USER_ID: user.USER_ID,
+        TOKEN: token,
+        EXPIRATION_DATE: expiry,
+        STATUS: 1
+      });
+
+    if (tokenError) {
+      console.error('[Auth] Error al guardar token de recuperación:', tokenError);
+      throw new Error('Error al procesar la solicitud de recuperación.');
+    }
+
+    await logAuthAction(user.USER_ID, user.USER_CI, 'PASSWORD_RESET_REQUESTED', ip, userAgent, 'Solicitud de restablecimiento de contraseña');
+
+    await sendPasswordRecoveryEmail(user.EMAIL, user.NAME, token);
+
+    return { success: true, message: 'Instrucciones enviadas al correo electrónico registrado.' };
+  });
+};
+
+/**
+ * Obtiene las preguntas de seguridad de un usuario para recuperación
+ */
+export const getUserSecurityQuestions = async (userCi: string) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { data: user, error: userError } = await supabase
+      .from('t_user')
+      .select('USER_ID, NAME, EMAIL, STATUS')
+      .eq('USER_CI', userCi)
+      .single();
+
+    if (userError || !user) {
+      return { success: false, message: 'La cédula no se encuentra registrada en el sistema.' };
+    }
+
+    if (user.STATUS === 0) {
+      return { success: false, message: 'Esta cuenta se encuentra bloqueada o inactiva.' };
+    }
+
+    const { data: questions, error: qError } = await supabase
+      .from('t_user_questions')
+      .select(`
+        USER_QUESTION_ID,
+        QUESTION_TYPE,
+        PRESET_QUESTION_ID,
+        CUSTOM_QUESTION,
+        ORDER_NUM,
+        t_preset_questions(DESCRIPTION)
+      `)
+      .eq('USER_ID', user.USER_ID)
+      .eq('STATUS', 1)
+      .order('ORDER_NUM');
+
+    if (qError || !questions || questions.length < 3) {
+      return { 
+        success: false, 
+        message: 'El usuario no tiene suficientes preguntas de seguridad configuradas. Por favor, utilice la recuperación por correo electrónico.' 
+      };
+    }
+
+    interface QuestionData {
+      USER_QUESTION_ID: number;
+      QUESTION_TYPE: string;
+      PRESET_QUESTION_ID: number | null;
+      CUSTOM_QUESTION: string | null;
+      ORDER_NUM: number;
+      t_preset_questions: { DESCRIPTION: string } | { DESCRIPTION: string }[] | null;
+    }
+
+    const formattedQuestions = (questions as unknown as QuestionData[]).map(q => ({
+      id: q.USER_QUESTION_ID,
+      questionText: q.QUESTION_TYPE === 'PRESET' 
+        ? (Array.isArray(q.t_preset_questions) ? q.t_preset_questions[0]?.DESCRIPTION : q.t_preset_questions?.DESCRIPTION) || ''
+        : q.CUSTOM_QUESTION || ''
+    }));
+
+    return { 
+      success: true, 
+      userId: user.USER_ID,
+      userCi: userCi,
+      email: user.EMAIL ? `${user.EMAIL.substring(0, 3)}***@${user.EMAIL.split('@')[1]}` : '',
+      questions: formattedQuestions
+    };
+  });
+};
+
+/**
+ * Verifica las respuestas de seguridad y restablece la contraseña
+ */
+export const verifySecurityAnswersAndReset = async (
+  userCi: string, 
+  answers: Array<{ questionId: number; answer: string }>, 
+  newPassword: string,
+  ip: string,
+  userAgent: string
+) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { data: user, error: userError } = await supabase
+      .from('t_user')
+      .select('USER_ID, USER_CI, NAME, EMAIL, STATUS')
+      .eq('USER_CI', userCi)
+      .single();
+
+    if (userError || !user) {
+      return { success: false, status: 404, message: 'Usuario no encontrado.' };
+    }
+
+    if (user.STATUS === 0) {
+      return { success: false, status: 403, message: 'Esta cuenta se encuentra bloqueada o inactiva.' };
+    }
+
+    let correctCount = 0;
+    
+    for (const ans of answers) {
+      const { data: question, error: qError } = await supabase
+        .from('t_user_questions')
+        .select('ANSWER')
+        .eq('USER_QUESTION_ID', ans.questionId)
+        .eq('USER_ID', user.USER_ID)
+        .eq('STATUS', 1)
+        .single();
+
+      if (!qError && question) {
+        if ((question as { ANSWER: string }).ANSWER.toLowerCase().trim() === ans.answer.toLowerCase().trim()) {
+          correctCount++;
+        }
+      }
+    }
+
+    if (correctCount < 3) {
+      await logAuthAction(user.USER_ID, user.USER_CI, 'SECURITY_QUESTIONS_FAILED', ip, userAgent, `Respuestas incorrectas: ${correctCount}/3 correctas`);
+      return { 
+        success: false, 
+        status: 401, 
+        message: 'Las respuestas de seguridad no son correctas. Por favor, intente nuevamente o use la recuperación por correo.' 
+      };
+    }
+
+    const changeResult = await changePassword(user.USER_ID, newPassword);
+    
+    if (!changeResult.success) return changeResult;
+
+    await logAuthAction(user.USER_ID, user.USER_CI, 'PASSWORD_RESET_COMPLETED', ip, userAgent, 'Restablecimiento de contraseña exitoso mediante preguntas de seguridad');
+
+    if (user.EMAIL) {
+      await sendPasswordChangedNotification(user.EMAIL, user.NAME);
+    }
+
+    return { success: true, message: 'Tu contraseña ha sido restablecida exitosamente.' };
+  });
+};
+

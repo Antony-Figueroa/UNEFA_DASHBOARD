@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { Link, useLocation } from "react-router";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/auth";
 import {
   BoxCubeIcon,
@@ -25,16 +27,127 @@ type NavItem = {
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean; roles?: number[]; badge?: string | number }[];
 };
 
-const navItems: NavItem[] = [
-  {
-    icon: <GridIcon />,
-    name: "Inicio",
-    path: "/dashboard",
+type PopupMenuProps = {
+  isOpen: boolean;
+  position: { top: number; left: number };
+  title: string;
+  items: { name: string; path: string }[];
+  isActive: (path: string) => boolean;
+  onEnter: () => void;
+  onLeave: () => void;
+  onNavigate: () => void;
+};
+
+const popupVariants = {
+  hidden: { 
+    opacity: 0, 
+    scale: 0.95,
+    x: -8 
   },
+  visible: { 
+    opacity: 1, 
+    scale: 1,
+    x: 0,
+    transition: {
+      type: "spring",
+      stiffness: 400,
+      damping: 30,
+      mass: 0.8
+    }
+  },
+  exit: { 
+    opacity: 0, 
+    scale: 0.95,
+    x: -8,
+    transition: {
+      duration: 0.15
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, x: -10 },
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: {
+      delay: i * 0.03,
+      type: "spring",
+      stiffness: 400,
+      damping: 25
+    }
+  })
+};
+
+const PopupMenu: React.FC<PopupMenuProps> = ({ isOpen, position, title, items, isActive, onEnter, onLeave, onNavigate }) => {
+  return createPortal(
+    <AnimatePresence mode="wait">
+      {isOpen && (
+        <motion.div
+          key={title}
+          variants={popupVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          className="fixed w-56 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-border-light/50 dark:border-white/10 overflow-hidden"
+          style={{ 
+            top: position.top,
+            left: position.left,
+            zIndex: 99999
+          }}
+          onMouseEnter={onEnter}
+          onMouseLeave={onLeave}
+          layoutId={`popup-${title}`}
+        >
+          <div className="py-2">
+            <motion.div 
+              className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-text-tertiary border-b border-border-light/50 dark:border-white/5"
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+            >
+              {title}
+            </motion.div>
+            <ul className="py-1">
+              {items.map((subItem, i) => (
+                <motion.li 
+                  key={subItem.name}
+                  custom={i}
+                  variants={itemVariants}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  <Link
+                    to={subItem.path}
+                    onClick={onNavigate}
+                    className={`flex items-center gap-2 px-4 py-2 text-theme-sm transition-all duration-200 ${
+                      isActive(subItem.path)
+                        ? "text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/30"
+                        : "text-text-secondary hover:text-text-primary hover:bg-gray-50 dark:text-text-tertiary dark:hover:text-white dark:hover:bg-white/3"
+                    }`}
+                  >
+                    <motion.span 
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive(subItem.path) ? "bg-brand-500" : "bg-text-tertiary/40"}`}
+                      whileHover={{ scale: 1.5 }}
+                      transition={{ type: "spring", stiffness: 500 }}
+                    />
+                    <span className="truncate">{subItem.name}</span>
+                  </Link>
+                </motion.li>
+              ))}
+            </ul>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+};
+
+const navItems: NavItem[] = [
+  { icon: <GridIcon />, name: "Inicio", path: "/dashboard" },
   {
-    name: "Panel de Tutor",
-    icon: <UserCircleIcon />,
-    roles: [3],
+    name: "Panel de Tutor", icon: <UserCircleIcon />, roles: [3],
     subItems: [
       { name: "Dashboard", path: "/tutor" },
       { name: "Mis Estudiantes", path: "/tutor/students" },
@@ -45,9 +158,7 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    name: "Panel de Estudiante",
-    icon: <UserCircleIcon />,
-    roles: [4],
+    name: "Panel de Estudiante", icon: <UserCircleIcon />, roles: [4],
     subItems: [
       { name: "Dashboard", path: "/student" },
       { name: "Mis Solicitudes", path: "/student/requests" },
@@ -56,18 +167,14 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    name: "Académico",
-    icon: <TableIcon />,
-    roles: [0, 1, 2],
+    name: "Académico", icon: <TableIcon />, roles: [0, 1, 2],
     subItems: [
       { name: "Período", path: "/period" },
       { name: "Carreras", path: "/careers" },
     ],
   },
   {
-    name: "Registros",
-    icon: <UserCircleIcon />,
-    roles: [0, 1, 2],
+    name: "Registros", icon: <UserCircleIcon />, roles: [0, 1, 2],
     subItems: [
       { name: "Estudiantes", path: "/students" },
       { name: "Tutores", path: "/tutors" },
@@ -75,9 +182,7 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    name: "Prácticas",
-    icon: <BoxCubeIcon />,
-    roles: [0, 1, 2],
+    name: "Prácticas", icon: <BoxCubeIcon />, roles: [0, 1, 2],
     subItems: [
       { name: "Pre-Inscripción", path: "/pre-enrollment" },
       { name: "Inscripción", path: "/enrollment" },
@@ -86,22 +191,10 @@ const navItems: NavItem[] = [
       { name: "Culminación", path: "/culmination" },
     ],
   },
+  { name: "Solicitudes", icon: <DocsIcon />, roles: [0, 1, 2], path: "/admin/requests" },
+  { name: "Reportes", icon: <PieChartIcon />, roles: [0, 1, 2], path: "/reports" },
   {
-    name: "Solicitudes",
-    icon: <DocsIcon />,
-    roles: [0, 1, 2],
-    path: "/admin/requests",
-  },
-  {
-    name: "Reportes",
-    icon: <PieChartIcon />,
-    roles: [0, 1, 2],
-    path: "/reports",
-  },
-  {
-    name: "Configuración",
-    icon: <PlugInIcon />,
-    roles: [0, 1],
+    name: "Configuración", icon: <PlugInIcon />, roles: [0, 1],
     subItems: [
       { name: "Usuarios", path: "/configure/users" },
       { name: "Listas", path: "/configure/lists" },
@@ -111,20 +204,12 @@ const navItems: NavItem[] = [
       { name: "Respaldos", path: "/configure/backups" },
     ],
   },
-  {
-    icon: <SparklesIcon />,
-    name: "IA",
-    path: "/ai-assistant",
-  },
-  {
-    icon: <DocsIcon />,
-    name: "Manuales",
-    path: "/manuals",
-  },
+  { icon: <SparklesIcon />, name: "IA", path: "/ai-assistant" },
+  { icon: <DocsIcon />, name: "Manuales", path: "/manuals" },
 ];
 
 const COLLAPSED_WIDTH = 72;
-const EXPANDED_WIDTH = 288;
+const EXPANDED_WIDTH = 280;
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, setIsMobileOpen } = useSidebar();
@@ -132,70 +217,77 @@ const AppSidebar: React.FC = () => {
   const location = useLocation();
 
   const [openSubmenus, setOpenSubmenus] = useState<Set<string>>(new Set());
-  const [hoveredMenu, setHoveredMenu] = useState<string | null>(null);
-  const [isHoveringSidebar, setIsHoveringSidebar] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sidebarRef = useRef<HTMLElement>(null);
+  const buttonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
-  const filteredNavItems = navItems.filter(item => {
-    if (item.roles && user && !item.roles.includes(user.role)) return false;
-    return true;
-  }).map(item => ({
-    ...item,
-    subItems: item.subItems?.filter(sub => {
-      if (sub.roles && user && !sub.roles.includes(user.role)) return false;
+  const userRole = user?.role;
+
+  const filteredNavItems = useMemo(() => {
+    return navItems.filter(item => {
+      if (item.roles && userRole !== undefined && !item.roles.includes(userRole)) return false;
       return true;
-    })
-  }));
+    }).map(item => ({
+      ...item,
+      subItems: item.subItems?.filter(sub => {
+        if (sub.roles && userRole !== undefined && !sub.roles.includes(userRole)) return false;
+        return true;
+      })
+    }));
+  }, [userRole]);
 
-  const isActive = useCallback(
-    (path: string) => location.pathname === path,
-    [location.pathname]
-  );
+  const isActive = useCallback((path: string) => location.pathname === path, [location.pathname]);
 
-  const hasActiveSubItem = useCallback(
-    (nav: NavItem) => {
-      if (!nav.subItems) return false;
-      return nav.subItems.some((subItem) => isActive(subItem.path));
-    },
-    [isActive]
-  );
+  const hasActiveSubItem = (nav: NavItem) => {
+    if (!nav.subItems) return false;
+    return nav.subItems.some(subItem => subItem.path === location.pathname);
+  };
 
   useEffect(() => {
     const openMenus = new Set<string>();
-    filteredNavItems.forEach((nav) => {
-      if (nav.subItems && hasActiveSubItem(nav)) {
+    filteredNavItems.forEach(nav => {
+      if (nav.subItems && nav.subItems.some(sub => sub.path === location.pathname)) {
         openMenus.add(nav.name);
       }
     });
     setOpenSubmenus(openMenus);
-  }, [location.pathname, hasActiveSubItem, filteredNavItems]);
+  }, [location.pathname, filteredNavItems]);
 
   const handleSubmenuToggle = (menuName: string) => {
     setOpenSubmenus(prev => {
       const next = new Set(prev);
-      if (next.has(menuName)) {
-        next.delete(menuName);
-      } else {
-        next.add(menuName);
-      }
+      if (next.has(menuName)) next.delete(menuName);
+      else next.add(menuName);
       return next;
     });
   };
 
-  const handleMouseEnter = useCallback(() => {
+  const updatePopupPosition = (menuName: string) => {
+    const button = buttonRefs.current[menuName];
+    if (button) {
+      const rect = button.getBoundingClientRect();
+      setPopupPosition({
+        top: rect.top - 4,
+        left: rect.right + 8
+      });
+    }
+  };
+
+  const handleMouseEnter = (menuName: string) => {
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
     }
-    setIsHoveringSidebar(true);
-  }, []);
+    updatePopupPosition(menuName);
+    setHoveredItem(menuName);
+  };
 
-  const handleMouseLeave = useCallback(() => {
+  const handleMouseLeave = () => {
     hoverTimeoutRef.current = setTimeout(() => {
-      setIsHoveringSidebar(false);
-      setHoveredMenu(null);
+      setHoveredItem(null);
     }, 150);
-  }, []);
+  };
 
   useEffect(() => {
     return () => {
@@ -205,79 +297,72 @@ const AppSidebar: React.FC = () => {
     };
   }, []);
 
-  const showExpanded = isExpanded || isHoveringSidebar || isMobileOpen;
-  const sidebarWidth = showExpanded ? EXPANDED_WIDTH : COLLAPSED_WIDTH;
+  const isCollapsed = !isExpanded && !isMobileOpen;
+  const sidebarWidth = isCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH;
 
-  const MenuItem: React.FC<{
-    item: NavItem;
-    isCollapsed: boolean;
-    forceShowSubmenu?: boolean;
-    onHover?: (name: string | null) => void;
-    isHovered?: boolean;
-  }> = ({ item, isCollapsed, forceShowSubmenu = false, onHover, isHovered }) => {
-    const hasSubmenu = item.subItems && item.subItems.length > 0;
-    const isSubmenuOpen = openSubmenus.has(item.name) || forceShowSubmenu;
-    const hasActiveChild = hasActiveSubItem(item);
-    const isDirectActive = item.path ? isActive(item.path) : false;
+  const renderMenuItem = (nav: NavItem) => {
+    const hasSubmenu = nav.subItems && nav.subItems.length > 0;
+    const isSubmenuOpen = openSubmenus.has(nav.name);
+    const hasActiveChild = hasActiveSubItem(nav);
+    const isDirectActive = nav.path ? isActive(nav.path) : false;
+    const isHovered = hoveredItem === nav.name;
 
-    if (isCollapsed && hasSubmenu) {
+    const buttonBaseClass = `group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-theme-sm font-medium transition-all duration-200 w-full`;
+    
+    if (isCollapsed) {
+      const popupItems = hasSubmenu 
+        ? nav.subItems || [] 
+        : nav.path ? [{ name: nav.name, path: nav.path }] : [];
+
+      const ButtonContent = (
+        <span className={`shrink-0 ${hasActiveChild || isDirectActive 
+          ? hasSubmenu ? "text-brand-500" : "text-white"
+          : "text-text-tertiary group-hover:text-text-primary dark:group-hover:text-white"
+        }`}>
+          {nav.icon}
+        </span>
+      );
+
+      const buttonClassName = `${buttonBaseClass} justify-center ${hasActiveChild || isDirectActive
+        ? hasSubmenu
+          ? "bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400"
+          : "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
+        : "text-text-secondary hover:bg-gray-50/70 hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/3 dark:hover:text-white"
+      }`;
+
       return (
-        <div 
-          className="relative"
-          onMouseEnter={() => onHover?.(item.name)}
-          onMouseLeave={() => onHover?.(null)}
+        <div
+          ref={el => { if (el) buttonRefs.current[nav.name] = el.querySelector('button, a'); }}
+          onMouseEnter={() => handleMouseEnter(nav.name)}
+          onMouseLeave={handleMouseLeave}
         >
-          <button
-            className={`group relative flex items-center justify-center w-full gap-3 px-3 py-2.5 rounded-xl text-theme-sm font-medium transition-all duration-200 ${
-              hasActiveChild
-                ? "bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400"
-                : "text-text-secondary hover:bg-gray-50/70 hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/[0.03] dark:hover:text-white"
-            }`}
-            title={item.name}
-          >
-            <span className={`shrink-0 ${
-              hasActiveChild
-                ? "text-brand-500"
-                : "text-text-tertiary group-hover:text-text-primary dark:group-hover:text-white"
-            }`}>
-              {item.icon}
-            </span>
-          </button>
-
-          {isHovered && (
-            <div 
-              className="absolute left-full top-0 ml-2 w-56 bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-border-light/50 dark:border-white/10 z-[60] overflow-hidden"
-              style={{ marginTop: '-4px' }}
+          {hasSubmenu ? (
+            <button className={buttonClassName}>
+              {ButtonContent}
+            </button>
+          ) : (
+            <Link
+              to={nav.path!}
+              onClick={() => setIsMobileOpen(false)}
+              className={buttonClassName}
             >
-              <div className="py-2">
-                <div className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-text-tertiary border-b border-border-light/50 dark:border-white/5">
-                  {item.name}
-                </div>
-                <ul className="py-1">
-                  {item.subItems?.map((subItem) => (
-                    <li key={subItem.name}>
-                      <Link
-                        to={subItem.path}
-                        onClick={() => setIsMobileOpen(false)}
-                        className={`flex items-center gap-2 px-4 py-2 text-theme-sm transition-all duration-200 ${
-                          isActive(subItem.path)
-                            ? "text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/30"
-                            : "text-text-secondary hover:text-text-primary hover:bg-gray-50 dark:text-text-tertiary dark:hover:text-white dark:hover:bg-white/[0.03]"
-                        }`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                          isActive(subItem.path)
-                            ? "bg-brand-500"
-                            : "bg-text-tertiary/40"
-                        }`} />
-                        <span className="truncate">{subItem.name}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+              {ButtonContent}
+            </Link>
           )}
+
+          <PopupMenu
+            isOpen={isHovered}
+            position={popupPosition}
+            title={nav.name}
+            items={popupItems}
+            isActive={isActive}
+            onEnter={() => handleMouseEnter(nav.name)}
+            onLeave={handleMouseLeave}
+            onNavigate={() => {
+              setHoveredItem(null);
+              setIsMobileOpen(false);
+            }}
+          />
         </div>
       );
     }
@@ -286,46 +371,29 @@ const AppSidebar: React.FC = () => {
       return (
         <div>
           <button
-            onClick={() => handleSubmenuToggle(item.name)}
-            className={`group relative flex items-center w-full gap-3 px-3 py-2.5 rounded-xl text-theme-sm font-medium transition-all duration-200 ${
-              hasActiveChild
-                ? "bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400"
-                : isSubmenuOpen
+            onClick={() => handleSubmenuToggle(nav.name)}
+            className={`${buttonBaseClass} ${hasActiveChild
+              ? "bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400"
+              : isSubmenuOpen
                 ? "bg-gray-50 text-text-primary dark:bg-white/5 dark:text-white"
-                : "text-text-secondary hover:bg-gray-50/70 hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/[0.03] dark:hover:text-white"
+                : "text-text-secondary hover:bg-gray-50/70 hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/3 dark:hover:text-white"
             }`}
-            title={isCollapsed ? item.name : undefined}
           >
-            <span className={`shrink-0 transition-colors duration-200 ${
-              hasActiveChild
-                ? "text-brand-500"
-                : isSubmenuOpen
+            <span className={`shrink-0 transition-colors duration-200 ${hasActiveChild
+              ? "text-brand-500"
+              : isSubmenuOpen
                 ? "text-text-primary dark:text-white"
                 : "text-text-tertiary group-hover:text-text-primary dark:group-hover:text-white"
             }`}>
-              {item.icon}
+              {nav.icon}
             </span>
-            <span className="flex-1 text-left truncate">{item.name}</span>
-            <ChevronDownIcon
-              className={`size-4 shrink-0 transition-transform duration-200 ease-out ${
-                isSubmenuOpen ? "rotate-180" : ""
-              } ${
-                hasActiveChild
-                  ? "text-brand-400"
-                  : "text-text-tertiary"
-              }`}
-            />
+            <span className="flex-1 text-left truncate">{nav.name}</span>
+            <ChevronDownIcon className={`size-4 shrink-0 transition-transform duration-200 ease-out ${isSubmenuOpen ? "rotate-180" : ""} ${hasActiveChild ? "text-brand-400" : "text-text-tertiary"}`} />
           </button>
 
-          <div
-            className="overflow-hidden transition-all duration-200 ease-out"
-            style={{
-              height: isSubmenuOpen ? 'auto' : "0px",
-              opacity: isSubmenuOpen ? 1 : 0,
-            }}
-          >
+          <div className="overflow-hidden transition-all duration-200 ease-out" style={{ maxHeight: isSubmenuOpen ? 500 : 0, opacity: isSubmenuOpen ? 1 : 0 }}>
             <ul className="py-1 pl-4 ml-3 border-l-2 border-border-light/50 dark:border-white/5">
-              {item.subItems?.map((subItem) => (
+              {nav.subItems?.map(subItem => (
                 <li key={subItem.name}>
                   <Link
                     to={subItem.path}
@@ -333,20 +401,12 @@ const AppSidebar: React.FC = () => {
                     className={`group/sub relative flex items-center gap-2 px-3 py-2 text-theme-sm rounded-lg transition-all duration-200 ${
                       isActive(subItem.path)
                         ? "text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/20"
-                        : "text-text-secondary hover:text-text-primary hover:bg-gray-50 dark:text-text-tertiary dark:hover:text-white dark:hover:bg-white/[0.03]"
+                        : "text-text-secondary hover:text-text-primary hover:bg-gray-50 dark:text-text-tertiary dark:hover:text-white dark:hover:bg-white/3"
                     }`}
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all duration-200 ${
-                      isActive(subItem.path)
-                        ? "bg-brand-500 scale-125"
-                        : "bg-text-tertiary/40 group-hover/sub:bg-brand-400"
-                    }`} />
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all duration-200 ${isActive(subItem.path) ? "bg-brand-500 scale-125" : "bg-text-tertiary/40 group-hover/sub:bg-brand-400"}`} />
                     <span className="truncate">{subItem.name}</span>
-                    {subItem.new && (
-                      <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-brand-500 text-white">
-                        NUEVO
-                      </span>
-                    )}
+                    {subItem.new && <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-brand-500 text-white">NUEVO</span>}
                   </Link>
                 </li>
               ))}
@@ -358,32 +418,18 @@ const AppSidebar: React.FC = () => {
 
     return (
       <Link
-        to={item.path!}
+        to={nav.path!}
         onClick={() => setIsMobileOpen(false)}
-        className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-theme-sm font-medium transition-all duration-200 ${
-          isDirectActive
-            ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
-            : "text-text-secondary hover:bg-gray-50/70 hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/[0.03] dark:hover:text-white"
-        } ${isCollapsed ? "justify-center" : ""}`}
-        title={isCollapsed ? item.name : undefined}
+        className={`${buttonBaseClass} ${isDirectActive
+          ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
+          : "text-text-secondary hover:bg-gray-50/70 hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/3 dark:hover:text-white"
+        }`}
       >
-        <span className={`shrink-0 ${
-          isDirectActive
-            ? "text-white"
-            : "text-text-tertiary group-hover:text-text-primary dark:group-hover:text-white"
-        }`}>
-          {item.icon}
+        <span className={`shrink-0 ${isDirectActive ? "text-white" : "text-text-tertiary group-hover:text-text-primary dark:group-hover:text-white"}`}>
+          {nav.icon}
         </span>
-        {!isCollapsed && (
-          <>
-            <span className="flex-1 truncate">{item.name}</span>
-            {item.badge && (
-              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-warning-500 text-white">
-                {item.badge}
-              </span>
-            )}
-          </>
-        )}
+        <span className="flex-1 text-left truncate">{nav.name}</span>
+        {nav.badge && <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-warning-500 text-white">{nav.badge}</span>}
       </Link>
     );
   };
@@ -391,43 +437,25 @@ const AppSidebar: React.FC = () => {
   return (
     <>
       {isMobileOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setIsMobileOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setIsMobileOpen(false)} />
       )}
 
       <aside
-        ref={sidebarRef}
-        className={`fixed flex flex-col left-0 bg-white dark:bg-bg-dark text-text-primary transition-all duration-300 ease-out z-50 border-r border-border-light/50 dark:border-white/5
+        className={`fixed flex flex-col left-0 bg-white dark:bg-bg-dark text-text-primary transition-all duration-300 ease-out border-r border-border-light/50 dark:border-white/5
           ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
-        style={{ 
-          width: sidebarWidth,
-          height: '100vh',
-          top: 0
-        }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        style={{ width: sidebarWidth, height: '100vh', top: 0, zIndex: 9999 }}
       >
-        <div className={`py-5 flex items-center border-b border-border-light/30 dark:border-white/5 ${!showExpanded ? "justify-center px-0" : "px-4"}`}>
+        <div className={`py-5 flex items-center border-b border-border-light/30 dark:border-white/5 ${isCollapsed ? "justify-center px-0" : "px-4"}`}>
           <Link to="/dashboard" className="flex items-center gap-3 group">
             <div className="relative shrink-0">
-              <img 
-                src="/logo-nuevo.png" 
-                alt="UNEFA" 
-                className="size-9 object-contain transition-transform duration-300 group-hover:scale-105" 
-              />
+              <img src="/logo-nuevo.png" alt="UNEFA" className="size-9 object-contain transition-transform duration-300 group-hover:scale-105" />
               <div className="absolute -inset-1 bg-brand-500/10 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
-            {showExpanded && (
+            {!isCollapsed && (
               <div className="flex flex-col min-w-0">
-                <span className="text-base font-bold leading-tight tracking-tight text-unefa-blue dark:text-white truncate">
-                  UNEFA
-                </span>
-                <span className="text-[10px] font-medium uppercase tracking-wider text-text-tertiary">
-                  Dashboard
-                </span>
+                <span className="text-base font-bold leading-tight tracking-tight text-unefa-blue dark:text-white truncate">UNEFA</span>
+                <span className="text-[10px] font-medium uppercase tracking-wider text-text-tertiary">Dashboard</span>
               </div>
             )}
           </Link>
@@ -436,28 +464,19 @@ const AppSidebar: React.FC = () => {
         <div className="flex-1 flex flex-col px-3 overflow-y-auto no-scrollbar py-4">
           <nav className="flex-1">
             <div className="space-y-1">
-              {!showExpanded && (
+              {isCollapsed && (
                 <header className="flex justify-center py-2 mb-2">
                   <HorizontaLDots className="size-4 text-text-tertiary/40" />
                 </header>
               )}
-              {showExpanded && (
+              {!isCollapsed && (
                 <header className="px-3 mb-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-text-tertiary/60">
-                    Navegación
-                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-text-tertiary/60">Navegación</span>
                 </header>
               )}
               <ul className="flex flex-col gap-1">
-                {filteredNavItems.map((nav) => (
-                  <li key={nav.name}>
-                    <MenuItem 
-                      item={nav} 
-                      isCollapsed={!showExpanded}
-                      onHover={!showExpanded ? setHoveredMenu : undefined}
-                      isHovered={hoveredMenu === nav.name}
-                    />
-                  </li>
+                {filteredNavItems.map(nav => (
+                  <li key={nav.name}>{renderMenuItem(nav)}</li>
                 ))}
               </ul>
             </div>

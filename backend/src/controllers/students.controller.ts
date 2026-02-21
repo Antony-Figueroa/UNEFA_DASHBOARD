@@ -1,9 +1,18 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { cacheManager } from '../lib/cache-manager.js';
+import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { auditCreate, auditUpdate, auditDelete, auditStatusChange } from '../utils/audit-helpers.js';
 
 const TABLE_NAME = 't_students';
 const CACHE_PREFIX = 'students:';
+
+const STUDENT_COLUMNS_TO_AUDIT = [
+  'STUDENTS_CI', 'NAME', 'SECOND_NAME', 'SURNAME', 'SECOND_SURNAME',
+  'GENDER', 'BIRTHDATE', 'MARITAL_STATUS', 'CONTACT_PHONE', 'EMAIL',
+  'ADDRESS', 'CAREER_ID', 'SEMESTER', 'SECTION', 'REGIME',
+  'STUDENT_TYPE', 'MILITARY_RANK', 'EMPLOYMENT', 'STATUS'
+];
 
 // Columnas base sin relaciones
 const STUDENT_COLUMNS_BASE = `
@@ -244,7 +253,7 @@ const mapDBToFrontend = (s: DBStudent) => {
   };
 };
 
-export const createStudent = async (req: Request, res: Response) => {
+export const createStudent = async (req: AuthRequest, res: Response) => {
   try {
     const s = req.body;
     console.log('[Students] Attempting to create student with data:', JSON.stringify(s, null, 2));
@@ -404,6 +413,9 @@ export const createStudent = async (req: Request, res: Response) => {
       return data as unknown as DBStudent;
     }, 'createStudent');
 
+    // Registrar auditoría
+    await auditCreate(req, 't_students', dbData, STUDENT_COLUMNS_TO_AUDIT);
+
     // Invalidar caché de estudiantes
     cacheManager.deleteByPrefix(CACHE_PREFIX);
 
@@ -414,7 +426,7 @@ export const createStudent = async (req: Request, res: Response) => {
   }
 };
 
-export const updateStudent = async (req: Request, res: Response) => {
+export const updateStudent = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const s = req.body;
@@ -526,6 +538,13 @@ export const updateStudent = async (req: Request, res: Response) => {
     console.log('[Students] Final DB data to update:', JSON.stringify(dbData, null, 2));
 
     const data = await dbManager.withRetry(async (supabase) => {
+      // 0. Obtener datos antiguos para auditoría
+      const { data: oldData } = await supabase
+        .from(TABLE_NAME)
+        .select(STUDENT_COLUMNS_BASE)
+        .eq('STUDENTS_ID', parseInt(id))
+        .single();
+
       // 1. Actualizar el registro
       const { error: updateError } = await supabase
         .from(TABLE_NAME)
@@ -548,6 +567,12 @@ export const updateStudent = async (req: Request, res: Response) => {
         console.error('[Students] Fetch after update error:', fetchError);
         throw fetchError;
       }
+
+      // Registrar auditoría
+      if (oldData) {
+        await auditUpdate(req, 't_students', oldData as Record<string, any>, dbData, STUDENT_COLUMNS_TO_AUDIT);
+      }
+
       return data as unknown as DBStudent;
     }, 'updateStudent');
 
@@ -561,16 +586,28 @@ export const updateStudent = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteStudent = async (req: Request, res: Response) => {
+export const deleteStudent = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     await dbManager.withRetry(async (supabase) => {
+      // Obtener datos antes de eliminar para auditoría
+      const { data: deletedData } = await supabase
+        .from(TABLE_NAME)
+        .select(STUDENT_COLUMNS_BASE)
+        .eq('STUDENTS_ID', parseInt(id))
+        .single();
+
       const { error } = await supabase
         .from(TABLE_NAME)
         .delete()
         .eq('STUDENTS_ID', parseInt(id));
 
       if (error) throw error;
+
+      // Registrar auditoría
+      if (deletedData) {
+        await auditDelete(req, 't_students', deletedData as Record<string, any>, STUDENT_COLUMNS_TO_AUDIT);
+      }
     }, 'deleteStudent');
 
     // Invalidar caché de estudiantes
@@ -581,12 +618,19 @@ export const deleteStudent = async (req: Request, res: Response) => {
   }
 };
 
-export const toggleStudentStatus = async (req: Request, res: Response) => {
+export const toggleStudentStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
     const data = await dbManager.withRetry(async (supabase) => {
+      // Obtener estado anterior
+      const { data: oldData } = await supabase
+        .from(TABLE_NAME)
+        .select('STATUS')
+        .eq('STUDENTS_ID', parseInt(id))
+        .single();
+
       const { data, error } = await supabase
         .from(TABLE_NAME)
         .update({ STATUS: status ? 1 : 0 })
@@ -595,6 +639,12 @@ export const toggleStudentStatus = async (req: Request, res: Response) => {
         .single();
 
       if (error) throw error;
+
+      // Registrar auditoría de cambio de estado
+      if (oldData && oldData.STATUS !== (status ? 1 : 0)) {
+        await auditStatusChange(req, 't_students', id, oldData.STATUS, status ? 1 : 0);
+      }
+
       return data;
     });
 

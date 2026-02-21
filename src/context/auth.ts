@@ -40,7 +40,7 @@ export interface AuthContextType {
   /** Indica si se está verificando el estado de la sesión */
   loading: boolean;
   /** Función para cerrar la sesión actual */
-  signOut: () => Promise<void>;
+  signOut: (reason?: string) => Promise<void>;
   /** Función para verificar manualmente el estado de la sesión */
   checkAuth: () => Promise<void>;
 }

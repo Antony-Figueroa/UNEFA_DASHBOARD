@@ -83,25 +83,23 @@ const QuickStatItem: React.FC<QuickStatItemProps> = ({
       <div className={`absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100 ${colorClass.replace('text-', 'bg-').replace('600', '50').replace('400', '900/20')}`} />
       
       <div className="relative flex items-start justify-between">
-        <div className="flex items-start gap-4">
-          {/* Icon Container */}
+        <div className="flex items-start gap-4 flex-1 min-w-0">
           <motion.div 
             whileHover={{ rotate: 5, scale: 1.05 }}
             transition={{ duration: 0.2 }}
-            className={`flex size-12 items-center justify-center rounded-xl ${colorClass} shadow-sm`}
+            className={`flex size-12 items-center justify-center rounded-xl ${colorClass} shadow-sm shrink-0`}
           >
             {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: "size-6" })}
           </motion.div>
           
-          {/* Text Content */}
-          <div className="flex flex-col">
+          <div className="flex flex-col min-w-0">
             <span className="text-xs font-semibold uppercase tracking-wider text-text-secondary dark:text-text-tertiary mb-1">
               {label}
             </span>
             {loading ? (
               <Skeleton height={24} width={80} className="mt-1" />
             ) : (
-              <h4 className="text-xl font-bold text-text-primary dark:text-white">
+              <h4 className="text-xl font-bold text-text-primary dark:text-white truncate">
                 {isNumber && typeof value === 'number' ? (
                   <AnimatedCounter value={value} duration={1.5} />
                 ) : (
@@ -112,8 +110,7 @@ const QuickStatItem: React.FC<QuickStatItemProps> = ({
           </div>
         </div>
 
-        {/* Decorative corner accent */}
-        <div className={`absolute -top-1 -right-1 size-16 opacity-10 rounded-full ${colorClass.split(' ')[0].replace('bg-', 'bg-')}`} />
+        <div className={`size-16 opacity-10 rounded-full ${colorClass.split(' ')[0].replace('bg-', 'bg-')} shrink-0 ml-4`} />
       </div>
 
       {/* Bottom progress indicator */}

@@ -1,7 +1,15 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
+import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { auditCreate, auditUpdate, auditDelete, auditStatusChange } from '../utils/audit-helpers.js';
 
 const TABLE_NAME = 't_tutors';
+
+const TUTOR_COLUMNS_TO_AUDIT = [
+  'TUTOR_CI', 'NAME', 'SECOND_NAME', 'SURNAME', 'SECOND_SURNAME',
+  'CONTACT_PHONE', 'GENDER', 'EMAIL', 'PROFESSION', 'CONDITION',
+  'DEDICATION', 'CATEGORY', 'STATUS'
+];
 
 interface AppError extends Error {
   code?: string;
@@ -200,7 +208,7 @@ const mapDBToFrontend = (t: DBTutor & { t_tutor_career?: DBTutorCareer[] }) => {
   };
 };
 
-export const createTutor = async (req: Request, res: Response) => {
+export const createTutor = async (req: AuthRequest, res: Response) => {
   try {
     const t = req.body;
     const dbData = {
@@ -268,13 +276,16 @@ export const createTutor = async (req: Request, res: Response) => {
       return newTutor;
     });
 
+    // Registrar auditoría
+    await auditCreate(req, 't_tutors', dbData, TUTOR_COLUMNS_TO_AUDIT);
+
     res.status(201).json(mapDBToFrontend(data));
   } catch (error: unknown) {
     handleDbError(res, error);
   }
 };
 
-export const updateTutor = async (req: Request, res: Response) => {
+export const updateTutor = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const t = req.body;
@@ -295,6 +306,13 @@ export const updateTutor = async (req: Request, res: Response) => {
     };
 
     const data = await dbManager.withRetry(async (supabase) => {
+      // 0. Obtener datos antiguos para auditoría
+      const { data: oldData } = await supabase
+        .from(TABLE_NAME)
+        .select('*')
+        .eq('TUTOR_ID', id)
+        .single();
+
       // 1. Actualizar tutor
       const { error: tutorError } = await supabase
         .from(TABLE_NAME)
@@ -344,6 +362,12 @@ export const updateTutor = async (req: Request, res: Response) => {
         .single();
         
       if (finalError) throw finalError;
+
+      // Registrar auditoría
+      if (oldData) {
+        await auditUpdate(req, 't_tutors', oldData as Record<string, any>, dbData, TUTOR_COLUMNS_TO_AUDIT);
+      }
+
       return finalData as (DBTutor & { t_tutor_career: DBTutorCareer[] });
     });
 
@@ -353,16 +377,28 @@ export const updateTutor = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteTutor = async (req: Request, res: Response) => {
+export const deleteTutor = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     await dbManager.withRetry(async (supabase) => {
+      // Obtener datos antes de eliminar para auditoría
+      const { data: deletedData } = await supabase
+        .from(TABLE_NAME)
+        .select('*')
+        .eq('TUTOR_ID', id)
+        .single();
+
       const { error } = await supabase
         .from(TABLE_NAME)
         .delete()
         .eq('TUTOR_ID', id);
 
       if (error) throw error;
+
+      // Registrar auditoría
+      if (deletedData) {
+        await auditDelete(req, 't_tutors', deletedData as Record<string, any>, TUTOR_COLUMNS_TO_AUDIT);
+      }
     });
     res.status(204).send();
   } catch (error: unknown) {
@@ -370,18 +406,30 @@ export const deleteTutor = async (req: Request, res: Response) => {
   }
 };
 
-export const toggleTutorStatus = async (req: Request, res: Response) => {
+export const toggleTutorStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
     const data = await dbManager.withRetry(async (supabase) => {
+      // Obtener estado anterior
+      const { data: oldData } = await supabase
+        .from(TABLE_NAME)
+        .select('STATUS')
+        .eq('TUTOR_ID', id)
+        .single();
+
       const { error } = await supabase
         .from(TABLE_NAME)
         .update({ STATUS: status ? 1 : 0 })
         .eq('TUTOR_ID', id);
 
       if (error) throw error;
+
+      // Registrar auditoría
+      if (oldData && oldData.STATUS !== (status ? 1 : 0)) {
+        await auditStatusChange(req, 't_tutors', id, oldData.STATUS, status ? 1 : 0);
+      }
 
       // Obtener datos completos para el retorno
       const { data: finalData, error: finalError } = await supabase

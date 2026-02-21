@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
+import { motion } from "framer-motion";
 import PageMeta from "../../components/common/PageMeta";
 import AuthLayout from "./AuthPageLayout";
-import Label from "../../components/form/Label";
-import Input from "../../components/form/input/InputField";
 import Button from "../../components/ui/button/Button";
 import * as authService from "../../features/auth/services/authService";
-import { ChevronLeftIcon, EyeCloseIcon, EyeIcon } from "../../icons";
+import { EyeCloseIcon, EyeIcon } from "../../icons";
 import { useToast } from "../../context/toast";
 
 interface ApiError {
@@ -389,7 +388,7 @@ export default function PasswordRecovery() {
                 <div className="space-y-6">
                   <div className="p-3 bg-brand-50 dark:bg-brand-500/10 rounded-lg">
                     <p className="text-xs text-brand-600 dark:text-brand-400">
-                      Responde al menos 3 preguntas de seguridad para continuar.
+                      Responde las 3 preguntas de seguridad para continuar.
                     </p>
                   </div>
 

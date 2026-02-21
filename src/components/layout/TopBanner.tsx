@@ -1,48 +1,79 @@
-import React, { useState, useEffect, useRef, useContext, useCallback } from "react";
+import { useEffect, useRef, useContext, useState } from "react";
 import { SidebarContext } from "../../context/sidebar";
 
-const TopBanner: React.FC = () => {
+const TopBanner = () => {
   const sidebarContext = useContext(SidebarContext);
-  
-  const isExpanded = sidebarContext?.isExpanded ?? false;
-  
-  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isLargeScreen, setIsLargeScreen] = useState(false);
 
-  const updateBannerHeight = useCallback(() => {
-    if (containerRef.current && isLargeScreen) {
-      const height = containerRef.current.offsetHeight;
-      document.documentElement.style.setProperty("--banner-height", `${height}px`);
-    } else {
+  const isExpanded = sidebarContext?.isExpanded ?? false;
+  const isMobileOpen = sidebarContext?.isMobileOpen ?? false;
+
+  useEffect(() => {
+    const checkScreen = () => setIsLargeScreen(window.innerWidth >= 1024);
+    checkScreen();
+    window.addEventListener("resize", checkScreen);
+    return () => window.removeEventListener("resize", checkScreen);
+  }, []);
+
+  useEffect(() => {
+    if (!isLargeScreen) {
       document.documentElement.style.setProperty("--banner-height", "0px");
+      return;
     }
-  }, [isLargeScreen]);
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsLargeScreen(window.innerWidth >= 1024);
-      updateBannerHeight();
+    const updateBannerHeight = () => {
+      if (containerRef.current) {
+        const height = containerRef.current.offsetHeight;
+        document.documentElement.style.setProperty("--banner-height", `${height}px`);
+      }
     };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [updateBannerHeight]);
 
-  useEffect(() => {
     updateBannerHeight();
-  }, [updateBannerHeight]);
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateBannerHeight();
+    });
+
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [isLargeScreen, isExpanded, isMobileOpen]);
 
   if (!isLargeScreen) return null;
 
+  if (!sidebarContext) {
+    return (
+      <div
+        ref={containerRef}
+        className="bg-white dark:bg-bg-dark border-b border-border-light dark:border-border-dark overflow-hidden"
+      >
+        <img
+          src="/unefa-img/menbrete-nuevo.jpg"
+          alt="Gobierno Bolivariano de Venezuela"
+          className="w-full h-auto block"
+        />
+      </div>
+    );
+  }
+
   return (
-    <div 
+    <div
       ref={containerRef}
-      className={`fixed top-0 right-0 bg-white dark:bg-bg-dark border-b border-border-light dark:border-border-dark overflow-hidden z-40 transition-all duration-300 ease-in-out ${!sidebarContext ? "left-0" : isExpanded ? "left-72" : "left-[72px]"}`}
+      className="fixed top-0 right-0 bg-white dark:bg-bg-dark border-b border-border-light dark:border-white/10 overflow-hidden transition-all duration-300"
+      style={{ 
+        left: isExpanded || isMobileOpen ? 280 : 72,
+        zIndex: 30 
+      }}
     >
       <img
         src="/unefa-img/menbrete-nuevo.jpg"
         alt="Gobierno Bolivariano de Venezuela"
         className="w-full h-auto block"
-        onLoad={updateBannerHeight}
       />
     </div>
   );

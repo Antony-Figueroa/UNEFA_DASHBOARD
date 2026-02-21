@@ -22,7 +22,7 @@ const AnimatedBackground: React.FC = () => {
       <div className="absolute inset-0 bg-linear-to-br from-bg-main via-white to-brand-50/30 dark:from-bg-dark dark:via-gray-900 dark:to-brand-950/20" />
       
       <motion.div
-        className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full opacity-30 dark:opacity-15"
+        className="absolute top-0 right-0 w-150 h-150 rounded-full opacity-30 dark:opacity-15"
         style={{ background: 'radial-gradient(circle, var(--color-brand-400) 0%, transparent 70%)' }}
         animate={{
           scale: [1, 1.2, 1],
@@ -75,33 +75,33 @@ const AnimatedBackground: React.FC = () => {
   );
 };
 
-const SectionWrapper: React.FC<{ children: React.ReactNode; delay?: number }> = ({ children, delay = 0 }) => (
+const SectionWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <motion.div
-    initial={{ opacity: 0, y: 30 }}
+    initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: "-100px" }}
-    transition={{ duration: 0.6, delay, ease: "easeOut" }}
+    viewport={{ once: true, margin: "-50px" }}
+    transition={{ duration: 0.3, ease: "easeOut" }}
   >
     {children}
   </motion.div>
 );
 
 const sections = [
-  { Component: HeroSection, key: 'hero', delay: 0 },
-  { Component: MissionVisionSection, key: 'mission', delay: 0.1 },
-  { Component: PartnerLogosSection, key: 'partners', delay: 0.2 },
-  { Component: CommunityInfoSection, key: 'community', delay: 0.3 },
-  { Component: GraduateStatsSection, key: 'stats', delay: 0.4 },
-  { Component: ProcessFlowSection, key: 'process', delay: 0.5 },
-  { Component: WorkspaceImageGallery, key: 'gallery', delay: 0.6 },
-  { Component: UnefaInfoSection, key: 'info', delay: 0.7 },
-  { Component: UnefaMapSection, key: 'map', delay: 0.8 },
-  { Component: FAQSection, key: 'faq', delay: 0.9 },
+  { Component: HeroSection, key: 'hero' },
+  { Component: MissionVisionSection, key: 'mission' },
+  { Component: PartnerLogosSection, key: 'partners' },
+  { Component: CommunityInfoSection, key: 'community' },
+  { Component: GraduateStatsSection, key: 'stats' },
+  { Component: ProcessFlowSection, key: 'process' },
+  { Component: WorkspaceImageGallery, key: 'gallery' },
+  { Component: UnefaInfoSection, key: 'info' },
+  { Component: UnefaMapSection, key: 'map' },
+  { Component: FAQSection, key: 'faq' },
 ];
 
 const InternshipHome: React.FC = React.memo(() => {
   return (
-    <div className="min-h-screen bg-bg-main dark:bg-bg-dark relative">
+    <>
       <PageMeta
         title="Prácticas Profesionales | UNEFA"
         description="Página informativa sobre el proceso de prácticas profesionales de la UNEFA."
@@ -109,28 +109,30 @@ const InternshipHome: React.FC = React.memo(() => {
 
       <AnimatedBackground />
 
-      <div className="sticky top-0 z-9999 w-full" role="banner">
+      <div className="fixed top-0 left-0 right-0 z-40">
         <TopBanner />
         <PublicNavbar />
       </div>
 
-      <main role="main" aria-label="Contenido principal">
-        {sections.map((section) => {
-          const SectionComponent = section.Component;
-          return (
-            <Suspense key={section.key} fallback={<div className="h-24" />}>
-              <SectionWrapper delay={section.delay}>
-                <SectionComponent />
-              </SectionWrapper>
-            </Suspense>
-          );
-        })}
-      </main>
+      <div className="min-h-screen bg-bg-main dark:bg-bg-dark" style={{ paddingTop: 'calc(var(--banner-height, 0px) + var(--navbar-height, 80px))' }}>
+        <main role="main" aria-label="Contenido principal">
+          {sections.map((section) => {
+            const SectionComponent = section.Component;
+            return (
+              <Suspense key={section.key} fallback={<div className="h-24" />}>
+                <SectionWrapper>
+                  <SectionComponent />
+                </SectionWrapper>
+              </Suspense>
+            );
+          })}
+        </main>
 
-      <footer role="contentinfo" aria-label="Pie de página">
-        <PublicFooter />
-      </footer>
-    </div>
+        <footer role="contentinfo" aria-label="Pie de página">
+          <PublicFooter />
+        </footer>
+      </div>
+    </>
   );
 });
 

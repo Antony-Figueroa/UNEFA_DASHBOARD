@@ -187,12 +187,12 @@ export const verifySecurityQuestions = async (req: Request, res: Response) => {
 };
 
 export const requestPasswordReset = async (req: Request, res: Response) => {
-  const { email } = req.body;
+  const { userCi } = req.body;
   const ip = req.ip || '';
   const userAgent = req.headers['user-agent'] || '';
 
-  if (!email) {
-    return res.status(400).json({ success: false, message: 'El correo electrónico es requerido' });
+  if (!userCi) {
+    return res.status(400).json({ success: false, message: 'La cédula es requerida' });
   }
 
   try {
@@ -205,9 +205,53 @@ export const requestPasswordReset = async (req: Request, res: Response) => {
       });
     }
 
-    const result = await authService.requestPasswordReset(email, ip, userAgent);
+    const result = await authService.requestPasswordResetByCi(userCi, ip, userAgent);
     if (!result.success) {
       return res.status(result.status || 400).json(result);
+    }
+    res.json(result);
+  } catch (error) {
+    handleAuthError(res, error);
+  }
+};
+
+export const getUserSecurityQuestions = async (req: Request, res: Response) => {
+  const { userCi } = req.params;
+
+  if (!userCi) {
+    return res.status(400).json({ success: false, message: 'La cédula es requerida' });
+  }
+
+  try {
+    const result = await authService.getUserSecurityQuestions(userCi);
+    res.json(result);
+  } catch (error) {
+    handleAuthError(res, error);
+  }
+};
+
+export const verifySecurityAnswersAndReset = async (req: Request, res: Response) => {
+  const { userCi, answers, newPassword } = req.body;
+  const ip = req.ip || '';
+  const userAgent = req.headers['user-agent'] || '';
+
+  if (!userCi || !answers || !Array.isArray(answers) || answers.length < 3) {
+    return res.status(400).json({ success: false, message: 'Cédula, respuestas y nueva contraseña son requeridas' });
+  }
+
+  if (!newPassword) {
+    return res.status(400).json({ success: false, message: 'La nueva contraseña es requerida' });
+  }
+
+  const passwordValidation = await validatePassword(newPassword);
+  if (!passwordValidation.isValid) {
+    return res.status(400).json({ success: false, message: passwordValidation.message });
+  }
+
+  try {
+    const result = await authService.verifySecurityAnswersAndReset(userCi, answers, newPassword, ip, userAgent);
+    if (!result.success) {
+      return res.status(('status' in result ? result.status : null) || 400).json(result);
     }
     res.json(result);
   } catch (error) {

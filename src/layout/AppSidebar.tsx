@@ -93,7 +93,7 @@ const PopupMenu: React.FC<PopupMenuProps> = ({ isOpen, position, title, items, i
           style={{
             top: position.top,
             left: position.left,
-            zIndex: 99999
+            zIndex: 40
           }}
           onMouseEnter={onEnter}
           onMouseLeave={onLeave}
@@ -435,14 +435,14 @@ const AppSidebar: React.FC = () => {
   return (
     <>
       {isMobileOpen && (
-        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setIsMobileOpen(false)} />
+        <div className="fixed inset-0 bg-black/50 z-20 lg:hidden" onClick={() => setIsMobileOpen(false)} />
       )}
 
       <aside
         className={`fixed flex flex-col left-0 bg-white dark:bg-bg-dark text-text-primary transition-all duration-300 ease-out border-r border-border-light/50 dark:border-white/5
           ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
-        style={{ width: sidebarWidth, height: '100vh', top: 0, zIndex: 9999 }}
+        style={{ width: sidebarWidth, height: '100vh', top: 0, zIndex: 30 }}
       >
         <div className={`py-5 flex items-center border-b border-border-light/30 dark:border-white/5 ${isCollapsed ? "justify-center px-0" : "px-4"}`}>
           <Link to="/dashboard" className="flex items-center gap-3 group">

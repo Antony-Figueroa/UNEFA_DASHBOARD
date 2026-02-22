@@ -21,7 +21,7 @@ const pasosProceso: PasoProceso[] = [
     duracion: "1-2 días",
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00v11a2 2 0 002 2-2 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
       </svg>
     ),
   },
@@ -188,7 +188,7 @@ const PasantiasPage: React.FC = React.memo(() => {
                   Etapas del Proceso
                 </h2>
                 <p className="text-text-secondary">
-                  El proceso de pasantías se divide en 7 etapas fundamentales que带你 desde la postulación hasta la culminación exitosa.
+                  El proceso de pasantías se divide en 7 etapas fundamentales que te guían desde la postulación hasta la culminación exitosa.
                 </p>
               </motion.div>
 
@@ -207,7 +207,7 @@ const PasantiasPage: React.FC = React.memo(() => {
                         index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
                       } flex-col gap-8`}
                     >
-                      <div className={`flex-1 ${index % 2 === 0 ? "md:text-right" : "md:text-left"} text-center`}>
+                      <div className={`flex-1 ${index % 2 === 0 ? "md:text-right md:pr-16" : "md:text-left md:pl-16"} text-center px-4 md:px-0`}>
                         <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-brand-500 text-white font-bold text-lg mb-4 md:hidden">
                           {paso.numero}
                         </div>
@@ -337,7 +337,7 @@ const PasantiasPage: React.FC = React.memo(() => {
                 ¿Estás listo para comenzar?
               </h2>
               <p className="text-lg text-text-secondary mb-8">
-                Si cumples con los requisitos y tienes todas las documentos, puedes iniciar tu proceso de pasantías.
+                Si cumples con los requisitos y tienes toda la documentación, puedes iniciar tu proceso de pasantías.
               </p>
               <div className="flex flex-wrap gap-4 justify-center">
                 <motion.a

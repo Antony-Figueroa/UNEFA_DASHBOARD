@@ -277,6 +277,17 @@
   --z-index-9999999: 9999999;
 }
 
+@keyframes spotlight {
+  0% {
+    opacity: 0;
+    transform: translate(-72%, -62%) scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -40%) scale(1);
+  }
+}
+
 @layer base {
   :root.dark {
     --color-text-primary: var(--color-gray-100);

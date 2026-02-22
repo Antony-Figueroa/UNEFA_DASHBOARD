@@ -58,7 +58,7 @@ const baseInstSchema = z.object({
     .regex(/^\d+$/, "Solo se admiten números")
     .length(7, "El número debe tener exactamente 7 dígitos"),
   practiceType: z.string().min(1, "Seleccione un tipo de práctica"),
-  careerId: z.union([z.string(), z.number()]).refine(val => String(val).length > 0, "Seleccione una carrera"),
+  careerIds: z.array(z.string()).min(1, "Seleccione al menos una carrera"),
   region: z.string().min(1, "Seleccione un región"),
   nucleus: z.string().min(1, "Seleccione un núcleo"),
   extension: z.string().min(1, "Seleccione una extensión"),
@@ -147,7 +147,7 @@ export default function InstitutionModal({
       phonePrefix: "",
       phoneNumber: "",
       practiceType: "",
-      careerId: "",
+      careerIds: [],
       region: "",
       nucleus: "",
       extension: "",
@@ -165,16 +165,16 @@ export default function InstitutionModal({
   const [pendingSave, setPendingSave] = useState<CreateInstitutionPayload | UpdateInstitutionPayload | null>(null);
 
   const { options: practiceOptions, fetchByCareer } = useInternshipTypes();
-  const watchedCareerId = useWatch({ control, name: "careerId" });
+  const watchedCareerIds = useWatch({ control, name: "careerIds" });
 
   useEffect(() => {
     const loadPracticeTypes = async () => {
-      if (watchedCareerId) {
-        await fetchByCareer(String(watchedCareerId));
+      if (watchedCareerIds && watchedCareerIds.length > 0) {
+        await fetchByCareer(watchedCareerIds[0]);
       }
     };
     loadPracticeTypes();
-  }, [watchedCareerId, fetchByCareer]);
+  }, [watchedCareerIds, fetchByCareer]);
 
   // Efecto para auto-seleccionar el tipo de práctica cuando las opciones cambian
   useEffect(() => {
@@ -377,7 +377,7 @@ export default function InstitutionModal({
           phonePrefix: phoneP || "",
           phoneNumber: phoneN || "",
           practiceType: editingInst.practiceType,
-          careerId: editingInst.careerId,
+          careerIds: editingInst.careerIds || [],
           region: editingInst.region,
           nucleus: editingInst.nucleus,
           extension: editingInst.extension,
@@ -392,7 +392,7 @@ export default function InstitutionModal({
           phonePrefix: "",
           phoneNumber: "",
           practiceType: "",
-          careerId: "",
+          careerIds: [],
           region: "",
           nucleus: "",
           extension: "",
@@ -413,7 +413,7 @@ export default function InstitutionModal({
       fiscalAddress: data.fiscalAddress.toUpperCase(),
       phone: `${data.phonePrefix}-${data.phoneNumber}`,
       practiceType: data.practiceType.toUpperCase(),
-      careerId: String(data.careerId),
+      careerIds: data.careerIds,
       region: data.region.toUpperCase(),
       nucleus: data.nucleus.toUpperCase(),
       extension: data.extension.toUpperCase(),
@@ -569,24 +569,67 @@ export default function InstitutionModal({
             )}
           </div>
 
-          <div>
-            <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Carrera *</label>
+          <div className="md:col-span-2">
+            <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">
+              Carreras Aceptadas *
+            </label>
             <Controller
-              name="careerId"
+              name="careerIds"
               control={control}
               render={({ field }) => (
-                <CustomSelect
-                  id="careerId"
-                  options={careerOptions.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                  onChange={field.onChange}
-                  value={String(field.value ?? "")}
-                  disabled={isLoading || hasProfessionalPractices}
-                  placeholder="Seleccione carrera"
-                />
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2 p-3 border border-gray-200 dark:border-gray-700 rounded-lg min-h-[80px] bg-gray-50 dark:bg-gray-800/50">
+                    {field.value && field.value.length > 0 ? (
+                      field.value.map((careerId: string) => {
+                        const career = careerOptions.find(c => String(c.value) === careerId);
+                        return (
+                          <span
+                            key={careerId}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 rounded-full text-sm font-medium"
+                          >
+                            {career?.label || careerId}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!hasProfessionalPractices) {
+                                  field.onChange(field.value.filter((id: string) => id !== careerId));
+                                }
+                              }}
+                              className="ml-1 hover:bg-brand-200 dark:hover:bg-brand-800/50 rounded-full p-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={hasProfessionalPractices}
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </span>
+                        );
+                      })
+                    ) : (
+                      <p className="text-sm text-gray-400 dark:text-gray-500">
+                        Seleccione las carreras que acepta esta institución
+                      </p>
+                    )}
+                  </div>
+                  <CustomSelect
+                    id="careerIds"
+                    options={careerOptions
+                      .filter(opt => !field.value?.includes(String(opt.value)))
+                      .map(opt => ({ value: String(opt.value), label: opt.label }))}
+                    onChange={(value: string) => {
+                      if (value && !field.value?.includes(value)) {
+                        field.onChange([...(field.value || []), value]);
+                      }
+                    }}
+                    value=""
+                    disabled={isLoading || hasProfessionalPractices}
+                    placeholder={field.value?.length ? "Agregar otra carrera..." : "Seleccione carrera..."}
+                  />
+                </div>
               )}
             />
-            {errors.careerId && (
-              <p className="mt-1 text-xs text-red-500">{errors.careerId.message}</p>
+            {errors.careerIds && (
+              <p className="mt-1 text-xs text-red-500">{errors.careerIds.message}</p>
             )}
             {hasProfessionalPractices && (
               <p className="mt-1 text-[10px] text-amber-600 dark:text-amber-400">

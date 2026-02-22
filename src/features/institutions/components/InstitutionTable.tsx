@@ -30,7 +30,7 @@ interface InstitutionTableProps {
   institutionTypeOptions?: { value: string; label: string }[];
 }
 
-type SortKey = "rif" | "name" | "practiceType" | "careerName";
+type SortKey = "rif" | "name" | "practiceType" | "careerNames";
 type SortOrder = "asc" | "desc";
 
 interface ActionButtonsProps {
@@ -142,7 +142,7 @@ export default function InstitutionTable({
     const filtered = data.filter((i) => {
       const matchesRif = !rifSearch || i.rif.toLowerCase().includes(rifSearch);
       const matchesName = !nameSearch || i.name.toLowerCase().includes(nameSearch);
-      const matchesCareer = !careerSearch || i.careerId === careerSearch;
+      const matchesCareer = !careerSearch || i.careerIds?.includes(careerSearch);
       const matchesInstitutionType = !institutionTypeSearch || i.institutionType === institutionTypeSearch;
       
       const matchesTab = activeTab === "Activas" ? i.status === true : i.status === false;
@@ -425,8 +425,8 @@ export default function InstitutionTable({
               <TableCell isHeader className="cursor-pointer group" onClick={async () => handleSort("practiceType")}>
                   <div className="flex items-center">Tipo Práctica <SortIndicator column="practiceType" /></div>
               </TableCell>
-              <TableCell isHeader className="cursor-pointer group" onClick={async () => handleSort("careerName")}>
-                  <div className="flex items-center">Carrera <SortIndicator column="careerName" /></div>
+              <TableCell isHeader className="cursor-pointer group" onClick={async () => handleSort("careerNames")}>
+                  <div className="flex items-center">Carreras <SortIndicator column="careerNames" /></div>
               </TableCell>
               <TableCell isHeader className="text-right">&nbsp;</TableCell>
             </TableRow>
@@ -471,7 +471,11 @@ export default function InstitutionTable({
                         {getPracticeName(i.practiceType)}
                     </Badge>
                 </TableCell>
-                        <TableCell className="text-text-secondary dark:text-text-tertiary">{i.careerName}</TableCell>
+                        <TableCell className="text-text-secondary dark:text-text-tertiary">
+                          <Tooltip content={i.careerNames || "Sin carreras"} className="max-w-xs">
+                            <span className="truncate block max-w-48">{i.careerNames || "-"}</span>
+                          </Tooltip>
+                        </TableCell>
                         <TableCell className="table-cell text-right">
                             <ActionButtons
                                 onView={onView ? () => onView(i) : undefined}
@@ -549,8 +553,8 @@ export default function InstitutionTable({
                                         <p className="text-sm text-text-primary dark:text-text-tertiary font-medium">{i.phone}</p>
                                     </div>
                                     <div className="col-span-2 flex flex-col items-center">
-                                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Carrera</p>
-                                        <p className="text-sm text-text-primary dark:text-text-tertiary font-medium truncate w-full max-w-62.5">{i.careerName}</p>
+                                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Carreras</p>
+                                        <p className="text-sm text-text-primary dark:text-text-tertiary font-medium truncate w-full max-w-62.5">{i.careerNames || "-"}</p>
                                     </div>
                                 </div>
 

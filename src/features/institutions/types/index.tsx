@@ -19,10 +19,10 @@ export interface Institution {
   phone: string;
   /** Type of professional practice allowed */
   practiceType: string;
-  /** Associated career ID */
-  careerId: string;
-  /** Name of the associated career (optional, joined from careers table) */
-  careerName?: string;
+  /** Associated career IDs (multiple) */
+  careerIds: string[];
+  /** Names of the associated careers (comma-separated) */
+  careerNames?: string;
   /** Geographic region */
   region: string;
   /** University nucleus */
@@ -44,7 +44,7 @@ export interface Institution {
 /**
  * Payload for creating a new institution.
  */
-export type CreateInstitutionPayload = Omit<Institution, 'institutionId' | 'registrationDate' | 'status' | 'careerName' | 'responsibleCount' | 'isInUse'>;
+export type CreateInstitutionPayload = Omit<Institution, 'institutionId' | 'registrationDate' | 'status' | 'careerNames' | 'responsibleCount' | 'isInUse'>;
 
 /**
  * Payload for updating an existing institution.

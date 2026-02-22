@@ -4,7 +4,7 @@
  * con visualización moderna tipo tarjetas y gráfico circular mejorado.
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactApexChart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
@@ -23,6 +23,8 @@ interface CareerDistributionChartProps {
   data: DashboardStats['careerDistribution'];
   loading?: boolean;
 }
+
+const STORAGE_KEY = 'dashboard-career-view-preference';
 
 // Colores institucionales UNEFA extendidos
 const careerColors = [
@@ -43,7 +45,19 @@ const getCareerIcon = (index: number) => {
 };
 
 const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data, loading }) => {
-  const [viewType, setViewType] = useState<'cards' | 'donut' | 'bar'>('cards');
+  const [viewType, setViewType] = useState<'cards' | 'donut' | 'bar'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved === 'cards' || saved === 'donut' || saved === 'bar') {
+        return saved;
+      }
+    }
+    return 'cards';
+  });
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, viewType);
+  }, [viewType]);
 
   const totalStudents = useMemo(() => 
     data.reduce((acc, curr) => acc + curr.studentCount, 0),

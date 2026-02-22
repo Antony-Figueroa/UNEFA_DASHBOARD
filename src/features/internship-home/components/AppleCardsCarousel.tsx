@@ -118,14 +118,14 @@ export const Carousel = ({ items, initialScroll = 0 }: CarouselProps) => {
         </div>
         <div className="mr-10 flex justify-end gap-2">
           <button
-            className="relative z-40 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 disabled:opacity-50 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 disabled:opacity-50 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700"
             onClick={scrollLeftHandler}
             disabled={!canScrollLeft}
           >
             <ChevronLeft className="h-5 w-5 text-gray-500 dark:text-gray-400" />
           </button>
           <button
-            className="relative z-40 flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 disabled:opacity-50 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 disabled:opacity-50 transition-colors hover:bg-gray-200 dark:hover:bg-gray-700"
             onClick={scrollRightHandler}
             disabled={!canScrollRight}
           >

@@ -134,9 +134,19 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
     dataLabels: { enabled: false },
     legend: { show: false },
     tooltip: {
-      theme: 'light',
+      theme: 'dark',
+      style: {
+        fontSize: '13px',
+        fontFamily: 'Inter, system-ui, sans-serif',
+      },
       y: {
-        formatter: (val) => `${val} estudiantes`
+        formatter: (val) => `${val} estudiantes`,
+        title: {
+          formatter: () => ''
+        }
+      },
+      marker: {
+        show: true
       }
     },
     stroke: {

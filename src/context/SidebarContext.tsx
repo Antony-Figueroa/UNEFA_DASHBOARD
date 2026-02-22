@@ -1,10 +1,22 @@
 import { useState, useEffect, useCallback } from "react";
 import { SidebarContext } from "./sidebar";
 
+const SIDEBAR_STORAGE_KEY = "sidebar_expanded";
+
+const getInitialExpandedState = (): boolean => {
+  if (typeof window === "undefined") return true;
+  const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+  if (stored === null) return true;
+  return stored === "true";
+};
+
 export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(getInitialExpandedState);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_STORAGE_KEY, String(isExpanded));
+  }, [isExpanded]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -25,11 +37,9 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
       value={{
         isExpanded,
         isMobileOpen,
-        isHovered,
         toggleSidebar,
         toggleMobileSidebar,
         setIsMobileOpen,
-        setIsHovered,
       }}
     >
       {children}

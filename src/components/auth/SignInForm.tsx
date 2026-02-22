@@ -120,19 +120,6 @@ export default function SignInForm() {
         transition={{ duration: 0.5, delay: 0.1 }}
         className="mb-10"
       >
-        <div className="flex items-center gap-3 mb-5">
-          <div className="flex items-center justify-center size-11 rounded-xl bg-brand-50 dark:bg-brand-500/10">
-            <svg className="size-5 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-            </svg>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 dark:bg-green-500/10 border border-green-100 dark:border-green-500/20">
-            <div className="size-1.5 rounded-full bg-green-500" />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-green-600 dark:text-green-400">
-              Sistema Activo
-            </span>
-          </div>
-        </div>
 
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
           Bienvenido
@@ -206,7 +193,7 @@ export default function SignInForm() {
 
         <div className="pt-3">
           <Button
-            className="w-full h-12 text-base font-semibold rounded-xl"
+            className="w-full h-12 text-base font-semibold rounded-xl disabled:bg-gray-500 dark:disabled:bg-gray-400 disabled:cursor-not-allowed"
             size="lg"
             type="submit"
             disabled={loading || !userCi || !password}

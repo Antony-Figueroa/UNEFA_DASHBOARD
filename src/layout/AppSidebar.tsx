@@ -93,7 +93,7 @@ const PopupMenu: React.FC<PopupMenuProps> = ({ isOpen, position, title, items, i
           style={{
             top: position.top,
             left: position.left,
-            zIndex: 40
+            zIndex: 60
           }}
           onMouseEnter={onEnter}
           onMouseLeave={onLeave}

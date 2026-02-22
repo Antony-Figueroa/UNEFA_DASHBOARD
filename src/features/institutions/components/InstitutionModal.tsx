@@ -10,6 +10,7 @@ import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
 import TextArea from "../../../components/form/input/TextArea";
 import CustomSelect from "../../../components/form/CustomSelect";
+import MultiSelect from "../../../components/form/MultiSelect";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Institution, CreateInstitutionPayload, UpdateInstitutionPayload } from "../types";
 import Button from "../../../components/ui/button/Button";
@@ -570,62 +571,22 @@ export default function InstitutionModal({
           </div>
 
           <div className="md:col-span-2">
-            <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">
-              Carreras Aceptadas *
-            </label>
             <Controller
               name="careerIds"
               control={control}
               render={({ field }) => (
-                <div className="space-y-2">
-                  <div className="flex flex-wrap gap-2 p-3 border border-gray-200 dark:border-gray-700 rounded-lg min-h-[80px] bg-gray-50 dark:bg-gray-800/50">
-                    {field.value && field.value.length > 0 ? (
-                      field.value.map((careerId: string) => {
-                        const career = careerOptions.find(c => String(c.value) === careerId);
-                        return (
-                          <span
-                            key={careerId}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 rounded-full text-sm font-medium"
-                          >
-                            {career?.label || careerId}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (!hasProfessionalPractices) {
-                                  field.onChange(field.value.filter((id: string) => id !== careerId));
-                                }
-                              }}
-                              className="ml-1 hover:bg-brand-200 dark:hover:bg-brand-800/50 rounded-full p-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                              disabled={hasProfessionalPractices}
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </span>
-                        );
-                      })
-                    ) : (
-                      <p className="text-sm text-gray-400 dark:text-gray-500">
-                        Seleccione las carreras que acepta esta institución
-                      </p>
-                    )}
-                  </div>
-                  <CustomSelect
-                    id="careerIds"
-                    options={careerOptions
-                      .filter(opt => !field.value?.includes(String(opt.value)))
-                      .map(opt => ({ value: String(opt.value), label: opt.label }))}
-                    onChange={(value: string) => {
-                      if (value && !field.value?.includes(value)) {
-                        field.onChange([...(field.value || []), value]);
-                      }
-                    }}
-                    value=""
-                    disabled={isLoading || hasProfessionalPractices}
-                    placeholder={field.value?.length ? "Agregar otra carrera..." : "Seleccione carrera..."}
-                  />
-                </div>
+                <MultiSelect
+                  label="Carreras Aceptadas *"
+                  options={careerOptions.map(opt => ({
+                    value: String(opt.value),
+                    text: opt.label
+                  }))}
+                  value={field.value || []}
+                  onChange={(selectedIds: string[]) => field.onChange(selectedIds)}
+                  placeholder="Seleccione las carreras que acepta esta institución"
+                  disabled={isLoading || hasProfessionalPractices}
+                  error={!!errors.careerIds}
+                />
               )}
             />
             {errors.careerIds && (

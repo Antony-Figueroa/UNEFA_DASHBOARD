@@ -74,7 +74,7 @@ const Button: React.FC<ButtonProps> = ({
   // Variant Classes
   const variantClasses = {
     primary:
-      "bg-btn-primary-bg text-btn-primary-text shadow-theme-xs hover:bg-btn-primary-hover active:bg-btn-primary-active disabled:bg-bg-secondary dark:disabled:bg-white/3",
+      "bg-btn-primary-bg text-btn-primary-text shadow-theme-xs hover:bg-btn-primary-hover active:bg-btn-primary-active disabled:bg-gray-400 dark:disabled:bg-gray-600",
     outline:
       "bg-bg-main text-text-primary ring-1 ring-inset ring-border-medium hover:bg-bg-secondary dark:bg-white/3 dark:text-text-tertiary dark:ring-border-dark dark:hover:bg-white/5 disabled:opacity-50",
     error:

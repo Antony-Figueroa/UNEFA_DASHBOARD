@@ -65,8 +65,28 @@ export default function SignInForm() {
         navigate("/dashboard");
       }
     } catch (err: unknown) {
-      const axiosError = err as { response?: { data?: { message?: string, attemptsRemaining?: number } } };
-      const errorMessage = axiosError.response?.data?.message || (err as Error).message || "Error al iniciar sesión";
+      const axiosError = err as { 
+        response?: { data?: { message?: string, attemptsRemaining?: number } };
+        code?: string;
+        message?: string;
+      };
+      
+      const isNetworkError = 
+        axiosError.code === 'ERR_NETWORK' || 
+        axiosError.message === 'Network Error' ||
+        !axiosError.response;
+      
+      let errorMessage: string;
+      let errorTitle: string;
+      
+      if (isNetworkError) {
+        errorTitle = "Error de Conexión";
+        errorMessage = "No se pudo conectar con el servidor. Verifique que el servidor esté activo e inténtelo nuevamente.";
+      } else {
+        errorTitle = "Error de Acceso";
+        errorMessage = axiosError.response?.data?.message || (err as Error).message || "Error al iniciar sesión";
+      }
+      
       const remaining = axiosError.response?.data?.attemptsRemaining;
 
       if (remaining !== undefined) {
@@ -79,14 +99,14 @@ export default function SignInForm() {
         } else {
           addToast({
             variant: "error",
-            title: "Error de Acceso",
+            title: errorTitle,
             message: errorMessage
           });
         }
       } else {
         addToast({
           variant: "error",
-          title: "Error de Acceso",
+          title: errorTitle,
           message: errorMessage
         });
       }

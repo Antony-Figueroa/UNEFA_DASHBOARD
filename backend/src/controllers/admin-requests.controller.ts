@@ -34,7 +34,7 @@ export const getAllRequests = async (req: AuthRequest, res: Response) => {
         DESCRIPTION,
         STATUS,
         RESPONSE,
-        CREATED_AT,
+        CREATION_DATE,
         PROCESSED_AT,
         PROCESSED_BY,
         t_request_types (NAME),
@@ -45,7 +45,7 @@ export const getAllRequests = async (req: AuthRequest, res: Response) => {
           EMAIL
         )
       `)
-      .order('CREATED_AT', { ascending: false });
+      .order('CREATION_DATE', { ascending: false });
 
     if (status && status !== 'all') {
       query = query.eq('STATUS', status);
@@ -71,7 +71,7 @@ export const getAllRequests = async (req: AuthRequest, res: Response) => {
       status: r.STATUS,
       response: r.RESPONSE,
       processedByName: null,
-      createdAt: r.CREATED_AT,
+      createdAt: r.CREATION_DATE,
       processedAt: r.PROCESSED_AT
     }));
 
@@ -133,7 +133,7 @@ export const getRequestById = async (req: AuthRequest, res: Response) => {
         DESCRIPTION,
         STATUS,
         RESPONSE,
-        CREATED_AT,
+        CREATION_DATE,
         PROCESSED_AT,
         PROCESSED_BY,
         t_request_types (NAME, DESCRIPTION),

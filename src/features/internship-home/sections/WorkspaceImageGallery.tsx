@@ -139,7 +139,7 @@ const WorkspaceImageGallery: React.FC = () => {
   }, []);
 
   return (
-    <section className="py-12 bg-brand-50/30 dark:bg-brand-900/10 border-y border-brand-100 dark:border-brand-800">
+    <section id="comunidad" className="py-12 bg-brand-50/30 dark:bg-brand-900/10 border-y border-brand-100 dark:border-brand-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-6">
           <h2 className="text-3xl font-bold text-[#2d90c4] dark:text-[#2d90c4]">

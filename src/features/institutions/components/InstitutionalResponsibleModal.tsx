@@ -80,6 +80,10 @@ interface InstitutionalResponsibleModalProps {
   institutionOptions: { value: string; label: string }[];
   /** Whether a background action is in progress */
   isLoading?: boolean;
+  /** Preselected institution ID (used when creating from institution modal) */
+  preselectedInstitutionId?: string;
+  /** Preselected institution name for display */
+  preselectedInstitutionName?: string;
 }
 
 /**
@@ -104,6 +108,8 @@ export default function InstitutionalResponsibleModal({
   editingResp,
   institutionOptions,
   isLoading = false,
+  preselectedInstitutionId,
+  preselectedInstitutionName,
 }: InstitutionalResponsibleModalProps) {
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const { fetchMultipleLists } = useLists();
@@ -294,11 +300,11 @@ export default function InstitutionalResponsibleModal({
           phonePrefix: "",
           phoneNumber: "",
           email: "",
-          institutionId: "",
+          institutionId: preselectedInstitutionId || "",
         });
       }
     }
-  }, [editingResp, isOpen, reset]);
+  }, [editingResp, isOpen, reset, preselectedInstitutionId]);
 
   /**
    * Handles form submission. Formats the data and calls the onSave callback.
@@ -379,19 +385,27 @@ export default function InstitutionalResponsibleModal({
             {/* Institución */}
             <div className="lg:col-span-1">
               <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Institución *</label>
-              <Controller
-                name="institutionId"
-                control={control}
-                render={({ field }) => (
-                  <CustomSelect
-                    id="institutionId"
-                    options={institutionOptions.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                    onChange={field.onChange}
-                    value={String(field.value ?? "")}
-                    placeholder="Seleccione una institución"
-                  />
-                )}
-              />
+              {preselectedInstitutionId ? (
+                <div className="px-4 py-2.5 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-xl">
+                  <p className="text-sm font-semibold text-brand-700 dark:text-brand-400">
+                    {preselectedInstitutionName || institutionOptions.find(o => o.value === preselectedInstitutionId)?.label || "Institución seleccionada"}
+                  </p>
+                </div>
+              ) : (
+                <Controller
+                  name="institutionId"
+                  control={control}
+                  render={({ field }) => (
+                    <CustomSelect
+                      id="institutionId"
+                      options={institutionOptions.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                      onChange={field.onChange}
+                      value={String(field.value ?? "")}
+                      placeholder="Seleccione una institución"
+                    />
+                  )}
+                />
+              )}
               {isSubmitted && errors.institutionId && (
                 <p className="mt-1 text-[11px] font-medium text-red-500">{errors.institutionId.message}</p>
               )}

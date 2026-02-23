@@ -7,9 +7,9 @@ import { Skeleton } from "../ui/skeleton";
 
 const PeriodStatusCard: React.FC = () => {
     const { periodos, status } = usePeriods();
-    const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+    const { isExpanded, isMobileOpen } = useSidebar();
 
-    const showContent = isExpanded || isHovered || isMobileOpen;
+    const showContent = isExpanded || isMobileOpen;
 
     const displayPeriod = useMemo(() => {
         if (!periodos || periodos.length === 0) return null;

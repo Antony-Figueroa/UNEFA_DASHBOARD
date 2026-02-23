@@ -2,19 +2,18 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { cacheManager } from '../lib/cache-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
-import { auditCreate, auditUpdate, auditDelete, auditStatusChange } from '../utils/audit-helpers.js';
+import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-helpers.js';
 
 const TABLE_NAME = 't_institution';
-const CAREER_RELATION_TABLE = 't_institution_career';
 const CACHE_PREFIX = 'institutions:';
 const CACHE_TTL = 3600000;
 
 const INSTITUTION_COLUMNS_TO_AUDIT = [
-  'INSTITUTION_NAME', 'INSTITUTION_ADDRESS', 'INSTITUTION_CONTACT', 'PRACTICE_TYPE',
+  'INSTITUTION_NAME', 'INSTITUTION_ADDRESS', 'INSTITUTION_CONTACT',
   'REGION', 'NUCLEUS', 'EXTENSION', 'INSTITUTION_TYPE', 'STATUS', 'RIF'
 ];
 
-const INSTITUTION_COLUMNS = 'INSTITUTION_ID, INSTITUTION_NAME, INSTITUTION_ADDRESS, INSTITUTION_CONTACT, PRACTICE_TYPE, REGION, NUCLEUS, EXTENSION, CREATION_DATE, INSTITUTION_TYPE, STATUS, RIF, t_professional_practices(INSTITUTION_ID)';
+const INSTITUTION_COLUMNS = 'INSTITUTION_ID, INSTITUTION_NAME, INSTITUTION_ADDRESS, INSTITUTION_CONTACT, REGION, NUCLEUS, EXTENSION, CREATION_DATE, INSTITUTION_TYPE, STATUS, RIF, t_professional_practices(INSTITUTION_ID)';
 
 interface AppError extends Error {
   code?: string;
@@ -50,7 +49,6 @@ interface DBInstitution {
   INSTITUTION_NAME: string;
   INSTITUTION_ADDRESS: string;
   INSTITUTION_CONTACT: string;
-  PRACTICE_TYPE: string;
   REGION: string;
   NUCLEUS: string;
   EXTENSION: string;
@@ -60,7 +58,6 @@ interface DBInstitution {
   RIF: string;
   t_professional_practices?: { INSTITUTION_ID: number }[];
   responsibleCount?: number;
-  careers?: { CAREER_ID: number; CAREER_NAME: string }[];
 }
 
 const mapDBToFrontend = (i: DBInstitution) => ({
@@ -69,9 +66,6 @@ const mapDBToFrontend = (i: DBInstitution) => ({
   name: i.INSTITUTION_NAME,
   fiscalAddress: i.INSTITUTION_ADDRESS,
   phone: i.INSTITUTION_CONTACT,
-  practiceType: i.PRACTICE_TYPE,
-  careerIds: i.careers?.map(c => String(c.CAREER_ID)) || [],
-  careerNames: i.careers?.map(c => c.CAREER_NAME).join(', ') || '',
   region: i.REGION,
   nucleus: i.NUCLEUS,
   extension: i.EXTENSION,
@@ -98,33 +92,12 @@ export const getInstitutions = async (_req: Request, res: Response) => {
 
       if (instError) throw instError;
 
-      const { data: careerRelations, error: relError } = await supabase
-        .from(CAREER_RELATION_TABLE)
-        .select('INSTITUTION_ID, CAREER_ID, t_career(CAREER_ID, CAREER_NAME)');
-
-      if (relError) throw relError;
-
       const { data: responsibles, error: respError } = await supabase
         .from('t_institution_manager')
         .select('INSTITUTION_ID')
         .eq('STATUS', 1);
 
       if (respError) throw respError;
-
-      const careerMap = new Map<number, { CAREER_ID: number; CAREER_NAME: string }[]>();
-      (careerRelations || []).forEach((rel: any) => {
-        const instId = rel.INSTITUTION_ID;
-        const career = rel.t_career;
-        if (!careerMap.has(instId)) {
-          careerMap.set(instId, []);
-        }
-        if (career) {
-          careerMap.get(instId)!.push({
-            CAREER_ID: career.CAREER_ID,
-            CAREER_NAME: career.CAREER_NAME
-          });
-        }
-      });
 
       const respCountMap = new Map<number, number>();
       (responsibles || []).forEach((r: any) => {
@@ -134,7 +107,6 @@ export const getInstitutions = async (_req: Request, res: Response) => {
 
       return (institutions || []).map(inst => ({
         ...inst,
-        careers: careerMap.get(inst.INSTITUTION_ID) || [],
         responsibleCount: respCountMap.get(inst.INSTITUTION_ID) || 0
       })) as DBInstitution[];
     }, 'getInstitutions');
@@ -211,22 +183,7 @@ export const getInstitutionById = async (req: Request, res: Response) => {
 
       if (error) throw error;
 
-      const { data: careerRelations, error: relError } = await supabase
-        .from(CAREER_RELATION_TABLE)
-        .select('CAREER_ID, t_career(CAREER_ID, CAREER_NAME)')
-        .eq('INSTITUTION_ID', parseInt(id));
-
-      if (relError) throw relError;
-
-      const careers = (careerRelations || [])
-        .map((rel: any) => rel.t_career)
-        .filter(Boolean)
-        .map((c: any) => ({ CAREER_ID: c.CAREER_ID, CAREER_NAME: c.CAREER_NAME }));
-
-      return {
-        ...inst,
-        careers
-      } as DBInstitution;
+      return inst as DBInstitution;
     }, 'getInstitutionById');
 
     res.json(mapDBToFrontend(data));
@@ -242,7 +199,6 @@ export const createInstitution = async (req: AuthRequest, res: Response) => {
       INSTITUTION_NAME: i.name,
       INSTITUTION_ADDRESS: i.fiscalAddress,
       INSTITUTION_CONTACT: i.phone,
-      PRACTICE_TYPE: i.practiceType,
       REGION: i.region,
       NUCLEUS: i.nucleus,
       EXTENSION: i.extension,
@@ -261,35 +217,7 @@ export const createInstitution = async (req: AuthRequest, res: Response) => {
 
       if (error) throw error;
 
-      const careerIds = i.careerIds || [];
-      const careers: { CAREER_ID: number; CAREER_NAME: string }[] = [];
-
-      if (careerIds.length > 0) {
-        const relations = careerIds.map((cid: string) => ({
-          INSTITUTION_ID: inst.INSTITUTION_ID,
-          CAREER_ID: parseInt(cid)
-        }));
-
-        const { error: relError } = await supabase
-          .from(CAREER_RELATION_TABLE)
-          .insert(relations);
-
-        if (relError) throw relError;
-
-        const { data: careerData } = await supabase
-          .from('t_career')
-          .select('CAREER_ID, CAREER_NAME')
-          .in('CAREER_ID', careerIds.map((cid: string) => parseInt(cid)));
-
-        if (careerData) {
-          careers.push(...careerData);
-        }
-      }
-
-      return {
-        ...inst,
-        careers
-      } as DBInstitution;
+      return inst as DBInstitution;
     }, 'createInstitution');
 
     await auditCreate(req, 't_institution', dbData, INSTITUTION_COLUMNS_TO_AUDIT);
@@ -311,7 +239,6 @@ export const updateInstitution = async (req: AuthRequest, res: Response) => {
     if (i.name !== undefined) dbData.INSTITUTION_NAME = i.name;
     if (i.fiscalAddress !== undefined) dbData.INSTITUTION_ADDRESS = i.fiscalAddress;
     if (i.phone !== undefined) dbData.INSTITUTION_CONTACT = i.phone;
-    if (i.practiceType !== undefined) dbData.PRACTICE_TYPE = i.practiceType;
     if (i.region !== undefined) dbData.REGION = i.region;
     if (i.nucleus !== undefined) dbData.NUCLEUS = i.nucleus;
     if (i.extension !== undefined) dbData.EXTENSION = i.extension;
@@ -339,51 +266,7 @@ export const updateInstitution = async (req: AuthRequest, res: Response) => {
         await auditUpdate(req, 't_institution', oldData as Record<string, any>, dbData, INSTITUTION_COLUMNS_TO_AUDIT);
       }
 
-      let careers: { CAREER_ID: number; CAREER_NAME: string }[] = [];
-
-      if (i.careerIds !== undefined) {
-        await supabase
-          .from(CAREER_RELATION_TABLE)
-          .delete()
-          .eq('INSTITUTION_ID', id);
-
-        if (i.careerIds.length > 0) {
-          const relations = i.careerIds.map((cid: string) => ({
-            INSTITUTION_ID: parseInt(id),
-            CAREER_ID: parseInt(cid)
-          }));
-
-          const { error: relError } = await supabase
-            .from(CAREER_RELATION_TABLE)
-            .insert(relations);
-
-          if (relError) throw relError;
-
-          const { data: careerData } = await supabase
-            .from('t_career')
-            .select('CAREER_ID, CAREER_NAME')
-            .in('CAREER_ID', i.careerIds.map((cid: string) => parseInt(cid)));
-
-          if (careerData) {
-            careers = careerData;
-          }
-        }
-      } else {
-        const { data: careerRelations } = await supabase
-          .from(CAREER_RELATION_TABLE)
-          .select('CAREER_ID, t_career(CAREER_ID, CAREER_NAME)')
-          .eq('INSTITUTION_ID', parseInt(id));
-
-        careers = (careerRelations || [])
-          .map((rel: any) => rel.t_career)
-          .filter(Boolean)
-          .map((c: any) => ({ CAREER_ID: c.CAREER_ID, CAREER_NAME: c.CAREER_NAME }));
-      }
-
-      return {
-        ...inst,
-        careers
-      } as DBInstitution;
+      return inst as DBInstitution;
     }, 'updateInstitution');
 
     cacheManager.deleteByPrefix(CACHE_PREFIX);
@@ -492,20 +375,7 @@ export const toggleInstitutionStatus = async (req: AuthRequest, res: Response) =
         await auditStatusChange(req, 't_institution', id, oldData.STATUS, status ? 1 : 0);
       }
 
-      const { data: careerRelations } = await supabase
-        .from(CAREER_RELATION_TABLE)
-        .select('CAREER_ID, t_career(CAREER_ID, CAREER_NAME)')
-        .eq('INSTITUTION_ID', parseInt(id));
-
-      const careers = (careerRelations || [])
-        .map((rel: any) => rel.t_career)
-        .filter(Boolean)
-        .map((c: any) => ({ CAREER_ID: c.CAREER_ID, CAREER_NAME: c.CAREER_NAME }));
-
-      return {
-        ...inst,
-        careers
-      } as DBInstitution;
+      return inst as DBInstitution;
     }, 'toggleInstitutionStatus');
 
     cacheManager.deleteByPrefix(CACHE_PREFIX);

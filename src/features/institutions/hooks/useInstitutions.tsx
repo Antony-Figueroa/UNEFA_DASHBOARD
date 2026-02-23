@@ -45,8 +45,9 @@ export const useInstitutions = () => {
 
   /**
    * Adds a new institution with enriched notifications.
+   * @returns The newly created institution, or undefined on error.
    */
-  const addInstitution = async (instData: CreateInstitutionPayload) => {
+  const addInstitution = async (instData: CreateInstitutionPayload): Promise<Institution | undefined> => {
     try {
       const newInst = await institutionService.create(instData);
       await refreshInstitutions();
@@ -65,6 +66,8 @@ export const useInstitutions = () => {
           </>
         ),
       });
+      
+      return newInst;
     } catch (e) {
       console.error("Error adding institution:", e);
       addToast({
@@ -72,6 +75,7 @@ export const useInstitutions = () => {
         title: "Error de Registro",
         message: "No se pudo registrar la institución. Intente de nuevo.",
       });
+      return undefined;
     }
   };
 

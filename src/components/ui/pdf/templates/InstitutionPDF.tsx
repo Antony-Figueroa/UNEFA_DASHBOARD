@@ -20,7 +20,7 @@ export const InstitutionPDF: React.FC<InstitutionPDFProps> = ({ data }) => {
           <Text style={[pdfStyles.tableCell, { flex: 1 }]}>RIF</Text>
           <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Institución</Text>
           <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Ubicación</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>Carrera / Tipo</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>Tipos de Práctica</Text>
         </View>
 
         {data.map((institution, index) => (
@@ -42,9 +42,8 @@ export const InstitutionPDF: React.FC<InstitutionPDFProps> = ({ data }) => {
               </Text>
             </View>
             <View style={[pdfStyles.tableCell, { flex: 1.2 }]}>
-              <Text>{institution.careerName || "N/A"}</Text>
-              <Text style={{ fontSize: 8, color: "#64748B", marginTop: 2 }}>
-                {institution.practiceType}
+              <Text style={{ fontSize: 8, color: "#64748B" }}>
+                {institution.practiceTypes?.join(", ") || "N/A"}
               </Text>
             </View>
           </View>

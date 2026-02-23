@@ -17,8 +17,6 @@ export interface Institution {
   fiscalAddress: string;
   /** Contact phone number */
   phone: string;
-  /** Type of professional practice allowed */
-  practiceType: string;
   /** Geographic region */
   region: string;
   /** University nucleus */
@@ -35,6 +33,8 @@ export interface Institution {
   responsibleCount?: number;
   /** Flag indicating if the institution is currently being used in practices (optional) */
   isInUse?: boolean;
+  /** Types of practice this institution has based on enrolled students (computed, optional) */
+  practiceTypes?: string[];
 }
 
 /**

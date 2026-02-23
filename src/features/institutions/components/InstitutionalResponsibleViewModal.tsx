@@ -4,10 +4,13 @@
  * con diseño consistente al de la vista de institución.
  */
 
+import { useState } from "react";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { InstitutionalResponsible } from "../types";
+import { SingleReportModal } from "../../../components/ui/pdf/SingleReportModal";
+import { InstitutionalResponsiblePDF } from "../../../components/ui/pdf/templates/individual";
 
 /**
  * Props for the InstitutionalResponsibleViewModal component.
@@ -42,6 +45,8 @@ export default function InstitutionalResponsibleViewModal({
   onEdit,
   responsible,
 }: InstitutionalResponsibleViewModalProps) {
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+
   if (!responsible) return null;
 
   const formattedDate = new Date(responsible.registrationDate).toLocaleDateString('es-VE', {
@@ -130,12 +135,34 @@ export default function InstitutionalResponsibleViewModal({
         <Button variant="outline" onClick={onClose} className="flex-1 sm:flex-none">
           Cerrar
         </Button>
+        <Button
+          variant="outline"
+          onClick={() => setReportModalOpen(true)}
+          className="flex-1 sm:flex-none"
+          startIcon={
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          }
+        >
+          Generar Reporte
+        </Button>
         {onEdit && (
           <AsyncButton onClick={async () => { onEdit(responsible); onClose(); }} className="flex-1 sm:flex-none">
             Editar Información
           </AsyncButton>
         )}
       </ModalFooter>
+
+      <SingleReportModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        title="Ficha de Responsable Institucional"
+        subtitle={`${responsible.firstName} ${responsible.lastName} - ${responsible.identificationPrefix}-${responsible.identificationNumber}`}
+        data={responsible}
+        template={(data) => <InstitutionalResponsiblePDF data={data} />}
+        fileName={`responsable_${responsible.identificationNumber}`}
+      />
     </Modal>
   );
 }

@@ -12,6 +12,8 @@ import Badge from "../../../components/ui/badge/Badge";
 import { TutorRowData } from "../types";
 import { getCareers } from "../../careers/services/careersService";
 import { Career } from "../../careers/types";
+import { SingleReportModal } from "../../../components/ui/pdf/SingleReportModal";
+import { TutorIndividualPDF } from "../../../components/ui/pdf/templates/individual";
 
 /**
  * Props for the TutorViewModal component.
@@ -49,6 +51,7 @@ export default function TutorViewModal({
     tutor,
 }: TutorViewModalProps) {
     const [careers, setCareers] = useState<Career[]>([]);
+    const [reportModalOpen, setReportModalOpen] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -187,12 +190,34 @@ export default function TutorViewModal({
                 <Button variant="outline" onClick={onClose} className="flex-1 sm:flex-none">
                     Cerrar
                 </Button>
+                <Button
+                    variant="outline"
+                    onClick={() => setReportModalOpen(true)}
+                    className="flex-1 sm:flex-none"
+                    startIcon={
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    }
+                >
+                    Generar Reporte
+                </Button>
                 {onEdit && (
                     <AsyncButton onClick={async () => { onEdit(tutor); onClose(); }} className="flex-1 sm:flex-none">
                         Editar Información
                     </AsyncButton>
                 )}
             </ModalFooter>
+
+            <SingleReportModal
+                isOpen={reportModalOpen}
+                onClose={() => setReportModalOpen(false)}
+                title="Ficha de Tutor Académico"
+                subtitle={`${tutor.firstName} ${tutor.lastName} - ${tutor.identificationPrefix}-${tutor.identificationNumber}`}
+                data={tutor}
+                template={(data) => <TutorIndividualPDF data={data} />}
+                fileName={`tutor_${tutor.identificationNumber}`}
+            />
         </Modal>
     );
 }

@@ -4,10 +4,13 @@
  * Mantiene la consistencia visual con el estándar del sistema.
  */
 
+import { useState } from "react";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { Institution } from "../types";
+import { SingleReportModal } from "../../../components/ui/pdf/SingleReportModal";
+import { InstitutionIndividualPDF } from "../../../components/ui/pdf/templates/individual";
 
 /**
  * Props for the InstitutionViewModal component.
@@ -42,6 +45,8 @@ export default function InstitutionViewModal({
     onEdit,
     institution,
 }: InstitutionViewModalProps) {
+    const [reportModalOpen, setReportModalOpen] = useState(false);
+
     if (!institution) return null;
 
     const formattedDate = new Date(institution.registrationDate).toLocaleDateString('es-VE', {
@@ -91,16 +96,12 @@ export default function InstitutionViewModal({
                                 <p className="text-sm font-bold text-text-primary dark:text-white/90">{institution.phone}</p>
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Carrera</label>
-                                <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">{institution.careerName}</p>
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipo de Práctica</label>
-                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{institution.practiceType}</p>
-                            </div>
-                            <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipo de Institución</label>
                                 <p className="text-sm font-bold text-text-primary dark:text-white/90">{institution.institutionType}</p>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipos de Práctica</label>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{institution.practiceTypes?.join(", ") || "Sin asignar"}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Región</label>
@@ -136,12 +137,34 @@ export default function InstitutionViewModal({
                 <Button variant="outline" onClick={onClose} className="flex-1 sm:flex-none">
                     Cerrar
                 </Button>
+                <Button
+                    variant="outline"
+                    onClick={() => setReportModalOpen(true)}
+                    className="flex-1 sm:flex-none"
+                    startIcon={
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    }
+                >
+                    Generar Reporte
+                </Button>
                 {onEdit && (
                     <AsyncButton onClick={async () => { onEdit(institution); onClose(); }} className="flex-1 sm:flex-none">
                         Editar Información
                     </AsyncButton>
                 )}
             </ModalFooter>
+
+            <SingleReportModal
+                isOpen={reportModalOpen}
+                onClose={() => setReportModalOpen(false)}
+                title="Ficha de Institución"
+                subtitle={`${institution.name} - ${institution.rif}`}
+                data={institution}
+                template={(data) => <InstitutionIndividualPDF data={data} />}
+                fileName={`institucion_${institution.rif?.replace(/-/g, '') || institution.institutionId}`}
+            />
         </Modal>
     );
 }

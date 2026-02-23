@@ -13,6 +13,7 @@ import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
+import { useToast } from "../../context/toast";
 import { Tabs } from "../../components/ui/tabs/Tabs";
 import { PlusCircleIcon } from "../../icons/actions";
 import { DownloadIcon } from "../../icons";
@@ -38,7 +39,7 @@ import {
   UpdateInstitutionalResponsiblePayload
 } from "../../features/institutions/types";
 import { formatDateTime } from "../../utils/date";
-import { useInternshipTypes } from "../../features/internship-types/hooks/useInternshipTypes";
+
 import { useLists } from "../../features/lists/hooks/useLists";
 
 const formatInstToRow = (i: Institution): InstitutionRowData => ({
@@ -53,13 +54,11 @@ const formatRespToRow = (r: InstitutionalResponsible): InstitutionalResponsibleR
 
 export default function InstitutionsPage() {
   const [pageLoading, setPageLoading] = useState(true);
-  const { internshipTypes, fetchAll: fetchInternshipTypes } = useInternshipTypes();
   const { fetchMultipleLists } = useLists();
+  const { addToast } = useToast();
   const [listOptions, setListOptions] = useState<Record<string, { value: string; label: string }[]>>({});
 
   useEffect(() => {
-    fetchInternshipTypes();
-    
     const loadDynamicOptions = async () => {
       try {
         const listNames = [
@@ -85,7 +84,7 @@ export default function InstitutionsPage() {
     };
 
     loadDynamicOptions();
-  }, [fetchInternshipTypes, fetchMultipleLists]);
+  }, [fetchMultipleLists]);
 
   const institutionTypeOptions = useMemo(() => (listOptions["Tipo de empresa"] || []).sort((a, b) => a.label.localeCompare(b.label)), [listOptions]);
 
@@ -125,6 +124,10 @@ export default function InstitutionsPage() {
   const [viewResp, setViewResp] = useState<InstitutionalResponsibleRowData | null>(null);
   const [isInstPDFModalOpen, setIsInstPDFModalOpen] = useState(false);
   const [isRespPDFModalOpen, setIsRespPDFModalOpen] = useState(false);
+  
+  // Estados para flujo post-creación de institución
+  const [newlyCreatedInstitution, setNewlyCreatedInstitution] = useState<{ id: string; name: string } | null>(null);
+  const [isAddingMultipleResponsibles, setIsAddingMultipleResponsibles] = useState(false);
   
   // Estados para búsqueda en los PDF
   const [instPdfSearchTerm, setInstPdfSearchTerm] = useState("");
@@ -405,7 +408,6 @@ export default function InstitutionsPage() {
                   data={instTableData}
                   status={instStatus === "idle" ? "success" : instStatus}
                   activeTab={activeTab}
-                  internshipTypes={internshipTypes}
                   onEdit={handleOpenEditModal}
                   onView={setViewInst}
                   onToggleStatus={handleToggleInstStatus}
@@ -432,17 +434,33 @@ export default function InstitutionsPage() {
 
       <InstitutionModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setIsAddingMultipleResponsibles(false);
+          setNewlyCreatedInstitution(null);
+        }}
         onSave={async (data) => {
           try {
             if (editingInst) {
               await editInstitution({ ...editingInst, ...data } as UpdateInstitutionPayload);
+              setIsModalOpen(false);
             } else {
-              await addInstitution(data as CreateInstitutionPayload);
+              const newInst = await addInstitution(data as CreateInstitutionPayload);
+              setIsModalOpen(false);
+              
+              if (newInst && !isAddingMultipleResponsibles) {
+                setNewlyCreatedInstitution({ id: newInst.institutionId, name: newInst.name });
+              }
             }
-            setIsModalOpen(false);
           } catch (error) {
             console.error("Error saving institution:", error);
+            addToast({
+              variant: "error",
+              title: "Error al Guardar",
+              message: editingInst 
+                ? "No se pudieron actualizar los datos de la institución. Intente de nuevo."
+                : "No se pudo registrar la institución. Intente de nuevo.",
+            });
           }
         }}
         editingInst={editingInst}
@@ -452,23 +470,57 @@ export default function InstitutionsPage() {
 
       <InstitutionalResponsibleModal
         isOpen={isRespModalOpen}
-        onClose={() => setIsRespModalOpen(false)}
+        onClose={() => {
+          setIsRespModalOpen(false);
+          if (isAddingMultipleResponsibles) {
+            setIsAddingMultipleResponsibles(false);
+            setNewlyCreatedInstitution(null);
+          }
+        }}
         onSave={async (data) => {
           try {
             if (editingResp) {
               await editResponsible({ ...editingResp, ...data } as UpdateInstitutionalResponsiblePayload);
+              setIsRespModalOpen(false);
             } else {
               await addResponsible(data as CreateInstitutionalResponsiblePayload);
+              
+              if (isAddingMultipleResponsibles && newlyCreatedInstitution) {
+                setConfirmation({
+                  isOpen: true,
+                  title: "Responsable Registrado",
+                  message: "¿Desea agregar otro responsable para la misma institución?",
+                  onConfirm: () => {
+                    setIsRespModalOpen(false);
+                    setTimeout(() => {
+                      setIsRespModalOpen(true);
+                    }, 100);
+                  },
+                  confirmText: "Agregar otro",
+                  variant: "info",
+                });
+              } else {
+                setIsRespModalOpen(false);
+                setIsAddingMultipleResponsibles(false);
+                setNewlyCreatedInstitution(null);
+              }
             }
-            setIsRespModalOpen(false);
           } catch (error) {
             console.error("Error saving responsible:", error);
-            // El error ya debería ser manejado por el hook useInstitutionalResponsibles (mostrando un toast, etc.)
+            addToast({
+              variant: "error",
+              title: "Error al Guardar",
+              message: editingResp
+                ? "No se pudieron actualizar los datos del responsable. Intente de nuevo."
+                : "No se pudo registrar el responsable. Intente de nuevo.",
+            });
           }
         }}
         editingResp={editingResp}
         institutionOptions={institutionOptions}
         isLoading={loadingAction}
+        preselectedInstitutionId={isAddingMultipleResponsibles ? newlyCreatedInstitution?.id : undefined}
+        preselectedInstitutionName={isAddingMultipleResponsibles ? newlyCreatedInstitution?.name : undefined}
       />
 
       <InstitutionViewModal
@@ -530,9 +582,9 @@ export default function InstitutionsPage() {
          title={confirmation.title}
          message={confirmation.message}
          confirmLabel={confirmation.confirmText}
-         variant={confirmation.variant}
-         isLoading={loadingAction}
-       />
-    </>
-  );
+          variant={confirmation.variant}
+          isLoading={loadingAction}
+        />
+      </>
+    );
 }

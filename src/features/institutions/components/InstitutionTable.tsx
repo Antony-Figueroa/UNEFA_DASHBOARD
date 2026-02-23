@@ -25,12 +25,11 @@ interface InstitutionTableProps {
   onBulkDelete?: (ids: string[]) => void;
   onBulkRestore?: (ids: string[]) => void;
   activeTab?: "Activas" | "Inactivas";
-  careerOptions?: { value: string | number; label: string }[];
   internshipTypes?: InternshipType[];
   institutionTypeOptions?: { value: string; label: string }[];
 }
 
-type SortKey = "rif" | "name" | "practiceType" | "careerNames";
+type SortKey = "rif" | "name" | "practiceType";
 type SortOrder = "asc" | "desc";
 
 interface ActionButtonsProps {
@@ -103,13 +102,11 @@ export default function InstitutionTable({
   onBulkDelete,
   onBulkRestore,
   activeTab = "Activas",
-  careerOptions = [],
   internshipTypes = [],
   institutionTypeOptions = [],
 }: InstitutionTableProps) {
   const [rifFilter, setRifFilter] = useState("");
   const [nameFilter, setNameFilter] = useState("");
-  const [careerFilter, setCareerFilter] = useState("");
   const [institutionTypeFilter, setInstitutionTypeFilter] = useState("");
 
   const getPracticeName = (id: string | number) => {
@@ -136,19 +133,16 @@ export default function InstitutionTable({
   const filteredData = useMemo(() => {
     const rifSearch = debouncedRifFilter.trim().toLowerCase();
     const nameSearch = debouncedNameFilter.trim().toLowerCase();
-    const careerSearch = careerFilter;
     const institutionTypeSearch = institutionTypeFilter;
 
     const filtered = data.filter((i) => {
       const matchesRif = !rifSearch || i.rif.toLowerCase().includes(rifSearch);
       const matchesName = !nameSearch || i.name.toLowerCase().includes(nameSearch);
-      const matchesCareer = !careerSearch || i.careerIds?.includes(careerSearch);
       const matchesInstitutionType = !institutionTypeSearch || i.institutionType === institutionTypeSearch;
       
       const matchesTab = activeTab === "Activas" ? i.status === true : i.status === false;
       
-      return matchesRif && matchesName && matchesCareer && 
-             matchesInstitutionType && matchesTab;
+      return matchesRif && matchesName && matchesInstitutionType && matchesTab;
     });
 
     filtered.sort((a, b) => {
@@ -165,19 +159,16 @@ export default function InstitutionTable({
     data, 
     debouncedRifFilter, 
     debouncedNameFilter, 
-    careerFilter, 
     institutionTypeFilter,
     activeTab, 
     sortConfig
   ]);
 
-  // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [
     debouncedRifFilter, 
     debouncedNameFilter, 
-    careerFilter, 
     institutionTypeFilter,
     activeTab
   ]);
@@ -301,26 +292,6 @@ export default function InstitutionTable({
             </div>
 
             {/* Filtro por Carrera */}
-            <div className="relative">
-                <select
-                    value={careerFilter}
-                    onChange={(e) => setCareerFilter(e.target.value)}
-                    className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 appearance-none"
-                >
-                    <option value="" className="dark:bg-bg-dark">Todas las Carreras</option>
-                    {careerOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
-                            {opt.label}
-                        </option>
-                    ))}
-                </select>
-                <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                </div>
-            </div>
-
             {/* Filtro por Tipo de Institución */}
             <div className="relative">
                 <select
@@ -425,9 +396,6 @@ export default function InstitutionTable({
               <TableCell isHeader className="cursor-pointer group" onClick={async () => handleSort("practiceType")}>
                   <div className="flex items-center">Tipo Práctica <SortIndicator column="practiceType" /></div>
               </TableCell>
-              <TableCell isHeader className="cursor-pointer group" onClick={async () => handleSort("careerNames")}>
-                  <div className="flex items-center">Carreras <SortIndicator column="careerNames" /></div>
-              </TableCell>
               <TableCell isHeader className="text-right">&nbsp;</TableCell>
             </TableRow>
           </TableHeader>
@@ -471,11 +439,6 @@ export default function InstitutionTable({
                         {getPracticeName(i.practiceType)}
                     </Badge>
                 </TableCell>
-                        <TableCell className="text-text-secondary dark:text-text-tertiary">
-                          <Tooltip content={i.careerNames || "Sin carreras"} className="max-w-xs">
-                            <span className="truncate block max-w-48">{i.careerNames || "-"}</span>
-                          </Tooltip>
-                        </TableCell>
                         <TableCell className="table-cell text-right">
                             <ActionButtons
                                 onView={onView ? () => onView(i) : undefined}
@@ -489,10 +452,10 @@ export default function InstitutionTable({
                 ))
             ) : (
                 <TableRow>
-                    <TableCell colSpan={7} className="p-0">
+                    <TableCell colSpan={6} className="p-0">
                         <EmptyState
                             title="No se encontraron instituciones"
-                            description={rifFilter || nameFilter || careerFilter
+                            description={rifFilter || nameFilter
                                 ? "Intenta ajustar los filtros para encontrar lo que buscas."
                                 : "Aún no hay instituciones registradas en esta categoría."}
                         />
@@ -552,10 +515,6 @@ export default function InstitutionTable({
                                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Teléfono</p>
                                         <p className="text-sm text-text-primary dark:text-text-tertiary font-medium">{i.phone}</p>
                                     </div>
-                                    <div className="col-span-2 flex flex-col items-center">
-                                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Carreras</p>
-                                        <p className="text-sm text-text-primary dark:text-text-tertiary font-medium truncate w-full max-w-62.5">{i.careerNames || "-"}</p>
-                                    </div>
                                 </div>
 
                                 <ActionButtons
@@ -574,7 +533,7 @@ export default function InstitutionTable({
         ) : (
             <EmptyState
                 title="No se encontraron instituciones"
-                description={rifFilter || nameFilter || careerFilter
+                description={rifFilter || nameFilter
                     ? "Intenta ajustar los filtros para encontrar lo que buscas."
                     : "Aún no hay instituciones registradas en esta categoría."}
             />

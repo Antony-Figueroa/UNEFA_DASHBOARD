@@ -37,7 +37,6 @@ import {
   CreateInstitutionalResponsiblePayload,
   UpdateInstitutionalResponsiblePayload
 } from "../../features/institutions/types";
-import { useCareers } from "../../features/careers/hooks/useCareers";
 import { formatDateTime } from "../../utils/date";
 import { useInternshipTypes } from "../../features/internship-types/hooks/useInternshipTypes";
 import { useLists } from "../../features/lists/hooks/useLists";
@@ -54,8 +53,6 @@ const formatRespToRow = (r: InstitutionalResponsible): InstitutionalResponsibleR
 
 export default function InstitutionsPage() {
   const [pageLoading, setPageLoading] = useState(true);
-  const { careers } = useCareers();
-  const careerOptions = useMemo(() => careers.map(c => ({ value: c.careerId, label: c.careerName })), [careers]);
   const { internshipTypes, fetchAll: fetchInternshipTypes } = useInternshipTypes();
   const { fetchMultipleLists } = useLists();
   const [listOptions, setListOptions] = useState<Record<string, { value: string; label: string }[]>>({});
@@ -408,7 +405,6 @@ export default function InstitutionsPage() {
                   data={instTableData}
                   status={instStatus === "idle" ? "success" : instStatus}
                   activeTab={activeTab}
-                  careerOptions={careerOptions}
                   internshipTypes={internshipTypes}
                   onEdit={handleOpenEditModal}
                   onView={setViewInst}
@@ -447,11 +443,9 @@ export default function InstitutionsPage() {
             setIsModalOpen(false);
           } catch (error) {
             console.error("Error saving institution:", error);
-            // El error ya debería ser manejado por el hook useInstitutions (mostrando un toast, etc.)
           }
         }}
         editingInst={editingInst}
-        careerOptions={careerOptions}
         isLoading={loadingAction}
         existingInstitutions={institutions}
       />

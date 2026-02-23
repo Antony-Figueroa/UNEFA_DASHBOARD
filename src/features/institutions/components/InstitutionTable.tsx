@@ -10,10 +10,7 @@ import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { Institution } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
-import Badge from "../../../components/ui/badge/Badge";
 import { useDebounce } from "../../../hooks/useDebounce";
-import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
-import { InternshipType } from "../../internship-types/types";
 import { maskRIF, maskPhone } from "../../../utils/maskData";
 
 interface InstitutionTableProps {
@@ -25,11 +22,10 @@ interface InstitutionTableProps {
   onBulkDelete?: (ids: string[]) => void;
   onBulkRestore?: (ids: string[]) => void;
   activeTab?: "Activas" | "Inactivas";
-  internshipTypes?: InternshipType[];
   institutionTypeOptions?: { value: string; label: string }[];
 }
 
-type SortKey = "rif" | "name" | "practiceType";
+type SortKey = "rif" | "name";
 type SortOrder = "asc" | "desc";
 
 interface ActionButtonsProps {
@@ -102,17 +98,11 @@ export default function InstitutionTable({
   onBulkDelete,
   onBulkRestore,
   activeTab = "Activas",
-  internshipTypes = [],
   institutionTypeOptions = [],
 }: InstitutionTableProps) {
   const [rifFilter, setRifFilter] = useState("");
   const [nameFilter, setNameFilter] = useState("");
   const [institutionTypeFilter, setInstitutionTypeFilter] = useState("");
-
-  const getPracticeName = (id: string | number) => {
-    const type = internshipTypes.find(t => String(t.id) === String(id));
-    return type ? type.name : String(id);
-  };
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -393,9 +383,6 @@ export default function InstitutionTable({
                   <div className="flex items-center">Nombre <SortIndicator column="name" /></div>
               </TableCell>
               <TableCell isHeader>Teléfono</TableCell>
-              <TableCell isHeader className="cursor-pointer group" onClick={async () => handleSort("practiceType")}>
-                  <div className="flex items-center">Tipo Práctica <SortIndicator column="practiceType" /></div>
-              </TableCell>
               <TableCell isHeader className="text-right">&nbsp;</TableCell>
             </TableRow>
           </TableHeader>
@@ -407,38 +394,17 @@ export default function InstitutionTable({
                         className={`${index % 2 === 0 ? "bg-white dark:bg-transparent" : "bg-bg-secondary/50 dark:bg-white/2"} ${selectedIds.includes(i.institutionId) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
                     >
                         <TableCell>
-                            <Tooltip 
-                                content={i.isInUse ? "Esta institución tiene registros relacionados y no puede ser seleccionada para eliminar" : ""}
-                                isDisabled={!i.isInUse}
-                            >
-                                <div>
-                                    <Checkbox
-                                        checked={selectedIds.includes(i.institutionId)}
-                                        onChange={(checked) => handleSelectRow(i.institutionId, checked)}
-                                        disabled={i.isInUse}
-                                    />
-                                </div>
-                            </Tooltip>
+                            <Checkbox
+                                checked={selectedIds.includes(i.institutionId)}
+                                onChange={(checked) => handleSelectRow(i.institutionId, checked)}
+                                disabled={i.isInUse}
+                            />
                         </TableCell>
                         <TableCell className="font-medium text-text-primary dark:text-white/90">
                             {maskRIF(i.rif)}
                         </TableCell>
                         <TableCell className="text-text-secondary dark:text-text-tertiary font-semibold">{i.name}</TableCell>
                         <TableCell className="text-text-secondary dark:text-text-tertiary whitespace-nowrap">{maskPhone(i.phone)}</TableCell>
-                        <TableCell>
-                    <Badge 
-                        color={
-                            getPracticeName(i.practiceType) === "HOSPITALARIA" ? "error" : 
-                            getPracticeName(i.practiceType) === "COMUNITARIA" ? "warning" : 
-                            "success"
-                        } 
-                        variant="light" 
-                        size="sm" 
-                        shape="rounded"
-                    >
-                        {getPracticeName(i.practiceType)}
-                    </Badge>
-                </TableCell>
                         <TableCell className="table-cell text-right">
                             <ActionButtons
                                 onView={onView ? () => onView(i) : undefined}
@@ -496,24 +462,12 @@ export default function InstitutionTable({
                             <div className="mt-4 space-y-6 animate-fadeIn border-t border-border-light dark:border-white/5 pt-6">
                                 <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
                                     <div className="flex flex-col items-center">
-                                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Tipo Práctica</p>
-                                        <div className="flex justify-center w-full">
-                                            <Badge 
-                                                color={
-                                                    getPracticeName(i.practiceType) === "HOSPITALARIA" ? "error" : 
-                                                    getPracticeName(i.practiceType) === "COMUNITARIA" ? "warning" : 
-                                                    "success"
-                                                } 
-                                                variant="light" 
-                                                size="sm"
-                                            >
-                                                {getPracticeName(i.practiceType)}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col items-center">
                                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Teléfono</p>
                                         <p className="text-sm text-text-primary dark:text-text-tertiary font-medium">{i.phone}</p>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Tipo</p>
+                                        <p className="text-sm text-text-primary dark:text-text-tertiary font-medium">{i.institutionType || "-"}</p>
                                     </div>
                                 </div>
 

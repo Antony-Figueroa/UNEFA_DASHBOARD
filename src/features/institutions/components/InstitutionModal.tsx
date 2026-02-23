@@ -8,17 +8,14 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
-import TextArea from "../../../components/form/input/TextArea";
 import CustomSelect from "../../../components/form/CustomSelect";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Institution, CreateInstitutionPayload, UpdateInstitutionPayload } from "../types";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
-import { useInternshipTypes } from "../../internship-types/hooks/useInternshipTypes";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { useLists } from "../../lists/hooks/useLists";
-import * as enrollmentService from "../../enrollment/services/enrollmentService";
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 
@@ -48,18 +45,22 @@ const baseInstSchema = z.object({
   rifNumber: z.string()
     .min(1, "El número de RIF es obligatorio")
     .regex(/^\d{9}$/, "El RIF debe tener exactamente 9 números"),
-  name: z.string().min(1, "El nombre es obligatorio"),
-  fiscalAddress: z.string().min(1, "La dirección fiscal es obligatoria"),
+  name: z.string().min(1, "El nombre es obligatorio").max(200, "El nombre no puede exceder 200 caracteres"),
   phonePrefix: z.string().min(1, "Seleccione un prefijo"),
   phoneNumber: z.string()
     .min(1, "El número de teléfono es obligatorio")
     .regex(/^\d+$/, "Solo se admiten números")
     .length(7, "El número debe tener exactamente 7 dígitos"),
-  practiceType: z.string().min(1, "Seleccione un tipo de práctica"),
-  region: z.string().min(1, "Seleccione un región"),
+  region: z.string().min(1, "Seleccione una región"),
   nucleus: z.string().min(1, "Seleccione un núcleo"),
   extension: z.string().min(1, "Seleccione una extensión"),
   institutionType: z.string().min(1, "Seleccione un tipo de institución"),
+  estado: z.string().min(1, "El estado es obligatorio").max(100, "El estado no puede exceder 100 caracteres"),
+  municipio: z.string().min(1, "El municipio es obligatorio").max(100, "El municipio no puede exceder 100 caracteres"),
+  parroquia: z.string().min(1, "La parroquia es obligatoria").max(100, "La parroquia no puede exceder 100 caracteres"),
+  calle: z.string().min(1, "La calle es obligatoria").max(150, "La calle no puede exceder 150 caracteres"),
+  avenida: z.string().min(1, "La avenida es obligatoria").max(150, "La avenida no puede exceder 150 caracteres"),
+  referencia: z.string().max(200, "La referencia no puede exceder 200 caracteres").optional(),
 });
 
 /**
@@ -112,14 +113,13 @@ export default function InstitutionModal({
   existingInstitutions = [],
 }: InstitutionModalProps) {
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
-  const [hasProfessionalPractices, setHasProfessionalPractices] = useState(false);
   const { fetchMultipleLists } = useLists();
 
   // Estado para agregar nuevos valores a las listas
   const [isValueModalOpen, setIsValueModalOpen] = useState(false);
   const [valueModalTitle, setValueModalTitle] = useState<string>("");
   const [targetListName, setTargetListName] = useState<string>("");
-  const [targetField, setTargetField] = useState<keyof InstFormData | "">("");
+  const [targetField, setTargetField] = useState<string>("");
   const [newValueInput, setNewValueInput] = useState<string>("");
   const [savingNewValue, setSavingNewValue] = useState(false);
 
@@ -139,17 +139,21 @@ export default function InstitutionModal({
       rifPrefix: "",
       rifNumber: "",
       name: "",
-      fiscalAddress: "",
       phonePrefix: "",
       phoneNumber: "",
-      practiceType: "",
       region: "",
       nucleus: "",
       extension: "",
       institutionType: "",
+      estado: "",
+      municipio: "",
+      parroquia: "",
+      calle: "",
+      avenida: "",
+      referencia: "",
     },
   });
-  
+
   const {
     showConfirmation,
     handleCloseAttempt,
@@ -158,14 +162,6 @@ export default function InstitutionModal({
   } = useUnsavedChanges(isDirty, onClose);
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState<CreateInstitutionPayload | UpdateInstitutionPayload | null>(null);
-
-  const { options: practiceOptions } = useInternshipTypes();
-
-  useEffect(() => {
-    if (practiceOptions.length === 1 && !editingInst) {
-      setValue("practiceType", practiceOptions[0].value);
-    }
-  }, [practiceOptions, setValue, editingInst]);
 
   useEffect(() => {
     const loadOptions = async () => {
@@ -176,7 +172,8 @@ export default function InstitutionModal({
           "Region",
           "Nucleo",
           "Extensión",
-          "Tipo de empresa"
+          "Tipo de empresa",
+          "ESTADOS_VENEZUELA"
         ];
         const data = await fetchMultipleLists(listNames);
         const mappedOptions: Record<string, { value: string; label: string }[]> = {};
@@ -204,28 +201,6 @@ export default function InstitutionModal({
       loadOptions();
     }
   }, [isOpen, fetchMultipleLists]);
-
-  // Verificar si la institución tiene prácticas profesionales (inscripciones)
-  useEffect(() => {
-    const checkPractices = async () => {
-      if (editingInst?.institutionId) {
-        try {
-          const enrollments = await enrollmentService.getEnrollments();
-          const hasPractices = enrollments.some(e => e.institutionId === editingInst.institutionId);
-          setHasProfessionalPractices(hasPractices);
-        } catch (error) {
-          console.error("Error checking professional practices:", error);
-          setHasProfessionalPractices(false);
-        }
-      } else {
-        setHasProfessionalPractices(false);
-      }
-    };
-
-    if (isOpen) {
-      checkPractices();
-    }
-  }, [isOpen, editingInst]);
 
   const optionsRif = options.Rif;
   const optionsRegion = options.Region;
@@ -353,44 +328,66 @@ export default function InstitutionModal({
         const rifParts = editingInst.rif ? editingInst.rif.split("-") : ["", ""];
         const [phoneP, phoneN] = editingInst.phone ? editingInst.phone.split("-") : ["", ""];
 
+        // Parsear dirección fiscal
+        const addressParts = editingInst.fiscalAddress ? editingInst.fiscalAddress.split(", ") : [];
+        const getPart = (index: number) => addressParts[index] || "";
+
         reset({
           rifPrefix: rifParts[0] || "",
           rifNumber: rifParts[1] || "",
           name: editingInst.name,
-          fiscalAddress: editingInst.fiscalAddress,
           phonePrefix: phoneP || "",
           phoneNumber: phoneN || "",
-          practiceType: editingInst.practiceType,
           region: editingInst.region,
           nucleus: editingInst.nucleus,
           extension: editingInst.extension,
           institutionType: editingInst.institutionType,
+          estado: getPart(0),
+          municipio: getPart(1),
+          parroquia: getPart(2),
+          calle: getPart(3),
+          avenida: getPart(4),
+          referencia: getPart(5),
         });
       } else {
         reset({
           rifPrefix: "",
           rifNumber: "",
           name: "",
-          fiscalAddress: "",
           phonePrefix: "",
           phoneNumber: "",
-          practiceType: "",
           region: "",
           nucleus: "",
           extension: "",
           institutionType: "",
+          estado: "",
+          municipio: "",
+          parroquia: "",
+          calle: "",
+          avenida: "",
+          referencia: "",
         });
       }
     }
   }, [editingInst, isOpen, reset]);
 
   const onSubmit = (data: InstFormData) => {
+    // Construir dirección fiscal desde los campos
+    const addressParts = [
+      data.estado,
+      data.municipio,
+      data.parroquia,
+      data.calle,
+      data.avenida,
+      data.referencia,
+    ].filter(Boolean);
+    const fiscalAddress = addressParts.join(", ");
+
     const commonData = {
       rif: `${data.rifPrefix}-${data.rifNumber}`.toUpperCase(),
       name: data.name.toUpperCase(),
-      fiscalAddress: data.fiscalAddress.toUpperCase(),
+      fiscalAddress: fiscalAddress.toUpperCase(),
       phone: `${data.phonePrefix}-${data.phoneNumber}`,
-      practiceType: data.practiceType.toUpperCase(),
       region: data.region.toUpperCase(),
       nucleus: data.nucleus.toUpperCase(),
       extension: data.extension.toUpperCase(),
@@ -494,19 +491,86 @@ export default function InstitutionModal({
               hint={errors.name?.message} 
             />
           </div>
+          
+          {/* Sección de Dirección Fiscal */}
           <div className="md:col-span-2">
-            <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Dirección Fiscal *</label>
-            <TextArea 
-              placeholder="Dirección completa" 
-              className="uppercase"
-              {...register("fiscalAddress", {
-                onChange: handleUppercaseChange
-              })} 
-              error={!!errors.fiscalAddress} 
-              hint={errors.fiscalAddress?.message} 
-              rows={2}
-            />
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Dirección Fiscal
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Estado *</label>
+                  <Input
+                    placeholder="Ej: Portuguesa"
+                    className="uppercase"
+                    {...register("estado", { onChange: handleUppercaseChange })}
+                    error={!!errors.estado}
+                  />
+                  {errors.estado && <p className="mt-1 text-xs text-red-500">{errors.estado.message}</p>}
+                </div>
+                
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Municipio *</label>
+                  <Input
+                    placeholder="Ej: Guanare"
+                    className="uppercase"
+                    {...register("municipio", { onChange: handleUppercaseChange })}
+                    error={!!errors.municipio}
+                  />
+                  {errors.municipio && <p className="mt-1 text-xs text-red-500">{errors.municipio.message}</p>}
+                </div>
+                
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Parroquia *</label>
+                  <Input
+                    placeholder="Ej: San José de la Montaña"
+                    className="uppercase"
+                    {...register("parroquia", { onChange: handleUppercaseChange })}
+                    error={!!errors.parroquia}
+                  />
+                  {errors.parroquia && <p className="mt-1 text-xs text-red-500">{errors.parroquia.message}</p>}
+                </div>
+                
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Calle *</label>
+                  <Input
+                    placeholder="Ej: Calle 5"
+                    className="uppercase"
+                    {...register("calle", { onChange: handleUppercaseChange })}
+                    error={!!errors.calle}
+                  />
+                  {errors.calle && <p className="mt-1 text-xs text-red-500">{errors.calle.message}</p>}
+                </div>
+                
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Avenida *</label>
+                  <Input
+                    placeholder="Ej: Av. Libertador"
+                    className="uppercase"
+                    {...register("avenida", { onChange: handleUppercaseChange })}
+                    error={!!errors.avenida}
+                  />
+                  {errors.avenida && <p className="mt-1 text-xs text-red-500">{errors.avenida.message}</p>}
+                </div>
+                
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Referencia</label>
+                  <Input
+                    placeholder="Ej: Frente al banco"
+                    className="uppercase"
+                    {...register("referencia", { onChange: handleUppercaseChange })}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
+          
           <div>
             <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Teléfono *</label>
             <div className="flex gap-2">
@@ -542,32 +606,6 @@ export default function InstitutionModal({
             {(errors.phonePrefix || errors.phoneNumber) && (
               <p className="mt-1 text-xs text-red-500">
                 {errors.phonePrefix?.message || errors.phoneNumber?.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Tipo Práctica *</label>
-            <Controller
-              name="practiceType"
-              control={control}
-              render={({ field }) => (
-                <CustomSelect
-                  id="practiceType"
-                  options={practiceOptions.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                  onChange={field.onChange}
-                  value={String(field.value ?? "")}
-                  disabled={hasProfessionalPractices}
-                  placeholder="Seleccione tipo"
-                />
-              )}
-            />
-            {errors.practiceType && (
-              <p className="mt-1 text-xs text-red-500">{errors.practiceType.message}</p>
-            )}
-            {hasProfessionalPractices && (
-              <p className="mt-1 text-[10px] text-amber-600 dark:text-amber-400">
-                Campo bloqueado: La institución tiene prácticas registradas.
               </p>
             )}
           </div>

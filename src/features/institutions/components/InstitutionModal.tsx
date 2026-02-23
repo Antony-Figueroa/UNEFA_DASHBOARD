@@ -4,13 +4,12 @@
  */
 
 import { useEffect, useState, useMemo } from "react";
-import { useForm, Controller, useWatch } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
 import TextArea from "../../../components/form/input/TextArea";
 import CustomSelect from "../../../components/form/CustomSelect";
-import MultiSelect from "../../../components/form/MultiSelect";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Institution, CreateInstitutionPayload, UpdateInstitutionPayload } from "../types";
 import Button from "../../../components/ui/button/Button";
@@ -35,8 +34,6 @@ interface InstitutionModalProps {
   onSave: (inst: CreateInstitutionPayload | UpdateInstitutionPayload) => Promise<void> | void;
   /** The institution record being edited, or null if creating a new one */
   editingInst?: Institution | null;
-  /** Options for the career selection dropdown */
-  careerOptions: { value: string | number; label: string }[];
   /** Whether a background action is in progress */
   isLoading?: boolean;
   /** List of existing institutions for validation (e.g., duplicate RIF) */
@@ -59,7 +56,6 @@ const baseInstSchema = z.object({
     .regex(/^\d+$/, "Solo se admiten números")
     .length(7, "El número debe tener exactamente 7 dígitos"),
   practiceType: z.string().min(1, "Seleccione un tipo de práctica"),
-  careerIds: z.array(z.string()).min(1, "Seleccione al menos una carrera"),
   region: z.string().min(1, "Seleccione un región"),
   nucleus: z.string().min(1, "Seleccione un núcleo"),
   extension: z.string().min(1, "Seleccione una extensión"),
@@ -112,7 +108,6 @@ export default function InstitutionModal({
   onClose,
   onSave,
   editingInst,
-  careerOptions,
   isLoading = false,
   existingInstitutions = [],
 }: InstitutionModalProps) {
@@ -148,7 +143,6 @@ export default function InstitutionModal({
       phonePrefix: "",
       phoneNumber: "",
       practiceType: "",
-      careerIds: [],
       region: "",
       nucleus: "",
       extension: "",
@@ -165,19 +159,8 @@ export default function InstitutionModal({
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState<CreateInstitutionPayload | UpdateInstitutionPayload | null>(null);
 
-  const { options: practiceOptions, fetchByCareer } = useInternshipTypes();
-  const watchedCareerIds = useWatch({ control, name: "careerIds" });
+  const { options: practiceOptions } = useInternshipTypes();
 
-  useEffect(() => {
-    const loadPracticeTypes = async () => {
-      if (watchedCareerIds && watchedCareerIds.length > 0) {
-        await fetchByCareer(watchedCareerIds[0]);
-      }
-    };
-    loadPracticeTypes();
-  }, [watchedCareerIds, fetchByCareer]);
-
-  // Efecto para auto-seleccionar el tipo de práctica cuando las opciones cambian
   useEffect(() => {
     if (practiceOptions.length === 1 && !editingInst) {
       setValue("practiceType", practiceOptions[0].value);
@@ -378,7 +361,6 @@ export default function InstitutionModal({
           phonePrefix: phoneP || "",
           phoneNumber: phoneN || "",
           practiceType: editingInst.practiceType,
-          careerIds: editingInst.careerIds || [],
           region: editingInst.region,
           nucleus: editingInst.nucleus,
           extension: editingInst.extension,
@@ -393,7 +375,6 @@ export default function InstitutionModal({
           phonePrefix: "",
           phoneNumber: "",
           practiceType: "",
-          careerIds: [],
           region: "",
           nucleus: "",
           extension: "",
@@ -403,10 +384,6 @@ export default function InstitutionModal({
     }
   }, [editingInst, isOpen, reset]);
 
-  /**
-   * Handles form submission. Formats the data and calls the onSave callback.
-   * @param data - The validated form data.
-   */
   const onSubmit = (data: InstFormData) => {
     const commonData = {
       rif: `${data.rifPrefix}-${data.rifNumber}`.toUpperCase(),
@@ -414,7 +391,6 @@ export default function InstitutionModal({
       fiscalAddress: data.fiscalAddress.toUpperCase(),
       phone: `${data.phonePrefix}-${data.phoneNumber}`,
       practiceType: data.practiceType.toUpperCase(),
-      careerIds: data.careerIds,
       region: data.region.toUpperCase(),
       nucleus: data.nucleus.toUpperCase(),
       extension: data.extension.toUpperCase(),
@@ -566,35 +542,6 @@ export default function InstitutionModal({
             {(errors.phonePrefix || errors.phoneNumber) && (
               <p className="mt-1 text-xs text-red-500">
                 {errors.phonePrefix?.message || errors.phoneNumber?.message}
-              </p>
-            )}
-          </div>
-
-          <div className="md:col-span-2">
-            <Controller
-              name="careerIds"
-              control={control}
-              render={({ field }) => (
-                <MultiSelect
-                  label="Carreras Aceptadas *"
-                  options={careerOptions.map(opt => ({
-                    value: String(opt.value),
-                    text: opt.label
-                  }))}
-                  value={field.value || []}
-                  onChange={(selectedIds: string[]) => field.onChange(selectedIds)}
-                  placeholder="Seleccione las carreras que acepta esta institución"
-                  disabled={isLoading || hasProfessionalPractices}
-                  error={!!errors.careerIds}
-                />
-              )}
-            />
-            {errors.careerIds && (
-              <p className="mt-1 text-xs text-red-500">{errors.careerIds.message}</p>
-            )}
-            {hasProfessionalPractices && (
-              <p className="mt-1 text-[10px] text-amber-600 dark:text-amber-400">
-                Campo bloqueado: La institución tiene prácticas registradas.
               </p>
             )}
           </div>

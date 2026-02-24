@@ -12,6 +12,7 @@ import { User, CreateUserPayload, UpdateUserPayload } from "../types";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { AuthUser } from "../../../context/auth";
+import { useToast } from "../../../context/toast";
 
 /**
  * Propiedades para el componente UserModal.
@@ -49,6 +50,7 @@ const UserModal: React.FC<UserModalProps> = ({
   const isEditing = !!user;
   const isCurrentUser = currentUser?.id === user?.id;
   const isCurrentUserAdmin = currentUser?.role === 1;
+  const { addToast } = useToast();
 
   const {
     register,
@@ -122,19 +124,19 @@ const UserModal: React.FC<UserModalProps> = ({
     
     // Validación: No puede modificar su propio rol
     if (isCurrentUser && validatedData.role !== user?.role) {
-      alert("No puedes modificar tu propio rol.");
+      addToast({ variant: "error", title: "Error", message: "No puedes modificar tu propio rol." });
       return;
     }
 
     // Validación: No puede desactivarse a sí mismo
     if (isCurrentUser && validatedData.status !== user?.status && validatedData.status === 0) {
-      alert("No puedes desactivarte a ti mismo.");
+      addToast({ variant: "error", title: "Error", message: "No puedes desactivarte a ti mismo." });
       return;
     }
 
     // Validación: Admin no puede desactivarse
     if (isCurrentUserAdmin && validatedData.status === 0) {
-      alert("El administrador no puede desactivarse a sí mismo.");
+      addToast({ variant: "error", title: "Error", message: "El administrador no puede desactivarse a sí mismo." });
       return;
     }
 

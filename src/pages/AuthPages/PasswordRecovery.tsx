@@ -19,6 +19,7 @@ interface ApiError {
 interface SecurityQuestion {
   id: number;
   questionText: string;
+  isCustom?: boolean;
 }
 
 type RecoveryMethod = 'email' | 'questions';
@@ -98,7 +99,13 @@ export default function PasswordRecovery() {
     try {
       const result = await authService.getRecoveryQuestions(userCi);
       if (result.success && result.questions) {
-        setSecurityQuestions(result.questions);
+        // Mapear preguntas del backend al formato del frontend
+        const mappedQuestions: SecurityQuestion[] = result.questions.map((q: any) => ({
+          id: q.id,
+          questionText: q.description || q.questionText || "",
+          isCustom: q.isCustom || false
+        }));
+        setSecurityQuestions(mappedQuestions);
         setMaskedEmail(result.email || "");
         setStep(2);
       } else {
@@ -145,9 +152,11 @@ export default function PasswordRecovery() {
     
     setLoading(true);
     try {
-      const answers = Object.entries(securityAnswers).map(([questionId, answer]) => ({
-        questionId: Number(questionId),
-        answer
+      // Incluir isCustom en las respuestas
+      const answers = securityQuestions.map((q) => ({
+        questionId: q.id,
+        answer: securityAnswers[q.id] || "",
+        isCustom: q.isCustom || false
       }));
       
       const result = await authService.verifyAnswersAndReset(userCi, answers, newPassword);

@@ -19,6 +19,7 @@ import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { useLists } from "../../lists/hooks/useLists";
 import { List, ListValue } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
+import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { 
   studentSchema, 
   StudentFormInput,
@@ -262,6 +263,15 @@ export default function StudentModal({
   }, [setValue]);
 
   const openAddValueModal = (listName: string, field: "civilStatus" | "phonePrefix" | "regime" | "militaryRank", title: string, preset: string = "") => {
+    // Verificar si la lista está protegida
+    if (isProtectedList(listName)) {
+      addToast({
+        variant: "warning",
+        title: "Lista Protegida",
+        message: PROTECTED_LIST_MESSAGE,
+      });
+      return;
+    }
     setTargetListName(listName);
     setTargetField(field);
     setValueModalTitle(title);

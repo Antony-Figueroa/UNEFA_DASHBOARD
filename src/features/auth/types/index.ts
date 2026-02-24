@@ -65,6 +65,10 @@ export interface LoginResponse {
 export interface SecurityQuestion {
   /** Unique identifier for the question */
   id: number;
+  /** Whether this is a custom question created by the user */
+  isCustom?: boolean;
+  /** The custom question text (if isCustom is true) */
+  customQuestion?: string;
   /** The question text */
   description: string;
 }

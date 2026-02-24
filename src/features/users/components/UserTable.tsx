@@ -10,6 +10,7 @@ import { UserRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import Badge from "../../../components/ui/badge/Badge";
 import { maskEmail } from "../../../utils/maskData";
+import { AuthUser } from "../../../context/auth";
 
 /**
  * Propiedades para el componente UserTable.
@@ -58,6 +59,8 @@ interface UserTableProps {
     rolesOptions: { value: string; label: string }[];
     /** Función para limpiar filtros */
     onClearFilters: () => void;
+    /** Usuario actual logueado */
+    currentUser?: AuthUser | null;
 }
 
 /**
@@ -68,6 +71,8 @@ interface ActionButtonsProps {
     onToggleStatus?: () => void;
     status: number;
     isMobile?: boolean;
+    userId?: number;
+    currentUserId?: number;
 }
 
 /**
@@ -78,7 +83,10 @@ const ActionButtons = ({
     onToggleStatus,
     status,
     isMobile = false,
+    userId,
+    currentUserId,
 }: ActionButtonsProps) => {
+    const isCurrentUser = userId === currentUserId;
     const containerClasses = isMobile 
         ? "flex flex-col gap-3 pt-2" 
         : "flex justify-end gap-3";
@@ -97,9 +105,10 @@ const ActionButtons = ({
             )}
             {onToggleStatus && (
                 <AsyncActionButton
-                    onClick={async () => onToggleStatus()}
+                    onClick={async () => !isCurrentUser && onToggleStatus()}
+                    disabled={isCurrentUser}
                     icon={status === 1 ? <TrashIcon /> : <RefreshIcon />}
-                    tooltip={status === 1 ? "Desactivar usuario" : "Activar usuario"}
+                    tooltip={isCurrentUser ? "No puedes desactivarte a ti mismo" : (status === 1 ? "Desactivar usuario" : "Activar usuario")}
                     label={isMobile ? (status === 1 ? "Desactivar Usuario" : "Activar Usuario") : undefined}
                     variant={status === 1 ? "danger" : "success"}
                     fullWidth={isMobile}
@@ -131,8 +140,10 @@ export default function UserTable({
     filters,
     onFilterChange,
     rolesOptions,
-    onClearFilters
+    onClearFilters,
+    currentUser
 }: UserTableProps) {
+    const currentUserId = currentUser?.id;
     if (status === "error") {
         return (
             <div className="rounded-xl border border-alert-error-border bg-alert-error-bg p-8 text-center dark:border-error-800 dark:bg-error-950 animate-fadeIn">
@@ -266,6 +277,8 @@ export default function UserTable({
                                             status={user.status}
                                             onEdit={() => onEdit?.(user)}
                                             onToggleStatus={() => onToggleStatus?.(user)}
+                                            userId={user.id}
+                                            currentUserId={currentUserId}
                                         />
                                     </TableCell>
                                 </TableRow>

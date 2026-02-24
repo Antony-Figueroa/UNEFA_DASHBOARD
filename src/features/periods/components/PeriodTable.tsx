@@ -609,10 +609,10 @@ const PeriodTable = ({
                                             {periodo.description}
                                         </TableCell>
                                         <TableCell className="text-text-secondary dark:text-text-tertiary">
-                                            {new Date(periodo.startDate).toLocaleDateString()}
+                                            {periodo.startDate}
                                         </TableCell>
                                         <TableCell className="text-text-secondary dark:text-text-tertiary">
-                                            {new Date(periodo.endDate).toLocaleDateString()}
+                                            {periodo.endDate}
                                         </TableCell>
                                         <TableCell>
                                             {progress !== null ? (
@@ -694,7 +694,7 @@ const PeriodTable = ({
                                             {periodo.description}
                                         </h3>
                                         <p className="text-sm text-text-secondary dark:text-text-tertiary mt-1">
-                                            {new Date(periodo.startDate).toLocaleDateString()} - {new Date(periodo.endDate).toLocaleDateString()}
+                                            {periodo.startDate} - {periodo.endDate}
                                         </p>
                                     </div>
                                     <Badge

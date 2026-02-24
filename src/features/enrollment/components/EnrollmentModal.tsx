@@ -25,9 +25,11 @@ import { getInternshipTypes, mapToOptions } from "../../internship-types/service
 import { InternshipTypeOption } from "../../internship-types/types";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { useToast } from "../../../context/toast";
 import * as enrollmentService from "../services/enrollmentService";
 import { useLists } from "../../lists/hooks/useLists";
 import { generateMatricula } from "../../../utils/matricula";
+import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 
@@ -109,6 +111,7 @@ export default function EnrollmentModal({
 
   const { responsibles } = useInstitutionalResponsibles();
   const { fetchMultipleLists } = useLists();
+  const { addToast } = useToast();
 
   // Estado para agregar nuevos valores a las listas
   const [isValueModalOpen, setIsValueModalOpen] = useState(false);
@@ -191,6 +194,10 @@ export default function EnrollmentModal({
 
   // Funciones para agregar nuevos valores a las listas
   const openAddValueModal = (listName: string, field: keyof EnrollmentFormData, title: string) => {
+    if (isProtectedList(listName)) {
+      addToast({ variant: "warning", title: "Lista Protegida", message: PROTECTED_LIST_MESSAGE });
+      return;
+    }
     setTargetListName(listName);
     setTargetField(field);
     setValueModalTitle(title);

@@ -8,13 +8,23 @@ const passwordRegex = {
 };
 
 const securityQuestionSchema = z.object({
-  questionId: z.union([z.number(), z.string()]).refine((val) => {
-    const num = typeof val === 'string' ? parseInt(val) : val;
-    return !isNaN(num) && num > 0;
-  }, "Seleccione una pregunta"),
+  questionId: z.union([z.number(), z.string()]).optional(),
   customQuestion: z.string().optional(),
   answer: z.string().min(1, "La respuesta es obligatoria"),
   isCustom: z.boolean().optional()
+}).refine((data) => {
+  // Si es pregunta personalizada, customQuestion es requerida
+  if (data.isCustom) {
+    return data.customQuestion && data.customQuestion.trim().length > 0;
+  }
+  // Si no es personalizada, questionId es requerida
+  if (!data.isCustom) {
+    const qid = typeof data.questionId === 'string' ? parseInt(data.questionId) : data.questionId;
+    return !isNaN(qid as number) && (qid as number) > 0;
+  }
+  return false;
+}, {
+  message: "Seleccione una pregunta o cree una personalizada",
 });
 
 export const firstLoginSchema = z.object({

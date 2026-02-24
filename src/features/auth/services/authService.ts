@@ -59,17 +59,27 @@ export const logout = async (): Promise<void> => {
  * @param userId - ID of the user.
  * @param newPassword - The new password.
  * @param securityQuestions - Optional answers to security questions if required.
+ * @param profileData - Optional profile data for first login.
  * @returns A promise with the change response.
  */
 export const changePassword = async (
   userId: number,
   newPassword: string,
-  securityQuestions?: SecurityAnswer[]
+  securityQuestions?: SecurityAnswer[],
+  profileData?: {
+    name?: string;
+    secondName?: string;
+    surname?: string;
+    secondSurname?: string;
+    phoneNumber?: string;
+    email?: string;
+  }
 ): Promise<PasswordChangeResponse> => {
   const response = await apiClient.post<PasswordChangeResponse>("/auth/change-password", {
     userId,
     newPassword,
     securityQuestions,
+    profileData,
   });
   return response.data;
 };

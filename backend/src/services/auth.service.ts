@@ -297,7 +297,21 @@ export const verifyMaster = async (userId: number, password: string, ip: string,
   });
 };
 
-export const changePassword = async (userId: number, newPassword: string, securityQuestions?: { questionId: number, answer: string }[]) => {
+interface ProfileData {
+  name?: string;
+  secondName?: string;
+  surname?: string;
+  secondSurname?: string;
+  phoneNumber?: string;
+  email?: string;
+}
+
+export const changePassword = async (
+  userId: number, 
+  newPassword: string, 
+  securityQuestions?: { questionId: number, answer: string, customQuestion?: string, isCustom?: boolean }[],
+  profileData?: ProfileData
+) => {
   return await dbManager.withRetry(async (supabase) => {
     // 1. Obtener claves anteriores para evitar reutilización
     const { data: previousKeys } = await supabase
@@ -367,24 +381,41 @@ export const changePassword = async (userId: number, newPassword: string, securi
       REST_USER_DATE: '2025-01-01 00:00:00'
     });
 
-    // 5. Actualizar estado del usuario
-    await supabase.from('t_user').update({ 
+    // 5. Actualizar estado del usuario y perfil (si es primer ingreso)
+    const updateData: any = { 
       FORCE_PASSWORD_CHANGE: false,
-      LOGIN: 1 
-    }).eq('USER_ID', userId);
+      LOGIN: 1,
+      TERMS_CONDITIONS: 'ACEPTADO'
+    };
+    
+    if (profileData) {
+      if (profileData.name) updateData.NAME = profileData.name.toUpperCase();
+      if (profileData.secondName) updateData.SECOND_NAME = profileData.secondName.toUpperCase();
+      if (profileData.surname) updateData.SURNAME = profileData.surname.toUpperCase();
+      if (profileData.secondSurname) updateData.SECOND_SURNAME = profileData.secondSurname.toUpperCase();
+      if (profileData.phoneNumber) updateData.PHONE_NUMBER = profileData.phoneNumber;
+      if (profileData.email) updateData.EMAIL = profileData.email.toUpperCase();
+    }
+    
+    await supabase.from('t_user').update(updateData).eq('USER_ID', userId);
 
     // 6. Guardar preguntas de seguridad
     if (securityQuestions && Array.isArray(securityQuestions)) {
       // Primero eliminar anteriores si existen
       await supabase.from('t_security_questions').delete().eq('USER_ID', userId);
       
-      const questionsToInsert = securityQuestions.map(q => ({
+      // Filtrar solo preguntas preset (no custom para evitar complicar la estructura actual)
+      const presetQuestions = securityQuestions.filter(q => !q.isCustom && q.questionId > 0);
+      
+      const questionsToInsert = presetQuestions.map(q => ({
         USER_ID: userId,
         PRESET_QUESTION_ID: q.questionId,
-        ANSWER: q.answer
+        ANSWER: q.answer.toUpperCase()
       }));
       
-      await supabase.from('t_security_questions').insert(questionsToInsert);
+      if (questionsToInsert.length > 0) {
+        await supabase.from('t_security_questions').insert(questionsToInsert);
+      }
     }
 
     return { success: true, message: 'Contraseña actualizada correctamente' };

@@ -47,11 +47,14 @@ const InputField = forwardRef<HTMLInputElement, InputProps>(
       rightIcon,
       isPassword = false,
       onChange,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      isPassword: _isPassword,
       ...props
     },
     ref
   ) => {
-    const shouldUppercase = type !== "password" && !isPassword;
+    // No aplicar mayúsculas si es un campo de contraseña (isPassword=true) o si el tipo es password
+    const shouldUppercase = !isPassword && type !== "password";
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const input = e.currentTarget;
       if (shouldUppercase) {

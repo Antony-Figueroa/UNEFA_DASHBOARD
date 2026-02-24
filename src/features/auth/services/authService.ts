@@ -152,7 +152,7 @@ export const requestRecovery = async (userCi: string): Promise<AuthActionRespons
 export const getRecoveryQuestions = async (userCi: string): Promise<{
   success: boolean;
   message?: string;
-  questions?: Array<{ id: number; questionText: string }>;
+  questions?: Array<{ id: number; description: string; isCustom?: boolean; customQuestion?: string }>;
   email?: string;
 }> => {
   const response = await apiClient.get(`/auth/recovery-questions/${userCi}`);
@@ -168,7 +168,7 @@ export const getRecoveryQuestions = async (userCi: string): Promise<{
  */
 export const verifyAnswersAndReset = async (
   userCi: string,
-  answers: Array<{ questionId: number; answer: string }>,
+  answers: Array<{ questionId: number; answer: string; isCustom?: boolean }>,
   newPassword: string
 ): Promise<AuthActionResponse> => {
   const response = await apiClient.post<AuthActionResponse>("/auth/verify-answers-reset", {

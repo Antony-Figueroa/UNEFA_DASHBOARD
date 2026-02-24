@@ -30,6 +30,7 @@ import { useLists } from "../../lists/hooks/useLists";
 import { generateMatricula } from "../../../utils/matricula";
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
+import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 
 /**
  * Propiedades del componente PreEnrollmentModal.
@@ -270,6 +271,15 @@ export default function PreEnrollmentModal({
 
   // Funciones para agregar nuevos valores a las listas
   const openAddValueModal = (listName: string, field: keyof PreEnrollmentFormData, title: string) => {
+    // Verificar si la lista está protegida
+    if (isProtectedList(listName)) {
+      addToast({
+        variant: "warning",
+        title: "Lista Protegida",
+        message: PROTECTED_LIST_MESSAGE,
+      });
+      return;
+    }
     setTargetListName(listName);
     setTargetField(field);
     setValueModalTitle(title);

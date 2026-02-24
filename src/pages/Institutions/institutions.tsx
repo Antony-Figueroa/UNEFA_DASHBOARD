@@ -466,6 +466,10 @@ export default function InstitutionsPage() {
         editingInst={editingInst}
         isLoading={loadingAction}
         existingInstitutions={institutions}
+        responsibles={editingInst ? responsibles.filter(r => r.institutionId === editingInst.institutionId) : []}
+        onAddResponsible={addResponsible}
+        onEditResponsible={editResponsible}
+        institutionOptions={institutionOptions}
       />
 
       <InstitutionalResponsibleModal

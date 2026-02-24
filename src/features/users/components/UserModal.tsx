@@ -97,6 +97,13 @@ const UserModal: React.FC<UserModalProps> = ({
     }
   }, [user, reset, isOpen]);
 
+  // Asegurar que el valor del rol se establezca correctamente
+  useEffect(() => {
+    if (user && user.role) {
+      setValue("role", user.role, { shouldValidate: true });
+    }
+  }, [user, setValue]);
+
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [pendingData, setPendingData] = useState<UserFormOutput | null>(null);
 

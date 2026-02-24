@@ -34,6 +34,8 @@ export interface Tutor {
 
   /** Profesión del tutor */
   profession: string;
+  /** Título académico */
+  titulo: string;
   /** Condición laboral */
   condition: string;
   /** Dedicación horaria */

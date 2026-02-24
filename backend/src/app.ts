@@ -18,6 +18,7 @@ import trackingRoutes from './routes/tracking.routes.js';
 import institutionsRoutes from './routes/institutions.routes.js';
 import institutionalResponsiblesRoutes from './routes/institutional-responsibles.routes.js';
 import listsRoutes from './routes/lists.routes.js';
+import publicRoutes from './routes/public.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import usersRoutes from './routes/users.routes.js';
 import aiRoutes from './routes/ai.routes.js';
@@ -179,6 +180,9 @@ app.get('/api/health', async (_req, res) => {
     environment: process.env.NODE_ENV || 'development'
   });
 });
+
+// Public routes (no auth required)
+app.use('/api/public', publicRoutes);
 
 // Apply protection to all subsequent /api routes
 app.use('/api', authenticateToken, restrictAsistente);

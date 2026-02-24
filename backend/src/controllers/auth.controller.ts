@@ -339,7 +339,7 @@ export const refreshSession = async (req: AuthRequest, res: Response) => {
 };
 
 export const changePassword = async (req: Request, res: Response) => {
-  const { userId, newPassword, securityQuestions } = req.body;
+  const { userId, newPassword, securityQuestions, profileData } = req.body;
 
   if (!userId || !newPassword) {
     return res.status(400).json({ message: 'ID de usuario y nueva contraseña son requeridos' });
@@ -351,7 +351,7 @@ export const changePassword = async (req: Request, res: Response) => {
   }
 
   try {
-    const result = await authService.changePassword(userId, newPassword, securityQuestions);
+    const result = await authService.changePassword(userId, newPassword, securityQuestions, profileData);
     res.json(result);
   } catch (error) {
     handleAuthError(res, error);

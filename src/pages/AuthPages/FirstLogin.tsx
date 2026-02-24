@@ -131,11 +131,11 @@ export default function FirstLogin() {
   const passwordsMatch = confirmPassword.length > 0 && newPassword === confirmPassword;
 
   useEffect(() => {
-    if (location.state?.userId) {
-      setUserId(location.state.userId);
-    } else {
-      navigate("/signin");
+    if (!location.state?.userId) {
+      navigate("/signin", { replace: true });
+      return;
     }
+    setUserId(location.state.userId);
 
     const fetchData = async () => {
       try {

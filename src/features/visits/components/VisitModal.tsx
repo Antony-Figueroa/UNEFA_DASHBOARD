@@ -5,11 +5,12 @@ import * as z from 'zod';
 import { Modal } from '../../../components/ui/modal';
 import Button from '../../../components/ui/button/Button';
 import CustomSelect from '../../../components/form/CustomSelect';
-import { Visit, CreateVisitPayload, UpdateVisitPayload, VISIT_TYPES } from '../types';
+import { Visit, CreateVisitPayload, UpdateVisitPayload, VISIT_TYPES, VISIT_CASES } from '../types';
 
 const visitSchema = z.object({
   visitDate: z.string().min(1, 'La fecha es requerida'),
   visitType: z.enum(['PRESENCIAL', 'VIRTUAL', 'TELEFONICA']),
+  visitCase: z.enum(['VISITA_INICIAL', 'SEGUIMIENTO_REGULAR', 'REVISION_BITACORAS', 'EVALUACION_PARCIAL', 'SEGUIMIENTO_PROBLEMAS', 'CAMBIO_EMPRESA', 'CAMBIO_TUTOR', 'SUSPENSION', 'REANUDACION', 'EVALUACION_FINAL', 'CERTIFICACION']),
   hoursWorked: z.number().min(0, 'Las horas deben ser positivas').max(24, 'Máximo 24 horas'),
   activitiesPerformed: z.string().min(10, 'Mínimo 10 caracteres'),
   observations: z.string().optional(),
@@ -52,6 +53,7 @@ export default function VisitModal({
     defaultValues: {
       visitDate: new Date().toISOString().slice(0, 16),
       visitType: 'PRESENCIAL',
+      visitCase: 'SEGUIMIENTO_REGULAR',
       hoursWorked: 0,
       activitiesPerformed: '',
       observations: '',
@@ -64,6 +66,7 @@ export default function VisitModal({
       reset({
         visitDate: visit.visitDate.slice(0, 16),
         visitType: visit.visitType,
+        visitCase: visit.visitCase || 'SEGUIMIENTO_REGULAR',
         hoursWorked: visit.hoursWorked,
         activitiesPerformed: visit.activitiesPerformed,
         observations: visit.observations,
@@ -73,6 +76,7 @@ export default function VisitModal({
       reset({
         visitDate: new Date().toISOString().slice(0, 16),
         visitType: 'PRESENCIAL',
+        visitCase: 'SEGUIMIENTO_REGULAR',
         hoursWorked: 0,
         activitiesPerformed: '',
         observations: '',
@@ -86,6 +90,7 @@ export default function VisitModal({
       ? {
           visitDate: new Date(data.visitDate).toISOString(),
           visitType: data.visitType,
+          visitCase: data.visitCase,
           hoursWorked: data.hoursWorked,
           activitiesPerformed: data.activitiesPerformed,
           observations: data.observations || '',
@@ -96,6 +101,7 @@ export default function VisitModal({
           tutorId,
           visitDate: new Date(data.visitDate).toISOString(),
           visitType: data.visitType,
+          visitCase: data.visitCase,
           hoursWorked: data.hoursWorked,
           activitiesPerformed: data.activitiesPerformed,
           observations: data.observations || '',
@@ -151,6 +157,24 @@ export default function VisitModal({
                     value={field.value}
                     onChange={(val) => field.onChange(val)}
                     placeholder="Seleccionar tipo"
+                  />
+                )}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-text-primary dark:text-white">
+                Caso de Seguimiento *
+              </label>
+              <Controller
+                name="visitCase"
+                control={control}
+                render={({ field }) => (
+                  <CustomSelect
+                    options={VISIT_CASES.map(c => ({ value: c.value, label: c.label }))}
+                    value={field.value}
+                    onChange={(val) => field.onChange(val)}
+                    placeholder="Seleccionar caso"
                   />
                 )}
               />

@@ -10,7 +10,7 @@ import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
 import CustomSelect from "../../../components/form/CustomSelect";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
-import { Institution, CreateInstitutionPayload, UpdateInstitutionPayload } from "../types";
+import { Institution, CreateInstitutionPayload, UpdateInstitutionPayload, InstitutionalResponsible, CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload } from "../types";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
@@ -18,6 +18,7 @@ import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { useLists } from "../../lists/hooks/useLists";
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
+import InstitutionalResponsibleModal from "./InstitutionalResponsibleModal";
 
 /**
  * Props for the InstitutionModal component.
@@ -35,6 +36,14 @@ interface InstitutionModalProps {
   isLoading?: boolean;
   /** List of existing institutions for validation (e.g., duplicate RIF) */
   existingInstitutions?: Institution[];
+  /** List of responsibles for this institution */
+  responsibles?: InstitutionalResponsible[];
+  /** Callback to add a responsible */
+  onAddResponsible?: (data: CreateInstitutionalResponsiblePayload) => Promise<void>;
+  /** Callback to edit a responsible */
+  onEditResponsible?: (data: UpdateInstitutionalResponsiblePayload) => Promise<void>;
+  /** Institution options for responsible modal */
+  institutionOptions?: { value: string; label: string }[];
 }
 
 /**
@@ -111,6 +120,10 @@ export default function InstitutionModal({
   editingInst,
   isLoading = false,
   existingInstitutions = [],
+  responsibles = [],
+  onAddResponsible,
+  onEditResponsible,
+  institutionOptions = [],
 }: InstitutionModalProps) {
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const { fetchMultipleLists } = useLists();
@@ -122,6 +135,11 @@ export default function InstitutionModal({
   const [targetField, setTargetField] = useState<string>("");
   const [newValueInput, setNewValueInput] = useState<string>("");
   const [savingNewValue, setSavingNewValue] = useState(false);
+
+  // Estado para el modal de responsables
+  const [isRespModalOpen, setIsRespModalOpen] = useState(false);
+  const [editingResponsible, setEditingResponsible] = useState<InstitutionalResponsible | null>(null);
+  const [responsibleLoading, setResponsibleLoading] = useState(false);
 
   const instSchema = useMemo(() => createInstSchema(existingInstitutions, editingInst || null), [existingInstitutions, editingInst]);
 
@@ -697,6 +715,78 @@ export default function InstitutionModal({
               <p className="mt-1 text-xs text-red-500">{errors.institutionType.message}</p>
             )}
           </div>
+
+          {/* Sección de Responsables Institucionales */}
+          {editingInst && (
+            <div className="md:col-span-2">
+              <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Responsables Institucionales
+                  </h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingResponsible(null);
+                      setIsRespModalOpen(true);
+                    }}
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Agregar
+                  </Button>
+                </div>
+
+                {responsibles.length > 0 ? (
+                  <div className="space-y-2">
+                    {responsibles.map((resp) => (
+                      <div
+                        key={resp.responsibleId}
+                        className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                            {resp.firstName} {resp.lastName}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {resp.identificationPrefix}-{resp.identificationNumber} • {resp.email}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingResponsible(resp);
+                              setIsRespModalOpen(true);
+                            }}
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                    <svg className="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <p className="text-sm">No hay responsables registrados</p>
+                    <p className="text-xs mt-1">Agregue un responsable haciendo clic en el botón</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           
           {/* Botón oculto para permitir submit con Enter */}
           <button type="submit" className="hidden" />
@@ -786,6 +876,36 @@ export default function InstitutionModal({
         </AsyncButton>
       </ModalFooter>
     </Modal>
+
+    {/* Modal de Responsables Institucionales */}
+    <InstitutionalResponsibleModal
+      isOpen={isRespModalOpen}
+      onClose={() => {
+        setIsRespModalOpen(false);
+        setEditingResponsible(null);
+      }}
+      onSave={async (data) => {
+        try {
+          setResponsibleLoading(true);
+          if (editingResponsible) {
+            await onEditResponsible?.({ ...editingResponsible, ...data } as UpdateInstitutionalResponsiblePayload);
+          } else {
+            await onAddResponsible?.({ ...data, institutionId: editingInst!.institutionId } as CreateInstitutionalResponsiblePayload);
+          }
+          setIsRespModalOpen(false);
+          setEditingResponsible(null);
+        } catch (error) {
+          console.error("Error saving responsible:", error);
+        } finally {
+          setResponsibleLoading(false);
+        }
+      }}
+      editingResp={editingResponsible}
+      institutionOptions={institutionOptions}
+      isLoading={responsibleLoading}
+      preselectedInstitutionId={editingInst?.institutionId}
+      preselectedInstitutionName={editingInst?.name}
+    />
   </>
 );
 }

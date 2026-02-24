@@ -104,6 +104,13 @@ export default function TutorModal({
     { value: "MÉDICO", label: "MÉDICO" },
   ];
 
+  const TITULO_OPTIONS = options["Título"] || [
+    { value: "PREGRADO", label: "PREGRADO" },
+    { value: "ESPECIALIZACIÓN", label: "ESPECIALIZACIÓN" },
+    { value: "MAESTRÍA", label: "MAESTRÍA" },
+    { value: "DOCTORADO", label: "DOCTORADO" },
+  ];
+
   useEffect(() => {
     const loadOptions = async () => {
       try {
@@ -115,6 +122,7 @@ export default function TutorModal({
           "Dedicación",
           "Categoría",
           "Profesión",
+          "Título",
           "Tipo de Practica"
         ];
         const data = await fetchMultipleLists(listNames);
@@ -245,6 +253,7 @@ export default function TutorModal({
     dedication: z.string().min(1, "La dedicación es obligatoria").transform(val => val.toUpperCase()),
     category: z.string().min(1, "La categoría es obligatoria").transform(val => val.toUpperCase()),
     profession: z.string().min(1, "La profesión es obligatoria").transform(val => val.toUpperCase()),
+    titulo: z.string().min(1, "El título es obligatorio").transform(val => val.toUpperCase()),
     carreras: z.array(z.string()).min(1, "Debe seleccionar al menos una carrera"),
   }).superRefine((data, ctx) => {
     // Validar duplicidad de cédula
@@ -304,6 +313,7 @@ export default function TutorModal({
       dedication: "",
       category: "",
       profession: "",
+      titulo: "",
       carreras: [],
     },
   });
@@ -359,6 +369,7 @@ export default function TutorModal({
           dedication: editingTutor.dedication,
           category: editingTutor.category,
           profession: editingTutor.profession,
+          titulo: editingTutor.titulo || "",
           carreras: editingTutor.carreras || [],
         });
       } else {
@@ -377,6 +388,7 @@ export default function TutorModal({
           dedication: "",
           category: "",
           profession: "",
+          titulo: "",
           carreras: [],
         });
       }
@@ -722,6 +734,29 @@ export default function TutorModal({
               />
               {errors.profession && (
                 <p className="mt-1 text-xs text-red-500">{errors.profession.message}</p>
+              )}
+            </div>
+
+            {/* Título Académico */}
+            <div className="lg:col-span-1">
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Título *</label>
+              <Controller
+                name="titulo"
+                control={control}
+                render={({ field }) => (
+                  <CustomSelect
+                    id="titulo"
+                    options={TITULO_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                    placeholder="Seleccione Título"
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    value={String(field.value)}
+                    error={!!errors.titulo}
+                  />
+                )}
+              />
+              {errors.titulo && (
+                <p className="mt-1 text-xs text-red-500">{errors.titulo.message}</p>
               )}
             </div>
 

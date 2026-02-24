@@ -10,6 +10,7 @@ import UserModal from "../../features/users/components/UserModal";
 import { useUsers } from "../../features/users/hooks/useUsers";
 import { useLists } from "../../features/lists/hooks/useLists";
 import { useDebounce } from "../../hooks/useDebounce";
+import { useAuth } from "../../context/auth";
 import { User, CreateUserPayload, UpdateUserPayload } from "../../features/users/types";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
@@ -19,6 +20,9 @@ import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
  * Permite administrar los accesos, roles y estados de los usuarios del sistema.
  */
 const UserManagementPage = () => {
+  // Usuario actual autenticado
+  const { user: currentUser } = useAuth();
+  
   // Estados de UI
   const [activeTab, setActiveTab] = useState<"Activos" | "Inactivos">("Activos");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -128,7 +132,22 @@ const UserManagementPage = () => {
   };
 
   const handleToggleStatus = (user: User) => {
-    const isDeactivating = user.status;
+    const isDeactivating = user.status === 1;
+    const isCurrentUser = currentUser?.id === user.id;
+    const isCurrentUserAdmin = currentUser?.role === 1;
+
+    // Validación: No puede desactivarse a sí mismo
+    if (isCurrentUser && isDeactivating) {
+      alert("No puedes desactivarte a ti mismo.");
+      return;
+    }
+
+    // Validación: Admin no puede desactivarse
+    if (isCurrentUserAdmin && isDeactivating) {
+      alert("El administrador no puede desactivarse a sí mismo.");
+      return;
+    }
+
     const actionVerb = isDeactivating ? "desactivar" : "activar";
     const confirmTitle = isDeactivating ? "Confirmar Desactivación" : "Confirmar Activación";
     const variant = isDeactivating ? "error" : "success";
@@ -333,6 +352,7 @@ const UserManagementPage = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         user={editingUser}
+        currentUser={currentUser}
         onSave={handleSave}
         isSubmitting={loadingAction}
         roleOptions={rolesOptions}

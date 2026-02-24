@@ -16,6 +16,8 @@ import { Career } from "../../careers/types";
 import { useLists } from "../../lists/hooks/useLists";
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
+import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
+import { useToast } from "../../../context/toast";
 
 /**
  * Props for the TutorModal component.
@@ -52,6 +54,7 @@ export default function TutorModal({
   const [careers, setCareers] = useState<Career[]>([]);
   const [careersLoading, setCareersLoading] = useState(false);
   const { fetchMultipleLists } = useLists();
+  const { addToast } = useToast();
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState<CreateTutorPayload | UpdateTutorPayload | null>(null);
@@ -149,6 +152,15 @@ export default function TutorModal({
 
   // Funciones para agregar nuevos valores a las listas
   const openAddValueModal = (listName: string, field: keyof TutorFormData, title: string) => {
+    // Verificar si la lista está protegida
+    if (isProtectedList(listName)) {
+      addToast({
+        variant: "warning",
+        title: "Lista Protegida",
+        message: PROTECTED_LIST_MESSAGE,
+      });
+      return;
+    }
     setTargetListName(listName);
     setTargetField(field);
     setValueModalTitle(title);

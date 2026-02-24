@@ -18,7 +18,9 @@ import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { useLists } from "../../lists/hooks/useLists";
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
+import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import InstitutionalResponsibleModal from "./InstitutionalResponsibleModal";
+import { useToast } from "../../../context/toast";
 
 /**
  * Props for the InstitutionModal component.
@@ -127,6 +129,7 @@ export default function InstitutionModal({
 }: InstitutionModalProps) {
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const { fetchMultipleLists } = useLists();
+  const { addToast } = useToast();
 
   // Estado para agregar nuevos valores a las listas
   const [isValueModalOpen, setIsValueModalOpen] = useState(false);
@@ -229,6 +232,15 @@ export default function InstitutionModal({
 
   // Funciones para agregar nuevos valores a las listas
   const openAddValueModal = (listName: string, field: keyof InstFormData, title: string) => {
+    // Verificar si la lista está protegida
+    if (isProtectedList(listName)) {
+      addToast({
+        variant: "warning",
+        title: "Lista Protegida",
+        message: PROTECTED_LIST_MESSAGE,
+      });
+      return;
+    }
     setTargetListName(listName);
     setTargetField(field);
     setValueModalTitle(title);

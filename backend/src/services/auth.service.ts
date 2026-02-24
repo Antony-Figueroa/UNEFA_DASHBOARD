@@ -404,14 +404,15 @@ export const changePassword = async (
       // Primero eliminar anteriores si existen
       await supabase.from('t_security_questions').delete().eq('USER_ID', userId);
       
-      // Filtrar solo preguntas preset (no custom para evitar complicar la estructura actual)
-      const presetQuestions = securityQuestions.filter(q => !q.isCustom && q.questionId > 0);
-      
-      const questionsToInsert = presetQuestions.map(q => ({
-        USER_ID: userId,
-        PRESET_QUESTION_ID: q.questionId,
-        ANSWER: q.answer.toUpperCase()
-      }));
+      // Mapear preguntas (preset y personalizadas)
+      const questionsToInsert = securityQuestions
+        .filter(q => q.isCustom ? q.customQuestion && q.customQuestion.trim() : q.questionId > 0)
+        .map(q => ({
+          USER_ID: userId,
+          PRESET_QUESTION_ID: q.isCustom ? null : q.questionId,
+          CUSTOM_QUESTION: q.isCustom ? q.customQuestion?.toUpperCase() : null,
+          ANSWER: q.answer.toUpperCase()
+        }));
       
       if (questionsToInsert.length > 0) {
         await supabase.from('t_security_questions').insert(questionsToInsert);
@@ -540,13 +541,14 @@ export const getSecurityQuestions = async (userCi: string) => {
     }
 
     interface SecurityQuestionResult {
-      PRESET_QUESTION_ID: number;
+      PRESET_QUESTION_ID: number | null;
+      CUSTOM_QUESTION: string | null;
       t_preset_questions: { DESCRIPTION: string } | { DESCRIPTION: string }[] | null;
     }
 
     const { data, error: qError } = await supabase
       .from('t_security_questions')
-      .select('PRESET_QUESTION_ID, t_preset_questions(DESCRIPTION)')
+      .select('PRESET_QUESTION_ID, CUSTOM_QUESTION, t_preset_questions(DESCRIPTION)')
       .eq('USER_ID', user.USER_ID);
 
     const questions = data as unknown as SecurityQuestionResult[] | null;
@@ -559,30 +561,57 @@ export const getSecurityQuestions = async (userCi: string) => {
       success: true, 
       userId: user.USER_ID,
       questions: questions.map(q => ({
-        id: q.PRESET_QUESTION_ID,
-        description: Array.isArray(q.t_preset_questions) 
-          ? q.t_preset_questions[0]?.DESCRIPTION 
-          : q.t_preset_questions?.DESCRIPTION || ''
+        id: q.PRESET_QUESTION_ID || 0,
+        isCustom: !q.PRESET_QUESTION_ID,
+        customQuestion: q.CUSTOM_QUESTION || undefined,
+        description: q.PRESET_QUESTION_ID 
+          ? (Array.isArray(q.t_preset_questions) 
+            ? q.t_preset_questions[0]?.DESCRIPTION 
+            : q.t_preset_questions?.DESCRIPTION || '')
+          : q.CUSTOM_QUESTION || ''
       }))
     };
   });
 };
 
-export const verifySecurityQuestions = async (userId: number, answers: { questionId: number, answer: string }[]) => {
+export const verifySecurityQuestions = async (userId: number, answers: { questionId: number, answer: string, isCustom?: boolean }[]) => {
   return await dbManager.withRetry(async (supabase) => {
+    interface SecurityQuestionResult {
+      PRESET_QUESTION_ID: number | null;
+      CUSTOM_QUESTION: string | null;
+      ANSWER: string;
+    }
+
     const { data: storedQuestions, error } = await supabase
       .from('t_security_questions')
-      .select('PRESET_QUESTION_ID, ANSWER')
+      .select('PRESET_QUESTION_ID, CUSTOM_QUESTION, ANSWER')
       .eq('USER_ID', userId);
 
     if (error || !storedQuestions || storedQuestions.length === 0) {
       return { success: false, message: 'No se encontraron preguntas de seguridad configuradas' };
     }
 
+    const stored = storedQuestions as unknown as SecurityQuestionResult[];
+
     // Verificar cada respuesta
     for (const provided of answers) {
-      const stored = storedQuestions.find(q => q.PRESET_QUESTION_ID === provided.questionId);
-      if (!stored || stored.ANSWER.toLowerCase().trim() !== provided.answer.toLowerCase().trim()) {
+      let isValid = false;
+
+      if (provided.isCustom) {
+        // Para preguntas personalizadas, buscar por CUSTOM_QUESTION
+        const customStored = stored.find(q => !q.PRESET_QUESTION_ID && q.CUSTOM_QUESTION);
+        if (customStored && customStored.ANSWER.toLowerCase().trim() === provided.answer.toLowerCase().trim()) {
+          isValid = true;
+        }
+      } else {
+        // Para preguntas preset
+        const presetStored = stored.find(q => q.PRESET_QUESTION_ID === provided.questionId);
+        if (presetStored && presetStored.ANSWER.toLowerCase().trim() === provided.answer.toLowerCase().trim()) {
+          isValid = true;
+        }
+      }
+
+      if (!isValid) {
         return { success: false, message: 'Una o más respuestas son incorrectas' };
       }
     }
@@ -911,7 +940,7 @@ export const getUserSecurityQuestions = async (userCi: string) => {
  */
 export const verifySecurityAnswersAndReset = async (
   userCi: string, 
-  answers: Array<{ questionId: number; answer: string }>, 
+  answers: Array<{ questionId: number; answer: string; isCustom?: boolean }>, 
   newPassword: string,
   ip: string,
   userAgent: string
@@ -931,21 +960,37 @@ export const verifySecurityAnswersAndReset = async (
       return { success: false, status: 403, message: 'Esta cuenta se encuentra bloqueada o inactiva.' };
     }
 
+    // Obtener las preguntas de seguridad del usuario
+    const { data: storedQuestions, error: qError } = await supabase
+      .from('t_security_questions')
+      .select('PRESET_QUESTION_ID, CUSTOM_QUESTION, ANSWER')
+      .eq('USER_ID', user.USER_ID);
+
+    if (qError || !storedQuestions || storedQuestions.length === 0) {
+      return { success: false, status: 404, message: 'No se encontraron preguntas de seguridad configuradas.' };
+    }
+
     let correctCount = 0;
     
     for (const ans of answers) {
-      const { data: question, error: qError } = await supabase
-        .from('t_user_questions')
-        .select('ANSWER')
-        .eq('USER_QUESTION_ID', ans.questionId)
-        .eq('USER_ID', user.USER_ID)
-        .eq('STATUS', 1)
-        .single();
+      let isValid = false;
 
-      if (!qError && question) {
-        if ((question as { ANSWER: string }).ANSWER.toLowerCase().trim() === ans.answer.toLowerCase().trim()) {
-          correctCount++;
+      if (ans.isCustom) {
+        // Para preguntas personalizadas
+        const customStored = storedQuestions.find(q => !q.PRESET_QUESTION_ID && q.CUSTOM_QUESTION);
+        if (customStored && customStored.ANSWER.toLowerCase().trim() === ans.answer.toLowerCase().trim()) {
+          isValid = true;
         }
+      } else {
+        // Para preguntas preset
+        const presetStored = storedQuestions.find(q => q.PRESET_QUESTION_ID === ans.questionId);
+        if (presetStored && presetStored.ANSWER.toLowerCase().trim() === ans.answer.toLowerCase().trim()) {
+          isValid = true;
+        }
+      }
+
+      if (isValid) {
+        correctCount++;
       }
     }
 

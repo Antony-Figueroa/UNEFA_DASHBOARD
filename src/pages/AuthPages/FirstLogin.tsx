@@ -8,7 +8,7 @@ import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import Button from "../../components/ui/button/Button";
 import * as authService from "../../features/auth/services/authService";
-import { SecurityQuestion } from "../../features/auth/types";
+import { SecurityQuestion, SecurityAnswer } from "../../features/auth/types";
 import { EyeClosedIcon, EyeIcon, ShieldCheckIcon, UserIcon, LockIcon, KeyRoundIcon, CheckCircleIcon, XCircleIcon, ChevronRightIcon } from "lucide-react";
 import CustomSelect from "../../components/form/CustomSelect";
 import { useToast } from "../../context/toast";
@@ -156,7 +156,7 @@ export default function FirstLogin() {
       .filter((_, idx) => idx !== currentIndex)
       .filter(q => q.questionId && typeof q.questionId === 'string' && q.questionId !== "")
       .map(q => typeof q.questionId === 'string' ? parseInt(q.questionId) : q.questionId)
-      .filter(id => !isNaN(id));
+      .filter(id => id !== undefined && !isNaN(id as number));
 
     return presetQuestions
       .filter(pq => !selectedIds.includes(pq.id))
@@ -175,13 +175,15 @@ export default function FirstLogin() {
         email: data.email.toUpperCase()
       };
 
-      const formattedQuestions = data.securityQuestions
+      const formattedQuestions: SecurityAnswer[] = data.securityQuestions
         .filter(q => !q.isCustom && q.questionId)
-        .map(q => ({
-          questionId: typeof q.questionId === 'string' ? parseInt(q.questionId) : q.questionId,
-          answer: q.answer.toUpperCase(),
-          isCustom: false
-        }));
+        .map(q => {
+          const qid = typeof q.questionId === 'string' ? parseInt(q.questionId) : (q.questionId as number);
+          return {
+            questionId: qid,
+            answer: q.answer.toUpperCase(),
+          };
+        });
 
       const result = await authService.changePassword(
         userId!,
@@ -439,7 +441,7 @@ export default function FirstLogin() {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-5">
                   <div>
                     <Label htmlFor="newPassword">
                       Nueva Contraseña <span className="text-error-500">*</span>
@@ -448,7 +450,7 @@ export default function FirstLogin() {
                       <Input
                         id="newPassword"
                         type={showNewPassword ? "text" : "password"}
-                        placeholder={showNewPassword ? "MÍNIMO 12 CARACTERES" : "Mínimo 12 caracteres"}
+                        placeholder={showNewPassword ? "Minimo 12 caracteres" : "Minimo 12 caracteres"}
                         {...register("newPassword")}
                         error={!!errors.newPassword}
                         className="h-12 text-base"
@@ -494,10 +496,11 @@ export default function FirstLogin() {
                       <Input
                         id="confirmPassword"
                         type={showConfirmPassword ? "text" : "password"}
-                        placeholder={showConfirmPassword ? "REPITA SU CONTRASEÑA" : "Repita su contraseña"}
+                        placeholder={showConfirmPassword ? "Repita su contrasena" : "Repita su contrasena"}
                         {...register("confirmPassword")}
                         error={!!errors.confirmPassword}
                         className="h-12 text-base"
+                        isPassword
                       />
                       <button
                         type="button"

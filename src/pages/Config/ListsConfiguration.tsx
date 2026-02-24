@@ -14,6 +14,7 @@ import { CrudForm, CrudFieldConfig, CrudFormValues } from "../../features/crudTe
 import { UnifiedDialog } from "../../components/ui/dialog/UnifiedDialog";
 import { useUnsavedChanges } from "../../hooks/useUnsavedChanges";
 import { useToast } from "../../context/toast";
+import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../constants/systemLists";
 
 const ListsConfiguration = () => {
   const { addToast } = useToast();
@@ -67,6 +68,8 @@ const ListsConfiguration = () => {
     setIsValueModalOpen(false);
     setIsValueDirty(false);
   });
+
+  const isSelectedListProtected = selectedList ? isProtectedList(selectedList.name) : false;
 
 
   const loadLists = useCallback(async () => {
@@ -344,18 +347,21 @@ const ListsConfiguration = () => {
                   "Seleccione una lista"
                 )
               }
-              headerAction={
+               headerAction={
                  selectedList && (
                    <div className="flex items-center gap-3">
                      <Button 
                        size="sm"
+                       disabled={isSelectedListProtected}
                        onClick={() => {
-                         setEditingValue(null);
-                         setIsValueModalOpen(true);
+                         if (!isSelectedListProtected) {
+                           setEditingValue(null);
+                           setIsValueModalOpen(true);
+                         }
                        }}
                        startIcon={<PlusCircleIcon className="h-4 w-4" />}
                      >
-                       Añadir Valor
+                       {isSelectedListProtected ? "Lista protegida" : "Añadir Valor"}
                      </Button>
                    </div>
                  )
@@ -368,6 +374,13 @@ const ListsConfiguration = () => {
               >
                 {selectedList ? (
                   <div className="overflow-x-auto">
+                    {isSelectedListProtected && (
+                      <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                        <p className="text-sm text-amber-800 dark:text-amber-200">
+                          <strong>Lista protegida:</strong> {PROTECTED_LIST_MESSAGE}
+                        </p>
+                      </div>
+                    )}
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="border-b border-border-light dark:border-border-dark">
@@ -397,28 +410,32 @@ const ListsConfiguration = () => {
                               </button>
                             </td>
                             <td className="px-4 py-4 text-right">
-                              <div className="flex justify-end gap-2">
+                              <div className={`flex justify-end gap-2 ${isSelectedListProtected ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                 <button 
-                                  className="p-1.5 text-text-secondary hover:text-brand-500 transition-colors"
-                                  title="Editar"
+                                  className={`p-1.5 transition-colors ${isSelectedListProtected ? 'text-text-tertiary' : 'text-text-secondary hover:text-brand-500'}`}
+                                  title={isSelectedListProtected ? PROTECTED_LIST_MESSAGE : "Editar"}
+                                  disabled={isSelectedListProtected}
                                   onClick={() => {
-                                    setEditingValue(val);
-                                    setIsValueModalOpen(true);
+                                    if (!isSelectedListProtected) {
+                                      setEditingValue(val);
+                                      setIsValueModalOpen(true);
+                                    }
                                   }}
                                 >
                                   <PencilIcon className="h-4 w-4" />
                                 </button>
                                 {val.status ? (
                                   <button 
-                                    className="p-1.5 text-text-secondary hover:text-error-500 transition-colors"
-                                    title="Desactivar"
-                                    onClick={() => handleToggleValueStatus(val)}
+                                    className={`p-1.5 transition-colors ${isSelectedListProtected ? 'text-text-tertiary' : 'text-text-secondary hover:text-error-500'}`}
+                                    title={isSelectedListProtected ? PROTECTED_LIST_MESSAGE : "Desactivar"}
+                                    disabled={isSelectedListProtected}
+                                    onClick={() => !isSelectedListProtected && handleToggleValueStatus(val)}
                                   >
                                     <TrashBinIcon className="h-4 w-4" />
                                   </button>
                                 ) : (
                                   <button 
-                                    className="p-1.5 text-text-secondary hover:text-success-500 transition-colors"
+                                    className={`p-1.5 transition-colors ${isSelectedListProtected ? 'text-text-tertiary' : 'text-text-secondary hover:text-success-500'}`}
                                     title="Activar"
                                     onClick={() => handleToggleValueStatus(val)}
                                   >

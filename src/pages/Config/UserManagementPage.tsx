@@ -11,6 +11,7 @@ import { useUsers } from "../../features/users/hooks/useUsers";
 import { useLists } from "../../features/lists/hooks/useLists";
 import { useDebounce } from "../../hooks/useDebounce";
 import { useAuth } from "../../context/auth";
+import { useToast } from "../../context/toast";
 import { User, CreateUserPayload, UpdateUserPayload } from "../../features/users/types";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
@@ -22,6 +23,7 @@ import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 const UserManagementPage = () => {
   // Usuario actual autenticado
   const { user: currentUser } = useAuth();
+  const { addToast } = useToast();
   
   // Estados de UI
   const [activeTab, setActiveTab] = useState<"Activos" | "Inactivos">("Activos");
@@ -138,13 +140,13 @@ const UserManagementPage = () => {
 
     // Validación: No puede desactivarse a sí mismo
     if (isCurrentUser && isDeactivating) {
-      alert("No puedes desactivarte a ti mismo.");
+      addToast({ variant: "error", title: "Error", message: "No puedes desactivarte a ti mismo." });
       return;
     }
 
     // Validación: Admin no puede desactivarse
     if (isCurrentUserAdmin && isDeactivating) {
-      alert("El administrador no puede desactivarse a sí mismo.");
+      addToast({ variant: "error", title: "Error", message: "El administrador no puede desactivarse a sí mismo." });
       return;
     }
 
@@ -341,6 +343,7 @@ const UserManagementPage = () => {
                 onFilterChange={setFilters}
                 rolesOptions={rolesOptions}
                 onClearFilters={() => setFilters({ ci: "", name: "", surname: "", role: "" })}
+                currentUser={currentUser}
               />
             </SkeletonLoader>
           </ComponentCard>

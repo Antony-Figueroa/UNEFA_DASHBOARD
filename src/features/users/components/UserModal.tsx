@@ -11,6 +11,7 @@ import { userSchema, UserFormData, UserFormOutput } from "../constants/validatio
 import { User, CreateUserPayload, UpdateUserPayload } from "../types";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { AuthUser } from "../../../context/auth";
 
 /**
  * Propiedades para el componente UserModal.
@@ -22,6 +23,8 @@ interface UserModalProps {
   onClose: () => void;
   /** Usuario a editar (null si es creación) */
   user: User | null;
+  /** Usuario actual logueado */
+  currentUser: AuthUser | null;
   /** Función para guardar los cambios */
   onSave: (data: CreateUserPayload | UpdateUserPayload) => Promise<void>;
   /** Indica si se está procesando la solicitud */
@@ -38,10 +41,15 @@ const UserModal: React.FC<UserModalProps> = ({
   isOpen,
   onClose,
   user,
+  currentUser,
   onSave,
   isSubmitting,
   roleOptions
 }) => {
+  const isEditing = !!user;
+  const isCurrentUser = currentUser?.id === user?.id;
+  const isCurrentUserAdmin = currentUser?.role === 1;
+
   const {
     register,
     handleSubmit,
@@ -104,6 +112,25 @@ const UserModal: React.FC<UserModalProps> = ({
    */
   const onSubmit = (data: any) => {
     const validatedData = data as UserFormOutput;
+    
+    // Validación: No puede modificar su propio rol
+    if (isCurrentUser && validatedData.role !== user?.role) {
+      alert("No puedes modificar tu propio rol.");
+      return;
+    }
+
+    // Validación: No puede desactivarse a sí mismo
+    if (isCurrentUser && validatedData.status !== user?.status && validatedData.status === 0) {
+      alert("No puedes desactivarte a ti mismo.");
+      return;
+    }
+
+    // Validación: Admin no puede desactivarse
+    if (isCurrentUserAdmin && validatedData.status === 0) {
+      alert("El administrador no puede desactivarse a sí mismo.");
+      return;
+    }
+
     setPendingData(validatedData);
     setShowSaveConfirm(true);
   };

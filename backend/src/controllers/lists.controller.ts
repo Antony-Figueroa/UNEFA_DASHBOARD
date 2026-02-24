@@ -184,3 +184,15 @@ export const toggleValueStatus = async (req: Request, res: Response) => {
     handleDbError(res, error);
   }
 };
+
+/**
+ * Get phone prefixes (public endpoint - no auth required)
+ */
+export const getPhonePrefixes = async (_req: Request, res: Response) => {
+  try {
+    const data = await listsService.getPhonePrefixes();
+    res.json(data);
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};

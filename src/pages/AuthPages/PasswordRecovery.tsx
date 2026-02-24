@@ -5,7 +5,7 @@ import PageMeta from "../../components/common/PageMeta";
 import AuthLayout from "./AuthPageLayout";
 import Button from "../../components/ui/button/Button";
 import * as authService from "../../features/auth/services/authService";
-import { EyeCloseIcon, EyeIcon } from "../../icons";
+import { EyeClosedIcon, EyeIcon } from "lucide-react";
 import { useToast } from "../../context/toast";
 
 interface ApiError {
@@ -360,7 +360,7 @@ export default function PasswordRecovery() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   >
-                    {showPassword ? <EyeIcon className="size-5" /> : <EyeCloseIcon className="size-5" />}
+                    {showPassword ? <EyeIcon className="size-5" /> : <EyeClosedIcon className="size-5" />}
                   </button>
                 </div>
                 {renderPasswordStrength(newPassword)}
@@ -588,7 +588,7 @@ export default function PasswordRecovery() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   >
-                    {showPassword ? <EyeIcon className="size-5" /> : <EyeCloseIcon className="size-5" />}
+                    {showPassword ? <EyeIcon className="size-5" /> : <EyeClosedIcon className="size-5" />}
                   </button>
                 </div>
                 {renderPasswordStrength(newPassword)}

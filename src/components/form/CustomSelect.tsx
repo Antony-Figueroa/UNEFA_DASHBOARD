@@ -4,7 +4,7 @@
  * Resuelve problemas de visualización en modales mediante el uso de Portals y posicionamiento dinámico.
  */
 
-import { useState, useEffect, useRef, forwardRef } from "react";
+import { useState, useEffect, useRef, forwardRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Tooltip } from "../ui/tooltip/Tooltip";
 import { cn } from "../../utils/cn";
@@ -52,6 +52,10 @@ export interface CustomSelectProps {
   onAddNew?: () => void;
   /** Etiqueta opcional para la acción de agregar nuevo. */
   addNewLabel?: string;
+  /** Habilita la búsqueda en el dropdown */
+  searchable?: boolean;
+  /** Placeholder para el input de búsqueda */
+  searchPlaceholder?: string;
 }
 
 /**
@@ -76,9 +80,12 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
   error = false,
   onAddNew,
   addNewLabel,
+  searchable,
+  searchPlaceholder = "Buscar...",
 }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState<string>(value !== undefined ? value : defaultValue);
+  const [searchTerm, setSearchTerm] = useState("");
 
   /** 
    * Estado para almacenar las coordenadas y dimensiones del input.
@@ -87,6 +94,34 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, height: 0, position: 'bottom' as 'bottom' | 'top' });
   const containerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Habilitar búsqueda automáticamente si hay más de 5 opciones o si se pasa explícitamente
+  const isSearchable = searchable === true || (searchable === undefined && options.length > 5);
+
+  // Filtrar opciones basadas en el término de búsqueda
+  const filteredOptions = useMemo(() => {
+    if (!isSearchable || !searchTerm.trim()) {
+      return options;
+    }
+    const term = searchTerm.toLowerCase().trim();
+    return options.filter(option => 
+      option.label.toLowerCase().includes(term) || 
+      option.value.toLowerCase().includes(term)
+    );
+  }, [options, searchTerm, isSearchable]);
+
+  // Efecto para enfocar el input de búsqueda cuando se abre el menú
+  useEffect(() => {
+    if (isOpen && isSearchable && searchInputRef.current) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+    }
+    if (isOpen && isSearchable) {
+      setSearchTerm("");
+    }
+  }, [isOpen, isSearchable]);
 
   /**
    * Actualiza la posición del menú desplegable basándose en la posición actual del contenedor en el viewport.
@@ -96,7 +131,8 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
   const updateCoords = () => {
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
-      const menuEstimatedHeight = Math.min(options.length * 40 + (onAddNew ? 50 : 0), 240); // 240px max-height
+      const hasSearchInput = isSearchable ? 52 : 0; // Altura del input de búsqueda
+      const menuEstimatedHeight = Math.min(filteredOptions.length * 40 + (onAddNew ? 50 : 0) + hasSearchInput, 320); // 320px max-height con búsqueda
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
       
@@ -177,10 +213,12 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
 
   // Calcular la altura máxima disponible para el menú
   const getMaxHeight = () => {
+    const searchInputHeight = searchable && options.length > 5 ? 80 : 0;
+    const maxMenuHeight = 320 + searchInputHeight;
     if (coords.position === 'top') {
-      return Math.min(240, coords.top - 20); // 20px de margen
+      return Math.min(maxMenuHeight, coords.top - 20); // 20px de margen
     } else {
-      return Math.min(240, window.innerHeight - coords.top - 20);
+      return Math.min(maxMenuHeight, window.innerHeight - coords.top - 20);
     }
   };
 
@@ -191,6 +229,7 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
     if (!isOpen || disabled) return null;
 
     const maxHeight = getMaxHeight();
+    const showSearch = searchable && options.length > 5;
 
     return (
       <ul
@@ -202,6 +241,47 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
           minWidth: '120px'
         }}
       >
+        {/* Input de búsqueda */}
+        {showSearch && (
+          <li className="sticky top-0 z-10 bg-white dark:bg-bg-dark border-b border-border-light dark:border-border-dark px-2 py-2">
+            <div className="relative">
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder={searchPlaceholder}
+                className="w-full h-9 pl-9 pr-3 text-sm border border-border-medium rounded-lg bg-gray-50 dark:bg-gray-800 text-text-primary dark:text-text-emphasis placeholder:text-text-tertiary focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 dark:border-border-dark"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSearchTerm("");
+                    searchInputRef.current?.focus();
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary p-0.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            {searchTerm && (
+              <p className="text-xs text-text-tertiary mt-1.5 px-1">
+                {filteredOptions.length} resultado{filteredOptions.length !== 1 ? 's' : ''} de "{searchTerm}"
+              </p>
+            )}
+          </li>
+        )}
         {onAddNew && (
           <li className="sticky top-0 z-10 bg-white dark:bg-bg-dark border-b border-border-light dark:border-border-dark">
             <button
@@ -220,8 +300,8 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
             </button>
           </li>
         )}
-        {options.length > 0 ? (
-          options.map((option) => {
+        {filteredOptions.length > 0 ? (
+          filteredOptions.map((option) => {
             const isOptionDisabled = option.disabled;
             const optionContent = (
               <li
@@ -254,8 +334,18 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
             return optionContent;
           })
         ) : (
-          <li className="px-4 py-2 text-sm text-text-tertiary text-center">
-            No hay opciones
+          <li className="px-4 py-6 text-sm text-text-tertiary text-center">
+            {searchTerm ? (
+              <div className="flex flex-col items-center gap-2">
+                <svg className="w-8 h-8 text-text-tertiary opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <span>No se encontraron resultados</span>
+                <span className="text-xs opacity-75">para "{searchTerm}"</span>
+              </div>
+            ) : (
+              "No hay opciones"
+            )}
           </li>
         )}
       </ul>

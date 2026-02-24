@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router";
 import { motion } from "framer-motion";
-import { EyeCloseIcon, EyeIcon } from "../../icons";
+import { EyeClosedIcon, EyeIcon } from "lucide-react";
 import Button from "../ui/button/Button";
 import * as authService from "../../features/auth/services/authService";
 import { useAuth } from "../../context/auth";
@@ -196,7 +196,7 @@ export default function SignInForm() {
               {showPassword ? (
                 <EyeIcon className="size-5" />
               ) : (
-                <EyeCloseIcon className="size-5" />
+                <EyeClosedIcon className="size-5" />
               )}
             </button>
           </div>

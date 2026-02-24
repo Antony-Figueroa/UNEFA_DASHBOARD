@@ -9,7 +9,7 @@ import * as authService from "../../features/auth/services/authService";
 import { securityQuestionsService, PresetQuestion } from "../../features/security-questions/services/securityQuestionsService";
 import { useToast } from "../../context/toast";
 import UnifiedDialog from "../ui/dialog/UnifiedDialog";
-import { EyeCloseIcon, EyeIcon } from "../../icons";
+import { EyeClosedIcon, EyeIcon } from "lucide-react";
 
 interface QuestionForm {
   questionType: 'PRESET' | 'CUSTOM';
@@ -341,7 +341,7 @@ export default function UserPasswordCard() {
                   onClick={() => togglePassword("current")}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
                 >
-                  {showPasswords.current ? <EyeIcon className="h-4 w-4" /> : <EyeCloseIcon className="h-4 w-4" />}
+                  {showPasswords.current ? <EyeIcon className="h-4 w-4" /> : <EyeClosedIcon className="h-4 w-4" />}
                 </button>
               </div>
             </div>
@@ -363,7 +363,7 @@ export default function UserPasswordCard() {
                   onClick={() => togglePassword("new")}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
                 >
-                  {showPasswords.new ? <EyeIcon className="h-4 w-4" /> : <EyeCloseIcon className="h-4 w-4" />}
+                  {showPasswords.new ? <EyeIcon className="h-4 w-4" /> : <EyeClosedIcon className="h-4 w-4" />}
                 </button>
               </div>
               
@@ -409,7 +409,7 @@ export default function UserPasswordCard() {
                   onClick={() => togglePassword("confirm")}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
                 >
-                  {showPasswords.confirm ? <EyeIcon className="h-4 w-4" /> : <EyeCloseIcon className="h-4 w-4" />}
+                  {showPasswords.confirm ? <EyeIcon className="h-4 w-4" /> : <EyeClosedIcon className="h-4 w-4" />}
                 </button>
               </div>
               {formData.confirmPassword && !passwordsMatch && (

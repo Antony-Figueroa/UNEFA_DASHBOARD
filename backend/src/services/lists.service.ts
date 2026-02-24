@@ -544,3 +544,33 @@ export const getMultipleListsByNames = async (identifiers: string[]) => {
   cacheManager.set(cacheKey, result, CACHE_TTL);
   return result;
 };
+
+/**
+ * Get phone prefixes (public endpoint - no auth required)
+ */
+export const getPhonePrefixes = async () => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { data: list } = await supabase
+      .from('t_list')
+      .select('LIST_ID')
+      .eq('NAME', 'CODIGOS_AREA')
+      .eq('STATUS', 1)
+      .single();
+
+    if (!list) {
+      return [];
+    }
+
+    const { data: values } = await supabase
+      .from('t_value_list')
+      .select('NAME, ABBREVIATION')
+      .eq('LIST_ID', list.LIST_ID)
+      .eq('STATUS', 1)
+      .order('NAME');
+
+    return (values || []).map(v => ({
+      value: v.NAME,
+      label: v.ABBREVIATION || v.NAME
+    }));
+  });
+};

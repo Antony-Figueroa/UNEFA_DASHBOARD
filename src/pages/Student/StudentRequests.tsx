@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import studentService from "../../features/student/services/studentService";
@@ -7,6 +7,9 @@ import Badge from "../../components/ui/badge/Badge";
 import Button from "../../components/ui/button/Button";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/modal";
 import toast from "react-hot-toast";
+import { getTutors } from "../../features/tutors/services/tutorsService";
+import { getInstitutions } from "../../features/institutions/services/institutionsService";
+import { getCareers } from "../../features/careers/services/careersService";
 
 const statusColors: Record<string, "success" | "warning" | "info" | "error" | "light"> = {
   pending: "warning",
@@ -25,6 +28,9 @@ const statusLabels: Record<string, string> = {
 export default function StudentRequests() {
   const [requests, setRequests] = useState<StudentRequest[]>([]);
   const [types, setTypes] = useState<RequestType[]>([]);
+  const [tutors, setTutors] = useState<{ value: string; label: string }[]>([]);
+  const [institutions, setInstitutions] = useState<{ value: string; label: string }[]>([]);
+  const [careers, setCareers] = useState<{ value: string; label: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<StudentRequest | null>(null);
@@ -33,7 +39,20 @@ export default function StudentRequests() {
     subject: "",
     description: ""
   });
+  const [reassignmentData, setReassignmentData] = useState({
+    newTutorId: "",
+    newInstitutionId: "",
+    newCareerId: "",
+    reason: ""
+  });
   const [submitting, setSubmitting] = useState(false);
+
+  const selectedType = useMemo(() => 
+    types.find(t => t.id === parseInt(newRequest.typeId)),
+    [types, newRequest.typeId]
+  );
+
+  const isReassignment = selectedType?.isReassignment || selectedType?.category === 'REASSIGNMENT';
 
   useEffect(() => {
     fetchData();
@@ -42,12 +61,32 @@ export default function StudentRequests() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [requestsData, typesData] = await Promise.all([
+      const [requestsData, typesData, tutorsData, institutionsData, careersData] = await Promise.all([
         studentService.getRequests(),
-        studentService.getRequestTypes()
+        studentService.getRequestTypes(),
+        getTutors(),
+        getInstitutions(),
+        getCareers()
       ]);
       setRequests(requestsData);
       setTypes(typesData);
+      
+      setTutors((tutorsData as any[] || []).map((t: any) => ({
+        value: String(t.tutorId),
+        label: `${t.name} ${t.surname}`
+      })));
+      
+      const instList = (institutionsData as any)?.data || (institutionsData as any[]) || [];
+      setInstitutions(instList.map((i: any) => ({
+        value: String(i.institutionId),
+        label: i.institutionName
+      })));
+      
+      const careerList = (careersData as any)?.data || (careersData as any[]) || [];
+      setCareers(careerList.map((c: any) => ({
+        value: String(c.careerId),
+        label: c.careerName
+      })));
     } catch (err) {
       console.error("[StudentRequests] Error:", err);
       toast.error("Error al cargar datos");
@@ -62,16 +101,41 @@ export default function StudentRequests() {
       return;
     }
 
+    if (isReassignment && !reassignmentData.reason) {
+      toast.error("Debes justificar el motivo de la reasignación");
+      return;
+    }
+
     try {
       setSubmitting(true);
-      await studentService.createRequest({
+      
+      const payload: any = {
         typeId: parseInt(newRequest.typeId),
         subject: newRequest.subject,
         description: newRequest.description
-      });
+      };
+
+      if (isReassignment) {
+        const reassignmentFields: any = { reason: reassignmentData.reason };
+        
+        if (reassignmentData.newTutorId) {
+          reassignmentFields.newTutorId = parseInt(reassignmentData.newTutorId);
+        }
+        if (reassignmentData.newInstitutionId) {
+          reassignmentFields.newInstitutionId = parseInt(reassignmentData.newInstitutionId);
+        }
+        if (reassignmentData.newCareerId) {
+          reassignmentFields.newCareerId = parseInt(reassignmentData.newCareerId);
+        }
+        
+        payload.reassignmentData = reassignmentFields;
+      }
+
+      await studentService.createRequest(payload);
       toast.success("Solicitud enviada exitosamente");
       setShowModal(false);
       setNewRequest({ typeId: "", subject: "", description: "" });
+      setReassignmentData({ newTutorId: "", newInstitutionId: "", newCareerId: "", reason: "" });
       fetchData();
     } catch (err) {
       console.error("[StudentRequests] Error creating:", err);
@@ -209,6 +273,72 @@ export default function StudentRequests() {
                 placeholder="Detalla tu solicitud..."
               />
             </div>
+
+            {/* Campos de Reasignación */}
+            {isReassignment && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg space-y-4">
+                <h4 className="font-medium text-blue-800 dark:text-blue-200">Datos de Reasignación</h4>
+                
+                {selectedType?.name?.includes('Tutor') && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Nuevo Tutor *</label>
+                    <select
+                      value={reassignmentData.newTutorId}
+                      onChange={(e) => setReassignmentData({ ...reassignmentData, newTutorId: e.target.value })}
+                      className="w-full px-4 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800"
+                    >
+                      <option value="">Seleccionar tutor...</option>
+                      {tutors.map((t) => (
+                        <option key={t.value} value={t.value}>{t.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {selectedType?.name?.includes('Empresa') && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Nueva Empresa/Institución *</label>
+                    <select
+                      value={reassignmentData.newInstitutionId}
+                      onChange={(e) => setReassignmentData({ ...reassignmentData, newInstitutionId: e.target.value })}
+                      className="w-full px-4 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800"
+                    >
+                      <option value="">Seleccionar empresa...</option>
+                      {institutions.map((i) => (
+                        <option key={i.value} value={i.value}>{i.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {selectedType?.name?.includes('Carrera') && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Nueva Carrera *</label>
+                    <select
+                      value={reassignmentData.newCareerId}
+                      onChange={(e) => setReassignmentData({ ...reassignmentData, newCareerId: e.target.value })}
+                      className="w-full px-4 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800"
+                    >
+                      <option value="">Seleccionar carrera...</option>
+                      {careers.map((c) => (
+                        <option key={c.value} value={c.value}>{c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Motivo de la reasignación *</label>
+                  <textarea
+                    value={reassignmentData.reason}
+                    onChange={(e) => setReassignmentData({ ...reassignmentData, reason: e.target.value })}
+                    className="w-full px-4 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800"
+                    rows={3}
+                    placeholder="Explica el motivo por el cual necesitas este cambio..."
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </ModalBody>
         <ModalFooter>

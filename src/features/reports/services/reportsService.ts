@@ -1,5 +1,31 @@
 import apiClient from '../../../api/apiClient';
 
+export interface CulminatedStudentReportRow {
+  id: number;
+  studentCi: string;
+  studentName: string;
+  careerName: string;
+  institutionName: string;
+  practiceType: string;
+  tutorName: string;
+  period: string;
+  startDate: string;
+  endDate: string;
+  totalHours: number;
+  grade: number;
+  status: 'pending' | 'approved' | 'certified';
+  certificateNumber?: string;
+  certifiedAt?: string;
+}
+
+export interface CulminatedStudentsResponse {
+  success: boolean;
+  data: CulminatedStudentReportRow[];
+  meta: {
+    total: number;
+  };
+}
+
 export interface ReportMetric {
   label: string;
   value: number | string;
@@ -92,6 +118,22 @@ export const reportsService = {
       period,
       format
     });
+    return response.data;
+  },
+
+  getCulminatedStudents: async (params?: {
+    periodId?: number;
+    careerId?: number;
+    status?: string;
+    institutionId?: number;
+  }): Promise<CulminatedStudentsResponse> => {
+    const queryParams = new URLSearchParams();
+    if (params?.periodId) queryParams.append('periodId', params.periodId.toString());
+    if (params?.careerId) queryParams.append('careerId', params.careerId.toString());
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.institutionId) queryParams.append('institutionId', params.institutionId.toString());
+    
+    const response = await apiClient.get(`/reports/culminated-students?${queryParams.toString()}`);
     return response.data;
   }
 };

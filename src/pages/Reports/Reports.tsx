@@ -11,6 +11,7 @@ import { StudentPDF } from "../../components/ui/pdf/templates/StudentPDF";
 import { TutorPDF } from "../../components/ui/pdf/templates/TutorPDF";
 import { InstitutionPDF } from "../../components/ui/pdf/templates/InstitutionPDF";
 import { EnrollmentPDF } from "../../components/ui/pdf/templates/EnrollmentPDF";
+import { CulminatedStudentsPDF } from "../../components/ui/pdf/templates/CulminatedStudentsPDF";
 import { getStudents } from "../../features/students/services/studentsService";
 import { getInstitutions } from "../../features/institutions/services/institutionsService";
 import { getEnrollments } from "../../features/enrollment/services/enrollmentService";
@@ -24,7 +25,7 @@ interface ReportMetric {
   trend?: "up" | "down" | "stable";
 }
 
-type ReportType = "students" | "enrollments" | "tracking" | "certificates" | "institutions" | "tutores-academicos" | "";
+type ReportType = "students" | "enrollments" | "tracking" | "certificates" | "institutions" | "tutores-academicos" | "culminated-students" | "";
 
 export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
@@ -159,6 +160,26 @@ export default function ReportsPage() {
       loadPDF: async () => [],
       pdfTemplate: (data) => <StudentPDF data={data as any[]} />,
       columns: []
+    },
+    "culminated-students": {
+      title: "Estudiantes Culminados",
+      subtitle: "Estudiantes que han completado sus prácticas profesionales",
+      loadPDF: async () => {
+        const response = await reportsService.getCulminatedStudents();
+        return response.data;
+      },
+      pdfTemplate: (data) => <CulminatedStudentsPDF data={data as any[]} />,
+      columns: [
+        { header: "Cédula", accessor: "studentCi" as any },
+        { header: "Estudiante", accessor: "studentName" as any },
+        { header: "Carrera", accessor: "careerName" as any },
+        { header: "Institución", accessor: "institutionName" as any },
+        { header: "Tipo", accessor: "practiceType" as any },
+        { header: "Tutor", accessor: "tutorName" as any },
+        { header: "Período", accessor: "period" as any },
+        { header: "Horas", accessor: "totalHours" as any },
+        { header: "Nota", accessor: "grade" as any },
+      ]
     }
   };
 
@@ -405,6 +426,7 @@ export default function ReportsPage() {
                     { value: "certificates", label: "Certificados" },
                     { value: "institutions", label: "Instituciones" },
                     { value: "tutores-academicos", label: "ANEXO 4 - Tutores Académicos" },
+                    { value: "culminated-students", label: "Estudiantes Culminados" },
                   ]}
                   value={reportType}
                   onChange={(e) => setReportType(e as unknown as ReportType)}

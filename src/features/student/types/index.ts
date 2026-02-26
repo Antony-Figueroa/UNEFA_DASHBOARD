@@ -77,6 +77,18 @@ export interface RequestType {
   id: number;
   name: string;
   description: string;
+  isReassignment?: boolean;
+  category?: string;
+}
+
+export interface ReassignmentData {
+  newTutorId?: number;
+  newInstitutionId?: number;
+  newCareerId?: number;
+  reason: string;
+  currentTutorName?: string;
+  currentInstitutionName?: string;
+  currentCareerName?: string;
 }
 
 export interface StudentRequest {
@@ -109,6 +121,7 @@ export interface CreateRequestPayload {
   typeId: number;
   subject: string;
   description: string;
+  reassignmentData?: ReassignmentData;
 }
 
 export interface ActivityLogStats {

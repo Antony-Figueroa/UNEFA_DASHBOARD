@@ -4,7 +4,7 @@ import type {
   StudentProfile, 
   StudentRequest, 
   RequestType,
-  CreateRequestPayload 
+  CreateRequestPayload
 } from '../types';
 
 const API_URL = '/student';
@@ -31,7 +31,17 @@ export const studentService = {
   },
 
   createRequest: async (data: CreateRequestPayload): Promise<{ id: number }> => {
-    const response = await apiClient.post(`${API_URL}/requests`, data);
+    const payload: Record<string, unknown> = {
+      typeId: data.typeId,
+      subject: data.subject,
+      description: data.description
+    };
+
+    if (data.reassignmentData) {
+      payload.reassignmentData = data.reassignmentData;
+    }
+
+    const response = await apiClient.post(`${API_URL}/requests`, payload);
     return response.data.data;
   }
 };

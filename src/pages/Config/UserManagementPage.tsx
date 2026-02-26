@@ -13,6 +13,7 @@ import { useDebounce } from "../../hooks/useDebounce";
 import { useAuth } from "../../context/auth";
 import { useToast } from "../../context/toast";
 import { User, CreateUserPayload, UpdateUserPayload } from "../../features/users/types";
+import { rolesService } from "../../features/roles/services/rolesService";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 
@@ -84,24 +85,23 @@ const UserManagementPage = () => {
     bulkToggleStatus
   } = useUsers(debouncedFilters, activeTab, page, limit);
 
-  // Cargar roles desde el sistema de listas
+  // Cargar roles desde la API
   useEffect(() => {
     const loadRoles = async () => {
       try {
-        const data = await fetchMultipleLists(["Roles"]);
-        if (data["Roles"] && data["Roles"].length > 0) {
-          const options = data["Roles"].map(v => ({
-            value: v.id,
-            label: v.name.toUpperCase()
-          }));
+        const response = await rolesService.getAll();
+        if (response.success && response.data.length > 0) {
+          const options = response.data
+            .filter(r => r.status === 'active')
+            .map(r => ({
+              value: r.id.toString(),
+              label: r.name.toUpperCase()
+            }));
           setRolesOptions(options);
           
           const newMap: Record<number, string> = {};
-          data["Roles"].forEach(v => {
-            const name = v.name.toUpperCase();
-            if (name === "MAESTRO") newMap[0] = "MAESTRO";
-            else if (name === "ADMIN") newMap[1] = "ADMIN";
-            else if (name === "ASISTENTE") newMap[2] = "ASISTENTE";
+          response.data.forEach(r => {
+            newMap[r.id] = r.name.toUpperCase();
           });
           
           if (Object.keys(newMap).length > 0) {

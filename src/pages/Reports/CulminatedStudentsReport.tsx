@@ -10,7 +10,6 @@ import { getPeriods } from "../../features/periods/services/periodService";
 import { getCareers } from "../../features/careers/services/careersService";
 import { getInstitutions } from "../../features/institutions/services/institutionsService";
 import toast from "react-hot-toast";
-import { FileDownIcon } from "../../icons/actions";
 
 export default function CulminatedStudentsReportPage() {
   const [loading, setLoading] = useState(true);
@@ -35,21 +34,21 @@ export default function CulminatedStudentsReportPage() {
       ]);
 
       setPeriods(
-        (periodsRes.data || []).map((p: any) => ({
+        (periodsRes || []).map((p: any) => ({
           value: String(p.periodId),
           label: p.description
         }))
       );
 
       setCareers(
-        (careersRes.data || []).map((c: any) => ({
+        (careersRes || []).map((c: any) => ({
           value: String(c.careerId),
           label: c.careerName
         }))
       );
 
       setInstitutions(
-        (institutionsRes.data || []).map((i: any) => ({
+        (institutionsRes || []).map((i: any) => ({
           value: String(i.institutionId),
           label: i.institutionName
         }))
@@ -84,10 +83,6 @@ export default function CulminatedStudentsReportPage() {
     setFilters(newFilters);
   };
 
-  const handleExportPDF = () => {
-    toast.success("Exportando PDF...");
-  };
-
   const totalHours = data.reduce((sum, item) => sum + item.totalHours, 0);
   const avgGrade = data.length > 0
     ? data.reduce((sum, item) => sum + (item.grade || 0), 0) / data.filter(item => item.grade > 0).length
@@ -95,38 +90,27 @@ export default function CulminatedStudentsReportPage() {
 
   return (
     <>
-      <PageMeta title="Reporte de Estudiantes Culminados | UNEFA" />
-      <PageBreadcrumb
-        pageTitle="Reportes"
-        pageTitleSecondary="Gestión Académica"
-        breadcrumbItems={[
-          { label: "Reportes", path: "/reports" },
-          { label: "Estudiantes Culminados", path: "/reports/culminated-students" }
-        ]}
-      />
+      <PageMeta title="Reportes de Estudiantes Culminados" description="Reporte de estudiantes que culminaron sus prácticas profesionales" />
+      <PageBreadcrumb pageTitle="Reportes" />
 
-      <div className="space-y-6">
-        <ComponentCard>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-xl font-bold text-text-primary dark:text-white">
-                Estudiantes que Culminaron Prácticas
-              </h2>
-              <p className="text-sm text-text-secondary dark:text-gray-400 mt-1">
-                Reporte de estudiantes que han completado sus prácticas profesionales
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={handleExportPDF}>
-                <FileDownIcon className="w-4 h-4 mr-2" />
-                Exportar PDF
-              </Button>
-              <Button variant="outline" onClick={fetchData}>
-                Actualizar
-              </Button>
-            </div>
+      <div className="space-y-6 animate-fadeIn">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-text-primary dark:text-text-emphasis">
+              Estudiantes Culminados
+            </h1>
+            <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">
+              Reporte de estudiantes que han completado sus prácticas profesionales
+            </p>
           </div>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={fetchData}>
+              Actualizar
+            </Button>
+          </div>
+        </div>
 
+        <ComponentCard title="Filtros y Resultados">
           <CulminatedStudentsFilters
             periodId={filters.periodId}
             careerId={filters.careerId}

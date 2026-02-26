@@ -34,10 +34,12 @@ export const getAllRequests = async (req: AuthRequest, res: Response) => {
         DESCRIPTION,
         STATUS,
         RESPONSE,
+        REASSIGNMENT_DATA,
+        IS_REASSIGNMENT,
         CREATION_DATE,
         PROCESSED_AT,
         PROCESSED_BY,
-        t_request_types (NAME),
+        t_request_types (NAME, IS_REASSIGNMENT, CATEGORY),
         t_students (
           STUDENTS_CI,
           NAME,
@@ -171,7 +173,7 @@ export const getRequestById = async (req: AuthRequest, res: Response) => {
 export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { status, response } = req.body;
+    const { status, response, reassignmentData } = req.body;
     const userId = req.user?.userId;
     const supabase = dbManager.getConnection();
 
@@ -182,7 +184,112 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const updateData: any = {
+    // Obtener la solicitud actual
+    const { data: currentRequest } = await supabase
+      .from('t_student_requests')
+      .select(`
+        REQUEST_ID,
+        STUDENT_ID,
+        REQUEST_TYPE_ID,
+        IS_REASSIGNMENT,
+        t_request_types (NAME, IS_REASSIGNMENT, CATEGORY),
+      `)
+      .eq('REQUEST_ID', id)
+      .single();
+
+    if (!currentRequest) {
+      return res.status(404).json({ success: false, message: 'Solicitud no encontrada' });
+    }
+
+    // Procesar reasignación si es aprobada
+    if (status === 'approved' && reassignmentData) {
+      const isReassignment = currentRequest.t_request_types?.IS_REASSIGNMENT === 1;
+      
+      if (isReassignment) {
+        const { newTutorId, newInstitutionId, newCareerId, reason } = reassignmentData;
+
+        // Obtener práctica activa del estudiante
+        const { data: practice } = await supabase
+          .from('t_professional_practices')
+          .select('PROFESSIONAL_PRACTICE_ID')
+          .eq('STUDENTS_ID', currentRequest.STUDENT_ID)
+          .eq('PRACTICES_STATUS', 2) // Activa
+          .single();
+
+        if (practice) {
+          const updatePractice: Record<string, unknown> = {
+            UPDATED_AT: new Date().toISOString()
+          };
+
+          // Guardar valores anteriores para auditoría
+          if (newTutorId) {
+            const { data: currentTutor } = await supabase
+              .from('t_professional_practices_tutor')
+              .select('TUTOR_ID')
+              .eq('PROFESSIONAL_PRACTICE_ID', practice.PROFESSIONAL_PRACTICE_ID)
+              .single();
+            
+            if (currentTutor) {
+              await supabase
+                .from('t_student_requests')
+                .update({ PREVIOUS_TUTOR_ID: currentTutor.TUTOR_ID })
+                .eq('REQUEST_ID', id);
+            }
+
+            // Actualizar tutor
+            await supabase
+              .from('t_professional_practices_tutor')
+              .update({ TUTOR_ID: newTutorId })
+              .eq('PROFESSIONAL_PRACTICE_ID', practice.PROFESSIONAL_PRACTICE_ID);
+          }
+
+          if (newInstitutionId) {
+            const { data: currentPractice } = await supabase
+              .from('t_professional_practices')
+              .select('INSTITUTION_ID')
+              .eq('PROFESSIONAL_PRACTICE_ID', practice.PROFESSIONAL_PRACTICE_ID)
+              .single();
+
+            if (currentPractice) {
+              await supabase
+                .from('t_student_requests')
+                .update({ PREVIOUS_INSTITUTION_ID: currentPractice.INSTITUTION_ID })
+                .eq('REQUEST_ID', id);
+            }
+
+            updatePractice.INSTITUTION_ID = newInstitutionId;
+          }
+
+          if (newCareerId) {
+            const { data: student } = await supabase
+              .from('t_students')
+              .select('CAREER_ID')
+              .eq('STUDENTS_ID', currentRequest.STUDENT_ID)
+              .single();
+
+            if (student) {
+              await supabase
+                .from('t_student_requests')
+                .update({ PREVIOUS_CAREER_ID: student.CAREER_ID })
+                .eq('REQUEST_ID', id);
+            }
+
+            // Actualizar carrera del estudiante
+            await supabase
+              .from('t_students')
+              .update({ CAREER_ID: newCareerId })
+              .eq('STUDENTS_ID', currentRequest.STUDENT_ID);
+          }
+
+          await supabase
+            .from('t_professional_practices')
+            .update(updatePractice)
+            .eq('PROFESSIONAL_PRACTICE_ID', practice.PROFESSIONAL_PRACTICE_ID);
+        }
+      }
+    }
+
+    const updateData: Record<string, unknown> = {
       STATUS: status,
       PROCESSED_BY: userId,
       PROCESSED_AT: new Date().toISOString()
@@ -190,6 +297,10 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
 
     if (response !== undefined) {
       updateData.RESPONSE = response;
+    }
+
+    if (reassignmentData) {
+      updateData.REASSIGNMENT_DATA = reassignmentData;
     }
 
     const { error } = await supabase
@@ -224,7 +335,16 @@ export const getRequestTypes = async (req: AuthRequest, res: Response) => {
 
     if (error) throw error;
 
-    res.json({ success: true, data });
+    const types = (data || []).map((t: any) => ({
+      id: t.REQUEST_TYPE_ID,
+      name: t.NAME,
+      description: t.DESCRIPTION,
+      isActive: t.IS_ACTIVE,
+      isReassignment: t.IS_REASSIGNMENT || false,
+      category: t.CATEGORY || 'GENERAL'
+    }));
+
+    res.json({ success: true, data: types });
 
   } catch (error) {
     console.error('[AdminRequests] Error getting request types:', error);

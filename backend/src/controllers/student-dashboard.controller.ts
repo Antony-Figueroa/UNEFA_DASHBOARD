@@ -351,7 +351,9 @@ export const getRequestTypes = async (req: AuthRequest, res: Response) => {
     const types: RequestType[] = (data || []).map((t: any) => ({
       id: t.REQUEST_TYPE_ID,
       name: t.NAME,
-      description: t.DESCRIPTION
+      description: t.DESCRIPTION,
+      isReassignment: t.IS_REASSIGNMENT || false,
+      category: t.CATEGORY || 'GENERAL'
     }));
 
     res.json({ success: true, data: types });
@@ -427,13 +429,30 @@ export const getStudentRequests = async (req: AuthRequest, res: Response) => {
 export const createStudentRequest = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
-    const { typeId, subject, description } = req.body;
+    const { typeId, subject, description, reassignmentData } = req.body;
     const supabase = dbManager.getConnection();
 
     if (!typeId || !subject || !description) {
       return res.status(400).json({
         success: false,
         message: 'Tipo, asunto y descripción son requeridos'
+      });
+    }
+
+    // Verificar si es una solicitud de reasignación
+    const { data: requestType } = await supabase
+      .from('t_request_types')
+      .select('IS_REASSIGNMENT')
+      .eq('REQUEST_TYPE_ID', typeId)
+      .single();
+
+    const isReassignment = requestType?.IS_REASSIGNMENT === 1;
+
+    // Si es reasignación, validar que tenga los datos
+    if (isReassignment && !reassignmentData) {
+      return res.status(400).json({
+        success: false,
+        message: 'Los datos de reasignación son requeridos para este tipo de solicitud'
       });
     }
 
@@ -450,15 +469,22 @@ export const createStudentRequest = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const insertData: Record<string, unknown> = {
+      STUDENT_ID: student.STUDENTS_ID,
+      REQUEST_TYPE_ID: typeId,
+      SUBJECT: subject,
+      DESCRIPTION: description,
+      STATUS: 'pending',
+      IS_REASSIGNMENT: isReassignment ? 1 : 0
+    };
+
+    if (isReassignment && reassignmentData) {
+      insertData.REASSIGNMENT_DATA = reassignmentData;
+    }
+
     const { data, error } = await supabase
       .from('t_student_requests')
-      .insert({
-        STUDENT_ID: student.STUDENTS_ID,
-        REQUEST_TYPE_ID: typeId,
-        SUBJECT: subject,
-        DESCRIPTION: description,
-        STATUS: 'pending'
-      })
+      .insert(insertData)
       .select()
       .single();
 

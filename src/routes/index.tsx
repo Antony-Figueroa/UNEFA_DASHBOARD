@@ -22,6 +22,7 @@ const Maintenance = lazy(() => import("../pages/Config/Maintenance"));
 const Backups = lazy(() => import("../pages/Config/Backups"));
 const Culmination = lazy(() => import("../pages/Culmination/Culmination"));
 const Reports = lazy(() => import("../pages/Reports/Reports"));
+const CulminatedStudentsReport = lazy(() => import("../pages/Reports/CulminatedStudentsReport"));
 const Manuals = lazy(() => import("../pages/Manuals/Manuals"));
 
 const TutorDashboard = lazy(() => import("../pages/Tutor/TutorDashboard"));
@@ -171,6 +172,7 @@ export const AppRoutes = () => {
 
             {/* Reports */}
             <Route path="/reports" element={<Reports />} />
+            <Route path="/reports/culminated-students" element={<CulminatedStudentsReport />} />
 
 {/* Manuals */}
             <Route path="/manuals" element={<Manuals />} />

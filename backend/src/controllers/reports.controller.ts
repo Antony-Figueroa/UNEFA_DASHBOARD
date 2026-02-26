@@ -359,3 +359,153 @@ function getRegionName(code: string | undefined): string {
   };
   return regionMap[code || ''] || code || '';
 }
+
+export interface CulminatedStudentReportRow {
+  id: number;
+  studentCi: string;
+  studentName: string;
+  careerName: string;
+  institutionName: string;
+  practiceType: string;
+  tutorName: string;
+  period: string;
+  startDate: string;
+  endDate: string;
+  totalHours: number;
+  grade: number;
+  status: 'pending' | 'approved' | 'certified';
+  certificateNumber?: string;
+  certifiedAt?: string;
+}
+
+export const getCulminatedStudentsReport = async (req: Request, res: Response) => {
+  try {
+    const { periodId, careerId, status, institutionId } = req.query;
+    const supabase = dbManager.getConnection();
+
+    const { data: practices, error: practicesError } = await supabase
+      .from('t_professional_practices')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        START_DATE,
+        END_DATE,
+        GRADE,
+        PRACTICES_STATUS,
+        PERIOD_ID,
+        INSTITUTION_ID,
+        STUDENTS_ID,
+        INTERNSHIP_TYPE_ID,
+        t_students (
+          STUDENTS_CI,
+          NAME,
+          SECOND_NAME,
+          SURNAME,
+          SECOND_SURNAME,
+          CAREER_ID,
+          t_career (
+            CAREER_ID,
+            CAREER_NAME
+          )
+        ),
+        t_institution (
+          INSTITUTION_ID,
+          INSTITUTION_NAME
+        ),
+        t_internships_period (
+          PERIOD_ID,
+          DESCRIPTION,
+          START_DATE,
+          END_DATE
+        ),
+        t_internship_type (
+          INTERNSHIP_TYPE_ID,
+          NAME
+        ),
+        t_professional_practices_tutor (
+          TUTOR_ID,
+          t_tutors (
+            TUTOR_ID,
+            NAME,
+            SECOND_NAME,
+            SURNAME,
+            SECOND_SURNAME
+          )
+        )
+      `)
+      .eq('STATUS', 1)
+      .eq('PRACTICES_STATUS', 3);
+
+    if (practicesError) {
+      console.error('[CulminatedReport] Error fetching practices:', practicesError);
+      res.status(500).json({ message: 'Error al obtener prácticas', error: practicesError.message });
+      return;
+    }
+
+    if (!practices || practices.length === 0) {
+      res.json({
+        success: true,
+        data: [],
+        meta: { total: 0 }
+      });
+      return;
+    }
+
+    const practiceIds = practices.map((p: any) => p.PROFESSIONAL_PRACTICE_ID);
+
+    const { data: tracking } = await supabase
+      .from('t_tracking')
+      .select('PROFESSIONAL_PRACTICE_ID, TOTAL_HOURS')
+      .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
+
+    const hoursMap = new Map<number, number>();
+    (tracking || []).forEach((t: any) => {
+      hoursMap.set(t.PROFESSIONAL_PRACTICE_ID, t.TOTAL_HOURS || 0);
+    });
+
+    let filteredPractices = practices.filter((p: any) => {
+      if (periodId && p.PERIOD_ID !== Number(periodId)) return false;
+      if (careerId && p.t_students?.CAREER_ID !== Number(careerId)) return false;
+      if (institutionId && p.INSTITUTION_ID !== Number(institutionId)) return false;
+      return true;
+    });
+
+    const reportData: CulminatedStudentReportRow[] = filteredPractices.map((p: any) => {
+      const tutor = p.t_professional_practices_tutor?.[0]?.t_tutors;
+      const student = p.t_students;
+      
+      return {
+        id: p.PROFESSIONAL_PRACTICE_ID,
+        studentCi: student?.STUDENTS_CI || '',
+        studentName: `${student?.NAME || ''} ${student?.SECOND_NAME || ''} ${student?.SURNAME || ''} ${student?.SECOND_SURNAME || ''}`.trim(),
+        careerName: student?.t_career?.CAREER_NAME || '',
+        institutionName: p.t_institution?.INSTITUTION_NAME || '',
+        practiceType: p.t_internship_type?.NAME || '',
+        tutorName: tutor ? `${tutor.NAME || ''} ${tutor.SECOND_NAME || ''} ${tutor.SURNAME || ''} ${tutor.SECOND_SURNAME || ''}`.trim() : '',
+        period: p.t_internships_period?.DESCRIPTION || '',
+        startDate: p.START_DATE || '',
+        endDate: p.END_DATE || '',
+        totalHours: hoursMap.get(p.PROFESSIONAL_PRACTICE_ID) || 0,
+        grade: p.GRADE || 0,
+        status: 'approved',
+        certificateNumber: undefined,
+        certifiedAt: undefined
+      };
+    });
+
+    if (status && status !== 'all') {
+      reportData.filter(r => r.status === status);
+    }
+
+    res.json({
+      success: true,
+      data: reportData,
+      meta: {
+        total: reportData.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Culminated Students Report Error:', error);
+    res.status(500).json({ message: 'Error al obtener reporte de estudiantes culminados', error });
+  }
+};

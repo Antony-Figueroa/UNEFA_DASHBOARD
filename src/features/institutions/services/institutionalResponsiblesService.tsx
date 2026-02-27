@@ -5,6 +5,7 @@
 
 import { InstitutionalResponsible, CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload } from "../types";
 import { createCrudService } from "../../../api/crudServiceFactory";
+import apiClient from "../../../api/apiClient";
 
 /**
  * Base URL for institutional responsibles endpoints.
@@ -50,3 +51,17 @@ export const responsibleService = createCrudService<InstitutionalResponsible, Cr
   endpoint: API_URL,
   mapFromApi
 });
+
+/**
+ * Obtiene un responsable institucional por su cédula de identidad.
+ * @param ci - Cédula de identidad (formato: V-12345678)
+ */
+export const getResponsibleByCi = async (ci: string): Promise<InstitutionalResponsible | null> => {
+  try {
+    const response = await apiClient.get(`${API_URL}/by-ci/${ci}`);
+    return response.data?.data || null;
+  } catch (error) {
+    console.error("[responsibleService] Error al obtener responsable por CI:", error);
+    return null;
+  }
+};

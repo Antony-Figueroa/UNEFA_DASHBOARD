@@ -19,6 +19,7 @@ import * as listsService from "../../lists/services/listsService";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { useToast } from "../../../context/toast";
 import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, cleanPhone } from "../../../utils/inputFormat";
+import { getTutorByCi } from "../services/tutorsService";
 
 /**
  * Props for the TutorModal component.
@@ -63,6 +64,11 @@ export default function TutorModal({
   // State for display values with formatting
   const [displayIdentificationNumber, setDisplayIdentificationNumber] = useState("");
   const [displayPhoneNumber, setDisplayPhoneNumber] = useState("");
+
+  // State for duplicate detection
+  const [isCheckingCi, setIsCheckingCi] = useState(false);
+  const [existingTutor, setExistingTutor] = useState<any | null>(null);
+  const [viewOnlyMode, setViewOnlyMode] = useState(false);
 
   // Handle identification number input change with formatting
   const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -328,7 +334,9 @@ export default function TutorModal({
     handleSubmit,
     control,
     reset,
+    watch,
     setValue,
+    setError,
     formState: { errors, isDirty, isValid },
   } = useForm<TutorFormData>({
     resolver: zodResolver(tutorSchema),
@@ -461,11 +469,17 @@ useEffect(() => {
 
   const isInUse = editingTutor?.isInUse;
 
+  const handleClose = () => {
+    setExistingTutor(null);
+    setViewOnlyMode(false);
+    onClose();
+  };
+
   return (
     <>
       <Modal 
         isOpen={isOpen} 
-        onClose={onClose} 
+        onClose={handleClose} 
         onCloseAttempt={handleCloseAttempt} 
         showCloseButton 
         size="4xl"
@@ -485,6 +499,15 @@ useEffect(() => {
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
         <form id="tutor-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto py-2">
+          {existingTutor && (
+            <div className="mb-4 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg">
+              <p className="text-sm text-warning-700 dark:text-warning-300">
+                Esta cédula ya está registrada. Los campos están en modo visualización. 
+                Haga clic en "Habilitar Edición" para modificar.
+              </p>
+            </div>
+          )}
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
             {/* Cédula */}
             <div>
@@ -502,7 +525,7 @@ useEffect(() => {
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         value={String(field.value)}
-                        disabled={isInUse}
+                        disabled={isInUse || !!existingTutor}
                         error={!!errors.identificationPrefix}
                         onAddNew={() => openAddValueModal("Nacionalidad", "identificationPrefix", "Agregar Nacionalidad")}
                         addNewLabel="Nueva opción"
@@ -510,15 +533,76 @@ useEffect(() => {
                     )}
                   />
                 </div>
-<div className="flex-1">
+                <div className="flex-1">
                   <Input
                     value={displayIdentificationNumber}
                     onChange={handleIdentificationNumberChange}
                     placeholder="V00.000.000"
                     error={!!errors.identificationNumber}
-                    disabled={isInUse}
+                    hint={isCheckingCi ? "Verificando..." : (errors.identificationNumber?.message || " ")}
+                    disabled={isInUse || !!editingTutor || !!existingTutor}
                     maxLength={9}
                     className="tracking-widest"
+                    onBlur={async (e) => {
+                      if (!existingTutor && !editingTutor) {
+                        const value = e.target.value;
+                        const cleaned = cleanCedula(value);
+                        if (cleaned.length >= 6) {
+                          setIsCheckingCi(true);
+                          const prefix = watch("identificationPrefix") || 'V';
+                          const fullCi = `${prefix}-${cleaned}`;
+                          try {
+                            const existingData = await getTutorByCi(fullCi);
+                            if (existingData) {
+                              const message = existingData.status 
+                                ? "Esta cédula ya está registrada." 
+                                : "Cédula registrada (INACTIVO). Contacte a administración para reactivar.";
+                              
+                              setError("identificationNumber", { 
+                                type: "manual", 
+                                message 
+                              });
+
+                              setExistingTutor(existingData);
+                              setViewOnlyMode(true);
+
+                              const areaCode = existingData.phone ? existingData.phone.substring(0, 4) : "";
+                              const phoneNumber = existingData.phone ? existingData.phone.substring(4) : "";
+
+                              setValue("identificationPrefix", existingData.identificationPrefix || 'V');
+                              setDisplayIdentificationNumber(formatCedulaDisplay(existingData.identificationNumber || ''));
+                              setValue("identificationNumber", existingData.identificationNumber || '');
+                              setValue("firstName", existingData.firstName || "");
+                              setValue("middleName", existingData.middleName || "");
+                              setValue("lastName", existingData.lastName || "");
+                              setValue("secondLastName", existingData.secondLastName || "");
+                              setValue("sex", existingData.sex || "");
+                              setValue("phoneAreaCode", areaCode);
+                              setDisplayPhoneNumber(formatPhoneDisplay(phoneNumber));
+                              setValue("phoneNumber", phoneNumber);
+                              setValue("email", existingData.email || "");
+                              setValue("condition", existingData.condition || "");
+                              setValue("dedication", existingData.dedication || "");
+                              setValue("category", existingData.category || "");
+                              setValue("profession", existingData.profession || "");
+                              setValue("titulo", existingData.titulo || "");
+                              setValue("carreras", existingData.carreras || []);
+
+                              addToast({
+                                variant: "warning",
+                                title: "Registro Existente",
+                                message: "El tutor ya existe. Puede ver sus datos o editarlo."
+                              });
+                            }
+                          } catch (err) {
+                            console.error("Error checking CI:", err);
+                          } finally {
+                            setIsCheckingCi(false);
+                          }
+                        }
+                      }
+                      register("identificationNumber").onBlur(e);
+                    }}
                   />
                 </div>
               </div>
@@ -536,6 +620,7 @@ useEffect(() => {
                 {...register("firstName")}
                 placeholder="INGRESE PRIMER NOMBRE"
                 error={!!errors.firstName}
+                disabled={!!existingTutor}
                 onChange={(e) => {
                   e.target.value = e.target.value.toUpperCase();
                   register("firstName").onChange(e);
@@ -553,6 +638,7 @@ useEffect(() => {
                 {...register("middleName")}
                 placeholder="INGRESE SEGUNDO NOMBRE"
                 error={!!errors.middleName}
+                disabled={!!existingTutor}
                 onChange={(e) => {
                   e.target.value = e.target.value.toUpperCase();
                   register("middleName").onChange(e);
@@ -570,6 +656,7 @@ useEffect(() => {
                 {...register("lastName")}
                 placeholder="INGRESE PRIMER APELLIDO"
                 error={!!errors.lastName}
+                disabled={!!existingTutor}
                 onChange={(e) => {
                   e.target.value = e.target.value.toUpperCase();
                   register("lastName").onChange(e);
@@ -587,6 +674,7 @@ useEffect(() => {
                 {...register("secondLastName")}
                 placeholder="INGRESE SEGUNDO APELLIDO"
                 error={!!errors.secondLastName}
+                disabled={!!existingTutor}
                 onChange={(e) => {
                   e.target.value = e.target.value.toUpperCase();
                   register("secondLastName").onChange(e);
@@ -611,6 +699,7 @@ useEffect(() => {
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     value={String(field.value)}
+                    disabled={!!existingTutor}
                     error={!!errors.sex}
                   />
                 )}
@@ -825,15 +914,49 @@ useEffect(() => {
           <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
-          <AsyncButton
-            type="submit"
-            form="tutor-form"
-            loading={isLoading}
-            className="w-full sm:w-auto min-h-12"
-            disabled={!isValid || (editingTutor ? !isDirty : false)}
-          >
-            {editingTutor ? "Actualizar Registro" : "Guardar Tutor"}
-          </AsyncButton>
+          {existingTutor ? (
+            viewOnlyMode ? (
+              <AsyncButton 
+                type="button"
+                className="w-full sm:w-auto min-h-12"
+                onClick={() => {
+                  setViewOnlyMode(false);
+                }}
+              >
+                Habilitar Edición
+              </AsyncButton>
+            ) : (
+              <AsyncButton 
+                type="submit" 
+                form="tutor-form" 
+                loading={isLoading} 
+                disabled={!isValid}
+                className="w-full sm:w-auto min-h-12"
+              >
+                Guardar Cambios
+              </AsyncButton>
+            )
+          ) : editingTutor ? (
+            <AsyncButton 
+              type="submit" 
+              form="tutor-form" 
+              loading={isLoading} 
+              disabled={!isDirty}
+              className="w-full sm:w-auto min-h-12"
+            >
+              Actualizar Registro
+            </AsyncButton>
+          ) : (
+            <AsyncButton 
+              type="submit" 
+              form="tutor-form" 
+              loading={isLoading} 
+              disabled={!isValid}
+              className="w-full sm:w-auto min-h-12"
+            >
+              Guardar Tutor
+            </AsyncButton>
+          )}
         </div>
       </ModalFooter>
     </Modal>

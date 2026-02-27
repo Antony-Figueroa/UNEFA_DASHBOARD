@@ -105,7 +105,7 @@ const ActionButtons = ({
             )}
             {onToggleStatus && (
                 <AsyncActionButton
-                    onClick={async () => !isCurrentUser && onToggleStatus()}
+                    onClick={async () => { if (!isCurrentUser) await onToggleStatus(); }}
                     disabled={isCurrentUser}
                     icon={status === 1 ? <TrashIcon /> : <RefreshIcon />}
                     tooltip={isCurrentUser ? "No puedes desactivarte a ti mismo" : (status === 1 ? "Desactivar usuario" : "Activar usuario")}

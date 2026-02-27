@@ -4,12 +4,14 @@ import {
   createTutor, 
   updateTutor, 
   deleteTutor, 
-  toggleTutorStatus 
+  toggleTutorStatus,
+  getTutorByCi
 } from '../controllers/tutors.controller.js';
 
 const router = Router();
 
 router.get('/', getTutors);
+router.get('/by-ci/:ci', getTutorByCi);
 router.post('/', createTutor);
 router.patch('/:id', updateTutor);
 router.delete('/:id', deleteTutor);

@@ -22,6 +22,7 @@ import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/syst
 import InstitutionalResponsibleModal from "./InstitutionalResponsibleModal";
 import { useToast } from "../../../context/toast";
 import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, cleanPhone } from "../../../utils/inputFormat";
+import { getInstitutionByRif } from "../services/institutionsService";
 
 /**
  * Props for the InstitutionModal component.
@@ -161,6 +162,11 @@ export default function InstitutionModal({
   const [displayRifNumber, setDisplayRifNumber] = useState("");
   const [displayPhoneNumber, setDisplayPhoneNumber] = useState("");
 
+  // State for duplicate detection
+  const [isCheckingRif, setIsCheckingRif] = useState(false);
+  const [existingInstitution, setExistingInstitution] = useState<any | null>(null);
+  const [viewOnlyMode, setViewOnlyMode] = useState(false);
+
   // Handle RIF number input change with formatting
   const handleRifNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
@@ -186,7 +192,9 @@ export default function InstitutionModal({
     handleSubmit,
     control,
     reset,
+    watch,
     setValue,
+    setError,
     formState: { errors, isDirty, isValid },
   } = useForm<InstFormData>({
     resolver: zodResolver(instSchema),
@@ -471,6 +479,12 @@ export default function InstitutionModal({
     setConfirmSaveOpen(true);
   };
 
+  const handleClose = () => {
+    setExistingInstitution(null);
+    setViewOnlyMode(false);
+    onClose();
+  };
+
   /**
    * Helper to convert input value to uppercase.
    */
@@ -483,7 +497,7 @@ export default function InstitutionModal({
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl">
+      <Modal isOpen={isOpen} onClose={handleClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl">
         <ModalHeader>
           <span className="text-xl font-semibold text-text-primary dark:text-white/90">
             {editingInst ? "Editar Institución" : "Registrar Institución"}
@@ -492,6 +506,14 @@ export default function InstitutionModal({
         </ModalHeader>
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
         <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {existingInstitution && (
+            <div className="mb-4 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg md:col-span-2">
+              <p className="text-sm text-warning-700 dark:text-warning-300">
+                Este RIF ya está registrado. Los campos están en modo visualización. 
+                Haga clic en "Habilitar Edición" para modificar.
+              </p>
+            </div>
+          )}
           <div>
             <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">RIF *</label>
             <div className="flex gap-2">
@@ -513,17 +535,78 @@ export default function InstitutionModal({
                    )}
                  />
                </div>
-                <div className="flex-1">
-                  <Input 
-                    value={displayRifNumber}
-                    onChange={handleRifNumberChange}
-                    placeholder="Ej. J-12.345.678" 
-                    className="uppercase tracking-widest"
-                    error={!!errors.rifNumber} 
-                    disabled={!!editingInst}
-                    maxLength={9}
-                  />
-                </div>
+                 <div className="flex-1">
+                   <Input 
+                     value={displayRifNumber}
+                     onChange={handleRifNumberChange}
+                     placeholder="Ej. J-12.345.678" 
+                     className="uppercase tracking-widest"
+                     error={!!errors.rifNumber}
+                     hint={isCheckingRif ? "Verificando..." : (errors.rifNumber?.message || " ")}
+                     disabled={!!editingInst || !!existingInstitution}
+                     maxLength={9}
+                     onBlur={async (e) => {
+                       if (!existingInstitution && !editingInst) {
+                         const value = e.target.value;
+                         const cleaned = cleanCedula(value);
+                         if (cleaned.length >= 9) {
+                           setIsCheckingRif(true);
+                           const prefix = watch("rifPrefix") || 'J';
+                           const fullRif = `${prefix}-${cleaned}`;
+                           try {
+                             const existingData = await getInstitutionByRif(fullRif);
+                             if (existingData) {
+                               const message = existingData.status 
+                                 ? "Este RIF ya está registrado." 
+                                 : "RIF registrado (INACTIVO). Contacte a administración para reactivar.";
+                               
+                               setError("rifNumber", { 
+                                 type: "manual", 
+                                 message 
+                               });
+
+                               setExistingInstitution(existingData);
+                               setViewOnlyMode(true);
+
+                               const rifParts = existingData.rif ? existingData.rif.split("-") : ["", ""];
+                               const [phoneP, phoneN] = existingData.phone ? existingData.phone.split("-") : ["", ""];
+                               const addressParts = existingData.fiscalAddress ? existingData.fiscalAddress.split(", ") : [];
+
+                               setValue("rifPrefix", rifParts[0] || "");
+                               setDisplayRifNumber(formatCedulaDisplay(existingData.rif || ""));
+                               setValue("rifNumber", rifParts[1] || "");
+                               setValue("name", existingData.name || "");
+                               setValue("phonePrefix", phoneP || "");
+                               setDisplayPhoneNumber(formatPhoneDisplay(phoneN || ""));
+                               setValue("phoneNumber", phoneN || "");
+                               setValue("region", existingData.region || "");
+                               setValue("nucleus", existingData.nucleus || "");
+                               setValue("extension", existingData.extension || "");
+                               setValue("institutionType", existingData.institutionType || "");
+                               setValue("estado", addressParts[0] || "");
+                               setValue("municipio", addressParts[1] || "");
+                               setValue("parroquia", addressParts[2] || "");
+                               setValue("calle", addressParts[3] || "");
+                               setValue("avenida", addressParts[4] || "");
+                               setValue("referencia", addressParts[5] || "");
+
+                               addToast({
+                                 variant: "warning",
+                                 title: "Registro Existente",
+                                 message: "La institución ya existe. Puede ver sus datos o editarlo."
+                               });
+                             }
+                           } catch (err) {
+                             console.error("Error checking RIF:", err);
+                           } finally {
+                             setIsCheckingRif(false);
+                           }
+                         }
+                       }
+                       register("rifNumber").onBlur(e);
+                     }}
+                   />
+                 </div>
               </div>
             {errors.rifNumber && (
               <p className="mt-1 text-xs text-red-500">
@@ -974,9 +1057,30 @@ export default function InstitutionModal({
             <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading}>
               Cancelar
             </Button>
-            <AsyncButton onClick={handleSubmit(onSubmit)} loading={isLoading} disabled={!isValid || (editingInst ? !isDirty : false)}>
-              {editingInst ? "Guardar Cambios" : "Registrar Institución"}
-            </AsyncButton>
+            {existingInstitution ? (
+              viewOnlyMode ? (
+                <AsyncButton 
+                  type="button"
+                  onClick={() => {
+                    setViewOnlyMode(false);
+                  }}
+                >
+                  Habilitar Edición
+                </AsyncButton>
+              ) : (
+                <AsyncButton onClick={handleSubmit(onSubmit)} loading={isLoading} disabled={!isValid}>
+                  Guardar Cambios
+                </AsyncButton>
+              )
+            ) : editingInst ? (
+              <AsyncButton onClick={handleSubmit(onSubmit)} loading={isLoading} disabled={!isDirty}>
+                Guardar Cambios
+              </AsyncButton>
+            ) : (
+              <AsyncButton onClick={handleSubmit(onSubmit)} loading={isLoading} disabled={!isValid}>
+                Registrar Institución
+              </AsyncButton>
+            )}
           </>
         )}
       </ModalFooter>

@@ -81,10 +81,46 @@ export const getInstitutionalResponsibles = async (_req: Request, res: Response)
         .order('NAME', { ascending: true });
 
       if (error) throw error;
-      return data as DBInstitutionalResponsible[];
+      return data as unknown as DBInstitutionalResponsible[];
     });
 
     res.json(data.map(mapDBToFrontend));
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+export const getInstitutionalResponsibleByCi = async (req: Request, res: Response) => {
+  try {
+    const { ci } = req.params;
+    
+    const data = await dbManager.withRetry(async (supabase) => {
+      const { data: responsible, error } = await supabase
+        .from(TABLE_NAME)
+        .select(`
+          *,
+          t_institution:INSTITUTION_ID (
+            INSTITUTION_NAME
+          )
+        `)
+        .eq('MANAGER_CI', ci)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        throw error;
+      }
+
+      return responsible as DBInstitutionalResponsible;
+    });
+
+    if (!data) {
+      return res.status(404).json({ message: 'Responsable no encontrado', data: null });
+    }
+
+    res.json({ data: mapDBToFrontend(data) });
   } catch (error: unknown) {
     handleDbError(res, error);
   }

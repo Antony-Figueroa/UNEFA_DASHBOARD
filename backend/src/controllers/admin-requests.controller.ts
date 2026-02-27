@@ -74,7 +74,9 @@ export const getAllRequests = async (req: AuthRequest, res: Response) => {
       response: r.RESPONSE,
       processedByName: null,
       createdAt: r.CREATION_DATE,
-      processedAt: r.PROCESSED_AT
+      processedAt: r.PROCESSED_AT,
+      isReassignment: r.t_request_types?.IS_REASSIGNMENT === 1,
+      reassignmentData: r.REASSIGNMENT_DATA
     }));
 
     const processedByUserIds = data

@@ -41,6 +41,7 @@ interface DBInstitutionalResponsible {
   SECOND_SURNAME: string | null;
   CONTACT_PHONE: string;
   EMAIL: string;
+  CARGO: string | null;
   CREATION_DATE: string;
   STATUS: number;
   INSTITUTION_ID: number;
@@ -59,6 +60,7 @@ const mapDBToFrontend = (r: DBInstitutionalResponsible) => ({
   secondLastName: r.SECOND_SURNAME || undefined,
   phone: r.CONTACT_PHONE,
   email: r.EMAIL,
+  cargo: r.CARGO || undefined,
   institutionId: String(r.INSTITUTION_ID),
   institutionName: r.t_institution?.INSTITUTION_NAME,
   status: r.STATUS === 1,
@@ -99,6 +101,7 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
       SECOND_SURNAME: r.secondLastName || null,
       CONTACT_PHONE: r.phone,
       EMAIL: r.email,
+      CARGO: r.cargo || null,
       INSTITUTION_ID: parseInt(r.institutionId),
       STATUS: r.status ? 1 : 0,
       CREATION_DATE: new Date().toISOString()
@@ -141,6 +144,7 @@ export const updateInstitutionalResponsible = async (req: Request, res: Response
     if (r.secondLastName !== undefined) dbData.SECOND_SURNAME = r.secondLastName || null;
     if (r.phone !== undefined) dbData.CONTACT_PHONE = r.phone;
     if (r.email !== undefined) dbData.EMAIL = r.email;
+    if (r.cargo !== undefined) dbData.CARGO = r.cargo || null;
     if (r.institutionId !== undefined) dbData.INSTITUTION_ID = parseInt(r.institutionId);
     if (r.status !== undefined) dbData.STATUS = r.status ? 1 : 0;
 

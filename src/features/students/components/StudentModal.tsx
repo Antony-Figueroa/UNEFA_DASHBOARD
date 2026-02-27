@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { checkAvailability } from "../services/studentsService";
+import { checkAvailability, getStudentByCi } from "../services/studentsService";
 import Input from "../../../components/form/input/InputField";
 import TextArea from "../../../components/form/input/TextArea";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
@@ -25,6 +25,7 @@ import {
   StudentFormInput,
   StudentFormOutput
 } from "../constants/validation";
+import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, cleanPhone } from "../../../utils/inputFormat";
 
 /**
  * Propiedades del componente StudentModal.
@@ -73,9 +74,35 @@ export default function StudentModal({
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const { fetchMultipleLists } = useLists();
   const { addToast } = useToast();
-  const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
+const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState<CreateStudentPayload | UpdateStudentPayload | null>(null);
+
+  // State for display values with formatting
+  const [displayIdentificationNumber, setDisplayIdentificationNumber] = useState("");
+  const [displayPhoneNumber, setDisplayPhoneNumber] = useState("");
+  
+  // State for existing record (when duplicate is found)
+  const [existingStudent, setExistingStudent] = useState<any | null>(null);
+  const [viewOnlyMode, setViewOnlyMode] = useState(false);
+
+  // Handle identification number input change with formatting
+  const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    const cleaned = cleanCedula(input);
+    const formatted = formatCedulaDisplay(cleaned);
+    setDisplayIdentificationNumber(formatted);
+    setValue("identificationNumber", cleaned, { shouldValidate: true });
+  };
+
+  // Handle phone number input change with formatting
+  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    const cleaned = cleanPhone(input);
+    const formatted = formatPhoneDisplay(cleaned);
+    setDisplayPhoneNumber(formatted);
+    setValue("phoneNumber", cleaned, { shouldValidate: true });
+  };
 
   useEffect(() => {
     const loadOptions = async () => {
@@ -96,7 +123,7 @@ export default function StudentModal({
         const listNames = [
           "Nacionalidad",
           "Sexo",
-          "CODIGOS_AREA",
+          "PREFIJO",
           "Registro Civil",
           "Regimen/Turno",
           "Tipo de estudiante",
@@ -142,7 +169,7 @@ export default function StudentModal({
     { value: "VIUDO/A", label: "VIUDO/A" },
   ];
 
-  const VENEZUELA_PHONE_PREFIXES = options.CODIGOS_AREA || [];
+  const VENEZUELA_PHONE_PREFIXES = options.PREFIJO || [];
 
   const REGIME_OPTIONS = options["Regimen/Turno"] || [
     { value: "DIURNO", label: "DIURNO" },
@@ -337,7 +364,7 @@ export default function StudentModal({
     }
   };
 
-  useEffect(() => {
+useEffect(() => {
     if (isOpen) {
       if (editingStudent) {
         // Separar prefijo y número de teléfono (ej: 04121234567)
@@ -376,6 +403,8 @@ export default function StudentModal({
           militaryRank: (editingStudent.militaryRank || "").toUpperCase(),
           works: (editingStudent.works || "").toUpperCase(),
         });
+        setDisplayIdentificationNumber(formatCedulaDisplay(editingStudent.identificationPrefix + editingStudent.identificationNumber));
+        setDisplayPhoneNumber(formatPhoneDisplay(editingStudent.phone || ""));
       } else {
         reset({
           identificationPrefix: "",
@@ -399,6 +428,8 @@ export default function StudentModal({
           militaryRank: "",
           works: "",
         });
+        setDisplayIdentificationNumber("");
+        setDisplayPhoneNumber("");
       }
     }
   }, [isOpen, editingStudent, reset]);
@@ -443,9 +474,14 @@ export default function StudentModal({
     }
   };
 
+  const handleClose = () => {
+    setExistingStudent(null);
+    onClose();
+  };
+
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl">
+      <Modal isOpen={isOpen} onClose={handleClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl">
         <ModalHeader>
           <div className="w-full">
             <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
@@ -459,6 +495,15 @@ export default function StudentModal({
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
         <form id="student-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 w-full">
+          {existingStudent && (
+            <div className="mb-4 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg">
+              <p className="text-sm text-warning-700 dark:text-warning-300">
+                Esta cédula ya está registrada. Los campos están en modo visualización. 
+                Haga clic en "Habilitar Edición" para modificar.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
             {/* Fila 1 */}
             <div>
@@ -476,7 +521,7 @@ export default function StudentModal({
                         onBlur={field.onBlur}
                         value={field.value}
                         placeholder="Tipo"
-                        disabled={!!editingStudent}
+                        disabled={!!editingStudent || !!existingStudent}
                         error={!!errors.identificationPrefix}
                       />
                     )}
@@ -484,47 +529,92 @@ export default function StudentModal({
                 </div>
                 <div className="flex-1">
                   <Input
-                    {...register("identificationNumber")}
-                    placeholder="Número de cédula"
+                    value={displayIdentificationNumber}
+                    onChange={handleIdentificationNumberChange}
+                    placeholder="V00.000.000"
                     error={!!errors.identificationNumber}
                     hint={isCheckingCi ? "Verificando..." : (errors.identificationNumber?.message || " ")}
-                    disabled={isCheckingCi}
-                    maxLength={8}
+                    disabled={isCheckingCi || !!editingStudent || !!existingStudent}
+                    maxLength={9}
                     autoComplete="off"
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '').substring(0, 8);
-                      setValue("identificationNumber", val, { shouldValidate: true });
-                    }}
+                    className="tracking-widest"
                     onBlur={async (e) => {
-                      const value = e.target.value;
-                      if (value.length >= 6) {
-                        setIsCheckingCi(true);
-                        const prefix = watch("identificationPrefix") || 'V';
-                        const fullCi = `${prefix}-${value}`;
-                        try {
-                          const res = await checkAvailability('ci', fullCi, editingStudent?.studentId);
-                          if (!res.available) {
-                            const message = res.status === 0 
-                                ? "Cédula registrada (INACTIVO). Contacte a administración para reactivar." 
-                                : "Esta cédula ya está registrada.";
-                            
-                            setError("identificationNumber", { 
-                              type: "manual", 
-                              message 
-                            });
+                      // Only check if not in existing student mode
+                      if (!existingStudent) {
+                        const value = e.target.value;
+                        const cleaned = cleanCedula(value);
+                        if (cleaned.length >= 6) {
+                          setIsCheckingCi(true);
+                          const prefix = watch("identificationPrefix") || 'V';
+                          const fullCi = `${prefix}-${cleaned}`;
+                          try {
+                            const res = await checkAvailability('ci', fullCi, editingStudent?.studentId);
+                            if (!res.available) {
+                              const message = res.status === 0 
+                                  ? "Cédula registrada (INACTIVO). Contacte a administración para reactivar." 
+                                  : "Esta cédula ya está registrada.";
+                              
+                              setError("identificationNumber", { 
+                                type: "manual", 
+                                message 
+                              });
 
-                            addToast({
-                              variant: "error",
-                              title: "Error de Validación",
-                              message
-                            });
-                          } else {
-                            clearErrors("identificationNumber");
+                              // Fetch existing student data and populate form
+                              const existingStudentData = await getStudentByCi(fullCi);
+                              if (existingStudentData) {
+                                setExistingStudent(existingStudentData);
+                                setViewOnlyMode(true);
+                                
+                                // Parse phone number into prefix and local
+                                let phonePrefix = "";
+                                let phoneNumber = "";
+                                if (existingStudentData.phone) {
+                                  const cleanPhone = existingStudentData.phone.replace(/[-\s]/g, '');
+                                  if (cleanPhone.length >= 4) {
+                                    phonePrefix = cleanPhone.substring(0, 4);
+                                    phoneNumber = cleanPhone.substring(4);
+                                  }
+                                }
+
+                                setValue("identificationPrefix", existingStudentData.identificationPrefix || 'V');
+                                setDisplayIdentificationNumber(formatCedulaDisplay(existingStudentData.identificationNumber || ''));
+                                setValue("identificationNumber", existingStudentData.identificationNumber || '');
+                                setValue("firstName", existingStudentData.firstName || "");
+                                setValue("middleName", existingStudentData.middleName || "");
+                                setValue("lastName", existingStudentData.lastName || "");
+                                setValue("secondLastName", existingStudentData.secondLastName || "");
+                                setValue("sex", existingStudentData.sex || "");
+                                setValue("birthDate", existingStudentData.birthDate || "");
+                                setValue("civilStatus", existingStudentData.civilStatus || "");
+                                setValue("phonePrefix", phonePrefix);
+                                setDisplayPhoneNumber(formatPhoneDisplay(phoneNumber));
+                                setValue("phoneNumber", phoneNumber);
+                                setValue("email", existingStudentData.email || "");
+                                setValue("address", existingStudentData.address || "");
+                                setValue("careerId", existingStudentData.careerId || "");
+                                setValue("semester", existingStudentData.semester || "");
+                                setValue("section", existingStudentData.section || "");
+                                setValue("regime", existingStudentData.regime || "");
+                                setValue("studentType", existingStudentData.studentType || "");
+                                setValue("militaryRank", existingStudentData.militaryRank || "");
+                                setValue("works", existingStudentData.works || "");
+                              }
+
+                              addToast({
+                                variant: "warning",
+                                title: "Registro Existente",
+                                message: "El estudiante ya existe. Puede ver sus datos o editarlo."
+                              });
+                            } else {
+                              clearErrors("identificationNumber");
+                              setExistingStudent(null);
+                              setViewOnlyMode(false);
+                            }
+                          } catch (err) {
+                            console.error("Error checking CI availability:", err);
+                          } finally {
+                            setIsCheckingCi(false);
                           }
-                        } catch (err) {
-                          console.error("Error checking CI availability:", err);
-                        } finally {
-                          setIsCheckingCi(false);
                         }
                       }
                       register("identificationNumber").onBlur(e);
@@ -540,6 +630,7 @@ export default function StudentModal({
                 placeholder="Primer nombre"
                 error={!!errors.firstName}
                 hint={errors.firstName?.message}
+                disabled={!!existingStudent}
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, '').toUpperCase();
                   setValue("firstName", val, { shouldValidate: true });
@@ -553,6 +644,7 @@ export default function StudentModal({
                 placeholder="Segundo nombre"
                 error={!!errors.middleName}
                 hint={errors.middleName?.message}
+                disabled={!!existingStudent}
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, '').toUpperCase();
                   setValue("middleName", val, { shouldValidate: true });
@@ -684,23 +776,20 @@ export default function StudentModal({
                         onBlur={field.onBlur}
                         value={field.value}
                         placeholder="Prefijo"
-                    onAddNew={() => openAddValueModal("CODIGOS_AREA", "phonePrefix", "Agregar Prefijo Telefónico")}
+                    onAddNew={() => openAddValueModal("PREFIJO", "phonePrefix", "Agregar Prefijo Telefónico")}
                     addNewLabel="Agregar Prefijo"
                         error={!!errors.phonePrefix}
                       />
                     )}
                   />
                 </div>
-                <div className="flex-1">
+<div className="flex-1">
                   <Input
-                    {...register("phoneNumber")}
-                    placeholder="Número de teléfono"
+                    value={displayPhoneNumber}
+                    onChange={handlePhoneNumberChange}
+                    placeholder="000-0000"
                     error={!!errors.phoneNumber}
-                    maxLength={7}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '').substring(0, 7);
-                      setValue("phoneNumber", val, { shouldValidate: true });
-                    }}
+                    maxLength={9}
                   />
                 </div>
               </div>
@@ -951,28 +1040,82 @@ export default function StudentModal({
           <AsyncButton variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </AsyncButton>
-          <AsyncButton 
-            type="submit" 
-            form="student-form" 
-            loading={isLoading} 
-            disabled={!isValid || (editingStudent ? !isDirty : false)}
-            className="w-full sm:w-auto min-h-12"
-            onClick={async () => {
-              if (!isValid) {
-                console.log("[StudentModal] Form is invalid. Errors:", errors);
-                // Forzar validación de todos los campos para mostrar errores
-                await handleSubmit(() => {})();
-                
-                addToast({
-                  variant: "error",
-                  title: "Error de Validación",
-                  message: "Por favor, complete todos los campos obligatorios correctamente.",
-                });
-              }
-            }}
-          >
-            {editingStudent ? "Actualizar Registro" : "Guardar Estudiante"}
-          </AsyncButton>
+          {existingStudent ? (
+            viewOnlyMode ? (
+            <AsyncButton 
+              type="button"
+              className="w-full sm:w-auto min-h-12"
+              onClick={() => {
+                setViewOnlyMode(false);
+              }}
+            >
+              Habilitar Edición
+            </AsyncButton>
+            ) : (
+            <AsyncButton 
+              type="submit" 
+              form="student-form" 
+              loading={isLoading} 
+              disabled={!isValid}
+              className="w-full sm:w-auto min-h-12"
+              onClick={async () => {
+                if (!isValid) {
+                  console.log("[StudentModal] Form is invalid. Errors:", errors);
+                  await handleSubmit(() => {})();
+                  addToast({
+                    variant: "error",
+                    title: "Error de Validación",
+                    message: "Por favor, complete todos los campos obligatorios correctamente.",
+                  });
+                }
+              }}
+            >
+              Guardar Cambios
+            </AsyncButton>
+            )
+          ) : editingStudent ? (
+            <AsyncButton 
+              type="submit" 
+              form="student-form" 
+              loading={isLoading} 
+              disabled={!isDirty}
+              className="w-full sm:w-auto min-h-12"
+              onClick={async () => {
+                if (!isValid) {
+                  console.log("[StudentModal] Form is invalid. Errors:", errors);
+                  await handleSubmit(() => {})();
+                  addToast({
+                    variant: "error",
+                    title: "Error de Validación",
+                    message: "Por favor, complete todos los campos obligatorios correctamente.",
+                  });
+                }
+              }}
+            >
+              Actualizar Registro
+            </AsyncButton>
+          ) : (
+            <AsyncButton 
+              type="submit" 
+              form="student-form" 
+              loading={isLoading} 
+              disabled={!isValid}
+              className="w-full sm:w-auto min-h-12"
+              onClick={async () => {
+                if (!isValid) {
+                  console.log("[StudentModal] Form is invalid. Errors:", errors);
+                  await handleSubmit(() => {})();
+                  addToast({
+                    variant: "error",
+                    title: "Error de Validación",
+                    message: "Por favor, complete todos los campos obligatorios correctamente.",
+                  });
+                }
+              }}
+            >
+              Guardar Estudiante
+            </AsyncButton>
+          )}
         </div>
       </ModalFooter>
     </Modal>

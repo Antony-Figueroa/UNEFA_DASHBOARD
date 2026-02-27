@@ -23,13 +23,35 @@ interface SupabaseUser {
 
 export const getUsers = async (filters: { role?: number, status?: number, search?: string, name?: string, surname?: string, userCi?: string }, page: number, limit: number) => {
   return await dbManager.withRetry(async (supabase) => {
+    // Si hay filtro por rol, primero obtener los IDs de usuarios con ese rol
+    let userIdsWithRole: number[] | undefined;
+    if (filters.role) {
+      const { data: roleUsers } = await supabase
+        .from('t_user_roles')
+        .select('ID_USER')
+        .eq('ID_ROLES', filters.role);
+      
+      userIdsWithRole = roleUsers?.map(r => r.ID_USER) || [];
+    }
+
     let query = supabase
       .from('t_user')
       .select('USER_ID, USER_CI, NAME, SURNAME, EMAIL, STATUS, CREATION_DATE, t_user_roles(ID_ROLES)', { count: 'exact' });
 
-    if (filters.role) {
-      query = query.eq('t_user_roles.ID_ROLES', filters.role);
+    // Aplicar filtro por IDs de usuarios con el rol especificado
+    if (userIdsWithRole !== undefined) {
+      if (userIdsWithRole.length === 0) {
+        // No hay usuarios con ese rol, retornar vacío
+        return {
+          users: [],
+          totalCount: 0,
+          totalPages: 0,
+          currentPage: page
+        };
+      }
+      query = query.in('USER_ID', userIdsWithRole);
     }
+
     if (filters.status !== undefined) {
       query = query.eq('STATUS', filters.status);
     }
@@ -182,7 +204,17 @@ export const createUser = async (userData: UserData, tempPass: string) => {
       throw roleError;
     }
 
-    return newUser;
+    // Retornar el usuario con los campos transformados (igual que en getUsers)
+    return {
+      id: newUser.USER_ID,
+      userCi: newUser.USER_CI,
+      name: newUser.NAME,
+      surname: newUser.SURNAME,
+      email: newUser.EMAIL,
+      role: userData.role || 2,
+      status: newUser.STATUS,
+      creationDate: newUser.CREATION_DATE
+    };
   });
 };
 

@@ -387,6 +387,7 @@ export default function FirstLogin() {
                             placeholder="Número"
                             error={!!errors.phoneNumber}
                             onChange={handlePhoneNumberChange}
+                            maxLength={7}
                             className="h-12 text-base"
                           />
                         </div>

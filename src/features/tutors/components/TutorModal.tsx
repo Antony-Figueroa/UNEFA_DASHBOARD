@@ -18,6 +18,7 @@ import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { useToast } from "../../../context/toast";
+import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, cleanPhone } from "../../../utils/inputFormat";
 
 /**
  * Props for the TutorModal component.
@@ -59,6 +60,28 @@ export default function TutorModal({
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState<CreateTutorPayload | UpdateTutorPayload | null>(null);
 
+  // State for display values with formatting
+  const [displayIdentificationNumber, setDisplayIdentificationNumber] = useState("");
+  const [displayPhoneNumber, setDisplayPhoneNumber] = useState("");
+
+  // Handle identification number input change with formatting
+  const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    const cleaned = cleanCedula(input);
+    const formatted = formatCedulaDisplay(cleaned);
+    setDisplayIdentificationNumber(formatted);
+    setValue("identificationNumber", cleaned, { shouldValidate: true, shouldDirty: true });
+  };
+
+  // Handle phone number input change with formatting
+  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    const cleaned = cleanPhone(input);
+    const formatted = formatPhoneDisplay(cleaned);
+    setDisplayPhoneNumber(formatted);
+    setValue("phoneNumber", cleaned, { shouldValidate: true, shouldDirty: true });
+  };
+
   // Estado para agregar nuevos valores a las listas
   const [isValueModalOpen, setIsValueModalOpen] = useState(false);
   const [valueModalTitle, setValueModalTitle] = useState<string>("");
@@ -78,7 +101,7 @@ export default function TutorModal({
     { value: "MASCULINO", label: "MASCULINO" },
   ];
 
-  const PHONE_AREA_OPTIONS = options["CODIGOS_AREA"] || [];
+  const PHONE_AREA_OPTIONS = options["PREFIJO"] || [];
 
   const CONDITION_OPTIONS = options["Condición"] || [
     { value: "ORDINARIO", label: "ORDINARIO" },
@@ -120,7 +143,7 @@ export default function TutorModal({
         const listNames = [
           "Nacionalidad",
           "Sexo",
-          "CODIGOS_AREA",
+          "PREFIJO",
           "Condición",
           "Dedicación",
           "Categoría",
@@ -361,7 +384,7 @@ export default function TutorModal({
     }));
   }, [careers]);
 
-  useEffect(() => {
+useEffect(() => {
     if (isOpen) {
       if (editingTutor) {
         const areaCode = editingTutor.phone.substring(0, 4);
@@ -384,6 +407,8 @@ export default function TutorModal({
           titulo: editingTutor.titulo || "",
           carreras: editingTutor.carreras || [],
         });
+        setDisplayIdentificationNumber(formatCedulaDisplay(editingTutor.identificationPrefix + editingTutor.identificationNumber));
+        setDisplayPhoneNumber(formatPhoneDisplay(editingTutor.phone));
       } else {
         reset({
           identificationPrefix: "",
@@ -403,6 +428,8 @@ export default function TutorModal({
           titulo: "",
           carreras: [],
         });
+        setDisplayIdentificationNumber("");
+        setDisplayPhoneNumber("");
       }
     }
   }, [isOpen, editingTutor, reset]);
@@ -483,13 +510,15 @@ export default function TutorModal({
                     )}
                   />
                 </div>
-                <div className="flex-1">
+<div className="flex-1">
                   <Input
-                    {...register("identificationNumber")}
-                    placeholder="INGRESE CÉDULA"
+                    value={displayIdentificationNumber}
+                    onChange={handleIdentificationNumberChange}
+                    placeholder="V00.000.000"
                     error={!!errors.identificationNumber}
                     disabled={isInUse}
-                    maxLength={8}
+                    maxLength={9}
+                    className="tracking-widest"
                   />
                 </div>
               </div>
@@ -608,23 +637,19 @@ export default function TutorModal({
                         onBlur={field.onBlur}
                         value={String(field.value)}
                         error={!!errors.phoneAreaCode}
-                        onAddNew={() => openAddValueModal("CODIGOS_AREA", "phoneAreaCode", "Agregar Código de Área")}
+                        onAddNew={() => openAddValueModal("PREFIJO", "phoneAreaCode", "Agregar Código de Área")}
                         addNewLabel="Nueva opción"
                       />
                     )}
                   />
                 </div>
-                <div className="flex-1">
+<div className="flex-1">
                   <Input
-                    {...register("phoneNumber", {
-                      onChange: (e) => {
-                        const digits = e.target.value.replace(/\D/g, "").slice(0, 7);
-                        e.target.value = digits;
-                      }
-                    })}
-                    placeholder="INGRESE TELÉFONO"
+                    value={displayPhoneNumber}
+                    onChange={handlePhoneNumberChange}
+                    placeholder="000-0000"
                     error={!!errors.phoneNumber}
-                    maxLength={7}
+                    maxLength={9}
                   />
                 </div>
               </div>

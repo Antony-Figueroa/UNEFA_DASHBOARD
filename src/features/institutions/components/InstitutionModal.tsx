@@ -21,6 +21,7 @@ import * as listsService from "../../lists/services/listsService";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import InstitutionalResponsibleModal from "./InstitutionalResponsibleModal";
 import { useToast } from "../../../context/toast";
+import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, cleanPhone } from "../../../utils/inputFormat";
 
 /**
  * Props for the InstitutionModal component.
@@ -30,8 +31,8 @@ interface InstitutionModalProps {
   isOpen: boolean;
   /** Callback to close the modal */
   onClose: () => void;
-  /** Callback fired when the form is submitted successfully */
-  onSave: (inst: CreateInstitutionPayload | UpdateInstitutionPayload) => Promise<void> | void;
+  /** Callback fired when the form is submitted successfully. Can return institution data for new institutions */
+  onSave: (inst: CreateInstitutionPayload | UpdateInstitutionPayload) => Promise<{ institutionId: string; name: string } | undefined> | void;
   /** The institution record being edited, or null if creating a new one */
   editingInst?: Institution | null;
   /** Whether a background action is in progress */
@@ -40,6 +41,8 @@ interface InstitutionModalProps {
   existingInstitutions?: Institution[];
   /** List of responsibles for this institution */
   responsibles?: InstitutionalResponsible[];
+  /** List of inactive responsibles (history) for this institution */
+  responsibleHistory?: InstitutionalResponsible[];
   /** Callback to add a responsible */
   onAddResponsible?: (data: CreateInstitutionalResponsiblePayload) => Promise<void>;
   /** Callback to edit a responsible */
@@ -123,6 +126,7 @@ export default function InstitutionModal({
   isLoading = false,
   existingInstitutions = [],
   responsibles = [],
+  responsibleHistory = [],
   onAddResponsible,
   onEditResponsible,
   institutionOptions = [],
@@ -143,6 +147,37 @@ export default function InstitutionModal({
   const [isRespModalOpen, setIsRespModalOpen] = useState(false);
   const [editingResponsible, setEditingResponsible] = useState<InstitutionalResponsible | null>(null);
   const [responsibleLoading, setResponsibleLoading] = useState(false);
+
+  // Estado para el modal de historial de responsables
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+
+  // Estado para el flujo de agregar responsables después de crear institución
+  const [showResponsibleSection, setShowResponsibleSection] = useState(false);
+  const [pendingInstitutionId, setPendingInstitutionId] = useState<string | null>(null);
+  const [askAddResponsiblesOpen, setAskAddResponsiblesOpen] = useState(false);
+  const [newlyAddedResponsibles, setNewlyAddedResponsibles] = useState<InstitutionalResponsible[]>([]);
+
+  // State for display values with formatting
+  const [displayRifNumber, setDisplayRifNumber] = useState("");
+  const [displayPhoneNumber, setDisplayPhoneNumber] = useState("");
+
+  // Handle RIF number input change with formatting
+  const handleRifNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    const cleaned = cleanCedula(input);
+    const formatted = formatCedulaDisplay(cleaned);
+    setDisplayRifNumber(formatted);
+    setValue("rifNumber", cleaned, { shouldValidate: true, shouldDirty: true });
+  };
+
+  // Handle phone number input change with formatting
+  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    const cleaned = cleanPhone(input);
+    const formatted = formatPhoneDisplay(cleaned);
+    setDisplayPhoneNumber(formatted);
+    setValue("phoneNumber", cleaned, { shouldValidate: true, shouldDirty: true });
+  };
 
   const instSchema = useMemo(() => createInstSchema(existingInstitutions, editingInst || null), [existingInstitutions, editingInst]);
 
@@ -188,7 +223,7 @@ export default function InstitutionModal({
     const loadOptions = async () => {
       try {
         const listNames = [
-          "CODIGOS_AREA",
+          "PREFIJO",
           "Rif",
           "Region",
           "Nucleo",
@@ -228,7 +263,7 @@ export default function InstitutionModal({
   const optionsNucleo = options.Nucleo;
   const optionsExtension = options["Extensión"];
   const optionsTipoEmpresa = options["Tipo de empresa"];
-  const optionsCodigosArea = options.CODIGOS_AREA;
+  const optionsCodigosArea = options.PREFIJO;
 
   // Funciones para agregar nuevos valores a las listas
   const openAddValueModal = (listName: string, field: keyof InstFormData, title: string) => {
@@ -379,6 +414,8 @@ export default function InstitutionModal({
           avenida: getPart(4),
           referencia: getPart(5),
         });
+        setDisplayRifNumber(formatCedulaDisplay(editingInst.rif || ""));
+        setDisplayPhoneNumber(formatPhoneDisplay(editingInst.phone || ""));
       } else {
         reset({
           rifPrefix: "",
@@ -397,6 +434,8 @@ export default function InstitutionModal({
           avenida: "",
           referencia: "",
         });
+        setDisplayRifNumber("");
+        setDisplayPhoneNumber("");
       }
     }
   }, [editingInst, isOpen, reset]);
@@ -442,23 +481,6 @@ export default function InstitutionModal({
     e.target.setSelectionRange(start, end);
   };
 
-  /**
-   * Helper to restrict input to numeric characters only.
-   */
-  const handleNumbersOnlyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const start = e.target.selectionStart;
-    const end = e.target.selectionEnd;
-    const originalValue = e.target.value;
-    const newValue = originalValue.replace(/\D/g, "");
-    e.target.value = newValue;
-    
-    // Adjust selection if characters were removed
-    if (originalValue !== newValue && start !== null && end !== null) {
-      const diff = originalValue.length - newValue.length;
-      e.target.setSelectionRange(start - diff, end - diff);
-    }
-  };
-
   return (
     <>
       <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl">
@@ -493,13 +515,13 @@ export default function InstitutionModal({
                </div>
                 <div className="flex-1">
                   <Input 
-                    placeholder="123456789" 
-                    className="uppercase"
-                    {...register("rifNumber", {
-                      onChange: handleNumbersOnlyChange
-                    })} 
+                    value={displayRifNumber}
+                    onChange={handleRifNumberChange}
+                    placeholder="Ej. J-12.345.678" 
+                    className="uppercase tracking-widest"
                     error={!!errors.rifNumber} 
                     disabled={!!editingInst}
+                    maxLength={9}
                   />
                 </div>
               </div>
@@ -616,7 +638,7 @@ export default function InstitutionModal({
                       value={String(field.value ?? "")}
                       placeholder="Prefijo"
                       error={!!errors.phonePrefix}
-                      onAddNew={() => openAddValueModal("CODIGOS_AREA", "phonePrefix", "Agregar Código de Área")}
+                      onAddNew={() => openAddValueModal("PREFIJO", "phonePrefix", "Agregar Código de Área")}
                       addNewLabel="Nueva opción"
                     />
                   )}
@@ -624,11 +646,10 @@ export default function InstitutionModal({
               </div>
               <div className="flex-1">
                 <Input 
-                  placeholder="1234567" 
-                  maxLength={7}
-                  {...register("phoneNumber", {
-                    onChange: handleNumbersOnlyChange
-                  })} 
+                  value={displayPhoneNumber}
+                  onChange={handlePhoneNumberChange}
+                  placeholder="000-0000" 
+                  maxLength={9}
                   error={!!errors.phoneNumber} 
                 />
               </div>
@@ -739,19 +760,34 @@ export default function InstitutionModal({
                     </svg>
                     Responsables Institucionales
                   </h3>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditingResponsible(null);
-                      setIsRespModalOpen(true);
-                    }}
-                  >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Agregar
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {responsibleHistory && responsibleHistory.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsHistoryModalOpen(true)}
+                        className="text-gray-600 hover:text-gray-800 dark:text-gray-400"
+                      >
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Historial ({responsibleHistory.length})
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingResponsible(null);
+                        setIsRespModalOpen(true);
+                      }}
+                    >
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Agregar
+                    </Button>
+                  </div>
                 </div>
 
                 {responsibles.length > 0 ? (
@@ -766,7 +802,7 @@ export default function InstitutionModal({
                             {resp.firstName} {resp.lastName}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {resp.identificationPrefix}-{resp.identificationNumber} • {resp.email}
+                            {resp.identificationPrefix}-{resp.identificationNumber} • {resp.email}{resp.cargo && ` • ${resp.cargo}`}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 ml-4">
@@ -799,18 +835,150 @@ export default function InstitutionModal({
               </div>
             </div>
           )}
+
+          {/* Sección para agregar responsables después de crear institución */}
+          {showResponsibleSection && (
+            <div className="md:col-span-2 mt-4">
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Agregar Responsables Institucionales
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowResponsibleSection(false);
+                      onClose();
+                    }}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    Omitir y cerrar
+                  </Button>
+                </div>
+
+                {/* Mostrar responsables existentes O los recien agregados durante la creación */}
+                {(responsibles.length > 0 || newlyAddedResponsibles.length > 0) ? (
+                  <div className="space-y-2 mb-4">
+                    {/* Responsables existentes (cuando se edita) */}
+                    {responsibles.map((resp) => (
+                      <div
+                        key={resp.responsibleId}
+                        className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                            {resp.firstName} {resp.lastName}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {resp.identificationPrefix}-{resp.identificationNumber} • {resp.email}{resp.cargo && ` • ${resp.cargo}`}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingResponsible(resp);
+                              setIsRespModalOpen(true);
+                            }}
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    {/* Responsables recien agregados (durante creación) */}
+                    {newlyAddedResponsibles.map((resp) => (
+                      <div
+                        key={resp.responsibleId}
+                        className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                              {resp.firstName} {resp.lastName}
+                            </p>
+                            <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full">
+                              Nuevo
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {resp.identificationPrefix}-{resp.identificationNumber} • {resp.email}{resp.cargo && ` • ${resp.cargo}`}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingResponsible(resp);
+                              setIsRespModalOpen(true);
+                            }}
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-gray-500 dark:text-gray-400 mb-4">
+                    <p className="text-sm">No hay responsables agregados aún</p>
+                  </div>
+                )}
+
+                <div className="flex justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingResponsible(null);
+                      setIsRespModalOpen(true);
+                    }}
+                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Agregar Responsable
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Botón oculto para permitir submit con Enter */}
           <button type="submit" className="hidden" />
         </form>
       </ModalBody>
       <ModalFooter>
-        <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading}>
-          Cancelar
-        </Button>
-        <AsyncButton onClick={handleSubmit(onSubmit)} loading={isLoading} disabled={!isValid || (editingInst ? !isDirty : false)}>
-          {editingInst ? "Guardar Cambios" : "Registrar Institución"}
-        </AsyncButton>
+        {showResponsibleSection ? (
+          <Button variant="primary" onClick={() => {
+            setShowResponsibleSection(false);
+            onClose();
+          }}>
+            Guardar y Cerrar
+          </Button>
+        ) : (
+          <>
+            <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading}>
+              Cancelar
+            </Button>
+            <AsyncButton onClick={handleSubmit(onSubmit)} loading={isLoading} disabled={!isValid || (editingInst ? !isDirty : false)}>
+              {editingInst ? "Guardar Cambios" : "Registrar Institución"}
+            </AsyncButton>
+          </>
+        )}
       </ModalFooter>
     </Modal>
 
@@ -820,7 +988,18 @@ export default function InstitutionModal({
         onClose={() => setConfirmSaveOpen(false)}
         onConfirm={async () => {
           if (pendingSave) {
-            await onSave(pendingSave);
+            const result = await onSave(pendingSave);
+            
+            // Si es nueva institución y se guardó exitosamente, preguntar si quiere agregar responsables
+            if (!editingInst && result && typeof result === 'object' && 'institutionId' in (result as any)) {
+              setPendingInstitutionId((result as any).institutionId);
+              setConfirmSaveOpen(false);
+              // Mostrar pregunta para agregar responsables
+              setTimeout(() => {
+                setAskAddResponsiblesOpen(true);
+              }, 100);
+              return;
+            }
           }
           setConfirmSaveOpen(false);
         }}
@@ -829,6 +1008,27 @@ export default function InstitutionModal({
         message={editingInst ? "¿Desea actualizar los datos de la institución?" : "¿Desea guardar la nueva institución?"}
         confirmLabel={editingInst ? "Actualizar" : "Guardar"}
         isLoading={isLoading}
+      />
+    )}
+
+    {/* Dialog para preguntar si desea agregar responsables después de crear institución */}
+    {!editingInst && (
+      <UnifiedDialog
+        isOpen={askAddResponsiblesOpen}
+        onClose={() => {
+          setAskAddResponsiblesOpen(false);
+          setPendingInstitutionId(null);
+          onClose();
+        }}
+        onConfirm={() => {
+          setAskAddResponsiblesOpen(false);
+          setShowResponsibleSection(true);
+        }}
+        variant="info"
+        title="Agregar Responsables"
+        message="¿Desea agregar responsables institucionales ahora? También puede hacerlo más adelante desde la edición de la institución."
+        confirmLabel="Sí, agregar responsables"
+        cancelLabel="No, cerrar"
       />
     )}
 
@@ -900,9 +1100,36 @@ export default function InstitutionModal({
         try {
           setResponsibleLoading(true);
           if (editingResponsible) {
-            await onEditResponsible?.({ ...editingResponsible, ...data } as UpdateInstitutionalResponsiblePayload);
+            // Si el responsable estaba inactivo, reactívalo al editar
+            const updateData = !editingResponsible.status 
+              ? { ...editingResponsible, ...data, status: true } 
+              : { ...editingResponsible, ...data };
+            await onEditResponsible?.(updateData as UpdateInstitutionalResponsiblePayload);
           } else {
-            await onAddResponsible?.({ ...data, institutionId: editingInst!.institutionId } as CreateInstitutionalResponsiblePayload);
+            // Usar pendingInstitutionId si es el flujo de creación, sinon usar editingInst
+            const institutionId = showResponsibleSection ? pendingInstitutionId : editingInst!.institutionId;
+            
+            // Agregar el responsable
+            const newResponsible = { ...data, institutionId: institutionId! } as CreateInstitutionalResponsiblePayload;
+            await onAddResponsible?.(newResponsible);
+            
+            // Si estamos en el flujo de creación, agregar a la lista local
+            if (showResponsibleSection && institutionId) {
+              const tempId = `temp-${Date.now()}`;
+              const newResp: InstitutionalResponsible = {
+                responsibleId: tempId,
+                identificationPrefix: data.identificationPrefix || '',
+                identificationNumber: data.identificationNumber || '',
+                firstName: data.firstName || '',
+                lastName: data.lastName || '',
+                phone: data.phone || '',
+                email: data.email || '',
+                institutionId: institutionId,
+                status: true,
+                registrationDate: new Date()
+              };
+              setNewlyAddedResponsibles(prev => [...prev, newResp]);
+            }
           }
           setIsRespModalOpen(false);
           setEditingResponsible(null);
@@ -915,9 +1142,79 @@ export default function InstitutionModal({
       editingResp={editingResponsible}
       institutionOptions={institutionOptions}
       isLoading={responsibleLoading}
-      preselectedInstitutionId={editingInst?.institutionId}
+      preselectedInstitutionId={showResponsibleSection ? pendingInstitutionId || undefined : editingInst?.institutionId}
       preselectedInstitutionName={editingInst?.name}
     />
+
+    {/* Modal de Historial de Responsables */}
+    <Modal
+      isOpen={isHistoryModalOpen}
+      onClose={() => setIsHistoryModalOpen(false)}
+      size="lg"
+    >
+      <ModalHeader>
+        <span className="text-xl font-semibold text-text-primary dark:text-white/90">
+          Historial de Responsables
+        </span>
+        <p className="text-sm text-text-secondary">Responsables anteriores de la institución</p>
+      </ModalHeader>
+      <ModalBody>
+        {responsibleHistory && responsibleHistory.length > 0 ? (
+          <div className="space-y-3">
+            {responsibleHistory.map((resp) => (
+              <div
+                key={resp.responsibleId}
+                className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {resp.firstName} {resp.lastName}
+                    </p>
+                    <span className="px-2 py-0.5 text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-full">
+                      Inactivo
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {resp.identificationPrefix}-{resp.identificationNumber} • {resp.email}
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    Registrado: {resp.registrationDate ? new Date(resp.registrationDate).toLocaleDateString('es-VE') : 'N/A'}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditingResponsible(resp);
+                    setIsHistoryModalOpen(false);
+                    setIsRespModalOpen(true);
+                  }}
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Reactivar
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <svg className="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p>No hay responsables en el historial</p>
+          </div>
+        )}
+      </ModalBody>
+      <ModalFooter>
+        <Button variant="outline" onClick={() => setIsHistoryModalOpen(false)}>
+          Cerrar
+        </Button>
+      </ModalFooter>
+    </Modal>
   </>
 );
 }

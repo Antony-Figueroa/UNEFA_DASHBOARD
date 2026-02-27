@@ -717,3 +717,32 @@ export const checkIdAvailability = async (req: Request, res: Response) => {
     handleDbError(res, error);
   }
 };
+
+export const getStudentByCi = async (req: Request, res: Response) => {
+  try {
+    const { ci } = req.params;
+    
+    if (!ci) {
+      return res.status(400).json({ message: 'La cédula es requerida' });
+    }
+
+    const student = await dbManager.withRetry(async (supabase) => {
+      const { data, error } = await supabase
+        .from(TABLE_NAME)
+        .select('*')
+        .eq('STUDENTS_CI', ci)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    }, 'getStudentByCi');
+
+    if (!student) {
+      return res.status(404).json({ message: 'Estudiante no encontrado', data: null });
+    }
+
+    res.json({ data: student });
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};

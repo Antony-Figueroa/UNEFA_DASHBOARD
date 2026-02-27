@@ -58,6 +58,11 @@ export const rolesService = {
     return response.data as RoleStatsResponse;
   },
 
+  create: async (data: { name: string; description?: string; permissionIds?: string[] }) => {
+    const response = await apiClient.post('/roles', data);
+    return response.data as { success: boolean; data: Role; message: string };
+  },
+
   update: async (id: number, updates: { name?: string; description?: string; permissions?: string[] }) => {
     const response = await apiClient.put(`/roles/${id}`, updates);
     return response.data;

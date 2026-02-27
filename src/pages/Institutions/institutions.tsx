@@ -446,10 +446,10 @@ export default function InstitutionsPage() {
               setIsModalOpen(false);
             } else {
               const newInst = await addInstitution(data as CreateInstitutionPayload);
-              setIsModalOpen(false);
               
-              if (newInst && !isAddingMultipleResponsibles) {
-                setNewlyCreatedInstitution({ id: newInst.institutionId, name: newInst.name });
+              if (newInst) {
+                // Retornar el ID para que el modal pueda preguntar si quiere agregar responsables
+                return { institutionId: newInst.institutionId, name: newInst.name };
               }
             }
           } catch (error) {
@@ -461,12 +461,14 @@ export default function InstitutionsPage() {
                 ? "No se pudieron actualizar los datos de la institución. Intente de nuevo."
                 : "No se pudo registrar la institución. Intente de nuevo.",
             });
+            throw error;
           }
         }}
         editingInst={editingInst}
         isLoading={loadingAction}
         existingInstitutions={institutions}
-        responsibles={editingInst ? responsibles.filter(r => r.institutionId === editingInst.institutionId) : []}
+        responsibles={editingInst ? responsibles.filter(r => r.institutionId === editingInst.institutionId && r.status) : []}
+        responsibleHistory={editingInst ? responsibles.filter(r => r.institutionId === editingInst.institutionId && !r.status) : []}
         onAddResponsible={addResponsible}
         onEditResponsible={editResponsible}
         institutionOptions={institutionOptions}

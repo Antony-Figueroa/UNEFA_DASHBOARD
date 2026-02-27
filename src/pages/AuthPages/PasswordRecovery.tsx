@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
 import PageMeta from "../../components/common/PageMeta";
@@ -7,6 +7,7 @@ import Button from "../../components/ui/button/Button";
 import * as authService from "../../features/auth/services/authService";
 import { EyeClosedIcon, EyeIcon } from "lucide-react";
 import { useToast } from "../../context/toast";
+import { formatCedulaDisplay, cleanCedula } from "../../utils/inputFormat";
 
 interface ApiError {
   response?: {
@@ -34,6 +35,7 @@ export default function PasswordRecovery() {
   const [step, setStep] = useState(token ? 3 : 1);
   
   const [userCi, setUserCi] = useState("");
+  const [displayCi, setDisplayCi] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -48,9 +50,18 @@ export default function PasswordRecovery() {
     return pass.length >= 12 && 
            /[A-Z]/.test(pass) && 
            /[a-z]/.test(pass) && 
-           /[0-9]/.test(pass) && 
-           /[^A-Za-z0-9]/.test(pass);
+           /\d/.test(pass);
   };
+
+  const handleCiChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    const filtered = input.replace(/[^0-9VEve]/g, '').toUpperCase();
+    const cleaned = cleanCedula(filtered);
+    const formatted = formatCedulaDisplay(cleaned);
+    
+    setUserCi(cleaned);
+    setDisplayCi(formatted);
+  }, []);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -456,11 +467,12 @@ export default function PasswordRecovery() {
                     <input
                       id="userCi"
                       type="text"
-                      placeholder="Ejemplo: V-12345678"
-                      value={userCi}
-                      onChange={(e) => setUserCi(e.target.value)}
+                      placeholder="V00.000.000"
+                      value={displayCi}
+                      onChange={handleCiChange}
                       required
-                      className={inputClass}
+                      maxLength={12}
+                      className={`${inputClass} tracking-widest`}
                     />
                     <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
                       Se enviará un enlace de recuperación al correo registrado.
@@ -503,11 +515,12 @@ export default function PasswordRecovery() {
                     <input
                       id="userCiQuestions"
                       type="text"
-                      placeholder="Ejemplo: V-12345678"
-                      value={userCi}
-                      onChange={(e) => setUserCi(e.target.value)}
+                      placeholder="V00.000.000"
+                      value={displayCi}
+                      onChange={handleCiChange}
                       required
-                      className={inputClass}
+                      maxLength={12}
+                      className={`${inputClass} tracking-widest`}
                     />
                     <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
                       Deberás responder tus preguntas de seguridad configuradas.

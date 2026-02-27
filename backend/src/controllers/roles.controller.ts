@@ -223,3 +223,86 @@ export const getRoleStats = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error al obtener estadísticas', error });
   }
 };
+
+interface CreateRoleBody {
+  name: string;
+  description?: string;
+  permissionIds?: string[];
+}
+
+export const createRole = async (req: Request, res: Response) => {
+  try {
+    const { name, description, permissionIds } = req.body as CreateRoleBody;
+
+    if (!name || !name.trim()) {
+      res.status(400).json({ message: 'El nombre del rol es requerido' });
+      return;
+    }
+
+    const supabase = dbManager.getConnection();
+
+    // Get the next available ID
+    const { data: maxRole } = await supabase
+      .from('t_roles')
+      .select('ID_ROLS')
+      .order('ID_ROLS', { ascending: false })
+      .limit(1)
+      .single();
+
+    const newRoleId = (maxRole?.ID_ROLS || 0) + 1;
+
+    // Create the role
+    const { data: roleData, error: roleError } = await supabase
+      .from('t_roles')
+      .insert({
+        ID_ROLS: newRoleId,
+        NAME: name.trim().toUpperCase(),
+        DESCRIPTION: description?.trim() || null,
+        STATUS: 1,
+        MODIF_USER_ID: 1,
+        MODIF_USER_DATE: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (roleError) {
+      console.error('Error creating role:', roleError);
+      res.status(400).json({ message: 'Error al crear rol' });
+      return;
+    }
+
+    // Assign permissions if provided
+    if (permissionIds && permissionIds.length > 0) {
+      const permissionInserts = permissionIds.map(permId => ({
+        ROLES_ID: newRoleId,
+        PERMISSIONS_ID: parseInt(permId)
+      }));
+
+      const { error: permError } = await supabase
+        .from('t_roles_permissions')
+        .insert(permissionInserts);
+
+      if (permError) {
+        console.error('Error assigning permissions:', permError);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Rol creado exitosamente',
+      data: {
+        id: newRoleId,
+        name: name.trim().toUpperCase(),
+        description: description?.trim() || '',
+        userCount: 0,
+        permissions: permissionIds || [],
+        status: 'active',
+        isSystem: false
+      }
+    });
+
+  } catch (error) {
+    console.error('Create Role Error:', error);
+    res.status(500).json({ message: 'Error al crear rol', error });
+  }
+};

@@ -91,6 +91,24 @@ export default function StudentsPage() {
         bulkRestoreStudents,
     } = useStudents();
 
+    // Event listener for opening edit modal from StudentModal
+    useEffect(() => {
+        const handleOpenEditStudent = (e: Event) => {
+            const customEvent = e as CustomEvent;
+            const studentId = customEvent.detail;
+            const student = Array.isArray(students) ? students.find((s) => s.studentId === studentId) : null;
+            if (student) {
+                setEditingStudent(student);
+                setIsModalOpen(true);
+            }
+        };
+
+        window.addEventListener('open-edit-student', handleOpenEditStudent);
+        return () => {
+            window.removeEventListener('open-edit-student', handleOpenEditStudent);
+        };
+    }, [students]);
+
     const { careers, addCareer } = useCareers();
     const { activeOptions: activeInternshipOptions, fetchAll: fetchInternshipTypes } = useInternshipTypes();
 

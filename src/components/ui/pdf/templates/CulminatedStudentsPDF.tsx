@@ -14,7 +14,7 @@ interface CulminatedStudentsPDFProps {
   };
 }
 
-export const CulminatedStudentsPDF: React.FC<CulminatedStudentsPDFProps> = ({ data, filters }) => {
+export const CulminatedStudentsPDF: React.FC<CulminatedStudentsPDFProps> = ({ data }) => {
   const totalHours = data.reduce((sum, item) => sum + item.totalHours, 0);
   const avgGrade = data.length > 0
     ? data.reduce((sum, item) => sum + (item.grade || 0), 0) / data.filter(item => item.grade > 0).length

@@ -5,6 +5,7 @@
 
 import { Tutor, CreateTutorPayload, UpdateTutorPayload } from "../types";
 import { createCrudService } from "../../../api/crudServiceFactory";
+import apiClient from "../../../api/apiClient";
 
 const API_URL = "/tutors";
 
@@ -37,3 +38,17 @@ export const createTutor = tutorsService.create;
 export const updateTutor = tutorsService.update;
 export const deleteTutor = tutorsService.delete;
 export const toggleTutorStatus = tutorsService.toggleStatus!;
+
+/**
+ * Obtiene un tutor por su cédula de identidad.
+ * @param ci - Cédula de identidad (formato: V-12345678)
+ */
+export const getTutorByCi = async (ci: string): Promise<Tutor | null> => {
+  try {
+    const response = await apiClient.get(`${API_URL}/by-ci/${ci}`);
+    return response.data?.data || null;
+  } catch (error) {
+    console.error("[tutorsService] Error al obtener tutor por CI:", error);
+    return null;
+  }
+};

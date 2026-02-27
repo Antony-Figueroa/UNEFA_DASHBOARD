@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { 
   getInstitutions, 
   getInstitutionById, 
+  getInstitutionByRif,
   createInstitution, 
   updateInstitution, 
   deleteInstitution,
@@ -14,6 +15,7 @@ const router = Router();
 
 router.get('/', authenticateToken, requirePermission('institutions:view'), getInstitutions);
 router.get('/stats', authenticateToken, requirePermission('institutions:view'), getInstitutionStats);
+router.get('/by-rif/:rif', getInstitutionByRif);
 router.get('/:id', authenticateToken, requirePermission('institutions:view'), getInstitutionById);
 router.post('/', authenticateToken, requirePermission('institutions:create'), createInstitution);
 router.put('/:id', authenticateToken, requirePermission('institutions:edit'), updateInstitution);

@@ -457,3 +457,44 @@ export const toggleTutorStatus = async (req: AuthRequest, res: Response) => {
     handleDbError(res, error);
   }
 };
+
+export const getTutorByCi = async (req: Request, res: Response) => {
+  try {
+    const { ci } = req.params;
+    
+    const data = await dbManager.withRetry(async (supabase) => {
+      const { data: tutor, error } = await supabase
+        .from(TABLE_NAME)
+        .select(`
+          *, 
+          t_tutor_career(
+            CAREER_ID, 
+            t_career(
+              t_career_internship_type(
+                t_internship_type(NAME)
+              )
+            )
+          )
+        `)
+        .eq('TUTOR_CI', ci)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        throw error;
+      }
+
+      return tutor as (DBTutor & { t_tutor_career: DBTutorCareer[] });
+    });
+
+    if (!data) {
+      return res.status(404).json({ message: 'Tutor no encontrado', data: null });
+    }
+
+    res.json({ data: mapDBToFrontend(data) });
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};

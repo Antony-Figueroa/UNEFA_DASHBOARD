@@ -1,5 +1,6 @@
 import { Institution, CreateInstitutionPayload, UpdateInstitutionPayload } from "../types";
 import { createCrudService } from "../../../api/crudServiceFactory";
+import apiClient from "../../../api/apiClient";
 
 const API_URL = "/institutions";
 
@@ -49,3 +50,17 @@ export const createInstitution = institutionService.create;
 export const updateInstitution = (id: string, institution: UpdateInstitutionPayload) => institutionService.update({ ...institution, institutionId: id } as any);
 export const deleteInstitution = institutionService.delete;
 export const toggleInstitutionStatus = institutionService.toggleStatus!;
+
+/**
+ * Obtiene una institución por su RIF.
+ * @param rif - RIF de la institución (formato: J-123456789)
+ */
+export const getInstitutionByRif = async (rif: string): Promise<Institution | null> => {
+  try {
+    const response = await apiClient.get(`${API_URL}/by-rif/${rif}`);
+    return response.data?.data || null;
+  } catch (error) {
+    console.error("[institutionsService] Error al obtener institución por RIF:", error);
+    return null;
+  }
+};

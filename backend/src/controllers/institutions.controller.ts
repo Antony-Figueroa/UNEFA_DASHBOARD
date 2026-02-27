@@ -336,6 +336,37 @@ export const deleteInstitution = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getInstitutionByRif = async (req: Request, res: Response) => {
+  try {
+    const { rif } = req.params;
+    
+    const data = await dbManager.withRetry(async (supabase) => {
+      const { data: inst, error } = await supabase
+        .from(TABLE_NAME)
+        .select(INSTITUTION_COLUMNS)
+        .eq('RIF', rif.toUpperCase())
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        throw error;
+      }
+
+      return inst as DBInstitution;
+    }, 'getInstitutionByRif');
+
+    if (!data) {
+      return res.status(404).json({ message: 'Institución no encontrada', data: null });
+    }
+
+    res.json({ data: mapDBToFrontend(data) });
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
 export const toggleInstitutionStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;

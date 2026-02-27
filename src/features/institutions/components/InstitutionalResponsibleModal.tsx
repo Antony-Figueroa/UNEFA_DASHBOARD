@@ -24,6 +24,7 @@ import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { useToast } from "../../../context/toast";
+import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, cleanPhone } from "../../../utils/inputFormat";
 
 const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
 
@@ -58,6 +59,7 @@ const respSchema = z.object({
   email: z.string()
     .min(1, "El correo es obligatorio")
     .email("Correo electrónico inválido"),
+  cargo: z.string().optional(),
   institutionId: z.string().min(1, "Seleccione una institución"),
 });
 
@@ -125,12 +127,34 @@ export default function InstitutionalResponsibleModal({
   const [newValueInput, setNewValueInput] = useState<string>("");
   const [savingNewValue, setSavingNewValue] = useState(false);
 
+  // State for display values with formatting
+  const [displayIdentificationNumber, setDisplayIdentificationNumber] = useState("");
+  const [displayPhoneNumber, setDisplayPhoneNumber] = useState("");
+
+  // Handle identification number input change with formatting
+  const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    const cleaned = cleanCedula(input);
+    const formatted = formatCedulaDisplay(cleaned);
+    setDisplayIdentificationNumber(formatted);
+    setValue("identificationNumber", cleaned, { shouldValidate: true, shouldDirty: true });
+  };
+
+  // Handle phone number input change with formatting
+  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    const cleaned = cleanPhone(input);
+    const formatted = formatPhoneDisplay(cleaned);
+    setDisplayPhoneNumber(formatted);
+    setValue("phoneNumber", cleaned, { shouldValidate: true, shouldDirty: true });
+  };
+
   const NATIONALITY_OPTIONS = options["Nacionalidad"] || [
     { value: "V", label: "V" },
     { value: "E", label: "E" },
   ];
 
-  const PHONE_PREFIX_OPTIONS = options["CODIGOS_AREA"] || [];
+  const PHONE_PREFIX_OPTIONS = options["PREFIJO"] || [];
 
   const {
     register,
@@ -168,7 +192,7 @@ export default function InstitutionalResponsibleModal({
   useEffect(() => {
     const loadOptions = async () => {
       try {
-        const listNames = ["Nacionalidad", "CODIGOS_AREA"];
+        const listNames = ["Nacionalidad", "PREFIJO"];
         const data = await fetchMultipleLists(listNames);
         const mappedOptions: Record<string, { value: string; label: string }[]> = {};
         
@@ -299,8 +323,11 @@ export default function InstitutionalResponsibleModal({
           phonePrefix: pPrefix,
           phoneNumber: pNumber,
           email: editingResp.email,
+          cargo: editingResp.cargo || "",
           institutionId: editingResp.institutionId,
         });
+        setDisplayIdentificationNumber(formatCedulaDisplay(editingResp.identificationPrefix + editingResp.identificationNumber));
+        setDisplayPhoneNumber(formatPhoneDisplay(editingResp.phone || ""));
       } else {
         reset({
           identificationPrefix: "V",
@@ -312,8 +339,11 @@ export default function InstitutionalResponsibleModal({
           phonePrefix: "",
           phoneNumber: "",
           email: "",
+          cargo: "",
           institutionId: preselectedInstitutionId || "",
         });
+        setDisplayIdentificationNumber("");
+        setDisplayPhoneNumber("");
       }
     }
   }, [editingResp, isOpen, reset, preselectedInstitutionId]);
@@ -381,11 +411,14 @@ export default function InstitutionalResponsibleModal({
                     )}
                   />
                 </div>
-                <div className="flex-1">
+<div className="flex-1">
                   <Input 
-                    placeholder="Ej: 12345678" 
-                    {...register("identificationNumber")} 
+                    value={displayIdentificationNumber}
+                    onChange={handleIdentificationNumberChange}
+                    placeholder="V00.000.000" 
                     error={!!errors.identificationNumber} 
+                    className="tracking-widest"
+                    maxLength={9}
                   />
                 </div>
               </div>
@@ -483,23 +516,19 @@ export default function InstitutionalResponsibleModal({
                         value={String(field.value ?? "")}
                         placeholder="Prefijo"
                         error={!!errors.phonePrefix}
-                        onAddNew={() => openAddValueModal("CODIGOS_AREA", "phonePrefix", "Agregar Código de Área")}
+                        onAddNew={() => openAddValueModal("PREFIJO", "phonePrefix", "Agregar Código de Área")}
                         addNewLabel="Nueva opción"
                       />
                     )}
                   />
                 </div>
-                <div className="flex-1">
+<div className="flex-1">
                   <Input 
-                    placeholder="Ej: 1234567" 
-                    {...register("phoneNumber", {
-                      onChange: (e) => {
-                        const digits = e.target.value.replace(/\D/g, "").slice(0, 7);
-                        e.target.value = digits;
-                      }
-                    })} 
+                    value={displayPhoneNumber}
+                    onChange={handlePhoneNumberChange}
+                    placeholder="000-0000" 
                     error={!!errors.phoneNumber} 
-                    maxLength={7}
+                    maxLength={9}
                   />
                 </div>
               </div>
@@ -518,6 +547,20 @@ export default function InstitutionalResponsibleModal({
                 {...register("email")} 
                 error={!!errors.email} 
                 hint={isSubmitted ? errors.email?.message : undefined} 
+              />
+            </div>
+
+            {/* Cargo */}
+            <div className="md:col-span-2 lg:col-span-2">
+              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Cargo</label>
+              <Input 
+                placeholder="Ej: Gerente de RRHH, Director, etc." 
+                className="uppercase"
+                {...register("cargo", {
+                  onChange: (e) => {
+                    e.target.value = e.target.value.toUpperCase();
+                  }
+                })} 
               />
             </div>
           </div>

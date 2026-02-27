@@ -54,6 +54,7 @@ interface DBInstitution {
   EXTENSION: string;
   CREATION_DATE: string;
   INSTITUTION_TYPE: string;
+  PRACTICE_TYPE: string;
   STATUS: number;
   RIF: string;
   t_professional_practices?: { INSTITUTION_ID: number }[];
@@ -70,6 +71,7 @@ const mapDBToFrontend = (i: DBInstitution) => ({
   nucleus: i.NUCLEUS,
   extension: i.EXTENSION,
   institutionType: i.INSTITUTION_TYPE,
+  practiceType: i.PRACTICE_TYPE || 'INTERNSHIP',
   status: i.STATUS === 1,
   registrationDate: i.CREATION_DATE,
   responsibleCount: i.responsibleCount || 0,
@@ -203,6 +205,7 @@ export const createInstitution = async (req: AuthRequest, res: Response) => {
       NUCLEUS: i.nucleus,
       EXTENSION: i.extension,
       INSTITUTION_TYPE: i.institutionType,
+      PRACTICE_TYPE: i.practiceType || 'INTERNSHIP', // Valor por defecto
       STATUS: i.status ? 1 : 0,
       RIF: i.rif,
       CREATION_DATE: new Date().toISOString()
@@ -243,6 +246,7 @@ export const updateInstitution = async (req: AuthRequest, res: Response) => {
     if (i.nucleus !== undefined) dbData.NUCLEUS = i.nucleus;
     if (i.extension !== undefined) dbData.EXTENSION = i.extension;
     if (i.institutionType !== undefined) dbData.INSTITUTION_TYPE = i.institutionType;
+    if (i.practiceType !== undefined) dbData.PRACTICE_TYPE = i.practiceType;
     if (i.status !== undefined) dbData.STATUS = i.status ? 1 : 0;
     if (i.rif !== undefined) dbData.RIF = i.rif;
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import adminRequestsService from "../../features/student/services/adminRequestsService";
@@ -6,6 +6,9 @@ import Badge from "../../components/ui/badge/Badge";
 import Button from "../../components/ui/button/Button";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/modal";
 import toast from "react-hot-toast";
+import { getTutors } from "../../features/tutors/services/tutorsService";
+import { getInstitutions } from "../../features/institutions/services/institutionsService";
+import { getCareers } from "../../features/careers/services/careersService";
 
 interface AdminRequest {
   id: number;
@@ -22,6 +25,18 @@ interface AdminRequest {
   processedByName: string | null;
   createdAt: string;
   processedAt: string | null;
+  isReassignment?: boolean;
+  reassignmentData?: {
+    newTutorId?: number;
+    newInstitutionId?: number;
+    newCareerId?: number;
+    reason?: string;
+  };
+}
+
+interface ReassignmentOption {
+  value: string;
+  label: string;
 }
 
 const statusColors: Record<string, "success" | "warning" | "info" | "error" | "light"> = {
@@ -41,16 +56,64 @@ const statusLabels: Record<string, string> = {
 export default function AdminRequests() {
   const [requests, setRequests] = useState<AdminRequest[]>([]);
   const [stats, setStats] = useState({ total: 0, pending: 0, in_review: 0, approved: 0, rejected: 0 });
+  const [tutors, setTutors] = useState<ReassignmentOption[]>([]);
+  const [institutions, setInstitutions] = useState<ReassignmentOption[]>([]);
+  const [careers, setCareers] = useState<ReassignmentOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedRequest, setSelectedRequest] = useState<AdminRequest | null>(null);
   const [newStatus, setNewStatus] = useState("");
   const [response, setResponse] = useState("");
+  const [reassignmentOverride, setReassignmentOverride] = useState<{
+    newTutorId?: number;
+    newInstitutionId?: number;
+    newCareerId?: number;
+  }>({});
   const [saving, setSaving] = useState(false);
+
+  const selectedTypeName = selectedRequest?.typeName || "";
+
+  const isReassignmentType = useMemo(() => 
+    (selectedRequest as any)?.isReassignment === true ||
+    selectedTypeName.includes('Tutor') || 
+    selectedTypeName.includes('Empresa') || 
+    selectedTypeName.includes('Carrera'), 
+    [selectedTypeName, selectedRequest]
+  );
 
   useEffect(() => {
     fetchRequests();
+    fetchOptions();
   }, [statusFilter]);
+
+  const fetchOptions = async () => {
+    try {
+      const [tutorsData, institutionsData, careersData] = await Promise.all([
+        getTutors(),
+        getInstitutions(),
+        getCareers()
+      ]);
+      
+      setTutors((tutorsData as any[] || []).map((t: any) => ({
+        value: String(t.tutorId),
+        label: `${t.name} ${t.surname}`
+      })));
+      
+      const instList = (institutionsData as any)?.data || (institutionsData as any[]) || [];
+      setInstitutions(instList.map((i: any) => ({
+        value: String(i.institutionId),
+        label: i.institutionName
+      })));
+      
+      const careerList = (careersData as any)?.data || (careersData as any[]) || [];
+      setCareers(careerList.map((c: any) => ({
+        value: String(c.careerId),
+        label: c.careerName
+      })));
+    } catch (err) {
+      console.error("[AdminRequests] Error fetching options:", err);
+    }
+  };
 
   const fetchRequests = async () => {
     try {
@@ -71,6 +134,11 @@ export default function AdminRequests() {
     setSelectedRequest(request);
     setNewStatus(request.status);
     setResponse(request.response || "");
+    setReassignmentOverride({
+      newTutorId: request.reassignmentData?.newTutorId,
+      newInstitutionId: request.reassignmentData?.newInstitutionId,
+      newCareerId: request.reassignmentData?.newCareerId
+    });
   };
 
   const handleUpdate = async () => {
@@ -78,10 +146,32 @@ export default function AdminRequests() {
 
     try {
       setSaving(true);
-      await adminRequestsService.updateStatus(selectedRequest.id.toString(), {
+      
+      const payload: any = {
         status: newStatus,
         response: response || undefined
-      });
+      };
+
+      // Si es reasignación y se va a aprobar, enviar datos de reasignación
+      if (isReassignmentType && newStatus === 'approved') {
+        const reassignmentData: any = { ...selectedRequest.reassignmentData };
+        
+        if (reassignmentOverride.newTutorId) {
+          reassignmentData.newTutorId = reassignmentOverride.newTutorId;
+        }
+        if (reassignmentOverride.newInstitutionId) {
+          reassignmentData.newInstitutionId = reassignmentOverride.newInstitutionId;
+        }
+        if (reassignmentOverride.newCareerId) {
+          reassignmentData.newCareerId = reassignmentOverride.newCareerId;
+        }
+        
+        if (Object.keys(reassignmentData).length > 0) {
+          payload.reassignmentData = reassignmentData;
+        }
+      }
+
+      await adminRequestsService.updateStatus(selectedRequest.id.toString(), payload);
       toast.success("Solicitud actualizada");
       setSelectedRequest(null);
       fetchRequests();
@@ -181,7 +271,14 @@ export default function AdminRequests() {
                           <p className="text-sm text-text-secondary">{request.studentCi}</p>
                         </div>
                       </td>
-                      <td className="px-4 py-4 text-text-secondary">{request.typeName}</td>
+                      <td className="px-4 py-4 text-text-secondary">
+                        {(request as any).isReassignment && (
+                          <span className="inline-flex items-center gap-1 text-yellow-600 text-xs mr-1" title="Solicitud de reasignación">
+                            🔄
+                          </span>
+                        )}
+                        {request.typeName}
+                      </td>
                       <td className="px-4 py-4">
                         <p className="max-w-xs truncate">{request.subject}</p>
                       </td>
@@ -242,6 +339,81 @@ export default function AdminRequests() {
                   <p className="whitespace-pre-wrap">{selectedRequest.description}</p>
                 </div>
               </div>
+
+              {isReassignmentType && selectedRequest.reassignmentData && (
+                <div className="border-t border-border-light dark:border-border-dark pt-4">
+                  <p className="text-sm font-medium mb-3 flex items-center gap-2">
+                    <span className="text-yellow-600">⚠️</span>
+                    Datos de Reasignación (puede modificar antes de aprobar)
+                  </p>
+                  
+                  {selectedRequest.reassignmentData.reason && (
+                    <div className="mb-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                      <p className="text-sm text-text-secondary">Motivo:</p>
+                      <p className="text-sm">{selectedRequest.reassignmentData.reason}</p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {selectedRequest.typeName.includes('Tutor') && (
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Nuevo Tutor</label>
+                        <select
+                          value={reassignmentOverride.newTutorId || ""}
+                          onChange={(e) => setReassignmentOverride(prev => ({ 
+                            ...prev, 
+                            newTutorId: e.target.value ? Number(e.target.value) : undefined 
+                          }))}
+                          className="w-full px-4 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800"
+                        >
+                          <option value="">Seleccionar tutor...</option>
+                          {tutors.map(t => (
+                            <option key={t.value} value={t.value}>{t.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {selectedRequest.typeName.includes('Empresa') && (
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Nueva Empresa</label>
+                        <select
+                          value={reassignmentOverride.newInstitutionId || ""}
+                          onChange={(e) => setReassignmentOverride(prev => ({ 
+                            ...prev, 
+                            newInstitutionId: e.target.value ? Number(e.target.value) : undefined 
+                          }))}
+                          className="w-full px-4 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800"
+                        >
+                          <option value="">Seleccionar empresa...</option>
+                          {institutions.map(i => (
+                            <option key={i.value} value={i.value}>{i.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {selectedRequest.typeName.includes('Carrera') && (
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Nueva Carrera</label>
+                        <select
+                          value={reassignmentOverride.newCareerId || ""}
+                          onChange={(e) => setReassignmentOverride(prev => ({ 
+                            ...prev, 
+                            newCareerId: e.target.value ? Number(e.target.value) : undefined 
+                          }))}
+                          className="w-full px-4 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-gray-800"
+                        >
+                          <option value="">Seleccionar carrera...</option>
+                          {careers.map(c => (
+                            <option key={c.value} value={c.value}>{c.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="border-t border-border-light dark:border-border-dark pt-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

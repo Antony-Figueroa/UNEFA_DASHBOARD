@@ -13,6 +13,7 @@ import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { AuthUser } from "../../../context/auth";
 import { useToast } from "../../../context/toast";
+import { formatCedulaDisplay, cleanCedula } from "../../../utils/inputFormat";
 
 /**
  * Propiedades para el componente UserModal.
@@ -47,9 +48,7 @@ const UserModal: React.FC<UserModalProps> = ({
   isSubmitting,
   roleOptions
 }) => {
-  const isEditing = !!user;
   const isCurrentUser = currentUser?.id === user?.id;
-  const isCurrentUserAdmin = currentUser?.role === 1;
   const { addToast } = useToast();
 
   const {
@@ -74,7 +73,19 @@ const UserModal: React.FC<UserModalProps> = ({
 
   const hasConsent = watch("hasConsent");
 
-  // Efecto para cargar los datos del usuario cuando se abre el modal para editar
+  // State for display values with formatting
+  const [displayCi, setDisplayCi] = useState("");
+
+  // Handle cedula input change with formatting
+  const handleCiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    const cleaned = cleanCedula(input);
+    const formatted = formatCedulaDisplay(cleaned);
+    setDisplayCi(formatted);
+    setValue("userCi", cleaned, { shouldValidate: true, shouldDirty: true });
+  };
+
+// Efecto para cargar los datos del usuario cuando se abre el modal para editar
   useEffect(() => {
     if (user) {
       reset({
@@ -86,6 +97,7 @@ const UserModal: React.FC<UserModalProps> = ({
         status: user.status,
         hasConsent: true // Ya tiene consentimiento si existe
       });
+      setDisplayCi(formatCedulaDisplay(user.userCi));
     } else {
       reset({
         userCi: "",
@@ -96,6 +108,7 @@ const UserModal: React.FC<UserModalProps> = ({
         status: 1,
         hasConsent: false
       });
+      setDisplayCi("");
     }
   }, [user, reset, isOpen]);
 
@@ -134,9 +147,10 @@ const UserModal: React.FC<UserModalProps> = ({
       return;
     }
 
-    // Validación: Admin no puede desactivarse
-    if (isCurrentUserAdmin && validatedData.status === 0) {
-      addToast({ variant: "error", title: "Error", message: "El administrador no puede desactivarse a sí mismo." });
+    // Validación: No se puede desactivar a un administrador
+    const isTargetUserAdmin = user?.role === 1;
+    if (isTargetUserAdmin && validatedData.status === 0) {
+      addToast({ variant: "error", title: "Error", message: "No se puede desactivar a un administrador." });
       return;
     }
 
@@ -213,15 +227,17 @@ const UserModal: React.FC<UserModalProps> = ({
               </h6>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
-              <div>
+<div>
                 <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Cédula *</label>
                 <Input
-                  {...register("userCi")}
+                  value={displayCi}
+                  onChange={handleCiChange}
                   disabled={!!user}
-                  placeholder="Ej. 12345678"
-                  className="h-11 rounded-lg border-gray-200 dark:border-gray-700 uppercase"
+                  placeholder="V00.000.000"
+                  className="h-11 rounded-lg border-gray-200 dark:border-gray-700 uppercase tracking-widest"
                   error={!!errors.userCi}
                   hint={errors.userCi?.message}
+                  maxLength={9}
                 />
               </div>
               <div>

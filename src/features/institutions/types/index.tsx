@@ -72,6 +72,8 @@ export interface InstitutionalResponsible {
   phone: string;
   /** Contact email address */
   email: string;
+  /** Position/Cargo in the institution */
+  cargo?: string;
   /** Associated institution ID */
   institutionId: string;
   /** Name of the associated institution (optional) */

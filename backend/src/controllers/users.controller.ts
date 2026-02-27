@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
 import * as usersService from '../services/users.service.js';
-import { generateSecurePassword } from '../utils/security.utils.js';
-import { sendUserCreationEmail } from '../utils/email.utils.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
 
@@ -31,7 +29,9 @@ export const createUser = async (req: AuthRequest, res: Response) => {
   try {
     const adminId = req.user?.userId;
     const userData = req.body;
-    const tempPass = await generateSecurePassword();
+    
+    // La contraseña inicial será la cédula del usuario
+    const tempPass = String(userData.userCi);
     
     const newUser = await usersService.createUser(userData, tempPass);
     
@@ -46,12 +46,13 @@ export const createUser = async (req: AuthRequest, res: Response) => {
       });
     });
     
-    // Enviar email con la clave temporal
-    await sendUserCreationEmail(userData.email, userData.name, userData.userCi, tempPass);
+    // TODO: Enviar email con la clave temporal cuando se implemente el sistema de emails
+    // await sendUserCreationEmail(userData.email, userData.name, userData.userCi, tempPass);
 
     res.status(201).json({ 
       message: 'Usuario creado exitosamente', 
-      user: newUser
+      user: newUser,
+      temporaryPassword: tempPass // temporal, para mostrar en UI si se desea
     });
   } catch (error: unknown) {
     console.error('[UserController] Error in createUser:', error);

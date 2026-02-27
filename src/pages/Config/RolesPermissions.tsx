@@ -32,6 +32,7 @@ export default function RolesPermissionsPage() {
   const [modules, setModules] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState<RoleWithPermissions | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -46,6 +47,12 @@ export default function RolesPermissionsPage() {
   });
 
   const [originalPermissionIds, setOriginalPermissionIds] = useState<number[]>([]);
+
+  const [createForm, setCreateForm] = useState({
+    name: "",
+    description: "",
+    permissionIds: [] as number[],
+  });
 
   const fetchData = async () => {
     setLoading(true);
@@ -98,6 +105,53 @@ export default function RolesPermissionsPage() {
     });
     setOriginalPermissionIds([...role.permissionIds]);
     setIsEditModalOpen(true);
+  };
+
+  const handleOpenCreateModal = () => {
+    setCreateForm({
+      name: "",
+      description: "",
+      permissionIds: [],
+    });
+    setIsCreateModalOpen(true);
+  };
+
+  const handleCreateRole = async () => {
+    if (!createForm.name.trim()) {
+      toast.error("El nombre del rol es requerido");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const response = await rolesService.create({
+        name: createForm.name,
+        description: createForm.description,
+        permissionIds: createForm.permissionIds.map(String),
+      });
+
+      if (response.success) {
+        toast.success("Rol creado exitosamente");
+        setIsCreateModalOpen(false);
+        fetchData();
+      } else {
+        toast.error(response.message || "Error al crear rol");
+      }
+    } catch (error) {
+      console.error("Error creating role:", error);
+      toast.error("Error al crear rol");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleCreatePermission = (permissionId: number) => {
+    setCreateForm((prev) => ({
+      ...prev,
+      permissionIds: prev.permissionIds.includes(permissionId)
+        ? prev.permissionIds.filter((p) => p !== permissionId)
+        : [...prev.permissionIds, permissionId],
+    }));
   };
 
   const handleTogglePermission = (permissionId: number) => {
@@ -263,8 +317,14 @@ export default function RolesPermissionsPage() {
           </div>
         </div>
 
-        <ComponentCard title="Roles del Sistema">
-          {loading ? (
+        <ComponentCard 
+          title="Roles del Sistema"
+          headerAction={
+            <Button size="sm" onClick={handleOpenCreateModal}>
+              + Crear Rol
+            </Button>
+          }
+        >          {loading ? (
             <TableSkeleton columns={5} rows={2} />
           ) : (
             <div className="hidden md:block overflow-hidden rounded-lg border border-border-default dark:border-border-dark">
@@ -528,6 +588,183 @@ export default function RolesPermissionsPage() {
               </Button>
               <Button onClick={handleSaveRole} disabled={saving || !hasChanges}>
                 {saving ? "Guardando..." : "Guardar Cambios"}
+              </Button>
+            </div>
+          </div>
+        </ModalFooter>
+      </Modal>
+
+      <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} size="4xl">
+        <ModalHeader>
+          <div className="flex items-center justify-between w-full pr-8">
+            <div>
+              <h3 className="text-lg font-semibold text-text-primary dark:text-text-emphasis">
+                Crear Nuevo Rol
+              </h3>
+              <p className="text-sm text-text-tertiary mt-0.5">
+                Define un nuevo rol con permisos personalizados
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-text-tertiary">Permisos:</span>
+              <Badge color="success" variant="light" shape="rounded">
+                {createForm.permissionIds.length} / {allPermissions.length}
+              </Badge>
+            </div>
+          </div>
+        </ModalHeader>
+
+        <ModalBody className="max-h-[60vh] overflow-y-auto">
+          <div className="space-y-6 py-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">
+                  Nombre del Rol *
+                </label>
+                <InputField
+                  value={createForm.name}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, name: e.target.value }))}
+                  placeholder="Ej: COORDINADOR"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">
+                  Descripción
+                </label>
+                <InputField
+                  value={createForm.description}
+                  onChange={(e) => setCreateForm((prev) => ({ ...prev, description: e.target.value }))}
+                  placeholder="Descripción del rol"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest">
+                  Matriz de Permisos
+                </label>
+                <button
+                  onClick={() => {
+                    const allSelected = createForm.permissionIds.length === allPermissions.length;
+                    if (allSelected) {
+                      setCreateForm((prev) => ({ ...prev, permissionIds: [] }));
+                    } else {
+                      setCreateForm((prev) => ({ 
+                        ...prev, 
+                        permissionIds: allPermissions.map((p) => p.PERMISSIONS_ID) 
+                      }));
+                    }
+                  }}
+                  className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+                >
+                  {createForm.permissionIds.length === allPermissions.length ? "Desmarcar todos" : "Marcar todos"}
+                </button>
+              </div>
+
+              <div className="rounded-xl border border-border-light dark:border-white/10 overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-white/5 border-b border-border-light dark:border-white/10">
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-40">Módulo</th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-text-tertiary uppercase tracking-wider">Permisos</th>
+                      <th className="text-center py-3 px-4 text-xs font-semibold text-text-tertiary uppercase tracking-wider w-20">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border-light dark:divide-white/5">
+                    {modules.map((module) => {
+                      const modulePermissions = groupedPermissions[module] || [];
+                      const selectedCount = modulePermissions.filter(p => createForm.permissionIds.includes(p.PERMISSIONS_ID)).length;
+                      const totalCount = modulePermissions.length;
+                      const isFullySelected = selectedCount === totalCount && totalCount > 0;
+                      const isPartiallySelected = selectedCount > 0 && selectedCount < totalCount;
+
+                      const toggleModule = () => {
+                        if (isFullySelected) {
+                          setCreateForm(prev => ({
+                            ...prev,
+                            permissionIds: prev.permissionIds.filter(id => !modulePermissions.map(p => p.PERMISSIONS_ID).includes(id))
+                          }));
+                        } else {
+                          setCreateForm(prev => ({
+                            ...prev,
+                            permissionIds: [...new Set([...prev.permissionIds, ...modulePermissions.map(p => p.PERMISSIONS_ID)])]
+                          }));
+                        }
+                      };
+
+                      return (
+                        <tr key={module} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+                          <td className="py-3 px-4">
+                            <button 
+                              onClick={toggleModule} 
+                              className="flex items-center gap-2 text-left w-full group"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isFullySelected}
+                                ref={(el) => { if (el) el.indeterminate = isPartiallySelected; }}
+                                onChange={() => {}}
+                                className="w-4 h-4 rounded border-border-light dark:border-white/10 text-brand-500 focus:ring-brand-500/20 shrink-0"
+                              />
+                              <span className="font-medium text-sm text-text-primary dark:text-text-emphasis group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                                {module}
+                              </span>
+                            </button>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex flex-wrap gap-2">
+                              {modulePermissions.map((permission) => {
+                                const actionName = permission.NAME.split(':')[1] || permission.NAME;
+                                const isSelected = createForm.permissionIds.includes(permission.PERMISSIONS_ID);
+                                
+                                return (
+                                  <button
+                                    key={permission.PERMISSIONS_ID}
+                                    onClick={() => handleToggleCreatePermission(permission.PERMISSIONS_ID)}
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                      isSelected
+                                        ? 'bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-300'
+                                        : 'bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/10'
+                                    }`}
+                                  >
+                                    {isSelected && (
+                                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                      </svg>
+                                    )}
+                                    {permission.DESCRIPTION || actionName}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="text-xs font-medium text-text-tertiary">
+                              {selectedCount}/{totalCount}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </ModalBody>
+
+        <ModalFooter>
+          <div className="flex items-center justify-between w-full">
+            <p className="text-xs text-text-tertiary">
+              {createForm.permissionIds.length} de {allPermissions.length} permisos seleccionados
+            </p>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleCreateRole} disabled={saving || !createForm.name.trim()}>
+                {saving ? "Creando..." : "Crear Rol"}
               </Button>
             </div>
           </div>

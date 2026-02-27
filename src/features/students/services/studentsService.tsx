@@ -59,6 +59,22 @@ export const checkAvailability = async (
   }
 };
 
+/**
+ * Obtiene un estudiante por su cédula de identidad.
+ * 
+ * @param ci - Cédula de identidad (formato: V-12345678).
+ * @returns Promesa con los datos del estudiante o null si no existe.
+ */
+export const getStudentByCi = async (ci: string): Promise<Student | null> => {
+  try {
+    const response = await apiClient.get(`${API_URL}/by-ci/${ci}`);
+    return response.data?.data || null;
+  } catch (error) {
+    console.error("[studentsService] Error al obtener estudiante por CI:", error);
+    return null;
+  }
+};
+
 // Exportaciones individuales para mantener compatibilidad
 export const getStudents = async () => {
   const data = await studentService.getAll();

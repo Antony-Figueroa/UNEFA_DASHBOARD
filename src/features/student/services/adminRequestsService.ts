@@ -14,7 +14,16 @@ export const adminRequestsService = {
     return response.data.data;
   },
 
-  updateStatus: async (id: string, data: { status: string; response?: string }): Promise<void> => {
+  updateStatus: async (id: string, data: { 
+    status: string; 
+    response?: string;
+    reassignmentData?: {
+      newTutorId?: number;
+      newInstitutionId?: number;
+      newCareerId?: number;
+      reason?: string;
+    };
+  }): Promise<void> => {
     await apiClient.put(`${ADMIN_API}/${id}`, data);
   },
 

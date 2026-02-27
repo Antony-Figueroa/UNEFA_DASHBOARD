@@ -11,7 +11,7 @@ const INACTIVITY_THRESHOLD = 5 * 60 * 1000; // 5 minutos de inactividad
 
 export const useSessionRefresh = () => {
   const lastActivityRef = useRef(Date.now());
-  const refreshTimerRef = useRef<number | null>(null);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isRefreshingRef = useRef(false);
 
   const updateLastActivity = () => {

@@ -197,7 +197,7 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
         t_request_types (NAME, IS_REASSIGNMENT, CATEGORY),
       `)
       .eq('REQUEST_ID', id)
-      .single();
+      .single() as { data: any };
 
     if (!currentRequest) {
       return res.status(404).json({ success: false, message: 'Solicitud no encontrada' });
@@ -209,12 +209,13 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
       
       if (isReassignment) {
         const { newTutorId, newInstitutionId, newCareerId, reason } = reassignmentData;
+        const studentId = currentRequest.STUDENT_ID;
 
         // Obtener práctica activa del estudiante
         const { data: practice } = await supabase
           .from('t_professional_practices')
           .select('PROFESSIONAL_PRACTICE_ID')
-          .eq('STUDENTS_ID', currentRequest.STUDENT_ID)
+          .eq('STUDENTS_ID', studentId)
           .eq('PRACTICES_STATUS', 2) // Activa
           .single();
 
@@ -266,7 +267,7 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
             const { data: student } = await supabase
               .from('t_students')
               .select('CAREER_ID')
-              .eq('STUDENTS_ID', currentRequest.STUDENT_ID)
+              .eq('STUDENTS_ID', studentId)
               .single();
 
             if (student) {
@@ -280,7 +281,7 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
             await supabase
               .from('t_students')
               .update({ CAREER_ID: newCareerId })
-              .eq('STUDENTS_ID', currentRequest.STUDENT_ID);
+              .eq('STUDENTS_ID', studentId);
           }
 
           await supabase

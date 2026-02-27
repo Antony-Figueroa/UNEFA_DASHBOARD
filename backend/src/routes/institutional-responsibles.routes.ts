@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { 
   getInstitutionalResponsibles, 
+  getInstitutionalResponsibleByCi,
   createInstitutionalResponsible, 
   updateInstitutionalResponsible, 
   deleteInstitutionalResponsible, 
@@ -10,6 +11,7 @@ import {
 const router = Router();
 
 router.get('/', getInstitutionalResponsibles);
+router.get('/by-ci/:ci', getInstitutionalResponsibleByCi);
 router.post('/', createInstitutionalResponsible);
 router.patch('/:id', updateInstitutionalResponsible);
 router.delete('/:id', deleteInstitutionalResponsible);

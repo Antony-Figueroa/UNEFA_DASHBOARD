@@ -25,6 +25,7 @@ import * as listsService from "../../lists/services/listsService";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { useToast } from "../../../context/toast";
 import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, cleanPhone } from "../../../utils/inputFormat";
+import { getResponsibleByCi } from "../services/institutionalResponsiblesService";
 
 const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
 
@@ -131,6 +132,11 @@ export default function InstitutionalResponsibleModal({
   const [displayIdentificationNumber, setDisplayIdentificationNumber] = useState("");
   const [displayPhoneNumber, setDisplayPhoneNumber] = useState("");
 
+  // State for duplicate detection
+  const [isCheckingCi, setIsCheckingCi] = useState(false);
+  const [existingResponsible, setExistingResponsible] = useState<any | null>(null);
+  const [viewOnlyMode, setViewOnlyMode] = useState(false);
+
   // Handle identification number input change with formatting
   const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
@@ -161,7 +167,9 @@ export default function InstitutionalResponsibleModal({
     handleSubmit,
     control,
     reset,
+    watch,
     setValue,
+    setError,
     formState: { errors, isSubmitted, isDirty, isValid },
   } = useForm<RespFormData>({
     resolver: zodResolver(respSchema),
@@ -377,10 +385,24 @@ export default function InstitutionalResponsibleModal({
     setConfirmSaveOpen(true);
   };
 
+  const handleClose = () => {
+    setExistingResponsible(null);
+    setViewOnlyMode(false);
+    onClose();
+  };
+
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} size="5xl" showCloseButton>
+      <Modal isOpen={isOpen} onClose={handleClose} onCloseAttempt={handleCloseAttempt} size="5xl" showCloseButton>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
+          {existingResponsible && (
+            <div className="mb-4 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg mx-4 mt-4">
+              <p className="text-sm text-warning-700 dark:text-warning-300">
+                Esta cédula ya está registrada. Los campos están en modo visualización. 
+                Haga clic en "Habilitar Edición" para modificar.
+              </p>
+            </div>
+          )}
           <ModalHeader>
             {editingResp ? "Editar Responsable" : "Nuevo Responsable"}
           </ModalHeader>
@@ -411,14 +433,78 @@ export default function InstitutionalResponsibleModal({
                     )}
                   />
                 </div>
-<div className="flex-1">
+                <div className="flex-1">
                   <Input 
                     value={displayIdentificationNumber}
                     onChange={handleIdentificationNumberChange}
                     placeholder="V00.000.000" 
-                    error={!!errors.identificationNumber} 
+                    error={!!errors.identificationNumber}
+                    hint={isCheckingCi ? "Verificando..." : (errors.identificationNumber?.message || " ")}
                     className="tracking-widest"
                     maxLength={9}
+                    disabled={!!editingResp || !!existingResponsible}
+                    onBlur={async (e) => {
+                      if (!existingResponsible && !editingResp) {
+                        const value = e.target.value;
+                        const cleaned = cleanCedula(value);
+                        if (cleaned.length >= 6) {
+                          setIsCheckingCi(true);
+                          const prefix = watch("identificationPrefix") || 'V';
+                          const fullCi = `${prefix}-${cleaned}`;
+                          try {
+                            const existingData = await getResponsibleByCi(fullCi);
+                            if (existingData) {
+                              const message = existingData.status 
+                                ? "Esta cédula ya está registrada." 
+                                : "Cédula registrada (INACTIVO). Contacte a administración para reactivar.";
+                              
+                              setError("identificationNumber", { 
+                                type: "manual", 
+                                message 
+                              });
+
+                              setExistingResponsible(existingData);
+                              setViewOnlyMode(true);
+
+                              let phonePrefix = "";
+                              let phoneNumber = "";
+                              if (existingData.phone) {
+                                const cleanPhone = existingData.phone.replace(/[-\s]/g, '');
+                                if (cleanPhone.length >= 4) {
+                                  phonePrefix = cleanPhone.substring(0, 4);
+                                  phoneNumber = cleanPhone.substring(4);
+                                }
+                              }
+
+                              setValue("identificationPrefix", existingData.identificationPrefix || 'V');
+                              setDisplayIdentificationNumber(formatCedulaDisplay(existingData.identificationNumber || ''));
+                              setValue("identificationNumber", existingData.identificationNumber || '');
+                              setValue("firstName", existingData.firstName || "");
+                              setValue("middleName", existingData.middleName || "");
+                              setValue("lastName", existingData.lastName || "");
+                              setValue("secondLastName", existingData.secondLastName || "");
+                              setValue("phonePrefix", phonePrefix);
+                              setDisplayPhoneNumber(formatPhoneDisplay(phoneNumber));
+                              setValue("phoneNumber", phoneNumber);
+                              setValue("email", existingData.email || "");
+                              setValue("cargo", existingData.cargo || "");
+                              setValue("institutionId", existingData.institutionId || "");
+
+                              addToast({
+                                variant: "warning",
+                                title: "Registro Existente",
+                                message: "El responsable ya existe. Puede ver sus datos o editarlo."
+                              });
+                            }
+                          } catch (err) {
+                            console.error("Error checking CI:", err);
+                          } finally {
+                            setIsCheckingCi(false);
+                          }
+                        }
+                      }
+                      register("identificationNumber").onBlur(e);
+                    }}
                   />
                 </div>
               </div>
@@ -576,15 +662,48 @@ export default function InstitutionalResponsibleModal({
           >
             Cancelar
           </Button>
-          <AsyncButton 
-            variant="primary" 
-            type="submit" 
-            className="min-h-12 px-8 rounded-xl font-bold"
-            loading={isLoading}
-            disabled={!isValid || (editingResp ? !isDirty : false)}
-          >
-            {editingResp ? "Actualizar" : "Guardar"}
-          </AsyncButton>
+          {existingResponsible ? (
+            viewOnlyMode ? (
+              <AsyncButton 
+                type="button"
+                className="min-h-12 px-8 rounded-xl font-bold"
+                onClick={() => {
+                  setViewOnlyMode(false);
+                }}
+              >
+                Habilitar Edición
+              </AsyncButton>
+            ) : (
+              <AsyncButton 
+                type="submit" 
+                className="min-h-12 px-8 rounded-xl font-bold"
+                loading={isLoading}
+                disabled={!isValid}
+              >
+                Guardar Cambios
+              </AsyncButton>
+            )
+          ) : editingResp ? (
+            <AsyncButton 
+              variant="primary" 
+              type="submit" 
+              className="min-h-12 px-8 rounded-xl font-bold"
+              loading={isLoading}
+              disabled={!isDirty}
+            >
+              Actualizar
+            </AsyncButton>
+          ) : (
+            <AsyncButton 
+              variant="primary" 
+              type="submit" 
+              className="min-h-12 px-8 rounded-xl font-bold"
+              loading={isLoading}
+              disabled={!isValid}
+            >
+              Guardar
+            </AsyncButton>
+          )}
         </ModalFooter>
       </form>
     </Modal>

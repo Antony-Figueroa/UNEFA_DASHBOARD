@@ -19,10 +19,18 @@ export default defineConfig(() => {
         output: {
           manualChunks(id) {
             if (id.includes("node_modules")) {
-              if (id.includes("react/jsx-runtime") || id.includes("react/cjs")) {
-                return "vendor-react-core";
+              // Keep polyfills isolated so React core doesn't end up importing from vendor-misc
+              // (Vite warns about circular chunks when that happens).
+              if (
+                /[\\/]node_modules[\\/](process|buffer|util|stream|events|inherits|readable-stream|string_decoder|safe-buffer|util-deprecate)[\\/]/.test(id)
+              ) {
+                return "vendor-node-polyfills";
               }
-              if (id.includes("react-dom") || id.includes("scheduler")) {
+
+              // NOTE: Avoid extracting a separate React-core chunk here.
+              // React (and the node polyfills it may reference) can easily create circular chunks with vendor-misc.
+              // Keeping React core in the default vendor-misc chunk avoids Vite's circular chunk warning.
+              if (/[\\/]node_modules[\\/]react-dom[\\/]/.test(id) || /[\\/]node_modules[\\/]scheduler[\\/]/.test(id)) {
                 return "vendor-react-dom";
               }
               if (id.includes("react-router")) {

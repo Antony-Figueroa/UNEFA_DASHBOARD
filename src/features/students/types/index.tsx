@@ -46,6 +46,10 @@ export interface Student {
   careerId?: string;
   /** Nombre de la carrera para visualización (opcional) */
   careerName?: string;
+  /** ID de la institución donde realiza pasantía (opcional) */
+  institutionId?: string;
+  /** Nombre de la institución para visualización (opcional) */
+  institutionName?: string;
   /** Semestre actual (ej: 04) */
   semester: string;
   /** Sección asignada (ej: 236) */

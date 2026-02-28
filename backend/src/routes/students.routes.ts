@@ -8,7 +8,8 @@ import {
   toggleStudentStatus,
   checkIdAvailability,
   getStudentStats,
-  getStudentByCi
+  getStudentByCi,
+  changeStudentRegistration
 } from '../controllers/students.controller.js';
 import { authenticateToken, requirePermission } from '../middlewares/auth.middleware.js';
 
@@ -22,6 +23,7 @@ router.get('/:id', authenticateToken, requirePermission('students:view'), getStu
 router.post('/', authenticateToken, requirePermission('students:create'), createStudent);
 router.put('/:id', authenticateToken, requirePermission('students:edit'), updateStudent);
 router.patch('/:id/status', authenticateToken, requirePermission('students:edit'), toggleStudentStatus);
+router.patch('/:id/change-registration', authenticateToken, requirePermission('students:edit'), changeStudentRegistration);
 router.delete('/:id', authenticateToken, requirePermission('students:delete'), deleteStudent);
 
 export default router;

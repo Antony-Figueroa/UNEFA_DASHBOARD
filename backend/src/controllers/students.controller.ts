@@ -746,3 +746,219 @@ export const getStudentByCi = async (req: Request, res: Response) => {
     handleDbError(res, error);
   }
 };
+
+interface ChangeRegistrationBody {
+  changeType: 'institution' | 'tutor' | 'regime';
+  newValue: string;
+  reason?: string;
+}
+
+export const changeStudentRegistration = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { changeType, newValue, reason } = req.body as ChangeRegistrationBody;
+    const adminId = req.user?.userId;
+
+    if (!id) {
+      return res.status(400).json({ message: 'ID del estudiante requerido' });
+    }
+
+    if (!changeType || !newValue) {
+      return res.status(400).json({ message: 'Tipo de cambio y nuevo valor son requeridos' });
+    }
+
+    const validTypes = ['institution', 'tutor', 'regime'];
+    if (!validTypes.includes(changeType)) {
+      return res.status(400).json({ message: 'Tipo de cambio inválido' });
+    }
+
+    // Get student current data
+    const student = await dbManager.withRetry(async (supabase) => {
+      const { data, error } = await supabase
+        .from(TABLE_NAME)
+        .select('*')
+        .eq('STUDENTS_ID', parseInt(id))
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    }, 'getStudentForChange');
+
+    if (!student) {
+      return res.status(404).json({ message: 'Estudiante no encontrado' });
+    }
+
+    // Check for active practices (validations)
+    const activePractices = await dbManager.withRetry(async (supabase) => {
+      const { data, error } = await supabase
+        .from('t_professional_practices')
+        .select('PROFESSIONAL_PRACTICE_ID, PRACTICES_STATUS')
+        .eq('STUDENTS_ID', parseInt(id))
+        .in('PRACTICES_STATUS', [1, 2]); // 1=En Proceso, 2=Activa
+      if (error) throw error;
+      return data;
+    }, 'checkActivePractices');
+
+    const hasActivePractice = activePractices && activePractices.length > 0;
+
+    // Check for pending evaluations
+    const pendingEvaluations = await dbManager.withRetry(async (supabase) => {
+      const { data, error } = await supabase
+        .from('t_evaluations')
+        .select('EVALUATION_ID, STATUS')
+        .eq('STUDENT_ID', parseInt(id))
+        .eq('STATUS', 1); // 1=Pending
+      if (error) throw error;
+      return data;
+    }, 'checkPendingEvaluations');
+
+    const hasPendingEvaluations = pendingEvaluations && pendingEvaluations.length > 0;
+
+    // Apply restrictions based on change type
+    if (changeType === 'institution' && hasActivePractice) {
+      return res.status(400).json({ 
+        message: 'No se puede cambiar la institución. El estudiante tiene una práctica activa.',
+        code: 'ACTIVE_PRACTICE_BLOCK'
+      });
+    }
+
+    if (changeType === 'tutor' && hasPendingEvaluations) {
+      return res.status(400).json({ 
+        message: 'No se puede cambiar el tutor. El estudiante tiene evaluaciones pendientes.',
+        code: 'PENDING_EVALUATIONS_BLOCK'
+      });
+    }
+
+    if (changeType === 'regime' && hasActivePractice) {
+      return res.status(400).json({ 
+        message: 'No se puede cambiar el régimen. El estudiante tiene una práctica activa.',
+        code: 'ACTIVE_PRACTICE_BLOCK'
+      });
+    }
+
+    // Perform the update based on change type
+    let updateData: Record<string, unknown> = {};
+    let oldValue = '';
+    let newValueFormatted = newValue;
+
+    if (changeType === 'regime') {
+      const validRegimes = ['DIURNO', 'NOCTURNO', 'MIXTO'];
+      if (!validRegimes.includes(newValue.toUpperCase())) {
+        return res.status(400).json({ message: 'Régimen inválido. Debe ser DIURNO, NOCTURNO o MIXTO' });
+      }
+      oldValue = student.REGIME || '';
+      updateData.REGIME = newValue.toUpperCase();
+    } else if (changeType === 'tutor') {
+      // Verify tutor exists
+      const tutor = await dbManager.withRetry(async (supabase) => {
+        const { data, error } = await supabase
+          .from('t_tutors')
+          .select('TUTOR_ID, NAME, SURNAME')
+          .eq('TUTOR_ID', parseInt(newValue))
+          .maybeSingle();
+        if (error) throw error;
+        return data;
+      }, 'verifyTutor');
+
+      if (!tutor) {
+        return res.status(404).json({ message: 'Tutor no encontrado' });
+      }
+
+      // Get current tutor assignment
+      const currentAssignment = await dbManager.withRetry(async (supabase) => {
+        const { data, error } = await supabase
+          .from('t_professional_practices_tutor')
+          .select('TUTOR_ID, t_tutors!inner(NAME, SURNAME)')
+          .eq('STUDENT_ID', parseInt(id))
+          .eq('IS_ACTIVE', true)
+          .maybeSingle();
+        if (error) throw error;
+        return data;
+      }, 'getCurrentTutor');
+
+      if (currentAssignment) {
+        const tutorData = currentAssignment.t_tutors as { NAME?: string; SURNAME?: string } | undefined;
+        oldValue = `${tutorData?.NAME || ''} ${tutorData?.SURNAME || ''}`.trim();
+        newValueFormatted = `${tutor.NAME} ${tutor.SURNAME}`.trim();
+        
+        // Update tutor assignment
+        await dbManager.withRetry(async (supabase) => {
+          const { error } = await supabase
+            .from('t_professional_practices_tutor')
+            .update({ 
+              TUTOR_ID: parseInt(newValue),
+              MODIFIED_AT: new Date().toISOString()
+            })
+            .eq('STUDENT_ID', parseInt(id))
+            .eq('IS_ACTIVE', true);
+          if (error) throw error;
+        }, 'updateTutorAssignment');
+      }
+    } else if (changeType === 'institution') {
+      // Verify institution exists
+      const institution = await dbManager.withRetry(async (supabase) => {
+        const { data, error } = await supabase
+          .from('t_institution')
+          .select('INSTITUTION_ID, INSTITUTION_NAME')
+          .eq('INSTITUTION_ID', parseInt(newValue))
+          .maybeSingle();
+        if (error) throw error;
+        return data;
+      }, 'verifyInstitution');
+
+      if (!institution) {
+        return res.status(404).json({ message: 'Institución no encontrada' });
+      }
+
+      oldValue = student.INSTITUTION_ID ? String(student.INSTITUTION_ID) : 'Sin institución';
+      newValueFormatted = institution.INSTITUTION_NAME;
+      updateData.INSTITUTION_ID = parseInt(newValue);
+    }
+
+    // Update student if regime change
+    if (changeType === 'regime') {
+      await dbManager.withRetry(async (supabase) => {
+        const { error } = await supabase
+          .from(TABLE_NAME)
+          .update(updateData)
+          .eq('STUDENTS_ID', parseInt(id));
+        if (error) throw error;
+      }, 'updateStudentRegime');
+    }
+
+    // Log the change in activity log
+    await dbManager.withRetry(async (supabase) => {
+      await supabase.from('t_activity_logs').insert({
+        USER_ID: adminId,
+        ACTION: `CAMBIO_REGISTRO_${changeType.toUpperCase()}`,
+        ACTION_TYPE: 'UPDATE',
+        ENTITY_TYPE: 'STUDENT',
+        ENTITY_ID: parseInt(id),
+        DETAILS: JSON.stringify({
+          changeType,
+          oldValue,
+          newValue: newValueFormatted,
+          reason: reason || 'Sin motivo especificado',
+          studentCi: student.STUDENTS_CI,
+          studentName: `${student.NAME} ${student.SURNAME}`
+        }),
+        IP_ADDRESS: req.ip,
+        USER_AGENT: req.headers['user-agent']
+      });
+    }, 'logRegistrationChange');
+
+    res.json({
+      success: true,
+      message: `Cambio de ${changeType} realizado exitosamente`,
+      data: {
+        changeType,
+        oldValue,
+        newValue: newValueFormatted,
+        reason
+      }
+    });
+
+  } catch (error: unknown) {
+    console.error('[changeStudentRegistration] Error:', error);
+    handleDbError(res, error);
+  }
+};

@@ -622,11 +622,11 @@ const PeriodTable = ({
                                                             className={`h-full rounded-full transition-all duration-500 ${
                                                                 progress >= 100 ? 'bg-success-500' : 'bg-primary-500'
                                                             }`}
-                                                            style={{ width: `${progress}%` }}
+                                                            style={{ width: `${Number(progress).toFixed(2)}%` }}
                                                         />
                                                     </div>
                                                     <span className="text-xs font-medium text-text-secondary dark:text-text-tertiary">
-                                                        {progress}%
+                                                        {progress.toFixed(2)}%
                                                     </span>
                                                 </div>
                                             ) : (
@@ -710,14 +710,14 @@ const PeriodTable = ({
                                     <div className="mb-4">
                                         <div className="flex justify-between text-xs mb-1">
                                             <span className="text-text-secondary dark:text-text-tertiary">Progreso</span>
-                                            <span className="font-medium text-text-primary dark:text-text-emphasis">{progress}%</span>
+                                            <span className="font-medium text-text-primary dark:text-text-emphasis">{progress.toFixed(2)}%</span>
                                         </div>
                                         <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
                                             <div 
                                                 className={`h-full rounded-full transition-all duration-500 ${
                                                     progress >= 100 ? 'bg-success-500' : 'bg-primary-500'
                                                 }`}
-                                                style={{ width: `${progress}%` }}
+                                                style={{ width: `${progress.toFixed(2)}%` }}
                                             />
                                         </div>
                                     </div>

@@ -39,7 +39,7 @@ const ScrollToTop: React.FC = () => {
 
   return (
     <AnimatePresence>
-      {isVisible && (
+      {isMounted && isVisible && (
         <motion.button
           initial={{ opacity: 0, scale: 0.5, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}

@@ -75,6 +75,28 @@ export const getStudentByCi = async (ci: string): Promise<Student | null> => {
   }
 };
 
+export interface ChangeRegistrationPayload {
+  changeType: 'institution' | 'tutor' | 'regime';
+  newValue: string;
+  reason?: string;
+}
+
+export const changeStudentRegistration = async (
+  studentId: string,
+  payload: ChangeRegistrationPayload
+): Promise<{ success: boolean; message: string; data?: any }> => {
+  try {
+    const response = await apiClient.patch(`${API_URL}/${studentId}/change-registration`, payload);
+    return response.data;
+  } catch (error: any) {
+    console.error("[studentsService] Error al cambiar registro:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Error al cambiar el registro del estudiante'
+    };
+  }
+};
+
 // Exportaciones individuales para mantener compatibilidad
 export const getStudents = async () => {
   const data = await studentService.getAll();

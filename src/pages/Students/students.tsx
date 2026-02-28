@@ -19,6 +19,7 @@ import { DownloadIcon } from "../../icons";
 import StudentTable from "../../features/students/components/StudentTable";
 import StudentModal from "../../features/students/components/StudentModal";
 import StudentViewModal from "../../features/students/components/StudentViewModal";
+import ChangeStudentDataModal from "../../features/students/components/ChangeStudentDataModal";
 import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
 import { StudentPDF } from "../../components/ui/pdf/templates/StudentPDF";
 import { useStudents } from "../../features/students/hooks/useStudents";
@@ -122,6 +123,8 @@ export default function StudentsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [viewStudent, setViewStudent] = useState<StudentRowData | null>(null);
+    const [isChangeDataModalOpen, setIsChangeDataModalOpen] = useState(false);
+    const [studentForChange, setStudentForChange] = useState<StudentRowData | null>(null);
     const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
     const [pdfSearchTerm, setPdfSearchTerm] = useState("");
     const [pdfCareerFilter, setPdfCareerFilter] = useState("");
@@ -196,6 +199,11 @@ export default function StudentsPage() {
         const original = Array.isArray(students) ? students.find((s) => s.studentId === row.studentId) : null;
         setEditingStudent(original || null);
         setIsModalOpen(true);
+    };
+
+    const handleChangeData = (row: StudentRowData) => {
+        setStudentForChange(row);
+        setIsChangeDataModalOpen(true);
     };
 
     /**
@@ -391,6 +399,7 @@ export default function StudentsPage() {
                                 error={error}
                                 activeTab={activeTab}
                                 onEdit={handleEdit}
+                                onChangeData={handleChangeData}
                                 onToggleStatus={handleToggleStatus}
                                 onExportToPreEnrollment={handleExportToPreEnrollment}
                                 onView={setViewStudent}
@@ -449,6 +458,13 @@ export default function StudentsPage() {
                         onClose={() => setViewStudent(null)}
                         onEdit={handleEdit}
                         student={viewStudent}
+                    />
+
+                    <ChangeStudentDataModal
+                        isOpen={isChangeDataModalOpen}
+                        onClose={() => setIsChangeDataModalOpen(false)}
+                        student={studentForChange}
+                        onSuccess={() => {}}
                     />
 
                     {/* Modal de Previsualización PDF */}

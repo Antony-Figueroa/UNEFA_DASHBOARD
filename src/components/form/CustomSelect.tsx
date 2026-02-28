@@ -99,15 +99,23 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
   // Habilitar búsqueda automáticamente si hay más de 5 opciones o si se pasa explícitamente
   const isSearchable = searchable === true || (searchable === undefined && options.length > 5);
 
+  // Función para normalizar texto (elimina tildes y convierte a minúsculas)
+  const normalizeText = (text: string): string => {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, ''); // Elimina diacríticos (tildes)
+  };
+
   // Filtrar opciones basadas en el término de búsqueda
   const filteredOptions = useMemo(() => {
     if (!isSearchable || !searchTerm.trim()) {
       return options;
     }
-    const term = searchTerm.toLowerCase().trim();
+    const term = normalizeText(searchTerm.trim());
     return options.filter(option => 
-      option.label.toLowerCase().includes(term) || 
-      option.value.toLowerCase().includes(term)
+      normalizeText(option.label).includes(term) || 
+      normalizeText(option.value).includes(term)
     );
   }, [options, searchTerm, isSearchable]);
 

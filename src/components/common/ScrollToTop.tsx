@@ -3,9 +3,17 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const ScrollToTop: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Only run on client
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Show button when page is scrolled more than 300px
   useEffect(() => {
+    if (!isMounted) return;
+    
     const toggleVisibility = () => {
       if (window.scrollY > 300) {
         setIsVisible(true);
@@ -19,9 +27,10 @@ const ScrollToTop: React.FC = () => {
     return () => {
       window.removeEventListener("scroll", toggleVisibility);
     };
-  }, []);
+  }, [isMounted]);
 
   const scrollToTop = () => {
+    if (typeof window === 'undefined') return;
     window.scrollTo({
       top: 0,
       behavior: "smooth",

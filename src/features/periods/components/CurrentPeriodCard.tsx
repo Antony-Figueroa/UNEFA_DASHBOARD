@@ -109,7 +109,7 @@ const CurrentPeriodCard: React.FC<CurrentPeriodCardProps> = ({
         {/* Stats de progreso */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
-            <p className="text-2xl font-bold">{progress}%</p>
+            <p className="text-2xl font-bold">{Number(progress).toFixed(2)}%</p>
             <p className="text-xs text-white/70 uppercase tracking-wider">Completado</p>
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center">
@@ -126,12 +126,12 @@ const CurrentPeriodCard: React.FC<CurrentPeriodCardProps> = ({
         <div className="mb-6">
           <div className="flex items-center justify-between text-sm mb-2">
             <span className="text-white/80">Progreso del período</span>
-            <span className="font-bold">{progress}%</span>
+            <span className="font-bold">{Number(progress).toFixed(2)}%</span>
           </div>
           <div className="h-3 bg-white/20 rounded-full overflow-hidden">
             <motion.div 
               initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
+              animate={{ width: `${Number(progress).toFixed(2)}%` }}
               transition={{ duration: 1, ease: "easeOut" }}
               className="h-full bg-gradient-to-r from-[#C5A059] to-yellow-400 rounded-full"
             />

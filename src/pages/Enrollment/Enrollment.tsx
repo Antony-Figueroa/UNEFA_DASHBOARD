@@ -18,11 +18,19 @@ import { DownloadIcon } from "../../icons";
 import EnrollmentTable from "../../features/enrollment/components/EnrollmentTable";
 import EnrollmentModal from "../../features/enrollment/components/EnrollmentModal";
 import EnrollmentViewModal from "../../features/enrollment/components/EnrollmentViewModal";
+import PreEnrollmentModal from "../../features/pre-enrollment/components/PreEnrollmentModal";
+import TutorModal from "../../features/tutors/components/TutorModal";
+import InstitutionModal from "../../features/institutions/components/InstitutionModal";
+import InstitutionalResponsibleModal from "../../features/institutions/components/InstitutionalResponsibleModal";
 import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
 import { EnrollmentPDF } from "../../components/ui/pdf/templates/EnrollmentPDF";
 import { getInternshipTypes, mapToOptions } from "../../features/internship-types/services/internshipTypesService";
 import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import { useEnrollment } from "../../features/enrollment/hooks/useEnrollment";
+import { usePreEnrollment } from "../../features/pre-enrollment/hooks/usePreEnrollment";
+import { useTutors } from "../../features/tutors/hooks/useTutors";
+import { useInstitutions } from "../../features/institutions/hooks/useInstitutions";
+import { useInstitutionalResponsibles } from "../../features/institutions/hooks/useInstitutionalResponsibles";
 import { Enrollment, EnrollmentRowData, CreateEnrollmentPayload, UpdateEnrollmentPayload } from "../../features/enrollment/types";
 import { PreEnrollmentRowData } from "../../features/pre-enrollment/types";
 import { formatDateTime } from "../../utils/date";
@@ -124,9 +132,19 @@ export default function EnrollmentPage() {
         toggleStatus,
     } = useEnrollment();
 
+    const { addPreEnrollment, loadingAction: preEnrollmentLoading } = usePreEnrollment();
+    const { tutors, addTutor, loadingAction: tutorLoading } = useTutors();
+    const { institutions, addInstitution, loadingAction: institutionLoading } = useInstitutions();
+    const { addResponsible, loadingAction: responsibleLoading } = useInstitutionalResponsibles();
+
     const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
     const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
     const [pdfSearchTerm, setPdfSearchTerm] = useState("");
+    const [isPreEnrollmentModalOpen, setIsPreEnrollmentModalOpen] = useState(false);
+    const [isTutorModalOpen, setIsTutorModalOpen] = useState(false);
+    const [isInstitutionModalOpen, setIsInstitutionModalOpen] = useState(false);
+    const [isResponsibleModalOpen, setIsResponsibleModalOpen] = useState(false);
+    const [preselectedInstitutionId, setPreselectedInstitutionId] = useState<string | undefined>(undefined);
     const [pdfPeriodFilter, setPdfPeriodFilter] = useState("");
     const [pdfPracticeTypeFilter, setPdfPracticeTypeFilter] = useState("");
     const [pdfSelectedIds, setPdfSelectedIds] = useState<Set<string>>(new Set());
@@ -148,6 +166,32 @@ export default function EnrollmentPage() {
     const filtered = useMemo(() => {
         return enrollments.map(formatEnrollmentToRow);
     }, [enrollments]);
+
+    /**
+     * Efecto para escuchar eventos de agregar desde el modal de inscripción.
+     */
+    useEffect(() => {
+        const handleAddPreEnrollment = () => setIsPreEnrollmentModalOpen(true);
+        const handleAddTutor = () => setIsTutorModalOpen(true);
+        const handleAddInstitution = () => setIsInstitutionModalOpen(true);
+        const handleAddResponsible = (e: Event) => {
+            const detail = (e as CustomEvent).detail;
+            setPreselectedInstitutionId(detail?.institutionId);
+            setIsResponsibleModalOpen(true);
+        };
+
+        window.addEventListener("enrollment:addPreEnrollment", handleAddPreEnrollment);
+        window.addEventListener("enrollment:addTutor", handleAddTutor);
+        window.addEventListener("enrollment:addInstitution", handleAddInstitution);
+        window.addEventListener("enrollment:addResponsible", handleAddResponsible);
+
+        return () => {
+            window.removeEventListener("enrollment:addPreEnrollment", handleAddPreEnrollment);
+            window.removeEventListener("enrollment:addTutor", handleAddTutor);
+            window.removeEventListener("enrollment:addInstitution", handleAddInstitution);
+            window.removeEventListener("enrollment:addResponsible", handleAddResponsible);
+        };
+    }, []);
 
     /**
      * Datos filtrados específicamente para el reporte PDF de Inscripciones.
@@ -456,6 +500,83 @@ export default function EnrollmentPage() {
                             { header: "Período", accessor: "period" },
                             { header: "Tipo Práctica", accessor: "practiceType" },
                         ]}
+                    />
+
+                    <PreEnrollmentModal
+                        isOpen={isPreEnrollmentModalOpen}
+                        onClose={() => setIsPreEnrollmentModalOpen(false)}
+                        onSave={async (payload) => {
+                            try {
+                                await addPreEnrollment(payload as any);
+                                const evt = new CustomEvent("enrollment:setPreEnrollment", { detail: payload });
+                                window.dispatchEvent(evt);
+                                setIsPreEnrollmentModalOpen(false);
+                            } catch (e) {
+                                console.error("[EnrollmentPage] Error creating pre-enrollment:", e);
+                            }
+                        }}
+                        isLoading={preEnrollmentLoading}
+                    />
+
+                    <TutorModal
+                        isOpen={isTutorModalOpen}
+                        onClose={() => setIsTutorModalOpen(false)}
+                        onSave={async (payload) => {
+                            try {
+                                await addTutor(payload as any);
+                                const evt = new CustomEvent("enrollment:setTutor", { detail: { tutorId: (payload as any).tutorId } });
+                                window.dispatchEvent(evt);
+                                setIsTutorModalOpen(false);
+                            } catch (e) {
+                                console.error("[EnrollmentPage] Error creating tutor:", e);
+                            }
+                        }}
+                        editingTutor={null}
+                        isLoading={tutorLoading}
+                        tutors={tutors}
+                    />
+
+                    <InstitutionModal
+                        isOpen={isInstitutionModalOpen}
+                        onClose={() => setIsInstitutionModalOpen(false)}
+                        onSave={async (payload) => {
+                            try {
+                                const result = await addInstitution(payload as any);
+                                if (result) {
+                                    setIsInstitutionModalOpen(false);
+                                    setIsResponsibleModalOpen(true);
+                                    setPreselectedInstitutionId(result.institutionId);
+                                }
+                                return result ? { institutionId: result.institutionId, name: result.name } : undefined;
+                            } catch (e) {
+                                console.error("[EnrollmentPage] Error creating institution:", e);
+                            }
+                        }}
+                        isLoading={institutionLoading}
+                        existingInstitutions={institutions}
+                    />
+
+                    <InstitutionalResponsibleModal
+                        isOpen={isResponsibleModalOpen}
+                        onClose={() => {
+                            setIsResponsibleModalOpen(false);
+                            setPreselectedInstitutionId(undefined);
+                        }}
+                        onSave={async (payload) => {
+                            try {
+                                await addResponsible({ ...payload, institutionId: preselectedInstitutionId! } as any);
+                                const evt = new CustomEvent("enrollment:setResponsible", { detail: { responsibleId: (payload as any).responsibleId } });
+                                window.dispatchEvent(evt);
+                                setIsResponsibleModalOpen(false);
+                                setPreselectedInstitutionId(undefined);
+                            } catch (e) {
+                                console.error("[EnrollmentPage] Error creating responsible:", e);
+                            }
+                        }}
+                        editingResp={null}
+                        institutionOptions={institutions.map(i => ({ value: i.institutionId, label: i.name }))}
+                        isLoading={responsibleLoading}
+                        preselectedInstitutionId={preselectedInstitutionId}
                     />
 
                     <UnifiedDialog

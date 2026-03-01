@@ -182,7 +182,9 @@ app.get('/api/health', async (_req, res) => {
 });
 
 // Public routes (no auth required)
+import testRoutes from './routes/test.routes.js';
 app.use('/api/public', publicRoutes);
+app.use('/api/test', testRoutes);
 
 // Apply protection to all subsequent /api routes
 app.use('/api', authenticateToken, restrictAsistente);

@@ -107,3 +107,44 @@ export const updateStudent = (id: string, payload: UpdateStudentPayload) => stud
 export const deleteStudent = studentService.delete;
 export const toggleStudentStatus = studentService.toggleStatus!;
 
+export interface ImportResult {
+  success: boolean;
+  imported: number;
+  failed: number;
+  errors: string[];
+}
+
+export const importStudents = async (data: Record<string, unknown>[]): Promise<ImportResult> => {
+  try {
+    const response = await apiClient.post(`${API_URL}/import`, { students: data });
+    return response.data;
+  } catch (error: any) {
+    console.error("[studentsService] Error al importar:", error);
+    return {
+      success: false,
+      imported: 0,
+      failed: data.length,
+      errors: [error.response?.data?.message || 'Error al importar estudiantes']
+    };
+  }
+};
+
+export const exportStudents = async (filters?: {
+  status?: boolean;
+  careerId?: string;
+  regime?: string;
+}): Promise<Student[]> => {
+  try {
+    const params = new URLSearchParams();
+    if (filters?.status !== undefined) params.append('status', String(filters.status));
+    if (filters?.careerId) params.append('careerId', filters.careerId);
+    if (filters?.regime) params.append('regime', filters.regime);
+    
+    const response = await apiClient.get(`${API_URL}/export?${params.toString()}`);
+    return response.data.data || [];
+  } catch (error) {
+    console.error("[studentsService] Error al exportar:", error);
+    return [];
+  }
+};
+

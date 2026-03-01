@@ -220,6 +220,10 @@ interface PeriodTableProps {
     onRestore?: (periodo: PeriodoRowData) => void;
     /** Callback para ver detalles */
     onView?: (periodo: PeriodoRowData) => void;
+    /** Callback para eliminación masiva */
+    onBulkDelete?: (periodos: PeriodoRowData[]) => void;
+    /** Callback para restauración masiva */
+    onBulkRestore?: (periodos: PeriodoRowData[]) => void;
     /** Tab activa (filtro) - Obsoleto */
     activeTab?: string;
     /** Indica si hay carga externa */
@@ -242,6 +246,8 @@ const PeriodTable = ({
     onActivate,
     onRestore,
     onView,
+    onBulkDelete,
+    onBulkRestore,
     externalLoading = false,
 }: PeriodTableProps) => {
     // ============================================
@@ -256,6 +262,7 @@ const PeriodTable = ({
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [inUseIds, setInUseIds] = useState<Set<string>>(new Set());
     const [viewMode, setViewMode] = useState<"timeline" | "table">("table");
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
     // Período actual (en curso)
     const currentPeriod = useMemo(() => {
@@ -328,6 +335,34 @@ const PeriodTable = ({
             newExpanded.add(id);
         }
         setExpandedRows(newExpanded);
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.size === filteredData.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(filteredData.map(p => p.periodId)));
+        }
+    };
+
+    const toggleSelectRow = (id: string) => {
+        const newSelected = new Set(selectedIds);
+        if (newSelected.has(id)) {
+            newSelected.delete(id);
+        } else {
+            newSelected.add(id);
+        }
+        setSelectedIds(newSelected);
+    };
+
+    const handleBulkDelete = () => {
+        const selectedPeriods = data.filter(p => selectedIds.has(p.periodId));
+        onBulkDelete?.(selectedPeriods);
+    };
+
+    const handleBulkRestore = () => {
+        const selectedPeriods = data.filter(p => selectedIds.has(p.periodId));
+        onBulkRestore?.(selectedPeriods);
     };
 
     const clearFilters = () => {
@@ -536,6 +571,44 @@ const PeriodTable = ({
                 </div>
             </div>
 
+            {/* Bulk Action Toolbar */}
+            {selectedIds.size > 0 && (
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                            {selectedIds.size} elemento{selectedIds.size > 1 ? 's' : ''} seleccionado{selectedIds.size > 1 ? 's' : ''}
+                        </span>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleBulkRestore}
+                            className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400"
+                        >
+                            <RefreshIcon className="w-4 h-4 mr-1" />
+                            Restaurar
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleBulkDelete}
+                            className="border-red-300 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400"
+                        >
+                            <TrashIcon className="w-4 h-4 mr-1" />
+                            Eliminar
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedIds(new Set())}
+                        >
+                            Cancelar
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* Timeline View */}
             {viewMode === "timeline" && (
                 <div className="p-6 bg-white dark:bg-gray-900 rounded-xl border border-border-light dark:border-border-dark">
@@ -552,6 +625,14 @@ const PeriodTable = ({
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableCell isHeader className="w-10">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedIds.size === filteredData.length && filteredData.length > 0}
+                                    onChange={toggleSelectAll}
+                                    className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                                />
+                            </TableCell>
                             <TableCell isHeader onClick={() => handleSort("description")} className="cursor-pointer hover:bg-bg-subtle dark:hover:bg-bg-dark-subtle transition-colors">
                                 <div className="flex items-center gap-2">
                                     Lapso
@@ -605,6 +686,14 @@ const PeriodTable = ({
 
                                 return (
                                     <TableRow key={periodo.periodId} className="hover:bg-bg-subtle/50 dark:hover:bg-bg-dark-subtle/50 transition-colors">
+                                        <TableCell>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.has(periodo.periodId)}
+                                                onChange={() => toggleSelectRow(periodo.periodId)}
+                                                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                                            />
+                                        </TableCell>
                                         <TableCell className="font-medium text-text-primary dark:text-text-emphasis">
                                             {periodo.description}
                                         </TableCell>

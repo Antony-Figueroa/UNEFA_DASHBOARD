@@ -22,6 +22,7 @@ import StudentViewModal from "../../features/students/components/StudentViewModa
 import ChangeStudentDataModal from "../../features/students/components/ChangeStudentDataModal";
 import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
 import { StudentPDF } from "../../components/ui/pdf/templates/StudentPDF";
+import UnifiedReportModal from "../../components/common/UnifiedReportModal";
 import { useStudents } from "../../features/students/hooks/useStudents";
 import { 
     Student, 
@@ -35,6 +36,7 @@ import CareerModal from "../../features/careers/components/CareerModal";
 import { useLists } from "../../features/lists/hooks/useLists";
 import { ListValue } from "../../features/lists/types";
 import { formatDateTime } from "../../utils/date";
+import { exportToExcel, ExportColumn } from "../../utils/excel";
 
 /**
  * Transforma un objeto de tipo Student (dominio) a StudentRowData (vista).
@@ -130,6 +132,7 @@ export default function StudentsPage() {
     const [pdfCareerFilter, setPdfCareerFilter] = useState("");
     const [pdfRegimeFilter, setPdfRegimeFilter] = useState("");
     const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
+    const [dateRangeFilter, setDateRangeFilter] = useState<{ start: string; end: string } | null>(null);
 
     type ConfirmationInfo = {
         isOpen: boolean;
@@ -144,9 +147,24 @@ export default function StudentsPage() {
 
     const filtered = useMemo(() => {
         if (!Array.isArray(students)) return [];
-        const byStatus = students.filter((s) => (activeTab === "Activas" ? !!s.status : !s.status));
-        return byStatus.map(formatStudentToRow);
-    }, [students, activeTab]);
+        
+        let result = students.filter((s) => (activeTab === "Activas" ? !!s.status : !s.status));
+        
+        if (dateRangeFilter && dateRangeFilter.start && dateRangeFilter.end) {
+            const startDate = new Date(dateRangeFilter.start);
+            const endDate = new Date(dateRangeFilter.end);
+            
+            if (startDate <= endDate) {
+                result = result.filter((s) => {
+                    if (!s.enrollmentDate) return false;
+                    const enrollDate = new Date(s.enrollmentDate);
+                    return enrollDate >= startDate && enrollDate <= endDate;
+                });
+            }
+        }
+        
+        return result.map(formatStudentToRow);
+    }, [students, activeTab, dateRangeFilter]);
 
     /**
      * Datos filtrados específicamente para el reporte PDF de Estudiantes.
@@ -177,6 +195,20 @@ export default function StudentsPage() {
     const handleCreate = () => {
         setEditingStudent(null);
         setIsModalOpen(true);
+    };
+
+    const handleExportExcel = () => {
+        const columns: ExportColumn<Record<string, unknown>>[] = [
+            { key: 'identificationNumber', label: 'Cédula' },
+            { key: 'fullNames', label: 'Nombre Completo' },
+            { key: 'email', label: 'Correo' },
+            { key: 'phone', label: 'Teléfono' },
+            { key: 'careerName', label: 'Carrera' },
+            { key: 'regime', label: 'Régimen' },
+            { key: 'semester', label: 'Semestre' },
+            { key: 'enrollmentDate', label: 'Fecha de Inscripción' },
+        ];
+        exportToExcel(filtered as unknown as Record<string, unknown>[], columns, 'estudiantes', 'Estudiantes');
     };
 
     useEffect(() => {
@@ -392,6 +424,43 @@ export default function StudentsPage() {
                             </button>
                         </div>
 
+                        <div className="mb-4 flex flex-wrap gap-3 items-end">
+                            <div className="w-40">
+                                <label className="text-xs font-medium text-text-secondary dark:text-text-tertiary mb-1 block">Desde</label>
+                                <input
+                                    type="date"
+                                    value={dateRangeFilter?.start || ""}
+                                    max={dateRangeFilter?.end || undefined}
+                                    onChange={(e) => setDateRangeFilter(prev => ({ 
+                                        start: e.target.value, 
+                                        end: prev?.end && e.target.value > prev.end ? prev.end : prev?.end || "" 
+                                    }))}
+                                    className="w-full px-3 py-2 text-sm bg-bg-secondary dark:bg-white/5 border border-border-light dark:border-white/10 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
+                                />
+                            </div>
+                            <div className="w-40">
+                                <label className="text-xs font-medium text-text-secondary dark:text-text-tertiary mb-1 block">Hasta</label>
+                                <input
+                                    type="date"
+                                    value={dateRangeFilter?.end || ""}
+                                    min={dateRangeFilter?.start || undefined}
+                                    onChange={(e) => setDateRangeFilter(prev => ({ 
+                                        start: prev?.start || "", 
+                                        end: e.target.value 
+                                    }))}
+                                    className="w-full px-3 py-2 text-sm bg-bg-secondary dark:bg-white/5 border border-border-light dark:border-white/10 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
+                                />
+                            </div>
+                            {dateRangeFilter && (dateRangeFilter.start || dateRangeFilter.end) && (
+                                <button
+                                    onClick={() => setDateRangeFilter(null)}
+                                    className="px-3 py-2 text-sm text-red-500 hover:text-red-600"
+                                >
+                                    Limpiar
+                                </button>
+                            )}
+                        </div>
+
                         <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="students-table">
                             <StudentTable
                                 data={filtered}
@@ -465,6 +534,12 @@ export default function StudentsPage() {
                         onClose={() => setIsChangeDataModalOpen(false)}
                         student={studentForChange}
                         onSuccess={() => {}}
+                    />
+
+                    <UnifiedReportModal
+                        isOpen={isPDFModalOpen}
+                        onClose={() => setIsPDFModalOpen(false)}
+                        onExportExcel={handleExportExcel}
                     />
 
                     {/* Modal de Previsualización PDF */}

@@ -17,7 +17,12 @@ import { PlusCircleIcon } from "../../icons/actions";
 import PreEnrollmentTable from "../../features/pre-enrollment/components/PreEnrollmentTable";
 import PreEnrollmentModal from "../../features/pre-enrollment/components/PreEnrollmentModal";
 import PreEnrollmentViewModal from "../../features/pre-enrollment/components/PreEnrollmentViewModal";
+import StudentModal from "../../features/students/components/StudentModal";
 import { usePreEnrollment } from "../../features/pre-enrollment/hooks/usePreEnrollment";
+import { useStudents } from "../../features/students/hooks/useStudents";
+import { useCareers } from "../../features/careers/hooks/useCareers";
+import { useLists } from "../../features/lists/hooks/useLists";
+import { ListValue } from "../../features/lists/types";
 import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import { getInternshipTypes, mapToOptions } from "../../features/internship-types/services/internshipTypesService";
 import { PreEnrollment, PreEnrollmentRowData, CreatePreEnrollmentPayload, UpdatePreEnrollmentPayload } from "../../features/pre-enrollment/types";
@@ -118,10 +123,33 @@ export default function PreEnrollmentPage() {
         bulkToggleStatus,
     } = usePreEnrollment();
 
+    const { addStudent, loadingAction: studentLoading } = useStudents();
+    const { careers } = useCareers();
+    const { fetchMultipleLists } = useLists();
+
     const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingEntry, setEditingEntry] = useState<PreEnrollment | null>(null);
     const [viewItem, setViewItem] = useState<PreEnrollmentRowData | null>(null);
+    const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
+    const [dynamicLists, setDynamicLists] = useState<Record<string, ListValue[]>>({});
+
+    const careerOptions = useMemo(() => 
+        careers.map(c => ({ value: String(c.careerId), label: c.careerName.toUpperCase() })),
+        [careers]);
+
+    useEffect(() => {
+        const loadDynamicLists = async () => {
+            try {
+                const listNames = ["Nacionalidad", "Tipo de sangre"];
+                const data = await fetchMultipleLists(listNames);
+                setDynamicLists(data as Record<string, ListValue[]>);
+            } catch (error) {
+                console.error("Error loading dynamic lists:", error);
+            }
+        };
+        loadDynamicLists();
+    }, [fetchMultipleLists]);
 
     type ConfirmationInfo = {
         isOpen: boolean;
@@ -137,6 +165,17 @@ export default function PreEnrollmentPage() {
     const filtered = useMemo(() => {
         return preEnrollments.map(formatPreEnrollmentToRow);
     }, [preEnrollments]);
+
+    /**
+     * Efecto para escuchar eventos de agregar estudiante desde el modal de preinscripción.
+     */
+    useEffect(() => {
+        const handleAddStudent = () => setIsStudentModalOpen(true);
+        window.addEventListener("preenrollment:addStudent", handleAddStudent);
+        return () => {
+            window.removeEventListener("preenrollment:addStudent", handleAddStudent);
+        };
+    }, []);
 
 
 
@@ -369,6 +408,25 @@ export default function PreEnrollmentPage() {
                         onClose={() => setViewItem(null)}
                         onEdit={handleEdit}
                         item={viewItem}
+                    />
+
+                    <StudentModal
+                        isOpen={isStudentModalOpen}
+                        onClose={() => setIsStudentModalOpen(false)}
+                        onSave={async (payload) => {
+                            try {
+                                await addStudent(payload as any);
+                                const evt = new CustomEvent("preenrollment:setStudentId", { detail: { ...payload } });
+                                window.dispatchEvent(evt);
+                                setIsStudentModalOpen(false);
+                            } catch (e) {
+                                console.error("[PreEnrollmentPage] Error creating student:", e);
+                            }
+                        }}
+                        editingStudent={null}
+                        careerOptions={careerOptions}
+                        dynamicLists={dynamicLists}
+                        isLoading={studentLoading}
                     />
 
                     <UnifiedDialog

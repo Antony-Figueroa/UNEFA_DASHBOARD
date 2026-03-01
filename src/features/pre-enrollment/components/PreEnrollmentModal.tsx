@@ -283,6 +283,25 @@ export default function PreEnrollmentModal({
     }
   }, [isOpen, fetchMultipleLists]);
 
+  /**
+   * Efecto para escuchar eventos de estudiante agregado desde el modal de estudiante.
+   */
+  useEffect(() => {
+    const handleSetStudentId = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail) {
+        setValue("identificationPrefix", detail.identificationPrefix || "V", { shouldValidate: true, shouldDirty: true });
+        setValue("identificationNumber", detail.identificationNumber || "", { shouldValidate: true, shouldDirty: true });
+        setValue("studentName", detail.firstName && detail.lastName ? `${detail.firstName} ${detail.lastName}` : "", { shouldValidate: true, shouldDirty: true });
+        setValue("phone", detail.phone || "", { shouldValidate: true, shouldDirty: true });
+      }
+    };
+    window.addEventListener("preenrollment:setStudentId", handleSetStudentId as EventListener);
+    return () => {
+      window.removeEventListener("preenrollment:setStudentId", handleSetStudentId as EventListener);
+    };
+  }, [setValue]);
+
   // Funciones para agregar nuevos valores a las listas
   const openAddValueModal = (listName: string, field: keyof PreEnrollmentFormData, title: string) => {
     // Verificar si la lista está protegida
@@ -746,6 +765,27 @@ setValue("identificationNumber", student.identificationNumber);
                 <p className="mt-1 text-xs text-error-500">{errors.identificationNumber.message}</p>
               )}
             </div>
+
+            {/* Botón para agregar nuevo estudiante */}
+            {!editingEntry && (
+              <div className="md:col-span-2 lg:col-span-3 flex justify-start">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const evt = new CustomEvent("preenrollment:addStudent");
+                    window.dispatchEvent(evt);
+                  }}
+                  className="text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Agregar Estudiante
+                </Button>
+              </div>
+            )}
 
             {/* Estudiante */}
             <div>

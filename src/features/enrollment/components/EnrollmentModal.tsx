@@ -143,7 +143,6 @@ export default function EnrollmentModal({
     register,
     handleSubmit,
     control,
-    reset,
     setValue,
     formState: { errors, isSubmitted, isDirty, isValid },
   } = useForm<EnrollmentFormData>({
@@ -424,39 +423,59 @@ useEffect(() => {
     }
   }, [initialData, isOpen, setValue]);
 
-useEffect(() => {
-    if (isOpen) {
-      if (editingEntry) {
-        reset({
-          identificationPrefix: editingEntry.identificationPrefix,
-          identificationNumber: editingEntry.identificationNumber,
-          studentName: editingEntry.studentName,
-          period: editingEntry.period,
-          practiceType: editingEntry.practiceType,
-          careerName: editingEntry.careerName || "",
-          academicTutorId: editingEntry.academicTutorId,
-          methodologicalTutorId: editingEntry.methodologicalTutorId,
-          institutionId: editingEntry.institutionId,
-          institutionResponsibleId: editingEntry.institutionResponsibleId,
-        });
-        setDisplayIdentificationNumber(formatCedulaDisplay(editingEntry.identificationPrefix + editingEntry.identificationNumber));
-      } else if (!initialData) {
-        reset({
-          identificationPrefix: "V",
-          identificationNumber: "",
-          studentName: "",
-          period: "",
-          practiceType: "",
-          careerName: "",
-          academicTutorId: "",
-          methodologicalTutorId: "",
-          institutionId: "",
-          institutionResponsibleId: "",
-        });
-        setDisplayIdentificationNumber("");
+  /**
+   * Efecto para escuchar eventos de preinscripción agregada desde el modal.
+   */
+  useEffect(() => {
+    const handleSetPreEnrollment = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail) {
+        setValue("identificationPrefix", detail.identificationPrefix || "V", { shouldValidate: true, shouldDirty: true });
+        setValue("identificationNumber", detail.identificationNumber || "", { shouldValidate: true, shouldDirty: true });
+        setValue("studentName", detail.studentName || "", { shouldValidate: true, shouldDirty: true });
+        setValue("period", detail.period || "", { shouldValidate: true, shouldDirty: true });
+        setValue("practiceType", detail.practiceType || "", { shouldValidate: true, shouldDirty: true });
+        setValue("careerName", detail.careerName || "", { shouldValidate: true, shouldDirty: true });
+        setDisplayIdentificationNumber(formatCedulaDisplay((detail.identificationPrefix || "V") + (detail.identificationNumber || "")));
       }
-    }
-  }, [editingEntry, reset, isOpen, initialData]);
+    };
+    window.addEventListener("enrollment:setPreEnrollment", handleSetPreEnrollment as EventListener);
+    return () => {
+      window.removeEventListener("enrollment:setPreEnrollment", handleSetPreEnrollment as EventListener);
+    };
+  }, [setValue]);
+
+  /**
+   * Efecto para escuchar eventos de tutor agregado desde el modal.
+   */
+  useEffect(() => {
+    const handleSetTutor = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail && detail.tutorId) {
+        setValue("academicTutorId", detail.tutorId, { shouldValidate: true, shouldDirty: true });
+      }
+    };
+    window.addEventListener("enrollment:setTutor", handleSetTutor as EventListener);
+    return () => {
+      window.removeEventListener("enrollment:setTutor", handleSetTutor as EventListener);
+    };
+  }, [setValue]);
+
+  /**
+   * Efecto para escuchar eventos de responsable institucional agregado desde el modal.
+   */
+  useEffect(() => {
+    const handleSetResponsible = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail && detail.responsibleId) {
+        setValue("institutionResponsibleId", detail.responsibleId, { shouldValidate: true, shouldDirty: true });
+      }
+    };
+    window.addEventListener("enrollment:setResponsible", handleSetResponsible as EventListener);
+    return () => {
+      window.removeEventListener("enrollment:setResponsible", handleSetResponsible as EventListener);
+    };
+  }, [setValue]);
 
   /**
    * Handles form submission.
@@ -540,6 +559,26 @@ useEffect(() => {
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
         <form id="enrollment-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8 max-w-4xl mx-auto">
+          {/* Botón para agregar preinscripción */}
+          {!editingEntry && !initialData && (
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const evt = new CustomEvent("enrollment:addPreEnrollment");
+                  window.dispatchEvent(evt);
+                }}
+                className="text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Nueva Preinscripción
+              </Button>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 sm:gap-x-8 gap-y-5 sm:gap-y-6">
             {/* Cédula */}
             <div className="flex flex-col gap-1">
@@ -735,6 +774,21 @@ useEffect(() => {
               {errors.methodologicalTutorId && (
                 <p className="mt-1 text-xs text-error-500">{errors.methodologicalTutorId?.message}</p>
               )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const evt = new CustomEvent("enrollment:addTutor");
+                  window.dispatchEvent(evt);
+                }}
+                className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Agregar Tutor
+              </Button>
             </div>
 
             {/* Institución */}
@@ -763,6 +817,21 @@ useEffect(() => {
               {errors.institutionId && (
                 <p className="mt-1 text-xs text-error-500">{errors.institutionId?.message}</p>
               )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const evt = new CustomEvent("enrollment:addInstitution");
+                  window.dispatchEvent(evt);
+                }}
+                className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Nueva Institución
+              </Button>
             </div>
 
             {/* Responsable Institucional */}
@@ -788,6 +857,23 @@ useEffect(() => {
               />
               {errors.institutionResponsibleId && (
                 <p className="mt-1 text-xs text-error-500">{errors.institutionResponsibleId?.message}</p>
+              )}
+              {selectedInstitutionId && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const evt = new CustomEvent("enrollment:addResponsible", { detail: { institutionId: selectedInstitutionId } });
+                    window.dispatchEvent(evt);
+                  }}
+                  className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Agregar Responsable
+                </Button>
               )}
             </div>
           </div>

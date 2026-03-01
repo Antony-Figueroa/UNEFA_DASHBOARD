@@ -194,6 +194,36 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
         .eq('PERIOD_ID', id)
         .single();
 
+      if (!oldData) {
+        const notFoundError = new Error(`No se encontró el período con PERIOD_ID: ${id}`) as AppError;
+        notFoundError.code = '404';
+        throw notFoundError;
+      }
+
+      // Verificar si el período está en uso
+      const { data: usageData } = await supabase
+        .from('t_professional_practices')
+        .select('PERIOD_ID')
+        .eq('PERIOD_ID', id)
+        .limit(1);
+
+      const isInUse = usageData && usageData.length > 0;
+
+      // Si está en uso, solo permitir modificar ciertos campos
+      if (isInUse) {
+        const restrictedFields = ['description', 'startDate', 'code'];
+        const tryingToModifyRestricted = restrictedFields.some(field => {
+          const value = req.body[field];
+          return value !== undefined && value !== null;
+        });
+
+        if (tryingToModifyRestricted) {
+          const usageError = new Error('No se puede modificar este campo porque el período tiene registros asociados') as AppError;
+          usageError.code = '403';
+          throw usageError;
+        }
+      }
+
       const updatePayload: Record<string, unknown> = {};
       if (description !== undefined) updatePayload.DESCRIPTION = description;
       if (startDate !== undefined) updatePayload.START_DATE = formatToDate(startDate);
@@ -213,7 +243,7 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
       if (error) throw error;
       
       if (!data || data.length === 0) {
-        const notFoundError = new Error(`No se encontró el périodo con PERIOD_ID: ${id}`) as AppError;
+        const notFoundError = new Error(`No se encontró el período con PERIOD_ID: ${id}`) as AppError;
         notFoundError.code = '404';
         throw notFoundError;
       }

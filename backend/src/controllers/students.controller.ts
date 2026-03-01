@@ -962,3 +962,134 @@ export const changeStudentRegistration = async (req: AuthRequest, res: Response)
     handleDbError(res, error);
   }
 };
+
+export const importStudents = async (req: Request, res: Response) => {
+  try {
+    const { students } = req.body;
+    
+    if (!Array.isArray(students) || students.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No se proporcionaron estudiantes para importar' 
+      });
+    }
+
+    const results = {
+      success: true,
+      imported: 0,
+      failed: 0,
+      errors: [] as string[]
+    };
+
+    for (const studentData of students) {
+      try {
+        const { data, error } = await supabase
+          .from('t_students')
+          .insert({
+            IDENTIFICATION_PREFIX: studentData.identificationPrefix || 'V',
+            IDENTIFICATION_NUMBER: studentData.identificationNumber,
+            FIRST_NAME: studentData.firstName,
+            MIDDLE_NAME: studentData.middleName || null,
+            LAST_NAME: studentData.lastName,
+            SECOND_LAST_NAME: studentData.secondLastName || null,
+            SEX: studentData.sex,
+            BIRTH_DATE: studentData.birthDate,
+            CIVIL_STATUS: studentData.civilStatus || 'SOLTERO',
+            PHONE: studentData.phone,
+            EMAIL: studentData.email,
+            ADDRESS: studentData.address || '',
+            CAREER_ID: studentData.careerId,
+            SEMESTER: studentData.semester || '01',
+            SECTION: studentData.section || '001',
+            REGIME: studentData.regime || 'DIURNO',
+            STUDENT_TYPE: studentData.studentType || 'CIVIL',
+            MILITARY_RANK: studentData.militaryRank || 'NO APLICA',
+            WORKS: studentData.works || 'NO',
+            STATUS: true
+          })
+          .select();
+
+        if (error) {
+          results.failed++;
+          results.errors.push(`Error con ${studentData.identificationNumber}: ${error.message}`);
+        } else {
+          results.imported++;
+        }
+      } catch (err: unknown) {
+        results.failed++;
+        const error = err as Error;
+        results.errors.push(`Error con ${studentData.identificationNumber}: ${error.message}`);
+      }
+    }
+
+    res.json(results);
+  } catch (error: unknown) {
+    console.error('[importStudents] Error:', error);
+    handleDbError(res, error);
+  }
+};
+
+export const exportStudents = async (req: Request, res: Response) => {
+  try {
+    const { status, careerId, regime } = req.query;
+
+    let query = supabase
+      .from('t_students')
+      .select(`
+        *,
+        t_career(CAREER_NAME),
+        t_institution(INSTITUTION_NAME)
+      `)
+      .order('FIRST_NAME', { ascending: true });
+
+    if (status !== undefined) {
+      query = query.eq('STATUS', status === 'true');
+    }
+    if (careerId) {
+      query = query.eq('CAREER_ID', careerId);
+    }
+    if (regime) {
+      query = query.eq('REGIME', regime);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('[exportStudents] Error:', error);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Error al exportar estudiantes' 
+      });
+    }
+
+    const formattedData = (data || []).map(student => ({
+      identificationPrefix: student.IDENTIFICATION_PREFIX,
+      identificationNumber: student.IDENTIFICATION_NUMBER,
+      firstName: student.FIRST_NAME,
+      middleName: student.MIDDLE_NAME,
+      lastName: student.LAST_NAME,
+      secondLastName: student.SECOND_LAST_NAME,
+      sex: student.SEX,
+      birthDate: student.BIRTH_DATE,
+      civilStatus: student.CIVIL_STATUS,
+      phone: student.PHONE,
+      email: student.EMAIL,
+      address: student.ADDRESS,
+      careerId: student.CAREER_ID,
+      careerName: student.t_career?.CAREER_NAME,
+      semester: student.SEMESTER,
+      section: student.SECTION,
+      regime: student.REGIME,
+      studentType: student.STUDENT_TYPE,
+      militaryRank: student.MILITARY_RANK,
+      works: student.WORKS,
+      enrollmentDate: student.ENROLLMENT_DATE,
+      status: student.STATUS
+    }));
+
+    res.json({ success: true, data: formattedData });
+  } catch (error: unknown) {
+    console.error('[exportStudents] Error:', error);
+    handleDbError(res, error);
+  }
+};

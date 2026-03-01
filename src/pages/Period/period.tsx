@@ -281,6 +281,51 @@ export default function Period() {
         });
     };
 
+    /**
+     * Maneja la eliminación masiva de periodos.
+     */
+    const handleBulkDelete = async (periodosRow: PeriodoRowData[]) => {
+        setConfirmation({
+            isOpen: true,
+            title: 'Confirmar Envío a Inactivos',
+            message: `¿Estás seguro de que deseas enviar ${periodosRow.length} período${periodosRow.length > 1 ? 's' : ''} a Inactivos?`,
+            onConfirm: async () => {
+                try {
+                    const ids = periodosRow.map(p => {
+                        const original = periodos.find(o => o.periodId === p.periodId);
+                        return original?.periodId;
+                    }).filter(Boolean) as string[];
+                    
+                    for (const id of ids) {
+                        await removePeriod(id);
+                    }
+                } catch (e) {
+                    console.error("[PeriodPage] Error al eliminar periodos:", e);
+                } finally {
+                    setConfirmation(null);
+                }
+            },
+            confirmText: 'Confirmar',
+            variant: 'error'
+        });
+    };
+
+    /**
+     * Maneja la restauración masiva de periodos.
+     */
+    const handleBulkRestore = async (periodosRow: PeriodoRowData[]) => {
+        try {
+            for (const periodoRow of periodosRow) {
+                const original = periodos.find(p => p.periodId === periodoRow.periodId);
+                if (original) {
+                    await editPeriod({ ...original, status: true });
+                }
+            }
+        } catch (e) {
+            console.error("[PeriodPage] Error al restaurar periodos:", e);
+        }
+    };
+
     // Memoizamos los datos formateados para la tabla para evitar recálculos innecesarios.
     const tableData = useMemo(() => periodos
         .filter(p => p.status === (activeTab === 'active')) // Filtra según la pestaña activa
@@ -391,7 +436,7 @@ export default function Period() {
 
                             <div className="animate-fadeIn">
                                 <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="periods-table">
-                                    <PeriodTable
+                                <PeriodTable
                                         key={activeTab}
                                         data={tableData}
                                         status={status}
@@ -402,6 +447,8 @@ export default function Period() {
                                         onView={handleOpenViewModal}
                                         onDelete={handleDelete}
                                         onRestore={handleRestore}
+                                        onBulkDelete={handleBulkDelete}
+                                        onBulkRestore={handleBulkRestore}
                                         externalLoading={loadingAction}
                                     />
                                 </SkeletonLoader>

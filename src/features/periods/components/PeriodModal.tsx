@@ -76,6 +76,15 @@ export default function PeriodModal({
     const isCulminado = periodo?.periodStatus === 3;
     const isInCurso = periodo?.periodStatus === 2;
 
+    // Calcular duración en semanas para mostrar información
+    const durationWeeks = useMemo(() => {
+        if (!startDateValue || !watch('endDate')) return null;
+        const start = new Date(startDateValue).getTime();
+        const end = new Date(watch('endDate')!).getTime();
+        const diffWeeks = (end - start) / (7 * 24 * 60 * 60 * 1000);
+        return Math.round(diffWeeks * 10) / 10;
+    }, [startDateValue, watch('endDate')]);
+
     // Ref para evitar que los efectos de sincronización interfieran con la inicialización
     const isInitializing = useRef(false);
 
@@ -525,6 +534,14 @@ export default function PeriodModal({
                                 </div>
                                 {errors.endDate && <p className="mt-1 text-xs text-red-500">{errors.endDate.message}</p>}
                                 <p className="mt-1 text-[10px] text-text-tertiary">Duración mín: 16 semanas.</p>
+                                {durationWeeks !== null && (
+                                    <p className={`mt-1 text-xs font-medium ${durationWeeks >= 16 ? 'text-green-600' : 'text-orange-500'}`}>
+                                        {durationWeeks < 16 
+                                            ? `⚠️ Faltan ${(16 - durationWeeks).toFixed(1)} semanas para completar el mínimo`
+                                            : `Duración: ${durationWeeks} semanas`
+                                        }
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>

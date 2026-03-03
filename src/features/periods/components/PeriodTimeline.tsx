@@ -174,12 +174,12 @@ const PeriodTimeline: React.FC<PeriodTimelineProps> = ({ periods, activePeriodId
                     <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                       <div className="flex items-center justify-between text-xs mb-2">
                         <span className="text-text-tertiary font-medium">Progreso</span>
-                        <span className="font-bold text-success-600">{getSafeProgress(period) || 0}%</span>
+                        <span className="font-bold text-success-600">{Number(getSafeProgress(period) || 0).toFixed(2)}%</span>
                       </div>
                       <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                         <motion.div 
                           initial={{ width: 0 }}
-                          animate={{ width: `${getSafeProgress(period) || 0}%` }}
+                          animate={{ width: `${Number(getSafeProgress(period) || 0).toFixed(2)}%` }}
                           transition={{ duration: 0.8, delay: 0.2 }}
                           className={`h-full rounded-full ${config.color}`}
                         />

@@ -114,7 +114,7 @@ export default function PreEnrollmentModal({
 
   // State for display values with formatting
   const [displayIdentificationNumber, setDisplayIdentificationNumber] = useState("");
-  const [displayPhone, setDisplayPhone] = useState("");
+  const [_displayPhone, setDisplayPhone] = useState("");
 
   // Handle identification number input change with formatting
   const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -635,15 +635,15 @@ useEffect(() => {
     <>
       <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl">
         <ModalHeader>
-        <div className="max-w-4xl mx-auto w-full">
-          <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-            {editingEntry ? "Editar Preinscripción" : "Nueva Preinscripción"}
-          </span>
-          <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
-            {editingEntry ? "Solo se puede modificar el período de la pre-inscripción." : "Ingresa los detalles para la nueva pre-inscripción."}
-          </p>
-        </div>
-      </ModalHeader>
+          <div className="max-w-4xl mx-auto w-full">
+            <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+              {editingEntry ? "Editar Preinscripción" : "Nueva Preinscripción"}
+            </span>
+            <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
+              {editingEntry ? "Solo se puede modificar el período de la pre-inscripción." : "Ingresa los detalles para la nueva pre-inscripción."}
+            </p>
+          </div>
+        </ModalHeader>
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
         <form id="pre-enrollment-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto">
@@ -794,10 +794,10 @@ setValue("identificationNumber", student.identificationNumber);
                 </Button>
               </div>
             )}
-            </div>
           </div>
+        </div>
 
-          {/* Sección: Datos Académicos */}
+        {/* Sección: Datos Académicos */}
           <div className="bg-white dark:bg-gray-900 rounded-xl p-5 sm:p-6 border border-border-light dark:border-white/10 shadow-sm">
             <div className="flex items-center gap-2 mb-5">
               <svg className="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -864,6 +864,7 @@ setValue("identificationNumber", student.identificationNumber);
                 className="bg-bg-secondary dark:bg-white/5 cursor-not-allowed"
               />
             </div>
+          </div>
           </div>
         </form>
       </ModalBody>

@@ -1,4 +1,4 @@
-# UNEFA Dashboard — Sistema de Gestión Académica 🎓
+# UNEFA Dashboard — Sistema de Gestión de Prácticas Profesionales
 
 [![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](https://github.com/Antony-Figueroa/UNEFA_DASHBOARD)
 [![React](https://img.shields.io/badge/React-19.0.0-61dafb.svg?logo=react)](https://reactjs.org/)
@@ -6,298 +6,301 @@
 [![Vite](https://img.shields.io/badge/Vite-6.1.0-646cff.svg?logo=vite)](https://vitejs.dev/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
 
-**UNEFA Dashboard** es una plataforma integral de gestión académica diseñada para universidades, construida con tecnologías de vanguardia: **React 19**, **Tailwind CSS v4**, **Vite**, **Express** y **Supabase**. Proporciona una arquitectura robusta, escalable y optimizada para administración académica completa.
+Sistema de gestión académica integral para universidades, enfocado en la administración de prácticas profesionales. Gestiona estudiantes, tutores, instituciones receptoras, evaluaciones y documentación académica con soporte multi-rol.
 
 ---
 
-## ✨ Características Principales
+## Requisitos Previos
 
-### Gestión Académica
-- 🎯 **Gestión Completa de Periodos Académicos** - Creación, edición y seguimiento de periodos con calendario dual
-- 👨‍🎓 **Gestión de Estudiantes** - Administración completa con tipos civil/militar
-- 👨‍🏫 **Gestión de Tutores** - Tutores académicos y sus asignaciones
-- 🏢 **Gestión de Instituciones** - Empresas e instituciones asociadas
-- 🎓 **Gestión de Carreras** - Programas académicos corta/larga duración
+| Requisito | Versión Mínima | Notas |
+|-----------|----------------|-------|
+| Node.js | >= 18.x | Runtime de JavaScript |
+| npm | >= 9.x | Gestor de paquetes |
+| PostgreSQL | 15+ | Base de datos (via Supabase) |
+| Docker | >= 20.x | Opcional, para contenedores |
+| Git | 2.x | Control de versiones |
 
-### Sistema de Pasantías
-- 📝 **Pre-inscripciones e Inscripciones** - Proceso completo con validaciones
-- 📊 **Seguimiento de Pasantías** - Tracking de visitas y actividades
-- 📋 **Sistema de Evaluaciones** - 3 tipos ponderados (Institucional 40%, Académico 30%, Comité 30%)
-- 📓 **Bitácora de Actividades** - Registro diario/semanal de estudiantes
-- 📁 **Gestión de Documentos** - Cartas, informes, constancias
+### Cuenta de Supabase Requerida
 
-### Dashboards por Rol
-- 👔 **Dashboard Admin** - Vista completa del sistema
-- 👨‍🏫 **Dashboard Tutor** - Estudiantes asignados, seguimientos, evaluaciones
-- 👨‍🎓 **Dashboard Estudiante** - Progreso de horas, bitácora, documentos, solicitudes
-
-### Sistema y UX
-- 🎨 **Personalización de Colores** - Cada usuario puede elegir su color de tema
-- 🔔 **Notificaciones en Tiempo Real** - SSE para alertas instantáneas
-- 🌙 **Dark Mode** - Soporte completo modo oscuro
-- 🔐 **Autenticación Segura** - JWT con cookies HTTP-only
-- 👥 **4 Roles de Usuario** - Admin, Asistente, Tutor, Estudiante
+1. Crear proyecto en [supabase.com](https://supabase.com)
+2. Obtener credenciales del panel de configuración
+3. Ejecutar migraciones desde `DB-postgres.sql`
 
 ---
 
-## 🚀 Quick Start
+## Instalación
 
-### Requisitos Previos
-
-- **Node.js** >= 18.x
-- **npm** >= 9.x
-- **Cuenta de Supabase** (para base de datos PostgreSQL)
-- **Docker** (opcional, para desarrollo con contenedores)
-
-### Instalación Rápida
+### Clonar el Repositorio
 
 ```bash
-# 1. Clonar el repositorio
 git clone https://github.com/Antony-Figueroa/UNEFA_DASHBOARD.git
 cd UNEFA_DASHBOARD
+```
 
-# 2. Instalar dependencias
-npm install                    # Frontend
-cd backend && npm install      # Backend
+### Instalar Dependencias
 
-# 3. Configurar variables de entorno
+```bash
+# Frontend
+npm install
+
+# Backend
+cd backend && npm install
+```
+
+### Configurar Variables de Entorno
+
+```bash
+# Frontend - copiar y editar
 cp .env.example .env
+
+# Backend - copiar y editar
 cp backend/.env.example backend/.env
-# Editar .env con credenciales de Supabase
+```
 
-# 4. Ejecutar migraciones en Supabase
-# Ver carpeta backend/migrations/
+#### Variables de Entorno
 
-# 5. Ejecutar en desarrollo
-npm run dev              # Frontend en http://localhost:5173
-cd backend && npm run dev # Backend en http://localhost:3000
+**Frontend (`.env`)**:
 
-# O con Docker:
+| Variable | Descripción | Ejemplo | Obligatoria |
+|----------|-------------|---------|-------------|
+| `VITE_API_URL` | URL del backend | `http://localhost:3000/api` | Sí |
+| `VITE_SUPABASE_URL` | URL del proyecto Supabase | `https://xxx.supabase.co` | Sí |
+| `VITE_SUPABASE_ANON_KEY` | Clave pública de Supabase | `eyJxxx...` | Sí |
+| `VITE_GOOGLE_AI_KEY` | API key de Gemini (asistente IA) | `AIzaSy...` | No |
+| `VITE_OPENROUTER_KEY` | API key de OpenRouter (fallback) | `sk-or-...` | No |
+
+**Backend (`backend/.env`)**:
+
+| Variable | Descripción | Ejemplo | Obligatoria |
+|----------|-------------|---------|-------------|
+| `PORT` | Puerto del servidor | `3000` | Sí |
+| `NODE_ENV` | Entorno | `development` | Sí |
+| `SUPABASE_URL` | URL de Supabase | `https://xxx.supabase.co` | Sí |
+| `SUPABASE_ANON_KEY` | Clave pública | `eyJxxx...` | Sí |
+| `SUPABASE_SERVICE_ROLE_KEY` | Clave de servicio (admin) | `eyJxxx...` | Sí |
+| `SUPABASE_JWT_SECRET` | Secreto para validar JWT | `your-jwt-secret` | Sí |
+
+### Ejecutar Migraciones de Base de Datos
+
+1. Abrir panel de Supabase SQL Editor
+2. Copiar contenido de `DB-postgres.sql`
+3. Ejecutar script
+
+### Iniciar Aplicación
+
+```bash
+# Desarrollo - Terminal 1 (Frontend)
+npm run dev
+# Accesible en: http://localhost:5173
+
+# Desarrollo - Terminal 2 (Backend)
+cd backend && npm run dev
+# Accesible en: http://localhost:3000
+
+# Producción con Docker
 docker-compose up --build
 ```
 
 ---
 
-## 📂 Estructura del Proyecto
+## Uso Rápido
 
-```text
+### Credenciales de Prueba (tras migrate)
+
+| Rol | Usuario | Contraseña |
+|-----|---------|------------|
+| Administrador | admin@unefa.edu.ve | admin123 |
+| Asistente | asistente@unefa.edu.ve | asis123 |
+| Tutor | tutor@unefa.edu.ve | tutor123 |
+| Estudiante | estudiante@test.com | estu123 |
+
+### Flujo Básico
+
+1. **Login**: Acceder con credenciales
+2. **Dashboard**: Ver estadísticas según rol
+3. **Gestión**: Navegar a módulos (Estudiantes, Tutores, Carreras, etc.)
+4. **Pasantías**: Crear pre-inscripción → Inscripción → Seguimiento → Evaluación
+
+---
+
+## Estructura del Proyecto
+
+```
 UNEFA_DASHBOARD/
-├── src/                    # Frontend React
-│   ├── api/                # Cliente Axios y factories
-│   ├── components/         # Componentes reutilizables
-│   │   ├── ui/             # Componentes atómicos
-│   │   ├── form/           # Componentes de formulario
-│   │   ├── common/         # Componentes compartidos
-│   │   └── Theme/          # Selector de colores
-│   ├── features/           # Módulos por funcionalidad (20+ features)
-│   │   ├── auth/           # Autenticación
-│   │   ├── periods/        # Periodos académicos
-│   │   ├── students/       # Estudiantes
-│   │   ├── tutors/         # Tutores
-│   │   ├── institutions/   # Instituciones
-│   │   ├── careers/        # Carreras
-│   │   ├── enrollment/     # Inscripciones
-│   │   ├── tracking/       # Seguimiento
-│   │   ├── evaluations/    # Evaluaciones
-│   │   ├── activity-logs/  # Bitácora
-│   │   ├── documents/      # Documentos
-│   │   ├── student/        # Dashboard estudiante
-│   │   ├── tutor/          # Dashboard tutor
-│   │   ├── notifications/  # Notificaciones SSE
-│   │   └── ...             # Otros features
-│   ├── context/            # Contextos globales (Auth, Theme, Toast)
-│   ├── pages/              # 40+ páginas
-│   ├── routes/             # Definición de rutas
-│   └── theme/              # Sistema de colores dinámico
+├── src/                          # Frontend React 19
+│   ├── api/                      # Cliente HTTP centralizado
+│   │   ├── apiClient.ts          # Axios con interceptores
+│   │   └── crudServiceFactory.ts # Factory para servicios CRUD
+│   ├── components/               # Componentes reutilizables
+│   │   ├── ui/                   # Componentes atómicos (Button, Input, Modal)
+│   │   ├── form/                 # Componentes de formulario
+│   │   ├── common/               # Componentes compartidos
+│   │   └── UserProfile/          # Tarjetas de perfil
+│   ├── features/                 # Módulos por funcionalidad
+│   │   ├── auth/                 # Autenticación y sesiones
+│   │   ├── students/             # Gestión de estudiantes
+│   │   ├── tutors/                # Tutores académicos
+│   │   ├── institutions/         # Instituciones receptoras
+│   │   ├── careers/              # Carreras universitarias
+│   │   ├── periods/              # Períodos académicos
+│   │   ├── enrollment/            # Inscripciones
+│   │   ├── pre-enrollment/        # Pre-inscripciones
+│   │   ├── tracking/              # Seguimiento de pasantías
+│   │   ├── evaluations/           # Evaluaciones (3 tipos ponderados)
+│   │   ├── activity-logs/         # Bitácora de actividades
+│   │   ├── documents/             # Gestión de documentos
+│   │   ├── notifications/         # Notificaciones SSE
+│   │   ├── dashboard/             # Dashboard admin
+│   │   ├── tutor/                 # Dashboard tutor
+│   │   ├── student/              # Dashboard estudiante
+│   │   ├── users/                # Gestión de usuarios
+│   │   ├── theme/                # Personalización de colores
+│   │   ├── lists/                # Listas de configuración
+│   │   └── backups/              # Respaldos de BD
+│   ├── context/                   # Contextos globales
+│   │   ├── AuthContext.tsx        # Autenticación
+│   │   ├── ThemeContext.tsx       # Tema de color
+│   │   └── ToastContext.tsx       # Notificaciones toast
+│   ├── hooks/                     # Hooks compartidos
+│   │   ├── useModal.tsx           # Control de modales
+│   │   ├── useDebounce.ts         # Debounce para búsquedas
+│   │   ├── useSessionTimeout.ts   # Timeout de sesión
+│   │   └── useCrud.ts             # Hook CRUD genérico
+│   ├── pages/                     # Páginas con rutas
+│   ├── routes/                    # Definición de rutas (lazy loading)
+│   ├── theme/                     # Sistema de colores CSS
+│   ├── utils/                     # Utilidades
+│   │   ├── date.ts                # Fechas
+│   │   ├── maskData.ts            # Enmascaramiento de datos
+│   │   └── excel.ts               # Exportación Excel
+│   ├── types/                     # Tipos TypeScript globales
+│   └── styles/                    # Estilos globales
 │
-├── backend/                # Backend Express
+├── backend/                       # Backend Express + TypeScript
 │   └── src/
-│       ├── controllers/    # 18 controllers
-│       ├── routes/         # 18 rutas
-│       ├── middlewares/    # Auth, validation, error handling
-│       ├── services/       # Lógica de negocio
-│       ├── migrations/     # Migraciones SQL
-│       └── lib/            # Cliente Supabase
+│       ├── controllers/           # Lógica de negocio (20+)
+│       │   ├── auth.controller.ts
+│       │   ├── students.controller.ts
+│       │   ├── tutors.controller.ts
+│       │   └── ...
+│       ├── routes/                 # Definición de endpoints
+│       │   ├── auth.routes.ts
+│       │   ├── students.routes.ts
+│       │   └── ...
+│       ├── middlewares/            # Middlewares Express
+│       │   ├── auth.middleware.ts  # JWT + permisos
+│       │   └── rate-limit.middleware.ts
+│       ├── services/               # Servicios externos
+│       │   ├── auth.service.ts
+│       │   ├── email.service.ts
+│       │   └── ai.service.ts
+│       ├── lib/                    # Utilidades
+│       │   ├── supabase.ts         # Cliente Supabase
+│       │   ├── cache-manager.ts    # Caché en memoria
+│       │   └── db-manager.ts       # Abstracción DB
+│       ├── utils/                  # Utilidades
+│       └── migrations/             # Migraciones SQL
 │
-├── docs/                   # Documentación
-├── docker-compose.yml      # Docker
-└── package.json
+├── docs/                          # Documentación adicional
+├── docker-compose.yml             # Configuración Docker
+├── package.json                   # Dependencias frontend
+└── README.md                      # Este archivo
 ```
 
 ---
 
-## 🛠️ Stack Tecnológico
+## Ejecutar Tests
 
-### Frontend
+```bash
+# Todos los tests
+npm test
 
-| Tecnología | Versión | Propósito |
-|------------|---------|-----------|
-| **React** | 19.0.0 | Framework UI |
-| **TypeScript** | 5.7.2 | Tipado estático |
-| **Vite** | 6.1.0 | Build tool |
-| **Tailwind CSS** | 4.1.18 | Estilos |
-| **React Router** | 7.1.5 | Routing |
-| **React Hook Form** | 7.69.0 | Formularios |
-| **Zod** | 4.3.3 | Validación |
-| **Axios** | 1.13.2 | Cliente HTTP |
-| **ApexCharts** | 4.1.0 | Gráficos |
-| **Lucide React** | 0.563.0 | Iconos |
-| **Framer Motion** | 12.26.2 | Animaciones |
+# Tests con watch
+npm test -- --watch
 
-### Backend
+# Coverage
+npm test -- --coverage
 
-| Tecnología | Versión | Propósito |
-|------------|---------|-----------|
-| **Node.js** | >= 18.x | Runtime |
-| **Express** | 4.22.1 | Framework web |
-| **TypeScript** | 5.x | Tipado |
-| **Supabase JS** | 2.90.1 | Cliente PostgreSQL |
-| **JWT** | - | Autenticación |
-| **Multer** | - | Upload archivos |
-
-### Infraestructura
-
-- **Base de Datos**: PostgreSQL (Supabase)
-- **Storage**: Supabase Storage (documentos)
-- **Deployment**: Vercel (Frontend), Railway/Render (Backend)
-- **Containers**: Docker + Docker Compose
-
----
-
-## 🏗️ Arquitectura
-
-### Feature-Based + Clean Architecture
-
-```mermaid
-graph TB
-    subgraph "🎨 Presentation"
-        A[Pages & Components]
-    end
-    subgraph "⚙️ Business Logic"
-        B[Custom Hooks]
-        C[Feature Services]
-    end
-    subgraph "📡 Data Access"
-        D[API Client]
-    end
-    subgraph "🔧 Backend"
-        E[Express Routes]
-        F[Controllers]
-    end
-    subgraph "💾 Database"
-        G[(PostgreSQL/Supabase)]
-    end
-    A --> B --> C --> D --> E --> F --> G
+# Backend - Tests de entorno
+cd backend && npm run test:env
 ```
 
-### Flujo de Datos
+---
 
-1. **UI Components** → Eventos del usuario
-2. **Pages** → Orquestación de features
-3. **Hooks** → Estado y lógica de negocio
-4. **Services** → Comunicación con API
-5. **Backend Routes** → Recepción de requests
-6. **Controllers** → Ejecución de lógica
-7. **Supabase** → Persistencia
+## Linting y TypeScript
+
+```bash
+# Lint
+npm run lint
+
+# TypeScript check
+npx tsc --noEmit
+```
 
 ---
 
-## 📚 Documentación
+## Contribución
+
+### Workflow
+
+1. Fork del repositorio
+2. Crear rama feature: `git checkout -b feature/NombreFeature`
+3. Realizar cambios con commits convencionales
+4. Push: `git push origin feature/NombreFeature`
+5. Abrir Pull Request
+
+### Conventional Commits
+
+```
+feat: nueva funcionalidad
+fix: corrección de bug
+docs: documentación
+style: formato (sin cambio lógica)
+refactor: refactorización
+test: tests
+chore: mantenimiento
+```
+
+### Estándares de Código
+
+- TypeScript strict mode activo
+- Sin `any` — usar tipos explícitos
+- Nomenclatura: PascalCase (componentes), camelCase (funciones)
+- Componentes con JSDoc en funciones públicas
+- Preferir hooks sobre clases
+
+---
+
+## Seguridad
+
+- JWT con cookies HttpOnly
+- Helmet headers
+- Bcrypt para contraseñas
+- Validación Zod en backend
+- Row Level Security (Supabase)
+- Rate limiting en endpoints sensibles
+
+---
+
+## Licencia
+
+MIT — ver [LICENSE.md](LICENSE.md)
+
+---
+
+## Recursos Adicionales
 
 | Documento | Descripción |
 |-----------|-------------|
-| [**AGENTS.md**](AGENTS.md) | Guía completa para desarrolladores y agentes IA |
-| [**docs/API.md**](docs/API.md) | Documentación de todos los endpoints |
-| [**technical-specs.md**](technical-specs.md) | Sistema de colores y especificaciones UI |
-| [**ux-standards.md**](ux-standards.md) | Estándares UX y accesibilidad |
-| [**DOCKER_GUIDE.md**](DOCKER_GUIDE.md) | Guía Docker |
-| [**CHANGELOG.md**](CHANGELOG.md) | Historial de cambios |
+| [AGENTS.md](AGENTS.md) | Guía para desarrolladores y agentes IA |
+| [docs/API.md](docs/API.md) | Referencia completa de endpoints |
+| [technical-specs.md](technical-specs.md) | Sistema de colores y UI |
+| [ux-standards.md](ux-standards.md) | Estándares UX y accesibilidad |
+| [DOCKER_GUIDE.md](DOCKER_GUIDE.md) | Guía Docker completa |
+| [CHANGELOG.md](CHANGELOG.md) | Historial de versiones |
 
 ---
 
-## 🎯 Comandos
+**Autores**: Antony Figueroa — [GitHub](https://github.com/Antony-Figueroa)
 
-```bash
-# Desarrollo
-npm run dev                  # Frontend
-cd backend && npm run dev    # Backend
-
-# Build
-npm run build                # Frontend
-cd backend && npm run build  # Backend
-
-# Docker
-docker-compose up --build    # Iniciar todo
-docker-compose down          # Detener
-
-# Testing
-npm test                     # Tests
-npm run lint                 # Lint
-```
-
----
-
-## 📝 Changelog Reciente
-
-### [2.2.0] - 2026-02-20
-
-#### Added
-- ✨ **Sistema de personalización de colores** - Cada usuario elige su color de tema
-- ✨ **Bitácora de actividades** - Registro diario/semanal para estudiantes
-- ✨ **Progreso de horas** - Barra visual de horas completadas vs requeridas
-- ✨ **Sistema de documentos** - Upload de cartas, informes, constancias
-- ✨ **Notificaciones SSE** - Sistema de notificaciones en tiempo real
-- ✨ **Sistema de solicitudes** - Estudiantes pueden enviar solicitudes a coordinación
-
-#### Changed
-- 🔄 Dashboard de estudiante completamente rediseñado
-- 🔄 Mejoras en sidebar con indicador de menú activo
-- 🔄 Optimización de chunks para mejor rendimiento
-
-### [2.1.0] - 2026-02-19
-
-#### Added
-- ✨ Sistema de Evaluaciones de Prácticas (3 tipos ponderados)
-- ✨ Roles de TUTOR y ESTUDIANTE con dashboards dedicados
-
----
-
-## 🔐 Seguridad
-
-- ✅ JWT con HttpOnly Cookies
-- ✅ CORS configurado
-- ✅ Helmet headers
-- ✅ Bcrypt hash
-- ✅ Validación Zod
-- ✅ Row Level Security (Supabase)
-
----
-
-## 🤝 Contribución
-
-1. Fork del proyecto
-2. Crear rama feature (`git checkout -b feature/AmazingFeature`)
-3. Commit (`git commit -m 'Add: AmazingFeature'`)
-4. Push (`git push origin feature/AmazingFeature`)
-5. Abrir Pull Request
-
-**Convenciones:**
-- Commits: [Conventional Commits](https://www.conventionalcommits.org/)
-- TypeScript: Tipado estricto
-- Código: Ver [AGENTS.md](AGENTS.md)
-
----
-
-## 📄 Licencia
-
-MIT License - ver [LICENSE.md](LICENSE.md)
-
----
-
-## 👥 Autor
-
-- **Antony Figueroa** - [GitHub](https://github.com/Antony-Figueroa)
-
----
-
-**⭐ Si este proyecto te resulta útil, considera darle una estrella**
+** estrella si el proyecto resulta útil

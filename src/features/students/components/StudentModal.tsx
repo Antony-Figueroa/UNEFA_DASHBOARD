@@ -25,7 +25,7 @@ import {
   StudentFormInput,
   StudentFormOutput
 } from "../constants/validation";
-import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, cleanPhone, CEDULA_MAX_LENGTH, PHONE_MAX_LENGTH } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, cleanPhone, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
 
 /**
  * Propiedades del componente StudentModal.

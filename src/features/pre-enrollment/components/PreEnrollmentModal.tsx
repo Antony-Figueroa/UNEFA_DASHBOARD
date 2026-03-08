@@ -31,7 +31,7 @@ import { generateMatricula } from "../../../utils/matricula";
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
-import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
 
 /**
  * Propiedades del componente PreEnrollmentModal.
@@ -688,7 +688,7 @@ useEffect(() => {
                     error={!!errors.identificationNumber}
                     className={isSearching ? "animate-pulse tracking-widest" : "tracking-widest"}
                     readOnly={!!editingEntry}
-                    maxLength={9}
+                    maxLength={CEDULA_MAX_LENGTH}
                     onKeyDown={(e) => {
                       if (!/[0-9]/.test(e.key) && !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)) {
                         e.preventDefault();

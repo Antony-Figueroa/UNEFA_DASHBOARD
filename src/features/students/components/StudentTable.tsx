@@ -251,6 +251,8 @@ export default function StudentTable({
     const [nameFilter, setNameFilter] = useState("");
     const [careerFilter, setCareerFilter] = useState("");
     const [regimeFilter, setRegimeFilter] = useState("");
+    const [dateFromFilter, setDateFromFilter] = useState("");
+    const [dateToFilter, setDateToFilter] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -286,6 +288,8 @@ export default function StudentTable({
 
     const debouncedIdFilter = useDebounce(idFilter, 300);
     const debouncedNameFilter = useDebounce(nameFilter, 300);
+    const debouncedDateFromFilter = useDebounce(dateFromFilter, 300);
+    const debouncedDateToFilter = useDebounce(dateToFilter, 300);
 
     useEffect(() => {
         setSelectedIds([]);
@@ -302,10 +306,29 @@ export default function StudentTable({
             const matchesCareer = !careerSearch || s.careerId === careerSearch;
             const matchesRegime = !regimeFilter || s.regime === regimeFilter;
 
+            // Filtros de fecha
+            let matchesDateFrom = true;
+            let matchesDateTo = true;
+            
+            if (debouncedDateFromFilter && s.enrollmentDate) {
+                const enrollmentDate = new Date(s.enrollmentDate);
+                const fromDate = new Date(debouncedDateFromFilter);
+                fromDate.setHours(0, 0, 0, 0);
+                matchesDateFrom = enrollmentDate >= fromDate;
+            }
+            
+            if (debouncedDateToFilter && s.enrollmentDate) {
+                const enrollmentDate = new Date(s.enrollmentDate);
+                const toDate = new Date(debouncedDateToFilter);
+                toDate.setHours(23, 59, 59, 999);
+                matchesDateTo = enrollmentDate <= toDate;
+            }
+
             const matchesTab = activeTab === "Activas" ? !!s.status : !s.status;
 
             return matchesId && matchesName && matchesCareer && 
                    matchesRegime && 
+                   matchesDateFrom && matchesDateTo &&
                    matchesTab;
         });
 
@@ -338,7 +361,7 @@ export default function StudentTable({
         });
 
         return filtered;
-    }, [data, debouncedIdFilter, debouncedNameFilter, careerFilter, regimeFilter, activeTab, sortConfig]);
+    }, [debouncedIdFilter, debouncedNameFilter, careerFilter, data, regimeFilter, debouncedDateFromFilter, debouncedDateToFilter, activeTab, sortConfig.key, sortConfig.order]);
 
     // Reset page when filters change
     useEffect(() => {
@@ -409,6 +432,8 @@ export default function StudentTable({
         setNameFilter("");
         setCareerFilter("");
         setRegimeFilter("");
+        setDateFromFilter("");
+        setDateToFilter("");
     };
 
     const SortIndicator = ({ column }: { column: SortKey }) => {
@@ -524,6 +549,28 @@ export default function StudentTable({
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                         </div>
+                    </div>
+
+                    {/* Filtro Fecha Desde */}
+                    <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-text-tertiary pointer-events-none">Desde</span>
+                        <input
+                            type="date"
+                            value={dateFromFilter}
+                            onChange={(e) => setDateFromFilter(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-12 pr-4 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis"
+                        />
+                    </div>
+
+                    {/* Filtro Fecha Hasta */}
+                    <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-text-tertiary pointer-events-none">Hasta</span>
+                        <input
+                            type="date"
+                            value={dateToFilter}
+                            onChange={(e) => setDateToFilter(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-12 pr-4 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis"
+                        />
                     </div>
                 </div>
 
@@ -703,7 +750,7 @@ export default function StudentTable({
                                         </div>
                                         <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron estudiantes</h3>
                                         <p className="mt-1 text-xs text-text-secondary dark:text-text-tertiary">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                                        {(idFilter || nameFilter || careerFilter || regimeFilter) && (
+                        {(idFilter || nameFilter || careerFilter || regimeFilter || dateFromFilter || dateToFilter) && (
                                             <button
                                                 onClick={clearFilters}
                                                 className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"

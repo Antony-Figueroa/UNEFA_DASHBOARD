@@ -5,6 +5,7 @@ import {
   connectToNotificationStream,
 } from '../services/notificationService';
 import type { Notification, SSENotification } from '../types';
+import { useAuth } from '../../../context/auth';
 
 interface UseNotificationsOptions {
   autoConnect?: boolean;
@@ -13,18 +14,17 @@ interface UseNotificationsOptions {
 
 export const useNotifications = (options: UseNotificationsOptions = {}) => {
   const { autoConnect = true, limit = 20 } = options;
+  const { user, loading: authLoading } = useAuth();
+  const isAuthenticated = !!user;
   
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
-  const hasToken = useCallback(() => {
-    return !!localStorage.getItem('token');
-  }, []);
-
   const fetchNotifications = useCallback(async (offset = 0, reset = false) => {
-    if (!hasToken()) {
+    // No intentar cargar si no está autenticado o si está cargando la auth
+    if (!isAuthenticated || authLoading) {
       return;
     }
     
@@ -45,16 +45,19 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
       setHasMore(response.data.length === limit);
     } catch (error: unknown) {
       const axiosError = error as { response?: { status?: number } };
-      if (axiosError.response?.status !== 401) {
-        console.error('[useNotifications] Error fetching notifications:', error);
+      // Silenciar errores 401 ya que puede haber un race condition con el login
+      if (axiosError.response?.status === 401) {
+        console.warn('[useNotifications] 401 -可能在登录过程中忽略');
+        return;
       }
+      console.error('[useNotifications] Error fetching notifications:', error);
     } finally {
       setLoading(false);
     }
-  }, [limit, hasToken]);
+  }, [limit, isAuthenticated, authLoading]);
 
   const markAsRead = useCallback(async (id: number) => {
-    if (!hasToken()) return;
+    if (!isAuthenticated) return;
     
     try {
       await notificationService.markAsRead(id);
@@ -72,10 +75,10 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
       console.error('[useNotifications] Error marking as read:', error);
       toast.error('Error al marcar notificación como leída');
     }
-  }, [hasToken]);
+  }, [isAuthenticated]);
 
   const markAllAsRead = useCallback(async () => {
-    if (!hasToken()) return;
+    if (!isAuthenticated) return;
     
     try {
       await notificationService.markAllAsRead();
@@ -90,10 +93,10 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
       console.error('[useNotifications] Error marking all as read:', error);
       toast.error('Error al marcar notificaciones');
     }
-  }, [hasToken]);
+  }, [isAuthenticated]);
 
   const deleteNotification = useCallback(async (id: number) => {
-    if (!hasToken()) return;
+    if (!isAuthenticated) return;
     
     try {
       await notificationService.delete(id);
@@ -108,7 +111,7 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
       console.error('[useNotifications] Error deleting notification:', error);
       toast.error('Error al eliminar notificación');
     }
-  }, [notifications, hasToken]);
+  }, [notifications, isAuthenticated]);
 
   const refreshNotifications = useCallback(() => {
     fetchNotifications(0, true);
@@ -147,16 +150,18 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
   }, []);
 
   useEffect(() => {
-    if (!hasToken()) {
+    // No cargar notificaciones si no está autenticado o si está cargando la auth
+    if (!isAuthenticated || authLoading) {
       setLoading(false);
       return;
     }
     
     fetchNotifications(0, true);
-  }, [fetchNotifications, hasToken]);
+  }, [fetchNotifications, isAuthenticated, authLoading]);
 
   useEffect(() => {
-    if (!autoConnect || !hasToken()) {
+    // No conectar al stream si no está autenticado o si está cargando
+    if (!autoConnect || !isAuthenticated || authLoading) {
       return;
     }
 
@@ -168,7 +173,7 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
     return () => {
       disconnect();
     };
-  }, [autoConnect, handleNewNotification, hasToken]);
+  }, [autoConnect, handleNewNotification, isAuthenticated, authLoading]);
 
   return {
     notifications,

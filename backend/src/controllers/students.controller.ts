@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { cacheManager } from '../lib/cache-manager.js';
+import { supabase } from '../lib/supabase.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { auditCreate, auditUpdate, auditDelete, auditStatusChange } from '../utils/audit-helpers.js';
 

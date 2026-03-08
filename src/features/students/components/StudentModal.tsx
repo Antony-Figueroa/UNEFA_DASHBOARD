@@ -25,7 +25,7 @@ import {
   StudentFormInput,
   StudentFormOutput
 } from "../constants/validation";
-import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, cleanPhone } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, cleanPhone, CEDULA_MAX_LENGTH, PHONE_MAX_LENGTH } from "../../../utils/inputFormat";
 
 /**
  * Propiedades del componente StudentModal.
@@ -535,7 +535,7 @@ useEffect(() => {
                     error={!!errors.identificationNumber}
                     hint={isCheckingCi ? "Verificando..." : (errors.identificationNumber?.message || " ")}
                     disabled={isCheckingCi || !!editingStudent || !!existingStudent}
-                    maxLength={9}
+                    maxLength={CEDULA_MAX_LENGTH}
                     autoComplete="off"
                     className="tracking-widest"
                     onBlur={async (e) => {
@@ -789,7 +789,7 @@ useEffect(() => {
                     onChange={handlePhoneNumberChange}
                     placeholder="000-0000"
                     error={!!errors.phoneNumber}
-                    maxLength={9}
+                    maxLength={CEDULA_MAX_LENGTH}
                   />
                 </div>
               </div>

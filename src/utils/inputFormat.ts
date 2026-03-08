@@ -1,12 +1,15 @@
 /**
  * @file inputFormat.ts
  * @description Utilidades para formateo visual de inputs (cédula, teléfono, etc.)
- * El formateo es solo visual - los datos se guardan CON el prefijo (V, E, etc.)
+ * El formateo es solo visual - los datos se guardan SIN formato (solo números + prefijo)
  */
 
 /**
  * Formatea un número de cédula para visualización (V-00.000.000)
- * @param value - Valor que puede tener prefijo (ej: "V12345678")
+ * Formato venezolano: prefijo (V/E) + 7-8 dígitos
+ * Ejemplos: V-12.345.678, V-31114449 (8 dígitos sin puntos)
+ * 
+ * @param value - Valor que puede tener prefijo (ej: "V12345678" o "31114449")
  * @returns String con formato visual
  */
 export const formatCedulaDisplay = (value: string): string => {
@@ -20,14 +23,36 @@ export const formatCedulaDisplay = (value: string): string => {
   
   if (!numbers) return prefix;
   
-  // Formatear números con puntos: 00.000.000
-  const formatted = numbers.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  // Formatear desde la izquierda para números de 7-8 dígitos
+  // Cédula venezolana: 7-8 dígitos sin prefijo
+  let formatted: string;
+  const len = numbers.length;
+  
+  if (len <= 3) {
+    // 1-3 dígitos: 123
+    formatted = numbers;
+  } else if (len === 4) {
+    // 4 dígitos: 1234
+    formatted = numbers;
+  } else if (len === 5) {
+    // 5 dígitos: 12.345
+    formatted = `${numbers.slice(0, 2)}.${numbers.slice(2)}`;
+  } else if (len === 6) {
+    // 6 dígitos: 123.456
+    formatted = `${numbers.slice(0, 3)}.${numbers.slice(3)}`;
+  } else if (len === 7) {
+    // 7 dígitos: 1.234.567
+    formatted = `${numbers.slice(0, 1)}.${numbers.slice(1, 4)}.${numbers.slice(4)}`;
+  } else {
+    // 8+ dígitos: 12.345.678 (cédula de 8 dígitos)
+    formatted = `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}`;
+  }
   
   return prefix ? `${prefix}-${formatted}` : formatted;
 };
 
 /**
- * Limpia una cédula eliminando caracteres de formato (guiones), pero mantiene el prefijo
+ * Limpia una cédula eliminando caracteres de formato (puntos, guiones)
  * @param value - Valor con o sin formato
  * @returns Valor limpio con prefijo (ej: V12345678)
  */
@@ -42,8 +67,20 @@ export const cleanCedula = (value: string): string => {
 };
 
 /**
+ * Longitud máxima del número de cédula SIN prefijo (8 dígitos para Venezuela)
+ */
+export const CEDULA_MAX_DIGITS = 8;
+
+/**
+ * Longitud máxima del input visual incluyendo formato (V-12.345.678 = 12 caracteres)
+ */
+export const CEDULA_MAX_LENGTH = 12;
+
+/**
  * Formatea un número de teléfono para visualización (000-0000)
- * @param value - Teléfono sin formato
+ * Formato venezolano: prefijo (0412, 0212, etc.) + número local (7 dígitos)
+ * 
+ * @param value - Teléfono sin formato o con prefijo
  * @returns Teléfono con formato
  */
 export const formatPhoneDisplay = (value: string): string => {
@@ -51,22 +88,40 @@ export const formatPhoneDisplay = (value: string): string => {
   
   const cleaned = value.replace(/\D/g, '');
   
+  // Si tiene prefijo de 4 dígitos (0412, 0212, etc.)
+  if (cleaned.length > 4) {
+    const prefix = cleaned.slice(0, 4);
+    const number = cleaned.slice(4, 8);
+    return number ? `${prefix}-${number}` : prefix;
+  }
+  
+  // Solo número local (sin prefijo)
   if (cleaned.length <= 4) return cleaned;
   if (cleaned.length <= 7) return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
   
-  // Máximo 7 dígitos (3 prefijo + 4 número local)
+  // Máximo 7 dígitos del número local
   return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}`;
 };
 
 /**
  * Limpia un teléfono eliminando caracteres de formato
  * @param value - Teléfono con o sin formato
- * @returns Teléfono limpio
+ * @returns Teléfono limpio (solo dígitos)
  */
 export const cleanPhone = (value: string): string => {
   if (!value) return '';
   return value.replace(/\D/g, '');
 };
+
+/**
+ * Longitud máxima del número de teléfono (sin prefijo)
+ */
+export const PHONE_LOCAL_MAX_DIGITS = 7;
+
+/**
+ * Longitud máxima del input visual incluyendo formato (0412-1234567 = 12 caracteres)
+ */
+export const PHONE_MAX_LENGTH = 12;
 
 /**
  * Formatea para mostrar en tablas con prefijo (V-12.345.678)

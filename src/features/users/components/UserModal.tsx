@@ -13,7 +13,7 @@ import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { AuthUser } from "../../../context/auth";
 import { useToast } from "../../../context/toast";
-import { formatCedulaDisplay, cleanCedula } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, cleanCedula, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
 
 /**
  * Propiedades para el componente UserModal.
@@ -237,7 +237,7 @@ const UserModal: React.FC<UserModalProps> = ({
                   className="h-11 rounded-lg border-gray-200 dark:border-gray-700 uppercase tracking-widest"
                   error={!!errors.userCi}
                   hint={errors.userCi?.message}
-                  maxLength={9}
+                  maxLength={CEDULA_MAX_LENGTH}
                 />
               </div>
               <div>

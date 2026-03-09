@@ -40,6 +40,7 @@ import visitsRoutes from './routes/visits.routes.js';
 import documentsRoutes from './routes/documents.routes.js';
 import permissionRoutes from './routes/permission.routes.js';
 import securityQuestionsRoutes from './routes/securityQuestions.routes.js';
+import landingConfigRoutes from './routes/landing-config.routes.js';
 import { subscribeToNotifications } from './services/sse.service.js';
 import { dbManager } from './lib/db-manager.js';
 import { performanceMiddleware } from './lib/performance-middleware.js';
@@ -218,6 +219,7 @@ app.use('/api/visits', visitsRoutes);
 app.use('/api/documents', documentsRoutes);
 app.use('/api/permissions', permissionRoutes);
 app.use('/api/security-questions', securityQuestionsRoutes);
+app.use('/api/landing-config', landingConfigRoutes);
 app.get('/api/notifications/stream', subscribeToNotifications);
 
 // Servir archivos estáticos del frontend (Vite build)

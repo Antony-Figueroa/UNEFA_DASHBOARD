@@ -1490,6 +1490,31 @@ ALTER TABLE "t_password_history"
   ADD CONSTRAINT "t_password_history_pkey" PRIMARY KEY ("HISTORY_ID");
 ALTER TABLE "t_password_history"
   ADD CONSTRAINT "fk_history_user" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID");
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla "t_landing_config"
+--
+
+CREATE TABLE "t_landing_config" (
+  "config_id" SERIAL NOT NULL,
+  "config_key" VARCHAR(100) NOT NULL UNIQUE,
+  "config_value" JSONB,
+  "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  "updated_by" VARCHAR(50) DEFAULT 'system',
+  PRIMARY KEY ("config_id")
+);
+
+CREATE INDEX "idx_landing_config_key" ON "t_landing_config" ("config_key");
+
+-- Insert default config for landing page
+INSERT INTO "t_landing_config" ("config_key", "config_value", "updated_by") VALUES 
+('hero', '{"title":"Impulsa tu carrera con","subtitle":"Conectamos estudiantes talentosos de la UNEFA con las mejores oportunidades en el sector público y privado para transformar su potencial en experiencia real.","highlightTexts":["Creatividad","Excelencia","Valor","Éxito"],"primaryButtonText":"Comenzar ahora","primaryButtonLink":"/signin","secondaryButtonText":"Saber más","statsText":"estudiantes han impulsado su carrera con nosotros.","statsCount":3200,"mainImage":"/unefa-img/9360.jpg","successCardTitle":"Éxito laboral","successCardValue":"+95%","successCardSubtitle":"Éxito laboral","companiesCardTitle":"Empresas aliadas","companiesCardValue":"200+","companiesCardSubtitle":"Empresas aliadas"}', 'system'),
+('missionVision', '{"missionTitle":"Misión","missionText":"Formar a través de la docencia, la investigación y la extensión, ciudadanos corresponsables con la seguridad y Defensa Integral de la Nación, comprometidos con la Revolución Bolivariana, con competencias emancipadoras y humanistas necesarias para sustentar los planes de desarrollo del país, promoviendo la producción y el intercambio de saberes, como mecanismo de integración latinoamericana y caribeña.","visionTitle":"Visión","visionText":"Ser la primera universidad socialista, reconocida por su Excelencia Educativa en el territorio nacional e internacional, líder en los saberes humanistas, científicos, tecnológicos y militares, inspirada en el ideario bolivariano."}', 'system'),
+('careers', '[{"id":"1","title":"INGENIERÍA AGRONÓMICA","description":"Formamos profesionales para el desarrollo agrícola sostenible, gestión de recursos naturales y producción vegetal.","category":"Ingeniería","image":"/unefa-img/agronomia.jpg","color":"success","order":1,"active":true},{"id":"2","title":"INGENIERÍA AGROINDUSTRIAL","description":"Carrera enfocada en la transformación de productos agrícolas, tecnología de alimentos y gestión agroindustrial.","category":"Ingeniería","image":"/unefa-img/agroindustrial.jpg","color":"primary","order":2,"active":true},{"id":"3","title":"ENFERMERÍA","description":"Formamos profesionales de la salud con competencias para el cuidado integral, prevención y promoción de la salud.","category":"T.S.U","image":"/unefa-img/enfermeria.jpg","color":"info","order":3,"active":true}]', 'system'),
+('graduateStats', '{"title":"Ficha de Datos: Pasantías y Prácticas Profesionales","subtitle":"Estimado Histórico y Estadísticas de Cumplimiento Académico - Extensión Acarigua (2008 - 2025).","totalRangeMin":3200,"totalRangeMax":5100,"annualRangeMin":180,"annualRangeMax":350,"successRate":98,"processDefinition":"Prácticas Profesionales (Pasantías) - Obligatorio y curricular para todas las carreras de pregrado.","durationText":"Entre 12 y 16 semanas (dependiendo del diseño curricular de la carrera).","notes":"Cifras consolidadas con base en los registros históricos de la Unidad de Gestión Educativa."}', 'system');
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

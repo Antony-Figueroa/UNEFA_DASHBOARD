@@ -186,6 +186,7 @@ app.get('/api/health', async (_req, res) => {
 import testRoutes from './routes/test.routes.js';
 app.use('/api/public', publicRoutes);
 app.use('/api/test', testRoutes);
+app.use('/api/landing-config', landingConfigRoutes);
 
 // Apply protection to all subsequent /api routes
 app.use('/api', authenticateToken, restrictAsistente);
@@ -219,7 +220,6 @@ app.use('/api/visits', visitsRoutes);
 app.use('/api/documents', documentsRoutes);
 app.use('/api/permissions', permissionRoutes);
 app.use('/api/security-questions', securityQuestionsRoutes);
-app.use('/api/landing-config', landingConfigRoutes);
 app.get('/api/notifications/stream', subscribeToNotifications);
 
 // Servir archivos estáticos del frontend (Vite build)

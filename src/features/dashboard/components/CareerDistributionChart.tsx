@@ -473,7 +473,7 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
                 </div>
                 <div className="text-center p-4 rounded-xl bg-success-50 dark:bg-success-900/20">
                   <p className="text-2xl font-bold text-success-600 dark:text-success-400">
-                    {Math.round(totalStudents / data.length)}
+                    {data.length > 0 ? Math.round(totalStudents / data.length) : 0}
                   </p>
                   <p className="text-xs text-gray-600 dark:text-gray-400">Promedio</p>
                 </div>

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { ThemeToggleButton } from "../common/ThemeToggleButton";
-import NotificationDropdown from "./NotificationDropdown";
+import { useAuth } from "../../context/auth";
 import UserDropdown from "./UserDropdown";
+import NotificationDropdown from "./NotificationDropdown";
 import { Link } from "react-router";
 interface HeaderProps {
   onToggle?: () => void;
@@ -10,6 +11,8 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onToggle, onClick }) => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
+  const { user } = useAuth();
+  const isAuthenticated = !!user;
 
   const toggleApplicationMenu = () => {
     setApplicationMenuOpen(!isApplicationMenuOpen);
@@ -164,7 +167,7 @@ const Header: React.FC<HeaderProps> = ({ onToggle, onClick }) => {
             {/* <!-- Dark Mode Toggler --> */}
             <ThemeToggleButton />
             {/* <!-- Dark Mode Toggler --> */}
-            <NotificationDropdown />
+            {isAuthenticated && <NotificationDropdown />}
             {/* <!-- Notification Menu Area --> */}
           </div>
           {/* <!-- User Area --> */}

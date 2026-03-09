@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useSidebar } from "../context/sidebar";
+import { useAuth } from "../context/auth";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
@@ -9,6 +10,8 @@ const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
   const headerRef = useRef<HTMLElement>(null);
+  const { user } = useAuth();
+  const isAuthenticated = !!user;
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
@@ -120,7 +123,7 @@ const AppHeader: React.FC = () => {
         >
           <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggleButton />
-            <NotificationDropdown />
+            {isAuthenticated && <NotificationDropdown />}
           </div>
 
           <div className="h-8 w-px bg-border-light/50 dark:bg-white/10 hidden sm:block" />

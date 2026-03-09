@@ -1,45 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { landingConfigService } from "../../landing-config/services/landingConfigService";
+import { LandingFAQ } from "../../landing-config/types";
 
 interface FAQItem {
   question: string;
   answer: string;
 }
-
-const faqItems: FAQItem[] = [
-  {
-    question: "¿Cuáles son los requisitos para iniciar mis prácticas profesionales?",
-    answer: "Para iniciar tus prácticas profesionales debes haber completado al menos el 70% de las unidades curriculares de tu pensum, estar oficialmente inscrito en el período académico correspondiente y haber entregado toda la documentación requerida por la Coordinación de Pasantías.",
-  },
-  {
-    question: "¿Cuántas horas de pasantía debo realizar?",
-    answer: "La carga horaria varía según la carrera. Generalmente se requieren entre 480 y 600 horas de prácticas, distribuidas durante un período de 3 a 6 meses dependiendo de la disponibilidad del estudiante y los requerimientos de la carrera.",
-  },
-  {
-    question: "¿Puedo realizar mis pasantías en cualquier empresa?",
-    answer: "Las empresas o instituciones donde realices tus prácticas deben estar previamente registradas y avaladas por la UNEFA. Puedes consultar el listado de instituciones aliadas en nuestra plataforma o proponer una nueva institución que será evaluada por la Coordinación.",
-  },
-  {
-    question: "¿Qué documentos debo entregar para la preinscripción?",
-    answer: "Los documentos requeridos incluyen: carta de postulación, constancia de inscripción actualizada, certificado de notas, fotografía reciente, copia de cédula de identidad y formato de datos personales debidamente diligenciado.",
-  },
-  {
-    question: "¿Quién me tutora durante las prácticas profesionales?",
-    answer: "Durante tus pasantías contarás con dos tutores: un Tutor Académico (docente de la UNEFA) quien supervisa el cumplimiento académico, y un Tutor Empresarial (profesional de la institución receptora) quien guía tu trabajo diario.",
-  },
-  {
-    question: "¿Las pasantías son remuneradas?",
-    answer: "La remuneración depende de las políticas de cada institución receptora. Algunas empresas ofrecen stipends o beneficios como transporte y alimentación, aunque no es un requisito obligatorio. Esto debe negociarse directamente con la empresa.",
-  },
-  {
-    question: "¿Qué sucede si debo suspender mis pasantías?",
-    answer: "En caso de fuerza mayor, debes informar inmediatamente a tu Tutor Académico y gestionar la suspensión formal ante la Coordinación de Pasantías. Podrás reanudar tus prácticas una vez se resuelva la situación, siempre dentro del período académico vigente.",
-  },
-  {
-    question: "¿Cómo se evalúa el desempeño en las pasantías?",
-    answer: "La evaluación consta de tres componentes: informe técnico presentado (40%), evaluación del tutor empresarial (30%) y evaluación del tutor académico mediante visitas y seguimiento (30%). Debes obtener una calificación mínima de 10 puntos para aprobar.",
-  },
-];
 
 const FAQItemComponent: React.FC<{ item: FAQItem; index: number }> = ({ item, index }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -109,6 +76,51 @@ const FAQItemComponent: React.FC<{ item: FAQItem; index: number }> = ({ item, in
 };
 
 const FAQSection: React.FC = () => {
+  const [faqs, setFaqs] = useState<LandingFAQ[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadFAQs = async () => {
+      try {
+        const config = await landingConfigService.getConfig();
+        setFaqs(config.faqs.filter(f => f.active).sort((a, b) => a.order - b.order));
+      } catch (error) {
+        console.error("[FAQSection] Error loading FAQs:", error);
+        const defaultConfig = landingConfigService.getDefaultConfig();
+        setFaqs(defaultConfig.faqs);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadFAQs();
+  }, []);
+
+  if (loading) {
+    return (
+      <section id="faq" className="py-24 bg-gray-50/50 dark:bg-gray-900/50 backdrop-blur-sm relative overflow-hidden">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <div className="h-10 w-48 bg-gray-200 dark:bg-gray-700 rounded mx-auto mb-4 animate-pulse" />
+            <div className="h-6 w-96 bg-gray-200 dark:bg-gray-700 rounded mx-auto animate-pulse" />
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-10 border border-gray-100 dark:border-gray-700">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="py-6 border-b border-gray-200 dark:border-gray-700">
+                <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  const faqItems: FAQItem[] = faqs.map(faq => ({
+    question: faq.question,
+    answer: faq.answer
+  }));
+
   return (
     <section id="faq" className="py-24 bg-gray-50/50 dark:bg-gray-900/50 backdrop-blur-sm relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">

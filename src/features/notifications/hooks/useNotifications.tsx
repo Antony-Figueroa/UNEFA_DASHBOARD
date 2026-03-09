@@ -16,6 +16,8 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
   const { autoConnect = true, limit = 20 } = options;
   const { user, loading: authLoading } = useAuth();
   const isAuthenticated = !!user;
+  const hasToken = !!localStorage.getItem('token');
+  const isReady = isAuthenticated && hasToken && !authLoading;
   
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -23,8 +25,8 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
   const [hasMore, setHasMore] = useState(true);
 
   const fetchNotifications = useCallback(async (offset = 0, reset = false) => {
-    // No intentar cargar si no está autenticado o si está cargando la auth
-    if (!isAuthenticated || authLoading) {
+    // No intentar cargar si no está listo (autenticado + token disponible)
+    if (!isReady) {
       return;
     }
     
@@ -54,10 +56,10 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
     } finally {
       setLoading(false);
     }
-  }, [limit, isAuthenticated, authLoading]);
+  }, [limit, isReady]);
 
   const markAsRead = useCallback(async (id: number) => {
-    if (!isAuthenticated) return;
+    if (!isReady) return;
     
     try {
       await notificationService.markAsRead(id);
@@ -75,10 +77,10 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
       console.error('[useNotifications] Error marking as read:', error);
       toast.error('Error al marcar notificación como leída');
     }
-  }, [isAuthenticated]);
+  }, [isReady]);
 
   const markAllAsRead = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isReady) return;
     
     try {
       await notificationService.markAllAsRead();
@@ -93,10 +95,10 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
       console.error('[useNotifications] Error marking all as read:', error);
       toast.error('Error al marcar notificaciones');
     }
-  }, [isAuthenticated]);
+  }, [isReady]);
 
   const deleteNotification = useCallback(async (id: number) => {
-    if (!isAuthenticated) return;
+    if (!isReady) return;
     
     try {
       await notificationService.delete(id);
@@ -111,7 +113,7 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
       console.error('[useNotifications] Error deleting notification:', error);
       toast.error('Error al eliminar notificación');
     }
-  }, [notifications, isAuthenticated]);
+  }, [notifications, isReady]);
 
   const refreshNotifications = useCallback(() => {
     fetchNotifications(0, true);
@@ -150,18 +152,20 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
   }, []);
 
   useEffect(() => {
-    // No cargar notificaciones si no está autenticado o si está cargando la auth
-    if (!isAuthenticated || authLoading) {
+    // No cargar notificaciones si no está autenticado o si está cargando la auth o no hay token
+    if (!isReady) {
+      setNotifications([]);
+      setUnreadCount(0);
       setLoading(false);
       return;
     }
     
     fetchNotifications(0, true);
-  }, [fetchNotifications, isAuthenticated, authLoading]);
+  }, [fetchNotifications, isReady]);
 
   useEffect(() => {
-    // No conectar al stream si no está autenticado o si está cargando
-    if (!autoConnect || !isAuthenticated || authLoading) {
+    // No conectar al stream si no está listo
+    if (!autoConnect || !isReady) {
       return;
     }
 
@@ -173,7 +177,7 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
     return () => {
       disconnect();
     };
-  }, [autoConnect, handleNewNotification, isAuthenticated, authLoading]);
+  }, [autoConnect, handleNewNotification, isReady]);
 
   return {
     notifications,

@@ -24,8 +24,8 @@ import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
 import { StudentPDF } from "../../components/ui/pdf/templates/StudentPDF";
 import UnifiedReportModal from "../../components/common/UnifiedReportModal";
 import { useStudents } from "../../features/students/hooks/useStudents";
-import { 
-    Student, 
+import {
+    Student,
     StudentRowData,
     CreateStudentPayload,
     UpdateStudentPayload
@@ -132,7 +132,7 @@ export default function StudentsPage() {
     const [pdfCareerFilter, setPdfCareerFilter] = useState("");
     const [pdfRegimeFilter, setPdfRegimeFilter] = useState("");
     const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
-    const [dateRangeFilter, setDateRangeFilter] = useState<{ start: string; end: string } | null>(null);
+    const [dateRangeFilter] = useState<{ start: string; end: string } | null>(null);
 
     type ConfirmationInfo = {
         isOpen: boolean;
@@ -147,13 +147,13 @@ export default function StudentsPage() {
 
     const filtered = useMemo(() => {
         if (!Array.isArray(students)) return [];
-        
+
         let result = students.filter((s) => (activeTab === "Activas" ? !!s.status : !s.status));
-        
+
         if (dateRangeFilter && dateRangeFilter.start && dateRangeFilter.end) {
             const startDate = new Date(dateRangeFilter.start);
             const endDate = new Date(dateRangeFilter.end);
-            
+
             if (startDate <= endDate) {
                 result = result.filter((s) => {
                     if (!s.enrollmentDate) return false;
@@ -162,7 +162,7 @@ export default function StudentsPage() {
                 });
             }
         }
-        
+
         return result.map(formatStudentToRow);
     }, [students, activeTab, dateRangeFilter]);
 
@@ -177,10 +177,10 @@ export default function StudentsPage() {
         return (Array.isArray(students) ? students : [])
             .filter((s) => {
                 const fullName = `${s.firstName} ${s.middleName || ""} ${s.lastName} ${s.secondLastName || ""}`.toLowerCase();
-                const matchesSearch = !search || 
-                    (s.identificationNumber || "").toLowerCase().includes(search) || 
+                const matchesSearch = !search ||
+                    (s.identificationNumber || "").toLowerCase().includes(search) ||
                     fullName.includes(search);
-                
+
                 const matchesCareer = !careerSearch || String(s.careerId) === careerSearch;
                 const matchesRegime = !regimeSearch || (s.regime || "").toLowerCase() === regimeSearch;
                 const matchesStatus = !!s.status;
@@ -247,9 +247,9 @@ export default function StudentsPage() {
         const isEditing = !!editingStudent;
         try {
             if (isEditing && editingStudent) {
-                await editStudent({ 
-                    ...payload, 
-                    studentId: editingStudent.studentId 
+                await editStudent({
+                    ...payload,
+                    studentId: editingStudent.studentId
                 } as UpdateStudentPayload);
             } else {
                 await addStudent(payload as CreateStudentPayload);
@@ -358,8 +358,8 @@ export default function StudentsPage() {
             onConfirm: () => {
                 setConfirmation(null);
                 // Navegar a la página de pre-inscripción pasando la cédula en el estado
-                navigate("/pre-enrollment", { 
-                    state: { exportStudentCi: student.identificationNumber } 
+                navigate("/pre-enrollment", {
+                    state: { exportStudentCi: student.identificationNumber }
                 });
             }
         });
@@ -424,42 +424,6 @@ export default function StudentsPage() {
                             </button>
                         </div>
 
-                        <div className="mb-4 flex flex-wrap gap-3 items-end">
-                            <div className="w-40">
-                                <label className="text-xs font-medium text-text-secondary dark:text-text-tertiary mb-1 block">Desde</label>
-                                <input
-                                    type="date"
-                                    value={dateRangeFilter?.start || ""}
-                                    max={dateRangeFilter?.end || undefined}
-                                    onChange={(e) => setDateRangeFilter(prev => ({ 
-                                        start: e.target.value, 
-                                        end: prev?.end && e.target.value > prev.end ? prev.end : prev?.end || "" 
-                                    }))}
-                                    className="w-full px-3 py-2 text-sm bg-bg-secondary dark:bg-white/5 border border-border-light dark:border-white/10 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
-                                />
-                            </div>
-                            <div className="w-40">
-                                <label className="text-xs font-medium text-text-secondary dark:text-text-tertiary mb-1 block">Hasta</label>
-                                <input
-                                    type="date"
-                                    value={dateRangeFilter?.end || ""}
-                                    min={dateRangeFilter?.start || undefined}
-                                    onChange={(e) => setDateRangeFilter(prev => ({ 
-                                        start: prev?.start || "", 
-                                        end: e.target.value 
-                                    }))}
-                                    className="w-full px-3 py-2 text-sm bg-bg-secondary dark:bg-white/5 border border-border-light dark:border-white/10 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
-                                />
-                            </div>
-                            {dateRangeFilter && (dateRangeFilter.start || dateRangeFilter.end) && (
-                                <button
-                                    onClick={() => setDateRangeFilter(null)}
-                                    className="px-3 py-2 text-sm text-red-500 hover:text-red-600"
-                                >
-                                    Limpiar
-                                </button>
-                            )}
-                        </div>
 
                         <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="students-table">
                             <StudentTable
@@ -492,35 +456,35 @@ export default function StudentsPage() {
                         onClose={() => setIsModalOpen(false)}
                         onSave={handleSave}
                         editingStudent={editingStudent}
-                careerOptions={careerOptions}
-                dynamicLists={dynamicLists}
-                isLoading={loadingAction}
-            />
-            <CareerModal
-                isOpen={isCareerModalOpen}
-                onClose={() => setIsCareerModalOpen(false)}
-                onSave={async (payload) => {
-                    try {
-                        const created = await addCareer(payload);
-                        if (created?.careerId !== undefined) {
-                            const evt = new CustomEvent("students:setCareerId", { detail: String(created.careerId) });
-                            window.dispatchEvent(evt);
-                        }
-                        setIsCareerModalOpen(false);
-                    } catch (e) {
-                        console.error("[StudentsPage] Error creando carrera:", e);
-                    }
-                }}
-                editingCareer={null}
-                internshipOptions={activeInternshipOptions}
-                isLoading={loadingAction}
-                hasPendingEvaluations={false}
-                isInUse={false}
-                existingCareers={careers}
-                onAddInternshipType={() => {}}
-                lastCreatedInternshipTypeId={null}
-                onConsumeLastCreatedInternshipType={() => {}}
-            />
+                        careerOptions={careerOptions}
+                        dynamicLists={dynamicLists}
+                        isLoading={loadingAction}
+                    />
+                    <CareerModal
+                        isOpen={isCareerModalOpen}
+                        onClose={() => setIsCareerModalOpen(false)}
+                        onSave={async (payload) => {
+                            try {
+                                const created = await addCareer(payload);
+                                if (created?.careerId !== undefined) {
+                                    const evt = new CustomEvent("students:setCareerId", { detail: String(created.careerId) });
+                                    window.dispatchEvent(evt);
+                                }
+                                setIsCareerModalOpen(false);
+                            } catch (e) {
+                                console.error("[StudentsPage] Error creando carrera:", e);
+                            }
+                        }}
+                        editingCareer={null}
+                        internshipOptions={activeInternshipOptions}
+                        isLoading={loadingAction}
+                        hasPendingEvaluations={false}
+                        isInUse={false}
+                        existingCareers={careers}
+                        onAddInternshipType={() => { }}
+                        lastCreatedInternshipTypeId={null}
+                        onConsumeLastCreatedInternshipType={() => { }}
+                    />
 
                     <StudentViewModal
                         isOpen={!!viewStudent}
@@ -533,7 +497,7 @@ export default function StudentsPage() {
                         isOpen={isChangeDataModalOpen}
                         onClose={() => setIsChangeDataModalOpen(false)}
                         student={studentForChange}
-                        onSuccess={() => {}}
+                        onSuccess={() => { }}
                     />
 
                     <UnifiedReportModal

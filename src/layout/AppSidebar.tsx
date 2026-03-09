@@ -201,6 +201,7 @@ const navItems: NavItem[] = [
       { name: "Roles y Permisos", path: "/configure/roles" },
       { name: "Mantenimiento", path: "/configure/maintenance" },
       { name: "Respaldos", path: "/configure/backups" },
+      { name: "Landing Page", path: "/configure/landing" },
     ],
   },
   { icon: <SparklesIcon />, name: "IA", path: "/ai-assistant" },

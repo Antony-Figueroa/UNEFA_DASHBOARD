@@ -3,105 +3,67 @@ import { LandingConfig, LandingConfigUpdate } from '../types';
 
 const API_URL = '/landing-config';
 
-const CACHE_KEY = 'landing_config_cache';
-const CACHE_TTL = 30 * 60 * 1000;
-
-interface CachedConfig {
-  data: LandingConfig;
-  timestamp: number;
-}
-
-const getCachedConfig = (): LandingConfig | null => {
-  try {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (!cached) return null;
-    
-    const parsed: CachedConfig = JSON.parse(cached);
-    const now = Date.now();
-    
-    if (now - parsed.timestamp > CACHE_TTL) {
-      localStorage.removeItem(CACHE_KEY);
-      return null;
-    }
-    
-    return parsed.data;
-  } catch {
-    return null;
-  }
-};
-
-const setCachedConfig = (data: LandingConfig): void => {
-  try {
-    const cached: CachedConfig = {
-      data,
-      timestamp: Date.now()
-    };
-    localStorage.setItem(CACHE_KEY, JSON.stringify(cached));
-  } catch {
-    
-  }
-};
-
-const clearCachedConfig = (): void => {
-  localStorage.removeItem(CACHE_KEY);
-};
-
 export const landingConfigService = {
-  getConfig: async (forceRefresh = false): Promise<LandingConfig> => {
-    if (!forceRefresh) {
-      const cached = getCachedConfig();
-      if (cached) return cached;
+  getConfig: async (_forceRefresh = true): Promise<LandingConfig> => {
+    try {
+      const response = await apiClient.get<any>(API_URL);
+      const rawData = response.data;
+      
+      let config: LandingConfig;
+      
+      if (rawData.success && rawData.data && rawData.data.hero) {
+        config = rawData.data;
+      } else if (rawData.hero) {
+        config = rawData as unknown as LandingConfig;
+      } else {
+        console.warn('[landingConfigService] Unexpected response format, using defaults');
+        return landingConfigService.getDefaultConfig();
+      }
+      
+      return config;
+    } catch (error) {
+      console.error('[landingConfigService] Error fetching config:', error);
+      return landingConfigService.getDefaultConfig();
     }
-
-    const response = await apiClient.get<LandingConfig>(API_URL);
-    setCachedConfig(response.data);
-    return response.data;
   },
 
   updateConfig: async (config: LandingConfigUpdate): Promise<LandingConfig> => {
-    const response = await apiClient.put<LandingConfig>(API_URL, config);
-    setCachedConfig(response.data);
-    return response.data;
+    const response = await apiClient.put<{ success: boolean; data: LandingConfig }>(API_URL, config);
+    return response.data.data;
   },
 
   updateHero: async (hero: Partial<LandingConfig['hero']>): Promise<LandingConfig> => {
-    const response = await apiClient.put<LandingConfig>(`${API_URL}/hero`, hero);
-    setCachedConfig(response.data);
-    return response.data;
+    const response = await apiClient.put<{ success: boolean; data: LandingConfig }>(`${API_URL}/hero`, hero);
+    return response.data.data;
   },
 
   updateMissionVision: async (missionVision: Partial<LandingConfig['missionVision']>): Promise<LandingConfig> => {
-    const response = await apiClient.put<LandingConfig>(`${API_URL}/mission-vision`, missionVision);
-    setCachedConfig(response.data);
-    return response.data;
+    const response = await apiClient.put<{ success: boolean; data: LandingConfig }>(`${API_URL}/mission-vision`, missionVision);
+    return response.data.data;
   },
 
   updateCareers: async (careers: LandingConfig['careers']): Promise<LandingConfig> => {
-    const response = await apiClient.put<LandingConfig>(`${API_URL}/careers`, { careers });
-    setCachedConfig(response.data);
-    return response.data;
+    const response = await apiClient.put<{ success: boolean; data: LandingConfig }>(`${API_URL}/careers`, { careers });
+    return response.data.data;
   },
 
   updateFAQs: async (faqs: LandingConfig['faqs']): Promise<LandingConfig> => {
-    const response = await apiClient.put<LandingConfig>(`${API_URL}/faqs`, { faqs });
-    setCachedConfig(response.data);
-    return response.data;
+    const response = await apiClient.put<{ success: boolean; data: LandingConfig }>(`${API_URL}/faqs`, { faqs });
+    return response.data.data;
   },
 
   updateProcessSteps: async (processSteps: LandingConfig['processSteps']): Promise<LandingConfig> => {
-    const response = await apiClient.put<LandingConfig>(`${API_URL}/process-steps`, { processSteps });
-    setCachedConfig(response.data);
-    return response.data;
+    const response = await apiClient.put<{ success: boolean; data: LandingConfig }>(`${API_URL}/process-steps`, { processSteps });
+    return response.data.data;
   },
 
   updateGraduateStats: async (stats: Partial<LandingConfig['graduateStats']>): Promise<LandingConfig> => {
-    const response = await apiClient.put<LandingConfig>(`${API_URL}/graduate-stats`, stats);
-    setCachedConfig(response.data);
-    return response.data;
+    const response = await apiClient.put<{ success: boolean; data: LandingConfig }>(`${API_URL}/graduate-stats`, stats);
+    return response.data.data;
   },
 
   clearCache: (): void => {
-    clearCachedConfig();
+    localStorage.removeItem('landing_config_cache');
   },
 
   getDefaultConfig: (): LandingConfig => ({

@@ -46,7 +46,7 @@ const InternshipHome: React.FC = () => {
       link.href = src;
       document.head.appendChild(link);
     });
-    
+
     return () => {
       preloadImages.forEach((src) => {
         const link = document.querySelector(`link[rel="preload"][href="${src}"]`);
@@ -63,8 +63,8 @@ const InternshipHome: React.FC = () => {
       />
 
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-brand-50/20 dark:from-gray-950 dark:via-gray-900 dark:to-brand-950/10" />
-        
+        <div className="absolute inset-0 bg-linear-to-br from-slate-50 via-white to-brand-50/20 dark:from-gray-950 dark:via-gray-900 dark:to-brand-950/10" />
+
         <div
           className="absolute inset-0 opacity-[0.015] dark:opacity-[0.02]"
           style={{

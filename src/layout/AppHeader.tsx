@@ -64,7 +64,7 @@ const AppHeader: React.FC = () => {
   return (
     <header
       ref={headerRef}
-      className="sticky flex w-full bg-white/95 backdrop-blur-sm border-b border-border-light/50 z-50 dark:border-white/5 dark:bg-bg-dark/95"
+      className="sticky flex w-full bg-white border-b border-border-light/50 z-40 dark:border-white/5 dark:bg-bg-dark"
       style={{
         top: 'var(--banner-height, 0px)',
         marginBottom: 'var(--header-spacing)',

@@ -275,6 +275,8 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
           animate: true,
           // Renderizar el calendario en el body para evitar problemas de overflow en el modal
           static: false,
+          // Asegurar que el calendario aparezca por encima del modal
+          appendTo: document.body,
           // Usar rango visual amplio para que aparezcan en el select
           minDate: new Date(visualMinYear, 0, 1),
           maxDate: new Date(visualMaxYear, 11, 31),
@@ -328,6 +330,9 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
               altInput.setAttribute('name', 'bday');
               altInput.setAttribute('inputmode', 'numeric');
             }
+
+            // Asegurar que el calendario tenga z-index alto para estar por encima del modal
+            instance.calendarContainer.style.zIndex = '10050';
 
             // Posicionar la vista del calendario en el rango permitido (ej. maxDate) sin seleccionar
             if (!value && !defaultValue) {

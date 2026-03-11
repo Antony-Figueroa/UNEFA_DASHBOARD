@@ -1,6 +1,7 @@
 import { SidebarProvider } from "../context/SidebarContext";
 import { useSidebar } from "../context/sidebar";
 import { Outlet } from "react-router";
+import { useState, useEffect } from "react";
 import AppHeader from "./AppHeader";
 import Backdrop from "./Backdrop";
 import AppSidebar from "./AppSidebar";
@@ -10,7 +11,17 @@ import { useSessionTimeout } from "../hooks/useSessionTimeout";
 
 const LayoutContent = () => {
   const { isExpanded, isMobileOpen } = useSidebar();
+  const [isDesktop, setIsDesktop] = useState(true);
   useSessionTimeout();
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-bg-dark">
@@ -20,7 +31,7 @@ const LayoutContent = () => {
       <div
         className="flex flex-col min-h-screen transition-all duration-300"
         style={{ 
-          marginLeft: isMobileOpen ? 0 : (isExpanded ? 280 : 72),
+          marginLeft: isMobileOpen ? 0 : (isDesktop ? (isExpanded ? 280 : 72) : 0),
           paddingTop: 'var(--banner-height, 0px)'
         }}
       >

@@ -129,6 +129,19 @@ export const getInstitutionalResponsibleByCi = async (req: Request, res: Respons
 export const createInstitutionalResponsible = async (req: Request, res: Response) => {
   try {
     const r = req.body;
+    
+    console.log('[createInstitutionalResponsible] Request body:', JSON.stringify(r));
+    console.log('[createInstitutionalResponsible] institutionId:', r.institutionId, 'type:', typeof r.institutionId);
+    
+    if (!r.institutionId) {
+      return res.status(400).json({ message: 'El ID de institución es requerido' });
+    }
+    
+    const institutionIdNum = parseInt(r.institutionId);
+    if (isNaN(institutionIdNum)) {
+      return res.status(400).json({ message: 'El ID de institución debe ser un número válido' });
+    }
+    
     const dbData = {
       MANAGER_CI: `${r.identificationPrefix}-${r.identificationNumber}`,
       NAME: r.firstName,
@@ -138,7 +151,7 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
       CONTACT_PHONE: r.phone,
       EMAIL: r.email,
       CARGO: r.cargo || null,
-      INSTITUTION_ID: parseInt(r.institutionId),
+      INSTITUTION_ID: institutionIdNum,
       STATUS: r.status ? 1 : 0,
       CREATION_DATE: new Date().toISOString()
     };

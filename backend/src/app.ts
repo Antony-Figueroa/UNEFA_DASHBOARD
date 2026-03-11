@@ -187,6 +187,8 @@ import testRoutes from './routes/test.routes.js';
 app.use('/api/public', publicRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/landing-config', landingConfigRoutes);
+app.use('/api/institutions', institutionsRoutes);
+app.use('/api/institutional-responsibles', institutionalResponsiblesRoutes);
 
 // Apply protection to all subsequent /api routes
 app.use('/api', authenticateToken, restrictAsistente);
@@ -199,8 +201,6 @@ app.use('/api/pre-enrollments', preEnrollmentsRoutes);
 app.use('/api/students', studentsRoutes);
 app.use('/api/tutors', tutorsRoutes);
 app.use('/api/tracking', trackingRoutes);
-app.use('/api/institutions', institutionsRoutes);
-app.use('/api/institutional-responsibles', institutionalResponsiblesRoutes);
 app.use('/api/lists', listsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportsRoutes);

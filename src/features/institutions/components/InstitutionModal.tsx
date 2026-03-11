@@ -21,7 +21,7 @@ import * as listsService from "../../lists/services/listsService";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import InstitutionalResponsibleModal from "./InstitutionalResponsibleModal";
 import { useToast } from "../../../context/toast";
-import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, cleanPhone } from "../../../utils/inputFormat";
+import { cleanCedula, cleanPhone } from "../../../utils/inputFormat";
 import { getInstitutionByRif } from "../services/institutionsService";
 
 /**
@@ -167,21 +167,19 @@ export default function InstitutionModal({
   const [existingInstitution, setExistingInstitution] = useState<any | null>(null);
   const [viewOnlyMode, setViewOnlyMode] = useState(false);
 
-  // Handle RIF number input change with formatting
+  // Handle RIF number input change without formatting
   const handleRifNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
     const cleaned = cleanCedula(input);
-    const formatted = formatCedulaDisplay(cleaned);
-    setDisplayRifNumber(formatted);
+    setDisplayRifNumber(cleaned);
     setValue("rifNumber", cleaned, { shouldValidate: true, shouldDirty: true });
   };
 
-  // Handle phone number input change with formatting
+  // Handle phone number input change without formatting
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
     const cleaned = cleanPhone(input);
-    const formatted = formatPhoneDisplay(cleaned);
-    setDisplayPhoneNumber(formatted);
+    setDisplayPhoneNumber(cleaned);
     setValue("phoneNumber", cleaned, { shouldValidate: true, shouldDirty: true });
   };
 
@@ -422,8 +420,8 @@ export default function InstitutionModal({
           avenida: getPart(4),
           referencia: getPart(5),
         });
-        setDisplayRifNumber(formatCedulaDisplay(editingInst.rif || ""));
-        setDisplayPhoneNumber(formatPhoneDisplay(editingInst.phone || ""));
+        setDisplayRifNumber(rifParts[1] || "");
+        setDisplayPhoneNumber(phoneN || "");
       } else {
         reset({
           rifPrefix: "",
@@ -572,13 +570,13 @@ export default function InstitutionModal({
                                const [phoneP, phoneN] = existingData.phone ? existingData.phone.split("-") : ["", ""];
                                const addressParts = existingData.fiscalAddress ? existingData.fiscalAddress.split(", ") : [];
 
-                               setValue("rifPrefix", rifParts[0] || "");
-                               setDisplayRifNumber(formatCedulaDisplay(existingData.rif || ""));
-                               setValue("rifNumber", rifParts[1] || "");
-                               setValue("name", existingData.name || "");
-                               setValue("phonePrefix", phoneP || "");
-                               setDisplayPhoneNumber(formatPhoneDisplay(phoneN || ""));
-                               setValue("phoneNumber", phoneN || "");
+                                setValue("rifPrefix", rifParts[0] || "");
+                                setDisplayRifNumber(rifParts[1] || "");
+                                setValue("rifNumber", rifParts[1] || "");
+                                setValue("name", existingData.name || "");
+                                setValue("phonePrefix", phoneP || "");
+                                setDisplayPhoneNumber(phoneN || "");
+                                setValue("phoneNumber", phoneN || "");
                                setValue("region", existingData.region || "");
                                setValue("nucleus", existingData.nucleus || "");
                                setValue("extension", existingData.extension || "");

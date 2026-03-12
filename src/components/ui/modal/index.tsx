@@ -51,7 +51,12 @@ export const Modal: React.FC<ModalProps & { size?: "sm" | "md" | "lg" | "xl" | "
     const target = e.target as HTMLElement;
     const isFlatpickrElement = target.closest('.flatpickr-calendar') || 
                                target.closest('.flatpickr-monthDropdown-months') ||
-                               target.closest('.flatpickr-innerContainer');
+                               target.closest('.flatpickr-innerContainer') ||
+                               target.closest('.flatpickr-days') ||
+                               target.closest('.flatpickr-day') ||
+                               target.classList.contains('flatpickr-calendar') ||
+                               target.closest('.dayContainer') ||
+                               target.closest('.flatpickr-weekwrapper');
     
     if (!isFlatpickrElement) {
       handleClose();

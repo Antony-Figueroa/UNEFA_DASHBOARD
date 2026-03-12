@@ -205,11 +205,6 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
         // Determinar fecha inicial para la vista (si no hay valor)
         const initialDefaultDate = value || defaultValue || options?.defaultDate || realMaxDate || realMinDate || undefined;
 
-        // Definir un rango visual de años más amplio para el dropdown (ej: +/- 10 años)
-        const currentYear = new Date().getFullYear();
-        const visualMinYear = Math.min(realMinDate?.getFullYear() || currentYear, currentYear - 5);
-        const visualMaxYear = Math.max(realMaxDate?.getFullYear() || currentYear, currentYear + 5);
-
         // Función para deshabilitar años en el dropdown que están fuera del rango real
         const updateYearOptions = (instance: any) => {
           const yearSelect = instance.currentYearElement;
@@ -277,9 +272,6 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
           static: false,
           // Asegurar que el calendario aparezca por encima del modal
           appendTo: document.body,
-          // Usar rango visual amplio para que aparezcan en el select
-          minDate: new Date(visualMinYear, 0, 1),
-          maxDate: new Date(visualMaxYear, 11, 31),
           altInputClass: cn(
             'h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm shadow-theme-xs transition-all',
             'placeholder:text-text-tertiary focus:outline-none focus:ring-3',
@@ -290,14 +282,20 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
             disabled && 'opacity-50 cursor-not-allowed bg-bg-secondary dark:bg-white/5'
           ),
           ...options,
-          // Pero deshabilitar los días que están fuera del rango real
+          // Usar minDate y maxDate reales de las opciones para limitar el calendario
+          minDate: options?.minDate || realMinDate,
+          maxDate: options?.maxDate || realMaxDate,
+          // Deshabilitar días fuera del rango real
           disable: [
             (date) => {
               const d = new Date(date);
               d.setHours(0, 0, 0, 0);
               
-              const isBefore = realMinDate ? d < new Date(new Date(realMinDate).setHours(0,0,0,0)) : false;
-              const isAfter = realMaxDate ? d > new Date(new Date(realMaxDate).setHours(23,59,59,999)) : false;
+              const minD = realMinDate ? new Date(realMinDate.getFullYear(), realMinDate.getMonth(), realMinDate.getDate()) : null;
+              const maxD = realMaxDate ? new Date(realMaxDate.getFullYear(), realMaxDate.getMonth(), realMaxDate.getDate()) : null;
+              
+              const isBefore = minD ? d < minD : false;
+              const isAfter = maxD ? d > maxD : false;
               
               // Combinar con otras funciones de deshabilitado si existen en options.disable
               let extraDisable = false;

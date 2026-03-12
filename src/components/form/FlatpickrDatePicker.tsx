@@ -332,7 +332,7 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
             }
 
             // Asegurar que el calendario tenga z-index alto para estar por encima del modal
-            instance.calendarContainer.style.zIndex = '10050';
+            instance.calendarContainer.style.setProperty('z-index', '10050', 'important');
 
             // Posicionar la vista del calendario en el rango permitido (ej. maxDate) sin seleccionar
             if (!value && !defaultValue) {

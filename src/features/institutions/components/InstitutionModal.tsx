@@ -8,6 +8,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
+import TextArea from "../../../components/form/input/TextArea";
 import CustomSelect from "../../../components/form/CustomSelect";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Institution, CreateInstitutionPayload, UpdateInstitutionPayload, InstitutionalResponsible, CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload } from "../types";
@@ -23,6 +24,7 @@ import InstitutionalResponsibleModal from "./InstitutionalResponsibleModal";
 import { useToast } from "../../../context/toast";
 import { cleanCedula, cleanPhone } from "../../../utils/inputFormat";
 import { getInstitutionByRif } from "../services/institutionsService";
+import venezuelaData from "../../../data/venezuela.json";
 
 /**
  * Props for the InstitutionModal component.
@@ -70,12 +72,10 @@ const baseInstSchema = z.object({
   nucleus: z.string().min(1, "Seleccione un núcleo"),
   extension: z.string().min(1, "Seleccione una extensión"),
   institutionType: z.string().min(1, "Seleccione un tipo de institución"),
-  estado: z.string().min(1, "El estado es obligatorio").max(100, "El estado no puede exceder 100 caracteres"),
-  municipio: z.string().min(1, "El municipio es obligatorio").max(100, "El municipio no puede exceder 100 caracteres"),
-  parroquia: z.string().min(1, "La parroquia es obligatoria").max(100, "La parroquia no puede exceder 100 caracteres"),
-  calle: z.string().min(1, "La calle es obligatoria").max(150, "La calle no puede exceder 150 caracteres"),
-  avenida: z.string().min(1, "La avenida es obligatoria").max(150, "La avenida no puede exceder 150 caracteres"),
-  referencia: z.string().max(200, "La referencia no puede exceder 200 caracteres").optional(),
+  estado: z.string().min(1, "Seleccione un estado"),
+  municipio: z.string().min(1, "Seleccione un municipio"),
+  parroquia: z.string().min(1, "Seleccione una parroquia"),
+  direccion: z.string().min(1, "La dirección es obligatoria").max(300, "La dirección no puede exceder 300 caracteres"),
 });
 
 /**
@@ -167,6 +167,40 @@ export default function InstitutionModal({
   const [existingInstitution, setExistingInstitution] = useState<any | null>(null);
   const [viewOnlyMode, setViewOnlyMode] = useState(false);
 
+  // State for cascaded location selects (Venezuela data)
+  const [selectedMunicipio, setSelectedMunicipio] = useState<string>("");
+  const [, setSelectedParroquia] = useState<string>("");
+
+  // Filter for Estado Portuguesa
+  const portuguesaData = venezuelaData.find((e: any) => e.estado === "Portuguesa");
+  
+  // Options for Estado (only Portuguesa)
+  const ESTADO_OPTIONS = [
+    { value: "PORTUGUESA", label: "PORTUGUESA" }
+  ];
+  
+  // Options for Municipio based on selected estado
+  const MUNICIPIO_OPTIONS = useMemo(() => {
+    if (!portuguesaData?.municipios) return [];
+    return portuguesaData.municipios.map((m: any) => ({
+      value: m.municipio.toUpperCase(),
+      label: m.municipio.toUpperCase()
+    }));
+  }, [portuguesaData]);
+  
+  // Options for Parroquia based on selected municipio
+  const PARROQUIA_OPTIONS = useMemo(() => {
+    if (!portuguesaData?.municipios || !selectedMunicipio) return [];
+    const municipio = portuguesaData.municipios.find((m: any) => 
+      m.municipio.toUpperCase() === selectedMunicipio
+    );
+    if (!municipio?.parroquias) return [];
+    return municipio.parroquias.map((p: string) => ({
+      value: p.toUpperCase(),
+      label: p.toUpperCase()
+    }));
+  }, [portuguesaData, selectedMunicipio]);
+
   // Handle RIF number input change without formatting
   const handleRifNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
@@ -210,9 +244,7 @@ export default function InstitutionModal({
       estado: "",
       municipio: "",
       parroquia: "",
-      calle: "",
-      avenida: "",
-      referencia: "",
+      direccion: "",
     },
   });
 
@@ -399,10 +431,6 @@ export default function InstitutionModal({
         const rifParts = editingInst.rif ? editingInst.rif.split("-") : ["", ""];
         const [phoneP, phoneN] = editingInst.phone ? editingInst.phone.split("-") : ["", ""];
 
-        // Parsear dirección fiscal
-        const addressParts = editingInst.fiscalAddress ? editingInst.fiscalAddress.split(", ") : [];
-        const getPart = (index: number) => addressParts[index] || "";
-
         reset({
           rifPrefix: rifParts[0] || "",
           rifNumber: rifParts[1] || "",
@@ -413,12 +441,10 @@ export default function InstitutionModal({
           nucleus: editingInst.nucleus,
           extension: editingInst.extension,
           institutionType: editingInst.institutionType,
-          estado: getPart(0),
-          municipio: getPart(1),
-          parroquia: getPart(2),
-          calle: getPart(3),
-          avenida: getPart(4),
-          referencia: getPart(5),
+          estado: editingInst.fiscalAddress ? "PORTUGUESA" : "",
+          municipio: "",
+          parroquia: "",
+          direccion: editingInst.fiscalAddress || "",
         });
         setDisplayRifNumber(rifParts[1] || "");
         setDisplayPhoneNumber(phoneN || "");
@@ -436,9 +462,7 @@ export default function InstitutionModal({
           estado: "",
           municipio: "",
           parroquia: "",
-          calle: "",
-          avenida: "",
-          referencia: "",
+          direccion: "",
         });
         setDisplayRifNumber("");
         setDisplayPhoneNumber("");
@@ -447,16 +471,7 @@ export default function InstitutionModal({
   }, [editingInst, isOpen, reset]);
 
   const onSubmit = (data: InstFormData) => {
-    // Construir dirección fiscal desde los campos
-    const addressParts = [
-      data.estado,
-      data.municipio,
-      data.parroquia,
-      data.calle,
-      data.avenida,
-      data.referencia,
-    ].filter(Boolean);
-    const fiscalAddress = addressParts.join(", ");
+    const fiscalAddress = `${data.estado}, ${data.municipio}, ${data.parroquia}, ${data.direccion}`;
 
     const commonData = {
       rif: `${data.rifPrefix}-${data.rifNumber}`.toUpperCase(),
@@ -568,7 +583,6 @@ export default function InstitutionModal({
 
                                const rifParts = existingData.rif ? existingData.rif.split("-") : ["", ""];
                                const [phoneP, phoneN] = existingData.phone ? existingData.phone.split("-") : ["", ""];
-                               const addressParts = existingData.fiscalAddress ? existingData.fiscalAddress.split(", ") : [];
 
                                 setValue("rifPrefix", rifParts[0] || "");
                                 setDisplayRifNumber(rifParts[1] || "");
@@ -577,16 +591,14 @@ export default function InstitutionModal({
                                 setValue("phonePrefix", phoneP || "");
                                 setDisplayPhoneNumber(phoneN || "");
                                 setValue("phoneNumber", phoneN || "");
-                               setValue("region", existingData.region || "");
-                               setValue("nucleus", existingData.nucleus || "");
-                               setValue("extension", existingData.extension || "");
-                               setValue("institutionType", existingData.institutionType || "");
-                               setValue("estado", addressParts[0] || "");
-                               setValue("municipio", addressParts[1] || "");
-                               setValue("parroquia", addressParts[2] || "");
-                               setValue("calle", addressParts[3] || "");
-                               setValue("avenida", addressParts[4] || "");
-                               setValue("referencia", addressParts[5] || "");
+                                setValue("region", existingData.region || "");
+                                setValue("nucleus", existingData.nucleus || "");
+                                setValue("extension", existingData.extension || "");
+                                setValue("institutionType", existingData.institutionType || "");
+                                setValue("estado", "PORTUGUESA");
+                                setValue("municipio", "");
+                                setValue("parroquia", "");
+                                setValue("direccion", existingData.fiscalAddress || "");
 
                                addToast({
                                  variant: "warning",
@@ -635,70 +647,89 @@ export default function InstitutionModal({
                 </svg>
                 Dirección Fiscal
               </h3>
-              
+               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Estado *</label>
-                  <Input
-                    placeholder="Ej: Portuguesa"
-                    className="uppercase"
-                    {...register("estado", { onChange: handleUppercaseChange })}
-                    error={!!errors.estado}
+                  <Controller
+                    name="estado"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomSelect
+                        id="estado"
+                        options={ESTADO_OPTIONS}
+                        onChange={(val) => {
+                          field.onChange(val);
+                          setSelectedMunicipio("");
+                          setSelectedParroquia("");
+                          setValue("municipio", "", { shouldValidate: true });
+                          setValue("parroquia", "", { shouldValidate: true });
+                        }}
+                        value={field.value}
+                        placeholder="Seleccione Estado"
+                        error={!!errors.estado}
+                      />
+                    )}
                   />
                   {errors.estado && <p className="mt-1 text-xs text-red-500">{errors.estado.message}</p>}
                 </div>
                 
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Municipio *</label>
-                  <Input
-                    placeholder="Ej: Guanare"
-                    className="uppercase"
-                    {...register("municipio", { onChange: handleUppercaseChange })}
-                    error={!!errors.municipio}
+                  <Controller
+                    name="municipio"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomSelect
+                        id="municipio"
+                        options={MUNICIPIO_OPTIONS}
+                        onChange={(val) => {
+                          field.onChange(val);
+                          setSelectedMunicipio(val);
+                          setSelectedParroquia("");
+                          setValue("parroquia", "", { shouldValidate: true });
+                        }}
+                        value={field.value}
+                        placeholder="Seleccione Municipio"
+                        error={!!errors.municipio}
+                      />
+                    )}
                   />
                   {errors.municipio && <p className="mt-1 text-xs text-red-500">{errors.municipio.message}</p>}
                 </div>
                 
                 <div>
                   <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Parroquia *</label>
-                  <Input
-                    placeholder="Ej: San José de la Montaña"
-                    className="uppercase"
-                    {...register("parroquia", { onChange: handleUppercaseChange })}
-                    error={!!errors.parroquia}
+                  <Controller
+                    name="parroquia"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomSelect
+                        id="parroquia"
+                        options={PARROQUIA_OPTIONS}
+                        onChange={(val) => {
+                          field.onChange(val);
+                          setSelectedParroquia(val);
+                        }}
+                        value={field.value}
+                        placeholder="Seleccione Parroquia"
+                        error={!!errors.parroquia}
+                      />
+                    )}
                   />
                   {errors.parroquia && <p className="mt-1 text-xs text-red-500">{errors.parroquia.message}</p>}
                 </div>
                 
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Calle *</label>
-                  <Input
-                    placeholder="Ej: Calle 5"
+                <div className="md:col-span-2">
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Dirección *</label>
+                  <TextArea
+                    placeholder="Ingrese la dirección completa (calle, número de casa, sector, etc.)"
                     className="uppercase"
-                    {...register("calle", { onChange: handleUppercaseChange })}
-                    error={!!errors.calle}
+                    {...register("direccion", { onChange: handleUppercaseChange })}
+                    error={!!errors.direccion}
+                    rows={2}
                   />
-                  {errors.calle && <p className="mt-1 text-xs text-red-500">{errors.calle.message}</p>}
-                </div>
-                
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Avenida *</label>
-                  <Input
-                    placeholder="Ej: Av. Libertador"
-                    className="uppercase"
-                    {...register("avenida", { onChange: handleUppercaseChange })}
-                    error={!!errors.avenida}
-                  />
-                  {errors.avenida && <p className="mt-1 text-xs text-red-500">{errors.avenida.message}</p>}
-                </div>
-                
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Referencia</label>
-                  <Input
-                    placeholder="Ej: Frente al banco"
-                    className="uppercase"
-                    {...register("referencia", { onChange: handleUppercaseChange })}
-                  />
+                  {errors.direccion && <p className="mt-1 text-xs text-red-500">{errors.direccion.message}</p>}
                 </div>
               </div>
             </div>

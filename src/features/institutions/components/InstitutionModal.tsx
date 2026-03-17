@@ -345,12 +345,21 @@ export default function InstitutionModal({
       return careerOptions;
     }
 
-    // Filtrar carreras que tienen al menos uno de los tipos de práctica seleccionados
-    // El career tiene internshipTypeIds: ["1"] para ÚNICA, ["2","3"] para HOSPITALARIA+COMUNITARIA
+    // Si se selecciona Ordinaria ("1"), solo mostrar carreras con internshipTypeIds = ["1"]
+    if (selectedInternshipTypes.includes("1")) {
+      return careerOptions.filter(career => {
+        const careerTypes = career.internshipTypeIds || [];
+        // Solo mostrar carreras que tienen EXACTAMENTE ["1"] (Ordinaria exclusiva)
+        return careerTypes.length === 1 && careerTypes.includes("1");
+      });
+    }
+
+    // Si se selecciona Hospitalaria (2) o Comunitaria (3), mostrar carreras con ["2","3"]
+    // Estas son las carreras combinadas Hospitalaria + Comunitaria
     return careerOptions.filter(career => {
       const careerTypes = career.internshipTypeIds || [];
-      // La carrera debe tener al menos un tipo que coincida con los seleccionados
-      return careerTypes.some(type => selectedInternshipTypes.includes(type));
+      // Mostrar carreras que tienen tanto 2 como 3
+      return careerTypes.includes("2") && careerTypes.includes("3");
     });
   }, [careerOptions, selectedInternshipTypes]);
 

@@ -10,6 +10,7 @@ import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
 import TextArea from "../../../components/form/input/TextArea";
 import CustomSelect from "../../../components/form/CustomSelect";
+import MultiSelect from "../../../components/form/MultiSelect";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { Institution, CreateInstitutionPayload, UpdateInstitutionPayload, InstitutionalResponsible, CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload } from "../types";
 import Button from "../../../components/ui/button/Button";
@@ -52,6 +53,8 @@ interface InstitutionModalProps {
   onEditResponsible?: (data: UpdateInstitutionalResponsiblePayload) => Promise<void>;
   /** Institution options for responsible modal */
   institutionOptions?: { value: string; label: string }[];
+  /** Career options for institution (with internshipTypeIds for filtering) */
+  careerOptions?: { value: string; text: string; internshipTypeIds?: string[] }[];
 }
 
 /**
@@ -76,6 +79,8 @@ const baseInstSchema = z.object({
   municipio: z.string().min(1, "Seleccione un municipio"),
   parroquia: z.string().min(1, "Seleccione una parroquia"),
   direccion: z.string().min(1, "La dirección es obligatoria").max(300, "La dirección no puede exceder 300 caracteres"),
+  internshipTypeIds: z.array(z.string()).min(1, "Seleccione al menos un tipo de práctica"),
+  careerIds: z.array(z.string()).min(1, "Seleccione al menos una carrera"),
 });
 
 /**
@@ -131,6 +136,7 @@ export default function InstitutionModal({
   onAddResponsible,
   onEditResponsible,
   institutionOptions = [],
+  careerOptions = [],
 }: InstitutionModalProps) {
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const { fetchMultipleLists } = useLists();
@@ -245,6 +251,7 @@ export default function InstitutionModal({
       municipio: "",
       parroquia: "",
       direccion: "",
+      internshipTypeIds: [],
     },
   });
 
@@ -267,7 +274,8 @@ export default function InstitutionModal({
           "Nucleo",
           "Extensión",
           "Tipo de empresa",
-          "ESTADOS_VENEZUELA"
+          "ESTADOS_VENEZUELA",
+          "TIPO DE PRACTICA"
         ];
         const data = await fetchMultipleLists(listNames);
         const mappedOptions: Record<string, { value: string; label: string }[]> = {};
@@ -302,6 +310,49 @@ export default function InstitutionModal({
   const optionsExtension = options["Extensión"];
   const optionsTipoEmpresa = options["Tipo de empresa"];
   const optionsCodigosArea = options.PREFIJO;
+  const optionsTipoPractica = options["TIPO DE PRACTICA"];
+
+  // Opciones de tipo de práctica normalizadas para el formulario (MultiSelect)
+  const PRACTICE_TYPE_OPTIONS = useMemo(() => {
+    const baseOptions = (optionsTipoPractica || []);
+    
+    return baseOptions.map(opt => {
+      const normalizedValue = opt.value.toUpperCase();
+      
+      // Normalizar valores para el formulario - mantener separados
+      if (normalizedValue === 'ÚNICA' || normalizedValue === 'UNICA') {
+        return { value: '1', text: 'Ordinaria' };
+      } else if (normalizedValue === 'HOSPITALARIA') {
+        return { value: '2', text: 'Hospitalaria' };
+      } else if (normalizedValue === 'COMUNITARIA') {
+        return { value: '3', text: 'Comunitaria' };
+      }
+      return { value: opt.value, text: opt.label };
+    }).filter(Boolean) as { value: string; text: string }[];
+  }, [optionsTipoPractica]);
+
+  // Observar los tipos de práctica seleccionados para filtrar carreras
+  const selectedInternshipTypes = watch("internshipTypeIds");
+
+  // Opciones de carreras filtradas según los tipos de práctica seleccionados
+  const CAREER_OPTIONS = useMemo(() => {
+    if (!careerOptions || careerOptions.length === 0) {
+      return [];
+    }
+
+    // Si no hay tipos de práctica seleccionados, mostrar todas las carreras
+    if (!selectedInternshipTypes || selectedInternshipTypes.length === 0) {
+      return careerOptions;
+    }
+
+    // Filtrar carreras que tienen al menos uno de los tipos de práctica seleccionados
+    // El career tiene internshipTypeIds: ["1"] para ÚNICA, ["2","3"] para HOSPITALARIA+COMUNITARIA
+    return careerOptions.filter(career => {
+      const careerTypes = career.internshipTypeIds || [];
+      // La carrera debe tener al menos un tipo que coincida con los seleccionados
+      return careerTypes.some(type => selectedInternshipTypes.includes(type));
+    });
+  }, [careerOptions, selectedInternshipTypes]);
 
   // Funciones para agregar nuevos valores a las listas
   const openAddValueModal = (listName: string, field: keyof InstFormData, title: string) => {
@@ -431,23 +482,58 @@ export default function InstitutionModal({
         const rifParts = editingInst.rif ? editingInst.rif.split("-") : ["", ""];
         const [phoneP, phoneN] = editingInst.phone ? editingInst.phone.split("-") : ["", ""];
 
+        let parsedEstado = "PORTUGUESA";
+        let parsedMunicipio = "";
+        let parsedParroquia = "";
+        let parsedDireccion = editingInst.fiscalAddress || "";
+        let parsedRegion = editingInst.region;
+        let parsedNucleo = editingInst.nucleus;
+        let parsedExtension = editingInst.extension;
+        let parsedTipoEmpresa = editingInst.institutionType;
+
+        if (editingInst.fiscalAddress) {
+          const parts = editingInst.fiscalAddress.split(", ");
+          // Formato completo: Región, Núcleo, Extensión, Tipo, Estado, Municipio, Parroquia, Dirección
+          if (parts.length >= 8) {
+            parsedRegion = parts[0];
+            parsedNucleo = parts[1];
+            parsedExtension = parts[2];
+            parsedTipoEmpresa = parts[3];
+            parsedEstado = parts[4];
+            parsedMunicipio = parts[5];
+            parsedParroquia = parts[6];
+            parsedDireccion = parts.slice(7).join(", ");
+          } else if (parts.length >= 4) {
+            // Formato anterior/simplificado: Estado, Municipio, Parroquia, Dirección
+            parsedEstado = parts[0];
+            parsedMunicipio = parts[1];
+            parsedParroquia = parts[2];
+            parsedDireccion = parts.slice(3).join(", ");
+          }
+        }
+
         reset({
           rifPrefix: rifParts[0] || "",
           rifNumber: rifParts[1] || "",
           name: editingInst.name,
           phonePrefix: phoneP || "",
           phoneNumber: phoneN || "",
-          region: editingInst.region,
-          nucleus: editingInst.nucleus,
-          extension: editingInst.extension,
-          institutionType: editingInst.institutionType,
-          estado: editingInst.fiscalAddress ? "PORTUGUESA" : "",
-          municipio: "",
-          parroquia: "",
-          direccion: editingInst.fiscalAddress || "",
+          region: parsedRegion?.toUpperCase() || "",
+          nucleus: parsedNucleo?.toUpperCase() || "",
+          extension: parsedExtension?.toUpperCase() || "",
+          institutionType: parsedTipoEmpresa?.toUpperCase() || "",
+          estado: parsedEstado?.toUpperCase(),
+          municipio: parsedMunicipio?.toUpperCase(),
+          parroquia: parsedParroquia?.toUpperCase(),
+          direccion: parsedDireccion,
+          internshipTypeIds: editingInst?.internshipTypeIds || [],
+          careerIds: editingInst?.careerIds || [],
         });
         setDisplayRifNumber(rifParts[1] || "");
         setDisplayPhoneNumber(phoneN || "");
+        
+        if (parsedMunicipio) setSelectedMunicipio(parsedMunicipio.toUpperCase());
+        if (parsedParroquia) setSelectedParroquia(parsedParroquia.toUpperCase());
       } else {
         reset({
           rifPrefix: "",
@@ -463,15 +549,20 @@ export default function InstitutionModal({
           municipio: "",
           parroquia: "",
           direccion: "",
+          internshipTypeIds: [],
+          careerIds: [],
         });
         setDisplayRifNumber("");
         setDisplayPhoneNumber("");
+        setSelectedMunicipio("");
+        setSelectedParroquia("");
       }
     }
-  }, [editingInst, isOpen, reset]);
+  }, [editingInst, isOpen, reset, optionsTipoPractica]);
 
   const onSubmit = (data: InstFormData) => {
-    const fiscalAddress = `${data.estado}, ${data.municipio}, ${data.parroquia}, ${data.direccion}`;
+    // El formato de guardado ahora incluye todos los metadatos para asegurar compatibilidad en la edición
+    const fiscalAddress = `${data.region}, ${data.nucleus}, ${data.extension}, ${data.institutionType}, ${data.estado}, ${data.municipio}, ${data.parroquia}, ${data.direccion}`;
 
     const commonData = {
       rif: `${data.rifPrefix}-${data.rifNumber}`.toUpperCase(),
@@ -482,6 +573,8 @@ export default function InstitutionModal({
       nucleus: data.nucleus.toUpperCase(),
       extension: data.extension.toUpperCase(),
       institutionType: data.institutionType.toUpperCase(),
+      internshipTypeIds: data.internshipTypeIds,
+      careerIds: data.careerIds,
       status: editingInst?.status ?? true,
     };
     if (editingInst) {
@@ -557,7 +650,7 @@ export default function InstitutionModal({
                      error={!!errors.rifNumber}
                      hint={isCheckingRif ? "Verificando..." : (errors.rifNumber?.message || " ")}
                      disabled={!!editingInst || !!existingInstitution}
-                     maxLength={9}
+                     maxLength={12}
                      onBlur={async (e) => {
                        if (!existingInstitution && !editingInst) {
                          const value = e.target.value;
@@ -577,12 +670,39 @@ export default function InstitutionModal({
                                  type: "manual", 
                                  message 
                                });
-
                                setExistingInstitution(existingData);
                                setViewOnlyMode(true);
 
                                const rifParts = existingData.rif ? existingData.rif.split("-") : ["", ""];
                                const [phoneP, phoneN] = existingData.phone ? existingData.phone.split("-") : ["", ""];
+
+                                let parsedEstado = "PORTUGUESA";
+                                let parsedMunicipio = "";
+                                let parsedParroquia = "";
+                                let parsedDireccion = existingData.fiscalAddress || "";
+                                let parsedRegion = existingData.region;
+                                let parsedNucleo = existingData.nucleus;
+                                let parsedExtension = existingData.extension;
+                                let parsedTipoEmpresa = existingData.institutionType;
+
+                                if (existingData.fiscalAddress) {
+                                  const parts = existingData.fiscalAddress.split(", ");
+                                  if (parts.length >= 8) {
+                                    parsedRegion = parts[0];
+                                    parsedNucleo = parts[1];
+                                    parsedExtension = parts[2];
+                                    parsedTipoEmpresa = parts[3];
+                                    parsedEstado = parts[4];
+                                    parsedMunicipio = parts[5];
+                                    parsedParroquia = parts[6];
+                                    parsedDireccion = parts.slice(7).join(", ");
+                                  } else if (parts.length >= 4) {
+                                    parsedEstado = parts[0];
+                                    parsedMunicipio = parts[1];
+                                    parsedParroquia = parts[2];
+                                    parsedDireccion = parts.slice(3).join(", ");
+                                  }
+                                }
 
                                 setValue("rifPrefix", rifParts[0] || "");
                                 setDisplayRifNumber(rifParts[1] || "");
@@ -591,21 +711,21 @@ export default function InstitutionModal({
                                 setValue("phonePrefix", phoneP || "");
                                 setDisplayPhoneNumber(phoneN || "");
                                 setValue("phoneNumber", phoneN || "");
-                                setValue("region", existingData.region || "");
-                                setValue("nucleus", existingData.nucleus || "");
-                                setValue("extension", existingData.extension || "");
-                                setValue("institutionType", existingData.institutionType || "");
-                                setValue("estado", "PORTUGUESA");
-                                setValue("municipio", "");
-                                setValue("parroquia", "");
-                                setValue("direccion", existingData.fiscalAddress || "");
+                                setValue("region", (parsedRegion || existingData.region || "").toUpperCase());
+                                setValue("nucleus", (parsedNucleo || existingData.nucleus || "").toUpperCase());
+                                setValue("extension", (parsedExtension || existingData.extension || "").toUpperCase());
+                                setValue("institutionType", (parsedTipoEmpresa || existingData.institutionType || "").toUpperCase());
+                                setValue("estado", parsedEstado?.toUpperCase() || "");
+                                setValue("municipio", parsedMunicipio?.toUpperCase() || "");
+                                setValue("parroquia", parsedParroquia?.toUpperCase() || "");
+                                setValue("direccion", parsedDireccion);
+                                
+                                if (parsedMunicipio) setSelectedMunicipio(parsedMunicipio.toUpperCase());
+                                if (parsedParroquia) setSelectedParroquia(parsedParroquia.toUpperCase());
 
-                               addToast({
-                                 variant: "warning",
-                                 title: "Registro Existente",
-                                 message: "La institución ya existe. Puede ver sus datos o editarlo."
-                               });
-                             }
+                                // Toast removido por solicitud del usuario (molesto durante el ingreso)
+                                // Las pistas visuales son suficientes
+                               }
                            } catch (err) {
                              console.error("Error checking RIF:", err);
                            } finally {
@@ -761,7 +881,7 @@ export default function InstitutionModal({
                   value={displayPhoneNumber}
                   onChange={handlePhoneNumberChange}
                   placeholder="000-0000" 
-                  maxLength={9}
+                  maxLength={12}
                   error={!!errors.phoneNumber} 
                 />
               </div>
@@ -858,6 +978,46 @@ export default function InstitutionModal({
             />
             {errors.institutionType && (
               <p className="mt-1 text-xs text-red-500">{errors.institutionType.message}</p>
+            )}
+          </div>
+
+          {/* Tipos de Práctica que acepta la institución */}
+          <div>
+            <Controller
+              name="internshipTypeIds"
+              control={control}
+              render={({ field }) => (
+                <MultiSelect
+                  label="Tipo de Práctica *"
+                  options={PRACTICE_TYPE_OPTIONS}
+                  onChange={field.onChange}
+                  value={field.value}
+                  placeholder="Seleccione los tipos"
+                />
+              )}
+            />
+            {errors.internshipTypeIds && (
+              <p className="mt-1 text-xs text-red-500">{errors.internshipTypeIds.message}</p>
+            )}
+          </div>
+
+          {/* Carreras que atiende la institución */}
+          <div>
+            <Controller
+              name="careerIds"
+              control={control}
+              render={({ field }) => (
+                <MultiSelect
+                  label="Carreras *"
+                  options={CAREER_OPTIONS}
+                  onChange={field.onChange}
+                  value={field.value}
+                  placeholder="Seleccione las carreras"
+                />
+              )}
+            />
+            {errors.careerIds && (
+              <p className="mt-1 text-xs text-red-500">{errors.careerIds.message}</p>
             )}
           </div>
 

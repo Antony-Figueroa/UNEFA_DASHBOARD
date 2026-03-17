@@ -33,14 +33,20 @@ export interface Institution {
   responsibleCount?: number;
   /** Flag indicating if the institution is currently being used in practices (optional) */
   isInUse?: boolean;
+  /** Type of practice this institution accepts (Ordinaria or Hospitalaria y Comunitaria) */
+  practiceType?: string;
   /** Types of practice this institution has based on enrolled students (computed, optional) */
   practiceTypes?: string[];
+  /** IDs of internship types this institution accepts (from t_institution_career) */
+  internshipTypeIds?: string[];
+  /** IDs of careers this institution attends (from t_institution_career) */
+  careerIds?: string[];
 }
 
 /**
  * Payload for creating a new institution.
  */
-export type CreateInstitutionPayload = Omit<Institution, 'institutionId' | 'registrationDate' | 'status' | 'responsibleCount' | 'isInUse'>;
+export type CreateInstitutionPayload = Omit<Institution, 'institutionId' | 'registrationDate' | 'status' | 'responsibleCount' | 'isInUse' | 'practiceTypes'>;
 
 /**
  * Payload for updating an existing institution.

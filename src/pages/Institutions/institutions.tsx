@@ -13,7 +13,6 @@ import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
-import { useToast } from "../../context/toast";
 import { Tabs } from "../../components/ui/tabs/Tabs";
 import { PlusCircleIcon } from "../../icons/actions";
 import { DownloadIcon } from "../../icons";
@@ -28,6 +27,7 @@ import { InstitutionPDF } from "../../components/ui/pdf/templates/InstitutionPDF
 import { InstitutionalResponsiblePDF } from "../../components/ui/pdf/templates/InstitutionalResponsiblePDF";
 import { useInstitutions } from "../../features/institutions/hooks/useInstitutions";
 import { useInstitutionalResponsibles } from "../../features/institutions/hooks/useInstitutionalResponsibles";
+import { useCareers } from "../../features/careers/hooks/useCareers";
 import { 
   Institution, 
   InstitutionRowData, 
@@ -55,7 +55,6 @@ const formatRespToRow = (r: InstitutionalResponsible): InstitutionalResponsibleR
 export default function InstitutionsPage() {
   const [pageLoading, setPageLoading] = useState(true);
   const { fetchMultipleLists } = useLists();
-  const { addToast } = useToast();
   const [listOptions, setListOptions] = useState<Record<string, { value: string; label: string }[]>>({});
 
   useEffect(() => {
@@ -109,6 +108,16 @@ export default function InstitutionsPage() {
     bulkRemoveResponsibles,
     bulkRestoreResponsibles,
   } = useInstitutionalResponsibles();
+
+  const { careers } = useCareers();
+
+  const careerOptions = useMemo(() => 
+    careers.filter(c => c.status).map(c => ({ 
+      value: String(c.careerId), 
+      text: c.careerName,
+      internshipTypeIds: c.internshipTypeIds || []
+    })),
+  [careers]);
 
   const [mainTab, setMainTab] = useState<"Instituciones" | "Responsables">("Instituciones");
   const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
@@ -448,19 +457,11 @@ export default function InstitutionsPage() {
               const newInst = await addInstitution(data as CreateInstitutionPayload);
               
               if (newInst) {
-                // Retornar el ID para que el modal pueda preguntar si quiere agregar responsables
                 return { institutionId: newInst.institutionId, name: newInst.name };
               }
             }
           } catch (error) {
             console.error("Error saving institution:", error);
-            addToast({
-              variant: "error",
-              title: "Error al Guardar",
-              message: editingInst 
-                ? "No se pudieron actualizar los datos de la institución. Intente de nuevo."
-                : "No se pudo registrar la institución. Intente de nuevo.",
-            });
             throw error;
           }
         }}
@@ -472,6 +473,7 @@ export default function InstitutionsPage() {
         onAddResponsible={addResponsible}
         onEditResponsible={editResponsible}
         institutionOptions={institutionOptions}
+        careerOptions={careerOptions}
       />
 
       <InstitutionalResponsibleModal
@@ -513,13 +515,6 @@ export default function InstitutionsPage() {
             }
           } catch (error) {
             console.error("Error saving responsible:", error);
-            addToast({
-              variant: "error",
-              title: "Error al Guardar",
-              message: editingResp
-                ? "No se pudieron actualizar los datos del responsable. Intente de nuevo."
-                : "No se pudo registrar el responsable. Intente de nuevo.",
-            });
           }
         }}
         editingResp={editingResp}

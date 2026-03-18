@@ -341,21 +341,33 @@ export default function InstitutionModal({
       return [];
     }
 
-    // Si no hay tipo de práctica seleccionado, mostrar todas las carreras
+    // Si no hay tipo de práctica seleccionado, no mostrar carreras
     if (!selectedInternshipType) {
-      return careerOptions;
+      return [];
     }
 
-    // Si se selecciona Ordinaria ("1"), solo mostrar carreras con priority = 0
-    if (selectedInternshipType === "1") {
+    // Mapeo de valores del select a prioridades
+    // "1" = Ordinaria -> priority 0
+    // "2" = Hospitalaria -> priority 1
+    // "3" = Comunitaria -> priority 2
+    const priorityMap: Record<string, number> = {
+      "1": 0, // Ordinaria
+      "2": 1, // Hospitalaria
+      "3": 2  // Comunitaria
+    };
+    
+    const selectedPriority = priorityMap[selectedInternshipType];
+    
+    // Si se selecciona Ordinaria (priority 0), solo mostrar carreras con priority = 0
+    if (selectedPriority === 0) {
       return careerOptions.filter(career => {
         const priorities = career.internshipPriorities || [];
         // Solo mostrar carreras que tienen EXACTAMENTE priority 0 (Ordinaria exclusiva)
-        return priorities.length === 1 && priorities.includes(0);
+        return priorities.length > 0 && priorities.includes(0);
       });
     }
 
-    // Si se selecciona Hospitalaria ("2") o Comunitaria ("3"), mostrar carreras con priorities 1 y 2
+    // Si se selecciona Hospitalaria (priority 1) o Comunitaria (priority 2), mostrar carreras con priorities 1 y 2
     // Estas son las carreras combinadas Hospitalaria + Comunitaria
     return careerOptions.filter(career => {
       const priorities = career.internshipPriorities || [];
@@ -1023,7 +1035,8 @@ export default function InstitutionModal({
                   options={CAREER_OPTIONS}
                   onChange={field.onChange}
                   value={field.value}
-                  placeholder="Seleccione las carreras"
+                  placeholder={selectedInternshipType ? "Seleccione las carreras" : "Seleccione primero el tipo de práctica"}
+                  disabled={!selectedInternshipType}
                 />
               )}
             />

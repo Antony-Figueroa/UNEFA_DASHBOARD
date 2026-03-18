@@ -54,7 +54,7 @@ interface InstitutionModalProps {
   /** Institution options for responsible modal */
   institutionOptions?: { value: string; label: string }[];
   /** Career options for institution (with internshipTypeIds for filtering) */
-  careerOptions?: { value: string; text: string; internshipTypeIds?: string[] }[];
+  careerOptions?: { value: string; text: string; internshipTypeIds?: string[]; internshipPriorities?: number[] }[];
 }
 
 /**
@@ -345,21 +345,21 @@ export default function InstitutionModal({
       return careerOptions;
     }
 
-    // Si se selecciona Ordinaria ("1"), solo mostrar carreras con internshipTypeIds = ["1"]
+    // Si se selecciona Ordinaria (priority 0), solo mostrar carreras con priority = 0
     if (selectedInternshipTypes.includes("1")) {
       return careerOptions.filter(career => {
-        const careerTypes = career.internshipTypeIds || [];
-        // Solo mostrar carreras que tienen EXACTAMENTE ["1"] (Ordinaria exclusiva)
-        return careerTypes.length === 1 && careerTypes.includes("1");
+        const priorities = career.internshipPriorities || [];
+        // Solo mostrar carreras que tienen EXACTAMENTE priority 0 (Ordinaria exclusiva)
+        return priorities.length === 1 && priorities.includes(0);
       });
     }
 
-    // Si se selecciona Hospitalaria (2) o Comunitaria (3), mostrar carreras con ["2","3"]
+    // Si se selecciona Hospitalaria (2) o Comunitaria (3), mostrar carreras con priorities 1 y 2
     // Estas son las carreras combinadas Hospitalaria + Comunitaria
     return careerOptions.filter(career => {
-      const careerTypes = career.internshipTypeIds || [];
-      // Mostrar carreras que tienen tanto 2 como 3
-      return careerTypes.includes("2") && careerTypes.includes("3");
+      const priorities = career.internshipPriorities || [];
+      // Mostrar carreras que tienen tanto 1 como 2
+      return priorities.includes(1) && priorities.includes(2);
     });
   }, [careerOptions, selectedInternshipTypes]);
 

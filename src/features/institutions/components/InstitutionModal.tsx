@@ -993,6 +993,7 @@ export default function InstitutionModal({
 
           {/* Tipo de Práctica que acepta la institución */}
           <div>
+            <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Tipo de Práctica *</label>
             <Controller
               name="internshipTypeId"
               control={control}

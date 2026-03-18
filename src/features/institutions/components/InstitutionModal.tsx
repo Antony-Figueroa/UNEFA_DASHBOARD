@@ -53,8 +53,8 @@ interface InstitutionModalProps {
   onEditResponsible?: (data: UpdateInstitutionalResponsiblePayload) => Promise<void>;
   /** Institution options for responsible modal */
   institutionOptions?: { value: string; label: string }[];
-  /** Career options for institution (with internshipTypeId for filtering) */
-  careerOptions?: { value: string; text: string; internshipTypeId?: string[]; internshipPriorities?: number[] }[];
+  /** Career options for institution (with internship types for filtering) */
+  careerOptions?: { value: string; text: string; internshipTypeIds?: string[]; internshipPriorities?: number[] }[];
 }
 
 /**
@@ -346,24 +346,28 @@ export default function InstitutionModal({
       return [];
     }
 
-    // Mapeo de valores del select a prioridades
-    // "1" = Ordinaria -> priority 0
-    // "2" = Hospitalaria -> priority 1
-    // "3" = Comunitaria -> priority 2
-    const priorityMap: Record<string, number> = {
-      "1": 0, // Ordinaria
-      "2": 1, // Hospitalaria
-      "3": 2  // Comunitaria
+    // Mapeo de valores del select a prioridades Y IDs
+    // Select value "1" = Ordinaria -> priority 0, ID 1
+    // Select value "2" = Hospitalaria -> priority 1, ID 2
+    // Select value "3" = Comunitaria -> priority 2, ID 3
+    const typeMapping: Record<string, { priority: number; id: string }> = {
+      "1": { priority: 0, id: "1" },
+      "2": { priority: 1, id: "2" },
+      "3": { priority: 2, id: "3" }
     };
     
-    const selectedPriority = priorityMap[selectedInternshipType];
-    
-    // Filtrar carreras que incluyan la prioridad seleccionada
-    // No importa si la carrera tiene otras prioridades, solo debe incluir la seleccionada
+    const mapping = typeMapping[selectedInternshipType];
+    if (!mapping) {
+      return [];
+    }
+
+    // Filtrar carreras que incluyan la prioridad O el ID seleccionado
     return careerOptions.filter(career => {
       const priorities = career.internshipPriorities || [];
-      // La carrera debe incluir la prioridad seleccionada
-      return priorities.includes(selectedPriority);
+      const typeIds = career.internshipTypeIds || [];
+      
+      // Verificar si la carrera incluye la prioridad o el ID seleccionado
+      return priorities.includes(mapping.priority) || typeIds.includes(mapping.id);
     });
   }, [careerOptions, selectedInternshipType]);
 

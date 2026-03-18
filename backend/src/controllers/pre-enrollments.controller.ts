@@ -4,8 +4,14 @@ import { dbManager } from '../lib/db-manager.js';
 const TABLE_NAME = 't_professional_practices';
 
 const handleDbError = (res: Response, error: unknown) => {
-  console.error('Database Error:', error);
-  const dbError = error as { message?: string; details?: string; code?: string };
+  const dbError = error as { message?: string; details?: string; code?: string; hint?: string; status?: number };
+  console.error('[PreEnrollmentsController] Error:', {
+    message: dbError.message,
+    code: dbError.code,
+    status: dbError.status,
+    details: dbError.details,
+    hint: dbError.hint
+  });
   
   let userMessage = 'Error en la base de datos';
   if (dbError.code === '23502') {
@@ -14,17 +20,21 @@ const handleDbError = (res: Response, error: unknown) => {
     userMessage = 'Error: Ya existe un registro con estos datos (duplicado)';
   } else if (dbError.code === 'PGRST204') {
     userMessage = 'Error: Registro no encontrado';
+  } else if (dbError.message) {
+    userMessage = dbError.message;
   }
 
-  res.status(500).json({ 
+  res.status(dbError.status || 500).json({ 
     message: userMessage, 
     error: dbError.message || 'Unknown database error',
     details: dbError.details,
-    code: dbError.code
+    code: dbError.code,
+    hint: dbError.hint
   });
 };
 
 interface Student {
+  STUDENTS_ID: number;
   STUDENTS_CI: string;
   NAME: string;
   SURNAME: string;
@@ -44,7 +54,7 @@ interface ProfessionalPractice {
   REGISTRATION_DATE: string;
   CREATION_DATE?: string;
   GRADE?: number;
-  PRACTICES_STATUS?: number;
+  PRACTICES_STATUS?: string;
   TRANSFER?: number;
   TOUR?: string;
   PERIOD_ID?: number;
@@ -122,31 +132,39 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
       enrollmentCode
     } = req.body;
 
-    const now = new Date().toISOString();
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     const result = await dbManager.withRetry(async (supabase) => {
       // 1. Buscar Estudiante
       const fullCI = `${identificationPrefix}-${identificationNumber}`;
+      console.log(`[PreEnrollmentsController] Buscando estudiante con C.I.: ${fullCI}`);
       const { data: student, error: studentError } = await supabase
         .from('t_students')
         .select('STUDENTS_ID')
         .eq('STUDENTS_CI', fullCI)
-        .single();
+        .maybeSingle(); 
       
-      if (studentError || !student) throw new Error('Estudiante no encontrado');
+      if (studentError) throw studentError;
+      if (!student) {
+        const err = new Error(`Estudiante con C.I. ${fullCI} no encontrado.`);
+        (err as any).status = 404;
+        throw err;
+      }
 
       // 2.1. Validar que no tenga una pre-inscripción activa
       const { data: activePreEnrollment, error: activePreError } = await supabase
         .from(TABLE_NAME)
         .select('PROFESSIONAL_PRACTICE_ID')
         .eq('STUDENTS_ID', student.STUDENTS_ID)
-        .eq('PRACTICES_STATUS', 1)
+        .eq('PRACTICES_STATUS', '1') // '1' para PRE-INSCRITO
         .eq('STATUS', 1)
         .maybeSingle();
 
       if (activePreError) throw activePreError;
       if (activePreEnrollment) {
-        throw new Error('El estudiante ya posee una pre-inscripción activa.');
+        const err = new Error('El estudiante ya posee una pre-inscripción activa.');
+        (err as any).status = 409;
+        throw err;
       }
 
       // 2.2. Validar inscripción activa
@@ -154,13 +172,15 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
         .from(TABLE_NAME)
         .select('PROFESSIONAL_PRACTICE_ID')
         .eq('STUDENTS_ID', student.STUDENTS_ID)
-        .eq('PRACTICES_STATUS', 2) // 2 para INSCRITO/ACTIVO
-        .eq('STATUS', 1) // 1 para activo (no eliminado lógicamente)
+        .eq('PRACTICES_STATUS', '2') // '2' para INSCRITO/ACTIVO
+        .eq('STATUS', 1) 
         .maybeSingle();
 
       if (activeEnrollmentError) throw activeEnrollmentError;
       if (activeEnrollment) {
-        throw new Error('El estudiante ya tiene una inscripción activa y no puede pre-inscribirse.');
+        const err = new Error('El estudiante ya tiene una inscripción activa y no puede pre-inscribirse.');
+        (err as any).status = 409;
+        throw err;
       }
 
       // 2. Buscar Periodo
@@ -168,18 +188,28 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
         .from('t_internships_period')
         .select('PERIOD_ID, START_DATE, END_DATE')
         .eq('DESCRIPTION', period)
-        .single();
+        .maybeSingle();
       
-      if (periodError || !periodData) throw new Error('Período no encontrado');
+      if (periodError) throw periodError;
+      if (!periodData) {
+        const err = new Error(`Período "${period}" no encontrado.`);
+        (err as any).status = 400;
+        throw err;
+      }
 
       // 3. Buscar Tipo de Práctica
       const { data: typeData, error: typeError } = await supabase
         .from('t_internship_type')
         .select('INTERNSHIP_TYPE_ID')
         .eq('NAME', practiceType)
-        .single();
+        .maybeSingle();
       
-      if (typeError || !typeData) throw new Error('Tipo de práctica no encontrado');
+      if (typeError) throw typeError;
+      if (!typeData) {
+        const err = new Error(`Tipo de práctica "${practiceType}" no encontrado.`);
+        (err as any).status = 400;
+        throw err;
+      }
 
       // 4. Validar duplicados (mismo estudiante, mismo periodo, mismo tipo de práctica)
       const { data: existingEntry, error: checkError } = await supabase
@@ -192,11 +222,54 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
 
       if (checkError) throw checkError;
       if (existingEntry) {
-        throw new Error('Ya existe un registro para este estudiante en el mismo período y tipo de práctica');
+        const err = new Error('Ya existe un registro para este estudiante en el mismo período y tipo de práctica.');
+        (err as any).status = 409;
+        throw err;
       }
 
-      // 5. Insertar en t_professional_practices como PRE-INSCRITO
-      // Nota: Usamos INSTITUTION_ID=1 y MANAGER_ID=1 como placeholders obligatorios
+      // 5. Buscar una Institución activa que tenga al menos un Responsable activo (Requisito DB)
+      console.log('[PreEnrollmentsController] Buscando una combinación válida de institución y responsable...');
+      
+      // Intentamos buscar un responsable directamente, lo cual nos da acceso a su INSTITUTION_ID
+      const { data: managerData, error: managerFetchError } = await supabase
+        .from('t_institution_manager')
+        .select('MANAGER_ID, INSTITUTION_ID')
+        .eq('STATUS', 1)
+        .limit(1)
+        .maybeSingle();
+
+      if (managerFetchError) throw managerFetchError;
+      
+      let finalInstId: number;
+      let finalManagerId: number;
+
+      if (managerData) {
+        finalInstId = managerData.INSTITUTION_ID;
+        finalManagerId = managerData.MANAGER_ID;
+      } else {
+        // Si no hay responsables, verificamos si al menos hay una institución
+        const { data: instData, error: instFetchError } = await supabase
+          .from('t_institution')
+          .select('INSTITUTION_ID')
+          .eq('STATUS', 1)
+          .limit(1)
+          .maybeSingle();
+
+        if (instFetchError) throw instFetchError;
+        if (!instData) {
+          const err = new Error('No se encontró ninguna institución activa en el sistema. Por favor, registre una institución en el módulo de Instituciones.');
+          (err as any).status = 400;
+          throw err;
+        }
+        
+        // Si llegamos aquí, hay institución pero no hay responsable
+        const err = new Error(`La institución registrada no tiene responsables asociados. Por favor, asigne un responsable a la institución en el módulo de Instituciones.`);
+        (err as any).status = 400;
+        throw err;
+      }
+
+      // 6. Insertar en t_professional_practices como PRE-INSCRITO
+      console.log(`[PreEnrollmentsController] Insertando registro para estudiante ID: ${student.STUDENTS_ID} con Inst ID: ${finalInstId} y Manager ID: ${finalManagerId}`);
       const { data, error } = await supabase
         .from(TABLE_NAME)
         .insert([{
@@ -206,17 +279,17 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
           REGISTRATION_DATE: now,
           CREATION_DATE: now,
           GRADE: 0,
-          PRACTICES_STATUS: 1, // 1 para PRE-INSCRITO
+          PRACTICES_STATUS: '1', 
           TRANSFER: 0,
           TOUR: '',
           PERIOD_ID: periodData.PERIOD_ID,
-          INSTITUTION_ID: 1, // Placeholder
+          INSTITUTION_ID: finalInstId, 
           STUDENTS_ID: student.STUDENTS_ID,
           STATUS: 1,
-          MANAGER_ID: 1, // Placeholder
+          MANAGER_ID: finalManagerId, 
           OBSERVATION: '',
           ENROLLMENT: enrollmentCode,
-          INTERNSHIP_STATUS: 1, // 1 para En Curso
+          INTERNSHIP_STATUS: 1, 
           INTERNSHIP_TYPE_ID: typeData.INTERNSHIP_TYPE_ID
         }])
         .select()

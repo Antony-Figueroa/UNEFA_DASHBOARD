@@ -24,7 +24,7 @@ import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { useToast } from "../../../context/toast";
-import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, cleanPhone } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, formatPhoneDisplay, cleanPhone, CEDULA_MAX_LENGTH, PHONE_MAX_LENGTH, CEDULA_MAX_DIGITS } from "../../../utils/inputFormat";
 import { getResponsibleByCi } from "../services/institutionalResponsiblesService";
 
 const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
@@ -140,10 +140,11 @@ export default function InstitutionalResponsibleModal({
   // Handle identification number input change with formatting
   const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
-    const cleaned = cleanCedula(input);
-    const formatted = formatCedulaDisplay(cleaned);
+    // Solo permitir números
+    const digitsOnly = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
+    const formatted = formatCedulaDisplay(digitsOnly, false);
     setDisplayIdentificationNumber(formatted);
-    setValue("identificationNumber", cleaned, { shouldValidate: true, shouldDirty: true });
+    setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
   };
 
   // Handle phone number input change with formatting
@@ -334,7 +335,7 @@ export default function InstitutionalResponsibleModal({
           cargo: editingResp.cargo || "",
           institutionId: editingResp.institutionId,
         });
-        setDisplayIdentificationNumber(formatCedulaDisplay(editingResp.identificationPrefix + editingResp.identificationNumber));
+        setDisplayIdentificationNumber(formatCedulaDisplay(editingResp.identificationNumber, false));
         setDisplayPhoneNumber(formatPhoneDisplay(editingResp.phone || ""));
       } else {
         reset({
@@ -441,16 +442,16 @@ export default function InstitutionalResponsibleModal({
                     error={!!errors.identificationNumber}
                     hint={isCheckingCi ? "Verificando..." : (errors.identificationNumber?.message || " ")}
                     className="tracking-widest"
-                    maxLength={9}
+                    maxLength={CEDULA_MAX_LENGTH}
                     disabled={!!editingResp || !!existingResponsible}
                     onBlur={async (e) => {
                       if (!existingResponsible && !editingResp) {
-                        const value = e.target.value;
-                        const cleaned = cleanCedula(value);
-                        if (cleaned.length >= 6) {
+                        const val = e.target.value;
+                        const digitsOnly = val.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
+                        if (digitsOnly.length >= 6) {
                           setIsCheckingCi(true);
                           const prefix = watch("identificationPrefix") || 'V';
-                          const fullCi = `${prefix}-${cleaned}`;
+                          const fullCi = `${prefix}-${digitsOnly}`;
                           try {
                             const existingData = await getResponsibleByCi(fullCi);
                             if (existingData) {
@@ -466,13 +467,15 @@ export default function InstitutionalResponsibleModal({
                               setExistingResponsible(existingData);
                               setViewOnlyMode(true);
 
-                              let phonePrefix = "";
-                              let phoneNumber = "";
+                              let pPrefix = "";
+                              let pNumber = "";
                               if (existingData.phone) {
-                                const cleanPhone = existingData.phone.replace(/[-\s]/g, '');
-                                if (cleanPhone.length >= 4) {
-                                  phonePrefix = cleanPhone.substring(0, 4);
-                                  phoneNumber = cleanPhone.substring(4);
+                                const cleanPh = existingData.phone.replace(/[-\s]/g, '');
+                                if (cleanPh.length >= 4) {
+                                  pPrefix = cleanPh.substring(0, 4);
+                                  pNumber = cleanPh.substring(4);
+                                } else {
+                                  pNumber = cleanPh;
                                 }
                               }
 
@@ -483,18 +486,12 @@ export default function InstitutionalResponsibleModal({
                               setValue("middleName", existingData.middleName || "");
                               setValue("lastName", existingData.lastName || "");
                               setValue("secondLastName", existingData.secondLastName || "");
-                              setValue("phonePrefix", phonePrefix);
-                              setDisplayPhoneNumber(formatPhoneDisplay(phoneNumber));
-                              setValue("phoneNumber", phoneNumber);
+                              setValue("phonePrefix", pPrefix);
+                              setDisplayPhoneNumber(formatPhoneDisplay(existingData.phone || ""));
+                              setValue("phoneNumber", pNumber);
                               setValue("email", existingData.email || "");
                               setValue("cargo", existingData.cargo || "");
                               setValue("institutionId", existingData.institutionId || "");
-
-                              addToast({
-                                variant: "warning",
-                                title: "Registro Existente",
-                                message: "El responsable ya existe. Puede ver sus datos o editarlo."
-                              });
                             }
                           } catch (err) {
                             console.error("Error checking CI:", err);
@@ -508,9 +505,6 @@ export default function InstitutionalResponsibleModal({
                   />
                 </div>
               </div>
-              {isSubmitted && errors.identificationNumber && (
-                <p className="mt-1 text-[11px] font-medium text-red-500">{errors.identificationNumber.message}</p>
-              )}
             </div>
 
             {/* Institución */}
@@ -614,7 +608,7 @@ export default function InstitutionalResponsibleModal({
                     onChange={handlePhoneNumberChange}
                     placeholder="000-0000" 
                     error={!!errors.phoneNumber} 
-                    maxLength={9}
+                    maxLength={PHONE_MAX_LENGTH}
                   />
                 </div>
               </div>

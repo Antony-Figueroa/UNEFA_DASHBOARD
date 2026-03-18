@@ -6,7 +6,7 @@ import Button from "../ui/button/Button";
 import * as authService from "../../features/auth/services/authService";
 import { useAuth } from "../../context/auth";
 import { useToast } from "../../context/toast";
-import { formatCedulaDisplay, cleanCedula } from "../../utils/inputFormat";
+import { formatCedulaDisplay, cleanCedula, CEDULA_MAX_LENGTH } from "../../utils/inputFormat";
 
 export default function SignInForm() {
   const { addToast } = useToast();
@@ -181,7 +181,7 @@ export default function SignInForm() {
             onChange={handleCiChange}
             required
             autoComplete="username"
-            maxLength={12}
+            maxLength={CEDULA_MAX_LENGTH}
             className="w-full px-4 py-3.5 text-base text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200 tracking-widest"
           />
         </div>

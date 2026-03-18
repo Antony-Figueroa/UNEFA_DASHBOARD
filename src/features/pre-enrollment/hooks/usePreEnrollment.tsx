@@ -69,12 +69,15 @@ export const usePreEnrollment = () => {
           ),
         });
       }
-    } catch (error) {
-      console.error("[usePreEnrollment] Error al crear pre-inscripción:", error);
+    } catch (error: any) {
+      if (!error.response || error.response.status >= 500) {
+        console.error("[usePreEnrollment] Error crítico al crear pre-inscripción:", error);
+      }
+      const backendMessage = error.response?.data?.message || "No se pudo registrar la pre-inscripción en el sistema.";
       addToast({
         variant: "error",
         title: "Error de Registro",
-        message: "No se pudo registrar la pre-inscripción en el sistema.",
+        message: backendMessage,
       });
       throw error;
     }
@@ -96,12 +99,15 @@ export const usePreEnrollment = () => {
           message: <p>Los datos de <strong>{updatedPreEnrollment.studentName || "el estudiante"}</strong> han sido actualizados exitosamente.</p>,
         });
       }
-    } catch (error) {
-      console.error(`[usePreEnrollment] Error al editar pre-inscripción:`, error);
+    } catch (error: any) {
+      if (!error.response || error.response.status >= 500) {
+        console.error(`[usePreEnrollment] Error crítico al editar pre-inscripción:`, error);
+      }
+      const backendMessage = error.response?.data?.message || "No se pudieron actualizar los datos de la pre-inscripción.";
       addToast({
         variant: "error",
         title: "Error de Actualización",
-        message: "No se pudieron actualizar los datos de la pre-inscripción.",
+        message: backendMessage,
       });
       throw error;
     }

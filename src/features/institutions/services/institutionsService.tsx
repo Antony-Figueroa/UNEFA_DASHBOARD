@@ -64,3 +64,32 @@ export const getInstitutionByRif = async (rif: string): Promise<Institution | nu
     return null;
   }
 };
+
+/**
+ * Obtiene las carreras asociadas a una institución.
+ * @param institutionId - ID de la institución
+ */
+export const getInstitutionCareers = async (institutionId: string): Promise<{ careerId: string; name: string }[]> => {
+  try {
+    const response = await apiClient.get(`${API_URL}/${institutionId}/careers`);
+    return response.data || [];
+  } catch (error) {
+    console.error("[institutionsService] Error al obtener carreras de la institución:", error);
+    return [];
+  }
+};
+
+/**
+ * Actualiza las carreras asociadas a una institución.
+ * @param institutionId - ID de la institución
+ * @param careers - Array de IDs de carreras
+ */
+export const updateInstitutionCareers = async (institutionId: string, careers: string[]): Promise<boolean> => {
+  try {
+    await apiClient.put(`${API_URL}/${institutionId}/careers`, { careers });
+    return true;
+  } catch (error) {
+    console.error("[institutionsService] Error al actualizar carreras de la institución:", error);
+    return false;
+  }
+};

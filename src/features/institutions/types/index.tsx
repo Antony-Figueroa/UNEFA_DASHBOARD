@@ -39,6 +39,8 @@ export interface Institution {
   practiceTypes?: string[];
   /** IDs of internship types this institution accepts (from t_institution_career) */
   internshipTypeIds?: string[];
+  /** Single internship type ID for form selection */
+  internshipTypeId?: string;
   /** IDs of careers this institution attends (from t_institution_career) */
   careerIds?: string[];
 }

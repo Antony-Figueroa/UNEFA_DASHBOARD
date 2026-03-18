@@ -82,10 +82,12 @@ export const useStudents = () => {
         });
       }
     } catch (e) {
-      console.error("[useStudents] Error al registrar estudiante:", e);
+      const axiosError = e as any;
+      if (!axiosError.response || axiosError.response.status >= 500) {
+        console.error("[useStudents] Error crítico al registrar estudiante:", e);
+      }
       // useCrud ya manejó el error si no pasamos silent: true en el catch, 
       // pero aquí queremos un mensaje personalizado.
-      const axiosError = e as any;
       addToast({
         variant: "error",
         title: "Error de Registro",
@@ -120,8 +122,10 @@ export const useStudents = () => {
         });
       }
     } catch (e) {
-      console.error("[useStudents] Error al actualizar estudiante:", e);
       const axiosError = e as AxiosError<{ message: string }>;
+      if (!axiosError.response || axiosError.response.status >= 500) {
+        console.error("[useStudents] Error crítico al actualizar estudiante:", e);
+      }
       addToast({
         variant: "error",
         title: "Error de Actualización",

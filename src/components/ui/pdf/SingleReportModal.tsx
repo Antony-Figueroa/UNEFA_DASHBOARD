@@ -17,6 +17,7 @@ interface SingleReportModalProps<T> {
     label: string;
     value: string;
   };
+  extraSidebarContent?: React.ReactNode;
 }
 
 export const SingleReportModal = <T,>({
@@ -28,6 +29,7 @@ export const SingleReportModal = <T,>({
   template,
   fileName,
   recordInfo,
+  extraSidebarContent,
 }: SingleReportModalProps<T>) => {
   const { generatePDF, previewPDF, isGenerating } = useSingleReport({ fileName });
 
@@ -120,6 +122,12 @@ export const SingleReportModal = <T,>({
                     <span className="font-bold">Nota:</span> Para una mejor visualización, utilice la opción "Abrir en Nueva Pestaña" que permite usar las herramientas de zoom del navegador.
                   </p>
                 </div>
+
+                {extraSidebarContent && (
+                  <div className="pt-6 border-t border-border-light dark:border-white/5 space-y-4">
+                    {extraSidebarContent}
+                  </div>
+                )}
               </div>
             </div>
 

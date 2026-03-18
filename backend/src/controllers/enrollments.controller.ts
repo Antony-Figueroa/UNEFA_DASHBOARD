@@ -16,8 +16,8 @@ const ENROLLMENT_COLUMNS_TO_AUDIT = [
 const ENROLLMENT_COLUMNS = 'PROFESSIONAL_PRACTICE_ID, START_DATE, END_DATE, REPORT_TITLE, REGISTRATION_DATE, GRADE, PRACTICES_STATUS, TRANSFER, TOUR, PERIOD_ID, INSTITUTION_ID, STUDENTS_ID, STATUS, MANAGER_ID, OBSERVATION, ENROLLMENT, INTERNSHIP_STATUS, INTERNSHIP_TYPE_ID';
 
 const handleDbError = (res: Response, error: unknown) => {
-  console.error('Database Error:', error);
-  const dbError = error as { message?: string; details?: string; code?: string };
+  console.error('Error:', error);
+  const dbError = error as { message?: string; details?: string; code?: string; status?: number };
   
   let userMessage = 'Error en la base de datos';
   if (dbError.code === '23502') {
@@ -26,9 +26,11 @@ const handleDbError = (res: Response, error: unknown) => {
     userMessage = 'Error: Ya existe un registro con estos datos (duplicado)';
   } else if (dbError.code === 'PGRST204') {
     userMessage = 'Error: Registro no encontrado';
+  } else if (dbError.message) {
+    userMessage = dbError.message;
   }
 
-  res.status(500).json({ 
+  res.status(dbError.status || 500).json({ 
     message: userMessage, 
     error: dbError.message || 'Unknown database error',
     details: dbError.details,
@@ -234,7 +236,11 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
         .eq('STUDENTS_CI', fullCI)
         .single();
       
-      if (studentError || !student) throw new Error('Estudiante no encontrado');
+      if (studentError || !student) {
+        const err = new Error('Estudiante no encontrado');
+        (err as any).status = 404;
+        throw err;
+      }
 
       const { data: existingEnrollment } = await supabase
         .from(TABLE_NAME)
@@ -245,7 +251,9 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
         .limit(1);
 
       if (existingEnrollment && existingEnrollment.length > 0) {
-        throw new Error('El estudiante ya posee una inscripción activa');
+        const err = new Error('El estudiante ya posee una inscripción activa');
+        (err as any).status = 409;
+        throw err;
       }
 
       const { data: preEnrollmentRow, error: preError } = await supabase
@@ -259,7 +267,9 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
 
       if (preError) throw preError;
       if (!preEnrollmentRow) {
-        throw new Error('No existe una pre-inscripción activa para el estudiante');
+        const err = new Error('No existe una pre-inscripción activa para el estudiante');
+        (err as any).status = 400;
+        throw err;
       }
 
       const updateData: Partial<ProfessionalPractice> & { ENROLLMENT?: string } = {

@@ -25,5 +25,6 @@ export interface Career {
   careerType?: string;
   status?: boolean;
   internshipTypeIds?: string[];
+  internshipPriorities?: number[];
   [key: string]: unknown;
 }

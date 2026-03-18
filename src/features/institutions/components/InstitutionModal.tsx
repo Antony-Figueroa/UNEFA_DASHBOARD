@@ -358,21 +358,12 @@ export default function InstitutionModal({
     
     const selectedPriority = priorityMap[selectedInternshipType];
     
-    // Si se selecciona Ordinaria (priority 0), solo mostrar carreras con priority = 0
-    if (selectedPriority === 0) {
-      return careerOptions.filter(career => {
-        const priorities = career.internshipPriorities || [];
-        // Solo mostrar carreras que tienen EXACTAMENTE priority 0 (Ordinaria exclusiva)
-        return priorities.length > 0 && priorities.includes(0);
-      });
-    }
-
-    // Si se selecciona Hospitalaria (priority 1) o Comunitaria (priority 2), mostrar carreras con priorities 1 y 2
-    // Estas son las carreras combinadas Hospitalaria + Comunitaria
+    // Filtrar carreras que incluyan la prioridad seleccionada
+    // No importa si la carrera tiene otras prioridades, solo debe incluir la seleccionada
     return careerOptions.filter(career => {
       const priorities = career.internshipPriorities || [];
-      // Mostrar carreras que tienen tanto 1 como 2
-      return priorities.includes(1) && priorities.includes(2);
+      // La carrera debe incluir la prioridad seleccionada
+      return priorities.includes(selectedPriority);
     });
   }, [careerOptions, selectedInternshipType]);
 

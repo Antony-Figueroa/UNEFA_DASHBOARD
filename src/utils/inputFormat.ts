@@ -12,7 +12,7 @@
  * @param value - Valor que puede tener prefijo (ej: "V12345678" o "31114449")
  * @returns String con formato visual
  */
-export const formatCedulaDisplay = (value: string): string => {
+export const formatCedulaDisplay = (value: string, includePrefix: boolean = true): string => {
   if (!value) return '';
   
   // Extraer prefijo y números
@@ -21,33 +21,29 @@ export const formatCedulaDisplay = (value: string): string => {
   const prefix = prefixMatch ? prefixMatch[1] : '';
   const numbers = cleaned.replace(/^[VE]/, '');
   
-  if (!numbers) return prefix;
+  if (!numbers) return includePrefix ? prefix : '';
   
   // Formatear desde la izquierda para números de 7-8 dígitos
-  // Cédula venezolana: 7-8 dígitos sin prefijo
   let formatted: string;
   const len = numbers.length;
   
   if (len <= 3) {
-    // 1-3 dígitos: 123
     formatted = numbers;
   } else if (len === 4) {
-    // 4 dígitos: 1234
     formatted = numbers;
   } else if (len === 5) {
-    // 5 dígitos: 12.345
     formatted = `${numbers.slice(0, 2)}.${numbers.slice(2)}`;
   } else if (len === 6) {
-    // 6 dígitos: 123.456
     formatted = `${numbers.slice(0, 3)}.${numbers.slice(3)}`;
   } else if (len === 7) {
-    // 7 dígitos: 1.234.567
-    formatted = `${numbers.slice(0, 1)}.${numbers.slice(1, 4)}.${numbers.slice(4)}`;
-  } else {
-    // 8+ dígitos: 12.345.678 (cédula de 8 dígitos)
+    formatted = `${numbers.slice(0, 1)}.${numbers.slice(1, 4)}.${numbers.slice(4, 7)}`;
+  } else if (len === 8) {
     formatted = `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}`;
+  } else {
+    formatted = `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}`;
   }
   
+  if (!includePrefix) return formatted;
   return prefix ? `${prefix}-${formatted}` : formatted;
 };
 
@@ -67,14 +63,14 @@ export const cleanCedula = (value: string): string => {
 };
 
 /**
- * Longitud máxima del número de cédula SIN prefijo (8 dígitos para Venezuela)
+ * Longitud máxima del número de cédula SIN prefijo (9 dígitos para soportar casos especiales)
  */
-export const CEDULA_MAX_DIGITS = 8;
+export const CEDULA_MAX_DIGITS = 9;
 
 /**
- * Longitud máxima del input visual incluyendo formato (V-12.345.678 = 12 caracteres)
+ * Longitud máxima del input visual incluyendo formato (V-000.000.000 = 13 caracteres)
  */
-export const CEDULA_MAX_LENGTH = 12;
+export const CEDULA_MAX_LENGTH = 13;
 
 /**
  * Formatea un número de teléfono para visualización (000-0000)

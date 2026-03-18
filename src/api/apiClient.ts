@@ -13,6 +13,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from "ax
  */
 interface RetryConfig extends InternalAxiosRequestConfig {
   _retryCount?: number;
+  silent?: boolean;
 }
 
 const isProd = import.meta.env.PROD;
@@ -85,9 +86,13 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // 2. Logging de errores no esperados
-    if (error.response?.status !== 401 && !isPublicPage && !isMonitoringPath) {
-      console.error(`[API Response Error]: ${error.message} en ${config?.url}`, {
+    // 2. Logging de errores
+    if (error.response?.status !== 401 && !isPublicPage && !isMonitoringPath && !config?.silent) {
+      const isServerError = (error.response?.status ?? 0) >= 500 || !error.response;
+      const logMethod = isServerError ? 'error' : 'warn';
+      const prefix = isServerError ? '[API Critical Error]' : '[API Business Error]';
+      
+      console[logMethod](`${prefix}: ${error.message} en ${config?.url}`, {
         status: error.response?.status,
         data: error.response?.data
       });

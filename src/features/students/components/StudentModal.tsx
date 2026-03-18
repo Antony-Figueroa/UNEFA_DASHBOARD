@@ -25,7 +25,7 @@ import {
   StudentFormInput,
   StudentFormOutput
 } from "../constants/validation";
-import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, cleanPhone, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, formatPhoneDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS } from "../../../utils/inputFormat";
 
 /**
  * Propiedades del componente StudentModal.
@@ -89,10 +89,11 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   // Handle identification number input change with formatting
   const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
-    const cleaned = cleanCedula(input);
-    const formatted = formatCedulaDisplay(cleaned);
+    // Solo permitir números
+    const digitsOnly = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
+    const formatted = formatCedulaDisplay(digitsOnly, false);
     setDisplayIdentificationNumber(formatted);
-    setValue("identificationNumber", cleaned, { shouldValidate: true });
+    setValue("identificationNumber", digitsOnly, { shouldValidate: true });
   };
 
   // Handle phone number input change with formatting
@@ -403,7 +404,7 @@ useEffect(() => {
           militaryRank: (editingStudent.militaryRank || "").toUpperCase(),
           works: (editingStudent.works || "").toUpperCase(),
         });
-        setDisplayIdentificationNumber(formatCedulaDisplay(editingStudent.identificationPrefix + editingStudent.identificationNumber));
+        setDisplayIdentificationNumber(formatCedulaDisplay(editingStudent.identificationNumber, false));
         setDisplayPhoneNumber(formatPhoneDisplay(editingStudent.phone || ""));
       } else {
         reset({
@@ -541,12 +542,12 @@ useEffect(() => {
                     onBlur={async (e) => {
                       // Only check if not in existing student mode
                       if (!existingStudent) {
-                        const value = e.target.value;
-                        const cleaned = cleanCedula(value);
-                        if (cleaned.length >= 6) {
+                        const val = e.target.value;
+                        const digitsOnly = val.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
+                        if (digitsOnly.length >= 6) {
                           setIsCheckingCi(true);
                           const prefix = watch("identificationPrefix") || 'V';
-                          const fullCi = `${prefix}-${cleaned}`;
+                          const fullCi = `${prefix}-${digitsOnly}`;
                           try {
                             const res = await checkAvailability('ci', fullCi, editingStudent?.studentId);
                             if (!res.available) {
@@ -600,11 +601,8 @@ useEffect(() => {
                                 setValue("works", existingStudentData.works || "");
                               }
 
-                              addToast({
-                                variant: "warning",
-                                title: "Registro Existente",
-                                message: "El estudiante ya existe. Puede ver sus datos o editarlo."
-                              });
+                              // Toast removido por solicitud del usuario
+                              // Las pistas visuales son suficientes
                             } else {
                               clearErrors("identificationNumber");
                               setExistingStudent(null);
@@ -1057,7 +1055,7 @@ useEffect(() => {
               form="student-form" 
               loading={isLoading} 
               disabled={!isValid}
-              className="w-full sm:w-auto min-h-12"
+              className="w-full sm:w-auto min-h-12 shadow-none"
               onClick={async () => {
                 if (!isValid) {
                   console.log("[StudentModal] Form is invalid. Errors:", errors);
@@ -1079,7 +1077,7 @@ useEffect(() => {
               form="student-form" 
               loading={isLoading} 
               disabled={!isDirty}
-              className="w-full sm:w-auto min-h-12"
+              className="w-full sm:w-auto min-h-12 shadow-none"
               onClick={async () => {
                 if (!isValid) {
                   console.log("[StudentModal] Form is invalid. Errors:", errors);
@@ -1100,7 +1098,7 @@ useEffect(() => {
               form="student-form" 
               loading={isLoading} 
               disabled={!isValid}
-              className="w-full sm:w-auto min-h-12"
+              className="w-full sm:w-auto min-h-12 shadow-none"
               onClick={async () => {
                 if (!isValid) {
                   console.log("[StudentModal] Form is invalid. Errors:", errors);

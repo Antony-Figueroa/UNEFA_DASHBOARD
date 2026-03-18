@@ -58,7 +58,7 @@ export const responsibleService = createCrudService<InstitutionalResponsible, Cr
  */
 export const getResponsibleByCi = async (ci: string): Promise<InstitutionalResponsible | null> => {
   try {
-    const response = await apiClient.get(`${API_URL}/by-ci/${ci}`);
+    const response = await apiClient.get(`${API_URL}/by-ci/${ci}`, { silent: true } as any);
     return response.data?.data || null;
   } catch (error) {
     console.error("[responsibleService] Error al obtener responsable por CI:", error);

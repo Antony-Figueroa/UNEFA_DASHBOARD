@@ -222,7 +222,7 @@ export default function PreEnrollmentPage() {
                     }
                     setIsModalOpen(false);
                 } catch (error) {
-                    console.error("[PreEnrollmentPage] Error al guardar:", error);
+                    // El error ya es manejado por el hook usePreEnrollment (muestra Toast)
                 } finally {
                     setConfirmation(null);
                 }

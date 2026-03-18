@@ -9,22 +9,24 @@ interface AppError extends Error {
 }
 
 const handleDbError = (res: Response, error: unknown) => {
-  console.error('Database Error:', error);
-  const dbError = error as AppError;
+  console.error('[DB Error Controller]:', error);
+  const dbError = error as { message?: string; details?: string; code?: string; status?: number };
   
   let userMessage = 'Error en la base de datos';
   if (dbError.code === '23502') {
     userMessage = `Error: El campo ${dbError.details?.match(/"([^"]+)"/)?.[1] || 'requerido'} no puede estar vacío`;
   } else if (dbError.code === '23505') {
-    userMessage = 'Error: Ya existe un registro con estos datos (duplicado)';
+    userMessage = 'Error: Ya existe un responsable con esta cédula';
   } else if (dbError.code === 'PGRST205') {
     userMessage = 'Error: La tabla no existe en la base de datos';
-  } else if (dbError.code === '404') {
+  } else if (dbError.code === '42703' || (dbError.message && dbError.message.includes('column "CARGO"'))) {
+    userMessage = 'Error estructural: El campo (Cargo) no existe en su base de datos. Se intentará guardar sin este campo.';
+  } else if (dbError.code === 'PGRST116' || dbError.code === '404' || dbError.status === 404) {
     userMessage = dbError.message || 'Registro no encontrado';
     return res.status(404).json({ message: userMessage });
   }
 
-  res.status(500).json({ 
+  res.status(dbError.status || 500).json({ 
     message: userMessage, 
     error: dbError.message || 'Unknown database error',
     details: dbError.details,
@@ -129,9 +131,7 @@ export const getInstitutionalResponsibleByCi = async (req: Request, res: Respons
 export const createInstitutionalResponsible = async (req: Request, res: Response) => {
   try {
     const r = req.body;
-    
     console.log('[createInstitutionalResponsible] Request body:', JSON.stringify(r));
-    console.log('[createInstitutionalResponsible] institutionId:', r.institutionId, 'type:', typeof r.institutionId);
     
     if (!r.institutionId) {
       return res.status(400).json({ message: 'El ID de institución es requerido' });
@@ -142,21 +142,41 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
       return res.status(400).json({ message: 'El ID de institución debe ser un número válido' });
     }
     
-    const dbData = {
+    const creationDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    const dbData: any = {
       MANAGER_CI: `${r.identificationPrefix}-${r.identificationNumber}`,
-      NAME: r.firstName,
-      SECOND_NAME: r.middleName || null,
-      SURNAME: r.lastName,
-      SECOND_SURNAME: r.secondLastName || null,
+      NAME: String(r.firstName).toUpperCase(),
+      SECOND_NAME: r.middleName ? String(r.middleName).toUpperCase() : null,
+      SURNAME: String(r.lastName).toUpperCase(),
+      SECOND_SURNAME: r.secondLastName ? String(r.secondLastName).toUpperCase() : null,
       CONTACT_PHONE: r.phone,
-      EMAIL: r.email,
-      CARGO: r.cargo || null,
+      EMAIL: String(r.email).toUpperCase(),
       INSTITUTION_ID: institutionIdNum,
-      STATUS: r.status ? 1 : 0,
-      CREATION_DATE: new Date().toISOString()
+      STATUS: r.status === false ? 0 : 1,
+      CREATION_DATE: creationDate
     };
 
+    // Mapeo seguro: Solo incluir CARGO si se desea, pero tener en cuenta que puede no existir
+    // en versiones antiguas de la base de datos.
+    if (r.cargo) {
+      (dbData as any).CARGO = String(r.cargo).toUpperCase();
+    }
+
     const data = await dbManager.withRetry(async (supabase) => {
+      // Verificar duplicado primero con maybeSingle
+      const { data: existing } = await supabase
+        .from(TABLE_NAME)
+        .select('MANAGER_ID')
+        .eq('MANAGER_CI', dbData.MANAGER_CI)
+        .maybeSingle();
+
+      if (existing) {
+        const err = new Error('Ya existe un responsable con esa cédula');
+        (err as any).status = 400;
+        throw err;
+      }
+
       const { data, error } = await supabase
         .from(TABLE_NAME)
         .insert([dbData])
@@ -168,7 +188,10 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
         `)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[createInstitutionalResponsible] DB Insert Error:', error);
+        throw error;
+      }
       return data as DBInstitutionalResponsible;
     });
 
@@ -182,18 +205,20 @@ export const updateInstitutionalResponsible = async (req: Request, res: Response
   try {
     const { id } = req.params;
     const r = req.body;
-    const dbData: Partial<DBInstitutionalResponsible> = {};
+    console.log(`[updateInstitutionalResponsible] Updating ID: ${id}, Body:`, JSON.stringify(r));
+    
+    const dbData: any = {};
     
     if (r.identificationPrefix !== undefined && r.identificationNumber !== undefined) {
       dbData.MANAGER_CI = `${r.identificationPrefix}-${r.identificationNumber}`;
     }
-    if (r.firstName !== undefined) dbData.NAME = r.firstName;
-    if (r.middleName !== undefined) dbData.SECOND_NAME = r.middleName || null;
-    if (r.lastName !== undefined) dbData.SURNAME = r.lastName;
-    if (r.secondLastName !== undefined) dbData.SECOND_SURNAME = r.secondLastName || null;
+    if (r.firstName !== undefined) dbData.NAME = String(r.firstName).toUpperCase();
+    if (r.middleName !== undefined) dbData.SECOND_NAME = r.middleName ? String(r.middleName).toUpperCase() : null;
+    if (r.lastName !== undefined) dbData.SURNAME = String(r.lastName).toUpperCase();
+    if (r.secondLastName !== undefined) dbData.SECOND_SURNAME = r.secondLastName ? String(r.secondLastName).toUpperCase() : null;
     if (r.phone !== undefined) dbData.CONTACT_PHONE = r.phone;
-    if (r.email !== undefined) dbData.EMAIL = r.email;
-    if (r.cargo !== undefined) dbData.CARGO = r.cargo || null;
+    if (r.email !== undefined) dbData.EMAIL = String(r.email).toUpperCase();
+    if (r.cargo !== undefined) dbData.CARGO = r.cargo ? String(r.cargo).toUpperCase() : null;
     if (r.institutionId !== undefined) dbData.INSTITUTION_ID = parseInt(r.institutionId);
     if (r.status !== undefined) dbData.STATUS = r.status ? 1 : 0;
 
@@ -210,7 +235,10 @@ export const updateInstitutionalResponsible = async (req: Request, res: Response
         `)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[updateInstitutionalResponsible] DB Update Error:', error);
+        throw error;
+      }
       return data as DBInstitutionalResponsible;
     });
 

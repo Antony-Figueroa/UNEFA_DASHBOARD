@@ -67,7 +67,7 @@ export const checkAvailability = async (
  */
 export const getStudentByCi = async (ci: string): Promise<Student | null> => {
   try {
-    const response = await apiClient.get(`${API_URL}/by-ci/${ci}`);
+    const response = await apiClient.get(`${API_URL}/by-ci/${ci}`, { silent: true } as any);
     return response.data?.data || null;
   } catch (error) {
     console.error("[studentsService] Error al obtener estudiante por CI:", error);

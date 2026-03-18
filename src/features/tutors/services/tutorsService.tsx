@@ -45,7 +45,7 @@ export const toggleTutorStatus = tutorsService.toggleStatus!;
  */
 export const getTutorByCi = async (ci: string): Promise<Tutor | null> => {
   try {
-    const response = await apiClient.get(`${API_URL}/by-ci/${ci}`);
+    const response = await apiClient.get(`${API_URL}/by-ci/${ci}`, { silent: true } as any);
     return response.data?.data || null;
   } catch (error) {
     console.error("[tutorsService] Error al obtener tutor por CI:", error);

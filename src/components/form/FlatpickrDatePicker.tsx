@@ -234,6 +234,8 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
           const currentYear = instance.currentYear;
           const container = instance.calendarContainer;
 
+          if (!container) return;
+
           if (realMinDate) {
             const minMonth = realMinDate.getMonth();
             const minYear = realMinDate.getFullYear();

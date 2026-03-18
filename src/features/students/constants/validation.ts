@@ -4,7 +4,7 @@ export const studentSchema = z.object({
   identificationPrefix: z.string().min(1, "Seleccione un prefijo"),
   identificationNumber: z.string()
     .min(6, "La cédula debe tener al menos 6 dígitos")
-    .max(8, "La cédula no puede tener más de 8 dígitos")
+    .max(9, "La cédula no puede tener más de 9 dígitos")
     .regex(/^\d+$/, "Solo se admiten números"),
   firstName: z.string()
     .min(1, "El primer nombre es obligatorio")
@@ -53,7 +53,7 @@ export const studentSchema = z.object({
     .regex(/^\d+$/, "Solo se admiten números"),
   regime: z.string().min(1, "Seleccione el régimen"),
   studentType: z.string().min(1, "Seleccione el tipo de estudiante"),
-  militaryRank: z.string().min(1, "El rango militar es obligatorio"),
+  militaryRank: z.string().default("NO APLICA"),
   works: z.string().min(1, "Seleccione si trabaja"),
 });
 

@@ -43,8 +43,6 @@ interface StudentTableProps {
     onExportToPreEnrollment?: (student: StudentRowData) => void;
     /** Función llamada al solicitar ver los detalles de un estudiante */
     onView?: (student: StudentRowData) => void;
-    /** Función llamada al solicitar cambiar datos del estudiante (institución, tutor, régimen) */
-    onChangeData?: (student: StudentRowData) => void;
     /** Función llamada para eliminar múltiples estudiantes en bloque */
     onBulkDelete?: (ids: string[]) => void;
     /** Función llamada para restaurar múltiples estudiantes en bloque */
@@ -82,8 +80,6 @@ interface ActionButtonsProps {
     onExportToPreEnrollment?: () => void;
     /** Callback para ver detalles */
     onView?: () => void;
-    /** Callback para cambiar datos (institución, tutor, régimen) */
-    onChangeData?: () => void;
     /** Pestaña activa */
     activeTab: "Activas" | "Inactivas";
     /** Modo inactivo */
@@ -132,7 +128,6 @@ const ActionButtons = ({
     onToggleStatus,
     onExportToPreEnrollment,
     onView,
-    onChangeData,
     activeTab,
     inactiveMode = false,
     isMobile = false,
@@ -165,16 +160,6 @@ const ActionButtons = ({
                     tooltip="Editar"
                     label={isMobile ? "Editar Estudiante" : undefined}
                     variant="primary"
-                    fullWidth={isMobile}
-                />
-            )}
-            {onChangeData && activeTab === "Activas" && (
-                <AsyncActionButton
-                    onClick={async () => onChangeData()}
-                    icon={<RefreshIcon />}
-                    tooltip="Cambiar Datos"
-                    label={isMobile ? "Cambiar Datos" : undefined}
-                    variant="warning"
                     fullWidth={isMobile}
                 />
             )}
@@ -236,7 +221,6 @@ export default function StudentTable({
     onToggleStatus,
     onExportToPreEnrollment,
     onView,
-    onChangeData,
     onBulkDelete,
     onBulkRestore,
     selectedIds: controlledSelectedIds,
@@ -725,7 +709,6 @@ export default function StudentTable({
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
-                                            onChangeData={onChangeData ? () => onChangeData(s) : undefined}
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
                                             onExportToPreEnrollment={onExportToPreEnrollment ? () => onExportToPreEnrollment(s) : undefined}
                                             activeTab={activeTab}
@@ -820,7 +803,6 @@ export default function StudentTable({
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
                                             onEdit={onEdit ? () => onEdit(s) : undefined}
-                                            onChangeData={onChangeData ? () => onChangeData(s) : undefined}
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
                                             onExportToPreEnrollment={onExportToPreEnrollment ? () => onExportToPreEnrollment(s) : undefined}
                                             activeTab={activeTab}

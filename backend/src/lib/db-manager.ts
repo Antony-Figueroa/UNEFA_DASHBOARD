@@ -178,6 +178,13 @@ export class DatabaseManager {
         return result;
       } catch (error: unknown) {
         lastError = error;
+        
+        // No reintentar si es un error de aplicación ya controlado (tiene status)
+        const appError = error as { status?: number };
+        if (appError.status && appError.status < 500) {
+          throw error;
+        }
+
         const duration = Date.now() - startTime;
         console.debug(`[DatabaseManager] [${new Date().toISOString()}] Attempt ${attempt} for ${operationName} failed after ${duration}ms. Retrying...`);
         

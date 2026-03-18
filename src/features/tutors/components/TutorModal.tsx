@@ -18,7 +18,7 @@ import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { useToast } from "../../../context/toast";
-import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, cleanPhone, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, formatPhoneDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS } from "../../../utils/inputFormat";
 import { getTutorByCi } from "../services/tutorsService";
 
 /**
@@ -73,10 +73,10 @@ export default function TutorModal({
   // Handle identification number input change with formatting
   const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
-    const cleaned = cleanCedula(input);
-    const formatted = formatCedulaDisplay(cleaned);
+    const digitsOnly = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
+    const formatted = formatCedulaDisplay(digitsOnly, false);
     setDisplayIdentificationNumber(formatted);
-    setValue("identificationNumber", cleaned, { shouldValidate: true, shouldDirty: true });
+    setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
   };
 
   // Handle phone number input change with formatting
@@ -266,7 +266,7 @@ export default function TutorModal({
     identificationPrefix: z.string().min(1, "Seleccione el tipo"),
     identificationNumber: z.string()
       .min(6, "La cédula debe tener al menos 6 dígitos")
-      .max(8, "La cédula no puede exceder los 8 dígitos")
+      .max(CEDULA_MAX_DIGITS, `La cédula no puede exceder los ${CEDULA_MAX_DIGITS} dígitos`)
       .regex(/^\d+$/, "Solo se admiten números"),
     firstName: z.string()
       .min(1, "El primer nombre es obligatorio")
@@ -415,7 +415,7 @@ useEffect(() => {
           titulo: editingTutor.titulo || "",
           carreras: editingTutor.carreras || [],
         });
-        setDisplayIdentificationNumber(formatCedulaDisplay(editingTutor.identificationPrefix + editingTutor.identificationNumber));
+        setDisplayIdentificationNumber(formatCedulaDisplay(editingTutor.identificationNumber, false));
         setDisplayPhoneNumber(formatPhoneDisplay(editingTutor.phone));
       } else {
         reset({
@@ -545,12 +545,12 @@ useEffect(() => {
                     className="tracking-widest"
                     onBlur={async (e) => {
                       if (!existingTutor && !editingTutor) {
-                        const value = e.target.value;
-                        const cleaned = cleanCedula(value);
-                        if (cleaned.length >= 6) {
+                        const val = e.target.value;
+                        const digitsOnly = val.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
+                        if (digitsOnly.length >= 6) {
                           setIsCheckingCi(true);
                           const prefix = watch("identificationPrefix") || 'V';
-                          const fullCi = `${prefix}-${cleaned}`;
+                          const fullCi = `${prefix}-${digitsOnly}`;
                           try {
                             const existingData = await getTutorByCi(fullCi);
                             if (existingData) {
@@ -588,11 +588,8 @@ useEffect(() => {
                               setValue("titulo", existingData.titulo || "");
                               setValue("carreras", existingData.carreras || []);
 
-                              addToast({
-                                variant: "warning",
-                                title: "Registro Existente",
-                                message: "El tutor ya existe. Puede ver sus datos o editarlo."
-                              });
+                              // Toast removido por solicitud del usuario
+                              // Las pistas visuales son suficientes
                             }
                           } catch (err) {
                             console.error("Error checking CI:", err);
@@ -606,11 +603,6 @@ useEffect(() => {
                   />
                 </div>
               </div>
-              {(errors.identificationPrefix || errors.identificationNumber) && (
-                <p className="mt-1 text-xs text-red-500">
-                  {errors.identificationPrefix?.message || errors.identificationNumber?.message}
-                </p>
-              )}
             </div>
 
             {/* Primer Nombre */}

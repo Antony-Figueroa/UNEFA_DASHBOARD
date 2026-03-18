@@ -115,7 +115,8 @@ export default function InstitutionsPage() {
     careers.filter(c => c.status).map(c => ({ 
       value: String(c.careerId), 
       text: c.careerName,
-      internshipTypeIds: c.internshipTypeIds || []
+      internshipTypeIds: c.internshipTypeIds || [],
+      internshipPriorities: c.internshipPriorities || []
     })),
   [careers]);
 

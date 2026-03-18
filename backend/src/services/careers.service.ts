@@ -9,7 +9,9 @@ const CACHE_TTL = 3600000;
 const CAREER_COLUMNS = 'CAREER_ID, CAREER_NAME, CAREER_CODE, MINIMUM_GRADE, STATUS, CAREER_ABBREVIATION, CAREER_TYPE';
 
 const mapRecord = (career: Record<string, unknown>): Career => {
-  const internshipTypeIds = (career[RELATION_TABLE] as { INTERNSHIP_TYPE_ID: string }[])?.map(r => r.INTERNSHIP_TYPE_ID) || [];
+  const relationData = career[RELATION_TABLE] as { INTERNSHIP_TYPE_ID: string; t_internship_type: { PRIORITY: number } }[] | undefined;
+  const internshipTypeIds = relationData?.map(r => r.INTERNSHIP_TYPE_ID) || [];
+  const internshipPriorities = relationData?.map(r => r.t_internship_type?.PRIORITY).filter((p): p is number => p !== null) || [];
   const careerData = { ...career } as CareerDBRecord;
   delete careerData[RELATION_TABLE];
   const c = careerData;
@@ -24,6 +26,7 @@ const mapRecord = (career: Record<string, unknown>): Career => {
       careerType: (c.CAREER_TYPE as string) ?? undefined,
       status: typeof c.STATUS === 'number' ? c.STATUS === 1 : undefined,
       internshipTypeIds: internshipTypeIds || [],
+      internshipPriorities: internshipPriorities || [],
       // Uppercase keys for backward compatibility (frontend legacy)
       CAREER_ID: c.CAREER_ID,
       CAREER_NAME: c.CAREER_NAME,
@@ -52,13 +55,14 @@ export const getCareers = async () => {
   if (cached) return cached;
 
   const transformed = await dbManager.withRetry(async (supabase) => {
-    // 1. Obtener carreras básicas
+    // 1. Obtener carreras básicas con la prioridad de los tipos de práctica
     const { data: careers, error } = await supabase
       .from(TABLE_NAME)
       .select(`
         ${CAREER_COLUMNS},
         ${RELATION_TABLE} (
-          INTERNSHIP_TYPE_ID
+          INTERNSHIP_TYPE_ID,
+          t_internship_type (PRIORITY)
         )
       `)
       .order('CAREER_NAME', { ascending: true });

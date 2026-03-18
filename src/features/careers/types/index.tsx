@@ -24,6 +24,8 @@ export interface Career {
   careerType: 'CORTA' | 'LARGA';
   /** Lista de identificadores de tipos de pasantía permitidos */
   internshipTypeIds?: string[];
+  /** Lista de prioridades de tipos de pasantía (0 = Única, 1 = Hospitalaria, 2 = Comunitaria) */
+  internshipPriorities?: number[];
   /** Fecha en la que se registró la carrera en el sistema */
   creationDate: Date;
   /** Estado de la carrera (true/1: Activo, false/0: Inactivo) */

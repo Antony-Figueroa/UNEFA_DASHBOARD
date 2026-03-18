@@ -490,7 +490,9 @@ export const getTutorByCi = async (req: Request, res: Response) => {
     });
 
     if (!data) {
-      return res.status(404).json({ message: 'Tutor no encontrado', data: null });
+      // Retornamos 200 con data: null para que el frontend maneje la ausencia
+      // sin disparar errores globales de interceptores.
+      return res.status(200).json({ data: null, message: 'Tutor no encontrado' });
     }
 
     res.json({ data: mapDBToFrontend(data) });

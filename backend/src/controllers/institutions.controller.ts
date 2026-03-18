@@ -424,3 +424,87 @@ export const toggleInstitutionStatus = async (req: AuthRequest, res: Response) =
     handleDbError(res, error);
   }
 };
+
+const INSTITUTION_CAREER_TABLE = 't_institution_career';
+
+export const getInstitutionCareers = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const data = await dbManager.withRetry(async (supabase) => {
+      const { data: institutionCareers, error } = await supabase
+        .from(INSTITUTION_CAREER_TABLE)
+        .select('CAREER_ID')
+        .eq('INSTITUTION_ID', parseInt(id));
+
+      if (error) throw error;
+
+      if (!institutionCareers || institutionCareers.length === 0) {
+        return [];
+      }
+
+      const careerIds = institutionCareers.map(ic => ic.CAREER_ID);
+      
+      const { data: careers, error: careersError } = await supabase
+        .from('t_career')
+        .select('CAREER_ID, CAREER_NAME')
+        .in('CAREER_ID', careerIds);
+
+      if (careersError) throw careersError;
+
+      return (careers || []).map(c => ({
+        careerId: String(c.CAREER_ID),
+        name: c.CAREER_NAME
+      }));
+    }, 'getInstitutionCareers');
+
+    res.json(data);
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+export const updateInstitutionCareers = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { careers } = req.body;
+
+    if (!ArrayOfCareers(careers)) {
+      return res.status(400).json({ message: 'El formato de carreras es inválido. Se esperaba un array de IDs de carreras.' });
+    }
+
+    const data = await dbManager.withRetry(async (supabase) => {
+      const { error: deleteError } = await supabase
+        .from(INSTITUTION_CAREER_TABLE)
+        .delete()
+        .eq('INSTITUTION_ID', parseInt(id));
+
+      if (deleteError) throw deleteError;
+
+      if (careers && careers.length > 0) {
+        const institutionCareers = careers.map((careerId: number) => ({
+          INSTITUTION_ID: parseInt(id),
+          CAREER_ID: careerId
+        }));
+
+        const { error: insertError } = await supabase
+          .from(INSTITUTION_CAREER_TABLE)
+          .insert(institutionCareers);
+
+        if (insertError) throw insertError;
+      }
+
+      return { success: true };
+    }, 'updateInstitutionCareers');
+
+    cacheManager.deleteByPrefix(CACHE_PREFIX);
+
+    res.json(data);
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+function ArrayOfCareers(careers: unknown): boolean {
+  return Array.isArray(careers) && careers.every(c => typeof c === 'number' || typeof c === 'string');
+}

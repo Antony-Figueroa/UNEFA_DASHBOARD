@@ -1,0 +1,1096 @@
+// ================================================================================
+// UNEFA Dashboard - Prisma Schema para SQLite
+// Basado en la estructura de Supabase (PostgreSQL)
+// ================================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ================================================================================
+// MODELOS DE LA BASE DE DATOS (50 TABLAS)
+// ================================================================================
+
+// ================================================================================
+// TABLA: t_user (Usuarios del sistema)
+// ================================================================================
+model TUser {
+  USER_ID             Int       @id @default(autoincrement())
+  USER                String
+  USER_CI             String
+  NAME                String
+  SECOND_NAME         String?
+  SURNAME             String
+  SECOND_SURNAME       String?
+  EMAIL               String
+  PHONE_NUMBER         String?
+  CREATION_DATE       DateTime
+  LOGIN               Int
+  TERMS_CONDITIONS     String
+  STATUS_SESSION       Int
+  STATUS              Int       @default(1)
+  FAILED_ATTEMPTS     Int       @default(0)
+  LOCK_DATE           DateTime?
+  FORCE_PASSWORD_CHANGE Boolean  @default(false)
+
+  // Relaciones
+  authLogs            TAuthLog[]
+  sessions            TSession[]
+  sessionAttempts     TSessionAttempt[]
+  sessionHistories    TSessionHistory[]
+  notifications       TNotification[]
+  recoveryTokens      TRecoveryToken[]
+  passwordHistories   TPasswordHistory[]
+  userKeys            TUserKey[]
+  userQuestions       TUserQuestion[]
+  userRoles           TUserRole[]
+  userTheme           TUserTheme?
+  students            TStudent[]
+  tutors              TTutor[]
+  institutionManagers TInstitutionManager[]
+  backups             TBackup[]
+  chatSessions        TChatSession[]
+  evaluations         TEvaluation[] @relation("EvaluatorUser")
+  registeredEvaluations TEvaluation[] @relation("RegisteredByUser")
+
+  @@map("t_user")
+}
+
+// ================================================================================
+// TABLA: t_students (Estudiantes)
+// ================================================================================
+model TStudent {
+  STUDENTS_ID         Int       @id @default(autoincrement())
+  STUDENTS_CI         String
+  NAME                String
+  SECOND_NAME         String?
+  SURNAME             String
+  SECOND_SURNAME       String?
+  GENDER              String
+  BIRTHDATE           DateTime
+  CONTACT_PHONE       String
+  EMAIL               String
+  ADDRESS             String
+  MARITAL_STATUS      String
+  SEMESTER            String
+  SECTION             String
+  REGIME              String
+  STUDENT_TYPE        String
+  MILITARY_RANK       String?
+  EMPLOYMENT          String
+  STATUS              Int       @default(1)
+  REGISTRATION_DATE   DateTime?
+  CAREER_ID           Int
+  USER_ID             Int?
+
+  // Relaciones
+  career              TCareer    @relation(fields: [CAREER_ID], references: [CAREER_ID])
+  user                TUser?    @relation(fields: [USER_ID], references: [USER_ID])
+  professionalPractices TProfessionalPractice[]
+  activityLogs        TActivityLog[]
+  studentDocuments    TStudentDocument[]
+  studentRequests     TStudentRequest[]
+
+  @@map("t_students")
+}
+
+// ================================================================================
+// TABLA: t_career (Carreras)
+// ================================================================================
+model TCareer {
+  CAREER_ID           Int       @id @default(autoincrement())
+  CAREER_NAME         String
+  CAREER_CODE         String
+  MINIMUM_GRADE       Float
+  CAREER_ABBREVIATION String
+  CREATION_DATE       DateTime
+  MODIF_USER_ID       Int
+  MODIF_USER_DATE     DateTime
+  ELIM_USER_ID        Int
+  ELIM_USER_DATE      DateTime
+  REST_USER_ID        Int
+  REST_USER_DATE      DateTime
+  STATUS              Int       @default(1)
+  CAREER_TYPE         String    @default("LARGA")
+
+  // Relaciones
+  students            TStudent[]
+  tutors              TTutorCareer[]
+  institutionCareers  TInstitutionCareer[]
+  careerInternshipTypes TCareerInternshipType[]
+
+  @@map("t_career")
+}
+
+// ================================================================================
+// TABLA: t_tutors (Tutores)
+// ================================================================================
+model TTutor {
+  TUTOR_ID            Int       @id @default(autoincrement())
+  TUTOR_CI            String
+  NAME                String
+  SECOND_NAME         String?
+  SURNAME             String
+  SECOND_SURNAME       String?
+  CONTACT_PHONE       String
+  GENDER              String
+  EMAIL               String
+  PROFESSION          String
+  CONDITION           String
+  DEDICATION          String
+  CATEGORY            String
+  CREATION_DATE       DateTime
+  STATUS              Int       @default(1)
+  USER_ID             Int?
+
+  // Relaciones
+  user                TUser?    @relation(fields: [USER_ID], references: [USER_ID])
+  tutorCareers        TTutorCareer[]
+  practiceVisits      TPracticeVisit[]
+  professionalPracticeTutors TProfessionalPracticeTutor[]
+
+  @@map("t_tutors")
+}
+
+// ================================================================================
+// TABLA: t_tutor_career (Relación Tutor-Carrera)
+// ================================================================================
+model TTutorCareer {
+  TUTOR_CAREER_ID     Int       @id @default(autoincrement())
+  created_at          DateTime  @default(now())
+  TUTOR_ID            Int
+  CAREER_ID           Int
+
+  // Relaciones
+  tutor               TTutor    @relation(fields: [TUTOR_ID], references: [TUTOR_ID])
+  career             TCareer   @relation(fields: [CAREER_ID], references: [CAREER_ID])
+
+  @@map("t_tutor_career")
+}
+
+// ================================================================================
+// TABLA: t_institution (Instituciones)
+// ================================================================================
+model TInstitution {
+  INSTITUTION_ID      Int       @id @default(autoincrement())
+  INSTITUTION_NAME    String
+  INSTITUTION_ADDRESS String
+  INSTITUTION_CONTACT String
+  PRACTICE_TYPE       String
+  REGION              String
+  NUCLEUS            String
+  EXTENSION           String
+  CREATION_DATE       DateTime
+  INSTITUTION_TYPE    String
+  STATUS             Int       @default(1)
+  RIF                String    @unique
+
+  // Relaciones
+  institutionManagers TInstitutionManager[]
+  institutionCareers  TInstitutionCareer[]
+  institutionInternshipTypes TInstitutionInternshipType[]
+  professionalPractices TProfessionalPractice[]
+
+  @@map("t_institution")
+}
+
+// ================================================================================
+// TABLA: t_institution_manager (Responsables de institución)
+// ================================================================================
+model TInstitutionManager {
+  MANAGER_ID          Int       @id @default(autoincrement())
+  MANAGER_CI          String
+  NAME                String
+  SECOND_NAME         String?
+  SURNAME             String
+  SECOND_SURNAME      String?
+  CONTACT_PHONE       String
+  EMAIL               String
+  CREATION_DATE       DateTime
+  STATUS              Int       @default(1)
+  INSTITUTION_ID      Int
+  cargo               String?
+
+  // Relaciones
+  institution         TInstitution @relation(fields: [INSTITUTION_ID], references: [INSTITUTION_ID])
+  professionalPractices TProfessionalPractice[]
+
+  @@map("t_institution_manager")
+}
+
+// ================================================================================
+// TABLA: t_institution_career (Relación Institución-Carrera)
+// ================================================================================
+model TInstitutionCareer {
+  INSTITUTION_CAREER_ID Int       @id @default(autoincrement())
+  created_at           DateTime  @default(now())
+  INSTITUTION_ID       Int
+  CAREER_ID           Int
+
+  // Relaciones
+  institution          TInstitution @relation(fields: [INSTITUTION_ID], references: [INSTITUTION_ID])
+  career              TCareer    @relation(fields: [CAREER_ID], references: [CAREER_ID])
+
+  @@map("t_institution_career")
+}
+
+// ================================================================================
+// TABLA: t_institution_internship_type (Relación Institución-Tipo de práctica)
+// ================================================================================
+model TInstitutionInternshipType {
+  INSTITUTION_INTERNSHIP_TYPE_ID Int       @id @default(autoincrement())
+  created_at                    DateTime  @default(now())
+  INSTITUTION_ID                Int
+  INTERNSHIP_TYPE_ID           Int
+
+  // Relaciones
+  institution        TInstitution   @relation(fields: [INSTITUTION_ID], references: [INSTITUTION_ID])
+  internshipType     TInternshipType @relation(fields: [INTERNSHIP_TYPE_ID], references: [INTERNSHIP_TYPE_ID])
+
+  @@map("t_institution_internship_type")
+}
+
+// ================================================================================
+// TABLA: t_internship_type (Tipos de prácticas)
+// ================================================================================
+model TInternshipType {
+  INTERNSHIP_TYPE_ID  Int       @id @default(autoincrement())
+  NAME                String
+  PRIORITY            Int       @default(1)
+  CREATION_DATE       DateTime
+  STATUS              Int       @default(1)
+
+  // Relaciones
+  careerInternshipTypes TCareerInternshipType[]
+  institutionInternshipTypes TInstitutionInternshipType[]
+  professionalPractices TProfessionalPractice[]
+
+  @@map("t_internship_type")
+}
+
+// ================================================================================
+// TABLA: t_career_internship_type (Relación Carrera-Tipo de práctica)
+// ================================================================================
+model TCareerInternshipType {
+  ID_CAREER_INTERNSHIP_TYPE_ID Int       @id @default(autoincrement())
+  CAREER_ID            Int
+  INTERNSHIP_TYPE_ID   Int
+
+  // Relaciones
+  career            TCareer         @relation(fields: [CAREER_ID], references: [CAREER_ID])
+  internshipType    TInternshipType @relation(fields: [INTERNSHIP_TYPE_ID], references: [INTERNSHIP_TYPE_ID])
+
+  @@map("t_career_internship_type")
+}
+
+// ================================================================================
+// TABLA: t_internships_period (Períodos de prácticas)
+// ================================================================================
+model TInternshipsPeriod {
+  PERIOD_ID            Int       @id @default(autoincrement())
+  START_DATE           DateTime
+  END_DATE             DateTime
+  CREATION_DATE       DateTime
+  DESCRIPTION         String
+  PERIOD_STATUS       String
+  STATUS              Int       @default(1)
+  T_INTERNSHIPS_CODE  String
+
+  // Relaciones
+  professionalPractices TProfessionalPractice[]
+
+  @@map("t_internships_period")
+}
+
+// ================================================================================
+// TABLA: t_professional_practices (Prácticas profesionales)
+// ================================================================================
+model TProfessionalPractice {
+  PROFESSIONAL_PRACTICE_ID Int       @id @default(autoincrement())
+  START_DATE              DateTime
+  END_DATE                DateTime
+  REPORT_TITLE           String
+  REGISTRATION_DATE      DateTime
+  CREATION_DATE          DateTime
+  GRADE                  Float
+  TRANSFER                Int       @default(0)
+  TOUR                   String
+  PERIOD_ID              Int
+  INSTITUTION_ID         Int
+  STUDENTS_ID            Int
+  STATUS                 Int       @default(1)
+  MANAGER_ID             Int
+  OBSERVATION            String
+  ENROLLMENT            String
+  INTERNSHIP_STATUS     Int       @default(1)
+  INTERNSHIP_TYPE_ID    Int
+  PRACTICES_STATUS      Int       @default(1)
+  EVALUATION_STATUS     String    @default("pending")
+
+  // Relaciones
+  period               TInternshipsPeriod     @relation(fields: [PERIOD_ID], references: [PERIOD_ID])
+  institution           TInstitution          @relation(fields: [INSTITUTION_ID], references: [INSTITUTION_ID])
+  student              TStudent             @relation(fields: [STUDENTS_ID], references: [STUDENTS_ID])
+  manager              TInstitutionManager   @relation(fields: [MANAGER_ID], references: [MANAGER_ID])
+  internshipType       TInternshipType     @relation(fields: [INTERNSHIP_TYPE_ID], references: [INTERNSHIP_TYPE_ID])
+
+  // Relaciones adicionales
+  activityLogs         TActivityLog[]
+  practiceVisits       TPracticeVisit[]
+  evaluations         TEvaluation[]
+  professionalPracticeTutors TProfessionalPracticeTutor[]
+
+  @@map("t_professional_practices")
+}
+
+// ================================================================================
+// TABLA: t_professional_practices_tutor (Relación Práctica-Tutor)
+// ================================================================================
+model TProfessionalPracticeTutor {
+  PROFESSIONAL_PRACTICES_TUTOR_ID Int       @id @default(autoincrement())
+  TUTOR_ID                       Int
+  PROFESSIONAL_PRACTICE_ID       Int
+  TUTOR_TYPE                    String
+
+  // Relaciones
+  tutor                 TTutor              @relation(fields: [TUTOR_ID], references: [TUTOR_ID])
+  professionalPractice TProfessionalPractice @relation(fields: [PROFESSIONAL_PRACTICE_ID], references: [PROFESSIONAL_PRACTICE_ID])
+
+  @@map("t_professional_practices_tutor")
+}
+
+// ================================================================================
+// TABLA: t_activity_logs (Bitácora de actividades)
+// ================================================================================
+model TActivityLog {
+  ACTIVITY_LOG_ID       Int       @id @default(autoincrement())
+  PROFESSIONAL_PRACTICE_ID Int
+  STUDENT_ID           Int
+  ACTIVITY_DATE        DateTime
+  WEEK_NUMBER          Int?
+  HOURS_WORKED         Float     @default(0)
+  ACTIVITY_TYPE        String    @default("DIARIA")
+  ACTIVITY_DESCRIPTION String
+  TASKS_COMPLETED      String?
+  CHALLENGES          String?
+  LEARNINGS           String?
+  SUPERVISOR_COMMENTS String?
+  SUPERVISOR_APPROVED Boolean   @default(false)
+  SUPERVISOR_ID       Int?
+  APPROVED_AT         DateTime?
+  STATUS              Int       @default(1)
+  CREATED_AT          DateTime  @default(now())
+  UPDATED_AT          DateTime  @default(now())
+  CREATED_BY          Int?
+
+  // Relaciones
+  professionalPractice TProfessionalPractice @relation(fields: [PROFESSIONAL_PRACTICE_ID], references: [PROFESSIONAL_PRACTICE_ID])
+  student              TStudent       @relation(fields: [STUDENT_ID], references: [STUDENTS_ID])
+
+  @@map("t_activity_logs")
+}
+
+// ================================================================================
+// TABLA: t_practice_visits (Visitas de seguimiento)
+// ================================================================================
+model TPracticeVisit {
+  VISIT_ID              Int       @id @default(autoincrement())
+  PROFESSIONAL_PRACTICE_ID Int
+  TUTOR_ID             Int
+  VISIT_DATE           DateTime  @default(now())
+  VISIT_TYPE           String    @default("PRESENCIAL")
+  HOURS_WORKED         Float     @default(0)
+  ACTIVITIES_PERFORMED String?
+  OBSERVATIONS         String?
+  RECOMMENDATIONS     String?
+  STATUS               Int       @default(1)
+  CREATED_AT           DateTime  @default(now())
+  UPDATED_AT           DateTime  @default(now())
+  CREATED_BY           Int?
+  VISIT_CASE           String    @default("SEGUIMIENTO_REGULAR")
+
+  // Relaciones
+  professionalPractice TProfessionalPractice @relation(fields: [PROFESSIONAL_PRACTICE_ID], references: [PROFESSIONAL_PRACTICE_ID])
+  tutor                TTutor          @relation(fields: [TUTOR_ID], references: [TUTOR_ID])
+
+  @@map("t_practice_visits")
+}
+
+// ================================================================================
+// TABLA: t_evaluation (Evaluaciones)
+// ================================================================================
+model TEvaluation {
+  EVALUATION_ID         Int       @id @default(autoincrement())
+  PROFESSIONAL_PRACTICE_ID Int
+  EVALUATOR_TYPE        String
+  EVALUATOR_ID          Int?
+  EVALUATOR_NAME        String
+  EVALUATOR_CI         String?
+  TOTAL_SCORE          Float
+  OBSERVATIONS         String?
+  EVALUATION_DATE      DateTime  @default(now())
+  REGISTERED_BY        Int?
+  STATUS               Int       @default(1)
+
+  // Relaciones
+  professionalPractice  TProfessionalPractice @relation(fields: [PROFESSIONAL_PRACTICE_ID], references: [PROFESSIONAL_PRACTICE_ID])
+  evaluator             TUser?     @relation("EvaluatorUser", fields: [EVALUATOR_ID], references: [USER_ID])
+  registeredBy         TUser?     @relation("RegisteredByUser", fields: [REGISTERED_BY], references: [USER_ID])
+
+  evaluationDetails     TEvaluationDetail[]
+
+  @@map("t_evaluation")
+}
+
+// ================================================================================
+// TABLA: t_evaluation_criteria (Criterios de evaluación)
+// ================================================================================
+model TEvaluationCriteria {
+  CRITERIA_ID        Int       @id @default(autoincrement())
+  ITEM_NUMBER        Int
+  DESCRIPTION       String
+  EVALUATOR_TYPE    String
+  STATUS            Int       @default(1)
+
+  evaluationDetails TEvaluationDetail[]
+
+  @@map("t_evaluation_criteria")
+}
+
+// ================================================================================
+// TABLA: t_evaluation_detail (Detalles de evaluación)
+// ================================================================================
+model TEvaluationDetail {
+  DETAIL_ID         Int       @id @default(autoincrement())
+  EVALUATION_ID     Int
+  CRITERIA_ID       Int?
+  ITEM_NUMBER      Int
+  SCORE            Int
+  STATUS           Int       @default(1)
+
+  // Relaciones
+  evaluation        TEvaluation       @relation(fields: [EVALUATION_ID], references: [EVALUATION_ID])
+  criteria          TEvaluationCriteria? @relation(fields: [CRITERIA_ID], references: [CRITERIA_ID])
+
+  @@map("t_evaluation_detail")
+}
+
+// ================================================================================
+// TABLA: t_list (Listas dinámicas)
+// ================================================================================
+model TList {
+  LIST_ID             Int       @id @default(autoincrement())
+  NAME                String
+  CREATION_DATE       DateTime
+  MODIF_USER_ID       Int
+  MODIF_USER_DATE     DateTime
+  ELIM_USER_ID        Int
+  ELIM_USER_DATE      DateTime
+  REST_USER_ID        Int
+  REST_USER_DATE      DateTime
+  STATUS              Int       @default(1)
+
+  // Relaciones
+  valueLists         TValueList[]
+
+  @@map("t_list")
+}
+
+// ================================================================================
+// TABLA: t_value_list (Valores de listas)
+// ================================================================================
+model TValueList {
+  VALUE_LIST_ID      Int       @id @default(autoincrement())
+  NAME               String
+  ABBREVIATION       String?
+  LIST_ID            Int
+  CREATION_DATE      DateTime
+  MODIF_USER_ID      Int
+  MODIF_USER_DATE    DateTime
+  ELIM_USER_ID       Int
+  ELIM_USER_DATE     DateTime
+  REST_USER_ID       Int
+  REST_USER_DATE     DateTime
+  STATUS             Int       @default(1)
+
+  // Relaciones
+  list               TList     @relation(fields: [LIST_ID], references: [LIST_ID])
+
+  @@map("t_value_list")
+}
+
+// ================================================================================
+// TABLA: t_notifications (Notificaciones)
+// ================================================================================
+model TNotification {
+  NOTIFICATION_ID     Int       @id @default(autoincrement())
+  USER_ID             Int
+  TYPE                String
+  TITLE               String
+  MESSAGE             String
+  READ                Boolean   @default(false)
+  READ_AT             DateTime?
+  DATA                Json?
+  CREATED_AT          DateTime  @default(now())
+
+  // Relaciones
+  user                TUser     @relation(fields: [USER_ID], references: [USER_ID])
+
+  @@map("t_notifications")
+}
+
+// ================================================================================
+// TABLA: t_student_documents (Documentos de estudiantes)
+// ================================================================================
+model TStudentDocument {
+  DOCUMENT_ID         Int       @id @default(autoincrement())
+  STUDENT_ID          Int
+  DOCUMENT_TYPE       String
+  TITLE               String
+  DESCRIPTION         String?
+  FILE_NAME           String
+  FILE_PATH           String
+  FILE_SIZE           Int?
+  FILE_TYPE           String?
+  STATUS              String    @default("pending")
+  REJECTION_REASON    String?
+  UPLOADED_AT        DateTime  @default(now())
+  REVIEWED_AT        DateTime?
+  REVIEWED_BY        Int?
+  CREATION_DATE      DateTime  @default(now())
+  MODIF_USER_ID      Int       @default(0)
+  MODIF_USER_DATE    DateTime  @default(now())
+  STATUS_TABLE       Int       @default(1)
+
+  // Relaciones
+  student             TStudent  @relation(fields: [STUDENT_ID], references: [STUDENTS_ID])
+
+  @@map("t_student_documents")
+}
+
+// ================================================================================
+// TABLA: t_student_requests (Solicitudes de estudiantes)
+// ================================================================================
+model TStudentRequest {
+  REQUEST_ID            Int       @id @default(autoincrement())
+  STUDENT_ID            Int
+  REQUEST_TYPE_ID       Int
+  SUBJECT               String
+  DESCRIPTION          String
+  STATUS               String    @default("pending")
+  RESPONSE             String?
+  PROCESSED_BY         Int?
+  PROCESSED_AT         DateTime?
+  CREATION_DATE        DateTime  @default(now())
+  MODIF_USER_ID        Int       @default(0)
+  MODIF_USER_DATE      DateTime  @default(now())
+  ELIM_USER_ID         Int       @default(0)
+  ELIM_USER_DATE       DateTime  @default(now())
+  REST_USER_ID         Int       @default(0)
+  REST_USER_DATE       DateTime  @default(now())
+  STATUS_TABLE         Int       @default(1)
+  REASSIGNMENT_DATA    Json?
+  IS_REASSIGNMENT     Int       @default(0)
+  PREVIOUS_TUTOR_ID   Int?
+  PREVIOUS_INSTITUTION_ID Int?
+  PREVIOUS_CAREER_ID  Int?
+
+  // Relaciones
+  student              TStudent  @relation(fields: [STUDENT_ID], references: [STUDENTS_ID])
+  requestType         TRequestType @relation(fields: [REQUEST_TYPE_ID], references: [REQUEST_TYPE_ID])
+
+  @@map("t_student_requests")
+}
+
+// ================================================================================
+// TABLA: t_request_types (Tipos de solicitudes)
+// ================================================================================
+model TRequestType {
+  REQUEST_TYPE_ID    Int       @id @default(autoincrement())
+  NAME              String
+  DESCRIPTION       String?
+  IS_ACTIVE         Int       @default(1)
+  CREATION_DATE     DateTime  @default(now())
+  MODIF_USER_ID     Int       @default(0)
+  MODIF_USER_DATE   DateTime  @default(now())
+  ELIM_USER_ID      Int       @default(0)
+  ELIM_USER_DATE    DateTime  @default(now())
+  REST_USER_ID      Int       @default(0)
+  REST_USER_DATE    DateTime  @default(now())
+  STATUS            Int       @default(1)
+  IS_REASSIGNMENT  Int       @default(0)
+  CATEGORY         String    @default("GENERAL")
+
+  // Relaciones
+  studentRequests   TStudentRequest[]
+
+  @@map("t_request_types")
+}
+
+// ================================================================================
+// TABLA: t_auth_log (Log de autenticación)
+// ================================================================================
+model TAuthLog {
+  ID              Int       @id @default(autoincrement())
+  USER_ID         Int?
+  USER_CI         String?
+  ACTION          String
+  IP_ADDRESS      String?
+  USER_AGENT      String?
+  DETAILS         String?
+  CREATED_AT      DateTime  @default(now())
+
+  // Relaciones
+  user            TUser?    @relation(fields: [USER_ID], references: [USER_ID])
+
+  @@map("t_auth_log")
+}
+
+// ================================================================================
+// TABLA: t_session (Sesiones)
+// ================================================================================
+model TSession {
+  SESSION_ID        Int       @id @default(autoincrement())
+  USER_ID           Int
+  LOGIN_TIME        DateTime
+  MODIF_USER_ID    Int
+  MODIF_USER_DATE  DateTime
+  ELIM_USER_ID     Int
+  ELIM_USER_DATE   DateTime
+  REST_USER_ID     Int
+  REST_USER_DATE   DateTime
+  STATUS           Int       @default(1)
+
+  // Relaciones
+  user              TUser     @relation(fields: [USER_ID], references: [USER_ID])
+
+  @@map("t_session")
+}
+
+// ================================================================================
+// TABLA: t_session_attempts (Intentos de sesión)
+// ================================================================================
+model TSessionAttempt {
+  ATTEMPT_ID        Int       @id @default(autoincrement())
+  ATTEMPT_TIME      DateTime
+  USER_ID           Int
+  ACTION            Int
+  MODIF_USER_ID     Int
+  MODIF_USER_DATE   DateTime
+  ELIM_USER_ID      Int
+  ELIM_USER_DATE    DateTime
+  REST_USER_ID      Int
+  REST_USER_DATE    DateTime
+  STATUS           Int       @default(1)
+
+  // Relaciones
+  user              TUser     @relation(fields: [USER_ID], references: [USER_ID])
+
+  @@map("t_session_attempts")
+}
+
+// ================================================================================
+// TABLA: t_session_history (Historial de sesiones)
+// ================================================================================
+model TSessionHistory {
+  SESSION_HISTORY_ID Int       @id @default(autoincrement())
+  SESSION_ID         Int
+  USER_ID            Int
+  LOGIN_TIME         DateTime
+  LOGOUT_TIME        DateTime
+  STATUS             Int       @default(1)
+
+  // Relaciones
+  user              TUser     @relation(fields: [USER_ID], references: [USER_ID])
+
+  @@map("t_session_history")
+}
+
+// ================================================================================
+// TABLA: t_recovery_tokens (Tokens de recuperación)
+// ================================================================================
+model TRecoveryToken {
+  TOKEN_ID           Int       @id @default(autoincrement())
+  USER_ID            Int
+  TOKEN              String
+  EXPIRATION_DATE    DateTime
+  STATUS             Int       @default(1)
+  CREATION_DATE     DateTime  @default(now())
+
+  // Relaciones
+  user              TUser     @relation(fields: [USER_ID], references: [USER_ID])
+
+  @@map("t_recovery_tokens")
+}
+
+// ================================================================================
+// TABLA: t_password_history (Historial de contraseñas)
+// ================================================================================
+model TPasswordHistory {
+  HISTORY_ID         Int       @id @default(autoincrement())
+  USER_ID            Int
+  KEY                String
+  CREATION_DATE      DateTime  @default(now())
+
+  // Relaciones
+  user               TUser     @relation(fields: [USER_ID], references: [USER_ID])
+
+  @@map("t_password_history")
+}
+
+// ================================================================================
+// TABLA: t_user_key (Claves de usuario)
+// ================================================================================
+model TUserKey {
+  USER_KEY_ID        Int       @id @default(autoincrement())
+  USER_ID            Int
+  KEY                String
+  START_DATE         DateTime
+  END_DATE           DateTime
+  MODIF_USER_ID      Int
+  MODIF_USER_DATE    DateTime
+  ELIM_USER_ID       Int
+  ELIM_USER_DATE     DateTime
+  REST_USER_ID       Int
+  REST_USER_DATE     DateTime
+  STATUS             Int       @default(1)
+  IS_TEMPORARY       Boolean   @default(false)
+
+  // Relaciones
+  user               TUser     @relation(fields: [USER_ID], references: [USER_ID])
+
+  @@map("t_user_key")
+}
+
+// ================================================================================
+// TABLA: t_user_questions (Preguntas de seguridad)
+// ================================================================================
+model TUserQuestion {
+  USER_QUESTION_ID   Int       @id @default(autoincrement())
+  USER_ID            Int
+  QUESTION_TYPE      String    @default("PRESET")
+  PRESET_QUESTION_ID Int?
+  CUSTOM_QUESTION    String?
+  ANSWER            String
+  ORDER_NUM         Int       @default(1)
+  CREATED_AT        DateTime  @default(now())
+  UPDATED_AT        DateTime  @default(now())
+  STATUS            Int       @default(1)
+
+  // Relaciones
+  user               TUser     @relation(fields: [USER_ID], references: [USER_ID])
+
+  @@map("t_user_questions")
+}
+
+// ================================================================================
+// TABLA: t_user_roles (Relación Usuario-Rol)
+// ================================================================================
+model TUserRole {
+  ID_USER            Int
+  ID_ROLES           Int
+
+  // Relaciones
+  user               TUser     @relation(fields: [ID_USER], references: [USER_ID])
+  role               TRole     @relation(fields: [ID_ROLES], references: [ID_ROLS])
+
+  @@id([ID_USER, ID_ROLES])
+  @@map("t_user_roles")
+}
+
+// ================================================================================
+// TABLA: t_roles (Roles)
+// ================================================================================
+model TRole {
+  ID_ROLS            Int       @id @default(autoincrement())
+  NAME               String
+  DESCRIPTION       String?
+  MODIF_USER_ID     Int
+  MODIF_USER_DATE   DateTime
+  ELIM_USER_ID      Int
+  ELIM_USER_DATE    DateTime
+  REST_USER_ID      Int
+  REST_USER_DATE    DateTime
+  STATUS            Int       @default(1)
+
+  // Relaciones
+  userRoles          TUserRole[]
+  rolePermissions    TRolePermission[]
+
+  @@map("t_roles")
+}
+
+// ================================================================================
+// TABLA: t_permissions (Permisos)
+// ================================================================================
+model TPermission {
+  PERMISSIONS_ID     Int       @id @default(autoincrement())
+  NAME               String
+  DESCRIPTION       String?
+  MODIF_USER_ID     Int
+  MODIF_USER_DATE   DateTime
+  ELIM_USER_ID      Int
+  ELIM_USER_DATE    DateTime
+  REST_USER_ID      Int
+  REST_USER_DATE    DateTime
+  STATUS            Int       @default(1)
+
+  // Relaciones
+  rolePermissions    TRolePermission[]
+
+  @@map("t_permissions")
+}
+
+// ================================================================================
+// TABLA: t_roles_permissions (Relación Rol-Permiso)
+// ================================================================================
+model TRolePermission {
+  ROLES_ID           Int
+  PERMISSIONS_ID     Int
+
+  // Relaciones
+  role               TRole       @relation(fields: [ROLES_ID], references: [ID_ROLS])
+  permission         TPermission @relation(fields: [PERMISSIONS_ID], references: [PERMISSIONS_ID])
+
+  @@id([ROLES_ID, PERMISSIONS_ID])
+  @@map("t_roles_permissions")
+}
+
+// ================================================================================
+// TABLA: t_user_theme (Tema de usuario)
+// ================================================================================
+model TUserTheme {
+  USER_THEME_ID      Int       @id @default(autoincrement())
+  USER_ID            Int       @unique
+  BRAND_COLOR       String    @default("blue")
+  CREATION_DATE     DateTime  @default(now())
+  MODIF_USER_ID     Int       @default(0)
+  MODIF_USER_DATE   DateTime  @default(now())
+  ELIM_USER_ID      Int       @default(0)
+  ELIM_USER_DATE    DateTime  @default(now())
+  REST_USER_ID      Int       @default(0)
+  REST_USER_DATE    DateTime  @default(now())
+  STATUS            Int       @default(1)
+
+  // Relaciones
+  user              TUser     @relation(fields: [USER_ID], references: [USER_ID])
+
+  @@map("t_user_theme")
+}
+
+// ================================================================================
+// TABLA: t_backups (Respaldos)
+// ================================================================================
+model TBackup {
+  id                 String    @id @default(uuid())
+  name               String
+  description        String?
+  file_name          String
+  size               BigInt?
+  tables             String[] // Array en SQLite
+  created_by         Int?
+  data               Json?
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @default(now())
+
+  // Relaciones
+  creator            TUser?    @relation(fields: [created_by], references: [USER_ID])
+
+  @@map("t_backups")
+}
+
+// ================================================================================
+// TABLA: t_chat_sessions (Sesiones de chat/IA)
+// ================================================================================
+model TChatSession {
+  SESSION_ID         String    @id @default(uuid())
+  USER_ID            Int
+  TITLE              String    @default("Nueva conversación")
+  MESSAGES           Json      @default("[]")
+  CREATED_AT         DateTime  @default(now())
+  UPDATED_AT         DateTime  @default(now())
+  STATUS             Int       @default(1)
+
+  // Relaciones
+  user               TUser     @relation(fields: [USER_ID], references: [USER_ID])
+
+  @@map("t_chat_sessions")
+}
+
+// ================================================================================
+// TABLA: t_landing_config (Configuración del landing page)
+// ================================================================================
+model TLandingConfig {
+  config_id          Int       @id @default(autoincrement())
+  config_key        String
+  config_value      Json?
+  updated_at        DateTime  @default(now())
+  updated_by        String    @default("system")
+
+  @@map("t_landing_config")
+}
+
+// ================================================================================
+// TABLAS ADICIONALES (menos críticas)
+// ================================================================================
+
+// ================================================================================
+// TABLA: t_preset_questions (Preguntas predefinidas)
+// ================================================================================
+model TPresetQuestion {
+  PRESET_QUESTION_ID Int       @id @default(autoincrement())
+  DESCRIPTION        String
+  ANSWER             String
+  MODIF_USER_ID     Int
+  MODIF_USER_DATE   DateTime
+  ELIM_USER_ID      Int
+  ELIM_USER_DATE    DateTime
+  REST_USER_ID      Int
+  REST_USER_DATE    DateTime
+  STATUS            Int       @default(1)
+
+  @@map("t_preset_questions")
+}
+
+// ================================================================================
+// TABLA: t_security_questions (Preguntas de seguridad)
+// ================================================================================
+model TSecurityQuestion {
+  SECURITY_QUESTIONS_ID Int    @id @default(autoincrement())
+  USER_ID               Int
+  PRESET_QUESTION_ID   Int
+  ANSWER               String?
+  CUSTOM_QUESTION      String?
+
+  @@map("t_security_questions")
+}
+
+// ================================================================================
+// TABLA: t_change_log (Log de cambios)
+// ================================================================================
+model TChangeLog {
+  CHANGE_LOG_ID      Int       @id @default(autoincrement())
+  DATE_TIME         DateTime
+  TABLE_ID          Int
+  COLUMN_ID         Int
+  OPERATION_ID      Int
+  USER_ID           Int
+  NEW_VALUE         String
+  OLD_VALUE         String
+  IP_ADDRESS        String
+  FORM_ID           Int
+  PRINT_EMAIL       String
+  STATUS            Int       @default(1)
+
+  @@map("t_change_log")
+}
+
+// ================================================================================
+// TABLA: t_operation (Operaciones)
+// ================================================================================
+model TOperation {
+  OPERATION_ID       Int       @id @default(autoincrement())
+  ACTION              String
+  DESCRIPTION        String?
+  STATUS             Int       @default(1)
+
+  @@map("t_operation")
+}
+
+// ================================================================================
+// TABLA: t_columns (Columnas)
+// ================================================================================
+model TColumn {
+  COLUMN_ID           Int       @id @default(autoincrement())
+  TABLE_ID           Int
+  COLUMN_NAME        String
+  STATUS             Int       @default(1)
+
+  @@map("t_columns")
+}
+
+// ================================================================================
+// TABLA: t_tables (Tablas)
+// ================================================================================
+model TTable {
+  TABLE_ID           Int       @id @default(autoincrement())
+  NAME               String
+  DESCRIPTION        String?
+  PHYSICAL_NAME     String
+  LOG                Int       @default(1)
+  STATUS             Int       @default(1)
+
+  @@map("t_tables")
+}
+
+// ================================================================================
+// TABLA: t_config (Configuración del sistema)
+// ================================================================================
+model TConfig {
+  CONFIG_ID                  Int       @id @default(autoincrement())
+  RECOVERY_EMAIL             Int
+  BLOCKING_DAYS              Int
+  WRONG_KEY_LOCK            Int
+  ATTEMPTS_KEY_BLOCK        Int
+  KEY_EXPIRATION            Int
+  EXPIRATION_DAYS           Int
+  USER_UPPERCASE            Int
+  USER_LOWERCASE           Int
+  USER_NUMBERS             Int
+  USER_SPECIAL_CHARACTERS  Int
+  USER_NUM_UPPERCASE       Int
+  USER_NUM_LOWERCASE      Int
+  USER_NUM_NUMBERS        Int
+  USER_NUM_SPECIAL_CHARACTERS Int
+  KEY_UPPERCASE            Int
+  KEY_LOWERCASE           Int
+  KEY_NUMBERS             Int
+  KEY_SPECIAL_CHARACTERS  Int
+  KEY_NUM_UPPERCASE       Int
+  KEY_NUM_LOWERCASE      Int
+  KEY_NUM_NUMBERS        Int
+  KEY_NUM_SPECIAL_CHARACTERS Int
+  USER_LENGTH             Int
+  KEY_LEGTH               Int
+  SECURITY_QUESTIONS      Int
+  TOTAL_QUESTIONS         Int
+  TOTAL_PRESET_QUESTIONS  Int
+  TOTAL_USER_QUESTIONS    Int
+  TOTAL_ANSWERS          Int
+
+  @@map("t_config")
+}
+
+// ================================================================================
+// TABLA: t_visit (Visitas antiguas - legacy)
+// ================================================================================
+model TVisit {
+  VISIT_ID             Int       @id @default(autoincrement())
+  VISIT_DATE           DateTime
+  NOTE                 String?
+  REQUESTED_ACTIVITY   String
+  CARRIED_ACTIVITY     String
+  STATUS               Int       @default(1)
+  TUTOR_ID             Int
+  PROFESSIONAL_PRACTICE_ID Int
+
+  @@map("t_visit")
+}
+
+// ================================================================================
+// TABLA: t_key_history (Historial de claves)
+// ================================================================================
+model TKeyHistory {
+  KEY_HISTORY_ID      Int       @id @default(autoincrement())
+  USER_KEY_ID         Int
+  USER_ID            Int
+  END_DATE           String
+  STATUS              Int       @default(1)
+
+  @@map("t_key_history")
+}

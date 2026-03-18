@@ -382,7 +382,7 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
       MILITARY_RANK: s.militaryRank || null,
       EMPLOYMENT: s.works === "SI" ? "SI" : "NO",
       STATUS: s.status !== false ? 1 : 0,
-      REGISTRATION_DATE: new Date().toISOString()
+      REGISTRATION_DATE: new Date().toISOString().slice(0, 19).replace('T', ' ')
     };
 
     console.log('[Students] Final DB data to insert:', JSON.stringify(dbData, null, 2));

@@ -32,7 +32,7 @@ import { generateMatricula } from "../../../utils/matricula";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
-import { formatCedulaDisplay, cleanCedula } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, cleanCedula, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
 
 /**
  * Props for the EnrollmentModal component.
@@ -615,7 +615,7 @@ useEffect(() => {
                     hint={errors.identificationNumber?.message || preEnrollmentError || undefined}
                     className={isSearching ? "animate-pulse tracking-widest" : "tracking-widest"}
                     disabled={!!editingEntry || !!initialData}
-                    maxLength={9}
+                    maxLength={CEDULA_MAX_LENGTH}
                   />
                   {isSearching && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">

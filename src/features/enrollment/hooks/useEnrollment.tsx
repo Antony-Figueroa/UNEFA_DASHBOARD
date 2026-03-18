@@ -68,8 +68,10 @@ export const useEnrollment = () => {
         });
       }
     } catch (e) {
-      console.error("[useEnrollment] Error adding enrollment:", e);
       const axiosError = e as any;
+      if (!axiosError.response || axiosError.response.status >= 500) {
+        console.error("[useEnrollment] Error crítico al inscribir:", e);
+      }
       addToast({ 
         variant: "error", 
         title: "Error de Registro", 
@@ -95,8 +97,10 @@ export const useEnrollment = () => {
         });
       }
     } catch (e) {
-      console.error("[useEnrollment] Error editing enrollment:", e);
       const axiosError = e as any;
+      if (!axiosError.response || axiosError.response.status >= 500) {
+        console.error("[useEnrollment] Error crítico al editar inscripción:", e);
+      }
       addToast({ 
         variant: "error", 
         title: "Error de Actualización", 

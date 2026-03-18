@@ -17,6 +17,7 @@ import { getInstitutions } from "../../features/institutions/services/institutio
 import { getEnrollments } from "../../features/enrollment/services/enrollmentService";
 import toast from "react-hot-toast";
 import { DocumentProps } from "@react-pdf/renderer";
+import { generateAnexo4Excel } from "../../utils/unefaExcelReports";
 
 interface ReportMetric {
   label: string;
@@ -220,6 +221,14 @@ export default function ReportsPage() {
 
   const exportTableToExcel = (data: TutorAcademicReportRow[], fileName: string) => {
     const currentReportType = reportType;
+    
+    // Si es el reporte de tutores (Anexo 4), usar el generador especializado
+    if (currentReportType === "tutores-academicos") {
+      generateAnexo4Excel(data, fileName);
+      toast.success('Reporte Anexo 4 generado exitosamente');
+      return;
+    }
+
     const config = currentReportType ? reportConfig[currentReportType] : null;
     if (!config) return;
 

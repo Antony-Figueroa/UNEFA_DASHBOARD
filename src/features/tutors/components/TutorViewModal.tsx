@@ -13,7 +13,10 @@ import { TutorRowData } from "../types";
 import { getCareers } from "../../careers/services/careersService";
 import { Career } from "../../careers/types";
 import { SingleReportModal } from "../../../components/ui/pdf/SingleReportModal";
-import { TutorIndividualPDF } from "../../../components/ui/pdf/templates/individual";
+import { TutorIndividualPDF, TutorCertificatePDF } from "../../../components/ui/pdf/templates/individual";
+import InputField from "../../../components/form/input/InputField";
+import Label from "../../../components/form/Label";
+import FlatpickrDatePicker from "../../../components/form/FlatpickrDatePicker";
 
 /**
  * Props for the TutorViewModal component.
@@ -52,6 +55,22 @@ export default function TutorViewModal({
 }: TutorViewModalProps) {
     const [careers, setCareers] = useState<Career[]>([]);
     const [reportModalOpen, setReportModalOpen] = useState(false);
+    const [constancyModalOpen, setConstancyModalOpen] = useState(false);
+
+    // Estados para campos editables de la constancia
+    const [decanaName, setDecanaName] = useState("MARBELYS DEL VALLE RIVERO");
+    const [decanaTitle, setDecanaTitle] = useState("DECANA");
+    const [academicHours, setAcademicHours] = useState("480");
+    const [period, setPeriod] = useState("2-2022");
+    const [startDate, setStartDate] = useState("2022-09-26");
+    const [endDate, setEndDate] = useState("2023-02-13");
+
+    // Función auxiliar para formatear fecha de YYYY-MM-DD a DD/MM/YYYY para el PDF
+    const formatDateForPDF = (dateStr: string) => {
+        if (!dateStr) return "";
+        const [year, month, day] = dateStr.split("-");
+        return `${day}/${month}/${year}`;
+    };
 
     useEffect(() => {
         if (isOpen) {
@@ -200,7 +219,19 @@ export default function TutorViewModal({
                         </svg>
                     }
                 >
-                    Generar Reporte
+                    Reporte
+                </Button>
+                <Button
+                    variant="outline"
+                    onClick={() => setConstancyModalOpen(true)}
+                    className="flex-1 sm:flex-none"
+                    startIcon={
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                    }
+                >
+                    Constancia
                 </Button>
                 {onEdit && (
                     <AsyncButton onClick={async () => { onEdit(tutor); onClose(); }} className="flex-1 sm:flex-none">
@@ -217,6 +248,99 @@ export default function TutorViewModal({
                 data={tutor}
                 template={(data) => <TutorIndividualPDF data={data} />}
                 fileName={`tutor_${tutor.identificationNumber}`}
+            />
+            <SingleReportModal
+                isOpen={constancyModalOpen}
+                onClose={() => setConstancyModalOpen(false)}
+                title="Constancia de Tutor Académico"
+                subtitle={`${tutor.firstName} ${tutor.lastName}`}
+                data={tutor}
+                template={(data) => (
+                    <TutorCertificatePDF 
+                        data={data} 
+                        decanaName={decanaName}
+                        decanaTitle={decanaTitle}
+                        academicHours={academicHours}
+                        period={period}
+                        startDate={formatDateForPDF(startDate)}
+                        endDate={formatDateForPDF(endDate)}
+                    />
+                )}
+                fileName={`constancia_tutor_${tutor.identificationNumber}`}
+                extraSidebarContent={
+                    <div className="space-y-4">
+                        <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/10 mb-4">
+                            <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-1">Personalización</p>
+                            <p className="text-[11px] text-blue-600/70 leading-relaxed italic">
+                                Ajuste los datos de la autoridad y del periodo antes de generar el documento final.
+                            </p>
+                        </div>
+                        
+                        <div className="space-y-3">
+                            <div>
+                                <Label className="text-[10px]! mb-1!">Nombre de Autoridad (Quien Suscribe)</Label>
+                                <InputField 
+                                    value={decanaName}
+                                    onChange={(e) => setDecanaName(e.target.value)}
+                                    placeholder="Nombre completo"
+                                    className="h-9! text-xs!"
+                                />
+                            </div>
+
+                            <div>
+                                <Label className="text-[10px]! mb-1!">Cargo/Título</Label>
+                                <InputField 
+                                    value={decanaTitle}
+                                    onChange={(e) => setDecanaTitle(e.target.value)}
+                                    placeholder="Ej: DECANA"
+                                    className="h-9! text-xs!"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <Label className="text-[10px]! mb-1!">Horas Académicas</Label>
+                                    <InputField 
+                                        value={academicHours}
+                                        onChange={(e) => setAcademicHours(e.target.value)}
+                                        placeholder="480"
+                                        className="h-9! text-xs!"
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="text-[10px]! mb-1!">Periodo</Label>
+                                    <InputField 
+                                        value={period}
+                                        onChange={(e) => setPeriod(e.target.value)}
+                                        placeholder="2-2022"
+                                        className="h-9! text-xs!"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <Label className="text-[10px]! mb-1!">F. Inicio</Label>
+                                    <FlatpickrDatePicker 
+                                        value={startDate}
+                                        onChange={(date) => setStartDate(date)}
+                                        placeholder="Inicio"
+                                        className="h-9! text-xs!"
+                                    />
+                                </div>
+                                <div>
+                                    <Label className="text-[10px]! mb-1!">F. Fin</Label>
+                                    <FlatpickrDatePicker 
+                                        value={endDate}
+                                        onChange={(date) => setEndDate(date)}
+                                        placeholder="Fin"
+                                        className="h-9! text-xs!"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
             />
         </Modal>
     );

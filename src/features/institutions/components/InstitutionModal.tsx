@@ -53,8 +53,8 @@ interface InstitutionModalProps {
   onEditResponsible?: (data: UpdateInstitutionalResponsiblePayload) => Promise<void>;
   /** Institution options for responsible modal */
   institutionOptions?: { value: string; label: string }[];
-  /** Career options for institution (with internshipTypeIds for filtering) */
-  careerOptions?: { value: string; text: string; internshipTypeIds?: string[]; internshipPriorities?: number[] }[];
+  /** Career options for institution (with internshipTypeId for filtering) */
+  careerOptions?: { value: string; text: string; internshipTypeId?: string[]; internshipPriorities?: number[] }[];
 }
 
 /**
@@ -79,7 +79,7 @@ const baseInstSchema = z.object({
   municipio: z.string().min(1, "Seleccione un municipio"),
   parroquia: z.string().min(1, "Seleccione una parroquia"),
   direccion: z.string().min(1, "La dirección es obligatoria").max(300, "La dirección no puede exceder 300 caracteres"),
-  internshipTypeIds: z.array(z.string()).min(1, "Seleccione al menos un tipo de práctica"),
+  internshipTypeId: z.string().min(1, "Seleccione el tipo de práctica"),
   careerIds: z.array(z.string()).min(1, "Seleccione al menos una carrera"),
 });
 
@@ -251,7 +251,8 @@ export default function InstitutionModal({
       municipio: "",
       parroquia: "",
       direccion: "",
-      internshipTypeIds: [],
+      internshipTypeId: "",
+      careerIds: [],
     },
   });
 
@@ -312,7 +313,7 @@ export default function InstitutionModal({
   const optionsCodigosArea = options.PREFIJO;
   const optionsTipoPractica = options["TIPO DE PRACTICA"];
 
-  // Opciones de tipo de práctica normalizadas para el formulario (MultiSelect)
+  // Opciones de tipo de práctica normalizadas para el formulario (Single Select)
   const PRACTICE_TYPE_OPTIONS = useMemo(() => {
     const baseOptions = (optionsTipoPractica || []);
     
@@ -321,32 +322,32 @@ export default function InstitutionModal({
       
       // Normalizar valores para el formulario - mantener separados
       if (normalizedValue === 'ÚNICA' || normalizedValue === 'UNICA') {
-        return { value: '1', text: 'Ordinaria' };
+        return { value: '1', label: 'Ordinaria' };
       } else if (normalizedValue === 'HOSPITALARIA') {
-        return { value: '2', text: 'Hospitalaria' };
+        return { value: '2', label: 'Hospitalaria' };
       } else if (normalizedValue === 'COMUNITARIA') {
-        return { value: '3', text: 'Comunitaria' };
+        return { value: '3', label: 'Comunitaria' };
       }
-      return { value: opt.value, text: opt.label };
-    }).filter(Boolean) as { value: string; text: string }[];
+      return { value: opt.value, label: opt.label };
+    }).filter(Boolean) as { value: string; label: string }[];
   }, [optionsTipoPractica]);
 
-  // Observar los tipos de práctica seleccionados para filtrar carreras
-  const selectedInternshipTypes = watch("internshipTypeIds");
+  // Observar el tipo de práctica seleccionado para filtrar carreras
+  const selectedInternshipType = watch("internshipTypeId");
 
-  // Opciones de carreras filtradas según los tipos de práctica seleccionados
+  // Opciones de carreras filtradas según el tipo de práctica seleccionado
   const CAREER_OPTIONS = useMemo(() => {
     if (!careerOptions || careerOptions.length === 0) {
       return [];
     }
 
-    // Si no hay tipos de práctica seleccionados, mostrar todas las carreras
-    if (!selectedInternshipTypes || selectedInternshipTypes.length === 0) {
+    // Si no hay tipo de práctica seleccionado, mostrar todas las carreras
+    if (!selectedInternshipType) {
       return careerOptions;
     }
 
-    // Si se selecciona Ordinaria (priority 0), solo mostrar carreras con priority = 0
-    if (selectedInternshipTypes.includes("1")) {
+    // Si se selecciona Ordinaria ("1"), solo mostrar carreras con priority = 0
+    if (selectedInternshipType === "1") {
       return careerOptions.filter(career => {
         const priorities = career.internshipPriorities || [];
         // Solo mostrar carreras que tienen EXACTAMENTE priority 0 (Ordinaria exclusiva)
@@ -354,14 +355,14 @@ export default function InstitutionModal({
       });
     }
 
-    // Si se selecciona Hospitalaria (2) o Comunitaria (3), mostrar carreras con priorities 1 y 2
+    // Si se selecciona Hospitalaria ("2") o Comunitaria ("3"), mostrar carreras con priorities 1 y 2
     // Estas son las carreras combinadas Hospitalaria + Comunitaria
     return careerOptions.filter(career => {
       const priorities = career.internshipPriorities || [];
       // Mostrar carreras que tienen tanto 1 como 2
       return priorities.includes(1) && priorities.includes(2);
     });
-  }, [careerOptions, selectedInternshipTypes]);
+  }, [careerOptions, selectedInternshipType]);
 
   // Funciones para agregar nuevos valores a las listas
   const openAddValueModal = (listName: string, field: keyof InstFormData, title: string) => {
@@ -535,7 +536,7 @@ export default function InstitutionModal({
           municipio: parsedMunicipio?.toUpperCase(),
           parroquia: parsedParroquia?.toUpperCase(),
           direccion: parsedDireccion,
-          internshipTypeIds: editingInst?.internshipTypeIds || [],
+          internshipTypeId: editingInst?.internshipTypeId || "",
           careerIds: editingInst?.careerIds || [],
         });
         setDisplayRifNumber(rifParts[1] || "");
@@ -558,7 +559,7 @@ export default function InstitutionModal({
           municipio: "",
           parroquia: "",
           direccion: "",
-          internshipTypeIds: [],
+          internshipTypeId: "",
           careerIds: [],
         });
         setDisplayRifNumber("");
@@ -582,7 +583,7 @@ export default function InstitutionModal({
       nucleus: data.nucleus.toUpperCase(),
       extension: data.extension.toUpperCase(),
       institutionType: data.institutionType.toUpperCase(),
-      internshipTypeIds: data.internshipTypeIds,
+      internshipTypeId: data.internshipTypeId,
       careerIds: data.careerIds,
       status: editingInst?.status ?? true,
     };
@@ -990,23 +991,23 @@ export default function InstitutionModal({
             )}
           </div>
 
-          {/* Tipos de Práctica que acepta la institución */}
+          {/* Tipo de Práctica que acepta la institución */}
           <div>
             <Controller
-              name="internshipTypeIds"
+              name="internshipTypeId"
               control={control}
               render={({ field }) => (
-                <MultiSelect
-                  label="Tipo de Práctica *"
+                <CustomSelect
+                  id="internshipTypeId"
                   options={PRACTICE_TYPE_OPTIONS}
                   onChange={field.onChange}
-                  value={field.value}
-                  placeholder="Seleccione los tipos"
+                  value={String(field.value ?? "")}
+                  placeholder="Seleccione el tipo"
                 />
               )}
             />
-            {errors.internshipTypeIds && (
-              <p className="mt-1 text-xs text-red-500">{errors.internshipTypeIds.message}</p>
+            {errors.internshipTypeId && (
+              <p className="mt-1 text-xs text-red-500">{errors.internshipTypeId.message}</p>
             )}
           </div>
 

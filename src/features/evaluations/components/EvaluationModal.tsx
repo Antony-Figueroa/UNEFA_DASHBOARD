@@ -150,7 +150,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                 {...register('evaluatorCi')}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white"
                 placeholder="V00.000.000"
-                maxLength={9}
+                maxLength={12}
               />
             </div>
           </div>

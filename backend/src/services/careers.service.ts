@@ -9,9 +9,9 @@ const CACHE_TTL = 3600000;
 const CAREER_COLUMNS = 'CAREER_ID, CAREER_NAME, CAREER_CODE, MINIMUM_GRADE, STATUS, CAREER_ABBREVIATION, CAREER_TYPE';
 
 const mapRecord = (career: Record<string, unknown>): Career => {
-  const relationData = career[RELATION_TABLE] as { INTERNSHIP_TYPE_ID: string; t_internship_type: { PRIORITY: number } }[] | undefined;
-  const internshipTypeIds = relationData?.map(r => r.INTERNSHIP_TYPE_ID) || [];
-  const internshipPriorities = relationData?.map(r => r.t_internship_type?.PRIORITY).filter((p): p is number => p !== null) || [];
+  const relationData = career[RELATION_TABLE] as unknown as { INTERNSHIP_TYPE_ID: number; PRIORITY: number }[] | undefined;
+  const internshipTypeIds = relationData?.map(r => String(r.INTERNSHIP_TYPE_ID)) || [];
+  const internshipPriorities = relationData?.map(r => r.PRIORITY).filter((p): p is number => p !== null && p !== undefined && !isNaN(p)) || [];
   const careerData = { ...career } as CareerDBRecord;
   delete careerData[RELATION_TABLE];
   const c = careerData;
@@ -51,23 +51,80 @@ const mapRecord = (career: Record<string, unknown>): Career => {
 
 export const getCareers = async () => {
   const cacheKey = `${CACHE_PREFIX}list`;
-  const cached = cacheManager.get(cacheKey);
-  if (cached) return cached;
+  // Temporalmente deshabilitar caché para debug
+  // const cached = cacheManager.get(cacheKey);
+  // if (cached) return cached;
+  cacheManager.delete(cacheKey);
 
   const transformed = await dbManager.withRetry(async (supabase) => {
-    // 1. Obtener carreras básicas con la prioridad de los tipos de práctica
+    console.log('[DEBUG CAREERS] Step 1: Getting careers...');
+    
+    // 1. Obtener carreras básicas
     const { data: careers, error } = await supabase
       .from(TABLE_NAME)
-      .select(`
-        ${CAREER_COLUMNS},
-        ${RELATION_TABLE} (
-          INTERNSHIP_TYPE_ID,
-          t_internship_type (PRIORITY)
-        )
-      `)
+      .select(CAREER_COLUMNS)
       .order('CAREER_NAME', { ascending: true });
 
     if (error) throw error;
+    console.log('[DEBUG CAREERS] Step 2: Got careers:', careers?.length);
+
+    // 2. Obtener relaciones carrera-tipo de práctica
+    const { data: careerInternshipRelations, error: relError } = await supabase
+      .from(RELATION_TABLE)
+      .select('CAREER_ID, INTERNSHIP_TYPE_ID');
+
+    if (relError) throw relError;
+    console.log('[DEBUG CAREERS] Step 3: Got relations:', careerInternshipRelations?.length, careerInternshipRelations?.[0]);
+
+    // 3. Obtener tipos de práctica con sus prioridades
+    const { data: internshipTypes, error: typeError } = await supabase
+      .from('t_internship_type')
+      .select('INTERNSHIP_TYPE_ID, PRIORITY');
+
+    if (typeError) throw typeError;
+    console.log('[DEBUG CAREERS] Step 4: Got types:', internshipTypes?.length, internshipTypes);
+
+    // 4. Crear mapa de priorities por career_id y por internship_type_id
+    const careerPrioritiesMap: Record<number, Record<number, number>> = {};
+    const careerTypeIdsMap: Record<number, string[]> = {};
+
+    // Inicializar mapas
+    (careers || []).forEach((c: Record<string, unknown>) => {
+      careerPrioritiesMap[c.CAREER_ID as number] = {};
+      careerTypeIdsMap[c.CAREER_ID as number] = [];
+    });
+
+    // Llenar mapas - crear un mapa de priority por internship_type_id
+    const priorityByTypeId: Record<number, number> = {};
+    (internshipTypes || []).forEach((t: { INTERNSHIP_TYPE_ID: number; PRIORITY: number }) => {
+      priorityByTypeId[t.INTERNSHIP_TYPE_ID] = t.PRIORITY;
+    });
+
+    (careerInternshipRelations || []).forEach((rel: { CAREER_ID: number; INTERNSHIP_TYPE_ID: number }) => {
+      if (careerPrioritiesMap[rel.CAREER_ID]) {
+        careerPrioritiesMap[rel.CAREER_ID][rel.INTERNSHIP_TYPE_ID] = priorityByTypeId[rel.INTERNSHIP_TYPE_ID] ?? 0;
+        careerTypeIdsMap[rel.CAREER_ID].push(String(rel.INTERNSHIP_TYPE_ID));
+      }
+    });
+
+    // 5. Unir con las carreras
+    const result = (careers || []).map((c: Record<string, unknown>) => {
+      const careerId = c.CAREER_ID as number;
+      const relations = (careerTypeIdsMap[careerId] || []).map(typeId => ({
+        INTERNSHIP_TYPE_ID: typeId,
+        PRIORITY: careerPrioritiesMap[careerId]?.[parseInt(typeId)] ?? 0
+      }));
+      
+      console.log('[DEBUG] careerId:', careerId, 'relations:', JSON.stringify(relations));
+      
+      return mapRecord({
+        ...c,
+        [RELATION_TABLE]: relations
+      });
+    });
+
+    console.log('[DEBUG] Sample result:', JSON.stringify(result[0]?.internshipPriorities));
+    return result;
 
     // 2. Verificar uso de forma eficiente (opcional, pero ayuda a la UI)
     // Para simplificar, consultaremos si existen en las tablas relacionadas

@@ -31,6 +31,8 @@ import { usePreEnrollment } from "../../features/pre-enrollment/hooks/usePreEnro
 import { useTutors } from "../../features/tutors/hooks/useTutors";
 import { useInstitutions } from "../../features/institutions/hooks/useInstitutions";
 import { useInstitutionalResponsibles } from "../../features/institutions/hooks/useInstitutionalResponsibles";
+import { useCareers } from "../../features/careers/hooks/useCareers";
+import { useInternshipTypes } from "../../features/internship-types/hooks/useInternshipTypes";
 import { Enrollment, EnrollmentRowData, CreateEnrollmentPayload, UpdateEnrollmentPayload } from "../../features/enrollment/types";
 import { PreEnrollmentRowData } from "../../features/pre-enrollment/types";
 import { formatDateTime } from "../../utils/date";
@@ -136,6 +138,16 @@ export default function EnrollmentPage() {
     const { tutors, addTutor, loadingAction: tutorLoading } = useTutors();
     const { institutions, addInstitution, loadingAction: institutionLoading } = useInstitutions();
     const { addResponsible, loadingAction: responsibleLoading } = useInstitutionalResponsibles();
+    const { careers } = useCareers();
+    const { activeOptions: internshipTypeOptions } = useInternshipTypes();
+
+    const careerOptions = useMemo(() => 
+        careers.filter(c => c.status).map(c => ({ 
+            value: String(c.careerId), 
+            text: c.careerName,
+            internshipPriorities: c.internshipTypeIds || []
+        })),
+    [careers]);
 
     const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
     const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
@@ -554,6 +566,8 @@ export default function EnrollmentPage() {
                         }}
                         isLoading={institutionLoading}
                         existingInstitutions={institutions}
+                        careerOptions={careerOptions}
+                        internshipTypeOptions={internshipTypeOptions}
                     />
 
                     <InstitutionalResponsibleModal

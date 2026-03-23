@@ -54,7 +54,9 @@ interface InstitutionModalProps {
   /** Institution options for responsible modal */
   institutionOptions?: { value: string; label: string }[];
   /** Career options for institution (with priorities for filtering) */
-  careerOptions?: { value: string; text: string; internshipPriorities?: number[] }[];
+  careerOptions?: { value: string; text: string; internshipPriorities?: string[] }[];
+  /** Options for internship types (from t_internship_type table) - debe incluir id para filtrado */
+  internshipTypeOptions?: { value: string; label: string; id?: number }[];
 }
 
 /**
@@ -137,6 +139,7 @@ export default function InstitutionModal({
   onEditResponsible,
   institutionOptions = [],
   careerOptions = [],
+  internshipTypeOptions = [],
 }: InstitutionModalProps) {
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const { fetchMultipleLists } = useLists();
@@ -313,60 +316,75 @@ export default function InstitutionModal({
   const optionsCodigosArea = options.PREFIJO;
   const optionsTipoPractica = options["TIPO DE PRACTICA"];
 
-  // Opciones de tipo de práctica normalizadas para el formulario (Single Select)
+  // Opciones de tipo de práctica - usar prop si está disponible, si no usar lista dinámica
   const PRACTICE_TYPE_OPTIONS = useMemo(() => {
+    // Si se pasan opciones como prop (de t_internship_type), usarlas
+    if (internshipTypeOptions && internshipTypeOptions.length > 0) {
+      return internshipTypeOptions.map(opt => ({
+        // Usar el ID (opt.id) como value para que el filtrado funcione correctamente
+        value: String(opt.id),
+        label: opt.label.toUpperCase()
+      }));
+    }
+    
+    // Fallback: usar lista dinámica (TIPO DE PRACTICA de t_list)
     const baseOptions = (optionsTipoPractica || []);
     
     return baseOptions.map(opt => {
       const normalizedValue = opt.value.toUpperCase();
       
-      // Normalizar valores para el formulario - mantener separados
+      // Normalizar valores para el formulario - mantener separados (en mayúsculas igual que en Carrera)
       if (normalizedValue === 'ÚNICA' || normalizedValue === 'UNICA') {
-        return { value: '1', label: 'Ordinaria' };
+        return { value: '1', label: 'ÚNICA' };
       } else if (normalizedValue === 'HOSPITALARIA') {
-        return { value: '2', label: 'Hospitalaria' };
+        return { value: '2', label: 'HOSPITALARIA' };
       } else if (normalizedValue === 'COMUNITARIA') {
-        return { value: '3', label: 'Comunitaria' };
+        return { value: '3', label: 'COMUNITARIA' };
       }
-      return { value: opt.value, label: opt.label };
+      return { value: opt.value, label: opt.label.toUpperCase() };
     }).filter(Boolean) as { value: string; label: string }[];
-  }, [optionsTipoPractica]);
+  }, [internshipTypeOptions, optionsTipoPractica]);
 
   // Observar el tipo de práctica seleccionado para filtrar carreras
   const selectedInternshipType = watch("internshipTypeId");
 
   // Opciones de carreras filtradas según el tipo de práctica seleccionado
+  // La lógica busca que la carrera TENGA ASOCIADO el tipo de práctica seleccionado
   const CAREER_OPTIONS = useMemo(() => {
     if (!careerOptions || careerOptions.length === 0) {
       return [];
     }
 
-    // Si no hay tipo de práctica seleccionado, no mostrar carreras
     if (!selectedInternshipType) {
       return [];
     }
 
-    // Mapeo de valores del select a prioridades
-    // "1" = Ordinaria -> priority 0
-    // "2" = Hospitalaria -> priority 1
-    // "3" = Comunitaria -> priority 2
-    const priorityMap: Record<string, number> = {
-      "1": 0, // Ordinaria
-      "2": 1, // Hospitalaria
-      "3": 2  // Comunitaria
-    };
-    
-    const selectedPriority = priorityMap[selectedInternshipType];
-    if (selectedPriority === undefined) {
-      return [];
-    }
-
-    // Filtrar carreras que incluyan la prioridad seleccionada
-    return careerOptions.filter(career => {
-      const priorities = career.internshipPriorities || [];
-      return priorities.includes(selectedPriority);
+    // El selectedInternshipType es el ID del tipo de práctica (1, 2, o 3)
+    // Filtrar carreras que tienen este tipo de práctica en su campo internshipTypeIds
+    const filtered = careerOptions.filter(career => {
+      const typeIds = career.internshipPriorities || [];
+      // Comparar usando string - ambos deben ser string para el includes
+      return typeIds.includes(String(selectedInternshipType));
     });
+    
+    return filtered;
   }, [careerOptions, selectedInternshipType]);
+
+  // Effect para limpiar careerIds seleccionadas cuando el tipo de práctica cambie
+  // y las carreras seleccionadas ya no sean válidas para el nuevo tipo
+  useEffect(() => {
+    if (selectedInternshipType && CAREER_OPTIONS.length > 0) {
+      const currentCareerIds = watch("careerIds") || [];
+      // Filtrar solo las carreras que siguen siendo válidas para el tipo seleccionado
+      const validCareerIds = currentCareerIds.filter(id => 
+        CAREER_OPTIONS.some(c => c.value === id)
+      );
+      // Si hay carreras que ya no son válidas, limpiarlas
+      if (validCareerIds.length !== currentCareerIds.length) {
+        setValue("careerIds", validCareerIds, { shouldValidate: true, shouldDirty: true });
+      }
+    }
+  }, [selectedInternshipType, CAREER_OPTIONS, setValue, watch]);
 
   // Funciones para agregar nuevos valores a las listas
   const openAddValueModal = (listName: string, field: keyof InstFormData, title: string) => {

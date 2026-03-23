@@ -28,6 +28,7 @@ import { InstitutionalResponsiblePDF } from "../../components/ui/pdf/templates/I
 import { useInstitutions } from "../../features/institutions/hooks/useInstitutions";
 import { useInstitutionalResponsibles } from "../../features/institutions/hooks/useInstitutionalResponsibles";
 import { useCareers } from "../../features/careers/hooks/useCareers";
+import { useInternshipTypes } from "../../features/internship-types/hooks/useInternshipTypes";
 import { 
   Institution, 
   InstitutionRowData, 
@@ -111,11 +112,13 @@ export default function InstitutionsPage() {
 
   const { careers } = useCareers();
 
+  const { activeOptions: internshipTypeOptions } = useInternshipTypes();
+
   const careerOptions = useMemo(() => 
     careers.filter(c => c.status).map(c => ({ 
       value: String(c.careerId), 
       text: c.careerName,
-      internshipPriorities: c.internshipPriorities || []
+      internshipPriorities: c.internshipTypeIds || []
     })),
   [careers]);
 
@@ -474,6 +477,7 @@ export default function InstitutionsPage() {
         onEditResponsible={editResponsible}
         institutionOptions={institutionOptions}
         careerOptions={careerOptions}
+        internshipTypeOptions={internshipTypeOptions}
       />
 
       <InstitutionalResponsibleModal

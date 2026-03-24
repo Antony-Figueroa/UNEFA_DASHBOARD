@@ -115,11 +115,11 @@ export default function PreEnrollmentModal({
   const [displayIdentificationNumber, setDisplayIdentificationNumber] = useState("");
   const [_displayPhone, setDisplayPhone] = useState("");
 
-  // Handle identification number input change with formatting
+  // Handle identification number input change with formatting (sin prefijo porque ya está en el select)
   const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
     const cleaned = cleanCedula(input);
-    const formatted = formatCedulaDisplay(cleaned);
+    const formatted = formatCedulaDisplay(cleaned, false); // Sin prefijo
     setDisplayIdentificationNumber(formatted);
     setValue("identificationNumber", cleaned, { shouldValidate: true, shouldDirty: true });
   };
@@ -165,7 +165,6 @@ export default function PreEnrollmentModal({
   const watchedCareerName = useWatch({ control, name: "careerName" });
   const watchedPracticeType = useWatch({ control, name: "practiceType" });
   const watchedEnrollmentCode = useWatch({ control, name: "enrollmentCode" });
-  const watchedPhone = useWatch({ control, name: "phone" });
 
   /**
    * Efecto para cargar la lista de estudiantes disponibles al abrir el modal.
@@ -280,25 +279,6 @@ export default function PreEnrollmentModal({
       loadOptions();
     }
   }, [isOpen, fetchMultipleLists]);
-
-  /**
-   * Efecto para escuchar eventos de estudiante agregado desde el modal de estudiante.
-   */
-  useEffect(() => {
-    const handleSetStudentId = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (detail) {
-        setValue("identificationPrefix", detail.identificationPrefix || "V", { shouldValidate: true, shouldDirty: true });
-        setValue("identificationNumber", detail.identificationNumber || "", { shouldValidate: true, shouldDirty: true });
-        setValue("studentName", detail.firstName && detail.lastName ? `${detail.firstName} ${detail.lastName}` : "", { shouldValidate: true, shouldDirty: true });
-        setValue("phone", detail.phone || "", { shouldValidate: true, shouldDirty: true });
-      }
-    };
-    window.addEventListener("preenrollment:setStudentId", handleSetStudentId as EventListener);
-    return () => {
-      window.removeEventListener("preenrollment:setStudentId", handleSetStudentId as EventListener);
-    };
-  }, [setValue]);
 
   /**
    * Limpia los campos relacionados con los datos del estudiante en el formulario.
@@ -421,7 +401,37 @@ if (student) {
     }
   }, [idNumber, idPrefix, lookupStudent, editingEntry, clearStudentFields]);
 
-useEffect(() => {
+  /**
+   * Efecto para escuchar eventos de estudiante agregado desde el modal de estudiante.
+   * Después de setear los datos básicos, busca el estudiante para completar campos automáticos.
+   */
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    
+    const handleSetStudentId = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail) {
+        setValue("identificationPrefix", detail.identificationPrefix || "V", { shouldValidate: true, shouldDirty: true });
+        setValue("identificationNumber", detail.identificationNumber || "", { shouldValidate: true, shouldDirty: true });
+        setDisplayIdentificationNumber(detail.identificationNumber || "");
+        setValue("studentName", detail.firstName && detail.lastName ? `${detail.firstName} ${detail.lastName}` : "", { shouldValidate: true, shouldDirty: true });
+        setValue("phone", detail.phone || "", { shouldValidate: true, shouldDirty: true });
+        setValue("careerName", detail.careerName || "", { shouldValidate: true, shouldDirty: true });
+        
+        // Esperar un momento y luego buscar el estudiante para completar campos automáticos
+        timeoutId = setTimeout(() => {
+          lookupStudent(detail.identificationPrefix || "V", detail.identificationNumber || "");
+        }, 100);
+      }
+    };
+    window.addEventListener("preenrollment:setStudentId", handleSetStudentId as EventListener);
+    return () => {
+      window.removeEventListener("preenrollment:setStudentId", handleSetStudentId as EventListener);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [setValue, lookupStudent]);
+
+  useEffect(() => {
     if (isOpen) {
       if (editingEntry) {
         reset({
@@ -572,7 +582,7 @@ useEffect(() => {
                   <div className="space-y-4">
                     <label className="block text-[10px] font-bold text-text-tertiary uppercase tracking-widest">Documento de Identidad *</label>
                     <div className="flex gap-3">
-                      <div className="w-24 shrink-0">
+                      <div className="w-28 shrink-0">
                         <Controller
                           name="identificationPrefix"
                           control={control}
@@ -630,7 +640,7 @@ useEffect(() => {
                                   }
                                   setValue("identificationNumber", student.identificationNumber);
                                   setValue("identificationPrefix", student.identificationPrefix);
-                                  setDisplayIdentificationNumber(formatCedulaDisplay(student.identificationPrefix + student.identificationNumber));
+                                  setDisplayIdentificationNumber(formatCedulaDisplay(student.identificationNumber, false)); // Sin prefijo
                                   setValue("studentName", `${student.firstName} ${student.lastName}`, { shouldValidate: true, shouldDirty: true });
                                   setValue("phone", student.phone || "", { shouldValidate: true, shouldDirty: true });
                                   setValue("careerName", student.careerName || "", { shouldValidate: true, shouldDirty: true });
@@ -710,8 +720,10 @@ useEffect(() => {
                           <p className="text-sm font-bold text-text-primary">{idPrefix || '-'}-{idNumber || '-------'}</p>
                         </div>
                         <div className="space-y-1 text-right">
-                          <span className="text-[9px] font-bold text-text-tertiary uppercase tracking-widest">Contacto</span>
-                          <p className="text-sm font-bold text-text-primary">{watchedPhone ? formatPhoneDisplay(watchedPhone) : 'No disponible'}</p>
+                          <span className="text-[9px] font-bold text-text-tertiary uppercase tracking-widest">Carrera</span>
+                          <p className="text-sm font-bold text-text-primary truncate" title={watchedCareerName || 'No disponible'}>
+                            {watchedCareerName || 'No disponible'}
+                          </p>
                         </div>
                     </div>
                   </div>

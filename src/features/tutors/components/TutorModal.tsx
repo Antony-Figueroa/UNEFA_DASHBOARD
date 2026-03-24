@@ -531,8 +531,6 @@ useEffect(() => {
                         value={String(field.value)}
                         disabled={isInUse || !!existingTutor}
                         error={!!errors.identificationPrefix}
-                        onAddNew={() => openAddValueModal("Nacionalidad", "identificationPrefix", "Agregar Nacionalidad")}
-                        addNewLabel="Nueva opción"
                       />
                     )}
                   />

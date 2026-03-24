@@ -96,8 +96,8 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
   const menuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Habilitar búsqueda automáticamente si hay más de 5 opciones o si se pasa explícitamente
-  const isSearchable = searchable === true || (searchable === undefined && options.length > 5);
+  // Habilitar búsqueda automáticamente si hay más de 3 opciones o si se pasa explícitamente
+  const isSearchable = searchable === true || (searchable === undefined && options.length > 3);
 
   // Función para normalizar texto (elimina tildes y convierte a minúsculas)
   const normalizeText = (text: string): string => {
@@ -237,7 +237,7 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
     if (!isOpen || disabled) return null;
 
     const maxHeight = getMaxHeight();
-    const showSearch = searchable && options.length > 5;
+    const showSearch = searchable && options.length > 3;
 
     return (
       <ul

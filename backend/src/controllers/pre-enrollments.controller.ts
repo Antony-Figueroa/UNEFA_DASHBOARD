@@ -227,10 +227,12 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
         throw err;
       }
 
-      // 5. Buscar una Institución activa que tenga al menos un Responsable activo (Requisito DB)
-      console.log('[PreEnrollmentsController] Buscando una combinación válida de institución y responsable...');
-      
-      // Intentamos buscar un responsable directamente, lo cual nos da acceso a su INSTITUTION_ID
+      // 5. Preparar institución y responsable (opcional para pre-inscripciones)
+      // Estos campos ahora son nullable, se asignan durante la inscripción正式
+      let finalInstId: number | null = null;
+      let finalManagerId: number | null = null;
+
+      // Intentar buscar una combinación válida si existe
       const { data: managerData, error: managerFetchError } = await supabase
         .from('t_institution_manager')
         .select('MANAGER_ID, INSTITUTION_ID')
@@ -238,39 +240,19 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
         .limit(1)
         .maybeSingle();
 
-      if (managerFetchError) throw managerFetchError;
-      
-      let finalInstId: number;
-      let finalManagerId: number;
-
-      if (managerData) {
+      if (managerFetchError) {
+        console.log('[PreEnrollmentsController] Error buscando responsable (se omite):', managerFetchError.message);
+      } else if (managerData) {
         finalInstId = managerData.INSTITUTION_ID;
         finalManagerId = managerData.MANAGER_ID;
+        console.log('[PreEnrollmentsController] Encontrada institución/responsable (opcional):', finalInstId, finalManagerId);
       } else {
-        // Si no hay responsables, verificamos si al menos hay una institución
-        const { data: instData, error: instFetchError } = await supabase
-          .from('t_institution')
-          .select('INSTITUTION_ID')
-          .eq('STATUS', 1)
-          .limit(1)
-          .maybeSingle();
-
-        if (instFetchError) throw instFetchError;
-        if (!instData) {
-          const err = new Error('No se encontró ninguna institución activa en el sistema. Por favor, registre una institución en el módulo de Instituciones.');
-          (err as any).status = 400;
-          throw err;
-        }
-        
-        // Si llegamos aquí, hay institución pero no hay responsable
-        const err = new Error(`La institución registrada no tiene responsables asociados. Por favor, asigne un responsable a la institución en el módulo de Instituciones.`);
-        (err as any).status = 400;
-        throw err;
+        console.log('[PreEnrollmentsController] No se encontró institución con responsable (opcional - se omite)');
       }
 
       // 6. Insertar en t_professional_practices como PRE-INSCRITO
-      console.log(`[PreEnrollmentsController] Insertando registro para estudiante ID: ${student.STUDENTS_ID} con Inst ID: ${finalInstId} y Manager ID: ${finalManagerId}`);
-      const { data, error } = await supabase
+      console.log(`[PreEnrollmentsController] Insertando pre-inscripción para estudiante ID: ${student.STUDENTS_ID}`);
+      const { data: insertedData, error } = await supabase
         .from(TABLE_NAME)
         .insert([{
           START_DATE: periodData.START_DATE,
@@ -292,11 +274,39 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
           INTERNSHIP_STATUS: 1, 
           INTERNSHIP_TYPE_ID: typeData.INTERNSHIP_TYPE_ID
         }])
-        .select()
+        .select(`
+          *,
+          t_students (
+            STUDENTS_CI,
+            NAME,
+            SURNAME,
+            t_career (CAREER_NAME)
+          ),
+          t_internships_period (DESCRIPTION),
+          t_internship_type (NAME)
+        `)
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Mapear la respuesta al formato del frontend
+      const ciParts = insertedData.t_students?.STUDENTS_CI?.split('-') || ['', ''];
+      const mappedResult = {
+        preEnrollmentId: insertedData.PROFESSIONAL_PRACTICE_ID.toString(),
+        identificationPrefix: ciParts[0] || 'V',
+        identificationNumber: ciParts[1] || '',
+        studentName: `${insertedData.t_students?.NAME || ''} ${insertedData.t_students?.SURNAME || ''}`.trim(),
+        phone: insertedData.t_students?.CONTACT_PHONE || '',
+        careerName: insertedData.t_students?.t_career?.CAREER_NAME || '',
+        period: insertedData.t_internships_period?.DESCRIPTION || '',
+        practiceType: insertedData.t_internship_type?.NAME || '',
+        enrollmentCode: insertedData.ENROLLMENT || '',
+        preEnrollmentDate: insertedData.REGISTRATION_DATE,
+        status: insertedData.STATUS === 1,
+        isInUse: false
+      };
+      
+      return mappedResult;
     });
 
     res.status(201).json(result);

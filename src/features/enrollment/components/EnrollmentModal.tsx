@@ -103,6 +103,8 @@ export default function EnrollmentModal({
   const [isSearching, setIsSearching] = useState(false);
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [institutions, setInstitutions] = useState<Institution[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_careersState, setCareers] = useState<{ careerId: string | number; careerName: string }[]>([]);
   const [practiceOptions, setPracticeOptions] = useState<InternshipTypeOption[]>([]);
   const [isLoadingPeriods, setIsLoadingPeriods] = useState(false);
   const [preEnrollmentError, setPreEnrollmentError] = useState<string | null>(null);
@@ -334,6 +336,29 @@ export default function EnrollmentModal({
       fetchData();
     }
   }, [isOpen, editingEntry, setValue]);
+
+  /**
+   * Efecto para escuchar cuando se agrega una nueva carrera desde el modal de inscripción.
+   * Recarga las carreras para mantener la lista actualizada.
+   */
+  useEffect(() => {
+    const handleCareerAdded = async () => {
+      try {
+        const careerData = await getCareers();
+        setCareers(careerData.filter((c: any) => c.status));
+        // Mostrar notificación de éxito
+        console.log("[EnrollmentModal] Carrera agregada exitosamente");
+      } catch (error) {
+        console.error("[EnrollmentModal] Error al recargar carreras:", error);
+      }
+    };
+
+    window.addEventListener("enrollment:careerAdded", handleCareerAdded);
+
+    return () => {
+      window.removeEventListener("enrollment:careerAdded", handleCareerAdded);
+    };
+  }, []);
 
   const lookupStudent = useCallback(async (prefix: string, number: string) => {
     if (number.length < 5) return;
@@ -706,6 +731,21 @@ useEffect(() => {
                   La carrera se carga automáticamente desde la pre-inscripción.
                 </p>
               )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const evt = new CustomEvent("enrollment:addCareer");
+                  window.dispatchEvent(evt);
+                }}
+                className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Nueva Carrera
+              </Button>
             </div>
 
             {/* Matrícula */}

@@ -6,7 +6,7 @@
  */
 
 import { useMemo, useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -57,8 +57,18 @@ const formatStudentToRow = (s: Student): StudentRowData => ({
 export default function StudentsPage() {
     const [pageLoading, setPageLoading] = useState(true);
     const navigate = useNavigate();
+    const location = useLocation();
     const { fetchMultipleLists } = useLists();
     const [dynamicLists, setDynamicLists] = useState<Record<string, ListValue[]>>({});
+
+    // Event listener for Command Palette - open create modal
+    useEffect(() => {
+        if (location.state?.openCreateModal) {
+            setEditingStudent(null);
+            setIsModalOpen(true);
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, navigate]);
 
     useEffect(() => {
         const loadLists = async () => {

@@ -549,10 +549,22 @@ export default function EnrollmentPage() {
                         onClose={() => setIsTutorModalOpen(false)}
                         onSave={async (payload) => {
                             try {
-                                await addTutor(payload as any);
-                                const evt = new CustomEvent("enrollment:setTutor", { detail: { tutorId: (payload as any).tutorId } });
-                                window.dispatchEvent(evt);
-                                setIsTutorModalOpen(false);
+                                const newTutor = await addTutor(payload as any);
+                                if (newTutor) {
+                                    // Disparar evento para actualizar la lista de tutores en el EnrollmentModal
+                                    const updateEvt = new CustomEvent("enrollment:tutorAdded", { 
+                                        detail: { tutor: newTutor } 
+                                    });
+                                    window.dispatchEvent(updateEvt);
+                                    
+                                    // Seleccionar el nuevo tutor automáticamente
+                                    const selectEvt = new CustomEvent("enrollment:setTutor", { 
+                                        detail: { tutorId: newTutor.tutorId } 
+                                    });
+                                    window.dispatchEvent(selectEvt);
+                                    
+                                    setIsTutorModalOpen(false);
+                                }
                             } catch (e) {
                                 console.error("[EnrollmentPage] Error creating tutor:", e);
                             }

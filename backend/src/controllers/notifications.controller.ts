@@ -15,7 +15,7 @@ export interface Notification {
 
 export const getNotifications = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.userId;
     
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });
@@ -59,7 +59,7 @@ export const getNotifications = async (req: Request, res: Response): Promise<voi
 
 export const markAsRead = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.userId;
     const { id } = req.params;
 
     if (!userId) {
@@ -87,7 +87,7 @@ export const markAsRead = async (req: Request, res: Response): Promise<void> => 
 
 export const markAllAsRead = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.userId;
 
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });
@@ -114,7 +114,7 @@ export const markAllAsRead = async (req: Request, res: Response): Promise<void> 
 
 export const deleteNotification = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.userId;
     const { id } = req.params;
 
     if (!userId) {
@@ -139,7 +139,7 @@ export const deleteNotification = async (req: Request, res: Response): Promise<v
 
 export const getUnreadCount = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.userId;
 
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });

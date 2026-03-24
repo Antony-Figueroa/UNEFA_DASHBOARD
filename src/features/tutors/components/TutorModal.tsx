@@ -461,6 +461,7 @@ useEffect(() => {
         dedication: (data.dedication || "").toUpperCase(),
         category: (data.category || "").toUpperCase(),
         profession: (data.profession || "").toUpperCase(),
+        titulo: data.titulo ? data.titulo.toUpperCase() : "",
         carreras: Array.isArray(data.carreras) ? data.carreras.map((c) => String(c).toUpperCase()) : data.carreras,
       } as CreateTutorPayload;
       setPendingSave(payload);

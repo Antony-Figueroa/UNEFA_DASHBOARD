@@ -17,6 +17,8 @@ const handleDbError = (res: Response, error: unknown) => {
     userMessage = `Error: El campo ${dbError.details?.match(/"([^"]+)"/)?.[1] || 'requerido'} no puede estar vacío`;
   } else if (dbError.code === '23505') {
     userMessage = 'Error: Ya existe un responsable con esta cédula';
+  } else if (dbError.code === '22001') {
+    userMessage = 'Error: La cédula ingresada excede el límite permitido (máximo 8 dígitos). Verifique e intente nuevamente.';
   } else if (dbError.code === 'PGRST205') {
     userMessage = 'Error: La tabla no existe en la base de datos';
   } else if (dbError.code === '42703' || (dbError.message && dbError.message.includes('column "CARGO"'))) {

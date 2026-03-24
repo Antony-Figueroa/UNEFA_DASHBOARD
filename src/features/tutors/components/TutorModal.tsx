@@ -37,6 +37,8 @@ interface TutorModalProps {
   isLoading?: boolean;
   /** List of all tutors for validation purposes */
   tutors?: Tutor[];
+  /** Unique ID for modal stack tracking (optional) */
+  modalId?: string;
 }
 
 /**
@@ -52,6 +54,7 @@ export default function TutorModal({
   editingTutor,
   isLoading = false,
   tutors = [],
+  modalId,
 }: TutorModalProps) {
   const [careers, setCareers] = useState<Career[]>([]);
   const [careersLoading, setCareersLoading] = useState(false);
@@ -483,6 +486,7 @@ useEffect(() => {
         onCloseAttempt={handleCloseAttempt} 
         showCloseButton 
         size="4xl"
+        modalId={modalId}
       >
         <ModalHeader>
           <span className="text-xl font-semibold text-text-primary dark:text-white/90">
@@ -986,6 +990,7 @@ useEffect(() => {
       isOpen={isValueModalOpen}
       onClose={() => setIsValueModalOpen(false)}
       size="md"
+      modalId={`${modalId}-value`}
     >
       <ModalHeader>{valueModalTitle}</ModalHeader>
       <ModalBody>

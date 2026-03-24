@@ -57,6 +57,8 @@ interface InstitutionModalProps {
   careerOptions?: { value: string; text: string; internshipPriorities?: string[] }[];
   /** Options for internship types (from t_internship_type table) - debe incluir id para filtrado */
   internshipTypeOptions?: { value: string; label: string; id?: number }[];
+  /** Unique ID for modal stack tracking (optional) */
+  modalId?: string;
 }
 
 /**
@@ -140,6 +142,7 @@ export default function InstitutionModal({
   institutionOptions = [],
   careerOptions = [],
   internshipTypeOptions = [],
+  modalId,
 }: InstitutionModalProps) {
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const { fetchMultipleLists } = useLists();
@@ -635,7 +638,7 @@ export default function InstitutionModal({
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={handleClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl">
+      <Modal isOpen={isOpen} onClose={handleClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl" modalId={modalId}>
         <ModalHeader>
           <span className="text-xl font-semibold text-text-primary dark:text-white/90">
             {editingInst ? "Editar Institución" : "Registrar Institución"}
@@ -1375,6 +1378,7 @@ export default function InstitutionModal({
       isOpen={isValueModalOpen}
       onClose={() => setIsValueModalOpen(false)}
       size="md"
+      modalId={`${modalId}-value`}
     >
       <ModalHeader>{valueModalTitle}</ModalHeader>
       <ModalBody>
@@ -1478,6 +1482,7 @@ export default function InstitutionModal({
       isOpen={isHistoryModalOpen}
       onClose={() => setIsHistoryModalOpen(false)}
       size="lg"
+      modalId={`${modalId}-history`}
     >
       <ModalHeader>
         <span className="text-xl font-semibold text-text-primary dark:text-white/90">

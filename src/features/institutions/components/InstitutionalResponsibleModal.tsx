@@ -89,6 +89,8 @@ interface InstitutionalResponsibleModalProps {
   preselectedInstitutionId?: string;
   /** Preselected institution name for display */
   preselectedInstitutionName?: string;
+  /** Unique ID for modal stack tracking (optional) */
+  modalId?: string;
 }
 
 /**
@@ -115,6 +117,7 @@ export default function InstitutionalResponsibleModal({
   isLoading = false,
   preselectedInstitutionId,
   preselectedInstitutionName,
+  modalId,
 }: InstitutionalResponsibleModalProps) {
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const { fetchMultipleLists } = useLists();
@@ -394,7 +397,7 @@ export default function InstitutionalResponsibleModal({
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={handleClose} onCloseAttempt={handleCloseAttempt} size="5xl" showCloseButton>
+      <Modal isOpen={isOpen} onClose={handleClose} onCloseAttempt={handleCloseAttempt} size="5xl" showCloseButton modalId={modalId}>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
           {existingResponsible && (
             <div className="mb-4 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg mx-4 mt-4">

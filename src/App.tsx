@@ -11,6 +11,7 @@ import { BrowserRouter as Router } from "react-router";
 import { AppRoutes } from "./routes";
 import ToastContainer from "./components/ui/toast/ToastContainer";
 import ScrollToTop from "./components/common/ScrollToTop";
+import { ModalStackProvider } from "./components/ui/modal/ModalContext";
 
 /**
  * Componente raíz de la aplicación React
@@ -19,12 +20,12 @@ import ScrollToTop from "./components/common/ScrollToTop";
  */
 export default function App() {
   return (
-    <>
+    <ModalStackProvider>
       <ToastContainer />
       <ScrollToTop />
       <Router>
         <AppRoutes />
       </Router>
-    </>
+    </ModalStackProvider>
   );
 }

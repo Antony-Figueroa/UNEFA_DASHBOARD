@@ -1,6 +1,7 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../../../utils/cn";
+import { useModalStack } from "./ModalContext";
 
 /**
  * Properties for the Modal component.
@@ -20,10 +21,13 @@ interface ModalProps {
   showCloseButton?: boolean;
   /** If true, the modal will occupy the entire screen */
   isFullscreen?: boolean;
+  /** Optional ID para identificar el modal (útil para modales anidados) */
+  modalId?: string;
 }
 
 /**
  * Reusable Modal component with backdrop, focus trapping, and accessibility features.
+ * Solo responde a ESC si es el modal más reciente en el stack.
  * 
  * @example
  * ```tsx
@@ -42,11 +46,34 @@ export const Modal: React.FC<ModalProps & { size?: "sm" | "md" | "lg" | "xl" | "
   isFullscreen = false,
   size = "md",
   zIndex,
+  modalId,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const handleClose = (typeof onCloseAttempt === 'function' ? onCloseAttempt : null) || onClose;
+  const { registerModal, unregisterModal, isTopModal } = useModalStack();
+  
+  // Registrar este modal en el stack cuando se abre
+  const [stackPosition, setStackPosition] = useState<number | null>(null);
+  
+  useEffect(() => {
+    if (isOpen && modalId) {
+      const position = registerModal(modalId);
+      setStackPosition(position);
+      return () => {
+        unregisterModal(modalId, position);
+        setStackPosition(null);
+      };
+    } else if (!isOpen) {
+      setStackPosition(null);
+    }
+  }, [isOpen, modalId, registerModal, unregisterModal]);
 
   const handleBackdropClick = (e: React.MouseEvent) => {
+    // Solo cerrar si es el modal más reciente
+    if (stackPosition !== null && !isTopModal(modalId || 'default', stackPosition)) {
+      return;
+    }
+    
     // Si el clic es en el backdrop y no en un elemento de Flatpickr que está fuera del modal
     const target = e.target as HTMLElement;
     const isFlatpickrElement = target.closest('.flatpickr-calendar') || 
@@ -75,11 +102,14 @@ export const Modal: React.FC<ModalProps & { size?: "sm" | "md" | "lg" | "xl" | "
     }
   }, [isOpen]);
 
-  // Manejar tecla Escape
+  // Manejar tecla Escape - solo si es el modal más reciente
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        handleClose();
+        // Solo cerrar si es el modal más reciente o si no hay stack tracking
+        if (stackPosition === null || isTopModal(modalId || 'default', stackPosition)) {
+          handleClose();
+        }
       }
     };
 
@@ -90,7 +120,7 @@ export const Modal: React.FC<ModalProps & { size?: "sm" | "md" | "lg" | "xl" | "
     return () => {
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [isOpen, handleClose]);
+  }, [isOpen, handleClose, stackPosition, isTopModal, modalId]);
 
   // Prevenir scroll del body cuando el modal está abierto
   useEffect(() => {

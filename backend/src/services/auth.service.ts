@@ -813,7 +813,15 @@ export const getAllAuthLogs = async (limit: number = 100, offset: number = 0, us
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
-    return { data: data || [], total: count || 0 };
+    
+    // Transform data to match frontend expectations
+    const transformedData = (data || []).map((log: any) => ({
+      ...log,
+      CREATION_DATE: log.CREATED_AT,  // Map CREATED_AT to CREATION_DATE
+      user: log.t_user || null         // Map t_user to user
+    }));
+    
+    return { data: transformedData, total: count || 0 };
   });
 };
 

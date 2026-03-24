@@ -6,12 +6,11 @@ import {
   deleteNotification,
   getUnreadCount,
 } from "../controllers/notifications.controller.js";
-import { authenticateToken } from "../middlewares/auth.middleware.js";
 import { supabase } from "../lib/supabase.js";
 
 const router = Router();
 
-router.use(authenticateToken);
+// NOTE: Authentication is applied globally in app.ts for all /api routes
 
 router.get("/", getNotifications);
 router.get("/unread-count", getUnreadCount);
@@ -22,7 +21,7 @@ router.delete("/:id", deleteNotification);
 // Endpoint para crear notificaciones de prueba
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.userId;
     
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });

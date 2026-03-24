@@ -56,8 +56,8 @@ export const login = async (req: Request, res: Response) => {
       
       res.cookie('auth_token', result.token, {
         httpOnly: true,
-        secure: true,
-        sameSite: 'none',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge,
         path: '/'
       });
@@ -331,8 +331,8 @@ export const refreshSession = async (req: AuthRequest, res: Response) => {
 
     res.cookie('auth_token', newToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge,
       path: '/'
     });

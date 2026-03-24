@@ -197,8 +197,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Usuarios", path: "/configure/users" },
       { name: "Listas", path: "/configure/lists" },
-      { name: "Registro", path: "/configure/logs" },
-      { name: "Auditoría", path: "/configure/audit" },
+      { name: "Auditoría", path: "/configure/auditoria" },
       { name: "Roles y Permisos", path: "/configure/roles" },
       { name: "Mantenimiento", path: "/configure/maintenance" },
       { name: "Respaldos", path: "/configure/backups" },

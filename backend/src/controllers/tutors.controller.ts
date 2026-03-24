@@ -8,7 +8,7 @@ const TABLE_NAME = 't_tutors';
 const TUTOR_COLUMNS_TO_AUDIT = [
   'TUTOR_CI', 'NAME', 'SECOND_NAME', 'SURNAME', 'SECOND_SURNAME',
   'CONTACT_PHONE', 'GENDER', 'EMAIL', 'PROFESSION', 'CONDITION',
-  'DEDICATION', 'CATEGORY', 'STATUS'
+  'DEDICATION', 'CATEGORY', 'TITULO', 'STATUS'
 ];
 
 interface AppError extends Error {
@@ -27,6 +27,9 @@ const handleDbError = (res: Response, error: unknown) => {
     userMessage = 'Error: Ya existe un registro con estos datos (duplicado)';
   } else if (dbError.code === 'PGRST205') {
     userMessage = 'Error: La tabla no existe en la base de datos';
+  } else if (dbError.code === '22001') {
+    // Valor demasiado largo para el tipo de columna
+    userMessage = 'Error: La cédula ingresada excede el límite permitido (máximo 8 dígitos). Verifique e intente nuevamente.';
   } else if (dbError.code === '404') {
     userMessage = dbError.message || 'Registro no encontrado';
     return res.status(404).json({ message: userMessage });
@@ -54,6 +57,7 @@ interface DBTutor {
   CONDITION: string;
   DEDICATION: string;
   CATEGORY: string;
+  TITULO: string | null;
   CREATION_DATE: string;
   STATUS: number;
 }
@@ -148,6 +152,7 @@ export const getTutors = async (_req: Request, res: Response) => {
         condition: t.CONDITION,
         dedication: t.DEDICATION,
         category: t.CATEGORY,
+        titulo: t.TITULO || undefined,
         registrationDate: t.CREATION_DATE,
         status: t.STATUS === 1,
         carreras: careers,
@@ -201,6 +206,7 @@ const mapDBToFrontend = (t: DBTutor & { t_tutor_career?: DBTutorCareer[] }) => {
     condition: t.CONDITION,
     dedication: t.DEDICATION,
     category: t.CATEGORY,
+    titulo: t.TITULO || undefined,
     registrationDate: t.CREATION_DATE,
     status: t.STATUS === 1,
     carreras: careers,
@@ -224,7 +230,8 @@ export const createTutor = async (req: AuthRequest, res: Response) => {
       CONDITION: t.condition,
       DEDICATION: t.dedication,
       CATEGORY: t.category,
-      STATUS: t.status ? 1 : 0,
+      TITULO: t.titulo || null,
+      STATUS: t.status !== undefined ? (t.status ? 1 : 0) : 1, // Default: activo (1) si no se envía status
       CREATION_DATE: new Date().toISOString()
     };
 
@@ -302,6 +309,7 @@ export const updateTutor = async (req: AuthRequest, res: Response) => {
       CONDITION: t.condition,
       DEDICATION: t.dedication,
       CATEGORY: t.category,
+      TITULO: t.titulo || null,
       STATUS: t.status ? 1 : 0
     };
 

@@ -425,7 +425,6 @@ export default function PreEnrollmentPage() {
                         }}
                         editingStudent={null}
                         careerOptions={careerOptions}
-                        dynamicLists={dynamicLists}
                         isLoading={studentLoading}
                     />
 

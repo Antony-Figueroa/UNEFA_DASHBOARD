@@ -36,6 +36,7 @@ import { useInternshipTypes } from "../../features/internship-types/hooks/useInt
 import { Enrollment, EnrollmentRowData, CreateEnrollmentPayload, UpdateEnrollmentPayload } from "../../features/enrollment/types";
 import { PreEnrollmentRowData } from "../../features/pre-enrollment/types";
 import { formatDateTime } from "../../utils/date";
+import CareerModal from "../../features/careers/components/CareerModal";
 
 /**
  * Normalizes an enrollment object for display in the table.
@@ -138,7 +139,7 @@ export default function EnrollmentPage() {
     const { tutors, addTutor, loadingAction: tutorLoading } = useTutors();
     const { institutions, addInstitution, loadingAction: institutionLoading } = useInstitutions();
     const { addResponsible, loadingAction: responsibleLoading } = useInstitutionalResponsibles();
-    const { careers } = useCareers();
+    const { careers, addCareer } = useCareers();
     const { activeOptions: internshipTypeOptions } = useInternshipTypes();
 
     const careerOptions = useMemo(() => 
@@ -156,6 +157,7 @@ export default function EnrollmentPage() {
     const [isTutorModalOpen, setIsTutorModalOpen] = useState(false);
     const [isInstitutionModalOpen, setIsInstitutionModalOpen] = useState(false);
     const [isResponsibleModalOpen, setIsResponsibleModalOpen] = useState(false);
+    const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
     const [preselectedInstitutionId, setPreselectedInstitutionId] = useState<string | undefined>(undefined);
     const [pdfPeriodFilter, setPdfPeriodFilter] = useState("");
     const [pdfPracticeTypeFilter, setPdfPracticeTypeFilter] = useState("");
@@ -191,17 +193,20 @@ export default function EnrollmentPage() {
             setPreselectedInstitutionId(detail?.institutionId);
             setIsResponsibleModalOpen(true);
         };
+        const handleAddCareer = () => setIsCareerModalOpen(true);
 
         window.addEventListener("enrollment:addPreEnrollment", handleAddPreEnrollment);
         window.addEventListener("enrollment:addTutor", handleAddTutor);
         window.addEventListener("enrollment:addInstitution", handleAddInstitution);
         window.addEventListener("enrollment:addResponsible", handleAddResponsible);
+        window.addEventListener("enrollment:addCareer", handleAddCareer);
 
         return () => {
             window.removeEventListener("enrollment:addPreEnrollment", handleAddPreEnrollment);
             window.removeEventListener("enrollment:addTutor", handleAddTutor);
             window.removeEventListener("enrollment:addInstitution", handleAddInstitution);
             window.removeEventListener("enrollment:addResponsible", handleAddResponsible);
+            window.removeEventListener("enrollment:addCareer", handleAddCareer);
         };
     }, []);
 
@@ -591,6 +596,29 @@ export default function EnrollmentPage() {
                         institutionOptions={institutions.map(i => ({ value: i.institutionId, label: i.name }))}
                         isLoading={responsibleLoading}
                         preselectedInstitutionId={preselectedInstitutionId}
+                    />
+
+                    <CareerModal
+                        isOpen={isCareerModalOpen}
+                        onClose={() => setIsCareerModalOpen(false)}
+                        onSave={async (payload) => {
+                            try {
+                                await addCareer(payload as any);
+                                // Notificar al EnrollmentModal que hay una nueva carrera disponible
+                                const evt = new CustomEvent("enrollment:careerAdded");
+                                window.dispatchEvent(evt);
+                                setIsCareerModalOpen(false);
+                            } catch (e) {
+                                console.error("[EnrollmentPage] Error creating career:", e);
+                            }
+                        }}
+                        editingCareer={null}
+                        internshipOptions={internshipTypeOptions}
+                        isLoading={loadingAction}
+                        hasPendingEvaluations={false}
+                        isInUse={false}
+                        existingCareers={careers}
+                        onAddInternshipType={() => {}}
                     />
 
                     <UnifiedDialog

@@ -8,6 +8,7 @@
  */
 
 import { useMemo, useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -60,6 +61,8 @@ const formatCareerToRow = (c: Career): CareerRowData => ({
  */
 export default function CareersPage() {
   const [pageLoading, setPageLoading] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
   const { 
     internshipTypes,
     options: internshipOptions,
@@ -74,6 +77,15 @@ export default function CareersPage() {
     bulkRestore: bulkRestoreTypes,
     // error: typeError // Eliminado porque no se usa
   } = useInternshipTypes();
+
+  // Event listener for Command Palette - open create modal
+  useEffect(() => {
+    if (location.state?.openCreateModal) {
+      setEditingCareer(null);
+      setIsModalOpen(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
 
   useEffect(() => {
     const init = async () => {

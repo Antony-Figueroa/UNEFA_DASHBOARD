@@ -66,6 +66,15 @@ export default function EnrollmentPage() {
     const [practiceTypeOptions, setPracticeTypeOptions] = useState<{ value: string; label: string }[]>([]);
     const [initialPreEnrollmentData, setInitialPreEnrollmentData] = useState<PreEnrollmentRowData | null>(null);
 
+    // Event listener for Command Palette - open create modal
+    useEffect(() => {
+        if (location.state?.openCreateModal) {
+            setInitialPreEnrollmentData(null);
+            setIsModalOpen(true);
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, navigate]);
+
     useEffect(() => {
         if (location.state?.preEnrollmentData) {
             setInitialPreEnrollmentData(location.state.preEnrollmentData);

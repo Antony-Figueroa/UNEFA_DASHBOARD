@@ -6,6 +6,7 @@
  */
 
 import { useMemo, useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -55,8 +56,20 @@ const formatRespToRow = (r: InstitutionalResponsible): InstitutionalResponsibleR
 
 export default function InstitutionsPage() {
   const [pageLoading, setPageLoading] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
   const { fetchMultipleLists } = useLists();
   const [listOptions, setListOptions] = useState<Record<string, { value: string; label: string }[]>>({});
+
+  // Event listener for Command Palette - open create modal
+  useEffect(() => {
+    if (location.state?.openCreateModal) {
+      setEditingInst(null);
+      setEditingResp(null);
+      setIsModalOpen(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
 
   useEffect(() => {
     const loadDynamicOptions = async () => {

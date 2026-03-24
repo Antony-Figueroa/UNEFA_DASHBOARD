@@ -55,6 +55,16 @@ export default function PreEnrollmentPage() {
     const [periodOptions, setPeriodOptions] = useState<{ value: string; label: string }[]>([]);
     const [practiceTypeOptions, setPracticeTypeOptions] = useState<{ value: string; label: string }[]>([]);
 
+    // Event listener for Command Palette - open create modal
+    useEffect(() => {
+        if (location.state?.openCreateModal) {
+            setEditingEntry(null);
+            setInitialCi(null);
+            setIsModalOpen(true);
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, navigate]);
+
     useEffect(() => {
         if (periodos.length > 0) {
             const mappedPeriods = periodos.map(p => ({

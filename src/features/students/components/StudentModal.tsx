@@ -114,11 +114,12 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
       if (dynamicLists && Object.keys(dynamicLists).length > 0) {
         const mappedOptions: Record<string, { value: string; label: string }[]> = {};
         Object.entries(dynamicLists).forEach(([key, values]) => {
-          mappedOptions[key] = values.map(v => ({
-            // Para Nacionalidad usamos la abreviación (V, E) si existe
-            value: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase(),
-            label: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase()
-          }));
+          mappedOptions[key] = values.map(v => {
+            // Para Nacionalidad y PREFIJO usamos la abreviación si existe
+            const useAbbreviation = (key === "Nacionalidad" || key === "PREFIJO") && v.abbreviation;
+            const value = useAbbreviation ? v.abbreviation.toUpperCase() : v.name.toUpperCase();
+            return { value, label: value };
+          });
         });
         setOptions(mappedOptions);
         return;
@@ -139,11 +140,12 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         const mappedOptions: Record<string, { value: string; label: string }[]> = {};
         
         Object.entries(data).forEach(([key, values]) => {
-          mappedOptions[key] = values.map(v => ({
-            // Para Nacionalidad usamos la abreviación (V, E)
-            value: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase(),
-            label: (key === "Nacionalidad" && v.abbreviation) ? v.abbreviation.toUpperCase() : v.name.toUpperCase()
-          }));
+          mappedOptions[key] = values.map(v => {
+            // Para Nacionalidad y PREFIJO usamos la abreviación si existe
+            const useAbbreviation = (key === "Nacionalidad" || key === "PREFIJO") && v.abbreviation;
+            const value = useAbbreviation ? v.abbreviation.toUpperCase() : v.name.toUpperCase();
+            return { value, label: value };
+          });
         });
         
         setOptions(mappedOptions);

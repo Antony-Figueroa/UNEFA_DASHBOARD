@@ -626,8 +626,6 @@ export default function EnrollmentModal({
                         placeholder="Tipo"
                         disabled={!!editingEntry || !!initialData}
                         error={!!errors.identificationPrefix}
-                        onAddNew={() => openAddValueModal("Nacionalidad", "identificationPrefix", "Agregar Nacionalidad")}
-                        addNewLabel="Nueva opción"
                       />
                     )}
                   />
@@ -739,21 +737,6 @@ export default function EnrollmentModal({
               {errors.careerName && (
                 <p className="mt-1 text-xs text-error-500">{errors.careerName?.message}</p>
               )}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const evt = new CustomEvent("enrollment:addCareer");
-                  window.dispatchEvent(evt);
-                }}
-                className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start"
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Nueva Carrera
-              </Button>
             </div>
 
             {/* Matrícula */}
@@ -795,6 +778,21 @@ export default function EnrollmentModal({
               {errors.academicTutorId && (
                 <p className="mt-1 text-xs text-error-500">{errors.academicTutorId?.message}</p>
               )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const evt = new CustomEvent("enrollment:addTutor");
+                  window.dispatchEvent(evt);
+                }}
+                className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                + Nuevo Tutor Académico
+              </Button>
             </div>
 
             {/* Tutor Metodológico */}
@@ -835,7 +833,7 @@ export default function EnrollmentModal({
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                Agregar Tutor
+                + Nuevo Tutor Metodológico
               </Button>
             </div>
 
@@ -878,7 +876,7 @@ export default function EnrollmentModal({
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                Nueva Institución
+                + Nueva Institución
               </Button>
             </div>
 
@@ -920,7 +918,7 @@ export default function EnrollmentModal({
                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                  Agregar Responsable
+                  + Nuevo Responsable Institucional
                 </Button>
               )}
             </div>

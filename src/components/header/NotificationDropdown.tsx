@@ -37,8 +37,9 @@ export default function NotificationDropdown() {
   return (
     <div className="relative">
       <button
-        className="relative flex items-center justify-center transition-all duration-200 rounded-full text-text-secondary bg-bg-main border border-border-light dropdown-toggle hover:text-text-emphasis h-9 w-9 hover:bg-bg-secondary dark:border-border-dark dark:bg-bg-dark dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-text-emphasis"
+        className="relative flex items-center justify-center transition-all duration-200 rounded-full text-text-secondary bg-bg-main border border-border-light dropdown-toggle hover:text-text-emphasis h-9 w-9 hover:bg-bg-secondary dark:border-border-dark dark:bg-bg-dark dark:text-text-tertiary dark:hover:bg-white/5 dark:hover:text-text-emphasis shrink-0"
         onClick={toggleDropdown}
+        aria-label="Notificaciones"
       >
         <span
           className={`absolute right-0 top-0.5 z-10 h-2 w-2 rounded-full bg-warning-500 ${unreadCount === 0 ? "hidden" : "flex"
@@ -64,7 +65,7 @@ export default function NotificationDropdown() {
       <Dropdown
         isOpen={isOpen}
         onClose={closeDropdown}
-        className="absolute -right-60 mt-4.25 flex h-120 w-87.5 flex-col rounded-2xl border border-border-light bg-white p-3 shadow-theme-md dark:border-border-dark dark:bg-bg-dark sm:w-90.25 lg:right-0 transition-colors duration-300"
+        className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 md:w-87.5 lg:w-90.25 max-h-[80vh] flex flex-col rounded-2xl border border-border-light bg-white p-3 shadow-theme-md dark:border-border-dark dark:bg-bg-dark transition-colors duration-300 z-50"
       >
         <div className="flex items-center justify-between pb-3 mb-3 border-b border-border-light dark:border-border-dark">
           <h5 className="text-base font-semibold text-text-emphasis dark:text-text-emphasis flex items-center gap-2">

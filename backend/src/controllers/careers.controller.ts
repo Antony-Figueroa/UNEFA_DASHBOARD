@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as careersService from '../services/careers.service.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { auditCreate, auditUpdate, auditDelete, auditStatusChange } from '../utils/audit-helpers.js';
 
 const handleDbError = (res: Response, error: unknown) => {
   console.error('Database Error:', error);
@@ -68,6 +69,19 @@ export const createCareer = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId || 1;
     const result = await careersService.createCareer(req.body, userId);
+    
+    // Auditoría de creación de carrera
+    if (result.success) {
+      try {
+        await auditCreate(req, 't_career', {
+          ...req.body,
+          CAREER_NAME: String(req.body.CAREER_NAME || '').toUpperCase()
+        }, ['CAREER_NAME', 'CAREER_CODE', 'CAREER_ABBREVIATION', 'MINIMUM_GRADE', 'CAREER_TYPE']);
+      } catch (auditError) {
+        console.error('[Audit] Error auditing career creation:', auditError);
+      }
+    }
+    
     res.status(201).json(result);
   } catch (error) {
     handleDbError(res, error);
@@ -78,7 +92,24 @@ export const updateCareer = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const userId = req.user?.userId || 1;
+    
+    // Obtener datos actuales antes de actualizar
+    const currentCareer = await careersService.getCareerById(id);
     const result = await careersService.updateCareer(id, req.body, userId);
+    
+    // Auditoría de actualización de carrera
+    if (result.success && currentCareer.success && currentCareer.data) {
+      try {
+        await auditUpdate(req, 't_career', 
+          currentCareer.data as Record<string, any>, 
+          req.body as Record<string, any>,
+          ['CAREER_NAME', 'CAREER_CODE', 'CAREER_ABBREVIATION', 'MINIMUM_GRADE', 'CAREER_TYPE']
+        );
+      } catch (auditError) {
+        console.error('[Audit] Error auditing career update:', auditError);
+      }
+    }
+    
     res.json(result);
   } catch (error) {
     handleDbError(res, error);
@@ -89,7 +120,24 @@ export const deleteCareer = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const userId = req.user?.userId || 1;
+    
+    // Obtener datos actuales antes de eliminar
+    const currentCareer = await careersService.getCareerById(id);
+    
     await careersService.deleteCareer(id, userId);
+    
+    // Auditoría de eliminación de carrera
+    if (currentCareer.success && currentCareer.data) {
+      try {
+        await auditDelete(req, 't_career', 
+          currentCareer.data as Record<string, any>,
+          ['CAREER_NAME', 'CAREER_CODE', 'CAREER_ABBREVIATION']
+        );
+      } catch (auditError) {
+        console.error('[Audit] Error auditing career deletion:', auditError);
+      }
+    }
+    
     res.status(204).send();
   } catch (error) {
     handleDbError(res, error);

@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { auditCreate, auditUpdate, auditDelete } from '../utils/audit-helpers.js';
+import { notifyEvaluationCreated } from '../services/notification.service.js';
 
 interface EvaluationCriteria {
   criteriaId: number;
@@ -259,6 +261,34 @@ export const createEvaluation = async (req: AuthRequest, res: Response) => {
 
     await updatePracticeGrade(data.professionalPracticeId);
 
+    // Auditoría de creación de evaluación
+    try {
+      // Obtener datos del estudiante para auditoría
+      const { data: practice } = await supabase
+        .from('t_professional_practices')
+        .select('t_students(NAME, SURNAME)')
+        .eq('PROFESSIONAL_PRACTICE_ID', data.professionalPracticeId)
+        .single();
+
+      const studentsData = practice?.t_students as unknown as Array<{ NAME?: string; SURNAME?: string }> | undefined;
+      const studentName = studentsData && studentsData.length > 0 
+        ? `${studentsData[0].NAME || ''} ${studentsData[0].SURNAME || ''}`.trim() 
+        : 'Estudiante';
+
+      await auditCreate(req, 't_evaluation', {
+        EVALUATION_ID: evaluationId,
+        PROFESSIONAL_PRACTICE_ID: data.professionalPracticeId,
+        EVALUATOR_TYPE: data.evaluatorType,
+        EVALUATOR_NAME: data.evaluatorName,
+        TOTAL_SCORE: totalScore
+      }, ['EVALUATOR_TYPE', 'EVALUATOR_NAME', 'TOTAL_SCORE', 'OBSERVATIONS']);
+
+      // Notificación a admins
+      await notifyEvaluationCreated(data.evaluatorName, data.professionalPracticeId, studentName);
+    } catch (auditError) {
+      console.error('[Audit] Error auditing evaluation:', auditError);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Evaluación creada exitosamente',
@@ -330,6 +360,18 @@ export const updateEvaluation = async (req: AuthRequest, res: Response) => {
 
     await updatePracticeGrade((existing as any).PROFESSIONAL_PRACTICE_ID);
 
+    // Auditoría de actualización
+    try {
+      const oldData = { ...existing, evaluatorName: (existing as any).EVALUATOR_NAME };
+      await auditUpdate(req, 't_evaluation',
+        oldData as Record<string, any>,
+        { ...req.body, TOTAL_SCORE: totalScore } as Record<string, any>,
+        ['EVALUATOR_NAME', 'EVALUATOR_CI', 'TOTAL_SCORE', 'OBSERVATIONS']
+      );
+    } catch (auditError) {
+      console.error('[Audit] Error auditing evaluation update:', auditError);
+    }
+
     res.json({
       success: true,
       message: 'Evaluación actualizada exitosamente'
@@ -373,6 +415,16 @@ export const deleteEvaluation = async (req: AuthRequest, res: Response) => {
       .eq('EVALUATION_ID', id);
 
     await updatePracticeGrade((existing as any).PROFESSIONAL_PRACTICE_ID);
+
+    // Auditoría de eliminación
+    try {
+      await auditDelete(req, 't_evaluation',
+        existing as Record<string, any>,
+        ['EVALUATOR_TYPE', 'EVALUATOR_NAME', 'TOTAL_SCORE']
+      );
+    } catch (auditError) {
+      console.error('[Audit] Error auditing evaluation deletion:', auditError);
+    }
 
     res.json({
       success: true,

@@ -63,14 +63,14 @@ export const cleanCedula = (value: string): string => {
 };
 
 /**
- * Longitud máxima del número de cédula SIN prefijo (9 dígitos para soportar casos especiales)
+ * Longitud máxima del número de cédula SIN prefijo (8 dígitos - límite de BD varchar(10) para TUTOR_CI: V-12345678)
  */
-export const CEDULA_MAX_DIGITS = 9;
+export const CEDULA_MAX_DIGITS = 8;
 
 /**
- * Longitud máxima del input visual incluyendo formato (V-000.000.000 = 13 caracteres)
+ * Longitud máxima del input visual incluyendo formato (V-00.000.000 = 12 caracteres)
  */
-export const CEDULA_MAX_LENGTH = 13;
+export const CEDULA_MAX_LENGTH = 12;
 
 /**
  * Formatea un número de teléfono para visualización (000-0000)

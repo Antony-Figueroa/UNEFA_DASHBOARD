@@ -74,7 +74,7 @@ export const useTutors = () => {
     refreshTutors();
   }, [refreshTutors]);
 
-  const addTutor = async (tutorData: CreateTutorPayload) => {
+  const addTutor = async (tutorData: CreateTutorPayload): Promise<Tutor | null> => {
     // Validar duplicidad de cédula localmente antes de intentar crear
     const isDuplicate = tutors.some(
       t => t.identificationNumber === tutorData.identificationNumber && 
@@ -87,7 +87,7 @@ export const useTutors = () => {
         title: "Cédula Duplicada",
         message: `Ya existe un tutor registrado con la cédula ${tutorData.identificationPrefix}-${tutorData.identificationNumber}.`,
       });
-      return;
+      return null;
     }
 
     const newTutor = await baseAddTutor(tutorData, { silent: true });
@@ -108,7 +108,9 @@ export const useTutors = () => {
           </>
         ),
       });
+      return newTutor;
     }
+    return null;
   };
 
   const editTutor = async (tutorData: UpdateTutorPayload) => {

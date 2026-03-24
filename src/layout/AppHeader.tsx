@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSidebar } from "../context/sidebar";
 import { useAuth } from "../context/auth";
+import { useCommandPalette } from "../components/command-palette/CommandPaletteContext";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
@@ -12,6 +13,7 @@ const AppHeader: React.FC = () => {
   const headerRef = useRef<HTMLElement>(null);
   const { user } = useAuth();
   const isAuthenticated = !!user;
+  const { open: openCommandPalette } = useCommandPalette();
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
@@ -51,13 +53,13 @@ const AppHeader: React.FC = () => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === "k") {
         event.preventDefault();
-        inputRef.current?.focus();
+        openCommandPalette();
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [openCommandPalette]);
 
   const isHeaderTooTall = headerHeight > (typeof window !== "undefined" ? window.innerHeight * 0.3 : 0);
 

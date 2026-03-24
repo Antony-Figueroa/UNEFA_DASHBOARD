@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-helpers.js';
+import { notifyRequestCreated, notifyTutorAssigned } from '../services/notification.service.js';
 
 interface AdminRequest {
   id: number;
@@ -204,6 +206,7 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
     }
 
     // Procesar reasignación si es aprobada
+    let practiceData: any = null;
     if (status === 'approved' && reassignmentData) {
       const isReassignment = currentRequest.t_request_types?.IS_REASSIGNMENT === 1;
       
@@ -219,6 +222,8 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
           .eq('PRACTICES_STATUS', 2) // Activa
           .single();
 
+        practiceData = practice;
+        
         if (practice) {
           const updatePractice: Record<string, unknown> = {
             UPDATED_AT: new Date().toISOString()
@@ -312,6 +317,41 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
       .eq('REQUEST_ID', id);
 
     if (error) throw error;
+
+    // Auditoría de cambio de estado
+    try {
+      await auditStatusChange(req, 't_student_requests', parseInt(id), 
+        currentRequest.STATUS === 'pending' ? 0 : currentRequest.STATUS === 'in_review' ? 1 : 2,
+        status === 'pending' ? 0 : status === 'in_review' ? 1 : status === 'approved' ? 2 : 3
+      );
+
+      // Notificación de tutor asignado si se aprobó una solicitud de reasignación
+      if (status === 'approved' && reassignmentData && reassignmentData.newTutorId) {
+        const { data: tutor } = await supabase
+          .from('t_tutor')
+          .select('t_user(USER_ID, NAME, SURNAME)')
+          .eq('TUTOR_ID', reassignmentData.newTutorId)
+          .single();
+        
+        const { data: studentData } = await supabase
+          .from('t_students')
+          .select('NAME, SURNAME')
+          .eq('STUDENTS_ID', currentRequest.STUDENT_ID)
+          .single();
+
+        if (tutor && studentData) {
+          const tutorUserId = (tutor.t_user as any)?.USER_ID;
+          await notifyTutorAssigned(
+            `${(tutor.t_user as any)?.NAME || ''} ${(tutor.t_user as any)?.SURNAME || ''}`.trim(),
+            `${studentData.NAME} ${studentData.SURNAME}`.trim(),
+            practiceData?.PROFESSIONAL_PRACTICE_ID || 0,
+            tutorUserId
+          );
+        }
+      }
+    } catch (auditError) {
+      console.error('[Audit] Error auditing request update:', auditError);
+    }
 
     res.json({
       success: true,

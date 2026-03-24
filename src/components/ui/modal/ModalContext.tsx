@@ -3,7 +3,7 @@
  * @description Context para manejar el stack de modales y asegurar que ESC cierre el modal correcto (el más reciente)
  */
 
-import { createContext, useContext, useState, useCallback, useRef, useEffect } from "react";
+import { createContext, useContext, useState, useCallback } from "react";
 
 interface ModalStackContextType {
   registerModal: (id: string) => number;

@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { auditCreate } from '../utils/audit-helpers.js';
+import { notifyRequestCreated } from '../services/notification.service.js';
 
 interface StudentInternship {
   enrollmentId: string;
@@ -489,6 +491,40 @@ export const createStudentRequest = async (req: AuthRequest, res: Response) => {
       .single();
 
     if (error) throw error;
+
+    // Auditoría de solicitud creada
+    try {
+      const requestId = data.REQUEST_ID;
+      
+      // Obtener nombre del estudiante
+      const { data: studentData } = await supabase
+        .from('t_students')
+        .select('NAME, SURNAME')
+        .eq('STUDENTS_ID', student.STUDENTS_ID)
+        .single();
+
+      const studentName = studentData ? `${studentData.NAME} ${studentData.SURNAME}` : 'Estudiante';
+      
+      // Obtener nombre del tipo de solicitud
+      const { data: typeData } = await supabase
+        .from('t_request_types')
+        .select('NAME')
+        .eq('REQUEST_TYPE_ID', typeId)
+        .single();
+
+      const typeName = typeData?.NAME || 'Solicitud';
+
+      await auditCreate(req, 't_student_requests', {
+        REQUEST_ID: requestId,
+        SUBJECT: subject,
+        STATUS: 'pending'
+      }, ['SUBJECT', 'DESCRIPTION', 'STATUS']);
+
+      // Notificación al admin
+      await notifyRequestCreated(studentName, typeName, requestId);
+    } catch (auditError) {
+      console.error('[Audit] Error auditing request creation:', auditError);
+    }
 
     res.status(201).json({
       success: true,

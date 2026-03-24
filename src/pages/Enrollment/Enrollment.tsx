@@ -551,6 +551,7 @@ export default function EnrollmentPage() {
                         editingTutor={null}
                         isLoading={tutorLoading}
                         tutors={tutors}
+                        modalId="enrollment-tutor"
                     />
 
                     <InstitutionModal
@@ -573,6 +574,7 @@ export default function EnrollmentPage() {
                         existingInstitutions={institutions}
                         careerOptions={careerOptions}
                         internshipTypeOptions={internshipTypeOptions}
+                        modalId="enrollment-institution"
                     />
 
                     <InstitutionalResponsibleModal
@@ -596,6 +598,7 @@ export default function EnrollmentPage() {
                         institutionOptions={institutions.map(i => ({ value: i.institutionId, label: i.name }))}
                         isLoading={responsibleLoading}
                         preselectedInstitutionId={preselectedInstitutionId}
+                        modalId="enrollment-responsible"
                     />
 
                     <CareerModal

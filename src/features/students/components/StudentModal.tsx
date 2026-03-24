@@ -45,6 +45,8 @@ interface StudentModalProps {
   dynamicLists?: Record<string, ListValue[]>;
   /** Indica si hay una operación de guardado en curso */
   isLoading?: boolean;
+  /** ID único para tracking en modal stack (opcional) */
+  modalId?: string;
 }
 
 /**
@@ -69,6 +71,7 @@ export default function StudentModal({
   careerOptions,
   dynamicLists,
   isLoading = false,
+  modalId,
 }: StudentModalProps) {
   const [isCheckingCi, setIsCheckingCi] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
@@ -483,7 +486,7 @@ useEffect(() => {
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={handleClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl">
+      <Modal isOpen={isOpen} onClose={handleClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl" modalId={modalId}>
         <ModalHeader>
           <div className="w-full">
             <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
@@ -1119,7 +1122,7 @@ useEffect(() => {
       </ModalFooter>
     </Modal>
 
-    <Modal isOpen={isValueModalOpen} onClose={() => setIsValueModalOpen(false)}>
+    <Modal isOpen={isValueModalOpen} onClose={() => setIsValueModalOpen(false)} modalId={`${modalId}-value`}>
       <ModalHeader>
         <div className="w-full">
           <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">

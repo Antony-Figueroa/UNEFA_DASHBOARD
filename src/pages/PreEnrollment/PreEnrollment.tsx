@@ -436,6 +436,7 @@ export default function PreEnrollmentPage() {
                         editingStudent={null}
                         careerOptions={careerOptions}
                         isLoading={studentLoading}
+                        modalId="preenrollment-student"
                     />
 
                     <UnifiedDialog

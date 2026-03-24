@@ -431,8 +431,6 @@ export default function InstitutionalResponsibleModal({
                         placeholder="Tipo"
                         disabled={!!editingResp}
                         error={!!errors.identificationPrefix}
-                        onAddNew={() => openAddValueModal("Nacionalidad", "identificationPrefix", "Agregar Nacionalidad")}
-                        addNewLabel="Nueva opción"
                       />
                     )}
                   />

@@ -9,7 +9,16 @@ import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCommandPalette } from "./CommandPaletteContext";
 import { useAuth } from "../../context/auth";
-import { SearchIcon, PlusIcon, UserIcon, FileIcon, UsersIcon, GridIcon, TableIcon, PageIcon, PieChartIcon, DocsIcon, MailIcon, SparklesIcon, CheckIcon, ShieldCheckIcon, LockIcon } from "../../icons";
+import { notificationService } from "../../features/notifications/services/notificationService";
+import toast from "react-hot-toast";
+import { SearchIcon, PlusIcon, UserIcon, FileIcon, UsersIcon, GridIcon, TableIcon, PageIcon, PieChartIcon, DocsIcon, SparklesIcon, LockIcon } from "../../icons";
+
+// Icono de prueba (tubo de ensayo)
+const TestTubeIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 3h6v6l4 8a2 2 0 01-2 4H7a2 2 0 01-2-4l4-8V3z" />
+  </svg>
+);
 
 // Tipos de resultados
 type ResultType = "navigation" | "action" | "student" | "tutor" | "institution" | "career";
@@ -55,6 +64,11 @@ const actionItems: NavItem[] = [
   { name: "Nuevo Tutor", description: "Registrar un nuevo tutor", type: "action", icon: <PlusIcon className="w-4 h-4" />, shortcut: "N T" },
   { name: "Nueva Carrera", description: "Agregar una nueva carrera", type: "action", icon: <PlusIcon className="w-4 h-4" />, shortcut: "N C" },
   { name: "Cerrar Sesión", description: "Salir de la cuenta", type: "action", icon: <LockIcon className="w-4 h-4" />, shortcut: "Q" },
+  // Notificaciones de prueba (solo desarrollo)
+  { name: "🔔 Notif: Éxito", description: "Crear notificación de prueba (éxito)", type: "action", icon: <TestTubeIcon className="w-4 h-4" />, shortcut: "" },
+  { name: "🔔 Notif: Advertencia", description: "Crear notificación de prueba (advertencia)", type: "action", icon: <TestTubeIcon className="w-4 h-4" />, shortcut: "" },
+  { name: "🔔 Notif: Error", description: "Crear notificación de prueba (error)", type: "action", icon: <TestTubeIcon className="w-4 h-4" />, shortcut: "" },
+  { name: "🔔 Notif: Info", description: "Crear notificación de prueba (información)", type: "action", icon: <TestTubeIcon className="w-4 h-4" />, shortcut: "" },
 ];
 
 // Mapeo de navegación a rutas
@@ -79,6 +93,23 @@ const actionHandlers: Record<string, () => void> = {
   "Nuevo Tutor": () => window.dispatchEvent(new CustomEvent("app:openTutorModal")),
   "Nueva Carrera": () => window.dispatchEvent(new CustomEvent("app:openCareerModal")),
   "Cerrar Sesión": () => window.dispatchEvent(new CustomEvent("app:logout")),
+  // Notificaciones de prueba
+  "🔔 Notif: Éxito": async () => {
+    await notificationService.createTest('success');
+    toast.success('Notificación de prueba creada');
+  },
+  "🔔 Notif: Advertencia": async () => {
+    await notificationService.createTest('warning');
+    toast('Notificación de prueba creada', { icon: '⚠️' });
+  },
+  "🔔 Notif: Error": async () => {
+    await notificationService.createTest('error');
+    toast.error('Notificación de prueba creada');
+  },
+  "🔔 Notif: Info": async () => {
+    await notificationService.createTest('info');
+    toast('Notificación de prueba creada', { icon: 'ℹ️' });
+  },
 };
 
 export default function CommandPalette() {
@@ -87,7 +118,7 @@ export default function CommandPalette() {
   const { signOut } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [entityResults, setEntityResults] = useState<SearchResult[]>([]);
+  const [entityResults] = useState<SearchResult[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 

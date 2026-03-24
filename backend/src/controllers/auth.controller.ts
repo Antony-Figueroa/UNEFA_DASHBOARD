@@ -3,6 +3,7 @@ import * as authService from '../services/auth.service.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { validatePassword } from '../utils/security.utils.js';
 import { getConfig } from '../services/config.service.js';
+import { auditCreate, auditUpdate } from '../utils/audit-helpers.js';
 
 const handleAuthError = (res: Response, error: unknown) => {
   console.error('Auth Error:', error);
@@ -63,6 +64,19 @@ export const login = async (req: Request, res: Response) => {
     }
 
     console.log(`[Auth] Login exitoso para CI: ${userCi}`);
+    
+    // Auditoría de login exitoso (usar user.id del resultado)
+    if (result.user && 'id' in result.user) {
+      try {
+        await auditCreate(req, 't_user', {
+          USER_ID: (result.user as any).id,
+          LAST_LOGIN: new Date().toISOString()
+        }, ['LAST_LOGIN']);
+      } catch (auditError) {
+        console.error('[Audit] Error auditing login:', auditError);
+      }
+    }
+    
     res.json({
       message: 'Login exitoso',
       user: result.user

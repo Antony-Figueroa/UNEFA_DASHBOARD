@@ -1,7 +1,48 @@
 import apiClient from "../../../api/apiClient";
 import type { NotificationsResponse } from '../types';
 
+export type TestNotificationType = 'success' | 'warning' | 'error' | 'info';
+
 export const notificationService = {
+  /**
+   * Crea una notificación de prueba (solo para desarrollo)
+   */
+  createTest: async (type: TestNotificationType = 'info'): Promise<{ success: boolean }> => {
+    const messages: Record<TestNotificationType, { title: string; message: string }> = {
+      success: {
+        title: '✅ Operación exitosa',
+        message: 'La acción se completó correctamente.'
+      },
+      warning: {
+        title: '⚠️ Advertencia',
+        message: 'Hay acciones que requieren tu atención.'
+      },
+      error: {
+        title: '❌ Error',
+        message: 'Ocurrió un error al procesar la solicitud.'
+      },
+      info: {
+        title: 'ℹ️ Información',
+        message: 'Nueva actualización disponible en el sistema.'
+      }
+    };
+
+    const { title, message } = messages[type];
+
+    try {
+      const response = await apiClient.post('/notifications', {
+        TITLE: title,
+        MESSAGE: message,
+        TYPE: type.toUpperCase(),
+        PRIORITY: type === 'error' ? 'high' : type === 'warning' ? 'medium' : 'low'
+      });
+      return response.data;
+    } catch (error) {
+      console.error('[NotificationService] Error creating test notification:', error);
+      return { success: false };
+    }
+  },
+
   getAll: async (limit = 20, offset = 0, unreadOnly = false): Promise<NotificationsResponse> => {
     const params = new URLSearchParams({
       limit: String(limit),

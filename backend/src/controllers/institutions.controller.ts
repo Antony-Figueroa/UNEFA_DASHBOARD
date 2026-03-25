@@ -13,7 +13,7 @@ const INSTITUTION_COLUMNS_TO_AUDIT = [
   'REGION', 'NUCLEUS', 'EXTENSION', 'INSTITUTION_TYPE', 'STATUS', 'RIF'
 ];
 
-const INSTITUTION_COLUMNS = 'INSTITUTION_ID, INSTITUTION_NAME, INSTITUTION_ADDRESS, INSTITUTION_CONTACT, REGION, NUCLEUS, EXTENSION, CREATION_DATE, INSTITUTION_TYPE, STATUS, RIF, t_professional_practices(INSTITUTION_ID)';
+const INSTITUTION_COLUMNS = 'INSTITUTION_ID, INSTITUTION_NAME, INSTITUTION_ADDRESS, INSTITUTION_CONTACT, PRACTICE_TYPE, CAREER_ID, REGION, NUCLEUS, EXTENSION, CREATION_DATE, INSTITUTION_TYPE, STATUS, RIF';
 
 interface AppError extends Error {
   code?: string;
@@ -55,100 +55,146 @@ interface DBInstitution {
   CREATION_DATE: string;
   INSTITUTION_TYPE: string;
   PRACTICE_TYPE: string;
+  CAREER_ID: number;
   STATUS: number;
   RIF: string;
   t_professional_practices?: { INSTITUTION_ID: number }[];
   responsibleCount?: number;
+  careerIds?: number[];
 }
 
-const mapDBToFrontend = (i: DBInstitution) => ({
+const mapDBToFrontend = (i: any) => ({
   institutionId: String(i.INSTITUTION_ID),
-  rif: i.RIF,
   name: i.INSTITUTION_NAME,
   fiscalAddress: i.INSTITUTION_ADDRESS,
   phone: i.INSTITUTION_CONTACT,
-  region: i.REGION,
-  nucleus: i.NUCLEUS,
-  extension: i.EXTENSION,
-  institutionType: i.INSTITUTION_TYPE,
-  practiceType: i.PRACTICE_TYPE || 'INTERNSHIP',
+  region: i.REGION, // This will be replaced by getFullName later in getInstitutions
+  nucleus: i.NUCLEUS, // This will be replaced by getFullName later in getInstitutions
+  extension: i.EXTENSION, // This will be replaced by getFullName later in getInstitutions
+  institutionType: i.INSTITUTION_TYPE, // This will be replaced by getFullName later in getInstitutions
+  practiceType: i.PRACTICE_TYPE,
+  internshipTypeId: i.PRACTICE_TYPE ? String(i.PRACTICE_TYPE) : undefined,
   status: i.STATUS === 1,
   registrationDate: i.CREATION_DATE,
+  rif: i.RIF,
   responsibleCount: i.responsibleCount || 0,
-  isInUse: Array.isArray(i.t_professional_practices) && i.t_professional_practices.length > 0
+  careerIds: (i.careerIds || []).map(String),
+  isInUse: !!i.isInUse,
 });
 
 export const getInstitutions = async (_req: Request, res: Response) => {
   const cacheKey = `${CACHE_PREFIX}list`;
-  const cachedData = cacheManager.get(cacheKey);
-  if (cachedData) {
-    return res.json(cachedData);
-  }
-
   try {
+    const cachedData = cacheManager.get(cacheKey);
+    if (cachedData) return res.json(cachedData);
+
     const data = await dbManager.withRetry(async (supabase) => {
+      console.log('[getInstitutions] Inicia consulta principal a table:', TABLE_NAME);
+      
+      // 1. Fetch main table with select * to avoid column typos
       const { data: institutions, error: instError } = await supabase
         .from(TABLE_NAME)
-        .select(INSTITUTION_COLUMNS)
-        .order('INSTITUTION_NAME', { ascending: true });
+        .select('*');
 
-      if (instError) throw instError;
+      if (instError) {
+        console.error('[getInstitutions] Error en consulta principal:', instError);
+        throw instError;
+      }
 
-      const { data: responsibles, error: respError } = await supabase
-        .from('t_institution_manager')
-        .select('INSTITUTION_ID')
-        .eq('STATUS', 1);
+      console.log(`[getInstitutions] Obtenidas ${institutions?.length || 0} instituciones`);
 
-      if (respError) throw respError;
+      // 2. Fetch relational data sequentially for easier debugging
+      let responsibles: any[] = [];
+      try {
+        const { data: respData, error: respError } = await supabase
+          .from('t_institution_manager')
+          .select('INSTITUTION_ID')
+          .eq('STATUS', 1);
+        if (!respError) responsibles = respData || [];
+      } catch (err) { console.warn('[getInstitutions] Error silenciado en responsibles:', err); }
 
+      let careers: any[] = [];
+      try {
+        const { data: careerData, error: careerError } = await supabase
+          .from('t_institution_career')
+          .select('INSTITUTION_ID, CAREER_ID');
+        if (!careerError) careers = careerData || [];
+      } catch (err) { console.warn('[getInstitutions] Error silenciado en careers:', err); }
+
+      let usage: Set<number> = new Set();
+      try {
+        const { data: practiceData, error: practiceError } = await supabase
+          .from('t_professional_practices')
+          .select('INSTITUTION_ID')
+          .eq('STATUS', 1);
+        if (!practiceError) usage = new Set((practiceData || []).map((p: any) => p.INSTITUTION_ID));
+      } catch (err) { console.warn('[getInstitutions] Error silenciado en usage:', err); }
+
+      // 3. Process maps
       const respCountMap = new Map<number, number>();
-      (responsibles || []).forEach((r: any) => {
+      responsibles.forEach((r: any) => {
         const count = respCountMap.get(r.INSTITUTION_ID) || 0;
         respCountMap.set(r.INSTITUTION_ID, count + 1);
       });
 
+      const careersMap = new Map<number, number[]>();
+      careers.forEach((c: any) => {
+        const list = careersMap.get(c.INSTITUTION_ID) || [];
+        list.push(c.CAREER_ID);
+        careersMap.set(c.INSTITUTION_ID, list);
+      });
+
+      // 4. Combine
       return (institutions || []).map(inst => ({
         ...inst,
-        responsibleCount: respCountMap.get(inst.INSTITUTION_ID) || 0
-      })) as DBInstitution[];
+        responsibleCount: respCountMap.get(inst.INSTITUTION_ID) || 0,
+        careerIds: careersMap.get(inst.INSTITUTION_ID) || [],
+        isInUse: usage.has(inst.INSTITUTION_ID)
+      }));
     }, 'getInstitutions');
 
-    const { data: listValues } = await dbManager.withRetry(async (supabase) => {
-      return await supabase
-        .from('t_value_list')
-        .select('NAME, ABBREVIATION')
-        .eq('STATUS', 1);
-    }, 'getListValuesForMapping');
-
-    const nameMap: Record<string, string> = {};
-    if (listValues) {
-      listValues.forEach((v: { NAME: string; ABBREVIATION: string }) => {
-        if (v.NAME) {
-          nameMap[v.NAME.toUpperCase()] = v.NAME;
-        }
-        if (v.ABBREVIATION) {
-          nameMap[v.ABBREVIATION.toUpperCase()] = v.NAME;
-        }
-      });
+    // 5. Value list for mapping
+    let listValues: any[] = [];
+    try {
+      const response = await dbManager.withRetry(async (supabase) => {
+        const { data, error } = await supabase
+          .from('t_value_list')
+          .select('NAME, ABBREVIATION')
+          .eq('STATUS', 1);
+        if (error) throw error;
+        return data;
+      }, 'getListValuesForMapping');
+      listValues = response || [];
+    } catch (err) { 
+      console.warn('[getInstitutions] Falló carga de t_value_list, se usarán valores crudos:', err);
     }
 
-    const getFullName = (val: string | undefined) => {
+    const nameMap: Record<string, string> = {};
+    listValues.forEach((v: { NAME: string; ABBREVIATION: string }) => {
+      if (v.NAME) nameMap[v.NAME.toUpperCase()] = v.NAME;
+      if (v.ABBREVIATION) nameMap[v.ABBREVIATION.toUpperCase()] = v.NAME;
+    });
+
+    const getFullName = (val: any) => {
       if (!val) return '';
-      return nameMap[val.toUpperCase()] || val;
+      const sVal = String(val).toUpperCase();
+      return nameMap[sVal] || val;
     };
 
+    // 6. Final Result
     const result = data.map(i => ({
       ...mapDBToFrontend(i),
       region: getFullName(i.REGION),
       nucleus: getFullName(i.NUCLEUS),
       extension: getFullName(i.EXTENSION),
-      institutionType: getFullName(i.INSTITUTION_TYPE)
+      institutionType: getFullName(i.INSTITUTION_TYPE),
+      practiceType: getFullName(i.PRACTICE_TYPE)
     }));
     
     cacheManager.set(cacheKey, result, CACHE_TTL);
-
     res.json(result);
   } catch (error: unknown) {
+    console.error('[getInstitutions] Critical Error:', error);
     handleDbError(res, error);
   }
 };
@@ -176,20 +222,74 @@ export const getInstitutionStats = async (_req: Request, res: Response) => {
 export const getInstitutionById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const instId = parseInt(id);
+
     const data = await dbManager.withRetry(async (supabase) => {
+      // 1. Fetch main table (using select * to be safe)
       const { data: inst, error } = await supabase
         .from(TABLE_NAME)
-        .select(INSTITUTION_COLUMNS)
-        .eq('INSTITUTION_ID', parseInt(id))
+        .select('*')
+        .eq('INSTITUTION_ID', instId)
         .single();
 
       if (error) throw error;
 
-      return inst as DBInstitution;
+      // 2. Parallel queries for relational data
+      const [{ count: respCount }, { data: careers }, { count: practiceCount }] = await Promise.all([
+        supabase.from('t_institution_manager').select('INSTITUTION_ID', { count: 'exact', head: true }).eq('INSTITUTION_ID', instId).eq('STATUS', 1),
+        supabase.from('t_institution_career').select('CAREER_ID').eq('INSTITUTION_ID', instId),
+        supabase.from('t_professional_practices').select('INSTITUTION_ID', { count: 'exact', head: true }).eq('INSTITUTION_ID', instId).eq('STATUS', 1).limit(1)
+      ]);
+
+      return {
+        ...inst,
+        responsibleCount: respCount || 0,
+        careerIds: (careers || []).map((c: any) => c.CAREER_ID),
+        isInUse: (practiceCount || 0) > 0
+      };
     }, 'getInstitutionById');
 
-    res.json(mapDBToFrontend(data));
+    // 3. Get name mappings
+    let listValues: any[] = [];
+    try {
+      const response = await dbManager.withRetry(async (supabase) => {
+        const { data, error } = await supabase
+          .from('t_value_list')
+          .select('NAME, ABBREVIATION')
+          .eq('STATUS', 1);
+        if (error) throw error;
+        return data;
+      }, 'getListValuesForMappingById');
+      listValues = response || [];
+    } catch (err) {
+      console.warn('[getInstitutionById] Names mapping failed, using raw IDs:', err);
+    }
+
+    const nameMap: Record<string, string> = {};
+    listValues.forEach((v: { NAME: string; ABBREVIATION: string }) => {
+      if (v.NAME) nameMap[v.NAME.toUpperCase()] = v.NAME;
+      if (v.ABBREVIATION) nameMap[v.ABBREVIATION.toUpperCase()] = v.NAME;
+    });
+
+    const getFullName = (val: any) => {
+      if (!val) return '';
+      const sVal = String(val).toUpperCase();
+      return nameMap[sVal] || val;
+    };
+
+    // 4. Return mapped result
+    const result = {
+      ...mapDBToFrontend(data),
+      region: getFullName(data.REGION),
+      nucleus: getFullName(data.NUCLEUS),
+      extension: getFullName(data.EXTENSION),
+      institutionType: getFullName(data.INSTITUTION_TYPE),
+      practiceType: getFullName(data.PRACTICE_TYPE)
+    };
+
+    res.json(result);
   } catch (error: unknown) {
+    console.error('[getInstitutionById] Critical Error:', error);
     handleDbError(res, error);
   }
 };
@@ -205,7 +305,7 @@ export const createInstitution = async (req: AuthRequest, res: Response) => {
       NUCLEUS: i.nucleus,
       EXTENSION: i.extension,
       INSTITUTION_TYPE: i.institutionType,
-      PRACTICE_TYPE: i.practiceType || 'INTERNSHIP', // Valor por defecto
+      PRACTICE_TYPE: i.internshipTypeId || i.practiceType || '1', // Manejar ambos nombres por compatibilidad
       STATUS: i.status ? 1 : 0,
       RIF: i.rif,
       CREATION_DATE: new Date().toISOString()
@@ -247,6 +347,7 @@ export const updateInstitution = async (req: AuthRequest, res: Response) => {
     if (i.extension !== undefined) dbData.EXTENSION = i.extension;
     if (i.institutionType !== undefined) dbData.INSTITUTION_TYPE = i.institutionType;
     if (i.practiceType !== undefined) dbData.PRACTICE_TYPE = i.practiceType;
+    if (i.internshipTypeId !== undefined) dbData.PRACTICE_TYPE = i.internshipTypeId;
     if (i.status !== undefined) dbData.STATUS = i.status ? 1 : 0;
     if (i.rif !== undefined) dbData.RIF = i.rif;
 

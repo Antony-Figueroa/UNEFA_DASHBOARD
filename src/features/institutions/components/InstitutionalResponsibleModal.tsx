@@ -24,7 +24,7 @@ import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { useToast } from "../../../context/toast";
-import { formatCedulaDisplay, formatPhoneDisplay, cleanPhone, CEDULA_MAX_LENGTH, PHONE_MAX_LENGTH, CEDULA_MAX_DIGITS } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, formatPhoneDisplay, cleanPhone, CEDULA_MAX_LENGTH, PHONE_MAX_LENGTH, CEDULA_MAX_DIGITS, PHONE_LOCAL_MAX_LENGTH, formatPhoneLocalDisplay, PHONE_INPUT_CLASS } from "../../../utils/inputFormat";
 import { getResponsibleByCi } from "../services/institutionalResponsiblesService";
 
 const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
@@ -154,7 +154,7 @@ export default function InstitutionalResponsibleModal({
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
     const cleaned = cleanPhone(input);
-    const formatted = formatPhoneDisplay(cleaned);
+    const formatted = formatPhoneLocalDisplay(cleaned);
     setDisplayPhoneNumber(formatted);
     setValue("phoneNumber", cleaned, { shouldValidate: true, shouldDirty: true });
   };
@@ -339,7 +339,7 @@ export default function InstitutionalResponsibleModal({
           institutionId: editingResp.institutionId,
         });
         setDisplayIdentificationNumber(formatCedulaDisplay(editingResp.identificationNumber, false));
-        setDisplayPhoneNumber(formatPhoneDisplay(editingResp.phone || ""));
+        setDisplayPhoneNumber(formatPhoneLocalDisplay(pNumber || ""));
       } else {
         reset({
           identificationPrefix: "V",
@@ -376,9 +376,9 @@ export default function InstitutionalResponsibleModal({
       secondLastName: (rest.secondLastName || "").toUpperCase(),
       phonePrefix: phonePrefix.toUpperCase(),
       phoneNumber: phoneNumber.toUpperCase(),
-      phone: `${phonePrefix}${phoneNumber}`,
+      phone: `${phonePrefix}-${phoneNumber}`,
       email: rest.email.toUpperCase(),
-      institutionId: rest.institutionId.toUpperCase(),
+      institutionId: String(rest.institutionId).toUpperCase(),
       status: editingResp?.status ?? true,
     };
     if (editingResp) {
@@ -488,7 +488,7 @@ export default function InstitutionalResponsibleModal({
                               setValue("lastName", existingData.lastName || "");
                               setValue("secondLastName", existingData.secondLastName || "");
                               setValue("phonePrefix", pPrefix);
-                              setDisplayPhoneNumber(formatPhoneDisplay(existingData.phone || ""));
+                               setDisplayPhoneNumber(formatPhoneLocalDisplay(pNumber || ""));
                               setValue("phoneNumber", pNumber);
                               setValue("email", existingData.email || "");
                               setValue("cargo", existingData.cargo || "");
@@ -532,7 +532,7 @@ export default function InstitutionalResponsibleModal({
                   )}
                 />
               )}
-              {isSubmitted && errors.institutionId && (
+              {errors.institutionId && (
                 <p className="mt-1 text-[11px] font-medium text-red-500">{errors.institutionId.message}</p>
               )}
             </div>
@@ -544,7 +544,7 @@ export default function InstitutionalResponsibleModal({
                 placeholder="Ingrese el primer nombre" 
                 {...register("firstName")} 
                 error={!!errors.firstName} 
-                hint={isSubmitted ? errors.firstName?.message : undefined} 
+                hint={errors.firstName?.message || " "} 
               />
             </div>
 
@@ -555,7 +555,7 @@ export default function InstitutionalResponsibleModal({
                 placeholder="Ingrese el segundo nombre" 
                 {...register("middleName")} 
                 error={!!errors.middleName} 
-                hint={isSubmitted ? errors.middleName?.message : undefined} 
+                hint={errors.middleName?.message || " "} 
               />
             </div>
 
@@ -566,7 +566,7 @@ export default function InstitutionalResponsibleModal({
                 placeholder="Ingrese el primer apellido" 
                 {...register("lastName")} 
                 error={!!errors.lastName} 
-                hint={isSubmitted ? errors.lastName?.message : undefined} 
+                hint={errors.lastName?.message || " "} 
               />
             </div>
 
@@ -577,7 +577,7 @@ export default function InstitutionalResponsibleModal({
                 placeholder="Ingrese el segundo apellido" 
                 {...register("secondLastName")} 
                 error={!!errors.secondLastName} 
-                hint={isSubmitted ? errors.secondLastName?.message : undefined} 
+                hint={errors.secondLastName?.message || " "} 
               />
             </div>
 
@@ -603,21 +603,18 @@ export default function InstitutionalResponsibleModal({
                     )}
                   />
                 </div>
-<div className="flex-1">
+                <div className="flex-1">
                   <Input 
                     value={displayPhoneNumber}
                     onChange={handlePhoneNumberChange}
                     placeholder="000-0000" 
-                    error={!!errors.phoneNumber} 
-                    maxLength={PHONE_MAX_LENGTH}
+                    className={PHONE_INPUT_CLASS}
+                    error={!!errors.phoneNumber || !!errors.phonePrefix} 
+                    maxLength={PHONE_LOCAL_MAX_LENGTH}
+                    hint={errors.phoneNumber?.message || errors.phonePrefix?.message || " "}
                   />
                 </div>
               </div>
-              {isSubmitted && (errors.phonePrefix || errors.phoneNumber) && (
-                <p className="mt-1 text-[11px] font-medium text-red-500">
-                  {errors.phonePrefix?.message || errors.phoneNumber?.message}
-                </p>
-              )}
             </div>
 
             {/* Correo Electrónico */}
@@ -627,7 +624,7 @@ export default function InstitutionalResponsibleModal({
                 placeholder="Ingrese el correo electrónico" 
                 {...register("email")} 
                 error={!!errors.email} 
-                hint={isSubmitted ? errors.email?.message : undefined} 
+                hint={errors.email?.message || " "} 
               />
             </div>
 
@@ -642,6 +639,8 @@ export default function InstitutionalResponsibleModal({
                     e.target.value = e.target.value.toUpperCase();
                   }
                 })} 
+                error={!!errors.cargo}
+                hint={errors.cargo?.message || " "}
               />
             </div>
           </div>

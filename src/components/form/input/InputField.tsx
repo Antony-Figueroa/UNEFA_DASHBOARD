@@ -34,25 +34,23 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
  * />
  * ```
  */
-const InputField = forwardRef<HTMLInputElement, InputProps>(
-  (
-    {
-      type = "text",
-      className = "",
-      disabled = false,
-      success = false,
-      error = false,
-      hint,
-      leftIcon,
-      rightIcon,
-      isPassword = false,
-      onChange,
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      isPassword: _isPassword,
-      ...props
-    },
-    ref
-  ) => {
+     const InputField = forwardRef<HTMLInputElement, InputProps>(
+     (
+       {
+         type = "text",
+         className = "",
+         disabled = false,
+         success = false,
+         error = false,
+         hint,
+         leftIcon,
+         rightIcon,
+         isPassword = false,
+         onChange,
+         ...props
+       },
+       ref
+     ) => {
     // No aplicar mayúsculas si es un campo de contraseña (isPassword=true) o si el tipo es password
     const shouldUppercase = !isPassword && type !== "password";
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

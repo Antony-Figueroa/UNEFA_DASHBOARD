@@ -100,6 +100,19 @@ export const formatPhoneDisplay = (value: string): string => {
 };
 
 /**
+ * Formatea un número de teléfono local (7 dígitos) para visualización (000-0000)
+ * @param value - Solo los 7 dígitos del número
+ * @returns Teléfono local con formato visual
+ */
+export const formatPhoneLocalDisplay = (value: string): string => {
+  if (!value) return '';
+  const cleaned = value.replace(/\D/g, '').substring(0, 7);
+  
+  if (cleaned.length <= 3) return cleaned;
+  return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}`;
+};
+
+/**
  * Limpia un teléfono eliminando caracteres de formato
  * @param value - Teléfono con o sin formato
  * @returns Teléfono limpio (solo dígitos)
@@ -113,6 +126,11 @@ export const cleanPhone = (value: string): string => {
  * Longitud máxima del número de teléfono (sin prefijo)
  */
 export const PHONE_LOCAL_MAX_DIGITS = 7;
+
+/**
+ * Longitud máxima del input visual del número local incluyendo formato (000-0000 = 8 caracteres)
+ */
+export const PHONE_LOCAL_MAX_LENGTH = 8;
 
 /**
  * Longitud máxima del input visual incluyendo formato (0412-1234567 = 12 caracteres)
@@ -131,5 +149,39 @@ export const formatCedulaForTable = (cedula: string): string => {
 /**
  * Clase CSS para dar espaciado visual a números de cédula
  */
+/**
+ * Longitud máxima del número de RIF (9 dígitos)
+ */
+export const RIF_NUMBERS_LENGTH = 9;
+
+/**
+ * Longitud máxima del input visual del RIF incluyendo formato (12345678-9 = 10 caracteres)
+ */
+export const RIF_MAX_LENGTH = 10;
+
+/**
+ * Formatea un número de RIF para visualización (12345678-9)
+ * @param value - Solo los 9 dígitos del RIF
+ * @returns RIF con formato visual
+ */
+export const formatRifDisplay = (value: string): string => {
+  if (!value) return '';
+  const cleaned = value.replace(/\D/g, '').substring(0, RIF_NUMBERS_LENGTH);
+  
+  if (cleaned.length <= 8) return cleaned;
+  return `${cleaned.slice(0, 8)}-${cleaned.slice(8, 9)}`;
+};
+
+/**
+ * Limpia un RIF eliminado caracteres de formato
+ * @param value - RIF con o sin formato
+ * @returns RIF limpio (solo dígitos)
+ */
+export const cleanRif = (value: string): string => {
+  if (!value) return '';
+  return value.replace(/\D/g, '').substring(0, RIF_NUMBERS_LENGTH);
+};
+
 export const CEDULA_INPUT_CLASS = "tracking-[0.2em]";
 export const PHONE_INPUT_CLASS = "tracking-[0.15em]";
+export const RIF_INPUT_CLASS = "tracking-[0.1em]";

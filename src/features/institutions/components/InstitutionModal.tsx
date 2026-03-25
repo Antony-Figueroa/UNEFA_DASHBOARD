@@ -22,8 +22,12 @@ import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import InstitutionalResponsibleModal from "./InstitutionalResponsibleModal";
+import InstitutionalResponsibleSelectModal from "./InstitutionalResponsibleSelectModal";
+import { Search, UserPlus, PlusCircle, ChevronDown, Trash2 } from "lucide-react";
+import { Dropdown } from "../../../components/ui/dropdown/Dropdown";
+import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
 import { useToast } from "../../../context/toast";
-import { cleanCedula, cleanPhone } from "../../../utils/inputFormat";
+import { cleanCedula, cleanPhone, cleanRif, formatRifDisplay, RIF_MAX_LENGTH, RIF_INPUT_CLASS, PHONE_LOCAL_MAX_LENGTH, formatPhoneLocalDisplay, PHONE_INPUT_CLASS } from "../../../utils/inputFormat";
 import { getInstitutionByRif } from "../services/institutionsService";
 import venezuelaData from "../../../data/venezuela.json";
 
@@ -158,6 +162,10 @@ export default function InstitutionModal({
 
   // Estado para el modal de responsables
   const [isRespModalOpen, setIsRespModalOpen] = useState(false);
+  const [isDecisionOpen, setIsDecisionOpen] = useState(false);
+  const [isSelectModalOpen, setIsSelectModalOpen] = useState(false);
+  const [isConfirmRemoveOpen, setIsConfirmRemoveOpen] = useState(false);
+  const [responsibleToRemove, setResponsibleToRemove] = useState<InstitutionalResponsible | null>(null);
   const [editingResponsible, setEditingResponsible] = useState<InstitutionalResponsible | null>(null);
   const [responsibleLoading, setResponsibleLoading] = useState(false);
 
@@ -169,6 +177,33 @@ export default function InstitutionModal({
   const [pendingInstitutionId, setPendingInstitutionId] = useState<string | null>(null);
   const [askAddResponsiblesOpen, setAskAddResponsiblesOpen] = useState(false);
   const [newlyAddedResponsibles, setNewlyAddedResponsibles] = useState<InstitutionalResponsible[]>([]);
+
+  // Handle responsible removal confirmation
+  const handleConfirmRemove = async () => {
+    if (responsibleToRemove && onEditResponsible) {
+      try {
+        await onEditResponsible({
+          responsibleId: responsibleToRemove.responsibleId,
+          institutionId: "", // Empty string unlinks in backend
+          status: true
+        });
+        setIsConfirmRemoveOpen(false);
+        setResponsibleToRemove(null);
+        addToast({
+          variant: "success",
+          title: "Desvinculado",
+          message: "Responsable desvinculado exitosamente"
+        });
+      } catch (error) {
+        console.error("Error unlinking responsible:", error);
+        addToast({
+          variant: "error",
+          title: "Error",
+          message: "No se pudo desvincular al responsable"
+        });
+      }
+    }
+  };
 
   // State for display values with formatting
   const [displayRifNumber, setDisplayRifNumber] = useState("");
@@ -213,19 +248,21 @@ export default function InstitutionModal({
     }));
   }, [portuguesaData, selectedMunicipio]);
 
-  // Handle RIF number input change without formatting
+  // Handle RIF number input change with formatting
   const handleRifNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
-    const cleaned = cleanCedula(input);
-    setDisplayRifNumber(cleaned);
+    const cleaned = cleanRif(input);
+    const formatted = formatRifDisplay(cleaned);
+    setDisplayRifNumber(formatted);
     setValue("rifNumber", cleaned, { shouldValidate: true, shouldDirty: true });
   };
 
-  // Handle phone number input change without formatting
+  // Handle phone number input change with formatting
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
     const cleaned = cleanPhone(input);
-    setDisplayPhoneNumber(cleaned);
+    const formatted = formatPhoneLocalDisplay(cleaned);
+    setDisplayPhoneNumber(formatted);
     setValue("phoneNumber", cleaned, { shouldValidate: true, shouldDirty: true });
   };
 
@@ -564,8 +601,10 @@ export default function InstitutionModal({
           internshipTypeId: editingInst?.internshipTypeId || "",
           careerIds: editingInst?.careerIds || [],
         });
-        setDisplayRifNumber(rifParts[1] || "");
-        setDisplayPhoneNumber(phoneN || "");
+        const formattedRif = formatRifDisplay(rifParts[1] || "");
+        const formattedPhone = formatPhoneLocalDisplay(phoneN || "");
+        setDisplayRifNumber(formattedRif);
+        setDisplayPhoneNumber(formattedPhone);
         
         if (parsedMunicipio) setSelectedMunicipio(parsedMunicipio.toUpperCase());
         if (parsedParroquia) setSelectedParroquia(parsedParroquia.toUpperCase());
@@ -674,110 +713,104 @@ export default function InstitutionModal({
                        addNewLabel="Nueva opción"
                      />
                    )}
-                 />
+                />
                </div>
-                 <div className="flex-1">
-                   <Input 
-                     value={displayRifNumber}
-                     onChange={handleRifNumberChange}
-                     placeholder="Ej. J-12.345.678" 
-                     className="uppercase tracking-widest"
-                     error={!!errors.rifNumber}
-                     hint={isCheckingRif ? "Verificando..." : (errors.rifNumber?.message || " ")}
-                     disabled={!!editingInst || !!existingInstitution}
-                     maxLength={12}
-                     onBlur={async (e) => {
-                       if (!existingInstitution && !editingInst) {
-                         const value = e.target.value;
-                         const cleaned = cleanCedula(value);
-                         if (cleaned.length >= 9) {
-                           setIsCheckingRif(true);
-                           const prefix = watch("rifPrefix") || 'J';
-                           const fullRif = `${prefix}-${cleaned}`;
-                           try {
-                             const existingData = await getInstitutionByRif(fullRif);
-                             if (existingData) {
-                               const message = existingData.status 
-                                 ? "Este RIF ya está registrado." 
-                                 : "RIF registrado (INACTIVO). Contacte a administración para reactivar.";
-                               
-                               setError("rifNumber", { 
-                                 type: "manual", 
-                                 message 
-                               });
-                               setExistingInstitution(existingData);
-                               setViewOnlyMode(true);
-
-                               const rifParts = existingData.rif ? existingData.rif.split("-") : ["", ""];
-                               const [phoneP, phoneN] = existingData.phone ? existingData.phone.split("-") : ["", ""];
-
-                                let parsedEstado = "PORTUGUESA";
-                                let parsedMunicipio = "";
-                                let parsedParroquia = "";
-                                let parsedDireccion = existingData.fiscalAddress || "";
-                                let parsedRegion = existingData.region;
-                                let parsedNucleo = existingData.nucleus;
-                                let parsedExtension = existingData.extension;
-                                let parsedTipoEmpresa = existingData.institutionType;
-
-                                if (existingData.fiscalAddress) {
-                                  const parts = existingData.fiscalAddress.split(", ");
-                                  if (parts.length >= 8) {
-                                    parsedRegion = parts[0];
-                                    parsedNucleo = parts[1];
-                                    parsedExtension = parts[2];
-                                    parsedTipoEmpresa = parts[3];
-                                    parsedEstado = parts[4];
-                                    parsedMunicipio = parts[5];
-                                    parsedParroquia = parts[6];
-                                    parsedDireccion = parts.slice(7).join(", ");
-                                  } else if (parts.length >= 4) {
-                                    parsedEstado = parts[0];
-                                    parsedMunicipio = parts[1];
-                                    parsedParroquia = parts[2];
-                                    parsedDireccion = parts.slice(3).join(", ");
-                                  }
-                                }
-
-                                setValue("rifPrefix", rifParts[0] || "");
-                                setDisplayRifNumber(rifParts[1] || "");
-                                setValue("rifNumber", rifParts[1] || "");
-                                setValue("name", existingData.name || "");
-                                setValue("phonePrefix", phoneP || "");
-                                setDisplayPhoneNumber(phoneN || "");
-                                setValue("phoneNumber", phoneN || "");
-                                setValue("region", (parsedRegion || existingData.region || "").toUpperCase());
-                                setValue("nucleus", (parsedNucleo || existingData.nucleus || "").toUpperCase());
-                                setValue("extension", (parsedExtension || existingData.extension || "").toUpperCase());
-                                setValue("institutionType", (parsedTipoEmpresa || existingData.institutionType || "").toUpperCase());
-                                setValue("estado", parsedEstado?.toUpperCase() || "");
-                                setValue("municipio", parsedMunicipio?.toUpperCase() || "");
-                                setValue("parroquia", parsedParroquia?.toUpperCase() || "");
-                                setValue("direccion", parsedDireccion);
+               <div className="flex-1">
+                    <Input 
+                      value={displayRifNumber}
+                      onChange={handleRifNumberChange}
+                      placeholder="12345678-9" 
+                      className={`uppercase ${RIF_INPUT_CLASS}`}
+                      error={!!errors.rifNumber}
+                      hint={errors.rifNumber?.message || (isCheckingRif ? "Verificando..." : " ")}
+                      disabled={!!editingInst || !!existingInstitution}
+                      maxLength={RIF_MAX_LENGTH}
+                      onBlur={async (e) => {
+                        if (!existingInstitution && !editingInst) {
+                          const value = e.target.value;
+                          const cleaned = cleanRif(value);
+                          if (cleaned.length >= 9) {
+                            setIsCheckingRif(true);
+                            const prefix = watch("rifPrefix") || 'J';
+                            const fullRif = `${prefix}-${cleaned}`;
+                            try {
+                              const existingData = await getInstitutionByRif(fullRif);
+                              if (existingData) {
+                                const message = existingData.status 
+                                  ? "Este RIF ya está registrado." 
+                                  : "RIF registrado (INACTIVO). Contacte a administración para reactivar.";
                                 
-                                if (parsedMunicipio) setSelectedMunicipio(parsedMunicipio.toUpperCase());
-                                if (parsedParroquia) setSelectedParroquia(parsedParroquia.toUpperCase());
+                                setError("rifNumber", { 
+                                  type: "manual", 
+                                  message 
+                                });
+                                setExistingInstitution(existingData);
+                                setViewOnlyMode(true);
 
-                                // Toast removido por solicitud del usuario (molesto durante el ingreso)
-                                // Las pistas visuales son suficientes
-                               }
-                           } catch (err) {
-                             console.error("Error checking RIF:", err);
-                           } finally {
-                             setIsCheckingRif(false);
-                           }
-                         }
-                       }
-                       register("rifNumber").onBlur(e);
-                     }}
-                   />
-                 </div>
-              </div>
-            {errors.rifNumber && (
-              <p className="mt-1 text-xs text-red-500">
-                {errors.rifNumber.message}
-              </p>
-            )}
+                                const rifParts = existingData.rif ? existingData.rif.split("-") : ["", ""];
+                                const [phoneP, phoneN] = existingData.phone ? existingData.phone.split("-") : ["", ""];
+
+                                 let parsedEstado = "PORTUGUESA";
+                                 let parsedMunicipio = "";
+                                 let parsedParroquia = "";
+                                 let parsedDireccion = existingData.fiscalAddress || "";
+                                 let parsedRegion = existingData.region;
+                                 let parsedNucleo = existingData.nucleus;
+                                 let parsedExtension = existingData.extension;
+                                 let parsedTipoEmpresa = existingData.institutionType;
+
+                                 if (existingData.fiscalAddress) {
+                                   const parts = existingData.fiscalAddress.split(", ");
+                                   if (parts.length >= 8) {
+                                     parsedRegion = parts[0];
+                                     parsedNucleo = parts[1];
+                                     parsedExtension = parts[2];
+                                     parsedTipoEmpresa = parts[3];
+                                     parsedEstado = parts[4];
+                                     parsedMunicipio = parts[5];
+                                     parsedParroquia = parts[6];
+                                     parsedDireccion = parts.slice(7).join(", ");
+                                   } else if (parts.length >= 4) {
+                                     parsedEstado = parts[0];
+                                     parsedMunicipio = parts[1];
+                                     parsedParroquia = parts[2];
+                                     parsedDireccion = parts.slice(3).join(", ");
+                                   }
+                                 }
+
+                                 setValue("rifPrefix", rifParts[0] || "");
+                                 const formattedRif = formatRifDisplay(rifParts[1] || "");
+                                 setDisplayRifNumber(formattedRif);
+                                 setValue("rifNumber", rifParts[1] || "");
+                                 setValue("name", existingData.name || "");
+                                 setValue("phonePrefix", phoneP || "");
+                                 const formattedPhone = formatPhoneLocalDisplay(phoneN || "");
+                                 setDisplayPhoneNumber(formattedPhone);
+                                 setValue("phoneNumber", phoneN || "");
+                                 setValue("region", (parsedRegion || existingData.region || "").toUpperCase());
+                                 setValue("nucleus", (parsedNucleo || existingData.nucleus || "").toUpperCase());
+                                 setValue("extension", (parsedExtension || existingData.extension || "").toUpperCase());
+                                 setValue("institutionType", (parsedTipoEmpresa || existingData.institutionType || "").toUpperCase());
+                                 setValue("estado", parsedEstado?.toUpperCase() || "");
+                                 setValue("municipio", parsedMunicipio?.toUpperCase() || "");
+                                 setValue("parroquia", parsedParroquia?.toUpperCase() || "");
+                                 setValue("direccion", parsedDireccion);
+                                 
+                                 if (parsedMunicipio) setSelectedMunicipio(parsedMunicipio.toUpperCase());
+                                 if (parsedParroquia) setSelectedParroquia(parsedParroquia.toUpperCase());
+                                }
+                            } catch (err) {
+                              console.error("Error checking RIF:", err);
+                            } finally {
+                              setIsCheckingRif(false);
+                            }
+                          }
+                        }
+                        register("rifNumber").onBlur(e);
+                      }}
+                    />
+                  </div>
+               </div>
           </div>
           <div>
             <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nombre *</label>
@@ -916,16 +949,13 @@ export default function InstitutionModal({
                   value={displayPhoneNumber}
                   onChange={handlePhoneNumberChange}
                   placeholder="000-0000" 
-                  maxLength={12}
-                  error={!!errors.phoneNumber} 
+                  className={PHONE_INPUT_CLASS}
+                  maxLength={PHONE_LOCAL_MAX_LENGTH}
+                  error={!!errors.phoneNumber || !!errors.phonePrefix} 
+                  hint={errors.phoneNumber?.message || errors.phonePrefix?.message || " "}
                 />
               </div>
             </div>
-            {(errors.phonePrefix || errors.phoneNumber) && (
-              <p className="mt-1 text-xs text-red-500">
-                {errors.phonePrefix?.message || errors.phoneNumber?.message}
-              </p>
-            )}
           </div>
 
           <div>
@@ -1083,19 +1113,44 @@ export default function InstitutionModal({
                         Historial ({responsibleHistory.length})
                       </Button>
                     )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditingResponsible(null);
-                        setIsRespModalOpen(true);
-                      }}
-                    >
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                      Agregar
-                    </Button>
+                    <div className="relative">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsDecisionOpen(!isDecisionOpen)}
+                        className="dropdown-toggle"
+                        endIcon={<ChevronDown className="w-4 h-4 ml-1 opacity-50" />}
+                      >
+                        <PlusCircle className="w-4 h-4 mr-1" />
+                        Agregar
+                      </Button>
+                      
+                      <Dropdown 
+                        isOpen={isDecisionOpen} 
+                        onClose={() => setIsDecisionOpen(false)}
+                        align="right"
+                        className="w-56"
+                      >
+                        <DropdownItem
+                          onClick={() => {
+                            setIsDecisionOpen(false);
+                            setIsSelectModalOpen(true);
+                          }}
+                          icon={<Search className="w-4 h-4" />}
+                        >
+                          Buscar Existente
+                        </DropdownItem>
+                        <DropdownItem
+                          onClick={() => {
+                            setIsDecisionOpen(false);
+                            setIsRespModalOpen(true);
+                          }}
+                          icon={<UserPlus className="w-4 h-4" />}
+                        >
+                          Registrar Nuevo
+                        </DropdownItem>
+                      </Dropdown>
+                    </div>
                   </div>
                 </div>
 
@@ -1123,10 +1178,23 @@ export default function InstitutionModal({
                               setIsRespModalOpen(true);
                             }}
                             className="text-blue-600 hover:text-blue-700"
+                            aria-label="Editar Responsable"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                             </svg>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setResponsibleToRemove(resp);
+                              setIsConfirmRemoveOpen(true);
+                            }}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            aria-label="Quitar de esta institución"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
@@ -1340,6 +1408,43 @@ export default function InstitutionModal({
         isLoading={isLoading}
       />
     )}
+
+    {/* Modal para seleccionar responsable existente */}
+    <InstitutionalResponsibleSelectModal
+      isOpen={isSelectModalOpen}
+      onClose={() => setIsSelectModalOpen(false)}
+      currentInstitutionId={editingInst?.institutionId}
+      onSelect={async (resp) => {
+        if (onEditResponsible) {
+          try {
+            await onEditResponsible({
+              responsibleId: resp.responsibleId,
+              institutionId: editingInst?.institutionId || "",
+              status: true 
+            });
+            setIsSelectModalOpen(false);
+          } catch (error) {
+            console.error("Error linking existing responsible:", error);
+            addToast({
+              variant: "error",
+              title: "Error",
+              message: "No se pudo vincular el responsable"
+            });
+          }
+        }
+      }}
+    />
+
+    {/* Diálogo de confirmación para desvincular responsable */}
+    <UnifiedDialog
+      isOpen={isConfirmRemoveOpen}
+      onClose={() => setIsConfirmRemoveOpen(false)}
+      variant="error"
+      title="Desvincular Responsable"
+      confirmLabel="Desvincular"
+      message={`¿Está seguro que desea quitar a ${responsibleToRemove?.firstName} ${responsibleToRemove?.lastName} de esta institución? Dejará de aparecer en este listado pero sus datos se mantendrán en el sistema.`}
+      onConfirm={handleConfirmRemove}
+    />
 
     {/* Dialog para preguntar si desea agregar responsables después de crear institución */}
     {!editingInst && (

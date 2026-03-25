@@ -151,7 +151,16 @@ export default function PreEnrollmentPage() {
     useEffect(() => {
         const loadDynamicLists = async () => {
             try {
-                const listNames = ["Nacionalidad", "Tipo de sangre"];
+                const listNames = [
+                    "Nacionalidad", 
+                    "Sexo", 
+                    "PREFIJO", 
+                    "Registro Civil", 
+                    "Regimen/Turno", 
+                    "Tipo de estudiante", 
+                    "Rango Militar", 
+                    "Trabajo"
+                ];
                 const data = await fetchMultipleLists(listNames);
                 setDynamicLists(data as Record<string, ListValue[]>);
             } catch (error) {

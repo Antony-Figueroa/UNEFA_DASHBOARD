@@ -84,13 +84,15 @@ interface UserKeyRow {
 }
 
 export const login = async (userCi: string, password: string, ip: string, userAgent: string) => {
-  return await dbManager.withRetry(async (supabase) => {
-    // 1. Buscar usuario por CI
-    const { data: userData, error: userError } = await supabase
-      .from('t_user')
-      .select('*, t_user_roles(ID_ROLES)')
-      .eq('USER_CI', userCi)
-      .single();
+   return await dbManager.withRetry(async (supabase) => {
+     // 1. Buscar usuario por CI
+     console.log(`[Auth Service] Login attempt for CI: ${userCi}`);
+     const { data: userData, error: userError } = await supabase
+       .from('t_user')
+       .select('*, t_user_roles(ID_ROLES)')
+       .eq('USER_CI', userCi)
+       .single();
+     console.log(`[Auth Service] Query result: userData=${JSON.stringify(userData)}, error=${userError}`);
 
     const user = userData as unknown as UserRow;
 
@@ -382,22 +384,36 @@ export const changePassword = async (
     });
 
     // 5. Actualizar estado del usuario y perfil (si es primer ingreso)
-    const updateData: any = { 
-      FORCE_PASSWORD_CHANGE: false,
-      LOGIN: 1,
-      TERMS_CONDITIONS: 'ACEPTADO'
+    // Primero actualizamos los datos del perfil
+    const profileUpdateData: any = { 
+        LOGIN: 1,
+        TERMS_CONDITIONS: 'ACEPTADO'
     };
     
     if (profileData) {
-      if (profileData.name) updateData.NAME = profileData.name.toUpperCase();
-      if (profileData.secondName) updateData.SECOND_NAME = profileData.secondName.toUpperCase();
-      if (profileData.surname) updateData.SURNAME = profileData.surname.toUpperCase();
-      if (profileData.secondSurname) updateData.SECOND_SURNAME = profileData.secondSurname.toUpperCase();
-      if (profileData.phoneNumber) updateData.PHONE_NUMBER = profileData.phoneNumber;
-      if (profileData.email) updateData.EMAIL = profileData.email.toUpperCase();
+        if (profileData.name) profileUpdateData.NAME = profileData.name.toUpperCase();
+        if (profileData.secondName) profileUpdateData.SECOND_NAME = profileData.secondName.toUpperCase();
+        if (profileData.surname) profileUpdateData.SURNAME = profileData.surname.toUpperCase();
+        if (profileData.secondSurname) profileUpdateData.SECOND_SURNAME = profileData.secondSurname.toUpperCase();
+        if (profileData.phoneNumber) profileUpdateData.PHONE_NUMBER = profileData.phoneNumber;
+        if (profileData.email) profileUpdateData.EMAIL = profileData.email.toUpperCase();
     }
     
-    await supabase.from('t_user').update(updateData).eq('USER_ID', userId);
+    // Segundo, nos aseguramos de desactivar los flags de seguridad
+    const securityResetData: Partial<UserRow> = { 
+        FORCE_PASSWORD_CHANGE: false,
+        // También resetear intentos fallidos por seguridad
+        FAILED_ATTEMPTS: 0,
+        LOCK_DATE: undefined
+    };
+    
+    // Aplicar actualización de perfil si hay datos
+    if (Object.keys(profileUpdateData).length > 0) {
+        await supabase.from('t_user').update(profileUpdateData).eq('USER_ID', userId);
+    }
+    
+    // Siempre aplicar reset de seguridad
+    await supabase.from('t_user').update(securityResetData).eq('USER_ID', userId);
 
     // 6. Guardar preguntas de seguridad
     if (securityQuestions && Array.isArray(securityQuestions)) {
@@ -659,7 +675,11 @@ export const resetPassword = async (userId: number, newPassword: string) => {
       } as Partial<UserRow>).eq('USER_ID', userId);
     } catch {
       // Fallback si las columnas no existen
-      await supabase.from('t_user').update({ STATUS: 1 }).eq('USER_ID', userId);
+      await supabase.from('t_user').update({ 
+        STATUS: 1,
+        FAILED_ATTEMPTS: 0,
+        FORCE_PASSWORD_CHANGE: false
+      }).eq('USER_ID', userId);
     }
 
     return { success: true, message: 'Contraseña restablecida correctamente' };

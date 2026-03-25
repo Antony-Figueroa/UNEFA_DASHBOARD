@@ -13,7 +13,7 @@ const router = Router();
 router.get('/', getInstitutionalResponsibles);
 router.get('/by-ci/:ci', getInstitutionalResponsibleByCi);
 router.post('/', createInstitutionalResponsible);
-router.patch('/:id', updateInstitutionalResponsible);
+router.put('/:id', updateInstitutionalResponsible);
 router.delete('/:id', deleteInstitutionalResponsible);
 router.patch('/:id/status', toggleInstitutionalResponsibleStatus);
 

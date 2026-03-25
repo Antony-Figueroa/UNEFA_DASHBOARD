@@ -14,7 +14,9 @@ interface InstitutionDTO {
   fiscalAddress: string;
   phone: string;
   practiceType: string;
+  internshipTypeId?: string;
   careerId: string;
+  careerIds?: string[];
   careerName?: string;
   region: string;
   nucleus: string;

@@ -13,26 +13,35 @@ const handleDbError = (res: Response, error: unknown) => {
   const dbError = error as { message?: string; details?: string; code?: string; status?: number };
   
   let userMessage = 'Error en la base de datos';
+  let statusCode = dbError.status || 500;
+
   if (dbError.code === '23502') {
     userMessage = `Error: El campo ${dbError.details?.match(/"([^"]+)"/)?.[1] || 'requerido'} no puede estar vacío`;
+    statusCode = 400;
   } else if (dbError.code === '23505') {
     userMessage = 'Error: Ya existe un responsable con esta cédula';
+    statusCode = 400;
+  } else if (dbError.code === '23503') {
+    userMessage = 'Error: La institución seleccionada no es válida o no existe';
+    statusCode = 400;
   } else if (dbError.code === '22001') {
-    userMessage = 'Error: La cédula ingresada excede el límite permitido (máximo 8 dígitos). Verifique e intente nuevamente.';
+    userMessage = 'Error: Los datos ingresados exceden el límite permitido. Verifique la longitud de los campos.';
+    statusCode = 400;
   } else if (dbError.code === 'PGRST205') {
     userMessage = 'Error: La tabla no existe en la base de datos';
-  } else if (dbError.code === '42703' || (dbError.message && dbError.message.includes('column "CARGO"'))) {
-    userMessage = 'Error estructural: El campo (Cargo) no existe en su base de datos. Se intentará guardar sin este campo.';
+  } else if (dbError.code === '42703' || (dbError.message && dbError.message.includes('column') && dbError.message.includes('not exist'))) {
+    userMessage = 'Error estructural: Un campo requerido no existe en su base de datos. Por favor, contacte al administrador.';
   } else if (dbError.code === 'PGRST116' || dbError.code === '404' || dbError.status === 404) {
     userMessage = dbError.message || 'Registro no encontrado';
     return res.status(404).json({ message: userMessage });
   }
 
-  res.status(dbError.status || 500).json({ 
+  res.status(statusCode).json({ 
     message: userMessage, 
     error: dbError.message || 'Unknown database error',
     details: dbError.details,
-    code: dbError.code
+    code: dbError.code,
+    raw: dbError // Enviar error completo para depuración profunda
   });
 };
 
@@ -45,7 +54,7 @@ interface DBInstitutionalResponsible {
   SECOND_SURNAME: string | null;
   CONTACT_PHONE: string;
   EMAIL: string;
-  CARGO: string | null;
+  cargo: string | null; // Corregido a minúsculas según esquema visual
   CREATION_DATE: string;
   STATUS: number;
   INSTITUTION_ID: number;
@@ -64,7 +73,7 @@ const mapDBToFrontend = (r: DBInstitutionalResponsible) => ({
   secondLastName: r.SECOND_SURNAME || undefined,
   phone: r.CONTACT_PHONE,
   email: r.EMAIL,
-  cargo: r.CARGO || undefined,
+  cargo: r.cargo || undefined, // Mapeado desde 'cargo' minúscula
   institutionId: String(r.INSTITUTION_ID),
   institutionName: r.t_institution?.INSTITUTION_NAME,
   status: r.STATUS === 1,
@@ -74,19 +83,23 @@ const mapDBToFrontend = (r: DBInstitutionalResponsible) => ({
 export const getInstitutionalResponsibles = async (_req: Request, res: Response) => {
   try {
     const data = await dbManager.withRetry(async (supabase) => {
+      // 1. Consulta simple
       const { data, error } = await supabase
         .from(TABLE_NAME)
-        .select(`
-          *,
-          t_institution:INSTITUTION_ID (
-            INSTITUTION_NAME
-          )
-        `)
+        .select('*')
         .order('NAME', { ascending: true });
 
       if (error) throw error;
-      return data as unknown as DBInstitutionalResponsible[];
-    });
+
+      // 2. Obtener nombres de instituciones para el mapeo (opcional pero recomendado)
+      const { data: instData } = await supabase.from('t_institution').select('INSTITUTION_ID, INSTITUTION_NAME');
+      const instMap = new Map((instData || []).map(i => [i.INSTITUTION_ID, i.INSTITUTION_NAME]));
+
+      return (data || []).map((r: any) => ({
+        ...r,
+        t_institution: { INSTITUTION_NAME: instMap.get(r.INSTITUTION_ID) || 'N/A' }
+      })) as unknown as DBInstitutionalResponsible[];
+    }, 'getInstitutionalResponsibles');
 
     res.json(data.map(mapDBToFrontend));
   } catch (error: unknown) {
@@ -101,27 +114,28 @@ export const getInstitutionalResponsibleByCi = async (req: Request, res: Respons
     const data = await dbManager.withRetry(async (supabase) => {
       const { data: responsible, error } = await supabase
         .from(TABLE_NAME)
-        .select(`
-          *,
-          t_institution:INSTITUTION_ID (
-            INSTITUTION_NAME
-          )
-        `)
+        .select('*')
         .eq('MANAGER_CI', ci)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!responsible) return null;
+
+      // Obtener nombre de la institución
+      const { data: inst } = await supabase
+        .from('t_institution')
+        .select('INSTITUTION_NAME')
+        .eq('INSTITUTION_ID', responsible.INSTITUTION_ID)
         .single();
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          return null;
-        }
-        throw error;
-      }
-
-      return responsible as DBInstitutionalResponsible;
-    });
+      return {
+        ...responsible,
+        t_institution: inst || { INSTITUTION_NAME: 'N/A' }
+      } as DBInstitutionalResponsible;
+    }, 'getInstitutionalResponsibleByCi');
 
     if (!data) {
-      return res.status(404).json({ message: 'Responsable no encontrado', data: null });
+      return res.status(200).json({ message: 'Responsable no encontrado', data: null });
     }
 
     res.json({ data: mapDBToFrontend(data) });
@@ -146,31 +160,31 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
     
     const creationDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-    const dbData: any = {
-      MANAGER_CI: `${r.identificationPrefix}-${r.identificationNumber}`,
-      NAME: String(r.firstName).toUpperCase(),
-      SECOND_NAME: r.middleName ? String(r.middleName).toUpperCase() : null,
-      SURNAME: String(r.lastName).toUpperCase(),
-      SECOND_SURNAME: r.secondLastName ? String(r.secondLastName).toUpperCase() : null,
-      CONTACT_PHONE: r.phone,
-      EMAIL: String(r.email).toUpperCase(),
-      INSTITUTION_ID: institutionIdNum,
-      STATUS: r.status === false ? 0 : 1,
-      CREATION_DATE: creationDate
+    const buildDbData = () => {
+      const data: any = {
+        MANAGER_CI: `${r.identificationPrefix}-${r.identificationNumber}`,
+        NAME: String(r.firstName).toUpperCase(),
+        SECOND_NAME: r.middleName ? String(r.middleName).toUpperCase() : null,
+        SURNAME: String(r.lastName).toUpperCase(),
+        SECOND_SURNAME: r.secondLastName ? String(r.secondLastName).toUpperCase() : null,
+        CONTACT_PHONE: r.phone,
+        EMAIL: String(r.email).toUpperCase(),
+        INSTITUTION_ID: institutionIdNum,
+        STATUS: r.status === false ? 0 : 1,
+        CREATION_DATE: creationDate,
+        cargo: r.cargo ? String(r.cargo).toUpperCase() : null // Usando nombre exacto de la columna 'cargo'
+      };
+      
+      return data;
     };
 
-    // Mapeo seguro: Solo incluir CARGO si se desea, pero tener en cuenta que puede no existir
-    // en versiones antiguas de la base de datos.
-    if (r.cargo) {
-      (dbData as any).CARGO = String(r.cargo).toUpperCase();
-    }
-
     const data = await dbManager.withRetry(async (supabase) => {
-      // Verificar duplicado primero con maybeSingle
+      // Verificar duplicado
+      const managerCi = `${r.identificationPrefix}-${r.identificationNumber}`;
       const { data: existing } = await supabase
         .from(TABLE_NAME)
         .select('MANAGER_ID')
-        .eq('MANAGER_CI', dbData.MANAGER_CI)
+        .eq('MANAGER_CI', managerCi)
         .maybeSingle();
 
       if (existing) {
@@ -179,23 +193,30 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
         throw err;
       }
 
-      const { data, error } = await supabase
+      let dbData = buildDbData();
+      let { data, error } = await supabase
         .from(TABLE_NAME)
         .insert([dbData])
-        .select(`
-          *,
-          t_institution:INSTITUTION_ID (
-            INSTITUTION_NAME
-          )
-        `)
+        .select('*')
         .single();
 
       if (error) {
         console.error('[createInstitutionalResponsible] DB Insert Error:', error);
         throw error;
       }
-      return data as DBInstitutionalResponsible;
-    });
+
+      // Obtener nombre de institución para el mapeo final
+      const { data: inst } = await supabase
+        .from('t_institution')
+        .select('INSTITUTION_NAME')
+        .eq('INSTITUTION_ID', (data as any).INSTITUTION_ID)
+        .single();
+
+      return {
+        ...data,
+        t_institution: inst || { INSTITUTION_NAME: 'N/A' }
+      } as DBInstitutionalResponsible;
+    }, 'createInstitutionalResponsible');
 
     res.status(201).json(mapDBToFrontend(data));
   } catch (error: unknown) {
@@ -220,28 +241,46 @@ export const updateInstitutionalResponsible = async (req: Request, res: Response
     if (r.secondLastName !== undefined) dbData.SECOND_SURNAME = r.secondLastName ? String(r.secondLastName).toUpperCase() : null;
     if (r.phone !== undefined) dbData.CONTACT_PHONE = r.phone;
     if (r.email !== undefined) dbData.EMAIL = String(r.email).toUpperCase();
-    if (r.cargo !== undefined) dbData.CARGO = r.cargo ? String(r.cargo).toUpperCase() : null;
-    if (r.institutionId !== undefined) dbData.INSTITUTION_ID = parseInt(r.institutionId);
+    if (r.cargo !== undefined) dbData.cargo = r.cargo ? String(r.cargo).toUpperCase() : null; // Corregido a minúsculas
+    if (r.institutionId !== undefined) {
+      // Si llega vacío o "0", lo tratamos como null para desvincular
+      dbData.INSTITUTION_ID = (r.institutionId === "" || r.institutionId === "0") ? null : parseInt(r.institutionId);
+    }
     if (r.status !== undefined) dbData.STATUS = r.status ? 1 : 0;
 
     const data = await dbManager.withRetry(async (supabase) => {
-      const { data, error } = await supabase
+      // 1. Actualizar el registro base
+      const { error: updateError } = await supabase
         .from(TABLE_NAME)
         .update(dbData)
+        .eq('MANAGER_ID', id);
+      
+      if (updateError) throw updateError;
+
+      // 2. Recuperar el registro actualizado
+      const { data: updatedData, error: selectError } = await supabase
+        .from(TABLE_NAME)
+        .select('*')
         .eq('MANAGER_ID', id)
-        .select(`
-          *,
-          t_institution:INSTITUTION_ID (
-            INSTITUTION_NAME
-          )
-        `)
         .single();
 
-      if (error) {
-        console.error('[updateInstitutionalResponsible] DB Update Error:', error);
-        throw error;
+      if (selectError) throw selectError;
+
+      // 3. Obtener el nombre de la institución si existe una vinculada
+      let instName = 'N/A';
+      if (updatedData.INSTITUTION_ID) {
+        const { data: inst } = await supabase
+          .from('t_institution')
+          .select('INSTITUTION_NAME')
+          .eq('INSTITUTION_ID', updatedData.INSTITUTION_ID)
+          .single();
+        if (inst) instName = inst.INSTITUTION_NAME;
       }
-      return data as DBInstitutionalResponsible;
+
+      return {
+        ...updatedData,
+        t_institution: { INSTITUTION_NAME: instName }
+      } as DBInstitutionalResponsible;
     });
 
     res.json(mapDBToFrontend(data));

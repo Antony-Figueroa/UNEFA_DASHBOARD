@@ -49,6 +49,7 @@ const mapFromApi = (dto: InstitutionalResponsibleDTO): InstitutionalResponsible 
  */
 export const responsibleService = createCrudService<InstitutionalResponsible, CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload, InstitutionalResponsibleDTO>({
   endpoint: API_URL,
+  idField: "responsibleId",
   mapFromApi
 });
 

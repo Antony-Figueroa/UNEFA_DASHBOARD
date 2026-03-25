@@ -74,7 +74,9 @@ export default function StudentsPage() {
         const loadLists = async () => {
             try {
                 const lists = await fetchMultipleLists([
+                    "Nacionalidad",
                     "Sexo",
+                    "PREFIJO",
                     "Registro Civil",
                     "Regimen/Turno",
                     "Tipo de estudiante",

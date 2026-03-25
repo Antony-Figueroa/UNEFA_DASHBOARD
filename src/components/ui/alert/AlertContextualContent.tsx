@@ -17,7 +17,15 @@ export const ChangeComparison: React.FC<{
     "enrollmentDate",
     "creationDate", // Excluido para evitar ruido visual en comparaciones
   ];
-  const allExcludes = [...defaultExcludes, ...excludeFields];
+  const allExcludes = [
+    ...defaultExcludes, 
+    ...excludeFields,
+    "institutionId", // Filtrar ID técnico para preferir el nombre descriptivo
+    "studentId",
+    "careerId",
+    "periodId",
+    "id"
+  ];
 
   // Helper para comparar valores, manejando fechas y tipos básicos
   const areEqual = (a: unknown, b: unknown): boolean => {
@@ -50,7 +58,11 @@ export const ChangeComparison: React.FC<{
 
   // Helper para formatear valores para visualización
   const formatValue = (val: unknown): string => {
-    if (val === null || val === undefined) return "N/A";
+    // Manejar null, undefined, strings vacíos y el string "null" que a veces viene del backend
+    if (val === null || val === undefined || val === "" || String(val).toLowerCase() === "null") {
+      return "Ninguno (Sin asignar)";
+    }
+    
     if (val instanceof Date) {
       return val.toLocaleDateString("es-ES", {
         year: "numeric",
@@ -59,6 +71,10 @@ export const ChangeComparison: React.FC<{
       });
     }
     if (typeof val === "boolean") return val ? "Activo" : "Inactivo";
+    if (typeof val === "number" && val === 0) return "Inactivo / Ninguno";
+    
+    // Si el valor es un ID (número solo), y tenemos algo más descriptivo, formatValue no lo sabe, 
+    // pero podemos limpiar strings de IDs largos si fuera necesario.
     return String(val);
   };
 

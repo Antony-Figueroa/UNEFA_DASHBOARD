@@ -448,14 +448,15 @@ export default function FirstLogin() {
                       Nueva Contraseña <span className="text-error-500">*</span>
                     </Label>
                     <div className="relative">
-                      <Input
-                        id="newPassword"
-                        type={showNewPassword ? "text" : "password"}
-                        placeholder={showNewPassword ? "Minimo 12 caracteres" : "Minimo 12 caracteres"}
-                        {...register("newPassword")}
-                        error={!!errors.newPassword}
-                        className="h-12 text-base"
-                      />
+                   <Input
+                     id="newPassword"
+                     type={showNewPassword ? "text" : "password"}
+                     isPassword={true}
+                     placeholder={showNewPassword ? "Minimo 12 caracteres" : "Minimo 12 caracteres"}
+                     {...register("newPassword")}
+                     error={!!errors.newPassword}
+                     className="h-12 text-base"
+                   />
                       <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
@@ -494,15 +495,15 @@ export default function FirstLogin() {
                       Confirmar Contraseña <span className="text-error-500">*</span>
                     </Label>
                     <div className="relative">
-                      <Input
-                        id="confirmPassword"
-                        type={showConfirmPassword ? "text" : "password"}
-                        placeholder={showConfirmPassword ? "Repita su contrasena" : "Repita su contrasena"}
-                        {...register("confirmPassword")}
-                        error={!!errors.confirmPassword}
-                        className="h-12 text-base"
-                        isPassword
-                      />
+                     <Input
+                       id="confirmPassword"
+                       type={showConfirmPassword ? "text" : "password"}
+                       isPassword={true}
+                       placeholder={showConfirmPassword ? "Repita su contrasena" : "Repita su contrasena"}
+                       {...register("confirmPassword")}
+                       error={!!errors.confirmPassword}
+                       className="h-12 text-base"
+                     />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}

@@ -18,7 +18,7 @@ import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { useToast } from "../../../context/toast";
-import { formatCedulaDisplay, formatPhoneDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS, PHONE_LOCAL_MAX_LENGTH } from "../../../utils/inputFormat";
 import { getTutorByCi } from "../services/tutorsService";
 
 /**
@@ -86,7 +86,7 @@ export default function TutorModal({
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
     const cleaned = cleanPhone(input);
-    const formatted = formatPhoneDisplay(cleaned);
+    const formatted = formatPhoneLocalDisplay(cleaned);
     setDisplayPhoneNumber(formatted);
     setValue("phoneNumber", cleaned, { shouldValidate: true, shouldDirty: true });
   };
@@ -395,7 +395,7 @@ export default function TutorModal({
     }));
   }, [careers]);
 
-useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       if (editingTutor) {
         const areaCode = editingTutor.phone.substring(0, 4);
@@ -419,7 +419,11 @@ useEffect(() => {
           carreras: editingTutor.carreras || [],
         });
         setDisplayIdentificationNumber(formatCedulaDisplay(editingTutor.identificationNumber, false));
-        setDisplayPhoneNumber(formatPhoneDisplay(editingTutor.phone));
+        
+        // Formatear teléfono
+        const cleanPh = cleanPhone(editingTutor.phone);
+        const numberOnly = cleanPh.length >= 4 ? cleanPh.substring(4) : cleanPh;
+        setDisplayPhoneNumber(formatPhoneLocalDisplay(numberOnly));
       } else {
         reset({
           identificationPrefix: "",
@@ -727,21 +731,17 @@ useEffect(() => {
                     )}
                   />
                 </div>
-<div className="flex-1">
+                <div className="flex-1">
                   <Input
                     value={displayPhoneNumber}
                     onChange={handlePhoneNumberChange}
                     placeholder="000-0000"
-                    error={!!errors.phoneNumber}
-                    maxLength={CEDULA_MAX_LENGTH}
+                    error={!!errors.phoneNumber || !!errors.phoneAreaCode}
+                    maxLength={PHONE_LOCAL_MAX_LENGTH}
+                    hint={errors.phoneNumber?.message || errors.phoneAreaCode?.message || " "}
                   />
                 </div>
               </div>
-              {(errors.phoneAreaCode || errors.phoneNumber) && (
-                <p className="mt-1 text-xs text-red-500">
-                  {errors.phoneAreaCode?.message || errors.phoneNumber?.message}
-                </p>
-              )}
             </div>
 
             {/* Correo */}

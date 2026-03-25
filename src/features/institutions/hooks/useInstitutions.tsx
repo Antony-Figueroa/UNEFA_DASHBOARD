@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Institution, CreateInstitutionPayload, UpdateInstitutionPayload } from "../types";
 import { institutionService, updateInstitutionCareers } from "../services/institutionsService";
 import { useToast } from "../../../context/toast";
@@ -13,7 +14,6 @@ const INSTITUTION_LABELS: Record<string, string> = {
   fiscalAddress: "Dirección Fiscal",
   phone: "Teléfono",
   practiceType: "Tipo de Práctica",
-  careerName: "Carrera",
   region: "Región",
   nucleus: "Núcleo",
   extension: "Extensión",
@@ -21,11 +21,34 @@ const INSTITUTION_LABELS: Record<string, string> = {
 };
 
 /**
+ * Maps technical internshipTypeId values to human-readable practice type names.
+ * Ensures toast notifications show descriptive names instead of raw IDs.
+ */
+const PRACTICE_TYPE_MAP: Record<string, string> = {
+  "1": "ORDINARIA / ÚNICA",
+  "2": "HOSPITALARIA",
+  "3": "COMUNITARIA",
+};
+
+const humanizeInstitutionData = (inst: any) => {
+  const id = String(inst.internshipTypeId ?? "");
+  const humanType =
+    PRACTICE_TYPE_MAP[id] ||
+    inst.practiceType ||
+    (id ? `Tipo ${id}` : "No asignado");
+
+  return {
+    ...inst,
+    practiceType: humanType,
+  };
+};
+
+/**
  * Hook to manage institutions.
- * 
+ *
  * Refactorizado para utilizar useCrud como motor de estado base,
  * manteniendo las notificaciones enriquecidas y acciones masivas.
- * 
+ *
  * @returns An object containing the institutions state and action functions.
  */
 export const useInstitutions = () => {
@@ -53,9 +76,11 @@ export const useInstitutions = () => {
       if (newInst && instData.careerIds && instData.careerIds.length > 0) {
         await updateInstitutionCareers(newInst.institutionId, instData.careerIds);
       }
-      
+
       await refreshInstitutions();
-      
+
+      const humanNewInst = humanizeInstitutionData(newInst);
+
       addToast({
         variant: "success",
         title: "Institución Registrada",
@@ -63,14 +88,14 @@ export const useInstitutions = () => {
           <>
             <p>La institución <strong>{newInst.name}</strong> ha sido registrada exitosamente.</p>
             <RecordDetails
-              data={newInst as unknown as Record<string, unknown>}
+              data={humanNewInst as unknown as Record<string, unknown>}
               labels={INSTITUTION_LABELS}
-              fields={['rif', 'practiceType', 'careerName']}
+              fields={["rif", "practiceType"]}
             />
           </>
         ),
       });
-      
+
       return newInst;
     } catch (e) {
       console.error("Error adding institution:", e);
@@ -89,12 +114,15 @@ export const useInstitutions = () => {
   const editInstitution = async (instData: UpdateInstitutionPayload) => {
     try {
       const { institutionId } = instData;
-      const oldInst = institutions.find(i => i.institutionId === institutionId);
+      const oldInst = institutions.find((i) => i.institutionId === institutionId);
       const updatedInst = await institutionService.update(instData);
       if (instData.careerIds) {
         await updateInstitutionCareers(institutionId, instData.careerIds);
       }
       await refreshInstitutions();
+
+      const humanOld = oldInst ? humanizeInstitutionData(oldInst) : null;
+      const humanNew = humanizeInstitutionData(updatedInst);
 
       addToast({
         variant: "success",
@@ -102,11 +130,14 @@ export const useInstitutions = () => {
         message: (
           <>
             <p>Los datos de <strong>{updatedInst.name}</strong> han sido actualizados exitosamente.</p>
-            {oldInst && <ChangeComparison 
-              oldData={oldInst as unknown as Record<string, unknown>} 
-              newData={updatedInst as unknown as Record<string, unknown>} 
-              labels={INSTITUTION_LABELS} 
-            />}
+            {humanOld && (
+              <ChangeComparison
+                oldData={humanOld as unknown as Record<string, unknown>}
+                newData={humanNew as unknown as Record<string, unknown>}
+                labels={INSTITUTION_LABELS}
+                excludeFields={["internshipTypeId", "careerIds", "id", "internshipTypeIds"]}
+              />
+            )}
           </>
         ),
       });
@@ -132,12 +163,13 @@ export const useInstitutions = () => {
       addToast({
         variant: newStatus ? "success" : "warning",
         title: newStatus ? "Institución Restaurada" : "Institución Inactivada",
-        message: `La institución ${inst.name} ahora está ${newStatus ? 'activa' : 'inactiva'}.`,
+        message: `La institución ${inst.name} ahora está ${newStatus ? "activa" : "inactiva"}.`,
       });
     } catch (e) {
       console.error("Error toggling institution status:", e);
       const error = e as { response?: { data?: { message?: string } } };
-      const errorMessage = error.response?.data?.message || "No se pudo cambiar el estado de la institución.";
+      const errorMessage =
+        error.response?.data?.message || "No se pudo cambiar el estado de la institución.";
       addToast({
         variant: "error",
         title: "Error de validación",
@@ -160,13 +192,13 @@ export const useInstitutions = () => {
           successCount++;
         } catch (innerError) {
           const error = innerError as { response?: { data?: { message?: string } } };
-          const msg = error.response?.data?.message || `Error al inactivar ID ${id}`;
+          const msg = error.response?.data?.message || `Error al inactivar institución`;
           if (!failMessages.includes(msg)) failMessages.push(msg);
         }
       }
-      
+
       await refreshInstitutions();
-      
+
       if (successCount > 0) {
         addToast({
           variant: "warning",
@@ -192,9 +224,9 @@ export const useInstitutions = () => {
    */
   const bulkRestoreInstitutions = async (ids: string[]) => {
     try {
-      await Promise.all(ids.map(id => institutionService.toggleStatus!(id, true)));
+      await Promise.all(ids.map((id) => institutionService.toggleStatus!(id, true)));
       await refreshInstitutions();
-      
+
       addToast({
         variant: "success",
         title: "Acción Masiva",
@@ -221,6 +253,6 @@ export const useInstitutions = () => {
     removeInstitution,
     toggleStatus,
     bulkRemoveInstitutions,
-    bulkRestoreInstitutions
+    bulkRestoreInstitutions,
   };
 };

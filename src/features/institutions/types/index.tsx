@@ -28,7 +28,7 @@ export interface Institution {
   /** Active status of the institution */
   status: boolean;
   /** Date when the institution was registered */
-  registrationDate: Date;
+  registrationDate: string | Date;
   /** Count of responsible personnel assigned (optional) */
   responsibleCount?: number;
   /** Flag indicating if the institution is currently being used in practices (optional) */

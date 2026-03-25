@@ -410,21 +410,22 @@ export default function InstitutionModal({
     return filtered;
   }, [careerOptions, selectedInternshipType]);
 
-  // Effect para limpiar careerIds seleccionadas cuando el tipo de práctica cambie
-  // y las carreras seleccionadas ya no sean válidas para el nuevo tipo
+  // Flag to avoid clearing careers during initial load
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Effect para limpiar careerIds cuando cambie el tipo de práctica, PERO SOLO después de la inicialización
   useEffect(() => {
-    if (selectedInternshipType && CAREER_OPTIONS.length > 0) {
+    if (isInitialized && selectedInternshipType && CAREER_OPTIONS.length > 0) {
       const currentCareerIds = watch("careerIds") || [];
-      // Filtrar solo las carreras que siguen siendo válidas para el tipo seleccionado
       const validCareerIds = currentCareerIds.filter(id => 
         CAREER_OPTIONS.some(c => c.value === id)
       );
-      // Si hay carreras que ya no son válidas, limpiarlas
+      
       if (validCareerIds.length !== currentCareerIds.length) {
         setValue("careerIds", validCareerIds, { shouldValidate: true, shouldDirty: true });
       }
     }
-  }, [selectedInternshipType, CAREER_OPTIONS, setValue, watch]);
+  }, [selectedInternshipType, CAREER_OPTIONS, setValue, watch, isInitialized]);
 
   // Funciones para agregar nuevos valores a las listas
   const openAddValueModal = (listName: string, field: keyof InstFormData, title: string) => {
@@ -598,8 +599,8 @@ export default function InstitutionModal({
           municipio: parsedMunicipio?.toUpperCase(),
           parroquia: parsedParroquia?.toUpperCase(),
           direccion: parsedDireccion,
-          internshipTypeId: editingInst?.internshipTypeId || "",
-          careerIds: editingInst?.careerIds || [],
+          internshipTypeId: editingInst.internshipTypeId ? String(editingInst.internshipTypeId) : "",
+          careerIds: editingInst.careerIds || [],
         });
         const formattedRif = formatRifDisplay(rifParts[1] || "");
         const formattedPhone = formatPhoneLocalDisplay(phoneN || "");
@@ -608,6 +609,9 @@ export default function InstitutionModal({
         
         if (parsedMunicipio) setSelectedMunicipio(parsedMunicipio.toUpperCase());
         if (parsedParroquia) setSelectedParroquia(parsedParroquia.toUpperCase());
+
+        // Marcar como inicializado después de permitir que los valores se asienten
+        setTimeout(() => setIsInitialized(true), 200);
       } else {
         reset({
           rifPrefix: "",
@@ -630,9 +634,12 @@ export default function InstitutionModal({
         setDisplayPhoneNumber("");
         setSelectedMunicipio("");
         setSelectedParroquia("");
+        setIsInitialized(true);
       }
+    } else {
+      setIsInitialized(false);
     }
-  }, [editingInst, isOpen, reset, optionsTipoPractica]);
+  }, [editingInst, isOpen, reset, optionsTipoPractica, careerOptions, internshipTypeOptions]);
 
   const onSubmit = (data: InstFormData) => {
     // El formato de guardado ahora incluye todos los metadatos para asegurar compatibilidad en la edición

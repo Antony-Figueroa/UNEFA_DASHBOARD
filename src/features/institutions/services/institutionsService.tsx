@@ -31,11 +31,13 @@ interface InstitutionDTO {
 /**
  * Maps an InstitutionDTO from the API to a domain Institution object.
  * @param dto - The data transfer object from the API.
- * @returns A domain Institution object with proper date formatting.
+ * @returns A domain Institution object with the original date string preserved.
  */
 const mapFromApi = (dto: InstitutionDTO): Institution => ({
   ...dto,
-  registrationDate: new Date(dto.registrationDate),
+  // Mantenemos la fecha como string original para que el modal pueda formatearla correctamente
+  // No convertir a Date aquí porque se pierde el formato ISO original
+  registrationDate: dto.registrationDate,
 });
 
 /**

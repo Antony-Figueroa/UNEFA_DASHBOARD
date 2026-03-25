@@ -72,8 +72,8 @@ const mapDBToFrontend = (i: any) => ({
   nucleus: i.NUCLEUS, // This will be replaced by getFullName later in getInstitutions
   extension: i.EXTENSION, // This will be replaced by getFullName later in getInstitutions
   institutionType: i.INSTITUTION_TYPE, // This will be replaced by getFullName later in getInstitutions
-  practiceType: i.PRACTICE_TYPE,
-  internshipTypeId: i.PRACTICE_TYPE ? String(i.PRACTICE_TYPE) : undefined,
+       practiceTypes: i.PRACTICE_TYPE ? [i.PRACTICE_TYPE] : [],
+       internshipTypeId: i.INTERNSHIP_TYPE_ID ? String(i.INTERNSHIP_TYPE_ID) : undefined,
   status: i.STATUS === 1,
   registrationDate: i.CREATION_DATE,
   rif: i.RIF,

@@ -146,6 +146,7 @@ export default function EnrollmentModal({
     control,
     setValue,
     watch,
+    reset,
     formState: { errors, isSubmitted, isDirty, isValid },
   } = useForm<EnrollmentFormData>({
     resolver: zodResolver(enrollmentSchema),
@@ -338,6 +339,27 @@ export default function EnrollmentModal({
       fetchData();
     }
   }, [isOpen, editingEntry, setValue]);
+
+  // Resetear formulario cuando se abre el modal para nueva inscripción
+  useEffect(() => {
+    if (isOpen && !editingEntry && !initialData) {
+      reset({
+        identificationPrefix: "V",
+        identificationNumber: "",
+        studentName: "",
+        period: "",
+        practiceType: "",
+        careerName: "",
+        enrollmentCode: "",
+        academicTutorId: "",
+        methodologicalTutorId: "",
+        institutionId: "",
+        institutionResponsibleId: "",
+      });
+      setDisplayIdentificationNumber("");
+      setPreEnrollmentError(null);
+    }
+  }, [isOpen, editingEntry, initialData, reset]);
 
   /**
    * Efecto para escuchar cuando se agrega una nueva carrera desde el modal de inscripción.

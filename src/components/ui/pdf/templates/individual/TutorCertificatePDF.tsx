@@ -127,7 +127,7 @@ export const TutorCertificatePDF: React.FC<TutorCertificatePDFProps> = ({
     <Document title={`CONSTANCIA TUTOR - ${tutor.identificationNumber}`}>
       <Page size="A4" style={styles.page}>
         {/* Marca de Agua */}
-        <Image src="/pdfs-docs/escudo.png" style={styles.watermark} />
+        <Image src="/pdfs-docs/logo.png" style={styles.watermark} />
 
         {/* Encabezado Institucional */}
         <View style={styles.institutionalHeader}>

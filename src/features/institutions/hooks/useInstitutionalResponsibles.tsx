@@ -13,13 +13,16 @@ import { useCrud } from "../../../hooks/useCrud";
  * Labels for responsible person fields used in toast notifications and comparisons.
  */
 const RESPONSIBLE_LABELS: Record<string, string> = {
-  identificationPrefix: "Tipo",
-  identificationNumber: "Cédula",
+  identificationPrefix: "Tipo de ID",
+  identificationNumber: "Cédula / Rif",
+  firstName: "Nombre",
+  lastName: "Apellido",
   fullName: "Nombre Completo",
   phone: "Teléfono",
-  email: "Correo",
-  institutionName: "Institución",
-  position: "Cargo",
+  email: "Correo Electrónico",
+  institutionName: "Sede / Institución",
+  cargo: "Cargo",
+  status: "Estado",
 };
 
 /**

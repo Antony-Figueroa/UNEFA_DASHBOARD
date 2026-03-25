@@ -44,8 +44,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setUser(null);
       }
-    } catch (error) {
-      console.error("[AuthContext] Error al verificar sesión:", error);
+    } catch (error: any) {
+      if (error.response?.status !== 401 && error.response?.status !== 403) {
+        console.error("[AuthContext] Error al verificar sesión:", error);
+      }
       setUser(null);
     } finally {
       setLoading(false);
@@ -76,8 +78,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       await authService.logout();
-    } catch (error) {
-      console.error("[AuthContext] Error durante el cierre de sesión:", error);
+    } catch (error: any) { // Explicitly type error as 'any' to access 'response'
+      // Only log if it's not a 401/403, as logout might fail due to already expired session
+      if (error.response?.status !== 401 && error.response?.status !== 403) {
+        console.error("[AuthContext] Error durante el cierre de sesión:", error);
+      }
     } finally {
       setUser(null);
       // Limpieza exhaustiva de datos locales

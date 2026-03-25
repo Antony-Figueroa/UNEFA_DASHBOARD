@@ -56,6 +56,8 @@ export interface CustomSelectProps {
   searchable?: boolean;
   /** Placeholder para el input de búsqueda */
   searchPlaceholder?: string;
+  /** Mensaje opcional de ayuda o error que se muestra debajo del componente. */
+  hint?: string;
 }
 
 /**
@@ -82,6 +84,7 @@ const CustomSelect = forwardRef<HTMLDivElement, CustomSelectProps>(({
   addNewLabel,
   searchable,
   searchPlaceholder = "Buscar...",
+  hint,
 }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState<string>(value !== undefined ? value : defaultValue);

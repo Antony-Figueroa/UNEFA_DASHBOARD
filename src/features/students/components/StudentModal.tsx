@@ -102,46 +102,49 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   // Handle phone number input change with formatting
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
-    const cleaned = cleanPhone(input);
-    const formatted = formatPhoneDisplay(cleaned);
+    const digitsOnly = input.replace(/\D/g, '').substring(0, 7);
+    const formatted = digitsOnly.length <= 3 ? digitsOnly : `${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3, 7)}`;
     setDisplayPhoneNumber(formatted);
-    setValue("phoneNumber", cleaned, { shouldValidate: true });
+    setValue("phoneNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
   };
 
   useEffect(() => {
     const loadOptions = async () => {
-      // Si ya tenemos las listas por prop, las usamos y evitamos la petición
-      if (dynamicLists && Object.keys(dynamicLists).length > 0) {
-        const mappedOptions: Record<string, { value: string; label: string }[]> = {};
-        Object.entries(dynamicLists).forEach(([key, values]) => {
-          mappedOptions[key] = values.map(v => {
-            // Para Nacionalidad y PREFIJO usamos la abreviación si existe
-            const useAbbreviation = (key === "Nacionalidad" || key === "PREFIJO") && v.abbreviation;
-            const value = useAbbreviation ? v.abbreviation.toUpperCase() : v.name.toUpperCase();
-            return { value, label: value };
-          });
-        });
-        setOptions(mappedOptions);
-        return;
-      }
+      const listNames = [
+        "Nacionalidad",
+        "Sexo",
+        "PREFIJO",
+        "Registro Civil",
+        "Regimen/Turno",
+        "Tipo de estudiante",
+        "Rango Militar",
+        "Trabajo"
+      ];
 
       try {
-        const listNames = [
-          "Nacionalidad",
-          "Sexo",
-          "PREFIJO",
-          "Registro Civil",
-          "Regimen/Turno",
-          "Tipo de estudiante",
-          "Rango Militar",
-          "Trabajo"
-        ];
-        const data = await fetchMultipleLists(listNames);
-        const mappedOptions: Record<string, { value: string; label: string }[]> = {};
+        let finalData: Record<string, ListValue[]> = {};
         
-        Object.entries(data).forEach(([key, values]) => {
+        // Determinar qué listas necesitamos pedir basándonos en lo que recibimos por prop
+        if (dynamicLists && Object.keys(dynamicLists).length > 0) {
+          finalData = { ...dynamicLists };
+          
+          // Verificamos si alguna de las listas esenciales NO está en dynamicLists
+          const missing = listNames.filter(name => !dynamicLists[name] || dynamicLists[name].length === 0);
+          
+          if (missing.length > 0) {
+            const extraData = await fetchMultipleLists(missing);
+            finalData = { ...finalData, ...extraData };
+          }
+        } else {
+          // Si no hay dynamicLists por prop, las pedimos todas
+          finalData = await fetchMultipleLists(listNames);
+        }
+
+        // Mapear los datos a formato de opciones
+        const mappedOptions: Record<string, { value: string; label: string }[]> = {};
+        Object.entries(finalData).forEach(([key, values]) => {
+          if (!values) return;
           mappedOptions[key] = values.map(v => {
-            // Para Nacionalidad y PREFIJO usamos la abreviación si existe
             const useAbbreviation = (key === "Nacionalidad" || key === "PREFIJO") && v.abbreviation;
             const value = useAbbreviation ? v.abbreviation.toUpperCase() : v.name.toUpperCase();
             return { value, label: value };
@@ -791,9 +794,10 @@ useEffect(() => {
                   <Input
                     value={displayPhoneNumber}
                     onChange={handlePhoneNumberChange}
-                    placeholder="000-0000"
+                    placeholder="123-4567"
                     error={!!errors.phoneNumber}
-                    maxLength={CEDULA_MAX_LENGTH}
+                    hint={errors.phoneNumber?.message || " "}
+                    maxLength={8}
                   />
                 </div>
               </div>

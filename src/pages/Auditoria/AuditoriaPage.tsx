@@ -28,6 +28,121 @@ import {
 // Types
 type TabType = 'auth' | 'changes' | 'activities';
 
+interface FilterConfig {
+  value: string;
+  onChange: (val: string) => void;
+  options: Array<{ value: string; label: string }>;
+  placeholder: string;
+  className?: string;
+}
+
+interface AuditFiltersProps {
+  dateFrom: string;
+  dateTo: string;
+  onDateFromChange: (val: string) => void;
+  onDateToChange: (val: string) => void;
+  onClearDates: () => void;
+  searchTerm: string;
+  onSearchChange: (val: string) => void;
+  searchPlaceholder: string;
+  filters: FilterConfig[];
+  onRefresh: () => void;
+  loading?: boolean;
+}
+
+/**
+ * Reusable Audit Filter Section Component
+ * Provides consistent filter layout across all tabs with:
+ * - Compact inline date range
+ * - Responsive search + dropdown grid
+ * - Proper spacing and alignment
+ */
+const AuditFilters: React.FC<AuditFiltersProps> = ({
+  dateFrom,
+  dateTo,
+  onDateFromChange,
+  onDateToChange,
+  onClearDates,
+  searchTerm,
+  onSearchChange,
+  searchPlaceholder,
+  filters,
+  onRefresh,
+  loading = false
+}) => {
+  return (
+    <div className="space-y-4">
+      {/* Row 1: Date Range - compact inline */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex-1 min-w-[140px] max-w-[180px]">
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+            Desde
+          </label>
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => onDateFromChange(e.target.value)}
+            className="h-10 text-sm"
+          />
+        </div>
+        <div className="flex-1 min-w-[140px] max-w-[180px]">
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+            Hasta
+          </label>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => onDateToChange(e.target.value)}
+            className="h-10 text-sm"
+          />
+        </div>
+        {(dateFrom || dateTo) && (
+          <button
+            onClick={onClearDates}
+            className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 underline mb-2"
+          >
+            Limpiar
+          </button>
+        )}
+      </div>
+
+      {/* Row 2: Search + Dropdowns - responsive grid */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex-1 min-w-[200px]">
+          <Input
+            placeholder={searchPlaceholder}
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="h-10"
+          />
+        </div>
+        {filters.map((filter, index) => (
+          <div
+            key={index}
+            className={filter.className || 'w-full sm:w-[180px]'}
+          >
+            <CustomSelect
+              options={filter.options}
+              placeholder={filter.placeholder}
+              onChange={(val) => filter.onChange(val as string)}
+              value={filter.value}
+            />
+          </div>
+        ))}
+        <Button
+          variant="primary"
+          onClick={onRefresh}
+          disabled={loading}
+          className="h-10"
+        >
+          <RefreshIcon className="w-4 h-4 mr-1.5" />
+          Actualizar
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 interface AuthLog {
   AUTH_LOG_ID: number;
   USER_ID: number;
@@ -133,29 +248,54 @@ export default function AuditoriaPage() {
   const [changeStats, setChangeStats] = useState({ total: 0, inserts: 0, updates: 0, deletes: 0 });
   const [activityStats, setActivityStats] = useState({ total: 0, hours: 0, approved: 0, pending: 0 });
 
-  // Fetch Auth Logs
+  // Date Range Filter State
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+
+  // Reset page when date filters change
+  useEffect(() => {
+    setAuthPage(1);
+    setChangePage(1);
+    setActivityPage(1);
+  }, [dateFrom, dateTo]);
+
+  // Fetch Auth Logs - loads ALL data for accurate stats
   const fetchAuthLogs = useCallback(async () => {
     setAuthLoading(true);
     try {
+      // Fetch ALL logs (high limit) to calculate accurate stats
       const params = new URLSearchParams();
-      params.append('page', String(authPage));
-      params.append('limit', String(authItemsPerPage));
+      params.append('limit', '10000'); // Get all records for accurate stats
       if (authFilters.action) params.append('action', authFilters.action);
       if (authFilters.searchTerm) params.append('search', authFilters.searchTerm);
       
       const response = await apiClient.get(`/auth/all-logs?${params.toString()}`);
       if (response.data.success) {
-        setAuthLogs(response.data.data || []);
-        setAuthTotal(response.data.meta?.total || 0);
+        const allLogs = response.data.data || [];
+        const total = response.data.meta?.total || allLogs.length;
         
-        // Calculate stats
-        const logs = response.data.data || [];
+        // Store all logs
+        setAuthLogs(allLogs);
+        setAuthTotal(total);
+        
+        // Calculate stats from ALL data (not just current page)
+        const today = new Date().toDateString();
+        const successLogs = allLogs.filter((l: AuthLog) => 
+          l.ACTION === 'LOGIN_SUCCESS' || 
+          l.ACTION === 'LOGIN' ||
+          l.ACTION === 'success'
+        );
+        const failedLogs = allLogs.filter((l: AuthLog) => 
+          l.ACTION === 'LOGIN_FAILED' || 
+          l.ACTION === 'failed' ||
+          l.ACTION === 'LOGIN_ERROR'
+        );
+        
         setAuthStats({
-          total: response.data.meta?.total || logs.length,
-          success: logs.filter((l: AuthLog) => l.ACTION === 'LOGIN_SUCCESS').length,
-          failed: logs.filter((l: AuthLog) => l.ACTION === 'LOGIN_FAILED').length,
-          today: logs.filter((l: AuthLog) => {
-            const today = new Date().toDateString();
+          total,
+          success: successLogs.length,
+          failed: failedLogs.length,
+          today: allLogs.filter((l: AuthLog) => {
             return new Date(l.CREATION_DATE).toDateString() === today;
           }).length
         });
@@ -165,7 +305,7 @@ export default function AuditoriaPage() {
     } finally {
       setAuthLoading(false);
     }
-  }, [authPage, authFilters]);
+  }, [authFilters]);
 
   // Fetch Change Logs
   const fetchChangeLogs = useCallback(async () => {
@@ -266,9 +406,29 @@ export default function AuditoriaPage() {
         log.USER_CI?.toLowerCase().includes(authFilters.searchTerm.toLowerCase()) ||
         log.DETAILS?.toLowerCase().includes(authFilters.searchTerm.toLowerCase()) ||
         log.user?.NAME?.toLowerCase().includes(authFilters.searchTerm.toLowerCase());
-      return matchAction && matchSearch;
+      
+      // Date range filter
+      const matchDate = (() => {
+        if (!dateFrom && !dateTo) return true;
+        const logDate = log.CREATION_DATE ? new Date(log.CREATION_DATE) : null;
+        if (!logDate || isNaN(logDate.getTime())) return true;
+        
+        if (dateFrom) {
+          const fromDate = new Date(dateFrom);
+          fromDate.setHours(0, 0, 0, 0);
+          if (logDate < fromDate) return false;
+        }
+        if (dateTo) {
+          const toDate = new Date(dateTo);
+          toDate.setHours(23, 59, 59, 999);
+          if (logDate > toDate) return false;
+        }
+        return true;
+      })();
+      
+      return matchAction && matchSearch && matchDate;
     });
-  }, [authLogs, authFilters]);
+  }, [authLogs, authFilters, dateFrom, dateTo]);
 
   const filteredChangeLogs = useMemo(() => {
     return changeLogs.filter(log => {
@@ -276,9 +436,29 @@ export default function AuditoriaPage() {
         log.tableLabel?.toLowerCase().includes(changeFilters.searchTerm.toLowerCase()) ||
         log.columnName?.toLowerCase().includes(changeFilters.searchTerm.toLowerCase()) ||
         log.userName?.toLowerCase().includes(changeFilters.searchTerm.toLowerCase());
-      return matchSearch;
+      
+      // Date range filter
+      const matchDate = (() => {
+        if (!dateFrom && !dateTo) return true;
+        const logDate = log.dateTime ? new Date(log.dateTime) : null;
+        if (!logDate || isNaN(logDate.getTime())) return true;
+        
+        if (dateFrom) {
+          const fromDate = new Date(dateFrom);
+          fromDate.setHours(0, 0, 0, 0);
+          if (logDate < fromDate) return false;
+        }
+        if (dateTo) {
+          const toDate = new Date(dateTo);
+          toDate.setHours(23, 59, 59, 999);
+          if (logDate > toDate) return false;
+        }
+        return true;
+      })();
+      
+      return matchSearch && matchDate;
     });
-  }, [changeLogs, changeFilters]);
+  }, [changeLogs, changeFilters, dateFrom, dateTo]);
 
   const filteredActivityLogs = useMemo(() => {
     return activityLogs.filter(log => {
@@ -289,15 +469,36 @@ export default function AuditoriaPage() {
       const matchSearch = !activityFilters.searchTerm ||
         log.activityDescription?.toLowerCase().includes(activityFilters.searchTerm.toLowerCase()) ||
         log.studentName?.toLowerCase().includes(activityFilters.searchTerm.toLowerCase());
-      return matchType && matchStatus && matchSearch;
+      
+      // Date range filter
+      const matchDate = (() => {
+        if (!dateFrom && !dateTo) return true;
+        const logDate = log.createdAt ? new Date(log.createdAt) : null;
+        if (!logDate || isNaN(logDate.getTime())) return true;
+        
+        if (dateFrom) {
+          const fromDate = new Date(dateFrom);
+          fromDate.setHours(0, 0, 0, 0);
+          if (logDate < fromDate) return false;
+        }
+        if (dateTo) {
+          const toDate = new Date(dateTo);
+          toDate.setHours(23, 59, 59, 999);
+          if (logDate > toDate) return false;
+        }
+        return true;
+      })();
+      
+      return matchType && matchStatus && matchSearch && matchDate;
     });
-  }, [activityLogs, activityFilters]);
+  }, [activityLogs, activityFilters, dateFrom, dateTo]);
 
-  // Paged data for tables - Auth and Change logs use SERVER-SIDE pagination
-  // so we don't slice again on client. Only Activity logs need client-side slicing.
+  // Paged data for tables - Auth logs now use CLIENT-SIDE pagination 
+  // since we fetch all data for accurate stats
   const pagedAuthLogs = useMemo(() => {
-    return filteredAuthLogs; // Server already paginated
-  }, [filteredAuthLogs]);
+    const start = (authPage - 1) * authItemsPerPage;
+    return filteredAuthLogs.slice(start, start + authItemsPerPage);
+  }, [filteredAuthLogs, authPage, authItemsPerPage]);
 
   const pagedChangeLogs = useMemo(() => {
     return filteredChangeLogs; // Server already paginated
@@ -420,39 +621,36 @@ export default function AuditoriaPage() {
             </ComponentCard>
           </div>
 
-          {/* Filters */}
-          <ComponentCard title="Filtros">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Input
-                placeholder="Buscar por CI, usuario o detalles..."
-                value={authFilters.searchTerm}
-                onChange={(e) => setAuthFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
-              />
-              <CustomSelect
-                options={[
+          {/* Filters - Reusable Component */}
+          <AuditFilters
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={setDateFrom}
+            onDateToChange={setDateTo}
+            onClearDates={() => { setDateFrom(''); setDateTo(''); }}
+            searchTerm={authFilters.searchTerm}
+            onSearchChange={(val) => setAuthFilters(prev => ({ ...prev, searchTerm: val }))}
+            searchPlaceholder="Buscar por CI, usuario o detalles..."
+            filters={[
+              {
+                value: authFilters.action,
+                onChange: (val) => setAuthFilters(prev => ({ ...prev, action: val })),
+                options: [
                   { value: '', label: 'Todas las acciones' },
                   ...Object.entries(ACTION_CONFIGS).map(([key, config]) => ({
                     value: key,
                     label: config.label
                   }))
-                ]}
-                placeholder="Acción"
-                onChange={(val) => setAuthFilters(prev => ({ ...prev, action: val as string }))}
-                value={authFilters.action}
-              />
-              <Button
-                variant="primary"
-                onClick={fetchAuthLogs}
-                className="w-full md:w-auto"
-              >
-                <RefreshIcon className="w-4 h-4 mr-1" />
-                Actualizar
-              </Button>
-            </div>
-          </ComponentCard>
+                ],
+                placeholder: 'Acción'
+              }
+            ]}
+            onRefresh={fetchAuthLogs}
+            loading={authLoading}
+          />
 
           {/* Auth Logs Table */}
-          <ComponentCard title={`Logs de Autenticación (${authTotal} registros)`}>
+          <ComponentCard title={`Logs de Autenticación (${filteredAuthLogs.length} de ${authTotal} registros)`}>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -507,11 +705,11 @@ export default function AuditoriaPage() {
               </table>
             </div>
             
-            {/* Pagination */}
+            {/* Pagination - using filtered data for client-side pagination */}
             <Pagination
               currentPage={authPage}
-              totalPages={Math.ceil(authTotal / authItemsPerPage) || 1}
-              totalItems={authTotal}
+              totalPages={Math.ceil(filteredAuthLogs.length / authItemsPerPage) || 1}
+              totalItems={filteredAuthLogs.length}
               itemsPerPage={authItemsPerPage}
               onPageChange={setAuthPage}
               onItemsPerPageChange={(newItems) => {
@@ -555,44 +753,41 @@ export default function AuditoriaPage() {
             </ComponentCard>
           </div>
 
-          {/* Filters */}
-          <ComponentCard title="Filtros">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Input
-                placeholder="Buscar..."
-                value={changeFilters.searchTerm}
-                onChange={(e) => setChangeFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
-              />
-              <CustomSelect
-                options={[
+          {/* Filters - Reusable Component */}
+          <AuditFilters
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={setDateFrom}
+            onDateToChange={setDateTo}
+            onClearDates={() => { setDateFrom(''); setDateTo(''); }}
+            searchTerm={changeFilters.searchTerm}
+            onSearchChange={(val) => setChangeFilters(prev => ({ ...prev, searchTerm: val }))}
+            searchPlaceholder="Buscar..."
+            filters={[
+              {
+                value: changeFilters.tableName,
+                onChange: (val) => setChangeFilters(prev => ({ ...prev, tableName: val })),
+                options: [
                   { value: '', label: 'Todas las tablas' },
                   ...tables
-                ]}
-                placeholder="Tabla"
-                onChange={(val) => setChangeFilters(prev => ({ ...prev, tableName: val as string }))}
-                value={changeFilters.tableName}
-              />
-              <CustomSelect
-                options={[
+                ],
+                placeholder: 'Tabla'
+              },
+              {
+                value: changeFilters.operation,
+                onChange: (val) => setChangeFilters(prev => ({ ...prev, operation: val })),
+                options: [
                   { value: '', label: 'Todas las operaciones' },
                   { value: 'INSERT', label: 'Creación' },
                   { value: 'UPDATE', label: 'Actualización' },
                   { value: 'DELETE', label: 'Eliminación' }
-                ]}
-                placeholder="Operación"
-                onChange={(val) => setChangeFilters(prev => ({ ...prev, operation: val as string }))}
-                value={changeFilters.operation}
-              />
-              <Button
-                variant="primary"
-                onClick={fetchChangeLogs}
-                className="w-full md:w-auto"
-              >
-                <RefreshIcon className="w-4 h-4 mr-1" />
-                Actualizar
-              </Button>
-            </div>
-          </ComponentCard>
+                ],
+                placeholder: 'Operación'
+              }
+            ]}
+            onRefresh={fetchChangeLogs}
+            loading={changeLoading}
+          />
 
           {/* Change Logs Table */}
           <ComponentCard title={`Cambios en Base de Datos (${changeTotal} registros)`}>
@@ -698,44 +893,41 @@ export default function AuditoriaPage() {
             </ComponentCard>
           </div>
 
-          {/* Filters */}
-          <ComponentCard title="Filtros">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Input
-                placeholder="Buscar estudiante o descripción..."
-                value={activityFilters.searchTerm}
-                onChange={(e) => setActivityFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
-              />
-              <CustomSelect
-                options={[
+          {/* Filters - Reusable Component */}
+          <AuditFilters
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={setDateFrom}
+            onDateToChange={setDateTo}
+            onClearDates={() => { setDateFrom(''); setDateTo(''); }}
+            searchTerm={activityFilters.searchTerm}
+            onSearchChange={(val) => setActivityFilters(prev => ({ ...prev, searchTerm: val }))}
+            searchPlaceholder="Buscar estudiante o descripción..."
+            filters={[
+              {
+                value: activityFilters.activityType,
+                onChange: (val) => setActivityFilters(prev => ({ ...prev, activityType: val })),
+                options: [
                   { value: '', label: 'Todos los tipos' },
                   { value: 'DIARIA', label: 'Diaria' },
                   { value: 'SEMANAL', label: 'Semanal' }
-                ]}
-                placeholder="Tipo"
-                onChange={(val) => setActivityFilters(prev => ({ ...prev, activityType: val as string }))}
-                value={activityFilters.activityType}
-              />
-              <CustomSelect
-                options={[
+                ],
+                placeholder: 'Tipo'
+              },
+              {
+                value: activityFilters.status,
+                onChange: (val) => setActivityFilters(prev => ({ ...prev, status: val })),
+                options: [
                   { value: '', label: 'Todos los estados' },
                   { value: 'approved', label: 'Aprobados' },
                   { value: 'pending', label: 'Pendientes' }
-                ]}
-                placeholder="Estado"
-                onChange={(val) => setActivityFilters(prev => ({ ...prev, status: val as string }))}
-                value={activityFilters.status}
-              />
-              <Button
-                variant="primary"
-                onClick={fetchActivityLogs}
-                className="w-full md:w-auto"
-              >
-                <RefreshIcon className="w-4 h-4 mr-1" />
-                Actualizar
-              </Button>
-            </div>
-          </ComponentCard>
+                ],
+                placeholder: 'Estado'
+              }
+            ]}
+            onRefresh={fetchActivityLogs}
+            loading={activityLoading}
+          />
 
           {/* Activity Logs Table */}
           <ComponentCard title={`Bitácora de Actividades (${filteredActivityLogs.length} registros)`}>

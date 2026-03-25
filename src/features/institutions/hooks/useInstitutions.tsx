@@ -1,5 +1,5 @@
 import { Institution, CreateInstitutionPayload, UpdateInstitutionPayload } from "../types";
-import { institutionService } from "../services/institutionsService";
+import { institutionService, updateInstitutionCareers } from "../services/institutionsService";
 import { useToast } from "../../../context/toast";
 import { RecordDetails, ChangeComparison } from "../../../components/ui/alert/AlertContextualContent";
 import { useCrud } from "../../../hooks/useCrud";
@@ -50,6 +50,10 @@ export const useInstitutions = () => {
   const addInstitution = async (instData: CreateInstitutionPayload): Promise<Institution | undefined> => {
     try {
       const newInst = await institutionService.create(instData);
+      if (newInst && instData.careerIds && instData.careerIds.length > 0) {
+        await updateInstitutionCareers(newInst.institutionId, instData.careerIds);
+      }
+      
       await refreshInstitutions();
       
       addToast({
@@ -87,6 +91,9 @@ export const useInstitutions = () => {
       const { institutionId } = instData;
       const oldInst = institutions.find(i => i.institutionId === institutionId);
       const updatedInst = await institutionService.update(instData);
+      if (instData.careerIds) {
+        await updateInstitutionCareers(institutionId, instData.careerIds);
+      }
       await refreshInstitutions();
 
       addToast({

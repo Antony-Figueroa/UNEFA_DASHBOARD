@@ -23,13 +23,10 @@ const ListsConfiguration = () => {
   const [isLoading, setIsLoading] = useState(true);
   
   // Modal states
-  const [isListModalOpen, setIsListModalOpen] = useState(false);
-  const [editingList, setEditingList] = useState<List | null>(null);
   const [isValueModalOpen, setIsValueModalOpen] = useState(false);
   const [editingValue, setEditingValue] = useState<ListValue | null>(null);
   
-  // Dirty states
-  const [isListDirty, setIsListDirty] = useState(false);
+  // Dirty state
   const [isValueDirty, setIsValueDirty] = useState(false);
 
   // Delete Confirm states - Removed as part of redundant confirmation cleanup
@@ -48,16 +45,6 @@ const ListsConfiguration = () => {
   };
 
   const [confirmation, setConfirmation] = useState<ConfirmationInfo | null>(null);
-
-  const {
-    showConfirmation: showListExitConfirm,
-    handleCloseAttempt: handleListCloseAttempt,
-    confirmClose: confirmListClose,
-    cancelClose: cancelListClose,
-  } = useUnsavedChanges(isListDirty, () => {
-    setIsListModalOpen(false);
-    setIsListDirty(false);
-  });
 
   const {
     showConfirmation: showValueExitConfirm,
@@ -97,41 +84,6 @@ const ListsConfiguration = () => {
     loadLists();
   }, [loadLists]);
 
-  const handleToggleListStatus = async (list: List) => {
-    const isActivating = !list.status;
-    setConfirmation({
-      isOpen: true,
-      title: isActivating ? "Confirmar Activación" : "Confirmar Desactivación",
-      message: isActivating 
-        ? `¿Estás seguro de que deseas activar la lista "${list.name}"?` 
-        : `¿Estás seguro de que deseas desactivar la lista "${list.name}"?`,
-      confirmText: isActivating ? "Activar" : "Desactivar",
-      variant: isActivating ? "success" : "error",
-      onConfirm: async () => {
-        try {
-          await listsService.toggleListStatus(list.id, isActivating);
-          loadLists();
-          addToast({
-            variant: "success",
-            title: isActivating ? "Lista activada" : "Lista desactivada",
-            message: isActivating 
-              ? `La lista "${list.name}" ha sido activada correctamente.`
-              : `La lista "${list.name}" ha sido desactivada correctamente.`
-          });
-        } catch (error: any) {
-          console.error("Error toggling list status:", error);
-          addToast({
-            variant: "error",
-            title: "Error al cambiar estado",
-            message: error.response?.data?.message || error.message || "No se pudo cambiar el estado de la lista."
-          });
-        } finally {
-          setConfirmation(null);
-        }
-      }
-    });
-  };
-
   const handleToggleValueStatus = async (value: ListValue) => {
     const isActivating = !value.status;
     setConfirmation({
@@ -158,21 +110,6 @@ const ListsConfiguration = () => {
 
 
 
-  const performSaveList = async (values: CrudFormValues) => {
-    try {
-      if (editingList) {
-        await listsService.updateList(editingList.id, values.name as string);
-      } else {
-        await listsService.createList(values.name as string);
-      }
-      setIsListModalOpen(false);
-      setIsListDirty(false);
-      loadLists();
-    } catch (error) {
-      console.error("Error saving list:", error);
-    }
-  };
-
   const performSaveValue = async (values: CrudFormValues) => {
     if (!selectedList) return;
     try {
@@ -188,10 +125,6 @@ const ListsConfiguration = () => {
       console.error("Error saving value:", error);
     }
   };
-
-  const listFields: CrudFieldConfig[] = [
-    { name: "name", label: "Nombre de la Lista", type: "text", required: true, placeholder: "Ej: Nacionalidad" }
-  ];
 
   const valueFields: CrudFieldConfig[] = [
     { name: "name", label: "Nombre del Valor", type: "text", required: true, placeholder: "Ej: Venezolana" },
@@ -241,18 +174,7 @@ const ListsConfiguration = () => {
                   </span>
                 </span>
               }
-              headerAction={
-                <button 
-                  className="text-brand-500 hover:text-brand-600 transition-colors"
-                  title="Nueva Lista"
-                  onClick={() => {
-                    setEditingList(null);
-                    setIsListModalOpen(true);
-                  }}
-                >
-                  <PlusCircleIcon className="h-5 w-5" />
-                </button>
-              }
+              headerAction={undefined}
             >
               <SkeletonLoader
                 isLoading={isLoading}
@@ -281,45 +203,9 @@ const ListsConfiguration = () => {
                           {list.values.length} valores
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge color={list.status ? "success" : "error"} size="sm">
-                          {list.status ? "Activa" : "Inactiva"}
-                        </Badge>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingList(list);
-                            setIsListModalOpen(true);
-                          }}
-                          className="p-1 opacity-0 group-hover:opacity-100 hover:text-brand-500 transition-all"
-                          title="Editar"
-                        >
-                          <PencilIcon className="h-3.5 w-3.5" />
-                        </button>
-                        {list.status ? (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleListStatus(list);
-                            }}
-                            className="p-1 opacity-0 group-hover:opacity-100 hover:text-error-500 transition-all"
-                            title="Desactivar"
-                          >
-                            <TrashBinIcon className="h-3.5 w-3.5" />
-                          </button>
-                        ) : (
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleListStatus(list);
-                            }}
-                            className="p-1 opacity-0 group-hover:opacity-100 hover:text-success-500 transition-all"
-                            title="Activar"
-                          >
-                            <CheckCircleIcon className="h-3.5 w-3.5" />
-                          </button>
-                        )}
-                      </div>
+                      <Badge color={list.status ? "success" : "error"} size="sm">
+                        {list.status ? "Activa" : "Inactiva"}
+                      </Badge>
                     </div>
                   ))}
                   {lists.length === 0 && !isLoading && (
@@ -468,21 +354,6 @@ const ListsConfiguration = () => {
         </div>
       </div>
 
-      {/* List Modal */}
-      <Modal isOpen={isListModalOpen} onClose={handleListCloseAttempt}>
-        <ModalHeader>{editingList ? "Editar Lista" : "Nueva Lista"}</ModalHeader>
-        <ModalBody>
-          <CrudForm 
-            fields={listFields}
-            initialValues={editingList ? { name: editingList.name } : {}}
-            onSubmit={performSaveList}
-            secondaryActionLabel="Cancelar"
-            onSecondaryAction={handleListCloseAttempt}
-            onDirtyChange={setIsListDirty}
-          />
-        </ModalBody>
-      </Modal>
-
       {/* Value Modal */}
       <Modal isOpen={isValueModalOpen} onClose={handleValueCloseAttempt}>
         <ModalHeader>{editingValue ? "Editar Valor" : "Nuevo Valor"}</ModalHeader>
@@ -497,18 +368,6 @@ const ListsConfiguration = () => {
           />
         </ModalBody>
       </Modal>
-
-      {/* Unsaved Changes Confirm Dialog - List */}
-      <UnifiedDialog
-        isOpen={showListExitConfirm}
-        onClose={cancelListClose}
-        onConfirm={confirmListClose}
-        title="Cambios no guardados"
-        message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
-        confirmLabel="Cerrar sin guardar"
-        cancelLabel="Continuar editando"
-        variant="warning"
-      />
 
       {/* Unsaved Changes Confirm Dialog - Value */}
       <UnifiedDialog

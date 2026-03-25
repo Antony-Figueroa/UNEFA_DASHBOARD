@@ -24,20 +24,20 @@ export const BRAND_COLORS: BrandColorPalette[] = [
   {
     key: 'blue',
     name: 'Azul UNEFA',
-    primary: '#054f94',
+    primary: '#1510a0',
     palette: {
-      25: '#f2f7ff',
-      50: '#ecf3ff',
-      100: '#dde9ff',
-      200: '#c2d6ff',
-      300: '#9cb9ff',
-      400: '#67baff',
-      500: '#2d90c4',
-      600: '#054f94',
-      700: '#2e5888',
-      800: '#233e66',
-      900: '#172d4a',
-      950: '#0b1626',
+      25: '#f7f6ff',
+      50: '#ebe9ff',
+      100: '#d6d4ff',
+      200: '#acadff',
+      300: '#6e67ff',
+      400: '#4036ff',
+      500: '#1a15acff', // Color solicitado
+      600: '#0e0a86ff',
+      700: '#090663ff',
+      800: '#070550ff',
+      900: '#090745ff',
+      950: '#06052eff',
     }
   },
   {

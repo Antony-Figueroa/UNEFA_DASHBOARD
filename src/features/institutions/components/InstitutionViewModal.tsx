@@ -4,13 +4,16 @@
  * Mantiene la consistencia visual con el estándar del sistema.
  */
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
-import { Institution } from "../types";
+import { Institution, InstitutionalResponsible } from "../types";
 import { SingleReportModal } from "../../../components/ui/pdf/SingleReportModal";
 import { InstitutionIndividualPDF } from "../../../components/ui/pdf/templates/individual";
+import { PlusCircle, User, AlertCircle, UserPlus, Search, ChevronDown } from "lucide-react";
+import { Dropdown } from "../../../components/ui/dropdown/Dropdown";
+import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
 
 /**
  * Props for the InstitutionViewModal component.
@@ -24,38 +27,103 @@ interface InstitutionViewModalProps {
     onEdit?: (inst: Institution) => void;
     /** The institution record to display */
     institution: Institution | null;
+    /** List of responsibles for this institution */
+    responsibles?: InstitutionalResponsible[];
+    /** Callback to register a NEW responsible */
+    onAddResponsible?: () => void;
+    /** Callback to search and link an EXISTING responsible */
+    onSearchResponsible?: () => void;
 }
 
 /**
  * Component for viewing the full details of an institution.
  * Presents information in a structured, read-only format.
- * 
- * @example
- * ```tsx
- * <InstitutionViewModal
- *   isOpen={isViewOpen}
- *   onClose={() => setViewOpen(false)}
- *   institution={selectedInstitution}
- * />
- * ```
  */
 export default function InstitutionViewModal({
     isOpen,
     onClose,
     onEdit,
     institution,
+    responsibles = [],
+    onAddResponsible,
+    onSearchResponsible,
 }: InstitutionViewModalProps) {
     const [reportModalOpen, setReportModalOpen] = useState(false);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Cerrar dropdown al hacer clic fuera
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     if (!institution) return null;
 
-    const formattedDate = new Date(institution.registrationDate).toLocaleDateString('es-VE', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+    // Formateo de fecha seguro - maneja múltiples formatos
+    const formatDate = (dateValue: string | Date | unknown): string => {
+        if (!dateValue) return 'Fecha no disponible';
+        
+        try {
+            let date: Date;
+            
+            if (dateValue instanceof Date) {
+                date = dateValue;
+            } else if (typeof dateValue === 'string') {
+                // El valor puede venir en diferentes formatos:
+                // 1. ISO completo: "2026-03-24T21:52:34.535Z"
+                // 2. PostgreSQL: "2026-03-24 21:52:34.535"
+                // 3. Formato corto: "24/03/2026 21:52"
+                
+                // Primero intentamos con el string original
+                date = new Date(dateValue);
+                
+                // Si falla, intentamos normalizar el formato PostgreSQL
+                if (isNaN(date.getTime())) {
+                    // Reemplazar espacio con T
+                    date = new Date(dateValue.replace(' ', 'T'));
+                }
+                
+                // Si sigue fallando, intentamos con formato corto DD/MM/YYYY
+                if (isNaN(date.getTime())) {
+                    const parts = (dateValue as string).split(/[\/\-\s]/);
+                    if (parts.length >= 2) {
+                        // Asumir formato DD/MM/YYYY
+                        const day = parseInt(String(parts[0]));
+                        const month = parseInt(String(parts[1])) - 1; // Mes es 0-indexed
+                        const year = parseInt(String(parts[2]));
+                        const timeParts = parts.length > 3 ? String(parts[3]).split(':') : ['0', '0'];
+                        date = new Date(year, month, day, parseInt(timeParts[0]) || 0, parseInt(timeParts[1]) || 0);
+                    }
+                }
+            } else {
+                return 'Fecha no disponible';
+            }
+            
+            if (isNaN(date.getTime())) {
+                return 'Fecha no disponible';
+            }
+            
+            return date.toLocaleDateString('es-VE', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch {
+            return 'Fecha no disponible';
+        }
+    };
+
+    const formattedDate = formatDate(institution.registrationDate);
+
+    const canAddResponsible = !!(onAddResponsible || onSearchResponsible);
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="5xl" showCloseButton>
@@ -114,6 +182,83 @@ export default function InstitutionViewModal({
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Extensión</label>
                                 <p className="text-sm font-bold text-text-primary dark:text-white/90">{institution.extension || '-'}</p>
+                            </div>
+
+                            {/* Sección: Responsable Asignado */}
+                            <div className="sm:col-span-2">
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Responsable Asignado</label>
+                                <div className="flex items-center gap-2 mt-1">
+                                    {responsibles && responsibles.length > 0 ? (
+                                        <div className="flex flex-col gap-2">
+                                            {responsibles.map((resp) => (
+                                                <div key={resp.responsibleId} className="flex items-center gap-2">
+                                                    <div className="size-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                                        <User className="size-3 text-blue-600 dark:text-blue-400" />
+                                                    </div>
+                                                    <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                                                        {resp.firstName} {resp.lastName}
+                                                        <span className="text-[10px] font-medium text-text-tertiary ml-2 italic">
+                                                            ({resp.cargo || 'Sin cargo'})
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20">
+                                                <AlertCircle className="size-3.5 text-warning-600 dark:text-warning-400" />
+                                                <span className="text-xs font-semibold text-warning-700 dark:text-warning-300 uppercase tracking-wider">No tiene responsable</span>
+                                            </div>
+
+                                            {/* Botón + con Dropdown de opciones */}
+                                            {canAddResponsible && (
+                                                <div className="relative">
+                                                  <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                                                    className="dropdown-toggle"
+                                                    endIcon={<ChevronDown className="w-4 h-4 ml-1 opacity-50" />}
+                                                  >
+                                                    <PlusCircle className="w-4 h-4 mr-1" />
+                                                    Agregar
+                                                  </Button>
+                                                  
+                                                  <Dropdown 
+                                                    isOpen={dropdownOpen} 
+                                                    onClose={() => setDropdownOpen(false)}
+                                                    align="right"
+                                                    className="w-56"
+                                                  >
+                                                    {onSearchResponsible && (
+                                                        <DropdownItem
+                                                          onClick={() => {
+                                                            setDropdownOpen(false);
+                                                            onSearchResponsible();
+                                                          }}
+                                                          icon={<Search className="w-4 h-4" />}
+                                                        >
+                                                          Buscar Existente
+                                                        </DropdownItem>
+                                                    )}
+                                                    {onAddResponsible && (
+                                                        <DropdownItem
+                                                          onClick={() => {
+                                                            setDropdownOpen(false);
+                                                            onAddResponsible();
+                                                          }}
+                                                          icon={<UserPlus className="w-4 h-4" />}
+                                                        >
+                                                          Registrar Nuevo
+                                                        </DropdownItem>
+                                                    )}
+                                                  </Dropdown>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

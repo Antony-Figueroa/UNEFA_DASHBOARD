@@ -23,6 +23,7 @@ import InstitutionViewModal from "../../features/institutions/components/Institu
 import InstitutionalResponsibleTable from "../../features/institutions/components/InstitutionalResponsibleTable";
 import InstitutionalResponsibleModal from "../../features/institutions/components/InstitutionalResponsibleModal";
 import InstitutionalResponsibleViewModal from "../../features/institutions/components/InstitutionalResponsibleViewModal";
+import InstitutionalResponsibleSelectModal from "../../features/institutions/components/InstitutionalResponsibleSelectModal";
 import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
 import { InstitutionPDF } from "../../components/ui/pdf/templates/InstitutionPDF";
 import { InstitutionalResponsiblePDF } from "../../components/ui/pdf/templates/InstitutionalResponsiblePDF";
@@ -30,12 +31,12 @@ import { useInstitutions } from "../../features/institutions/hooks/useInstitutio
 import { useInstitutionalResponsibles } from "../../features/institutions/hooks/useInstitutionalResponsibles";
 import { useCareers } from "../../features/careers/hooks/useCareers";
 import { useInternshipTypes } from "../../features/internship-types/hooks/useInternshipTypes";
-import { 
-  Institution, 
-  InstitutionRowData, 
-  InstitutionalResponsible, 
-  InstitutionalResponsibleRowData, 
-  CreateInstitutionPayload, 
+import {
+  Institution,
+  InstitutionRowData,
+  InstitutionalResponsible,
+  InstitutionalResponsibleRowData,
+  CreateInstitutionPayload,
   UpdateInstitutionPayload,
   CreateInstitutionalResponsiblePayload,
   UpdateInstitutionalResponsiblePayload
@@ -80,14 +81,14 @@ export default function InstitutionsPage() {
         ];
         const data = await fetchMultipleLists(listNames);
         const mappedOptions: Record<string, { value: string; label: string }[]> = {};
-        
+
         Object.entries(data).forEach(([key, values]) => {
           mappedOptions[key] = values.map(v => ({
             value: v.abbreviation || v.name,
             label: v.abbreviation || v.name
           }));
         });
-        
+
         setListOptions(mappedOptions);
       } catch (error) {
         console.error("Error loading dynamic options for institutions:", error);
@@ -127,9 +128,9 @@ export default function InstitutionsPage() {
 
   const { activeOptions: internshipTypeOptions } = useInternshipTypes();
 
-  const careerOptions = useMemo(() => 
-    careers.filter(c => c.status).map(c => ({ 
-      value: String(c.careerId), 
+  const careerOptions = useMemo(() =>
+    careers.filter(c => c.status).map(c => ({
+      value: String(c.careerId),
       text: c.careerName,
       internshipPriorities: c.internshipTypeIds || []
     })),
@@ -137,7 +138,7 @@ export default function InstitutionsPage() {
 
   const [mainTab, setMainTab] = useState<"Instituciones" | "Responsables">("Instituciones");
   const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
-  
+
   // Estados para Instituciones
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInst, setEditingInst] = useState<Institution | null>(null);
@@ -145,20 +146,24 @@ export default function InstitutionsPage() {
 
   // Estados para Responsables
   const [isRespModalOpen, setIsRespModalOpen] = useState(false);
+  const [isSelectRespModalOpen, setIsSelectRespModalOpen] = useState(false);
   const [editingResp, setEditingResp] = useState<InstitutionalResponsible | null>(null);
   const [viewResp, setViewResp] = useState<InstitutionalResponsibleRowData | null>(null);
   const [isInstPDFModalOpen, setIsInstPDFModalOpen] = useState(false);
   const [isRespPDFModalOpen, setIsRespPDFModalOpen] = useState(false);
-  
+
+  // Estado interno para rastrear la institución desde la cual se inicia el add de responsable
+  const [pendingResponsibleForInstitution, setPendingResponsibleForInstitution] = useState<{ id: string; name: string } | null>(null);
+
   // Estados para flujo post-creación de institución
   const [newlyCreatedInstitution, setNewlyCreatedInstitution] = useState<{ id: string; name: string } | null>(null);
   const [isAddingMultipleResponsibles, setIsAddingMultipleResponsibles] = useState(false);
-  
+
   // Estados para búsqueda en los PDF
   const [instPdfSearchTerm, setInstPdfSearchTerm] = useState("");
   const [respPdfSearchTerm, setRespPdfSearchTerm] = useState("");
 
-  const institutionOptions = useMemo(() => 
+  const institutionOptions = useMemo(() =>
     institutions.filter(i => i.status).map(i => ({ value: i.institutionId, label: i.name })),
   [institutions]);
 
@@ -192,8 +197,8 @@ export default function InstitutionsPage() {
     const search = instPdfSearchTerm.trim().toLowerCase();
     return (Array.isArray(institutions) ? institutions : [])
       .filter(i => i.status === true)
-      .filter(i => !search || 
-        i.rif.toLowerCase().includes(search) || 
+      .filter(i => !search ||
+        i.rif.toLowerCase().includes(search) ||
         i.name.toLowerCase().includes(search) ||
         i.institutionType.toLowerCase().includes(search)
       );
@@ -205,8 +210,8 @@ export default function InstitutionsPage() {
       .filter(r => r.status === true)
       .filter(r => {
         const fullName = `${r.firstName} ${r.lastName}`.toLowerCase();
-        return !search || 
-          r.identificationNumber.toLowerCase().includes(search) || 
+        return !search ||
+          r.identificationNumber.toLowerCase().includes(search) ||
           fullName.includes(search) ||
           r.institutionName?.toLowerCase().includes(search);
       });
@@ -371,8 +376,8 @@ export default function InstitutionsPage() {
                         </h2>
                     </div>
                     <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">
-                      {mainTab === "Instituciones" 
-                        ? "Gestiona la información y estado de las instituciones aliadas." 
+                      {mainTab === "Instituciones"
+                        ? "Gestiona la información y estado de las instituciones aliadas."
                         : "Gestiona los representantes y responsables de cada institución."}
                     </p>
                 </SkeletonLoader>
@@ -423,9 +428,9 @@ export default function InstitutionsPage() {
               className="mb-6"
             />
 
-            <SkeletonLoader 
-              isLoading={pageLoading || instStatus === "loading" || respStatus === "loading"} 
-              skeleton={<TablePageSkeleton rows={5} />} 
+            <SkeletonLoader
+              isLoading={pageLoading || instStatus === "loading" || respStatus === "loading"}
+              skeleton={<TablePageSkeleton rows={5} />}
               id="institutions-table-skeleton"
             >
               {mainTab === "Instituciones" ? (
@@ -471,7 +476,7 @@ export default function InstitutionsPage() {
               setIsModalOpen(false);
             } else {
               const newInst = await addInstitution(data as CreateInstitutionPayload);
-              
+
               if (newInst) {
                 return { institutionId: newInst.institutionId, name: newInst.name };
               }
@@ -497,6 +502,7 @@ export default function InstitutionsPage() {
         isOpen={isRespModalOpen}
         onClose={() => {
           setIsRespModalOpen(false);
+          setPendingResponsibleForInstitution(null);
           if (isAddingMultipleResponsibles) {
             setIsAddingMultipleResponsibles(false);
             setNewlyCreatedInstitution(null);
@@ -509,7 +515,7 @@ export default function InstitutionsPage() {
               setIsRespModalOpen(false);
             } else {
               await addResponsible(data as CreateInstitutionalResponsiblePayload);
-              
+
               if (isAddingMultipleResponsibles && newlyCreatedInstitution) {
                 setConfirmation({
                   isOpen: true,
@@ -528,6 +534,7 @@ export default function InstitutionsPage() {
                 setIsRespModalOpen(false);
                 setIsAddingMultipleResponsibles(false);
                 setNewlyCreatedInstitution(null);
+                setPendingResponsibleForInstitution(null);
               }
             }
           } catch (error) {
@@ -537,15 +544,51 @@ export default function InstitutionsPage() {
         editingResp={editingResp}
         institutionOptions={institutionOptions}
         isLoading={loadingAction}
-        preselectedInstitutionId={isAddingMultipleResponsibles ? newlyCreatedInstitution?.id : undefined}
-        preselectedInstitutionName={isAddingMultipleResponsibles ? newlyCreatedInstitution?.name : undefined}
+        preselectedInstitutionId={
+          pendingResponsibleForInstitution?.id ||
+          (isAddingMultipleResponsibles ? newlyCreatedInstitution?.id : undefined)
+        }
+        preselectedInstitutionName={
+          pendingResponsibleForInstitution?.name ||
+          (isAddingMultipleResponsibles ? newlyCreatedInstitution?.name : undefined)
+        }
       />
 
+      {/* Modal de visualización de institución — con responsables conectados */}
       <InstitutionViewModal
         isOpen={!!viewInst}
         onClose={() => setViewInst(null)}
         onEdit={handleOpenEditModal}
         institution={viewInst}
+        responsibles={
+          viewInst
+            ? responsibles.filter(
+                (r) => r.institutionId === viewInst.institutionId && r.status
+              )
+            : []
+        }
+        onAddResponsible={() => {
+          // Guarda la institución actual para pre-seleccionarla en el modal de responsable
+          if (viewInst) {
+            setPendingResponsibleForInstitution({
+              id: viewInst.institutionId,
+              name: viewInst.name,
+            });
+          }
+          setViewInst(null);
+          setEditingResp(null);
+          setTimeout(() => setIsRespModalOpen(true), 150);
+        }}
+        onSearchResponsible={() => {
+          if (viewInst) {
+            setPendingResponsibleForInstitution({
+              id: viewInst.institutionId,
+              name: viewInst.name,
+            });
+          }
+          setViewInst(null);
+          setTimeout(() => setIsSelectRespModalOpen(true), 150);
+        }}
       />
 
       <InstitutionalResponsibleViewModal
@@ -553,6 +596,29 @@ export default function InstitutionsPage() {
         onClose={() => setViewResp(null)}
         onEdit={handleOpenEditRespModal}
         responsible={viewResp}
+      />
+
+      {/* Modal para seleccionar responsable existente desde detalles */}
+      <InstitutionalResponsibleSelectModal
+        isOpen={isSelectRespModalOpen}
+        onClose={() => {
+          setIsSelectRespModalOpen(false);
+          setPendingResponsibleForInstitution(null);
+        }}
+        currentInstitutionId={pendingResponsibleForInstitution?.id}
+        onSelect={async (resp) => {
+          try {
+            await editResponsible({
+              responsibleId: resp.responsibleId,
+              institutionId: pendingResponsibleForInstitution?.id || "",
+              status: true 
+            } as UpdateInstitutionalResponsiblePayload);
+            setIsSelectRespModalOpen(false);
+            setPendingResponsibleForInstitution(null);
+          } catch (error) {
+            console.error("Error linking existing responsible:", error);
+          }
+        }}
       />
 
       <PDFPreviewModal
@@ -603,6 +669,6 @@ export default function InstitutionsPage() {
           variant={confirmation.variant}
           isLoading={loadingAction}
         />
-      </>
-    );
+    </>
+  );
 }

@@ -41,11 +41,11 @@ export const InstitutionPDF: React.FC<InstitutionPDFProps> = ({ data }) => {
                 {institution.nucleus} - {institution.extension}
               </Text>
             </View>
-            <View style={[pdfStyles.tableCell, { flex: 1.2 }]}>
-              <Text style={{ fontSize: 8, color: "#64748B" }}>
-                {institution.practiceTypes?.join(", ") || "N/A"}
-              </Text>
-            </View>
+             <View style={[pdfStyles.tableCell, { flex: 1.2 }]}>
+               <Text style={{ fontSize: 8, color: "#64748B" }}>
+                 {institution.practiceType || "N/A"}
+               </Text>
+             </View>
           </View>
         ))}
       </View>

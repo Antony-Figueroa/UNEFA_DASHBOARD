@@ -86,13 +86,11 @@ interface UserKeyRow {
 export const login = async (userCi: string, password: string, ip: string, userAgent: string) => {
    return await dbManager.withRetry(async (supabase) => {
      // 1. Buscar usuario por CI
-     console.log(`[Auth Service] Login attempt for CI: ${userCi}`);
      const { data: userData, error: userError } = await supabase
        .from('t_user')
        .select('*, t_user_roles(ID_ROLES)')
        .eq('USER_CI', userCi)
        .single();
-     console.log(`[Auth Service] Query result: userData=${JSON.stringify(userData)}, error=${userError}`);
 
     const user = userData as unknown as UserRow;
 

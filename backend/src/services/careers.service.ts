@@ -57,8 +57,6 @@ export const getCareers = async () => {
   cacheManager.delete(cacheKey);
 
   const transformed = await dbManager.withRetry(async (supabase) => {
-    console.log('[DEBUG CAREERS] Step 1: Getting careers...');
-    
     // 1. Obtener carreras básicas
     const { data: careers, error } = await supabase
       .from(TABLE_NAME)
@@ -66,7 +64,6 @@ export const getCareers = async () => {
       .order('CAREER_NAME', { ascending: true });
 
     if (error) throw error;
-    console.log('[DEBUG CAREERS] Step 2: Got careers:', careers?.length);
 
     // 2. Obtener relaciones carrera-tipo de práctica
     const { data: careerInternshipRelations, error: relError } = await supabase
@@ -74,7 +71,6 @@ export const getCareers = async () => {
       .select('CAREER_ID, INTERNSHIP_TYPE_ID');
 
     if (relError) throw relError;
-    console.log('[DEBUG CAREERS] Step 3: Got relations:', careerInternshipRelations?.length, careerInternshipRelations?.[0]);
 
     // 3. Obtener tipos de práctica con sus prioridades
     const { data: internshipTypes, error: typeError } = await supabase
@@ -82,7 +78,6 @@ export const getCareers = async () => {
       .select('INTERNSHIP_TYPE_ID, PRIORITY');
 
     if (typeError) throw typeError;
-    console.log('[DEBUG CAREERS] Step 4: Got types:', internshipTypes?.length, internshipTypes);
 
     // 4. Crear mapa de priorities por career_id y por internship_type_id
     const careerPrioritiesMap: Record<number, Record<number, number>> = {};
@@ -115,15 +110,12 @@ export const getCareers = async () => {
         PRIORITY: careerPrioritiesMap[careerId]?.[parseInt(typeId)] ?? 0
       }));
       
-      console.log('[DEBUG] careerId:', careerId, 'relations:', JSON.stringify(relations));
-      
       return mapRecord({
         ...c,
         [RELATION_TABLE]: relations
       });
     });
 
-    console.log('[DEBUG] Sample result:', JSON.stringify(result[0]?.internshipPriorities));
     return result;
 
     // 2. Verificar uso de forma eficiente (opcional, pero ayuda a la UI)

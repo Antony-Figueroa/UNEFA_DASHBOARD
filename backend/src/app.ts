@@ -65,8 +65,6 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,ht
   .map(s => s.trim())
   .filter(Boolean);
 
-console.log(`[CORS] Allowed Origins:`, allowedOrigins);
-
 // Performance monitoring
 app.use(performanceMiddleware);
 
@@ -81,9 +79,8 @@ usersService.ensureRolesSeeded().catch(() => {});
 setTimeout(() => {
   try {
     startPeriodScheduler();
-    console.log('[Main] Period notification scheduler started');
   } catch (err: unknown) {
-    console.error('[Main] Error starting period scheduler:', err);
+    console.error('[Scheduler] Error starting:', err);
   }
 }, 10000);
 

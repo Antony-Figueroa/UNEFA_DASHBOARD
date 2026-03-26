@@ -246,26 +246,46 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
       if (periodStatus !== undefined) {
         // VALIDACIÓN CRONOLÓGICA: No permitir activar un período si hay uno anterior sin finalizar
         if (String(periodStatus) === '2') { // Intentando activar a "En Curso"
-          const currentPeriodCode = updatePayload.T_INTERNSHIPS_CODE || oldData?.T_INTERNSHIPS_CODE;
+          // Obtener el período que se está intentando activar
+          const currentStartDate = updatePayload.START_DATE || oldData?.START_DATE;
+          const currentEndDate = updatePayload.END_DATE || oldData?.END_DATE;
+          const currentPeriodId = id;
           
-          // Obtener todos los períodos ordenados cronológicamente
-          const { data: allPeriods } = await supabase
-            .from(TABLE_NAME)
-            .select('PERIOD_ID, T_INTERNSHIPS_CODE, DESCRIPTION, PERIOD_STATUS')
-            .eq('STATUS', 1)
-            .order('START_DATE', { ascending: true });
+          if (currentStartDate && currentEndDate) {
+            // Obtener todos los períodos activos (excluyendo el actual), ordenados por fecha
+            const { data: allPeriods } = await supabase
+              .from(TABLE_NAME)
+              .select('PERIOD_ID, DESCRIPTION, START_DATE, END_DATE, PERIOD_STATUS')
+              .eq('STATUS', 1)
+              .neq('PERIOD_ID', currentPeriodId)
+              .order('START_DATE', { ascending: true });
 
-          if (allPeriods && allPeriods.length > 0) {
-            // Encontrar la posición del período actual en la secuencia
-            const currentIndex = allPeriods.findIndex(p => p.T_INTERNSHIPS_CODE === currentPeriodCode);
-            
-            if (currentIndex > 0) {
-              // Verificar que todos los períodos anteriores estén finalizados (PERIOD_STATUS = 3)
-              const previousPeriods = allPeriods.slice(0, currentIndex);
-              const unfinishedPeriods = previousPeriods.filter(p => p.PERIOD_STATUS !== '3');
+            if (allPeriods && allPeriods.length > 0) {
+              // Buscar el período que debería estar ANTES del actual (termina inmediatamente antes o se superpone)
+              // Un período bloquea si:
+              // 1. No está finalizado (PERIOD_STATUS != 3)
+              // 2. Su fecha de fin es >= a la fecha de inicio del período actual
+              //    O su fecha de inicio es < a la fecha de inicio del período actual (empieza antes)
+              const blockingPeriods = allPeriods.filter(p => {
+                const isNotFinalized = p.PERIOD_STATUS !== '3';
+                const pStartDate = new Date(p.START_DATE);
+                const pEndDate = new Date(p.END_DATE);
+                const currentStart = new Date(currentStartDate);
+                
+                // Bloquea si: no está finalizado Y (termina después de que empiece el actual O empieza antes que el actual)
+                const shouldBlock = isNotFinalized && (
+                  pEndDate >= currentStart || // Termina cuando o después de que empiece el actual
+                  pStartDate < currentStart  // Empieza antes del actual (período anterior)
+                );
+                
+                return shouldBlock;
+              });
               
-              if (unfinishedPeriods.length > 0) {
-                const errorMsg = `No se puede activar el período "${oldData?.DESCRIPTION}" porque el período anterior "${unfinishedPeriods[0].DESCRIPTION}" aún no ha sido culminado. Debes culminar el período anterior primero para poder activar este.`;
+              if (blockingPeriods.length > 0) {
+                // Ordenar por fecha de fin descendente para mostrar el más relevante
+                blockingPeriods.sort((a, b) => new Date(b.END_DATE).getTime() - new Date(a.END_DATE).getTime());
+                const blockingPeriod = blockingPeriods[0];
+                const errorMsg = `No se puede activar el período "${oldData?.DESCRIPTION}" porque el período "${blockingPeriod.DESCRIPTION}" (termina el ${new Date(blockingPeriod.END_DATE).toLocaleDateString('es-VE')}) aún no ha sido culminado. Debes culminar primero el período anterior para poder activar este.`;
                 console.warn(`[PeriodValidation] ${errorMsg}`);
                 const validationError = new Error(errorMsg) as AppError;
                 validationError.code = '400';

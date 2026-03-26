@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 
 const TABLE_NAME = 't_institution_manager';
+const PIVOT_TABLE = 't_institution_manager_institution';
 
 interface AppError extends Error {
   code?: string;
@@ -41,7 +42,7 @@ const handleDbError = (res: Response, error: unknown) => {
     error: dbError.message || 'Unknown database error',
     details: dbError.details,
     code: dbError.code,
-    raw: dbError // Enviar error completo para depuración profunda
+    raw: dbError
   });
 };
 
@@ -54,14 +55,46 @@ interface DBInstitutionalResponsible {
   SECOND_SURNAME: string | null;
   CONTACT_PHONE: string;
   EMAIL: string;
-  cargo: string | null; // Corregido a minúsculas según esquema visual
+  cargo: string | null;
   CREATION_DATE: string;
   STATUS: number;
-  INSTITUTION_ID: number;
-  t_institution?: {
-    INSTITUTION_NAME: string;
-  };
+  institutions?: Array<{
+    institutionId: string;
+    institutionName: string;
+    cargo: string;
+  }>;
 }
+
+/**
+ * Obtiene las instituciones asociadas a un responsable desde la tabla pivote
+ * Devuelve array de objetos con id, nombre y cargo por cada relación
+ */
+const getInstitutionsForManager = async (supabase: any, managerId: number) => {
+  const { data: pivotData, error: pivotError } = await supabase
+    .from(PIVOT_TABLE)
+    .select('"INSTITUTION_ID", cargo')
+    .eq('"MANAGER_ID"', managerId);
+
+  if (pivotError || !pivotData || pivotData.length === 0) {
+    return [];
+  }
+
+  const institutionIds = pivotData.map((d: any) => d.INSTITUTION_ID);
+
+  const { data: instData } = await supabase
+    .from('t_institution')
+    .select('INSTITUTION_ID, INSTITUTION_NAME')
+    .in('INSTITUTION_ID', institutionIds);
+
+  const instMap = new Map((instData || []).map((i: any) => [i.INSTITUTION_ID, i.INSTITUTION_NAME]));
+
+  // Devolver array de objetos - cada relación es independiente
+  return pivotData.map((p: any) => ({
+    institutionId: String(p.INSTITUTION_ID),
+    institutionName: instMap.get(p.INSTITUTION_ID) || 'N/A',
+    cargo: p.cargo || ''
+  }));
+};
 
 const mapDBToFrontend = (r: DBInstitutionalResponsible) => ({
   responsibleId: String(r.MANAGER_ID),
@@ -73,9 +106,9 @@ const mapDBToFrontend = (r: DBInstitutionalResponsible) => ({
   secondLastName: r.SECOND_SURNAME || undefined,
   phone: r.CONTACT_PHONE,
   email: r.EMAIL,
-  cargo: r.cargo || undefined, // Mapeado desde 'cargo' minúscula
-  institutionId: String(r.INSTITUTION_ID),
-  institutionName: r.t_institution?.INSTITUTION_NAME,
+  // El cargo ahora viene por cada institución, no global
+  cargo: r.institutions?.[0]?.cargo || r.cargo || undefined,
+  institutions: r.institutions || [],
   status: r.STATUS === 1,
   registrationDate: r.CREATION_DATE
 });
@@ -83,22 +116,41 @@ const mapDBToFrontend = (r: DBInstitutionalResponsible) => ({
 export const getInstitutionalResponsibles = async (_req: Request, res: Response) => {
   try {
     const data = await dbManager.withRetry(async (supabase) => {
-      // 1. Consulta simple
-      const { data, error } = await supabase
+      const { data: responsibles, error } = await supabase
         .from(TABLE_NAME)
         .select('*')
         .order('NAME', { ascending: true });
 
       if (error) throw error;
 
-      // 2. Obtener nombres de instituciones para el mapeo (opcional pero recomendado)
+      // Obtener mapa de instituciones
       const { data: instData } = await supabase.from('t_institution').select('INSTITUTION_ID, INSTITUTION_NAME');
-      const instMap = new Map((instData || []).map(i => [i.INSTITUTION_ID, i.INSTITUTION_NAME]));
+      const instMap = new Map((instData || []).map((i: any) => [i.INSTITUTION_ID, i.INSTITUTION_NAME]));
 
-      return (data || []).map((r: any) => ({
-        ...r,
-        t_institution: { INSTITUTION_NAME: instMap.get(r.INSTITUTION_ID) || 'N/A' }
-      })) as unknown as DBInstitutionalResponsible[];
+      // Obtener relaciones de la tabla pivote CON cargo
+      const { data: pivotData } = await supabase
+        .from(PIVOT_TABLE)
+        .select('"MANAGER_ID", "INSTITUTION_ID", cargo');
+
+      // Agrupar instituciones por manager CON su cargo
+      const managerInstitutions = new Map<number, Array<{ institutionId: string; institutionName: string; cargo: string }>>();
+      (pivotData || []).forEach((p: any) => {
+        const existing = managerInstitutions.get(p.MANAGER_ID) || [];
+        existing.push({
+          institutionId: String(p.INSTITUTION_ID),
+          institutionName: instMap.get(p.INSTITUTION_ID) || 'N/A',
+          cargo: p.cargo || ''
+        });
+        managerInstitutions.set(p.MANAGER_ID, existing);
+      });
+
+      return (responsibles || []).map((r: any) => {
+        const institutions = managerInstitutions.get(r.MANAGER_ID) || [];
+        return {
+          ...r,
+          institutions
+        };
+      }) as unknown as DBInstitutionalResponsible[];
     }, 'getInstitutionalResponsibles');
 
     res.json(data.map(mapDBToFrontend));
@@ -121,16 +173,12 @@ export const getInstitutionalResponsibleByCi = async (req: Request, res: Respons
       if (error) throw error;
       if (!responsible) return null;
 
-      // Obtener nombre de la institución
-      const { data: inst } = await supabase
-        .from('t_institution')
-        .select('INSTITUTION_NAME')
-        .eq('INSTITUTION_ID', responsible.INSTITUTION_ID)
-        .single();
+      // Obtener instituciones desde la tabla pivote (ahora devuelve array de objetos)
+      const institutions = await getInstitutionsForManager(supabase, responsible.MANAGER_ID);
 
       return {
         ...responsible,
-        t_institution: inst || { INSTITUTION_NAME: 'N/A' }
+        institutions
       } as DBInstitutionalResponsible;
     }, 'getInstitutionalResponsibleByCi');
 
@@ -149,13 +197,42 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
     const r = req.body;
     console.log('[createInstitutionalResponsible] Request body:', JSON.stringify(r));
     
-    if (!r.institutionId) {
-      return res.status(400).json({ message: 'El ID de institución es requerido' });
+    // Nueva estructura: institutions array con objetos { institutionId, cargo }
+    // También acepta backward compatibility con institutionIds array simple
+    let institutions: Array<{ institutionId: string; cargo: string }> = [];
+    
+    if (r.institutions && Array.isArray(r.institutions)) {
+      // Nueva estructura: [{ institutionId: "1", cargo: "Gerente" }, ...]
+      institutions = r.institutions.map((inst: any) => ({
+        institutionId: String(inst.institutionId),
+        cargo: inst.cargo || ''
+      }));
+    } else if (r.institutionIds && Array.isArray(r.institutionIds)) {
+      // Backward: [1, 2, 3] - usar cargo global si existe
+      institutions = r.institutionIds.map((id: string) => ({
+        institutionId: String(id),
+        cargo: r.cargo || ''
+      }));
+    } else if (r.institutionId) {
+      // Backward: single institutionId
+      institutions = [{
+        institutionId: String(r.institutionId),
+        cargo: r.cargo || ''
+      }];
     }
     
-    const institutionIdNum = parseInt(r.institutionId);
-    if (isNaN(institutionIdNum)) {
-      return res.status(400).json({ message: 'El ID de institución debe ser un número válido' });
+    if (institutions.length === 0) {
+      return res.status(400).json({ message: 'Debe seleccionar al menos una institución' });
+    }
+    
+    // Validar que todos los IDs sean válidos
+    const validInstitutions = institutions.filter(inst => {
+      const num = parseInt(inst.institutionId);
+      return !isNaN(num) && num > 0;
+    });
+    
+    if (validInstitutions.length === 0) {
+      return res.status(400).json({ message: 'Los IDs de institución deben ser números válidos' });
     }
     
     const creationDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
@@ -169,10 +246,12 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
         SECOND_SURNAME: r.secondLastName ? String(r.secondLastName).toUpperCase() : null,
         CONTACT_PHONE: r.phone,
         EMAIL: String(r.email).toUpperCase(),
-        INSTITUTION_ID: institutionIdNum,
+        // Mantener el campo antiguo por compatibilidad, pero será null
+        INSTITUTION_ID: null,
         STATUS: r.status === false ? 0 : 1,
         CREATION_DATE: creationDate,
-        cargo: r.cargo ? String(r.cargo).toUpperCase() : null // Usando nombre exacto de la columna 'cargo'
+        // El cargo global se mantiene por compatibilidad pero no se usa
+        cargo: null
       };
       
       return data;
@@ -194,7 +273,7 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
       }
 
       let dbData = buildDbData();
-      let { data, error } = await supabase
+      let { data: newManager, error } = await supabase
         .from(TABLE_NAME)
         .insert([dbData])
         .select('*')
@@ -205,16 +284,42 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
         throw error;
       }
 
-      // Obtener nombre de institución para el mapeo final
-      const { data: inst } = await supabase
+      // Insertar relaciones en la tabla pivote CON cargo
+      const pivotInserts = validInstitutions.map((inst: any) => ({
+        "MANAGER_ID": newManager.MANAGER_ID,
+        "INSTITUTION_ID": parseInt(inst.institutionId),
+        cargo: inst.cargo ? String(inst.cargo).toUpperCase() : null
+      }));
+
+      const { error: pivotError } = await supabase
+        .from(PIVOT_TABLE)
+        .insert(pivotInserts);
+
+      if (pivotError) {
+        console.error('[createInstitutionalResponsible] Pivot Insert Error:', pivotError);
+        // Si falla la tabla pivote, eliminamos el manager creado
+        await supabase.from(TABLE_NAME).delete().eq('MANAGER_ID', newManager.MANAGER_ID);
+        throw pivotError;
+      }
+
+      // Obtener instituciones para devolver al frontend
+      const instIds = validInstitutions.map((i: any) => parseInt(i.institutionId));
+      const { data: instData } = await supabase
         .from('t_institution')
-        .select('INSTITUTION_NAME')
-        .eq('INSTITUTION_ID', (data as any).INSTITUTION_ID)
-        .single();
+        .select('INSTITUTION_ID, INSTITUTION_NAME')
+        .in('INSTITUTION_ID', instIds);
+
+      const instMap = new Map((instData || []).map((i: any) => [i.INSTITUTION_ID, i.INSTITUTION_NAME]));
+
+      const resultInstitutions = validInstitutions.map((inst: any) => ({
+        institutionId: inst.institutionId,
+        institutionName: instMap.get(parseInt(inst.institutionId)) || 'N/A',
+        cargo: inst.cargo
+      }));
 
       return {
-        ...data,
-        t_institution: inst || { INSTITUTION_NAME: 'N/A' }
+        ...newManager,
+        institutions: resultInstitutions
       } as DBInstitutionalResponsible;
     }, 'createInstitutionalResponsible');
 
@@ -241,11 +346,12 @@ export const updateInstitutionalResponsible = async (req: Request, res: Response
     if (r.secondLastName !== undefined) dbData.SECOND_SURNAME = r.secondLastName ? String(r.secondLastName).toUpperCase() : null;
     if (r.phone !== undefined) dbData.CONTACT_PHONE = r.phone;
     if (r.email !== undefined) dbData.EMAIL = String(r.email).toUpperCase();
-    if (r.cargo !== undefined) dbData.cargo = r.cargo ? String(r.cargo).toUpperCase() : null; // Corregido a minúsculas
-    if (r.institutionId !== undefined) {
-      // Si llega vacío o "0", lo tratamos como null para desvincular
-      dbData.INSTITUTION_ID = (r.institutionId === "" || r.institutionId === "0") ? null : parseInt(r.institutionId);
-    }
+    // El cargo ya no se guarda en la tabla principal, está en la pivote
+    // dbData.cargo = r.cargo ? String(r.cargo).toUpperCase() : null;
+    
+    // Mantener INSTITUTION_ID como null (las relaciones están en la tabla pivote)
+    dbData.INSTITUTION_ID = null;
+    
     if (r.status !== undefined) dbData.STATUS = r.status ? 1 : 0;
 
     const data = await dbManager.withRetry(async (supabase) => {
@@ -257,7 +363,39 @@ export const updateInstitutionalResponsible = async (req: Request, res: Response
       
       if (updateError) throw updateError;
 
-      // 2. Recuperar el registro actualizado
+      // 2. Si se enviaron institutions, actualizar la tabla pivote
+      if (r.institutions !== undefined) {
+        // Nueva estructura: [{ institutionId: "1", cargo: "Gerente" }, ...]
+        const newInstitutions = (r.institutions as Array<{ institutionId: string; cargo: string }>)
+          .map(inst => ({
+            institutionId: parseInt(inst.institutionId),
+            cargo: inst.cargo ? String(inst.cargo).toUpperCase() : ''
+          }))
+          .filter(inst => !isNaN(inst.institutionId) && inst.institutionId > 0);
+        
+        // Eliminar relaciones existentes
+        await supabase
+          .from(PIVOT_TABLE)
+          .delete()
+          .eq('"MANAGER_ID"', id);
+
+        // Insertar nuevas relaciones CON cargo
+        if (newInstitutions.length > 0) {
+          const pivotInserts = newInstitutions.map((inst: any) => ({
+            "MANAGER_ID": parseInt(id),
+            "INSTITUTION_ID": inst.institutionId,
+            cargo: inst.cargo || null
+          }));
+
+          const { error: pivotError } = await supabase
+            .from(PIVOT_TABLE)
+            .insert(pivotInserts);
+
+          if (pivotError) throw pivotError;
+        }
+      }
+
+      // 3. Recuperar el registro actualizado con sus instituciones
       const { data: updatedData, error: selectError } = await supabase
         .from(TABLE_NAME)
         .select('*')
@@ -266,20 +404,12 @@ export const updateInstitutionalResponsible = async (req: Request, res: Response
 
       if (selectError) throw selectError;
 
-      // 3. Obtener el nombre de la institución si existe una vinculada
-      let instName = 'N/A';
-      if (updatedData.INSTITUTION_ID) {
-        const { data: inst } = await supabase
-          .from('t_institution')
-          .select('INSTITUTION_NAME')
-          .eq('INSTITUTION_ID', updatedData.INSTITUTION_ID)
-          .single();
-        if (inst) instName = inst.INSTITUTION_NAME;
-      }
+      // 4. Obtener instituciones desde la tabla pivote (ahora devuelve array de objetos)
+      const institutions = await getInstitutionsForManager(supabase, parseInt(id));
 
       return {
         ...updatedData,
-        t_institution: { INSTITUTION_NAME: instName }
+        institutions
       } as DBInstitutionalResponsible;
     });
 
@@ -312,20 +442,22 @@ export const toggleInstitutionalResponsibleStatus = async (req: Request, res: Re
     const { status } = req.body;
     
     const data = await dbManager.withRetry(async (supabase) => {
-      const { data, error } = await supabase
+      const { data: updatedData, error } = await supabase
         .from(TABLE_NAME)
         .update({ STATUS: status ? 1 : 0 })
         .eq('MANAGER_ID', id)
-        .select(`
-          *,
-          t_institution:INSTITUTION_ID (
-            INSTITUTION_NAME
-          )
-        `)
+        .select('*')
         .single();
 
       if (error) throw error;
-      return data as DBInstitutionalResponsible;
+
+      // Obtener instituciones (ahora devuelve array de objetos)
+      const institutions = await getInstitutionsForManager(supabase, parseInt(id));
+
+      return {
+        ...updatedData,
+        institutions
+      } as DBInstitutionalResponsible;
     });
 
     res.json(mapDBToFrontend(data));

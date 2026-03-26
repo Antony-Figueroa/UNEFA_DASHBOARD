@@ -120,6 +120,7 @@ export default function InstitutionsPage() {
     addResponsible,
     editResponsible,
     toggleStatus: toggleRespStatus,
+    refreshResponsibles,
     bulkRemoveResponsibles,
     bulkRestoreResponsibles,
   } = useInstitutionalResponsibles();
@@ -210,10 +211,11 @@ export default function InstitutionsPage() {
       .filter(r => r.status === true)
       .filter(r => {
         const fullName = `${r.firstName} ${r.lastName}`.toLowerCase();
+        const instNames = r.institutions?.map(i => i.institutionName).join(" ").toLowerCase() || "";
         return !search ||
           r.identificationNumber.toLowerCase().includes(search) ||
           fullName.includes(search) ||
-          r.institutionName?.toLowerCase().includes(search);
+          instNames.includes(search);
       });
   }, [responsibles, respPdfSearchTerm]);
 
@@ -227,10 +229,25 @@ export default function InstitutionsPage() {
     }
   };
 
-  const handleOpenEditModal = (inst: InstitutionRowData) => {
+  const handleOpenEditModal = async (inst: InstitutionRowData) => {
     const original = institutions.find(i => i.institutionId === inst.institutionId);
     if (original) {
-      setEditingInst(original);
+      // Refrescar datos de responsables para obtener los cargos específicos por institución
+      await refreshResponsibles();
+      
+      // Obtener datos frescos del servidor para asegurar tener internshipTypeIds
+      try {
+        const { getInstitutionById } = await import("../../features/institutions/services/institutionsService");
+        const freshData = await getInstitutionById(inst.institutionId);
+        if (freshData) {
+          setEditingInst(freshData);
+        } else {
+          setEditingInst(original);
+        }
+      } catch (error) {
+        console.error("Error fetching fresh institution data:", error);
+        setEditingInst(original);
+      }
       setIsModalOpen(true);
     }
   };
@@ -489,8 +506,8 @@ export default function InstitutionsPage() {
         editingInst={editingInst}
         isLoading={loadingAction}
         existingInstitutions={institutions}
-        responsibles={editingInst ? responsibles.filter(r => r.institutionId === editingInst.institutionId && r.status) : []}
-        responsibleHistory={editingInst ? responsibles.filter(r => r.institutionId === editingInst.institutionId && !r.status) : []}
+        responsibles={editingInst ? responsibles.filter(r => r.institutions?.some(inst => inst.institutionId === editingInst.institutionId) && r.status) : []}
+        responsibleHistory={editingInst ? responsibles.filter(r => r.institutions?.some(inst => inst.institutionId === editingInst.institutionId) && !r.status) : []}
         onAddResponsible={addResponsible}
         onEditResponsible={editResponsible}
         institutionOptions={institutionOptions}
@@ -563,7 +580,7 @@ export default function InstitutionsPage() {
         responsibles={
           viewInst
             ? responsibles.filter(
-                (r) => r.institutionId === viewInst.institutionId && r.status
+                (r) => r.institutions?.some(inst => inst.institutionId === viewInst.institutionId) && r.status
               )
             : []
         }
@@ -649,7 +666,7 @@ export default function InstitutionsPage() {
         columns={[
           { header: "Cédula", accessor: (r) => `${r.identificationPrefix}-${r.identificationNumber}` },
           { header: "Nombre", accessor: (r) => `${r.firstName} ${r.lastName}` },
-          { header: "Institución", accessor: "institutionName" },
+          { header: "Institución", accessor: (r) => r.institutions?.map(i => i.institutionName).join(", ") || "-" },
           { header: "Correo", accessor: "email" },
           { header: "Teléfono", accessor: "phone" },
         ]}

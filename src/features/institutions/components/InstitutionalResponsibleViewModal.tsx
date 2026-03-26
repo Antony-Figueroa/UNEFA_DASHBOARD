@@ -107,9 +107,9 @@ export default function InstitutionalResponsibleViewModal({
                 </p>
               </div>
               <div className="sm:col-span-2">
-                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Institución</label>
+                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Instituciones</label>
                 <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">
-                  {responsible.institutionName}
+                  {responsible.institutions?.map(inst => inst.institutionName).join(", ") || "Sin institución"}
                 </p>
               </div>
             </div>

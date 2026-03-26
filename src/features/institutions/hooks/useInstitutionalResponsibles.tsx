@@ -20,7 +20,7 @@ const RESPONSIBLE_LABELS: Record<string, string> = {
   fullName: "Nombre Completo",
   phone: "Teléfono",
   email: "Correo Electrónico",
-  institutionName: "Sede / Institución",
+  institutions: "Instituciones",
   cargo: "Cargo",
   status: "Estado",
 };
@@ -61,6 +61,19 @@ export const useInstitutionalResponsibles = () => {
       const newResp = await baseAddResponsible(respData, { silent: true });
       if (newResp) {
         const fullName = `${newResp.firstName} ${newResp.lastName}`;
+        
+        // Formatear instituciones para display legible
+        const formatInstitutions = (insts: any[] | undefined) => {
+          if (!insts || insts.length === 0) return "-";
+          return insts.map(i => `${i.institutionName}${i.cargo ? ` (${i.cargo})` : ''}`).join(', ');
+        };
+        
+        // Crear versión formateada para el detalle
+        const newRespFormatted = {
+          ...newResp,
+          institutions: formatInstitutions(newResp.institutions)
+        };
+        
         addToast({
           variant: "success",
           title: "Responsable Registrado",
@@ -68,9 +81,9 @@ export const useInstitutionalResponsibles = () => {
             <>
               <p>El responsable <strong>{fullName}</strong> ha sido registrado exitosamente.</p>
               <RecordDetails
-                data={newResp as unknown as Record<string, unknown>}
+                data={newRespFormatted as unknown as Record<string, unknown>}
                 labels={RESPONSIBLE_LABELS}
-                fields={['firstName', 'lastName', 'phone', 'email', 'institutionName']}
+                fields={['firstName', 'lastName', 'phone', 'email', 'institutions']}
               />
             </>
           ),
@@ -100,6 +113,23 @@ export const useInstitutionalResponsibles = () => {
       
       if (updatedResp) {
         const fullName = `${updatedResp.firstName} ${updatedResp.lastName}`;
+        
+        // Formatear instituciones para display legible
+        const formatInstitutions = (insts: any[] | undefined) => {
+          if (!insts || insts.length === 0) return "-";
+          return insts.map(i => `${i.institutionName}${i.cargo ? ` (${i.cargo})` : ''}`).join(', ');
+        };
+        
+        // Crear versiones formateadas para la comparación
+        const oldDataFormatted = {
+          ...oldResp,
+          institutions: formatInstitutions(oldResp?.institutions)
+        };
+        const newDataFormatted = {
+          ...updatedResp,
+          institutions: formatInstitutions(updatedResp.institutions)
+        };
+        
         addToast({
           variant: "success",
           title: "Responsable Actualizado",
@@ -107,8 +137,8 @@ export const useInstitutionalResponsibles = () => {
             <>
               <p>Los datos de <strong>{fullName}</strong> han sido actualizados exitosamente.</p>
               {oldResp && <ChangeComparison 
-                oldData={oldResp as unknown as Record<string, unknown>} 
-                newData={updatedResp as unknown as Record<string, unknown>} 
+                oldData={oldDataFormatted as unknown as Record<string, unknown>} 
+                newData={newDataFormatted as unknown as Record<string, unknown>} 
                 labels={RESPONSIBLE_LABELS} 
               />}
             </>

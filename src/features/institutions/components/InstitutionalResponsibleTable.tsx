@@ -185,7 +185,7 @@ export default function InstitutionalResponsibleTable({
         `${item.identificationPrefix}${item.identificationNumber}`.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
         `${item.firstName} ${item.lastName}`.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
         item.email.toLowerCase().includes(debouncedSearch.toLowerCase());
-      const matchesInstitution = filters.institution === "all" || item.institutionId === filters.institution;
+      const matchesInstitution = filters.institution === "all" || (item.institutions?.some(inst => inst.institutionId === filters.institution));
 
       return matchesTab && matchesSearch && matchesInstitution;
     });
@@ -212,9 +212,10 @@ export default function InstitutionalResponsibleTable({
    * Generates institution options for the filter dropdown based on unique institutions in the data.
    */
   const institutionOptions = useMemo(() => {
-    const uniqueInstitutions = Array.from(new Set(data.map(i => i.institutionId)))
+    const allInstitutions = data.flatMap(i => i.institutions || []);
+    const uniqueInstitutions = Array.from(new Set(allInstitutions.map(inst => inst.institutionId)))
       .map(id => {
-        const inst = data.find(item => item.institutionId === id);
+        const inst = allInstitutions.find(item => item.institutionId === id);
         return { value: id, label: inst?.institutionName || "Desconocida" };
       });
     return [{ value: "all", label: "Todas las Instituciones" }, ...uniqueInstitutions];
@@ -448,10 +449,10 @@ export default function InstitutionalResponsibleTable({
                   <SortIndicator column="email" />
                 </div>
               </TableCell>
-              <TableCell isHeader className="table-header-cell cursor-pointer text-center" onClick={async () => handleSort("institutionName")}>
+              <TableCell isHeader className="table-header-cell cursor-pointer text-center" onClick={async () => handleSort("institutions")}>
                 <div className="flex items-center justify-center">
-                  INSTITUCIÓN
-                  <SortIndicator column="institutionName" />
+                  INSTITUCIONES
+                  <SortIndicator column="institutions" />
                 </div>
               </TableCell>
               <TableCell isHeader className="table-header-cell text-right">
@@ -489,7 +490,7 @@ export default function InstitutionalResponsibleTable({
                   </TableCell>
                   <TableCell className="text-center">
                     <Badge color="primary" variant="light" size="sm" shape="rounded">
-                      {item.institutionName}
+                      {item.institutions?.map(inst => inst.institutionName).join(", ") || "Sin institución"}
                     </Badge>
                   </TableCell>
                   <TableCell className="table-cell text-right">
@@ -557,11 +558,11 @@ export default function InstitutionalResponsibleTable({
                     <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
                       <div className="col-span-2 flex flex-col items-center">
                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">
-                          Institución
+                          Instituciones
                         </p>
                         <div className="flex justify-center w-full">
                           <Badge color="primary" variant="light" size="sm">
-                            {item.institutionName}
+                            {item.institutions?.map(inst => inst.institutionName).join(", ") || "Sin institución"}
                           </Badge>
                         </div>
                       </div>

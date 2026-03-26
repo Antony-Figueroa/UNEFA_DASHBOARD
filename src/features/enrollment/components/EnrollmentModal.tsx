@@ -34,6 +34,9 @@ import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { formatCedulaDisplay, cleanCedula, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
 
+// Longitud máxima para Cédula en inscripción (8 dígitos: V-00.000.000 = 11 caracteres)
+const ENROLLMENT_CEDULA_MAX_LENGTH = 11;
+
 /**
  * Props for the EnrollmentModal component.
  */
@@ -341,25 +344,51 @@ export default function EnrollmentModal({
   }, [isOpen, editingEntry, setValue]);
 
   // Resetear formulario cuando se abre el modal para nueva inscripción
+  // Solo resetear si es UNA NUEVA inscripción (no-editar y sin initialData)
   useEffect(() => {
-    if (isOpen && !editingEntry && !initialData) {
-      reset({
-        identificationPrefix: "V",
-        identificationNumber: "",
-        studentName: "",
-        period: "",
-        practiceType: "",
-        careerName: "",
-        enrollmentCode: "",
-        academicTutorId: "",
-        methodologicalTutorId: "",
-        institutionId: "",
-        institutionResponsibleId: "",
-      });
-      setDisplayIdentificationNumber("");
-      setPreEnrollmentError(null);
+    if (!isOpen) return;
+    
+    // Si hay datos de edición o initialData, NO reseteamos - esos datos se cargan en otros efectos
+    if (editingEntry || initialData) {
+      return;
     }
+    
+    // Solo resetear para nueva inscripción
+    reset({
+      identificationPrefix: "V",
+      identificationNumber: "",
+      studentName: "",
+      period: "",
+      practiceType: "",
+      careerName: "",
+      enrollmentCode: "",
+      academicTutorId: "",
+      methodologicalTutorId: "",
+      institutionId: "",
+      institutionResponsibleId: "",
+    });
+    setDisplayIdentificationNumber("");
+    setPreEnrollmentError(null);
   }, [isOpen, editingEntry, initialData, reset]);
+
+  // Efecto para cargar datos cuando se edita un registro existente
+  useEffect(() => {
+    if (!isOpen || !editingEntry) return;
+    
+    // Cargar datos del registro a editar
+    setValue("identificationPrefix", editingEntry.identificationPrefix || "V");
+    setValue("identificationNumber", editingEntry.identificationNumber || "");
+    setDisplayIdentificationNumber(formatCedulaDisplay((editingEntry.identificationPrefix || "V") + (editingEntry.identificationNumber || "")));
+    setValue("studentName", editingEntry.studentName || "");
+    setValue("period", editingEntry.period || "");
+    setValue("practiceType", editingEntry.practiceType || "");
+    setValue("careerName", editingEntry.careerName || "");
+    setValue("enrollmentCode", editingEntry.enrollmentCode || "");
+    setValue("academicTutorId", editingEntry.academicTutorId || "");
+    setValue("methodologicalTutorId", editingEntry.methodologicalTutorId || "");
+    setValue("institutionId", editingEntry.institutionId || "");
+    setValue("institutionResponsibleId", editingEntry.institutionResponsibleId || "");
+  }, [isOpen, editingEntry, setValue]);
 
   /**
    * Efecto para escuchar cuando se agrega una nueva carrera desde el modal de inscripción.
@@ -405,19 +434,31 @@ export default function EnrollmentModal({
         (p: PreEnrollment) => p.identificationPrefix === prefix && p.identificationNumber === number && p.status
       );
 
+      // Verificar si ya tiene una inscripción activa
+      const activeEnrollment = enrollments.find(
+        (e) => e.identificationPrefix === prefix && e.identificationNumber === number && e.status === true
+      );
+
+      if (activeEnrollment) {
+        setPreEnrollmentError("El estudiante ya posee una inscripción activa. No puede proceder.");
+        return;
+      }
+
+      // Verificar si tiene inscripción culminada (inactiva pero con código)
+      const culminatedEnrollment = enrollments.find(
+        (e) => e.identificationPrefix === prefix && e.identificationNumber === number && e.enrollmentCode
+      );
+
+      if (culminatedEnrollment) {
+        setPreEnrollmentError("El estudiante ya possui uma inscrição concluída. Não é possível registrar uma nova inscrição.");
+        return;
+      }
+
+      // Verificar pre-inscripción activa solo si no tiene inscripción previa
       if (!preEnrollment) {
         setPreEnrollmentError("El estudiante no posee una pre-inscripción activa. No puede proceder.");
         setValue("studentName", "");
         setValue("careerName", "");
-        return;
-      }
-
-      const alreadyEnrolled = enrollments.find(
-        (e) => e.identificationPrefix === prefix && e.identificationNumber === number && e.status
-      );
-
-      if (alreadyEnrolled) {
-        setPreEnrollmentError("El estudiante ya posee una inscripción activa. No puede proceder.");
         return;
       }
 
@@ -685,7 +726,7 @@ export default function EnrollmentModal({
                     hint={errors.identificationNumber?.message || preEnrollmentError || undefined}
                     className={isSearching ? "animate-pulse tracking-widest" : "tracking-widest"}
                     disabled={!!editingEntry || !!initialData}
-                    maxLength={CEDULA_MAX_LENGTH}
+                    maxLength={ENROLLMENT_CEDULA_MAX_LENGTH}
                   />
                   {isSearching && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -746,9 +787,10 @@ export default function EnrollmentModal({
                   render={({ field }) => (
                     <CustomSelect
                       options={practiceOptions}
-                      placeholder="Seleccione el tipo"
+                      placeholder={field.value || "Tipo de práctica"}
                       onChange={field.onChange}
                       value={field.value}
+                      disabled={!!editingEntry}
                     />
                   )}
                 />
@@ -783,11 +825,12 @@ export default function EnrollmentModal({
                         value: String(c.careerId),
                         label: c.careerName
                       }))}
-                      placeholder="Seleccione la carrera"
+                      placeholder={field.value ? careersState.find(c => String(c.careerId) === String(field.value))?.careerName || "Carrera" : "Carrera"}
                       onChange={(val) => {
                         field.onChange(val);
                       }}
                       value={field.value ? String(field.value) : ""}
+                      disabled={!!editingEntry}
                     />
                   )}
                 />

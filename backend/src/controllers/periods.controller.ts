@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-helpers.js';
+import { periodNotificationService } from '../services/period-notification.service.js';
 
 const TABLE_NAME = 't_internships_period';
 
@@ -168,6 +169,20 @@ export const createPeriod = async (req: AuthRequest, res: Response) => {
 
     await auditCreate(req, 't_internships_period', dbData, PERIOD_COLUMNS_TO_AUDIT);
 
+    // Notificar a todos los usuarios sobre el nuevo período
+    console.log('[PeriodsController] Enviando notificación de período creado...');
+    try {
+      const notifResult = await periodNotificationService.notifyPeriodCreated({
+        description: data[0].DESCRIPTION,
+        startDate: data[0].START_DATE,
+        endDate: data[0].END_DATE,
+        periodStatus: data[0].PERIOD_STATUS,
+      });
+      console.log('[PeriodsController] Resultado notificación:', notifResult);
+    } catch (notifError) {
+      console.error('[PeriodsController] Error en notificación:', notifError);
+    }
+
     res.status(201).json(data[0]);
   } catch (error: unknown) {
     handleDbError(res, error);
@@ -229,6 +244,36 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
       if (startDate !== undefined) updatePayload.START_DATE = formatToDate(startDate);
       if (endDate !== undefined) updatePayload.END_DATE = formatToDate(endDate);
       if (periodStatus !== undefined) {
+        // VALIDACIÓN CRONOLÓGICA: No permitir activar un período si hay uno anterior sin finalizar
+        if (String(periodStatus) === '2') { // Intentando activar a "En Curso"
+          const currentPeriodCode = updatePayload.T_INTERNSHIPS_CODE || oldData?.T_INTERNSHIPS_CODE;
+          
+          // Obtener todos los períodos ordenados cronológicamente
+          const { data: allPeriods } = await supabase
+            .from(TABLE_NAME)
+            .select('PERIOD_ID, T_INTERNSHIPS_CODE, DESCRIPTION, PERIOD_STATUS')
+            .eq('STATUS', 1)
+            .order('START_DATE', { ascending: true });
+
+          if (allPeriods && allPeriods.length > 0) {
+            // Encontrar la posición del período actual en la secuencia
+            const currentIndex = allPeriods.findIndex(p => p.T_INTERNSHIPS_CODE === currentPeriodCode);
+            
+            if (currentIndex > 0) {
+              // Verificar que todos los períodos anteriores estén finalizados (PERIOD_STATUS = 3)
+              const previousPeriods = allPeriods.slice(0, currentIndex);
+              const unfinishedPeriods = previousPeriods.filter(p => p.PERIOD_STATUS !== '3');
+              
+              if (unfinishedPeriods.length > 0) {
+                const errorMsg = `No se puede activar el período "${oldData?.DESCRIPTION}" porque el período anterior "${unfinishedPeriods[0].DESCRIPTION}" aún no ha sido culminado. Debes culminar el período anterior primero para poder activar este.`;
+                console.warn(`[PeriodValidation] ${errorMsg}`);
+                const validationError = new Error(errorMsg) as AppError;
+                validationError.code = '400';
+                throw validationError;
+              }
+            }
+          }
+        }
         updatePayload.PERIOD_STATUS = String(periodStatus);
       }
       if (status !== undefined) updatePayload.STATUS = status === false ? 0 : 1;
@@ -250,6 +295,40 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
 
       if (oldData) {
         await auditUpdate(req, 't_internships_period', oldData as Record<string, any>, updatePayload, PERIOD_COLUMNS_TO_AUDIT);
+        
+        // Detectar cambio de estado del período
+        const oldStatus = oldData.PERIOD_STATUS;
+        const newStatus = updatePayload.PERIOD_STATUS ? String(updatePayload.PERIOD_STATUS) : oldStatus;
+        
+        // Notificar si el período cambió a "En Curso" (PERIOD_STATUS = 2)
+        if (oldStatus !== '2' && newStatus === '2') {
+          await periodNotificationService.notifyPeriodStarted({
+            description: data[0].DESCRIPTION,
+            startDate: data[0].START_DATE,
+            endDate: data[0].END_DATE,
+          });
+        }
+        
+        // Notificar si el período cambió a "Finalizado" (PERIOD_STATUS = 3)
+        if (oldStatus !== '3' && newStatus === '3') {
+          await periodNotificationService.notifyPeriodEnded({
+            description: data[0].DESCRIPTION,
+            endDate: data[0].END_DATE,
+            manuallyEnded: true,
+          });
+        }
+        
+        // Notificar edición general si hubo cambios en fechas o descripción
+        const hasMeaningfulChanges = updatePayload.DESCRIPTION || updatePayload.START_DATE || updatePayload.END_DATE;
+        if (hasMeaningfulChanges && oldStatus !== '2' && newStatus !== '3') {
+          await periodNotificationService.notifyPeriodUpdated({
+            description: data[0].DESCRIPTION,
+            startDate: updatePayload.START_DATE ? String(updatePayload.START_DATE) : oldData.START_DATE,
+            endDate: updatePayload.END_DATE ? String(updatePayload.END_DATE) : oldData.END_DATE,
+            oldDescription: oldData.DESCRIPTION,
+            changes: Object.keys(updatePayload).filter(k => k !== 'PERIOD_STATUS' && k !== 'STATUS'),
+          });
+        }
       }
 
       return (data as unknown) as Period[];
@@ -266,7 +345,7 @@ export const deletePeriod = async (req: AuthRequest, res: Response) => {
     await dbManager.withRetry(async (supabase) => {
       const { data: oldData } = await supabase
         .from(TABLE_NAME)
-        .select('PERIOD_ID, STATUS')
+        .select('PERIOD_ID, STATUS, DESCRIPTION')
         .eq('PERIOD_ID', id)
         .single();
 
@@ -279,6 +358,11 @@ export const deletePeriod = async (req: AuthRequest, res: Response) => {
 
       if (oldData) {
         await auditStatusChange(req, 't_internships_period', id, oldData.STATUS, 0);
+        
+        // Notificar eliminación del período
+        await periodNotificationService.notifyPeriodDeleted({
+          description: oldData.DESCRIPTION,
+        });
       }
     });
     res.status(204).send();

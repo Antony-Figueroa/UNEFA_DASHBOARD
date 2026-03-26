@@ -6,7 +6,7 @@ import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-help
 
 const TABLE_NAME = 't_institution';
 const CACHE_PREFIX = 'institutions:';
-const CACHE_TTL = 3600000;
+const CACHE_TTL = 300000; // 5 minutos cache
 
 const INSTITUTION_COLUMNS_TO_AUDIT = [
   'INSTITUTION_NAME', 'INSTITUTION_ADDRESS', 'INSTITUTION_CONTACT',
@@ -72,8 +72,11 @@ const mapDBToFrontend = (i: any) => ({
   nucleus: i.NUCLEUS, // This will be replaced by getFullName later in getInstitutions
   extension: i.EXTENSION, // This will be replaced by getFullName later in getInstitutions
   institutionType: i.INSTITUTION_TYPE, // This will be replaced by getFullName later in getInstitutions
-       practiceTypes: i.PRACTICE_TYPE ? [i.PRACTICE_TYPE] : [],
-       internshipTypeId: i.INTERNSHIP_TYPE_ID ? String(i.INTERNSHIP_TYPE_ID) : undefined,
+  practiceTypes: i.PRACTICE_TYPE ? [i.PRACTICE_TYPE] : [],
+  // Support both single internshipTypeId (from main table) and array (from pivot)
+  internshipTypeId: i.INTERNSHIP_TYPE_ID ? String(i.INTERNSHIP_TYPE_ID) : 
+                  (i.internshipTypeIds && i.internshipTypeIds.length > 0 ? String(i.internshipTypeIds[0]) : undefined),
+  internshipTypeIds: i.internshipTypeIds || [],
   status: i.STATUS === 1,
   registrationDate: i.CREATION_DATE,
   rif: i.RIF,
@@ -104,12 +107,12 @@ export const getInstitutions = async (_req: Request, res: Response) => {
       console.log(`[getInstitutions] Obtenidas ${institutions?.length || 0} instituciones`);
 
       // 2. Fetch relational data sequentially for easier debugging
+      // AHORA: Usamos la tabla pivote para responsables y tipos de práctica
       let responsibles: any[] = [];
       try {
         const { data: respData, error: respError } = await supabase
-          .from('t_institution_manager')
-          .select('INSTITUTION_ID')
-          .eq('STATUS', 1);
+          .from('t_institution_manager_institution')
+          .select('"INSTITUTION_ID"');
         if (!respError) responsibles = respData || [];
       } catch (err) { console.warn('[getInstitutions] Error silenciado en responsibles:', err); }
 
@@ -120,6 +123,15 @@ export const getInstitutions = async (_req: Request, res: Response) => {
           .select('INSTITUTION_ID, CAREER_ID');
         if (!careerError) careers = careerData || [];
       } catch (err) { console.warn('[getInstitutions] Error silenciado en careers:', err); }
+
+      // NUEVO: Obtener tipos de práctica por institución
+      let internshipTypes: any[] = [];
+      try {
+        const { data: typeData, error: typeError } = await supabase
+          .from('t_institution_internship_type')
+          .select('INSTITUTION_ID, INTERNSHIP_TYPE_ID');
+        if (!typeError) internshipTypes = typeData || [];
+      } catch (err) { console.warn('[getInstitutions] Error silenciado en internshipTypes:', err); }
 
       let usage: Set<number> = new Set();
       try {
@@ -144,11 +156,20 @@ export const getInstitutions = async (_req: Request, res: Response) => {
         careersMap.set(c.INSTITUTION_ID, list);
       });
 
+      // NUEVO: Mapa de tipos de práctica
+      const internshipTypeIdsMap = new Map<number, number[]>();
+      internshipTypes.forEach((t: any) => {
+        const list = internshipTypeIdsMap.get(t.INSTITUTION_ID) || [];
+        list.push(t.INTERNSHIP_TYPE_ID);
+        internshipTypeIdsMap.set(t.INSTITUTION_ID, list);
+      });
+
       // 4. Combine
       return (institutions || []).map(inst => ({
         ...inst,
         responsibleCount: respCountMap.get(inst.INSTITUTION_ID) || 0,
         careerIds: careersMap.get(inst.INSTITUTION_ID) || [],
+        internshipTypeIds: internshipTypeIdsMap.get(inst.INSTITUTION_ID) || [],
         isInUse: usage.has(inst.INSTITUTION_ID)
       }));
     }, 'getInstitutions');
@@ -235,16 +256,25 @@ export const getInstitutionById = async (req: Request, res: Response) => {
       if (error) throw error;
 
       // 2. Parallel queries for relational data
-      const [{ count: respCount }, { data: careers }, { count: practiceCount }] = await Promise.all([
-        supabase.from('t_institution_manager').select('INSTITUTION_ID', { count: 'exact', head: true }).eq('INSTITUTION_ID', instId).eq('STATUS', 1),
+      // Ahora usamos la tabla pivote para responsables e internship types
+      const [{ data: respPivot }, { data: careers }, { data: internshipTypes }, { count: practiceCount }] = await Promise.all([
+        // Contar responsibles desde la tabla pivote
+        supabase.from('t_institution_manager_institution')
+          .select('"MANAGER_ID"', { count: 'exact', head: true })
+          .eq('"INSTITUTION_ID"', instId),
+        // Obtener carreras asociadas
         supabase.from('t_institution_career').select('CAREER_ID').eq('INSTITUTION_ID', instId),
+        // Obtener tipos de práctica asociados
+        supabase.from('t_institution_internship_type').select('INTERNSHIP_TYPE_ID').eq('INSTITUTION_ID', instId),
+        // Contar prácticas activas
         supabase.from('t_professional_practices').select('INSTITUTION_ID', { count: 'exact', head: true }).eq('INSTITUTION_ID', instId).eq('STATUS', 1).limit(1)
       ]);
 
       return {
         ...inst,
-        responsibleCount: respCount || 0,
+        responsibleCount: (respPivot?.length || 0),
         careerIds: (careers || []).map((c: any) => c.CAREER_ID),
+        internshipTypeIds: (internshipTypes || []).map((t: any) => t.INTERNSHIP_TYPE_ID),
         isInUse: (practiceCount || 0) > 0
       };
     }, 'getInstitutionById');

@@ -15,6 +15,12 @@ const API_URL = "/institutional-responsibles";
 /**
  * Interface for InstitutionalResponsible Data Transfer Object (API Response).
  */
+interface ResponsibleInstitutionDTO {
+  institutionId: string;
+  institutionName: string;
+  cargo: string;
+}
+
 interface InstitutionalResponsibleDTO {
   responsibleId: string;
   identificationPrefix: string;
@@ -27,8 +33,8 @@ interface InstitutionalResponsibleDTO {
   position: string;
   phone: string;
   email: string;
-  institutionId: string;
-  institutionName?: string;
+  cargo?: string;
+  institutions: ResponsibleInstitutionDTO[];
   status: boolean;
   registrationDate: string | Date;
 }

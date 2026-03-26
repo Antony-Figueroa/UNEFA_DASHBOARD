@@ -59,8 +59,8 @@ export default function InstitutionalResponsibleSelectModal({ isOpen, onClose, o
   });
 
   const handleSelect = async (resp: InstitutionalResponsible) => {
-    // Bloquear si ya está en esta institución o en otra
-    if (resp.institutionId) return;
+    // Ahora puede estar en múltiples instituciones, siempre se puede agregar
+    // La lógica de bloqueo se maneja en la UI
 
     setSelecting(resp.responsibleId);
     try {
@@ -100,24 +100,23 @@ export default function InstitutionalResponsibleSelectModal({ isOpen, onClose, o
           ) : filtered.length > 0 ? (
             filtered.map((resp) => {
               // Ya está vinculado a esta misma institución
-              const isLinkedHere =
-                currentInstitutionId &&
-                resp.institutionId &&
-                String(resp.institutionId) === String(currentInstitutionId);
+              const isLinkedHere = currentInstitutionId && 
+                resp.institutions?.some(inst => inst.institutionId === String(currentInstitutionId));
 
-              // Ya está vinculado a OTRA institución
-              const isLinkedElsewhere =
-                resp.institutionId &&
-                (!currentInstitutionId || String(resp.institutionId) !== String(currentInstitutionId));
+              // Ya está vinculado a otras instituciones (pero no a esta)
+              const isLinkedElsewhere = resp.institutions && 
+                resp.institutions.length > 0 && 
+                (!currentInstitutionId || !resp.institutions.some(inst => inst.institutionId === String(currentInstitutionId)));
 
-              const isBlocked = !!isLinkedHere || !!isLinkedElsewhere;
+              // Ahora siempre se puede agregar (relación muchos a muchos)
+              const canAdd = true;
 
               return (
                 <div
                   key={resp.responsibleId}
                   className={cn(
                     "flex items-center justify-between p-4 bg-white dark:bg-gray-800/50 rounded-xl border transition-all group",
-                    isBlocked
+                    !canAdd
                       ? "border-gray-200 dark:border-gray-700 opacity-70"
                       : "border-gray-100 dark:border-gray-700 hover:border-brand-300 dark:hover:border-brand-500/50"
                   )}
@@ -126,7 +125,7 @@ export default function InstitutionalResponsibleSelectModal({ isOpen, onClose, o
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className={cn(
                         "text-sm font-bold truncate",
-                        isBlocked ? "text-text-tertiary" : "text-text-main dark:text-white"
+                        !canAdd ? "text-text-tertiary" : "text-text-main dark:text-white"
                       )}>
                         {resp.firstName} {resp.lastName}
                       </p>
@@ -141,11 +140,11 @@ export default function InstitutionalResponsibleSelectModal({ isOpen, onClose, o
                         </span>
                       )}
 
-                      {/* Badge: vinculado a otra empresa */}
+                      {/* Badge: vinculado a otras empresas */}
                       {isLinkedElsewhere && !isLinkedHere && (
                         <span className="text-[10px] px-2 py-0.5 bg-warning-100 text-warning-700 dark:bg-warning-900/30 dark:text-warning-400 rounded-full font-bold flex items-center gap-1">
                           <Lock className="w-2.5 h-2.5" />
-                          Vinculado
+                          En otras empresas
                         </span>
                       )}
                     </div>
@@ -153,34 +152,29 @@ export default function InstitutionalResponsibleSelectModal({ isOpen, onClose, o
                     <div className="flex flex-col gap-1 mt-1">
                       <p className="text-xs text-text-secondary flex items-center gap-1">
                         <Building2 className="w-3 h-3 shrink-0" />
-                        {resp.institutionName || "Sin institución"}
+                        {resp.institutions?.map(inst => inst.institutionName).join(", ") || "Sin institución"}
                       </p>
                       <p className="text-xs text-text-tertiary">
-                        {resp.email}{resp.cargo && ` • ${resp.cargo}`}
+                        {resp.email}
                       </p>
                     </div>
                   </div>
 
-                  {/* Botón con tooltip si está bloqueado */}
+                  {/* Botón siempre disponible (relación muchos a muchos) */}
                   <div className="ml-4 relative group/btn shrink-0">
                     <Button
                       size="sm"
-                      variant={isBlocked ? "outline" : "primary"}
+                      variant={isLinkedHere ? "outline" : "primary"}
                       onClick={() => handleSelect(resp)}
                       loading={selecting === resp.responsibleId}
-                      disabled={isBlocked}
+                      disabled={!!isLinkedHere}
                       className={cn(
                         "transition-all",
-                        !isBlocked && "opacity-0 group-hover:opacity-100"
+                        !isLinkedHere && "opacity-0 group-hover:opacity-100"
                       )}
                     >
                       {isLinkedHere ? (
                         "Ya vinculado aquí"
-                      ) : isLinkedElsewhere ? (
-                        <>
-                          <Lock className="w-3.5 h-3.5 mr-1.5" />
-                          No disponible
-                        </>
                       ) : (
                         <>
                           <UserPlus className="w-4 h-4 mr-2" />
@@ -189,14 +183,14 @@ export default function InstitutionalResponsibleSelectModal({ isOpen, onClose, o
                       )}
                     </Button>
 
-                    {/* Tooltip informativo cuando está vinculado a otra empresa */}
+                    {/* Tooltip informativo cuando está vinculado a otras empresas */}
                     {isLinkedElsewhere && !isLinkedHere && (
                       <div className="absolute bottom-full right-0 mb-2 z-50 pointer-events-none">
                         <div className="opacity-0 group-hover/btn:opacity-100 transition-opacity duration-200 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-xl whitespace-nowrap max-w-[220px] text-wrap text-right">
-                          Ya está vinculado a:
+                          También está vinculado a:
                           <br />
                           <span className="font-bold text-yellow-300">
-                            {resp.institutionName || "otra institución"}
+                            {resp.institutions?.map(inst => inst.institutionName).join(", ") || "otras instituciones"}
                           </span>
                         </div>
                         <div className="opacity-0 group-hover/btn:opacity-100 transition-opacity duration-200 flex justify-end">

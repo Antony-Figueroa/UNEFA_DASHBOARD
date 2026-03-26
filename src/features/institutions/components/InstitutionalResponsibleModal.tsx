@@ -12,10 +12,12 @@ import Input from "../../../components/form/input/InputField";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import CustomSelect from "../../../components/form/CustomSelect";
+import MultiSelect from "../../../components/form/MultiSelect";
 import { 
   InstitutionalResponsible, 
   CreateInstitutionalResponsiblePayload, 
-  UpdateInstitutionalResponsiblePayload 
+  UpdateInstitutionalResponsiblePayload,
+  ResponsibleInstitution 
 } from "../types";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
@@ -31,7 +33,13 @@ const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
 
 /**
  * Zod schema for institutional responsible form data.
+ * Nueva estructura: institutions es un array de objetos con institutionId y cargo
  */
+const institutionSchema = z.object({
+  institutionId: z.string().min(1, "Institución requerida"),
+  cargo: z.string().optional(),
+});
+
 const respSchema = z.object({
   identificationPrefix: z.string().min(1, "Seleccione un prefijo"),
   identificationNumber: z.string()
@@ -60,8 +68,8 @@ const respSchema = z.object({
   email: z.string()
     .min(1, "El correo es obligatorio")
     .email("Correo electrónico inválido"),
-  cargo: z.string().optional(),
-  institutionId: z.string().min(1, "Seleccione una institución"),
+  // institutions es ahora un array de objetos { institutionId, cargo }
+  institutions: z.array(institutionSchema).min(1, "Seleccione al menos una institución"),
 });
 
 /**
@@ -188,7 +196,7 @@ export default function InstitutionalResponsibleModal({
       phonePrefix: "",
       phoneNumber: "",
       email: "",
-      institutionId: "",
+      institutions: [],
     },
   });
 
@@ -317,14 +325,23 @@ export default function InstitutionalResponsibleModal({
         let pNumber = "";
         
         if (editingResp.phone) {
-          if (editingResp.phone.startsWith("0")) {
-            pPrefix = editingResp.phone.substring(0, 4);
-            pNumber = editingResp.phone.substring(4);
+          // Limpiar el teléfono de caracteres no numéricos (como guiones)
+          const cleanPhone = editingResp.phone.replace(/\D/g, '');
+          if (cleanPhone.length >= 4) {
+            pPrefix = cleanPhone.substring(0, 4);
+            pNumber = cleanPhone.substring(4);
           } else {
-            pNumber = editingResp.phone;
+            pNumber = cleanPhone;
           }
         }
 
+        // Map institutions array to form structure - incluir institutionName para 显示
+        const formInstitutions = (editingResp.institutions || []).map(inst => ({
+          institutionId: inst.institutionId,
+          institutionName: inst.institutionName || "",
+          cargo: inst.cargo || ""
+        }));
+        
         reset({
           identificationPrefix: editingResp.identificationPrefix,
           identificationNumber: editingResp.identificationNumber,
@@ -335,8 +352,7 @@ export default function InstitutionalResponsibleModal({
           phonePrefix: pPrefix,
           phoneNumber: pNumber,
           email: editingResp.email,
-          cargo: editingResp.cargo || "",
-          institutionId: editingResp.institutionId,
+          institutions: formInstitutions,
         });
         setDisplayIdentificationNumber(formatCedulaDisplay(editingResp.identificationNumber, false));
         setDisplayPhoneNumber(formatPhoneLocalDisplay(pNumber || ""));
@@ -351,8 +367,7 @@ export default function InstitutionalResponsibleModal({
           phonePrefix: "",
           phoneNumber: "",
           email: "",
-          cargo: "",
-          institutionId: preselectedInstitutionId || "",
+          institutions: preselectedInstitutionId ? [{ institutionId: preselectedInstitutionId, cargo: "" }] : [],
         });
         setDisplayIdentificationNumber("");
         setDisplayPhoneNumber("");
@@ -365,7 +380,7 @@ export default function InstitutionalResponsibleModal({
    * @param data - The validated form data.
    */
   const onSubmit = (data: RespFormData) => {
-    const { phonePrefix, phoneNumber, ...rest } = data;
+    const { phonePrefix, phoneNumber, institutions, ...rest } = data;
     const commonData = {
       ...rest,
       identificationPrefix: rest.identificationPrefix.toUpperCase(),
@@ -378,7 +393,7 @@ export default function InstitutionalResponsibleModal({
       phoneNumber: phoneNumber.toUpperCase(),
       phone: `${phonePrefix}-${phoneNumber}`,
       email: rest.email.toUpperCase(),
-      institutionId: String(rest.institutionId).toUpperCase(),
+      institutions: institutions, // Array de objetos { institutionId, cargo }
       status: editingResp?.status ?? true,
     };
     if (editingResp) {
@@ -491,8 +506,11 @@ export default function InstitutionalResponsibleModal({
                                setDisplayPhoneNumber(formatPhoneLocalDisplay(pNumber || ""));
                               setValue("phoneNumber", pNumber);
                               setValue("email", existingData.email || "");
-                              setValue("cargo", existingData.cargo || "");
-                              setValue("institutionId", existingData.institutionId || "");
+                              // Map institutions array
+                              setValue("institutions", (existingData.institutions || []).map((inst: any) => ({
+                                institutionId: inst.institutionId,
+                                cargo: inst.cargo || ""
+                              })));
                             }
                           } catch (err) {
                             console.error("Error checking CI:", err);
@@ -508,32 +526,121 @@ export default function InstitutionalResponsibleModal({
               </div>
             </div>
 
-            {/* Institución */}
+            {/* Institución con Cargo por cada una */}
             <div className="lg:col-span-1">
-              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Institución *</label>
+              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Instituciones *</label>
               {preselectedInstitutionId ? (
-                <div className="px-4 py-2.5 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-xl">
-                  <p className="text-sm font-semibold text-brand-700 dark:text-brand-400">
-                    {preselectedInstitutionName || institutionOptions.find(o => o.value === preselectedInstitutionId)?.label || "Institución seleccionada"}
-                  </p>
+                <div className="space-y-2">
+                  <div className="px-4 py-2.5 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-xl flex items-center justify-between">
+                    <p className="text-sm font-semibold text-brand-700 dark:text-brand-400">
+                      {preselectedInstitutionName || institutionOptions.find(o => o.value === preselectedInstitutionId)?.label || "Institución seleccionada"}
+                    </p>
+                  </div>
+                  <Controller
+                  name="institutions"
+                  control={control}
+                    render={({ field }) => {
+                    const { value, onChange } = field;
+                    // Buscar la institución - comparar como strings para evitar problemas de tipo
+                    const inst = (value || []).find((i: any) => String(i.institutionId) === String(preselectedInstitutionId));
+                    const currentCargo = inst?.cargo || "";
+                    return (
+                      <Input
+                        placeholder="Cargo en esta empresa (ej: Gerente, Supervisor)"
+                        className="uppercase"
+                        value={currentCargo}
+                        onChange={(e) => {
+                          const newValue = (value || []).map((i: any) => 
+                            String(i.institutionId) === String(preselectedInstitutionId)
+                              ? { ...i, cargo: e.target.value.toUpperCase() }
+                              : i
+                          );
+                          onChange(newValue);
+                        }}
+                      />
+                    );
+                  }}
+                />
                 </div>
               ) : (
                 <Controller
-                  name="institutionId"
+                  name="institutions"
                   control={control}
-                  render={({ field }) => (
-                    <CustomSelect
-                      id="institutionId"
-                      options={institutionOptions.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                      onChange={field.onChange}
-                      value={String(field.value ?? "")}
-                      placeholder="Seleccione una institución"
-                    />
-                  )}
+                  render={({ field: { value, onChange } }) => {
+                    const selectedInstitutions = value || [];
+                    
+                    const handleAddInstitution = (institutionId: string) => {
+                      const institutionName = institutionOptions.find(o => o.value === institutionId)?.label || "";
+                      onChange([...selectedInstitutions, { institutionId, institutionName, cargo: "" }]);
+                    };
+                    
+                    const handleRemoveInstitution = (institutionId: string) => {
+                      onChange(selectedInstitutions.filter((i: any) => i.institutionId !== institutionId));
+                    };
+                    
+                    const handleCargoChange = (institutionId: string, cargo: string) => {
+                      onChange(selectedInstitutions.map((i: any) => 
+                        i.institutionId === institutionId 
+                          ? { ...i, cargo: cargo.toUpperCase() }
+                          : i
+                      ));
+                    };
+
+                    return (
+                      <div className="space-y-2">
+                        {/* Selector para agregar institución */}
+                        <CustomSelect
+                          id="add-institution"
+                          options={institutionOptions
+                            .filter(opt => !selectedInstitutions.some((s: any) => s.institutionId === opt.value))
+                            .map(opt => ({ value: String(opt.value), label: opt.label }))
+                          }
+                          onChange={(val) => {
+                            if (val) handleAddInstitution(val);
+                          }}
+                          value=""
+                          placeholder="Agregar institución..."
+                        />
+                        
+                        {/* Lista de instituciones con cargo */}
+                        {selectedInstitutions.length > 0 && (
+                          <div className="space-y-2 mt-2">
+                            {selectedInstitutions.map((inst: any) => (
+                              <div key={inst.institutionId} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                                    {inst.institutionName || institutionOptions.find(o => o.value === inst.institutionId)?.label || "Institución"}
+                                  </p>
+                                </div>
+                                <input
+                                  type="text"
+                                  placeholder="Cargo"
+                                  className="w-40 px-2 py-1 text-xs uppercase border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  value={inst.cargo || ""}
+                                  onChange={(e) => handleCargoChange(inst.institutionId, e.target.value)}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveInstitution(inst.institutionId)}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }}
                 />
               )}
-              {errors.institutionId && (
-                <p className="mt-1 text-[11px] font-medium text-red-500">{errors.institutionId.message}</p>
+              {errors.institutions && (
+                <p className="mt-1 text-[11px] font-medium text-red-500">
+                  {errors.institutions.message as string}
+                </p>
               )}
             </div>
 
@@ -628,21 +735,7 @@ export default function InstitutionalResponsibleModal({
               />
             </div>
 
-            {/* Cargo */}
-            <div className="md:col-span-2 lg:col-span-2">
-              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Cargo</label>
-              <Input 
-                placeholder="Ej: Gerente de RRHH, Director, etc." 
-                className="uppercase"
-                {...register("cargo", {
-                  onChange: (e) => {
-                    e.target.value = e.target.value.toUpperCase();
-                  }
-                })} 
-                error={!!errors.cargo}
-                hint={errors.cargo?.message || " "}
-              />
-            </div>
+            {/* Nota: El cargo se asigna por cada institución seleccionada */}
           </div>
         </ModalBody>
 

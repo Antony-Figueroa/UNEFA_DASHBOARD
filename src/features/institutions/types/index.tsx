@@ -59,6 +59,19 @@ export interface UpdateInstitutionPayload extends Partial<CreateInstitutionPaylo
 }
 
 /**
+ * Represents a single institution association for a responsible.
+ * Each responsible can be linked to multiple institutions with different roles.
+ */
+export interface ResponsibleInstitution {
+  /** Institution ID */
+  institutionId: string;
+  /** Institution name (for display) - filled by backend/API */
+  institutionName?: string;
+  /** Role/Cargo in this specific institution */
+  cargo?: string;
+}
+
+/**
  * Represents a person responsible for an institution.
  */
 export interface InstitutionalResponsible {
@@ -80,12 +93,10 @@ export interface InstitutionalResponsible {
   phone: string;
   /** Contact email address */
   email: string;
-  /** Position/Cargo in the institution */
+  /** Position/Cargo - now stored per institution in the institutions array */
   cargo?: string;
-  /** Associated institution ID */
-  institutionId: string;
-  /** Name of the associated institution (optional) */
-  institutionName?: string;
+  /** Array of institution associations (each with its own cargo) */
+  institutions: ResponsibleInstitution[];
   /** Active status */
   status: boolean;
   /** Registration date */
@@ -95,7 +106,10 @@ export interface InstitutionalResponsible {
 /**
  * Payload for creating a new institutional responsible.
  */
-export type CreateInstitutionalResponsiblePayload = Omit<InstitutionalResponsible, 'responsibleId' | 'registrationDate' | 'status' | 'institutionName'>;
+export type CreateInstitutionalResponsiblePayload = Omit<InstitutionalResponsible, 'responsibleId' | 'registrationDate' | 'status' | 'institutions'> & {
+  /** For creation, accepts institutions array */
+  institutions: ResponsibleInstitution[];
+};
 
 /**
  * Payload for updating an existing institutional responsible.

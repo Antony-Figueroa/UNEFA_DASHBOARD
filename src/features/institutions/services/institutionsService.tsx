@@ -15,6 +15,7 @@ interface InstitutionDTO {
   phone: string;
   practiceType: string;
   internshipTypeId?: string;
+  internshipTypeIds?: string[];
   careerId: string;
   careerIds?: string[];
   careerName?: string;
@@ -50,6 +51,7 @@ export const institutionService = createCrudService<Institution, CreateInstituti
 
 // Exportaciones individuales para compatibilidad
 export const getInstitutions = institutionService.getAll;
+export const getInstitutionById = institutionService.getById;  // Exportar getById
 export const createInstitution = institutionService.create;
 export const updateInstitution = (id: string, institution: UpdateInstitutionPayload) => institutionService.update({ ...institution, institutionId: id } as any);
 export const deleteInstitution = institutionService.delete;

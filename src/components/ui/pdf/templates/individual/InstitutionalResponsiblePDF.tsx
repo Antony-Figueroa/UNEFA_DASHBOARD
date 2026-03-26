@@ -277,7 +277,7 @@ export const InstitutionalResponsiblePDF: React.FC<InstitutionalResponsiblePDFPr
           <View style={styles.infoGrid}>
             <View style={styles.infoItemFull}>
               <Text style={styles.infoLabel}>Institución</Text>
-              <Text style={styles.infoValueHighlight}>{responsible.institutionName || "No asignada"}</Text>
+              <Text style={styles.infoValueHighlight}>{responsible.institutions?.[0]?.institutionName || "No asignada"}</Text>
             </View>
           </View>
         </View>

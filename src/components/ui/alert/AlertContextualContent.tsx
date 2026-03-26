@@ -124,11 +124,12 @@ export const RecordDetails: React.FC<{
   labels?: Record<string, string>;
   fields?: string[];
 }> = ({ data, labels = {}, fields = [] }) => {
+  if (!data) return <span>Sin datos.</span>;
   const displayFields = fields.length > 0 ? fields : Object.keys(data).slice(0, 4);
 
   return (
     <div className="mt-2 space-y-1 border-l-2 border-success-200 pl-3 py-0.5 max-w-full">
-      {displayFields.map((key) => (
+      {(displayFields || []).map((key) => (
         <div key={key} className="text-xs wrap-break-word">
           <span className="font-medium text-text-secondary dark:text-text-tertiary">
             {labels[key] || key}:

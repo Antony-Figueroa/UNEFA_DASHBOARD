@@ -2,8 +2,11 @@ import { supabase } from '../lib/supabase.js';
 
 /**
  * Tipos de notificaciones del sistema
+ * Valores permitidos por el constraint chk_notification_type en BD:
+ * 'pre_enrollment', 'enrollment', 'tracking', 'tracking_visit', 
+ * 'user_management', 'reminder', 'system', 'approval'
  */
-export type NotificationType = 'SUCCESS' | 'WARNING' | 'ERROR' | 'INFO';
+export type NotificationType = 'pre_enrollment' | 'enrollment' | 'tracking' | 'tracking_visit' | 'user_management' | 'reminder' | 'system' | 'approval';
 
 /**
  * Servicio de notificaciones para períodos académicos
@@ -43,7 +46,7 @@ export const periodNotificationService = {
 
         const notifications = users.map(user => ({
         USER_ID: user.USER_ID,
-        TYPE: 'INFO' as const,
+        TYPE: 'system' as const,
         TITLE: '📅 Nuevo Período Académico Creado',
         MESSAGE: `Se ha creado el período "${period.description}" que startará el ${formatDate(period.startDate)} y finalizará el ${formatDate(period.endDate)}.`,
         READ: false,
@@ -97,7 +100,7 @@ export const periodNotificationService = {
 
       const notifications = users.map(user => ({
         USER_ID: user.USER_ID,
-        TYPE: 'WARNING' as const,
+        TYPE: 'reminder' as const,
         TITLE: '📅 Período Académico Actualizado',
         MESSAGE: `El período "${period.oldDescription || period.description}" ha sido modificado.\nNueva fecha: ${formatDate(period.startDate)} - ${formatDate(period.endDate)}${changesText}`,
         READ: false,
@@ -131,7 +134,7 @@ export const periodNotificationService = {
 
       const notifications = users.map(user => ({
         USER_ID: user.USER_ID,
-        TYPE: 'ERROR' as const,
+        TYPE: 'system' as const,
         TITLE: '📅 Período Académico Eliminado',
         MESSAGE: `El período "${period.description}" ha sido eliminado del sistema.`,
         READ: false,
@@ -177,7 +180,7 @@ export const periodNotificationService = {
 
       const notifications = users.map(user => ({
         USER_ID: user.USER_ID,
-        TYPE: 'SUCCESS' as const,
+        TYPE: 'system' as const,
         TITLE: '🚀 Período Académico en Curso',
         MESSAGE: `¡El período "${period.description}" ha comenzado!\n📅 Del ${formatDate(period.startDate)} al ${formatDate(period.endDate)}\n⏱️ Duración: ${daysRemaining} días`,
         READ: false,
@@ -219,7 +222,7 @@ export const periodNotificationService = {
 
       const notifications = users.map(user => ({
         USER_ID: user.USER_ID,
-        TYPE: 'WARNING' as const,
+        TYPE: 'reminder' as const,
         TITLE: '📅 Período Académico Finalizado',
         MESSAGE: `El período "${period.description}" ha ${reason}.\nGracias por su participación durante este período.`,
         READ: false,

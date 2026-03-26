@@ -292,13 +292,13 @@ const PeriodTable = ({
         const pendingPeriods = safeData.filter(p => getSafePeriodStatus(p) === 1);
         if (pendingPeriods.length === 0) return null;
 
-        // Ordenar todos los periodos cronológicamente por su descripción (lapso)
-        // Por simplicidad en este componente, ordenaremos por la fecha de inicio.
-        // Asumimos que startDate es ISO string "YYYY-MM-DD"
+        // Ordenar todos los periodos cronológicamente usando rawStartDate (Date object) o startDate
         const sortedPending = [...pendingPeriods].sort((a, b) => {
-            if (a.startDate < b.startDate) return -1;
-            if (a.startDate > b.startDate) return 1;
-            return 0;
+            // Usar rawStartDate si existe (Date object), sino intentar parsear startDate
+            const dateA = a.rawStartDate instanceof Date ? a.rawStartDate : new Date(a.startDate);
+            const dateB = b.rawStartDate instanceof Date ? b.rawStartDate : new Date(b.startDate);
+            
+            return dateA.getTime() - dateB.getTime();
         });
 
         // El primero de la lista ordenada es el único que se puede activar

@@ -8,13 +8,8 @@ const createTransporter = () => {
   // Asegurarse de que dotenv esté configurado (aunque ya se llama arriba)
   dotenv.config();
   
-  console.log('[Email] Intentando configurar transportador SMTP...');
-  console.log('[Email] Host:', process.env.SMTP_HOST);
-  console.log('[Email] User:', process.env.SMTP_USER);
-  
   // Solo crear el transportador si las variables de entorno están presentes
   if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn('⚠️ Configuración SMTP incompleta. Los correos se simularán en la consola.');
     return null;
   }
 

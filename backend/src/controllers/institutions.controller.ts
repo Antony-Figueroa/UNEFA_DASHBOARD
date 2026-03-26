@@ -471,29 +471,33 @@ export const getInstitutionByRif = async (req: Request, res: Response) => {
   try {
     const { rif } = req.params;
     
+    console.log(`[getInstitutionByRif] Buscando institución con RIF: ${rif}`);
+    
     const data = await dbManager.withRetry(async (supabase) => {
+      // Usar select(*) en lugar de columnas específicas para evitar errores
       const { data: inst, error } = await supabase
         .from(TABLE_NAME)
-        .select(INSTITUTION_COLUMNS)
+        .select('*')
         .eq('RIF', rif.toUpperCase())
-        .single();
+        .maybeSingle();  // Usa maybeSingle() en lugar de single() para evitar error si no encuentra
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          return null;
-        }
+        console.error('[getInstitutionByRif] Error en query:', error);
         throw error;
       }
 
-      return inst as DBInstitution;
+      return inst;
     }, 'getInstitutionByRif');
 
     if (!data) {
+      console.log(`[getInstitutionByRif] No se encontró institución con RIF: ${rif}`);
       return res.status(404).json({ message: 'Institución no encontrada', data: null });
     }
 
+    console.log(`[getInstitutionByRif] Institución encontrada:`, data.INSTITUTION_ID);
     res.json({ data: mapDBToFrontend(data) });
   } catch (error: unknown) {
+    console.error('[getInstitutionByRif] Error:', error);
     handleDbError(res, error);
   }
 };

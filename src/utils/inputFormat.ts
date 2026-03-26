@@ -23,26 +23,30 @@ export const formatCedulaDisplay = (value: string, includePrefix: boolean = true
   
   if (!numbers) return includePrefix ? prefix : '';
   
-  // Formatear desde la izquierda para números de 7-8 dígitos
+  // LIMITE: Solo permitir hasta 8 dígitos (cédula venezolana)
+  const limitedNumbers = numbers.slice(0, CEDULA_MAX_DIGITS);
+  
+  // Formatear desde la izquierda para números de 1-8 dígitos
   let formatted: string;
-  const len = numbers.length;
+  const len = limitedNumbers.length;
   
   if (len <= 3) {
-    formatted = numbers;
+    formatted = limitedNumbers;
   } else if (len === 4) {
-    formatted = numbers;
+    formatted = limitedNumbers;
   } else if (len === 5) {
-    formatted = `${numbers.slice(0, 2)}.${numbers.slice(2)}`;
+    formatted = `${limitedNumbers.slice(0, 2)}.${limitedNumbers.slice(2)}`;
   } else if (len === 6) {
-    formatted = `${numbers.slice(0, 3)}.${numbers.slice(3)}`;
+    formatted = `${limitedNumbers.slice(0, 3)}.${limitedNumbers.slice(3)}`;
   } else if (len === 7) {
-    formatted = `${numbers.slice(0, 1)}.${numbers.slice(1, 4)}.${numbers.slice(4, 7)}`;
+    formatted = `${limitedNumbers.slice(0, 1)}.${limitedNumbers.slice(1, 4)}.${limitedNumbers.slice(4, 7)}`;
   } else if (len === 8) {
-    formatted = `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}`;
+    formatted = `${limitedNumbers.slice(0, 2)}.${limitedNumbers.slice(2, 5)}.${limitedNumbers.slice(5, 8)}`;
   } else {
-    formatted = `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}`;
+    // Caso por defecto (0 dígitos o por seguridad)
+    formatted = limitedNumbers;
   }
-  
+   
   if (!includePrefix) return formatted;
   return prefix ? `${prefix}-${formatted}` : formatted;
 };
@@ -58,7 +62,8 @@ export const cleanCedula = (value: string): string => {
   const cleaned = value.toUpperCase().replace(/[^0-9VE]/g, '');
   const prefixMatch = cleaned.match(/^([VE])/);
   const prefix = prefixMatch ? prefixMatch[1] : '';
-  const numbers = cleaned.replace(/^[VE]/, '');
+  // LIMITE: Solo permitir hasta 8 dígitos
+  const numbers = cleaned.replace(/^[VE]/, '').slice(0, CEDULA_MAX_DIGITS);
   return prefix ? `${prefix}${numbers}` : numbers;
 };
 

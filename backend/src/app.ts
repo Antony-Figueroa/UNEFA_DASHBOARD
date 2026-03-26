@@ -48,6 +48,7 @@ import { performanceMiddleware } from './lib/performance-middleware.js';
 import { authenticateToken, restrictAsistente } from './middlewares/auth.middleware.js';
 import * as listsService from './services/lists.service.js';
 import * as usersService from './services/users.service.js';
+import { startPeriodScheduler } from './services/period-scheduler.service.js';
 
 dotenv.config();
 
@@ -75,6 +76,16 @@ dbManager.connect().catch(err => {
 });
 listsService.ensurePhonePrefixesSeeded().catch(() => {});
 usersService.ensureRolesSeeded().catch(() => {});
+
+// Iniciar scheduler de notificaciones de períodos (después de 10 segundos para dar tiempo a que todo esté listo)
+setTimeout(() => {
+  try {
+    startPeriodScheduler();
+    console.log('[Main] Period notification scheduler started');
+  } catch (err: unknown) {
+    console.error('[Main] Error starting period scheduler:', err);
+  }
+}, 10000);
 
 // Security config (dev friendly)
 app.use(helmet({

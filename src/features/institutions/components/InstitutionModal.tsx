@@ -182,9 +182,14 @@ export default function InstitutionModal({
   const handleConfirmRemove = async () => {
     if (responsibleToRemove && onEditResponsible) {
       try {
+        // Filtrar las instituciones para quitar la actual
+        const currentInstId = editingInst?.institutionId || "";
+        const filteredInstitutions = (responsibleToRemove.institutions || [])
+          .filter(inst => inst.institutionId !== currentInstId);
+        
         await onEditResponsible({
           responsibleId: responsibleToRemove.responsibleId,
-          institutionId: "", // Empty string unlinks in backend
+          institutions: filteredInstitutions,
           status: true
         });
         setIsConfirmRemoveOpen(false);
@@ -413,6 +418,74 @@ export default function InstitutionModal({
   // Flag to avoid clearing careers during initial load
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Effect que escucha cambios en editingInst para actualizar el formulario cuando llegan datos frescos
+  useEffect(() => {
+    if (!isOpen || !editingInst) return;
+    
+    // Verificar si tenemos datos frescos (con internshipTypeIds o internshipTypeId)
+    const hasFreshData = (editingInst.internshipTypeIds && editingInst.internshipTypeIds.length > 0) || editingInst.internshipTypeId;
+    
+    // Solo actualizar si ya estaba inicializado Y tenemos datos frescos
+    if (isInitialized && hasFreshData) {
+      // Los datos cambiaron, necesitamos重新设置表单
+      const rifParts = editingInst.rif ? editingInst.rif.split("-") : ["", ""];
+      const [phoneP, phoneN] = editingInst.phone ? editingInst.phone.split("-") : ["", ""];
+
+      let parsedEstado = "PORTUGUESA";
+      let parsedMunicipio = "";
+      let parsedParroquia = "";
+      let parsedDireccion = editingInst.fiscalAddress || "";
+      let parsedRegion = editingInst.region;
+      let parsedNucleo = editingInst.nucleus;
+      let parsedExtension = editingInst.extension;
+      let parsedTipoEmpresa = editingInst.institutionType;
+
+      if (editingInst.fiscalAddress) {
+        const parts = editingInst.fiscalAddress.split(", ");
+        if (parts.length >= 8) {
+          parsedRegion = parts[0];
+          parsedNucleo = parts[1];
+          parsedExtension = parts[2];
+          parsedTipoEmpresa = parts[3];
+          parsedEstado = parts[4];
+          parsedMunicipio = parts[5];
+          parsedParroquia = parts[6];
+          parsedDireccion = parts.slice(7).join(", ");
+        } else if (parts.length >= 4) {
+          parsedEstado = parts[0];
+          parsedMunicipio = parts[1];
+          parsedParroquia = parts[2];
+          parsedDireccion = parts.slice(3).join(", ");
+        }
+      }
+
+      // Determinar el tipo de práctica - soporta internshipTypeId, internshipTypeIds, o practiceType
+      const internshipTypeId = editingInst.internshipTypeId 
+        ? String(editingInst.internshipTypeId) 
+        : (editingInst.internshipTypeIds && editingInst.internshipTypeIds.length > 0 
+            ? String(editingInst.internshipTypeIds[0]) 
+            : (editingInst.practiceType ? String(editingInst.practiceType) : ""));
+
+      reset({
+        rifPrefix: rifParts[0] || "",
+        rifNumber: rifParts[1] || "",
+        name: editingInst.name,
+        phonePrefix: phoneP || "",
+        phoneNumber: phoneN || "",
+        region: parsedRegion?.toUpperCase() || "",
+        nucleus: parsedNucleo?.toUpperCase() || "",
+        extension: parsedExtension?.toUpperCase() || "",
+        institutionType: parsedTipoEmpresa?.toUpperCase() || "",
+        estado: parsedEstado?.toUpperCase(),
+        municipio: parsedMunicipio?.toUpperCase(),
+        parroquia: parsedParroquia?.toUpperCase(),
+        direccion: parsedDireccion,
+        internshipTypeId: internshipTypeId,
+        careerIds: editingInst.careerIds || [],
+      });
+    }
+  }, [editingInst, isOpen, isInitialized]);
+
   // Effect para limpiar careerIds cuando cambie el tipo de práctica, PERO SOLO después de la inicialización
   useEffect(() => {
     if (isInitialized && selectedInternshipType && CAREER_OPTIONS.length > 0) {
@@ -599,7 +672,12 @@ export default function InstitutionModal({
           municipio: parsedMunicipio?.toUpperCase(),
           parroquia: parsedParroquia?.toUpperCase(),
           direccion: parsedDireccion,
-          internshipTypeId: editingInst.internshipTypeId ? String(editingInst.internshipTypeId) : "",
+          // Soportar ambos: internshipTypeId (singular), internshipTypeIds (array), o practiceType (de tabla principal)
+          internshipTypeId: editingInst.internshipTypeId 
+            ? String(editingInst.internshipTypeId) 
+            : (editingInst.internshipTypeIds && editingInst.internshipTypeIds.length > 0 
+                ? String(editingInst.internshipTypeIds[0]) 
+                : (editingInst.practiceType ? String(editingInst.practiceType) : "")),
           careerIds: editingInst.careerIds || [],
         });
         const formattedRif = formatRifDisplay(rifParts[1] || "");
@@ -1248,7 +1326,14 @@ export default function InstitutionModal({
                 {(responsibles.length > 0 || newlyAddedResponsibles.length > 0) ? (
                   <div className="space-y-2 mb-4">
                     {/* Responsables existentes (cuando se edita) */}
-                    {responsibles.map((resp) => (
+                    {responsibles.map((resp) => {
+                      // Obtener el cargo de esta institución específica
+                      const currentInstitution = resp.institutions?.find(
+                        inst => inst.institutionId === editingInst?.institutionId
+                      );
+                      const institutionCargo = currentInstitution?.cargo || resp.cargo || "";
+                      
+                      return (
                       <div
                         key={resp.responsibleId}
                         className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
@@ -1258,7 +1343,8 @@ export default function InstitutionModal({
                             {resp.firstName} {resp.lastName}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {resp.identificationPrefix}-{resp.identificationNumber} • {resp.email}{resp.cargo && ` • ${resp.cargo}`}
+                            {resp.identificationPrefix}-{resp.identificationNumber} • {resp.email}
+                            {institutionCargo && ` • ${institutionCargo}`}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 ml-4">
@@ -1277,7 +1363,7 @@ export default function InstitutionModal({
                           </Button>
                         </div>
                       </div>
-                    ))}
+                    )})}
                     {/* Responsables recien agregados (durante creación) */}
                     {newlyAddedResponsibles.map((resp) => (
                       <div
@@ -1424,9 +1510,16 @@ export default function InstitutionModal({
       onSelect={async (resp) => {
         if (onEditResponsible) {
           try {
+            // Agregar la institución actual al array de instituciones del responsable
+            const newInstitution = {
+              institutionId: editingInst?.institutionId || "",
+              institutionName: editingInst?.name || "",
+              cargo: ""
+            };
+            const currentInstitutions = resp.institutions || [];
             await onEditResponsible({
               responsibleId: resp.responsibleId,
-              institutionId: editingInst?.institutionId || "",
+              institutions: [...currentInstitutions, newInstitution],
               status: true 
             });
             setIsSelectModalOpen(false);
@@ -1544,16 +1637,32 @@ export default function InstitutionModal({
           setResponsibleLoading(true);
           if (editingResponsible) {
             // Si el responsable estaba inactivo, reactívalo al editar
+            // Actualizar el cargo en la institución actual
+            const currentInstId = editingInst?.institutionId || "";
+            const updatedInstitutions = (editingResponsible.institutions || []).map(inst => {
+              if (inst.institutionId === currentInstId) {
+                return { ...inst, cargo: data.cargo || "" };
+              }
+              return inst;
+            });
+            
             const updateData = !editingResponsible.status 
-              ? { ...editingResponsible, ...data, status: true } 
-              : { ...editingResponsible, ...data };
+              ? { ...editingResponsible, ...data, institutions: updatedInstitutions, status: true } 
+              : { ...editingResponsible, ...data, institutions: updatedInstitutions };
             await onEditResponsible?.(updateData as UpdateInstitutionalResponsiblePayload);
           } else {
             // Usar pendingInstitutionId si es el flujo de creación, sinon usar editingInst
             const institutionId = showResponsibleSection ? pendingInstitutionId : editingInst!.institutionId;
             
-            // Agregar el responsable
-            const newResponsible = { ...data, institutionId: institutionId! } as CreateInstitutionalResponsiblePayload;
+            // Agregar el responsable con la nueva estructura de instituciones
+            const newResponsible = { 
+              ...data, 
+              institutions: [{ 
+                institutionId: institutionId!, 
+                institutionName: editingInst?.name || "",
+                cargo: data.cargo || "" 
+              }]
+            } as CreateInstitutionalResponsiblePayload;
             await onAddResponsible?.(newResponsible);
             
             // Si estamos en el flujo de creación, agregar a la lista local
@@ -1567,7 +1676,11 @@ export default function InstitutionModal({
                 lastName: data.lastName || '',
                 phone: data.phone || '',
                 email: data.email || '',
-                institutionId: institutionId,
+                institutions: [{ 
+                  institutionId: institutionId, 
+                  institutionName: editingInst?.name || "",
+                  cargo: data.cargo || ""
+                }],
                 status: true,
                 registrationDate: new Date()
               };

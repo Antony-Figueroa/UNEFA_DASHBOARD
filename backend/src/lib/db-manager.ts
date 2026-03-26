@@ -29,10 +29,8 @@ export class DatabaseManager {
       retryDelay: 1000,
     };
 
-    console.log(`[DatabaseManager] Intentando inicializar con URL: ${this.config.url.substring(0, 20)}...`);
-
     if (!this.config.url || !this.config.key) {
-      console.error('[DatabaseManager] CRITICAL: Missing Supabase credentials');
+      console.error('[DB] ERROR: Missing Supabase credentials');
     }
   }
 
@@ -61,8 +59,6 @@ export class DatabaseManager {
 
     this.connectionStatus = 'connecting';
     this.connectionPromise = (async () => {
-      console.log(`[DatabaseManager] [${new Date().toISOString()}] Connecting to Supabase...`);
-
       try {
         this.client = createClient(this.config.url, this.config.key, {
           auth: {
@@ -87,7 +83,7 @@ export class DatabaseManager {
         }
 
         this.connectionStatus = 'connected';
-        console.log(`[DatabaseManager] [${new Date().toISOString()}] Successfully connected to Supabase`);
+        console.log('[DB] ✅ Conectado a Supabase');
         return this.client;
       } catch (error: unknown) {
         this.connectionStatus = 'disconnected';
@@ -169,10 +165,8 @@ export class DatabaseManager {
         const result = await operation(client);
         
         const duration = Date.now() - startTime;
-        if (duration > 500) {
-          console.warn(`[Performance] [${new Date().toISOString()}] SLOW OPERATION: ${operationName} took ${duration}ms`);
-        } else {
-          console.log(`[Performance] [${new Date().toISOString()}] ${operationName} took ${duration}ms`);
+        if (duration > 1000) {
+          console.warn(`[DB] ⚠️ Operación lenta: ${operationName} (${duration}ms)`);
         }
         
         return result;
@@ -186,7 +180,7 @@ export class DatabaseManager {
         }
 
         const duration = Date.now() - startTime;
-        console.debug(`[DatabaseManager] [${new Date().toISOString()}] Attempt ${attempt} for ${operationName} failed after ${duration}ms. Retrying...`);
+        console.debug(`[DB] Intento ${attempt} falló después de ${duration}ms. Reintentando...`);
         
         // Si el error es de conexión, forzar reconexión en el próximo intento
         this.connectionStatus = 'disconnected';

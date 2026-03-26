@@ -32,7 +32,7 @@ export const InstitutionalResponsiblePDF: React.FC<InstitutionalResponsiblePDFPr
               {`${responsible.firstName} ${responsible.middleName || ""} ${responsible.lastName} ${responsible.secondLastName || ""}`.trim()}
             </Text>
             <Text style={[pdfStyles.tableCell, { flex: 3 }]}>
-              {responsible.institutionName || "No asignada"}
+              {responsible.institutions?.[0]?.institutionName || "No asignada"}
             </Text>
             <View style={[pdfStyles.tableCell, { flex: 2.5 }]}>
               <Text>{responsible.email}</Text>

@@ -244,53 +244,40 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
       if (startDate !== undefined) updatePayload.START_DATE = formatToDate(startDate);
       if (endDate !== undefined) updatePayload.END_DATE = formatToDate(endDate);
       if (periodStatus !== undefined) {
-        // VALIDACIÓN CRONOLÓGICA: No permitir activar un período si hay uno anterior sin finalizar
+        // VALIDACIÓN CRONOLÓGICA: Solo se puede activar el período pendiente MÁS ANTIGUO
         if (String(periodStatus) === '2') { // Intentando activar a "En Curso"
-          // Obtener el período que se está intentando activar
-          const currentStartDate = updatePayload.START_DATE || oldData?.START_DATE;
-          const currentEndDate = updatePayload.END_DATE || oldData?.END_DATE;
-          const currentPeriodId = id;
+          const currentPeriodId = parseInt(id, 10); // Convertir a número
           
-          if (currentStartDate && currentEndDate) {
-            // Obtener todos los períodos activos (excluyendo el actual), ordenados por fecha
-            const { data: allPeriods } = await supabase
-              .from(TABLE_NAME)
-              .select('PERIOD_ID, DESCRIPTION, START_DATE, END_DATE, PERIOD_STATUS')
-              .eq('STATUS', 1)
-              .neq('PERIOD_ID', currentPeriodId)
-              .order('START_DATE', { ascending: true });
+          console.log(`[PeriodValidation] Intentando activar período ID: ${currentPeriodId}`);
+          
+          // Obtener todos los períodos pendientes (PERIOD_STATUS = 1) ordenados por fecha
+          const { data: pendingPeriods, error: pendingError } = await supabase
+            .from(TABLE_NAME)
+            .select('PERIOD_ID, DESCRIPTION, START_DATE, END_DATE, PERIOD_STATUS')
+            .eq('STATUS', 1)
+            .eq('PERIOD_STATUS', '1')  // Solo pendientes
+            .order('START_DATE', { ascending: true });
 
-            if (allPeriods && allPeriods.length > 0) {
-              // Buscar el período que debería estar ANTES del actual (termina inmediatamente antes o se superpone)
-              // Un período bloquea si:
-              // 1. No está finalizado (PERIOD_STATUS != 3)
-              // 2. Su fecha de fin es >= a la fecha de inicio del período actual
-              //    O su fecha de inicio es < a la fecha de inicio del período actual (empieza antes)
-              const blockingPeriods = allPeriods.filter(p => {
-                const isNotFinalized = p.PERIOD_STATUS !== '3';
-                const pStartDate = new Date(p.START_DATE);
-                const pEndDate = new Date(p.END_DATE);
-                const currentStart = new Date(currentStartDate);
-                
-                // Bloquea si: no está finalizado Y (termina después de que empiece el actual O empieza antes que el actual)
-                const shouldBlock = isNotFinalized && (
-                  pEndDate >= currentStart || // Termina cuando o después de que empiece el actual
-                  pStartDate < currentStart  // Empieza antes del actual (período anterior)
-                );
-                
-                return shouldBlock;
-              });
-              
-              if (blockingPeriods.length > 0) {
-                // Ordenar por fecha de fin descendente para mostrar el más relevante
-                blockingPeriods.sort((a, b) => new Date(b.END_DATE).getTime() - new Date(a.END_DATE).getTime());
-                const blockingPeriod = blockingPeriods[0];
-                const errorMsg = `No se puede activar el período "${oldData?.DESCRIPTION}" porque el período "${blockingPeriod.DESCRIPTION}" (termina el ${new Date(blockingPeriod.END_DATE).toLocaleDateString('es-VE')}) aún no ha sido culminado. Debes culminar primero el período anterior para poder activar este.`;
-                console.warn(`[PeriodValidation] ${errorMsg}`);
-                const validationError = new Error(errorMsg) as AppError;
-                validationError.code = '400';
-                throw validationError;
-              }
+          if (pendingError) {
+            console.error('[PeriodValidation] Error obteniendo períodos pendientes:', pendingError);
+          }
+
+          console.log(`[PeriodValidation] Períodos pendientes encontrados: ${pendingPeriods?.length || 0}`);
+          console.log(`[PeriodValidation] IDs pendientes (ordenados): ${pendingPeriods?.map(p => p.PERIOD_ID).join(', ')}`);
+
+          if (pendingPeriods && pendingPeriods.length > 0) {
+            // El primer período de la lista ordenada es el MÁS ANTIGUO
+            const oldestPending = pendingPeriods[0];
+            
+            // Solo permite activar si ES el más antiguo
+            if (oldestPending.PERIOD_ID !== currentPeriodId) {
+              const errorMsg = `No se puede activar el período "${oldData?.DESCRIPTION}" porque primero debes activar el período "${oldestPending.DESCRIPTION}" (inicio: ${new Date(oldestPending.START_DATE).toLocaleDateString('es-VE')}).`;
+              console.warn(`[PeriodValidation] BLOQUEADO: ${errorMsg}`);
+              const validationError = new Error(errorMsg) as AppError;
+              validationError.code = '400';
+              throw validationError;
+            } else {
+              console.log('[PeriodValidation] OK: Este es el período pendiente más antiguo');
             }
           }
         }
@@ -321,33 +308,46 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
         const newStatus = updatePayload.PERIOD_STATUS ? String(updatePayload.PERIOD_STATUS) : oldStatus;
         
         // Notificar si el período cambió a "En Curso" (PERIOD_STATUS = 2)
+        // Las notificaciones NO deben fallar el request principal
         if (oldStatus !== '2' && newStatus === '2') {
-          await periodNotificationService.notifyPeriodStarted({
-            description: data[0].DESCRIPTION,
-            startDate: data[0].START_DATE,
-            endDate: data[0].END_DATE,
-          });
+          try {
+            await periodNotificationService.notifyPeriodStarted({
+              description: data[0].DESCRIPTION,
+              startDate: data[0].START_DATE,
+              endDate: data[0].END_DATE,
+            });
+          } catch (notifError) {
+            console.error('[PeriodsController] Error en notificación (no crítico):', notifError);
+          }
         }
         
         // Notificar si el período cambió a "Finalizado" (PERIOD_STATUS = 3)
         if (oldStatus !== '3' && newStatus === '3') {
-          await periodNotificationService.notifyPeriodEnded({
-            description: data[0].DESCRIPTION,
-            endDate: data[0].END_DATE,
-            manuallyEnded: true,
-          });
+          try {
+            await periodNotificationService.notifyPeriodEnded({
+              description: data[0].DESCRIPTION,
+              endDate: data[0].END_DATE,
+              manuallyEnded: true,
+            });
+          } catch (notifError) {
+            console.error('[PeriodsController] Error en notificación (no crítico):', notifError);
+          }
         }
         
-        // Notificar edición general si hubo cambios en fechas o descripción
+        // Notificación de edición general
         const hasMeaningfulChanges = updatePayload.DESCRIPTION || updatePayload.START_DATE || updatePayload.END_DATE;
         if (hasMeaningfulChanges && oldStatus !== '2' && newStatus !== '3') {
-          await periodNotificationService.notifyPeriodUpdated({
-            description: data[0].DESCRIPTION,
-            startDate: updatePayload.START_DATE ? String(updatePayload.START_DATE) : oldData.START_DATE,
-            endDate: updatePayload.END_DATE ? String(updatePayload.END_DATE) : oldData.END_DATE,
-            oldDescription: oldData.DESCRIPTION,
-            changes: Object.keys(updatePayload).filter(k => k !== 'PERIOD_STATUS' && k !== 'STATUS'),
-          });
+          try {
+            await periodNotificationService.notifyPeriodUpdated({
+              description: data[0].DESCRIPTION,
+              startDate: updatePayload.START_DATE ? String(updatePayload.START_DATE) : oldData.START_DATE,
+              endDate: updatePayload.END_DATE ? String(updatePayload.END_DATE) : oldData.END_DATE,
+              oldDescription: oldData.DESCRIPTION,
+              changes: Object.keys(updatePayload).filter(k => k !== 'PERIOD_STATUS' && k !== 'STATUS'),
+            });
+          } catch (notifError) {
+            console.error('[PeriodsController] Error en notificación (no crítico):', notifError);
+          }
         }
       }
 

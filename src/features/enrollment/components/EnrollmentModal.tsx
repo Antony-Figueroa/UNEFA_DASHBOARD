@@ -182,7 +182,9 @@ export default function EnrollmentModal({
   const selectedMethodologicalTutorId = useWatch({ control, name: "methodologicalTutorId" });
 
   // Filtrar responsables por institución seleccionada (comparar como strings)
-  const filteredResponsibles = responsibles.filter(r => String(r.institutionId) === String(selectedInstitutionId));
+  const filteredResponsibles = responsibles.filter(r => 
+    r.institutions?.some(inst => String(inst.institutionId) === String(selectedInstitutionId))
+  );
 
   // Cargar opciones dinámicas
   useEffect(() => {

@@ -532,6 +532,40 @@ export const MyTable = ({ data, onEdit, onDelete }) => {
 
 ## 10. Agent Behavior Rules
 
+### ⚠️ Priority: Use Context7 MCP for Documentation
+
+**Context7** es una herramienta fundamental que debe usarse ANTES de leer código fuente o escribir código. Proporciona documentación actualizada y ejemplos de librerías/frameworks.
+
+**CUANDO USAR Context7:**
+- Antes de implementar cualquier feature nueva
+- Al usar librerías o dependencias del proyecto
+- Para entender APIs de terceros
+- Para verificar mejores prácticas de frameworks (React, Next.js, Tailwind, etc.)
+- Antes de buscar en el código cuando hay documentación oficial disponible
+
+**CÓMO USAR Context7:**
+
+```bash
+# 1. Primero resolver el library ID
+context7_resolve-library-id(query: "qué necesitas", libraryName: "nombre de librería")
+
+# 2. Luego consultar la documentación
+context7_query-docs(libraryId: "/react/react", query: "tu pregunta específica")
+```
+
+**EJEMPLOS DE USO:**
+| Necesidad | Context7 Query |
+|-----------|----------------|
+| React useState | "useState hook examples" |
+| Tailwind forms | "form input styling" |
+| React Hook Form | "form validation with zod" |
+| Supabase auth | "user authentication" |
+| Next.js routing | "dynamic routes" |
+
+**NUNCA** buscar en el código primero si hay documentación oficial disponible en Context7.
+
+---
+
 ### Systematic Debugging
 1. **Reproduce** el error first
 2. **Check logs**: Browser console + backend terminal

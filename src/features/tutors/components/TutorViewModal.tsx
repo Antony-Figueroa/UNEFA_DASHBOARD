@@ -135,8 +135,12 @@ export default function TutorViewModal({
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                             <div>
-                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Profesión</label>
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Título</label>
                                 <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">{tutor.profession}</p>
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Grado de Instrucción</label>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">{tutor.titulo}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Condición</label>

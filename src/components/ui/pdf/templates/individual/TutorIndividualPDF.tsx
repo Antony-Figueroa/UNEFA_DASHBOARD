@@ -280,8 +280,12 @@ export const TutorIndividualPDF: React.FC<TutorIndividualPDFProps> = ({ data }) 
           </View>
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Profesión</Text>
+              <Text style={styles.infoLabel}>Título</Text>
               <Text style={styles.infoValue}>{tutor.profession}</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Grado de Instrucción</Text>
+              <Text style={styles.infoValue}>{tutor.titulo}</Text>
             </View>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Condición</Text>

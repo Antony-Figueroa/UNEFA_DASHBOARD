@@ -148,8 +148,18 @@ export default function TutorProfilePage() {
                     <Briefcase className="w-5 h-5 text-indigo-500" />
                   </div>
                   <div>
-                    <p className="text-sm text-text-secondary">Profesión</p>
+                    <p className="text-sm text-text-secondary">Título</p>
                     <p className="font-medium text-text-emphasis">{profile.profession || "No especificada"}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <Award className="w-5 h-5 text-purple-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-text-secondary">Grado de Instrucción</p>
+                    <p className="font-medium text-text-emphasis">{profile.titulo || "No especificado"}</p>
                   </div>
                 </div>
 

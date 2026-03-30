@@ -132,9 +132,9 @@ export default function TutorModal({
     { value: "TITULAR", label: "TITULAR" },
   ];
 
-  const PROFESSION_OPTIONS = options["Profesión"] || [];
-
   const TITULO_OPTIONS = options["Título"] || [];
+
+  const GRADO_INSTRUCCION_OPTIONS = options["GRADO DE INSTRUCCIÓN"] || [];
 
   useEffect(() => {
     const loadOptions = async () => {
@@ -146,8 +146,8 @@ export default function TutorModal({
           "Condición",
           "Dedicación",
           "Categoría",
-          "Profesión",
           "Título",
+          "GRADO DE INSTRUCCIÓN",
           "Tipo de Practica"
         ];
         const data = await fetchMultipleLists(listNames);
@@ -832,13 +832,13 @@ export default function TutorModal({
                 render={({ field }) => (
                   <CustomSelect
                     id="profession"
-                    options={PROFESSION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                    options={TITULO_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
                     placeholder="Seleccione Título"
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     value={String(field.value)}
                     error={!!errors.profession}
-                    onAddNew={() => openAddValueModal("Profesión", "profession", "Agregar Título")}
+                    onAddNew={() => openAddValueModal("Título", "profession", "Agregar Título")}
                     addNewLabel="Nueva opción"
                   />
                 )}
@@ -857,12 +857,14 @@ export default function TutorModal({
                 render={({ field }) => (
                   <CustomSelect
                     id="titulo"
-                    options={TITULO_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                    placeholder="Seleccione grado de instrucción"
+                    options={GRADO_INSTRUCCION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                    placeholder="Seleccione Grado de Instrucción"
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     value={String(field.value)}
                     error={!!errors.titulo}
+                    onAddNew={() => openAddValueModal("GRADO DE INSTRUCCIÓN", "titulo", "Agregar Grado de Instrucción")}
+                    addNewLabel="Nueva opción"
                   />
                 )}
               />

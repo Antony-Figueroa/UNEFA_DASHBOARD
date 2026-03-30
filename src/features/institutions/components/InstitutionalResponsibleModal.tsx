@@ -3,7 +3,7 @@
  * @description Modal para crear y editar responsables institucionales.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -17,7 +17,8 @@ import {
   InstitutionalResponsible, 
   CreateInstitutionalResponsiblePayload, 
   UpdateInstitutionalResponsiblePayload,
-  ResponsibleInstitution 
+  ResponsibleInstitution,
+  CreateInstitutionPayload
 } from "../types";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
@@ -28,6 +29,10 @@ import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/syst
 import { useToast } from "../../../context/toast";
 import { formatCedulaDisplay, formatPhoneDisplay, cleanPhone, CEDULA_MAX_LENGTH, PHONE_MAX_LENGTH, CEDULA_MAX_DIGITS, PHONE_LOCAL_MAX_LENGTH, formatPhoneLocalDisplay, PHONE_INPUT_CLASS } from "../../../utils/inputFormat";
 import { getResponsibleByCi } from "../services/institutionalResponsiblesService";
+import { useInstitutions } from "../hooks/useInstitutions";
+
+// Lazy load para evitar dependencia circular con InstitutionModal
+const InstitutionModal = lazy(() => import("./InstitutionModal"));
 
 const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
 
@@ -147,6 +152,10 @@ export default function InstitutionalResponsibleModal({
   const [isCheckingCi, setIsCheckingCi] = useState(false);
   const [existingResponsible, setExistingResponsible] = useState<any | null>(null);
   const [viewOnlyMode, setViewOnlyMode] = useState(false);
+
+  // State for new institution modal
+  const [isNewInstitutionModalOpen, setIsNewInstitutionModalOpen] = useState(false);
+  const { addInstitution } = useInstitutions();
 
   // Handle identification number input change with formatting
   const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -600,6 +609,8 @@ export default function InstitutionalResponsibleModal({
                           }}
                           value=""
                           placeholder="Agregar institución..."
+                          onAddNew={() => setIsNewInstitutionModalOpen(true)}
+                          addNewLabel="Crear nueva institución"
                         />
                         
                         {/* Lista de instituciones con cargo */}
@@ -869,6 +880,56 @@ export default function InstitutionalResponsibleModal({
         </AsyncButton>
       </ModalFooter>
     </Modal>
+
+    {/* Modal para crear nueva institución */}
+    <Suspense fallback={null}>
+      {isNewInstitutionModalOpen && (
+        <InstitutionModal
+          isOpen={isNewInstitutionModalOpen}
+          onClose={() => setIsNewInstitutionModalOpen(false)}
+          onSave={async (payload) => {
+            try {
+              const result = await addInstitution(payload as CreateInstitutionPayload);
+              if (result) {
+                setIsNewInstitutionModalOpen(false);
+                
+                // Obtener las instituciones actuales del form
+                const currentInstitutions = watch("institutions") || [];
+                const newInstitutionId = result.institutionId;
+                const newInstitutionName = result.name;
+                
+                // Agregar la nueva institución si no existe (usando el patrón existente)
+                if (!currentInstitutions.some((i: any) => String(i.institutionId) === String(newInstitutionId))) {
+                  const updatedInstitutions = [
+                    ...currentInstitutions,
+                    { institutionId: newInstitutionId, institutionName: newInstitutionName, cargo: "" } as any
+                  ];
+                  setValue("institutions", updatedInstitutions);
+                }
+                
+                addToast({
+                  variant: "success",
+                  title: "Institución creada",
+                  message: `La institución "${result.name}" ha sido creada y asignada`
+                });
+              }
+              return result;
+            } catch (error) {
+              console.error("[InstitutionalResponsibleModal] Error creating institution:", error);
+              addToast({
+                variant: "error",
+                title: "Error",
+                message: "No se pudo crear la institución"
+              });
+            }
+          }}
+          isLoading={false}
+          careerOptions={[]}
+          internshipTypeOptions={[]}
+          modalId="responsible-new-institution"
+        />
+      )}
+    </Suspense>
   </>
 );
 }

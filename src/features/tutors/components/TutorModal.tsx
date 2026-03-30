@@ -132,19 +132,9 @@ export default function TutorModal({
     { value: "TITULAR", label: "TITULAR" },
   ];
 
-  const PROFESSION_OPTIONS = options["Profesión"] || [
-    { value: "INGENIERO", label: "INGENIERO" },
-    { value: "LICENCIADO", label: "LICENCIADO" },
-    { value: "ABOGADO", label: "ABOGADO" },
-    { value: "MÉDICO", label: "MÉDICO" },
-  ];
+  const PROFESSION_OPTIONS = options["Profesión"] || [];
 
-  const TITULO_OPTIONS = options["Título"] || [
-    { value: "PREGRADO", label: "PREGRADO" },
-    { value: "ESPECIALIZACIÓN", label: "ESPECIALIZACIÓN" },
-    { value: "MAESTRÍA", label: "MAESTRÍA" },
-    { value: "DOCTORADO", label: "DOCTORADO" },
-  ];
+  const TITULO_OPTIONS = options["Título"] || [];
 
   useEffect(() => {
     const loadOptions = async () => {

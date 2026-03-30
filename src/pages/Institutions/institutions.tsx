@@ -125,7 +125,7 @@ export default function InstitutionsPage() {
     bulkRestoreResponsibles,
   } = useInstitutionalResponsibles();
 
-  const { careers } = useCareers();
+  const { careers, refreshCareers } = useCareers();
 
   const { activeOptions: internshipTypeOptions } = useInternshipTypes();
 
@@ -513,6 +513,7 @@ export default function InstitutionsPage() {
         institutionOptions={institutionOptions}
         careerOptions={careerOptions}
         internshipTypeOptions={internshipTypeOptions}
+        onCareerCreated={() => refreshCareers()}
       />
 
       <InstitutionalResponsibleModal

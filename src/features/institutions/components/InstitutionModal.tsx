@@ -66,6 +66,8 @@ interface InstitutionModalProps {
   careerOptions?: { value: string; text: string; internshipPriorities?: string[] }[];
   /** Options for internship types (from t_internship_type table) - debe incluir id para filtrado */
   internshipTypeOptions?: { value: string; label: string; id?: number }[];
+  /** Callback when a new career is created from this modal */
+  onCareerCreated?: () => void;
   /** Unique ID for modal stack tracking (optional) */
   modalId?: string;
 }
@@ -151,6 +153,7 @@ export default function InstitutionModal({
   institutionOptions = [],
   careerOptions = [],
   internshipTypeOptions = [],
+  onCareerCreated,
   modalId,
 }: InstitutionModalProps) {
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
@@ -1799,6 +1802,8 @@ export default function InstitutionModal({
                 title: "Carrera creada",
                 message: "La carrera ha sido creada exitosamente"
               });
+              // Llamar callback para recargar opciones en el componente padre
+              onCareerCreated?.();
             } catch (error) {
               console.error("[InstitutionModal] Error creating career:", error);
               addToast({

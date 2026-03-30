@@ -3,7 +3,7 @@
  * @description Modal con formulario para crear y editar instituciones.
  */
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, lazy, Suspense } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -30,6 +30,11 @@ import { useToast } from "../../../context/toast";
 import { cleanCedula, cleanPhone, cleanRif, formatRifDisplay, RIF_MAX_LENGTH, RIF_INPUT_CLASS, PHONE_LOCAL_MAX_LENGTH, formatPhoneLocalDisplay, PHONE_INPUT_CLASS } from "../../../utils/inputFormat";
 import { getInstitutionByRif } from "../services/institutionsService";
 import venezuelaData from "../../../data/venezuela.json";
+
+// Lazy load para evitar dependencia circular con CareerModal
+const CareerModal = lazy(() => import("../../careers/components/CareerModal"));
+import { useCareers } from "../../careers/hooks/useCareers";
+import { CreateCareerPayload } from "../../careers/types";
 
 /**
  * Props for the InstitutionModal component.
@@ -177,6 +182,10 @@ export default function InstitutionModal({
   const [pendingInstitutionId, setPendingInstitutionId] = useState<string | null>(null);
   const [askAddResponsiblesOpen, setAskAddResponsiblesOpen] = useState(false);
   const [newlyAddedResponsibles, setNewlyAddedResponsibles] = useState<InstitutionalResponsible[]>([]);
+
+  // Estado para el modal de nueva carrera
+  const [isNewCareerModalOpen, setIsNewCareerModalOpen] = useState(false);
+  const { addCareer } = useCareers();
 
   // Handle responsible removal confirmation
   const handleConfirmRemove = async () => {
@@ -1165,6 +1174,8 @@ export default function InstitutionModal({
                   value={field.value}
                   placeholder={selectedInternshipType ? "Seleccione las carreras" : "Seleccione primero el tipo de práctica"}
                   disabled={!selectedInternshipType}
+                  onAddNew={() => setIsNewCareerModalOpen(true)}
+                  addNewLabel="Crear nueva carrera"
                 />
               )}
             />
@@ -1772,6 +1783,43 @@ export default function InstitutionModal({
         </Button>
       </ModalFooter>
     </Modal>
+
+    {/* Modal para crear nueva carrera */}
+    <Suspense fallback={null}>
+      {isNewCareerModalOpen && (
+        <CareerModal
+          isOpen={isNewCareerModalOpen}
+          onClose={() => setIsNewCareerModalOpen(false)}
+          onSave={async (payload) => {
+            try {
+              await addCareer(payload as CreateCareerPayload);
+              setIsNewCareerModalOpen(false);
+              addToast({
+                variant: "success",
+                title: "Carrera creada",
+                message: "La carrera ha sido creada exitosamente"
+              });
+            } catch (error) {
+              console.error("[InstitutionModal] Error creating career:", error);
+              addToast({
+                variant: "error",
+                title: "Error",
+                message: "No se pudo crear la carrera"
+              });
+            }
+          }}
+          isLoading={false}
+          internshipOptions={(internshipTypeOptions || [])
+            .filter(opt => opt.id)
+            .map(opt => ({
+              id: opt.id!,
+              value: opt.value,
+              label: opt.label,
+              text: opt.label
+            }))}
+        />
+      )}
+    </Suspense>
   </>
 );
 }

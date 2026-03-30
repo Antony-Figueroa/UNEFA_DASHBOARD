@@ -76,6 +76,7 @@ export interface TutorProfile {
   gender: string;
   email: string;
   profession: string;
+  titulo: string;
   condition: string;
   dedication: string;
   category: string;

@@ -296,8 +296,8 @@ export default function TutorModal({
     condition: z.string().min(1, "La condición es obligatoria").transform(val => val.toUpperCase()),
     dedication: z.string().min(1, "La dedicación es obligatoria").transform(val => val.toUpperCase()),
     category: z.string().min(1, "La categoría es obligatoria").transform(val => val.toUpperCase()),
-    profession: z.string().min(1, "La profesión es obligatoria").transform(val => val.toUpperCase()),
-    titulo: z.string().min(1, "El título es obligatorio").transform(val => val.toUpperCase()),
+    profession: z.string().min(1, "El título es obligatorio").transform(val => val.toUpperCase()),
+    titulo: z.string().min(1, "El grado de instrucción es obligatorio").transform(val => val.toUpperCase()),
     carreras: z.array(z.string()).min(1, "Debe seleccionar al menos una carrera"),
   }).superRefine((data, ctx) => {
     // Validar duplicidad de cédula
@@ -833,9 +833,9 @@ export default function TutorModal({
               )}
             </div>
 
-            {/* Profesión */}
+            {/* Título */}
             <div className="lg:col-span-1">
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Profesión *</label>
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Título *</label>
               <Controller
                 name="profession"
                 control={control}
@@ -843,12 +843,12 @@ export default function TutorModal({
                   <CustomSelect
                     id="profession"
                     options={PROFESSION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                    placeholder="Seleccione Profesión"
+                    placeholder="Seleccione Título"
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     value={String(field.value)}
                     error={!!errors.profession}
-                    onAddNew={() => openAddValueModal("Profesión", "profession", "Agregar Profesión")}
+                    onAddNew={() => openAddValueModal("Profesión", "profession", "Agregar Título")}
                     addNewLabel="Nueva opción"
                   />
                 )}
@@ -858,9 +858,9 @@ export default function TutorModal({
               )}
             </div>
 
-            {/* Título Académico */}
+            {/* Grado de instrucción */}
             <div className="lg:col-span-1">
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Título *</label>
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Grado de instrucción *</label>
               <Controller
                 name="titulo"
                 control={control}
@@ -868,7 +868,7 @@ export default function TutorModal({
                   <CustomSelect
                     id="titulo"
                     options={TITULO_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                    placeholder="Seleccione Título"
+                    placeholder="Seleccione grado de instrucción"
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     value={String(field.value)}

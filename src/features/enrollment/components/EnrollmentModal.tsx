@@ -33,6 +33,28 @@ import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/syst
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { formatCedulaDisplay, cleanCedula, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
+import { UserCircleIcon, ShieldCheckIcon, DocsIcon, SearchIcon, UsersIcon } from "../../../icons";
+import { cn } from "../../../utils/cn";
+import Badge from "../../../components/ui/badge/Badge";
+
+// Inline icons for missing ones
+const BookOpenIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+  </svg>
+);
+
+const AcademicCapIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
+  </svg>
+);
+
+const BuildingOfficeIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-1.5c0-1.5 1.5-3 3.75-3h.75m0 0c1.5 0 3.75 1.5 3.75 3v1.5M12 18v-1.5m0 0c-1.5 0-3.75-1.5-3.75-3V9m0 0c1.5 0 3.75 1.5 3.75 3v1.5M3.375 21h1.5A1.125 1.125 0 005.625 21.375v-1.5a2.625 2.625 0 015.25-1.5h.375M3.375 9.375A2.625 2.625 0 006 12h.375m.375 3.75h.375a1.125 1.125 0 011.125 1.125v.375M6 18h.375A1.125 1.125 0 017.125 21.375v-.375M6 6h.375A1.125 1.125 0 017.125 5.25v-.375M9 12h.375m.375 3h.375a1.125 1.125 0 011.125 1.125v.375M9 6h.375A1.125 1.125 0 0110.125 5.25v-.375" />
+  </svg>
+);
 
 // Longitud máxima para Cédula en inscripción (8 dígitos: V-00.000.000 = 11 caracteres)
 const ENROLLMENT_CEDULA_MAX_LENGTH = 11;
@@ -661,22 +683,29 @@ export default function EnrollmentModal({
   return (
     <>
       <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl">
-        <ModalHeader>
-        <div className="max-w-4xl mx-auto w-full">
-          <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-            {editingEntry ? "Editar Inscripción" : "Nueva Inscripción"}
-          </span>
-          <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
-            {editingEntry ? "Modifica los detalles de la inscripción." : "Ingresa los detalles para la nueva inscripción."}
-          </p>
-        </div>
-      </ModalHeader>
+        <ModalHeader className="border-b border-border-light dark:border-white/5 pb-5">
+          <div className="max-w-5xl mx-auto w-full px-2 pt-2">
+            <div className="flex items-center gap-3 mb-1">
+              <div className="h-10 w-10 rounded-xl bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-400">
+                <DocsIcon className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-text-primary dark:text-white tracking-tight">
+                  {editingEntry ? "Gestión de Inscripción" : "Nueva Inscripción"}
+                </h2>
+                <p className="text-xs text-text-tertiary font-medium">
+                  {editingEntry ? "Actualiza los detalles académicos y empresariales del estudiante." : "Registra a un estudiante vinculándolo con tutores y una empresa para su práctica profesional."}
+                </p>
+              </div>
+            </div>
+          </div>
+        </ModalHeader>
 
-      <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
-        <form id="enrollment-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8 max-w-4xl mx-auto">
+      <ModalBody className="bg-slate-50/50 dark:bg-transparent custom-scrollbar">
+        <form id="enrollment-form" onSubmit={handleSubmit(onSubmit)} className="max-w-5xl mx-auto py-8 px-2">
           {/* Botón para agregar preinscripción */}
           {!editingEntry && !initialData && (
-            <div className="flex justify-end">
+            <div className="flex justify-end mb-6">
               <Button
                 type="button"
                 variant="outline"
@@ -685,361 +714,433 @@ export default function EnrollmentModal({
                   const evt = new CustomEvent("enrollment:addPreEnrollment");
                   window.dispatchEvent(evt);
                 }}
-                className="text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20"
+                className="text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20 rounded-xl font-bold"
               >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
+                <SearchIcon className="w-4 h-4 mr-1" />
                 Nueva Preinscripción
               </Button>
             </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 sm:gap-x-8 gap-y-5 sm:gap-y-6">
-            {/* Cédula */}
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                Cédula *
-              </label>
-              <div className="flex gap-2">
-                <div className="w-24">
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Columna Izquierda: Identificación y Datos Académicos */}
+            <div className="lg:col-span-7 space-y-6">
+              {/* Card: Identificación */}
+              <div className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-border-light dark:border-white/10 shadow-sm space-y-5">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-600">
+                      <SearchIcon className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-base font-bold text-text-primary dark:text-white">Identificación</h3>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="block text-[10px] font-bold text-text-tertiary uppercase tracking-widest">Documento de Identidad *</label>
+                  <div className="flex gap-3">
+                    <div className="w-28 shrink-0">
+                      <Controller
+                        name="identificationPrefix"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomSelect
+                            id="identificationPrefix"
+                            options={NATIONALITY_OPTIONS}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            value={field.value}
+                            placeholder="Tipo"
+                            disabled={!!editingEntry || !!initialData}
+                            error={!!errors.identificationPrefix}
+                            className="rounded-xl h-[48px]"
+                          />
+                        )}
+                      />
+                    </div>
+                    <div className="flex-1 relative">
+                      <Input
+                        value={displayIdentificationNumber}
+                        onChange={handleIdentificationNumberChange}
+                        placeholder="Número de cédula..."
+                        error={!!errors.identificationNumber || !!preEnrollmentError}
+                        className={cn(
+                          "rounded-xl h-[48px] font-bold tracking-wider",
+                          isSearching && "animate-pulse"
+                        )}
+                        disabled={!!editingEntry || !!initialData}
+                        maxLength={ENROLLMENT_CEDULA_MAX_LENGTH}
+                      />
+                      {isSearching && (
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-500 border-t-transparent"></div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {errors.identificationNumber && (
+                    <p className="text-[11px] font-bold text-error-500 flex items-center gap-1.5 animate-pulse">
+                      {errors.identificationNumber.message || preEnrollmentError}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Card: Perfil del Estudiante */}
+              <div className={cn(
+                "bg-white dark:bg-white/5 rounded-2xl border transition-all duration-500 overflow-hidden relative",
+                watch("studentName")
+                  ? "border-brand-500/20 shadow-lg shadow-brand-500/5 opacity-100 translate-y-0" 
+                  : "border-border-light/50 opacity-40 grayscale translate-y-2 pointer-events-none"
+              )}>
+                {!watch("studentName") && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-slate-50/50 dark:bg-transparent z-10">
+                    <p className="text-xs font-bold text-text-tertiary uppercase tracking-tighter">Esperando selección...</p>
+                  </div>
+                )}
+                
+                <div className="p-6 sm:p-7 space-y-5">
+                  <div className="flex items-center gap-5">
+                    <div className={cn(
+                      "h-14 w-14 rounded-2xl flex items-center justify-center text-white transition-all duration-500",
+                      watch("studentName") ? "bg-brand-500 shadow-lg shadow-brand-500/20 rotate-0" : "bg-slate-200 rotate-3"
+                    )}>
+                      <UserCircleIcon className="w-9 h-9" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-xl font-bold text-text-primary dark:text-white leading-tight">
+                          {watch("studentName") || "Nombre del Estudiante"}
+                        </h4>
+                        {watch("studentName") && <Badge color="success" variant="light" size="sm" className="font-bold">Verificado</Badge>}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs font-semibold text-text-tertiary">
+                        <DocsIcon className="w-3.5 h-3.5" />
+                        {(() => {
+                          const career = careersState.find(c => String(c.careerId) === String(watch("careerName")));
+                          return career?.careerName || "Carrera Académica";
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border-light dark:border-white/5">
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-bold text-text-tertiary uppercase tracking-widest">Documento</span>
+                      <p className="text-sm font-bold text-text-primary">{idPrefix || '-'}-{idNumber || '-------'}</p>
+                    </div>
+                    <div className="space-y-1 text-right">
+                      <span className="text-[9px] font-bold text-text-tertiary uppercase tracking-widest">Período</span>
+                      <p className="text-sm font-bold text-text-primary truncate">{watch("period") || '-------'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card: Datos Académicos */}
+              <div className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-border-light dark:border-white/10 shadow-sm space-y-6">
+                <div className="flex items-center gap-3 border-b border-border-light dark:border-white/5 pb-4">
+                  <div className="h-9 w-9 rounded-lg bg-success-500/10 flex items-center justify-center text-success-600">
+                    <ShieldCheckIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-text-primary dark:text-white">Datos Académicos</h3>
+                    <p className="text-[10px] text-text-tertiary font-bold uppercase tracking-tighter">Configuración automática</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Período */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Período *</label>
+                      {!editingEntry && <Badge color="info" variant="light" size="sm" className="font-bold text-[9px] px-1.5 backdrop-blur-sm">AUTO</Badge>}
+                    </div>
+                    <Input
+                      {...register("period")}
+                      placeholder={isLoadingPeriods ? "Cargando..." : "Período automático"}
+                      error={!!errors.period}
+                      readOnly
+                      className="rounded-xl h-[48px] bg-slate-50/50"
+                    />
+                  </div>
+
+                  {/* Tipo Práctica */}
+                  <div className="space-y-3">
+                    <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Tipo Práctica *</label>
+                    {editingEntry ? (
+                      <Controller
+                        name="practiceType"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomSelect
+                            options={practiceOptions}
+                            placeholder={field.value || "Tipo de práctica"}
+                            onChange={field.onChange}
+                            value={field.value}
+                            className="rounded-xl h-[48px]"
+                          />
+                        )}
+                      />
+                    ) : (
+                      <div className={cn(
+                        "h-[48px] px-4 rounded-xl border flex items-center gap-3 transition-colors",
+                        watch("practiceType") ? "bg-brand-50/30 border-brand-200 text-brand-700 font-bold" : "bg-slate-50 border-border-light text-text-tertiary italic"
+                      )}>
+                        <ShieldCheckIcon className={cn("w-4 h-4", watch("practiceType") ? "text-brand-500" : "text-slate-300")} />
+                        <span className="text-sm">{watch("practiceType") || "Pendiente..."}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Carrera */}
+                  <div className="col-span-2 space-y-3">
+                    <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Carrera</label>
+                    {editingEntry ? (
+                      <Controller
+                        name="careerName"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomSelect
+                            options={careersState.map(c => ({
+                              value: String(c.careerId),
+                              label: c.careerName
+                            }))}
+                            placeholder="Seleccionar carrera"
+                            onChange={(val) => field.onChange(val)}
+                            value={field.value ? String(field.value) : ""}
+                            className="rounded-xl h-[48px]"
+                          />
+                        )}
+                      />
+                    ) : (
+                      <div className={cn(
+                        "h-[48px] px-4 rounded-xl border flex items-center gap-3 transition-colors",
+                        watch("careerName") ? "bg-brand-50/30 border-brand-200 text-brand-700 font-bold" : "bg-slate-50 border-border-light text-text-tertiary italic"
+                      )}>
+                        <BookOpenIcon className={cn("w-4 h-4", watch("careerName") ? "text-brand-500" : "text-slate-300")} />
+                        <span className="text-sm truncate">
+                          {(() => {
+                            const career = careersState.find(c => String(c.careerId) === String(watch("careerName")));
+                            return career?.careerName || "Pendiente...";
+                          })()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Matrícula */}
+                  <div className="col-span-2 space-y-3 pt-2">
+                    <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Matrícula Asignada</label>
+                    <div className={cn(
+                      "h-[60px] rounded-2xl border-2 border-dashed flex items-center justify-center transition-all duration-300",
+                      watch("enrollmentCode") ? "border-brand-500/50 bg-brand-500/5 text-brand-600 shadow-inner" : "border-slate-200 bg-slate-50/50 text-slate-400"
+                    )}>
+                      <span className={cn(
+                        "text-xl font-mono font-bold tracking-[0.2em]",
+                        watch("enrollmentCode") ? "text-brand-600" : "text-slate-300"
+                      )}>
+                        {watch("enrollmentCode") || "--------"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Columna Derecha: Tutores e Institución */}
+            <div className="lg:col-span-5 space-y-6">
+              {/* Card: Tutor Académico */}
+              <div className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-border-light dark:border-white/10 shadow-sm space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600">
+                    <AcademicCapIcon className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-base font-bold text-text-primary dark:text-white">Tutor Académico</h3>
+                </div>
+
+                <div className="space-y-4">
                   <Controller
-                    name="identificationPrefix"
+                    name="academicTutorId"
                     control={control}
                     render={({ field }) => (
                       <CustomSelect
-                        id="identificationPrefix"
-                        options={NATIONALITY_OPTIONS}
+                        options={tutors
+                          .filter(t => t.tutorId !== selectedMethodologicalTutorId)
+                          .map(t => ({
+                            value: t.tutorId,
+                            label: `${t.firstName} ${t.lastName}`
+                          }))}
+                        placeholder="Seleccione el tutor académico"
                         onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        value={field.value}
-                        placeholder="Tipo"
-                        disabled={!!editingEntry || !!initialData}
-                        error={!!errors.identificationPrefix}
+                        value={String(field.value)}
+                        className="rounded-xl h-[48px]"
                       />
                     )}
                   />
-                </div>
-<div className="flex-1 relative">
-                  <Input
-                    value={displayIdentificationNumber}
-                    onChange={handleIdentificationNumberChange}
-                    placeholder="V00.000.000"
-                    error={!!errors.identificationNumber || !!preEnrollmentError}
-                    hint={errors.identificationNumber?.message || preEnrollmentError || undefined}
-                    className={isSearching ? "animate-pulse tracking-widest" : "tracking-widest"}
-                    disabled={!!editingEntry || !!initialData}
-                    maxLength={ENROLLMENT_CEDULA_MAX_LENGTH}
-                  />
-                  {isSearching && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-500 border-t-transparent"></div>
-                    </div>
+                  {errors.academicTutorId && (
+                    <p className="text-[11px] font-bold text-error-500">{errors.academicTutorId.message}</p>
                   )}
-                </div>
-              </div>
-            </div>
-
-            {/* Estudiante */}
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                  Estudiante *
-                </label>
-                {!editingEntry && <AutoGeneratedBadge tooltip="Se completa automáticamente al verificar la pre-inscripción." />}
-              </div>
-              <Input
-                {...register("studentName")}
-                placeholder="Nombre del estudiante"
-                error={!!errors.studentName}
-                hint={errors.studentName?.message}
-                readOnly
-                className="bg-bg-secondary dark:bg-white/5 cursor-not-allowed"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                  Período *
-                </label>
-                {!editingEntry && <AutoGeneratedBadge tooltip="Se asigna automáticamente el período académico vigente." />}
-              </div>
-              <Input
-                {...register("period")}
-                placeholder={isLoadingPeriods ? "Cargando períodos..." : "Período automático"}
-                error={!!errors.period}
-                hint={isSubmitted ? errors.period?.message : undefined}
-                readOnly
-                className="bg-bg-secondary dark:bg-white/5 cursor-not-allowed"
-              />
-            </div>
-
-            {/* Tipo Práctica */}
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                  Tipo Práctica *
-                </label>
-                {!editingEntry && <AutoGeneratedBadge tooltip="Determinado automáticamente según la carrera del estudiante." />}
-              </div>
-              {editingEntry ? (
-                <Controller
-                  name="practiceType"
-                  control={control}
-                  render={({ field }) => (
-                    <CustomSelect
-                      options={practiceOptions}
-                      placeholder={field.value || "Tipo de práctica"}
-                      onChange={field.onChange}
-                      value={field.value}
-                      disabled={!!editingEntry}
-                    />
-                  )}
-                />
-              ) : (
-                <Input
-                  value={watch("practiceType") || ""}
-                  placeholder="Se determina automáticamente"
-                  readOnly
-                  className="bg-bg-secondary dark:bg-white/5 cursor-not-allowed"
-                />
-              )}
-              {errors.practiceType && (
-                <p className="mt-1 text-xs text-error-500">{errors.practiceType?.message}</p>
-              )}
-            </div>
-
-            {/* Carrera */}
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                  Carrera *
-                </label>
-                {!editingEntry && <AutoGeneratedBadge tooltip="Se asigna automáticamente según la pre-inscripción del estudiante." />}
-              </div>
-              {editingEntry ? (
-                <Controller
-                  name="careerName"
-                  control={control}
-                  render={({ field }) => (
-                    <CustomSelect
-                      options={careersState.map(c => ({
-                        value: String(c.careerId),
-                        label: c.careerName
-                      }))}
-                      placeholder={field.value ? careersState.find(c => String(c.careerId) === String(field.value))?.careerName || "Carrera" : "Carrera"}
-                      onChange={(val) => {
-                        field.onChange(val);
-                      }}
-                      value={field.value ? String(field.value) : ""}
-                      disabled={!!editingEntry}
-                    />
-                  )}
-                />
-              ) : (
-                <Input
-                  placeholder="Se asigna automáticamente"
-                  readOnly
-                  value={(() => {
-                    const career = careersState.find(c => String(c.careerId) === watch("careerName"));
-                    return career ? career.careerName : "";
-                  })()}
-                  className="bg-bg-secondary dark:bg-white/5 cursor-not-allowed"
-                />
-              )}
-              {errors.careerName && (
-                <p className="mt-1 text-xs text-error-500">{errors.careerName?.message}</p>
-              )}
-            </div>
-
-            {/* Matrícula */}
-            <div>
-              <div className="flex items-center mb-2 sm:mb-2.5">
-                <label className="block text-black dark:text-white font-medium text-sm">Matrícula</label>
-                <AutoGeneratedBadge tooltip="Se genera automáticamente a partir de los datos del estudiante." />
-              </div>
-              <Input
-                {...register("enrollmentCode")}
-                placeholder="Matrícula automática"
-                readOnly
-                className="bg-bg-secondary dark:bg-white/5 cursor-not-allowed font-mono"
-              />
-            </div>
-
-            {/* Tutor Académico */}
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                Tutor Académico *
-              </label>
-              <Controller
-                name="academicTutorId"
-                control={control}
-                render={({ field }) => (
-                  <CustomSelect
-                    options={tutors
-                      .filter(t => t.tutorId !== selectedMethodologicalTutorId)
-                      .map(t => ({
-                        value: t.tutorId,
-                        label: `${t.firstName} ${t.lastName}`
-                      }))}
-                    placeholder="Seleccione el tutor"
-                    onChange={field.onChange}
-                    value={String(field.value)}
-                  />
-                )}
-              />
-              {errors.academicTutorId && (
-                <p className="mt-1 text-xs text-error-500">{errors.academicTutorId?.message}</p>
-              )}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const evt = new CustomEvent("enrollment:addTutor");
-                  window.dispatchEvent(evt);
-                }}
-                className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start"
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Nuevo Tutor Académico
-              </Button>
-            </div>
-
-            {/* Tutor Metodológico */}
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                Tutor Metodológico *
-              </label>
-              <Controller
-                name="methodologicalTutorId"
-                control={control}
-                render={({ field }) => (
-                  <CustomSelect
-                    options={tutors
-                      .filter(t => t.tutorId !== selectedAcademicTutorId)
-                      .map(t => ({
-                        value: t.tutorId,
-                        label: `${t.firstName} ${t.lastName}`
-                      }))}
-                    placeholder="Seleccione el tutor"
-                    onChange={field.onChange}
-                    value={String(field.value)}
-                  />
-                )}
-              />
-              {errors.methodologicalTutorId && (
-                <p className="mt-1 text-xs text-error-500">{errors.methodologicalTutorId?.message}</p>
-              )}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const evt = new CustomEvent("enrollment:addTutor");
-                  window.dispatchEvent(evt);
-                }}
-                className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start"
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Nuevo Tutor Metodológico
-              </Button>
-            </div>
-
-            {/* Institución */}
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                Institución *
-              </label>
-              <Controller
-                name="institutionId"
-                control={control}
-                render={({ field }) => (
-                  <CustomSelect
-                    options={institutions.map(i => ({
-                      value: i.institutionId,
-                      label: `${i.name}${i.region || i.nucleus ? ` (${[i.region, i.nucleus].filter(Boolean).join(' - ')})` : ''}`
-                    }))}
-                    placeholder="Seleccione la institución"
-                    onChange={(val) => {
-                      field.onChange(val);
-                      setValue("institutionResponsibleId", ""); // Reset responsible when institution changes
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const evt = new CustomEvent("enrollment:addTutor");
+                      window.dispatchEvent(evt);
                     }}
-                    value={String(field.value)}
-                  />
-                )}
-              />
-              {errors.institutionId && (
-                <p className="mt-1 text-xs text-error-500">{errors.institutionId?.message}</p>
-              )}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const evt = new CustomEvent("enrollment:addInstitution");
-                  window.dispatchEvent(evt);
-                }}
-                className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start"
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Nueva Institución
-              </Button>
-            </div>
+                    className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start rounded-lg font-bold"
+                  >
+                    <SearchIcon className="w-4 h-4 mr-1" />
+                    Nuevo Tutor Académico
+                  </Button>
+                </div>
+              </div>
 
-            {/* Responsable Institucional */}
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                Responsable Institucional *
-              </label>
-              <Controller
-                name="institutionResponsibleId"
-                control={control}
-                render={({ field }) => (
-                  <CustomSelect
-                    options={filteredResponsibles.map(r => ({
-                      value: r.responsibleId,
-                      label: `${r.firstName} ${r.lastName}`
-                    }))}
-                    placeholder={
-                      !selectedInstitutionId 
-                        ? "Seleccione primero la institución" 
-                        : filteredResponsibles.length === 0 
-                          ? "No hay responsables para esta institución" 
-                          : "Seleccione el responsable"
-                    }
-                    onChange={field.onChange}
-                    value={String(field.value || "")}
-                    disabled={!selectedInstitutionId || filteredResponsibles.length === 0}
+              {/* Card: Tutor Metodológico */}
+              <div className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-border-light dark:border-white/10 shadow-sm space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-600">
+                    <UsersIcon className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-base font-bold text-text-primary dark:text-white">Tutor Metodológico</h3>
+                </div>
+
+                <div className="space-y-4">
+                  <Controller
+                    name="methodologicalTutorId"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomSelect
+                        options={tutors
+                          .filter(t => t.tutorId !== selectedAcademicTutorId)
+                          .map(t => ({
+                            value: t.tutorId,
+                            label: `${t.firstName} ${t.lastName}`
+                          }))}
+                        placeholder="Seleccione el tutor metodológico"
+                        onChange={field.onChange}
+                        value={String(field.value)}
+                        className="rounded-xl h-[48px]"
+                      />
+                    )}
                   />
-                )}
-              />
-              {errors.institutionResponsibleId && (
-                <p className="mt-1 text-xs text-error-500">{errors.institutionResponsibleId?.message}</p>
-              )}
-              {selectedInstitutionId && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    const evt = new CustomEvent("enrollment:addResponsible", { detail: { institutionId: selectedInstitutionId } });
-                    window.dispatchEvent(evt);
-                  }}
-                  className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start"
-                >
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Nuevo Responsable Institucional
-                </Button>
-              )}
+                  {errors.methodologicalTutorId && (
+                    <p className="text-[11px] font-bold text-error-500">{errors.methodologicalTutorId.message}</p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const evt = new CustomEvent("enrollment:addTutor");
+                      window.dispatchEvent(evt);
+                    }}
+                    className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start rounded-lg font-bold"
+                  >
+                    <SearchIcon className="w-4 h-4 mr-1" />
+                    Nuevo Tutor Metodológico
+                  </Button>
+                </div>
+              </div>
+
+              {/* Card: Empresa/Institución */}
+              <div className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-border-light dark:border-white/10 shadow-sm space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-600">
+                    <BuildingOfficeIcon className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-base font-bold text-text-primary dark:text-white">Empresa / Institución</h3>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Institución */}
+                  <div className="space-y-3">
+                    <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Institución *</label>
+                    <Controller
+                      name="institutionId"
+                      control={control}
+                      render={({ field }) => (
+                        <CustomSelect
+                          options={institutions.map(i => ({
+                            value: i.institutionId,
+                            label: `${i.name}${i.region || i.nucleus ? ` (${[i.region, i.nucleus].filter(Boolean).join(' - ')})` : ''}`
+                          }))}
+                          placeholder="Seleccione la institución"
+                          onChange={(val) => {
+                            field.onChange(val);
+                            setValue("institutionResponsibleId", "");
+                          }}
+                          value={String(field.value)}
+                          className="rounded-xl h-[48px]"
+                        />
+                      )}
+                    />
+                    {errors.institutionId && (
+                      <p className="text-[11px] font-bold text-error-500">{errors.institutionId.message}</p>
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const evt = new CustomEvent("enrollment:addInstitution");
+                        window.dispatchEvent(evt);
+                      }}
+                      className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start rounded-lg font-bold"
+                    >
+                      <SearchIcon className="w-4 h-4 mr-1" />
+                      Nueva Institución
+                    </Button>
+                  </div>
+
+                  {/* Responsable */}
+                  <div className="space-y-3 pt-2">
+                    <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Responsable Institucional *</label>
+                    <Controller
+                      name="institutionResponsibleId"
+                      control={control}
+                      render={({ field }) => (
+                        <CustomSelect
+                          options={filteredResponsibles.map(r => ({
+                            value: r.responsibleId,
+                            label: `${r.firstName} ${r.lastName}`
+                          }))}
+                          placeholder={
+                            !selectedInstitutionId 
+                              ? "Seleccione primero la institución" 
+                              : filteredResponsibles.length === 0 
+                                ? "No hay responsables" 
+                                : "Seleccione el responsable"
+                          }
+                          onChange={field.onChange}
+                          value={String(field.value || "")}
+                          disabled={!selectedInstitutionId || filteredResponsibles.length === 0}
+                          className="rounded-xl h-[48px]"
+                        />
+                      )}
+                    />
+                    {errors.institutionResponsibleId && (
+                      <p className="text-[11px] font-bold text-error-500">{errors.institutionResponsibleId.message}</p>
+                    )}
+                    {selectedInstitutionId && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const evt = new CustomEvent("enrollment:addResponsible", { detail: { institutionId: selectedInstitutionId } });
+                          window.dispatchEvent(evt);
+                        }}
+                        className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start rounded-lg font-bold"
+                      >
+                        <SearchIcon className="w-4 h-4 mr-1" />
+                        Nuevo Responsable
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </form>

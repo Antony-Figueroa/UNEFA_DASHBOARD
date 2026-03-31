@@ -12,12 +12,10 @@ import Input from "../../../components/form/input/InputField";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import CustomSelect from "../../../components/form/CustomSelect";
-import MultiSelect from "../../../components/form/MultiSelect";
 import { 
   InstitutionalResponsible, 
   CreateInstitutionalResponsiblePayload, 
   UpdateInstitutionalResponsiblePayload,
-  ResponsibleInstitution,
   CreateInstitutionPayload
 } from "../types";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
@@ -27,8 +25,7 @@ import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { useToast } from "../../../context/toast";
-import { formatCedulaDisplay, formatPhoneDisplay, cleanPhone, CEDULA_MAX_LENGTH, PHONE_MAX_LENGTH, CEDULA_MAX_DIGITS, PHONE_LOCAL_MAX_LENGTH, formatPhoneLocalDisplay, PHONE_INPUT_CLASS } from "../../../utils/inputFormat";
-import { getResponsibleByCi } from "../services/institutionalResponsiblesService";
+import { formatCedulaDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS, PHONE_LOCAL_MAX_LENGTH, formatPhoneLocalDisplay, PHONE_INPUT_CLASS } from "../../../utils/inputFormat";
 import { useInstitutions } from "../hooks/useInstitutions";
 
 // Lazy load para evitar dependencia circular con InstitutionModal
@@ -422,389 +419,333 @@ export default function InstitutionalResponsibleModal({
   return (
     <>
       <Modal isOpen={isOpen} onClose={handleClose} onCloseAttempt={handleCloseAttempt} size="5xl" showCloseButton modalId={modalId}>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
-          {existingResponsible && (
-            <div className="mb-4 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg mx-4 mt-4">
-              <p className="text-sm text-warning-700 dark:text-warning-300">
-                Esta cédula ya está registrada. Los campos están en modo visualización. 
-                Haga clic en "Habilitar Edición" para modificar.
-              </p>
-            </div>
-          )}
-          <ModalHeader>
-            {editingResp ? "Editar Responsable" : "Nuevo Responsable"}
-          </ModalHeader>
+        <ModalHeader className="border-b border-border-light dark:border-white/5 pb-4">
+          <div className="max-w-5xl mx-auto w-full px-4 pt-2">
+            <span className="text-xl font-bold text-text-primary dark:text-white">
+              {editingResp ? "Editar Responsable" : "Nuevo Responsable"}
+            </span>
+          </div>
+        </ModalHeader>
 
-        <ModalBody>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
-            {/* Cédula */}
-            <div>
-              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Cédula *</label>
-              <div className="flex gap-2">
-                <div className="w-24 shrink-0">
-                  <Controller
-                    name="identificationPrefix"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomSelect
-                        id="identificationPrefix"
-                        options={NATIONALITY_OPTIONS}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        value={field.value}
-                        placeholder="Tipo"
-                        disabled={!!editingResp}
-                        error={!!errors.identificationPrefix}
+        <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
+          <form onSubmit={handleSubmit(onSubmit)} className="max-w-5xl mx-auto py-6">
+            {existingResponsible && (
+              <div className="mb-4 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg">
+                <p className="text-sm text-warning-700 dark:text-warning-300">
+                  Esta cédula ya está registrada. Los campos están en modo visualización. 
+                  Haga clic en "Habilitar Edición" para modificar.
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Columna Izquierda: Datos Personales */}
+              <div className="lg:col-span-2 space-y-5">
+                {/* Cédula */}
+                <div>
+                  <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Cédula *</label>
+                  <div className="flex gap-2">
+                    <div className="w-24 shrink-0">
+                      <Controller
+                        name="identificationPrefix"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomSelect
+                            id="identificationPrefix"
+                            options={NATIONALITY_OPTIONS}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            value={field.value}
+                            placeholder="Tipo"
+                            disabled={!!editingResp}
+                            error={!!errors.identificationPrefix}
+                          />
+                        )}
                       />
-                    )}
-                  />
+                    </div>
+                    <div className="flex-1">
+                      <Input 
+                        value={displayIdentificationNumber}
+                        onChange={handleIdentificationNumberChange}
+                        placeholder="V00.000.000" 
+                        error={!!errors.identificationNumber}
+                        hint={isCheckingCi ? "Verificando..." : (errors.identificationNumber?.message || " ")}
+                        className="tracking-widest"
+                        maxLength={CEDULA_MAX_LENGTH}
+                        disabled={!!editingResp || !!existingResponsible}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <Input 
-                    value={displayIdentificationNumber}
-                    onChange={handleIdentificationNumberChange}
-                    placeholder="V00.000.000" 
-                    error={!!errors.identificationNumber}
-                    hint={isCheckingCi ? "Verificando..." : (errors.identificationNumber?.message || " ")}
-                    className="tracking-widest"
-                    maxLength={CEDULA_MAX_LENGTH}
-                    disabled={!!editingResp || !!existingResponsible}
-                    onBlur={async (e) => {
-                      if (!existingResponsible && !editingResp) {
-                        const val = e.target.value;
-                        const digitsOnly = val.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
-                        if (digitsOnly.length >= 6) {
-                          setIsCheckingCi(true);
-                          const prefix = watch("identificationPrefix") || 'V';
-                          const fullCi = `${prefix}-${digitsOnly}`;
-                          try {
-                            const existingData = await getResponsibleByCi(fullCi);
-                            if (existingData) {
-                              const message = existingData.status 
-                                ? "Esta cédula ya está registrada." 
-                                : "Cédula registrada (INACTIVO). Contacte a administración para reactivar.";
-                              
-                              setError("identificationNumber", { 
-                                type: "manual", 
-                                message 
-                              });
 
-                              setExistingResponsible(existingData);
-                              setViewOnlyMode(true);
+                {/* Nombres */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Primer Nombre *</label>
+                    <Input 
+                      placeholder="Ingrese el primer nombre" 
+                      {...register("firstName")} 
+                      error={!!errors.firstName} 
+                      hint={errors.firstName?.message || " "} 
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Segundo Nombre</label>
+                    <Input 
+                      placeholder="Ingrese el segundo nombre" 
+                      {...register("middleName")} 
+                      error={!!errors.middleName} 
+                      hint={errors.middleName?.message || " "} 
+                    />
+                  </div>
+                </div>
 
-                              let pPrefix = "";
-                              let pNumber = "";
-                              if (existingData.phone) {
-                                const cleanPh = existingData.phone.replace(/[-\s]/g, '');
-                                if (cleanPh.length >= 4) {
-                                  pPrefix = cleanPh.substring(0, 4);
-                                  pNumber = cleanPh.substring(4);
-                                } else {
-                                  pNumber = cleanPh;
-                                }
-                              }
+                {/* Apellidos */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Primer Apellido *</label>
+                    <Input 
+                      placeholder="Ingrese el primer apellido" 
+                      {...register("lastName")} 
+                      error={!!errors.lastName} 
+                      hint={errors.lastName?.message || " "} 
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Segundo Apellido</label>
+                    <Input 
+                      placeholder="Ingrese el segundo apellido" 
+                      {...register("secondLastName")} 
+                      error={!!errors.secondLastName} 
+                      hint={errors.secondLastName?.message || " "} 
+                    />
+                  </div>
+                </div>
 
-                              setValue("identificationPrefix", existingData.identificationPrefix || 'V');
-                              setDisplayIdentificationNumber(formatCedulaDisplay(existingData.identificationNumber || ''));
-                              setValue("identificationNumber", existingData.identificationNumber || '');
-                              setValue("firstName", existingData.firstName || "");
-                              setValue("middleName", existingData.middleName || "");
-                              setValue("lastName", existingData.lastName || "");
-                              setValue("secondLastName", existingData.secondLastName || "");
-                              setValue("phonePrefix", pPrefix);
-                               setDisplayPhoneNumber(formatPhoneLocalDisplay(pNumber || ""));
-                              setValue("phoneNumber", pNumber);
-                              setValue("email", existingData.email || "");
-                              // Map institutions array
-                              setValue("institutions", (existingData.institutions || []).map((inst: any) => ({
-                                institutionId: inst.institutionId,
-                                cargo: inst.cargo || ""
-                              })));
+                {/* Teléfono y Correo */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Teléfono *</label>
+                    <div className="flex gap-2">
+                      <div className="w-28 shrink-0">
+                        <Controller
+                          name="phonePrefix"
+                          control={control}
+                          render={({ field }) => (
+                            <CustomSelect
+                              id="phonePrefix"
+                              options={PHONE_PREFIX_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                              onChange={field.onChange}
+                              value={String(field.value ?? "")}
+                              placeholder="Prefijo"
+                              error={!!errors.phonePrefix}
+                              onAddNew={() => openAddValueModal("PREFIJO", "phonePrefix", "Agregar Código de Área")}
+                              addNewLabel="Nueva opción"
+                            />
+                          )}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <Input 
+                          value={displayPhoneNumber}
+                          onChange={handlePhoneNumberChange}
+                          placeholder="000-0000" 
+                          className={PHONE_INPUT_CLASS}
+                          error={!!errors.phoneNumber || !!errors.phonePrefix} 
+                          maxLength={PHONE_LOCAL_MAX_LENGTH}
+                          hint={errors.phoneNumber?.message || errors.phonePrefix?.message || " "}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Correo Electrónico *</label>
+                    <Input 
+                      placeholder="Ingrese el correo electrónico" 
+                      {...register("email")} 
+                      error={!!errors.email} 
+                      hint={errors.email?.message || " "} 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Columna Derecha: Instituciones */}
+              <div className="lg:col-span-1">
+                <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Instituciones *</label>
+                {preselectedInstitutionId ? (
+                  <div className="space-y-2">
+                    <div className="px-4 py-2.5 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-lg flex items-center justify-between">
+                      <p className="text-sm font-semibold text-brand-700 dark:text-brand-400">
+                        {preselectedInstitutionName || institutionOptions.find(o => o.value === preselectedInstitutionId)?.label || "Institución seleccionada"}
+                      </p>
+                    </div>
+                    <Controller
+                      name="institutions"
+                      control={control}
+                      render={({ field }) => {
+                        const { value, onChange } = field;
+                        const inst = (value || []).find((i: any) => String(i.institutionId) === String(preselectedInstitutionId));
+                        const currentCargo = inst?.cargo || "";
+                        return (
+                          <Input
+                            placeholder="Cargo en esta empresa (ej: Gerente, Supervisor)"
+                            className="uppercase"
+                            value={currentCargo}
+                            onChange={(e) => {
+                              const newValue = (value || []).map((i: any) => 
+                                String(i.institutionId) === String(preselectedInstitutionId)
+                                  ? { ...i, cargo: e.target.value.toUpperCase() }
+                                  : i
+                              );
+                              onChange(newValue);
+                            }}
+                          />
+                        );
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <Controller
+                    name="institutions"
+                    control={control}
+                    render={({ field: { value, onChange } }) => {
+                      const selectedInstitutions = value || [];
+                      
+                      const handleAddInstitution = (institutionId: string) => {
+                        const institutionName = institutionOptions.find(o => o.value === institutionId)?.label || "";
+                        onChange([...selectedInstitutions, { institutionId, institutionName, cargo: "" }]);
+                      };
+                      
+                      const handleRemoveInstitution = (institutionId: string) => {
+                        onChange(selectedInstitutions.filter((i: any) => i.institutionId !== institutionId));
+                      };
+                      
+                      const handleCargoChange = (institutionId: string, cargo: string) => {
+                        onChange(selectedInstitutions.map((i: any) => 
+                          i.institutionId === institutionId 
+                            ? { ...i, cargo: cargo.toUpperCase() }
+                            : i
+                        ));
+                      };
+
+                      return (
+                        <div className="space-y-2">
+                          <CustomSelect
+                            id="add-institution"
+                            options={institutionOptions
+                              .filter(opt => !selectedInstitutions.some((s: any) => s.institutionId === opt.value))
+                              .map(opt => ({ value: String(opt.value), label: opt.label }))
                             }
-                          } catch (err) {
-                            console.error("Error checking CI:", err);
-                          } finally {
-                            setIsCheckingCi(false);
-                          }
-                        }
-                      }
-                      register("identificationNumber").onBlur(e);
+                            onChange={(val) => {
+                              if (val) handleAddInstitution(val);
+                            }}
+                            value=""
+                            placeholder="Agregar institución..."
+                            onAddNew={() => setIsNewInstitutionModalOpen(true)}
+                            addNewLabel="Crear nueva institución"
+                          />
+                          
+                          {selectedInstitutions.length > 0 && (
+                            <div className="space-y-2 mt-2">
+                              {selectedInstitutions.map((inst: any) => (
+                                <div key={inst.institutionId} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                                      {inst.institutionName || institutionOptions.find(o => o.value === inst.institutionId)?.label || "Institución"}
+                                    </p>
+                                  </div>
+                                  <input
+                                    type="text"
+                                    placeholder="Cargo"
+                                    className="w-32 px-2 py-1 text-xs uppercase border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    value={inst.cargo || ""}
+                                    onChange={(e) => handleCargoChange(inst.institutionId, e.target.value)}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveInstitution(inst.institutionId)}
+                                    className="text-red-500 hover:text-red-700"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
                     }}
                   />
-                </div>
+                )}
+                {errors.institutions && (
+                  <p className="mt-1 text-[11px] font-medium text-red-500">
+                    {errors.institutions.message as string}
+                  </p>
+                )}
               </div>
             </div>
-
-            {/* Institución con Cargo por cada una */}
-            <div className="lg:col-span-1">
-              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Instituciones *</label>
-              {preselectedInstitutionId ? (
-                <div className="space-y-2">
-                  <div className="px-4 py-2.5 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-xl flex items-center justify-between">
-                    <p className="text-sm font-semibold text-brand-700 dark:text-brand-400">
-                      {preselectedInstitutionName || institutionOptions.find(o => o.value === preselectedInstitutionId)?.label || "Institución seleccionada"}
-                    </p>
-                  </div>
-                  <Controller
-                  name="institutions"
-                  control={control}
-                    render={({ field }) => {
-                    const { value, onChange } = field;
-                    // Buscar la institución - comparar como strings para evitar problemas de tipo
-                    const inst = (value || []).find((i: any) => String(i.institutionId) === String(preselectedInstitutionId));
-                    const currentCargo = inst?.cargo || "";
-                    return (
-                      <Input
-                        placeholder="Cargo en esta empresa (ej: Gerente, Supervisor)"
-                        className="uppercase"
-                        value={currentCargo}
-                        onChange={(e) => {
-                          const newValue = (value || []).map((i: any) => 
-                            String(i.institutionId) === String(preselectedInstitutionId)
-                              ? { ...i, cargo: e.target.value.toUpperCase() }
-                              : i
-                          );
-                          onChange(newValue);
-                        }}
-                      />
-                    );
-                  }}
-                />
-                </div>
-              ) : (
-                <Controller
-                  name="institutions"
-                  control={control}
-                  render={({ field: { value, onChange } }) => {
-                    const selectedInstitutions = value || [];
-                    
-                    const handleAddInstitution = (institutionId: string) => {
-                      const institutionName = institutionOptions.find(o => o.value === institutionId)?.label || "";
-                      onChange([...selectedInstitutions, { institutionId, institutionName, cargo: "" }]);
-                    };
-                    
-                    const handleRemoveInstitution = (institutionId: string) => {
-                      onChange(selectedInstitutions.filter((i: any) => i.institutionId !== institutionId));
-                    };
-                    
-                    const handleCargoChange = (institutionId: string, cargo: string) => {
-                      onChange(selectedInstitutions.map((i: any) => 
-                        i.institutionId === institutionId 
-                          ? { ...i, cargo: cargo.toUpperCase() }
-                          : i
-                      ));
-                    };
-
-                    return (
-                      <div className="space-y-2">
-                        {/* Selector para agregar institución */}
-                        <CustomSelect
-                          id="add-institution"
-                          options={institutionOptions
-                            .filter(opt => !selectedInstitutions.some((s: any) => s.institutionId === opt.value))
-                            .map(opt => ({ value: String(opt.value), label: opt.label }))
-                          }
-                          onChange={(val) => {
-                            if (val) handleAddInstitution(val);
-                          }}
-                          value=""
-                          placeholder="Agregar institución..."
-                          onAddNew={() => setIsNewInstitutionModalOpen(true)}
-                          addNewLabel="Crear nueva institución"
-                        />
-                        
-                        {/* Lista de instituciones con cargo */}
-                        {selectedInstitutions.length > 0 && (
-                          <div className="space-y-2 mt-2">
-                            {selectedInstitutions.map((inst: any) => (
-                              <div key={inst.institutionId} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
-                                    {inst.institutionName || institutionOptions.find(o => o.value === inst.institutionId)?.label || "Institución"}
-                                  </p>
-                                </div>
-                                <input
-                                  type="text"
-                                  placeholder="Cargo"
-                                  className="w-40 px-2 py-1 text-xs uppercase border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                  value={inst.cargo || ""}
-                                  onChange={(e) => handleCargoChange(inst.institutionId, e.target.value)}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveInstitution(inst.institutionId)}
-                                  className="text-red-500 hover:text-red-700"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                  </svg>
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }}
-                />
-              )}
-              {errors.institutions && (
-                <p className="mt-1 text-[11px] font-medium text-red-500">
-                  {errors.institutions.message as string}
-                </p>
-              )}
-            </div>
-
-            {/* Primer Nombre */}
-            <div>
-              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Primer Nombre *</label>
-              <Input 
-                placeholder="Ingrese el primer nombre" 
-                {...register("firstName")} 
-                error={!!errors.firstName} 
-                hint={errors.firstName?.message || " "} 
-              />
-            </div>
-
-            {/* Segundo Nombre */}
-            <div>
-              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Segundo Nombre</label>
-              <Input 
-                placeholder="Ingrese el segundo nombre" 
-                {...register("middleName")} 
-                error={!!errors.middleName} 
-                hint={errors.middleName?.message || " "} 
-              />
-            </div>
-
-            {/* Primer Apellido */}
-            <div>
-              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Primer Apellido *</label>
-              <Input 
-                placeholder="Ingrese el primer apellido" 
-                {...register("lastName")} 
-                error={!!errors.lastName} 
-                hint={errors.lastName?.message || " "} 
-              />
-            </div>
-
-            {/* Segundo Apellido */}
-            <div>
-              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Segundo Apellido</label>
-              <Input 
-                placeholder="Ingrese el segundo apellido" 
-                {...register("secondLastName")} 
-                error={!!errors.secondLastName} 
-                hint={errors.secondLastName?.message || " "} 
-              />
-            </div>
-
-            {/* Teléfono */}
-            <div>
-              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Teléfono *</label>
-              <div className="flex gap-2">
-                <div className="w-28 shrink-0">
-                  <Controller
-                    name="phonePrefix"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomSelect
-                        id="phonePrefix"
-                        options={PHONE_PREFIX_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                        onChange={field.onChange}
-                        value={String(field.value ?? "")}
-                        placeholder="Prefijo"
-                        error={!!errors.phonePrefix}
-                        onAddNew={() => openAddValueModal("PREFIJO", "phonePrefix", "Agregar Código de Área")}
-                        addNewLabel="Nueva opción"
-                      />
-                    )}
-                  />
-                </div>
-                <div className="flex-1">
-                  <Input 
-                    value={displayPhoneNumber}
-                    onChange={handlePhoneNumberChange}
-                    placeholder="000-0000" 
-                    className={PHONE_INPUT_CLASS}
-                    error={!!errors.phoneNumber || !!errors.phonePrefix} 
-                    maxLength={PHONE_LOCAL_MAX_LENGTH}
-                    hint={errors.phoneNumber?.message || errors.phonePrefix?.message || " "}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Correo Electrónico */}
-            <div className="md:col-span-2 lg:col-span-2">
-              <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Correo Electrónico *</label>
-              <Input 
-                placeholder="Ingrese el correo electrónico" 
-                {...register("email")} 
-                error={!!errors.email} 
-                hint={errors.email?.message || " "} 
-              />
-            </div>
-
-            {/* Nota: El cargo se asigna por cada institución seleccionada */}
-          </div>
+          </form>
         </ModalBody>
 
-        <ModalFooter>
-          <Button 
-            variant="outline" 
-            onClick={handleCloseAttempt} 
-            type="button" 
-            className="min-h-12 px-8 rounded-xl font-bold"
-            disabled={isLoading}
-          >
-            Cancelar
-          </Button>
-          {existingResponsible ? (
-            viewOnlyMode ? (
+        <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-6xl mx-auto">
+            <Button 
+              variant="outline" 
+              onClick={handleCloseAttempt} 
+              type="button" 
+              className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
+              disabled={isLoading}
+            >
+              Cancelar
+            </Button>
+            {existingResponsible ? (
+              viewOnlyMode ? (
+                <AsyncButton 
+                  type="button"
+                  className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
+                  onClick={() => {
+                    setViewOnlyMode(false);
+                  }}
+                >
+                  Habilitar Edición
+                </AsyncButton>
+              ) : (
+                <AsyncButton 
+                  type="submit" 
+                  className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
+                  loading={isLoading}
+                  disabled={!isValid}
+                >
+                  Guardar Cambios
+                </AsyncButton>
+              )
+            ) : editingResp ? (
               <AsyncButton 
-                type="button"
-                className="min-h-12 px-8 rounded-xl font-bold"
-                onClick={() => {
-                  setViewOnlyMode(false);
-                }}
+                variant="primary" 
+                type="submit" 
+                className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
+                loading={isLoading}
+                disabled={!isDirty}
               >
-                Habilitar Edición
+                Actualizar
               </AsyncButton>
             ) : (
               <AsyncButton 
+                variant="primary" 
                 type="submit" 
-                className="min-h-12 px-8 rounded-xl font-bold"
+                className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
                 loading={isLoading}
                 disabled={!isValid}
               >
-                Guardar Cambios
+                Guardar
               </AsyncButton>
-            )
-          ) : editingResp ? (
-            <AsyncButton 
-              variant="primary" 
-              type="submit" 
-              className="min-h-12 px-8 rounded-xl font-bold"
-              loading={isLoading}
-              disabled={!isDirty}
-            >
-              Actualizar
-            </AsyncButton>
-          ) : (
-            <AsyncButton 
-              variant="primary" 
-              type="submit" 
-              className="min-h-12 px-8 rounded-xl font-bold"
-              loading={isLoading}
-              disabled={!isValid}
-            >
-              Guardar
-            </AsyncButton>
-          )}
+            )}
+          </div>
         </ModalFooter>
-      </form>
-    </Modal>
+      </Modal>
 
     {confirmSaveOpen && (
       <UnifiedDialog

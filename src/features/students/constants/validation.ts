@@ -40,9 +40,17 @@ export const studentSchema = z.object({
   phoneNumber: z.string()
     .length(7, "El número debe tener exactamente 7 dígitos")
     .regex(/^\d+$/, "Solo se admiten números"),
+  phoneSecondary: z.string()
+    .transform(val => val ? val.replace(/\D/g, '') : "")
+    .refine(val => !val || val.length >= 10, "El teléfono alternativo debe tener al menos 10 dígitos")
+    .default(""),
   email: z.string()
     .email("Email inválido")
     .min(1, "El email es obligatorio"),
+  emailSecondary: z.string()
+    .transform(val => val ? val.trim().toLowerCase() : "")
+    .refine(val => !val || z.string().email().safeParse(val).success, "Email alternativo inválido")
+    .default(""),
   address: z.string().min(1, "La dirección es obligatoria"),
   careerId: z.union([z.string(), z.number()]).refine(val => String(val).length > 0, "La carrera es obligatoria"),
   semester: z.string()

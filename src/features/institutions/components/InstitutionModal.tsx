@@ -86,6 +86,17 @@ const baseInstSchema = z.object({
     .min(1, "El número de teléfono es obligatorio")
     .regex(/^\d+$/, "Solo se admiten números")
     .length(7, "El número debe tener exactamente 7 dígitos"),
+  phoneSecondary: z.string()
+    .transform(val => val ? val.replace(/\D/g, '') : "")
+    .refine(val => !val || val.length >= 10, "El teléfono alternativo debe tener al menos 10 dígitos")
+    .optional()
+    .or(z.literal("")),
+  email: z.string().optional(),
+  emailSecondary: z.string()
+    .transform(val => val ? val.trim().toLowerCase() : "")
+    .refine(val => !val || z.string().email().safeParse(val).success, "Email alternativo inválido")
+    .optional()
+    .or(z.literal("")),
   region: z.string().min(1, "Seleccione una región"),
   nucleus: z.string().min(1, "Seleccione un núcleo"),
   extension: z.string().min(1, "Seleccione una extensión"),
@@ -303,6 +314,9 @@ export default function InstitutionModal({
       name: "",
       phonePrefix: "",
       phoneNumber: "",
+      phoneSecondary: "",
+      email: "",
+      emailSecondary: "",
       region: "",
       nucleus: "",
       extension: "",
@@ -676,6 +690,9 @@ export default function InstitutionModal({
           name: editingInst.name,
           phonePrefix: phoneP || "",
           phoneNumber: phoneN || "",
+          phoneSecondary: editingInst.phoneSecondary || "",
+          email: editingInst.email || "",
+          emailSecondary: editingInst.emailSecondary || "",
           region: parsedRegion?.toUpperCase() || "",
           nucleus: parsedNucleo?.toUpperCase() || "",
           extension: parsedExtension?.toUpperCase() || "",
@@ -709,6 +726,9 @@ export default function InstitutionModal({
           name: "",
           phonePrefix: "",
           phoneNumber: "",
+          phoneSecondary: "",
+          email: "",
+          emailSecondary: "",
           region: "",
           nucleus: "",
           extension: "",
@@ -740,6 +760,9 @@ export default function InstitutionModal({
       name: data.name.toUpperCase(),
       fiscalAddress: fiscalAddress.toUpperCase(),
       phone: `${data.phonePrefix}-${data.phoneNumber}`,
+      phoneSecondary: data.phoneSecondary || "",
+      email: data.email || "",
+      emailSecondary: data.emailSecondary || "",
       region: data.region.toUpperCase(),
       nucleus: data.nucleus.toUpperCase(),
       extension: data.extension.toUpperCase(),
@@ -1017,9 +1040,44 @@ export default function InstitutionModal({
                   {errors.direccion && <p className="mt-1 text-xs text-red-500">{errors.direccion.message}</p>}
                 </div>
               </div>
+              </div>
             </div>
-          </div>
-          
+
+            {/* Teléfono Alternativo */}
+            <div>
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Teléfono Alternativo</label>
+              <Input 
+                {...register("phoneSecondary")}
+                placeholder="0412-123-4567 (opcional)"
+                error={!!errors.phoneSecondary}
+                hint={errors.phoneSecondary?.message || " "}
+              />
+            </div>
+
+            {/* Correo Electrónico */}
+            <div>
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Correo Electrónico</label>
+              <Input 
+                {...register("email")}
+                placeholder="institucion@ejemplo.com (opcional)"
+                type="email"
+                error={!!errors.email}
+                hint={errors.email?.message || " "}
+              />
+            </div>
+
+            {/* Correo Alternativo */}
+            <div>
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Correo Alternativo</label>
+              <Input 
+                {...register("emailSecondary")}
+                placeholder="correo@ejemplo.com (opcional)"
+                type="email"
+                error={!!errors.emailSecondary}
+                hint={errors.emailSecondary?.message || " "}
+              />
+            </div>
+
           <div>
             <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Teléfono *</label>
             <div className="flex gap-2">
@@ -1689,7 +1747,9 @@ export default function InstitutionModal({
                 firstName: data.firstName || '',
                 lastName: data.lastName || '',
                 phone: data.phone || '',
+                phoneSecondary: data.phoneSecondary || '',
                 email: data.email || '',
+                emailSecondary: data.emailSecondary || '',
                 institutions: [{ 
                   institutionId: institutionId, 
                   institutionName: editingInst?.name || "",

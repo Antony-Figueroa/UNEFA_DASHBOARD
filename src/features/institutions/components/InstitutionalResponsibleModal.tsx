@@ -67,9 +67,19 @@ const respSchema = z.object({
     .min(1, "El número de teléfono es obligatorio")
     .regex(/^\d+$/, "Solo se admiten números")
     .min(7, "El número debe tener al menos 7 dígitos"),
+  phoneSecondary: z.string()
+    .transform(val => val ? val.replace(/\D/g, '') : "")
+    .refine(val => !val || val.length >= 10, "El teléfono alternativo debe tener al menos 10 dígitos")
+    .optional()
+    .or(z.literal("")),
   email: z.string()
     .min(1, "El correo es obligatorio")
     .email("Correo electrónico inválido"),
+  emailSecondary: z.string()
+    .transform(val => val ? val.trim().toLowerCase() : "")
+    .refine(val => !val || z.string().email().safeParse(val).success, "Email alternativo inválido")
+    .optional()
+    .or(z.literal("")),
   // institutions es ahora un array de objetos { institutionId, cargo }
   institutions: z.array(institutionSchema).min(1, "Seleccione al menos una institución"),
 });
@@ -201,7 +211,9 @@ export default function InstitutionalResponsibleModal({
       secondLastName: "",
       phonePrefix: "",
       phoneNumber: "",
+      phoneSecondary: "",
       email: "",
+      emailSecondary: "",
       institutions: [],
     },
   });
@@ -357,7 +369,9 @@ export default function InstitutionalResponsibleModal({
           secondLastName: editingResp.secondLastName || "",
           phonePrefix: pPrefix,
           phoneNumber: pNumber,
+          phoneSecondary: editingResp.phoneSecondary || "",
           email: editingResp.email,
+          emailSecondary: editingResp.emailSecondary || "",
           institutions: formInstitutions,
         });
         setDisplayIdentificationNumber(formatCedulaDisplay(editingResp.identificationNumber, false));
@@ -398,7 +412,9 @@ export default function InstitutionalResponsibleModal({
       phonePrefix: phonePrefix.toUpperCase(),
       phoneNumber: phoneNumber.toUpperCase(),
       phone: `${phonePrefix}-${phoneNumber}`,
+      phoneSecondary: rest.phoneSecondary || "",
       email: rest.email.toUpperCase(),
+      emailSecondary: rest.emailSecondary || "",
       institutions: institutions, // Array de objetos { institutionId, cargo }
       status: editingResp?.status ?? true,
     };
@@ -558,6 +574,18 @@ export default function InstitutionalResponsibleModal({
                       </div>
                     </div>
                   </div>
+
+                  {/* Teléfono Alternativo */}
+                  <div>
+                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Teléfono Alternativo</label>
+                    <Input 
+                      {...register("phoneSecondary")}
+                      placeholder="0412-123-4567 (opcional)"
+                      error={!!errors.phoneSecondary}
+                      hint={errors.phoneSecondary?.message || " "}
+                    />
+                  </div>
+
                   <div>
                     <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Correo Electrónico *</label>
                     <Input 
@@ -565,6 +593,17 @@ export default function InstitutionalResponsibleModal({
                       {...register("email")} 
                       error={!!errors.email} 
                       hint={errors.email?.message || " "} 
+                    />
+                  </div>
+
+                  {/* Correo Alternativo */}
+                  <div>
+                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Correo Alternativo</label>
+                    <Input 
+                      {...register("emailSecondary")}
+                      placeholder="correo@ejemplo.com (opcional)"
+                      error={!!errors.emailSecondary}
+                      hint={errors.emailSecondary?.message || " "}
                     />
                   </div>
                 </div>

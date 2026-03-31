@@ -282,7 +282,15 @@ export default function TutorModal({
     phoneNumber: z.string()
       .length(7, "El número de teléfono debe tener exactamente 7 dígitos")
       .regex(/^\d+$/, "Solo se admiten números"),
+    phoneSecondary: z.string()
+      .transform(val => val ? val.replace(/\D/g, '') : "")
+      .refine(val => !val || val.length >= 10, "El teléfono alternativo debe tener al menos 10 dígitos")
+      .optional(),
     email: z.string().email("Formato de correo electrónico inválido").min(1, "El correo es obligatorio").transform(val => val.toUpperCase()),
+    emailSecondary: z.string()
+      .transform(val => val ? val.trim().toLowerCase() : "")
+      .refine(val => !val || z.string().email().safeParse(val).success, "Email alternativo inválido")
+      .optional(),
     condition: z.string().min(1, "La condición es obligatoria").transform(val => val.toUpperCase()),
     dedication: z.string().min(1, "La dedicación es obligatoria").transform(val => val.toUpperCase()),
     category: z.string().min(1, "La categoría es obligatoria").transform(val => val.toUpperCase()),
@@ -344,7 +352,9 @@ export default function TutorModal({
       sex: "",
       phoneAreaCode: "",
       phoneNumber: "",
+      phoneSecondary: "",
       email: "",
+      emailSecondary: "",
       condition: "",
       dedication: "",
       category: "",
@@ -400,7 +410,9 @@ export default function TutorModal({
           sex: editingTutor.sex,
           phoneAreaCode: areaCode,
           phoneNumber: number,
+          phoneSecondary: editingTutor.phoneSecondary || "",
           email: editingTutor.email,
+          emailSecondary: editingTutor.emailSecondary || "",
           condition: editingTutor.condition,
           dedication: editingTutor.dedication,
           category: editingTutor.category,
@@ -450,7 +462,9 @@ export default function TutorModal({
         secondLastName: (data.secondLastName || "").toUpperCase(),
         sex: data.sex as "FEMENINO" | "MASCULINO",
         phone: `${data.phoneAreaCode}${data.phoneNumber}`,
+        phoneSecondary: data.phoneSecondary || "",
         email: (data.email || "").toUpperCase(),
+        emailSecondary: (data.emailSecondary || "").toUpperCase(),
         condition: (data.condition || "").toUpperCase(),
         dedication: (data.dedication || "").toUpperCase(),
         category: (data.category || "").toUpperCase(),
@@ -734,6 +748,17 @@ export default function TutorModal({
               </div>
             </div>
 
+            {/* Teléfono Alternativo */}
+            <div>
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Teléfono Alternativo</label>
+              <Input
+                {...register("phoneSecondary")}
+                placeholder="0412-123-4567 (opcional)"
+                error={!!errors.phoneSecondary}
+                hint={errors.phoneSecondary?.message || " "}
+              />
+            </div>
+
             {/* Correo */}
             <div className="lg:col-span-2">
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Correo Electrónico *</label>
@@ -746,6 +771,18 @@ export default function TutorModal({
               {errors.email && (
                 <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
               )}
+            </div>
+
+            {/* Correo Alternativo */}
+            <div>
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Correo Alternativo</label>
+              <Input
+                {...register("emailSecondary")}
+                placeholder="correo@ejemplo.com (opcional)"
+                type="email"
+                error={!!errors.emailSecondary}
+                hint={errors.emailSecondary?.message || " "}
+              />
             </div>
 
             {/* Condición */}

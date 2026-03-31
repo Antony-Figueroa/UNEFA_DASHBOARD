@@ -36,8 +36,12 @@ export interface Student {
   civilStatus: "SOLTERO" | "CASADO" | "DIVORCIADO" | "VIUDO";
   /** Número de teléfono de contacto */
   phone: string;
+  /** Número de teléfono alternativo (opcional) */
+  phoneSecondary?: string;
   /** Correo electrónico institucional o personal */
   email: string;
+  /** Correo electrónico alternativo (opcional) */
+  emailSecondary?: string;
   /** Dirección de habitación completa */
   address: string;
 

@@ -223,7 +223,9 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
       civilStatus: "",
       phonePrefix: "",
       phoneNumber: "",
+      phoneSecondary: "",
       email: "",
+      emailSecondary: "",
       address: "",
       careerId: "",
       semester: "",
@@ -403,7 +405,9 @@ useEffect(() => {
           civilStatus: (editingStudent.civilStatus || "").toUpperCase(),
           phonePrefix: phonePrefix,
           phoneNumber: phoneNumber,
+          phoneSecondary: editingStudent.phoneSecondary || "",
           email: (editingStudent.email || "").toUpperCase(),
+          emailSecondary: (editingStudent.emailSecondary || "").toUpperCase(),
           address: (editingStudent.address || "").toUpperCase(),
           careerId: String(editingStudent.careerId || ""),
           semester: editingStudent.semester || "",
@@ -458,7 +462,9 @@ useEffect(() => {
         birthDate: validatedData.birthDate,
         civilStatus: validatedData.civilStatus.toUpperCase() as Student["civilStatus"],
         phone: `${validatedData.phonePrefix}${validatedData.phoneNumber}`,
+        phoneSecondary: validatedData.phoneSecondary || "",
         email: validatedData.email.toUpperCase(),
+        emailSecondary: validatedData.emailSecondary || "",
         address: validatedData.address.toUpperCase(),
         careerId: String(validatedData.careerId),
         semester: validatedData.semester,
@@ -809,6 +815,17 @@ useEffect(() => {
               )}
             </div>
 
+            {/* Teléfono Alternativo */}
+            <div>
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Teléfono Alternativo</label>
+              <Input
+                {...register("phoneSecondary")}
+                placeholder="0412-123-4567 (opcional)"
+                error={!!errors.phoneSecondary}
+                hint={errors.phoneSecondary?.message || " "}
+              />
+            </div>
+
             {/* Fila 4 */}
             <div className="md:col-span-2">
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Correo Electrónico *</label>
@@ -848,6 +865,18 @@ useEffect(() => {
                   }
                   register("email").onBlur(e);
                 }}
+              />
+            </div>
+
+            {/* Correo Electrónico Alternativo */}
+            <div>
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Correo Alternativo</label>
+              <Input
+                {...register("emailSecondary")}
+                type="email"
+                placeholder="correo@ejemplo.com (opcional)"
+                error={!!errors.emailSecondary}
+                hint={errors.emailSecondary?.message || " "}
               />
             </div>
 

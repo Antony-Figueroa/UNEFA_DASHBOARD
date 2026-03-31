@@ -29,8 +29,12 @@ export interface Tutor {
   sex: "FEMENINO" | "MASCULINO";
   /** Teléfono de contacto */
   phone: string;
+  /** Teléfono alternativo (opcional) */
+  phoneSecondary?: string;
   /** Correo electrónico */
   email: string;
+  /** Correo electrónico alternativo (opcional) */
+  emailSecondary?: string;
 
   /** Profesión del tutor */
   profession: string;

@@ -17,6 +17,12 @@ export interface Institution {
   fiscalAddress: string;
   /** Contact phone number */
   phone: string;
+  /** Alternative phone number (optional) */
+  phoneSecondary?: string;
+  /** Contact email address */
+  email?: string;
+  /** Alternative email address (optional) */
+  emailSecondary?: string;
   /** Geographic region */
   region: string;
   /** University nucleus */
@@ -91,8 +97,12 @@ export interface InstitutionalResponsible {
   secondLastName?: string;
   /** Contact phone number */
   phone: string;
+  /** Alternative phone number (optional) */
+  phoneSecondary?: string;
   /** Contact email address */
   email: string;
+  /** Alternative email address (optional) */
+  emailSecondary?: string;
   /** Position/Cargo - now stored per institution in the institutions array */
   cargo?: string;
   /** Array of institution associations (each with its own cargo) */

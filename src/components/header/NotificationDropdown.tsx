@@ -180,12 +180,31 @@ export default function NotificationDropdown() {
                           </span>
                         </div>
                         
-                        {/* Mensaje */}
-                        <p 
-                          className="text-xs text-text-secondary dark:text-text-tertiary line-clamp-2 mb-1.5"
-                        >
-                          {notification.MESSAGE}
-                        </p>
+                        {/* Mensaje con tooltip */}
+                        <div className="relative group/tooltip">
+                          <p 
+                            className="text-xs text-text-secondary dark:text-text-tertiary line-clamp-2 mb-1.5"
+                          >
+                            {notification.MESSAGE}
+                          </p>
+                          {/* Tooltip que aparece en hover */}
+                          <div className="absolute left-0 top-full mt-1 hidden group-hover/tooltip:block z-50 w-72">
+                            <div className="bg-white dark:bg-bg-dark text-text-emphasis dark:text-text-emphasis text-xs p-4 rounded-xl shadow-xl border border-border-light dark:border-border-dark">
+                              <div className="font-semibold mb-2 text-text-emphasis dark:text-text-emphasis border-b border-border-light dark:border-border-dark pb-2">
+                                {notification.TITLE}
+                              </div>
+                              <div className="text-text-secondary dark:text-text-tertiary whitespace-pre-wrap my-2">
+                                {notification.MESSAGE}
+                              </div>
+                              <div className="text-[10px] text-text-tertiary flex items-center gap-1 pt-2 border-t border-border-light dark:border-border-dark">
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                {formatDateTime(notification.CREATED_AT)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
 
                         <div className="flex items-center gap-2 text-[10px] text-text-tertiary">
                           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -165,13 +165,10 @@ export default function NotificationDropdown() {
                         )}
                       </div>
 
-                      {/* Contenido */}
+                        {/* Contenido */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-1">
-                          <span 
-                            className="text-sm font-semibold text-text-emphasis dark:text-text-emphasis truncate cursor-pointer hover:text-brand-500 dark:hover:text-brand-400 transition-colors"
-                            title={notification.TITLE}
-                          >
+                          <span className="text-sm font-semibold text-text-emphasis dark:text-text-emphasis truncate">
                             {notification.TITLE}
                           </span>
                           {/* Badge de tipo */}
@@ -188,7 +185,7 @@ export default function NotificationDropdown() {
                             {notification.MESSAGE}
                           </p>
                           {/* Tooltip que aparece en hover */}
-                          <div className="absolute left-0 top-full mt-1 hidden group-hover/tooltip:block z-50 w-72">
+                          <div className="absolute left-0 top-full mt-1 hidden group-hover/tooltip:block z-50 w-72 animate-fade-in">
                             <div className="bg-white dark:bg-bg-dark text-text-emphasis dark:text-text-emphasis text-xs p-4 rounded-xl shadow-xl border border-border-light dark:border-border-dark">
                               <div className="font-semibold mb-2 text-text-emphasis dark:text-text-emphasis border-b border-border-light dark:border-border-dark pb-2">
                                 {notification.TITLE}

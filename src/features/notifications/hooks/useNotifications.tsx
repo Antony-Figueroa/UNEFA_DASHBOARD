@@ -16,8 +16,10 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
   const { autoConnect = true, limit = 20 } = options;
   const { user, loading: authLoading } = useAuth();
   const isAuthenticated = !!user;
-  const hasToken = !!localStorage.getItem('token');
-  const isReady = isAuthenticated && hasToken && !authLoading;
+  
+  // El sistema de auth usa cookies, no localStorage
+  // isReady solo necesita que el usuario esté autenticado y que auth no esté cargando
+  const isReady = isAuthenticated && !authLoading;
   
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -25,7 +27,7 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
   const [hasMore, setHasMore] = useState(true);
 
   const fetchNotifications = useCallback(async (offset = 0, reset = false) => {
-    // No intentar cargar si no está listo (autenticado + token disponible)
+    // No intentar cargar si no está listo (autenticado + auth cargada)
     if (!isReady) {
       return;
     }
@@ -49,10 +51,8 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
       const axiosError = error as { response?: { status?: number } };
       // Silenciar errores 401 ya que puede haber un race condition con el login
       if (axiosError.response?.status === 401) {
-        console.warn('[useNotifications] 401 -可能在登录过程中忽略');
         return;
       }
-      console.error('[useNotifications] Error fetching notifications:', error);
     } finally {
       setLoading(false);
     }
@@ -152,7 +152,7 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
   }, []);
 
   useEffect(() => {
-    // No cargar notificaciones si no está autenticado o si está cargando la auth o no hay token
+    // No cargar notificaciones si no está autenticado o si está cargando la auth
     if (!isReady) {
       setNotifications([]);
       setUnreadCount(0);

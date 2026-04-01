@@ -28,30 +28,39 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
-    const { TITLE, MESSAGE, TYPE = 'INFO', PRIORITY = 'low' } = req.body;
+    const { TITLE, MESSAGE, TYPE = 'info' } = req.body;
 
     if (!TITLE || !MESSAGE) {
       res.status(400).json({ error: "TITLE and MESSAGE are required" });
       return;
     }
 
-    const { error } = await supabase
+    console.log('[notifications.routes] Creating notification:', { userId, TITLE, MESSAGE, TYPE });
+
+    const { data, error } = await supabase
       .from("t_notifications")
       .insert({
         USER_ID: userId,
-        TYPE,
+        TYPE: TYPE.toLowerCase(),
         TITLE,
         MESSAGE,
-        PRIORITY,
         READ: false,
-      });
+      })
+      .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[notifications.routes] Supabase error:', error);
+      throw error;
+    }
 
-    res.json({ success: true });
-  } catch (error) {
+    console.log('[notifications.routes] Notification created:', data);
+    res.json({ success: true, data });
+  } catch (error: any) {
     console.error("[notifications.routes] Error creating notification:", error);
-    res.status(500).json({ error: "Error creating notification" });
+    res.status(500).json({ 
+      error: "Error creating notification",
+      details: error?.message || error?.details || String(error)
+    });
   }
 });
 

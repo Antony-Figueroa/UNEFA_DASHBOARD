@@ -42,6 +42,7 @@ import documentsRoutes from './routes/documents.routes.js';
 import permissionRoutes from './routes/permission.routes.js';
 import securityQuestionsRoutes from './routes/securityQuestions.routes.js';
 import landingConfigRoutes from './routes/landing-config.routes.js';
+import globalSearchRoutes from './routes/global-search.routes.js';
 import { subscribeToNotifications } from './services/sse.service.js';
 import { dbManager } from './lib/db-manager.js';
 import { performanceMiddleware } from './lib/performance-middleware.js';
@@ -196,6 +197,7 @@ import testRoutes from './routes/test.routes.js';
 app.use('/api/public', publicRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/landing-config', landingConfigRoutes);
+app.use('/api/search', globalSearchRoutes);
 app.use('/api/institutions', institutionsRoutes);
 app.use('/api/institutional-responsibles', institutionalResponsiblesRoutes);
 

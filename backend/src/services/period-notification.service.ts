@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase.js';
+import { sendNotificationByRole, sendNotificationToUser } from './sse.service.js';
 
 export type NotificationType = 'pre_enrollment' | 'enrollment' | 'tracking' | 'tracking_visit' | 'user_management' | 'reminder' | 'system' | 'approval';
 
@@ -7,94 +8,59 @@ const formatDate = (dateStr: string): string => {
   return date.toLocaleDateString('es-VE', { day: '2-digit', month: 'long', year: 'numeric' });
 };
 
-const getActiveUsers = async (): Promise<number[]> => {
-  const { data, error } = await supabase
-    .from('t_user')
-    .select('USER_ID')
-    .eq('STATUS', 1);
-
-  if (error || !data || data.length === 0) return [];
-  return data.map(u => u.USER_ID);
-};
-
-const insertNotifications = async (
-  userIds: number[],
-  type: NotificationType,
-  title: string,
-  message: string
-): Promise<boolean> => {
-  const notifications = userIds.map(USER_ID => ({
-    USER_ID,
-    TYPE: type,
-    TITLE: title,
-    MESSAGE: message,
-    READ: false,
-  }));
-
-  const { error } = await supabase.from('t_notifications').insert(notifications);
-  return !error;
-};
-
 export const periodNotificationService = {
   notifyPeriodCreated: async (period: { description: string; startDate: string; endDate: string; periodStatus: string }): Promise<boolean> => {
-    const userIds = await getActiveUsers();
-    if (userIds.length === 0) return false;
-    return insertNotifications(
-      userIds,
+    // Usar SSE service para notificación en tiempo real + persistencia en DB
+    const result = await sendNotificationByRole(
+      'all', // Enviar a todos los usuarios activos
       'system',
       '📅 Nuevo Período Académico Creado',
       `Se ha creado el período "${period.description}" (${formatDate(period.startDate)} - ${formatDate(period.endDate)}).`
     );
+    return !!result;
   },
 
   notifyPeriodUpdated: async (period: { description: string; startDate: string; endDate: string; oldDescription?: string; changes?: string[] }): Promise<boolean> => {
-    const userIds = await getActiveUsers();
-    if (userIds.length === 0) return false;
-    return insertNotifications(
-      userIds,
+    const result = await sendNotificationByRole(
+      'all',
       'system',
       '✏️ Período Académico Modificado',
       `El período "${period.oldDescription || period.description}" ha sido actualizado.`
     );
+    return !!result;
   },
 
   notifyPeriodDeleted: async (period: { description: string }): Promise<boolean> => {
-    const userIds = await getActiveUsers();
-    if (userIds.length === 0) return false;
-    return insertNotifications(
-      userIds,
+    const result = await sendNotificationByRole(
+      'all',
       'system',
       '🗑️ Período Académico Eliminado',
       `El período "${period.description}" ha sido eliminado.`
     );
+    return !!result;
   },
 
   notifyPeriodStarted: async (period: { description: string; startDate: string; endDate: string }): Promise<boolean> => {
-    const userIds = await getActiveUsers();
-    if (userIds.length === 0) return false;
-    return insertNotifications(
-      userIds,
+    const result = await sendNotificationByRole(
+      'all',
       'system',
       '🚀 Período Académico Iniciado',
       `El período "${period.description}" ha iniciado formalmente.`
     );
+    return !!result;
   },
 
   notifyPeriodEnded: async (period: { description: string; endDate: string; manuallyEnded?: boolean }): Promise<boolean> => {
-    const userIds = await getActiveUsers();
-    if (userIds.length === 0) return false;
-    return insertNotifications(
-      userIds,
+    const result = await sendNotificationByRole(
+      'all',
       'system',
       '🏁 Período Académico Finalizado',
       `El período "${period.description}" ha finalizado.`
     );
+    return !!result;
   },
 
   notifyPeriodEndingSoon: async (period: { description: string; endDate: string }, daysRemaining: number): Promise<boolean> => {
-    const userIds = await getActiveUsers();
-    if (userIds.length === 0) return false;
-
     let title = '';
     let message = '';
 
@@ -112,6 +78,13 @@ export const periodNotificationService = {
       message = `Quedan ${daysRemaining} días para que finalice el período "${period.description}".`;
     }
 
-    return insertNotifications(userIds, 'reminder', title, message);
+    const result = await sendNotificationByRole('all', 'reminder', title, message);
+    return !!result;
+  },
+
+  // Método genérico para notificaciones a todos los usuarios
+  notifyAll: async (type: NotificationType, title: string, message: string): Promise<boolean> => {
+    const result = await sendNotificationByRole('all', type, title, message);
+    return !!result;
   },
 };

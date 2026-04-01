@@ -30,11 +30,18 @@ export const notificationService = {
     const { title, message } = messages[type];
 
     try {
+      // Mapear tipos válidos para la DB (el CHECK constraint permite: pre_enrollment, enrollment, tracking, tracking_visit, user_management, reminder, system, approval)
+      const typeMap: Record<TestNotificationType, string> = {
+        success: 'system',
+        warning: 'reminder',
+        error: 'system',
+        info: 'system'
+      };
+      
       const response = await apiClient.post('/notifications', {
         TITLE: title,
         MESSAGE: message,
-        TYPE: type.toUpperCase(),
-        PRIORITY: type === 'error' ? 'high' : type === 'warning' ? 'medium' : 'low'
+        TYPE: typeMap[type]
       });
       return response.data;
     } catch (error) {
@@ -78,20 +85,14 @@ export const connectToNotificationStream = (
   onNotification: (notification: unknown) => void,
   onError?: (error: Event) => void
 ): (() => void) => {
-  const token = localStorage.getItem('token');
+  // VITE_API_URL ya incluye /api, no duplicar
+  const baseURL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
   
-  if (!token) {
-    console.warn('[SSE] No token available for SSE connection');
-    return () => {};
-  }
-
-  const eventSource = new EventSource(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/notifications/stream`, {
+  // SSE necesita mantener la cookie - withCredentials la envía automáticamente
+  // También pasar token por query como backup
+  const eventSource = new EventSource(`${baseURL}/api/notifications/stream?source=sse`, {
     withCredentials: true,
   });
-
-  eventSource.onopen = () => {
-    console.log('[SSE] Connected to notification stream');
-  };
 
   eventSource.addEventListener('new_notification', (event) => {
     try {

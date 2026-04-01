@@ -2,9 +2,27 @@ import { useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Link } from "react-router";
+import toast from 'react-hot-toast';
 import { useNotifications } from "../../features/notifications/hooks/useNotifications";
 import { notificationTypeIcons } from "../../features/notifications/types";
-import { formatDistanceToNow } from "../../utils/date";
+import { formatDistanceToNow, formatDateTime } from "../../utils/date";
+
+// Mapa de colores para tipos de notificación - semántica académica
+const notificationTypeStyles: Record<string, { bg: string; text: string; label: string }> = {
+  pre_enrollment: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400', label: 'Pre-inscripción' },
+  enrollment: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', label: 'Inscripción' },
+  tracking: { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-400', label: 'Pasantía' },
+  tracking_visit: { bg: 'bg-violet-100 dark:bg-violet-900/30', text: 'text-violet-700 dark:text-violet-400', label: 'Visita' },
+  user_management: { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-400', label: 'Usuario' },
+  reminder: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', label: 'Recordatorio' },
+  system: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-700 dark:text-gray-400', label: 'Sistema' },
+  approval: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-400', label: 'Aprobación' },
+};
+
+// Función para obtener el estilo según tipo
+const getTypeStyle = (type: string) => {
+  return notificationTypeStyles[type] || notificationTypeStyles.system;
+};
 
 export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,12 +32,16 @@ export default function NotificationDropdown() {
     loading, 
     markAsRead, 
     markAllAsRead, 
-    deleteNotification,
-    fetchMore 
+    fetchMore,
+    refreshNotifications
   } = useNotifications({ autoConnect: true });
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
+    // Refresh notifications when opening
+    if (!isOpen) {
+      refreshNotifications();
+    }
   }
 
   function closeDropdown() {
@@ -65,132 +87,153 @@ export default function NotificationDropdown() {
       <Dropdown
         isOpen={isOpen}
         onClose={closeDropdown}
-        className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 md:w-87.5 lg:w-90.25 max-h-[80vh] flex flex-col rounded-2xl border border-border-light bg-white p-3 shadow-theme-md dark:border-border-dark dark:bg-bg-dark transition-colors duration-300 z-50"
+        className="absolute right-0 mt-2 w-96 h-[480px] flex flex-col rounded-2xl border border-border-light bg-white dark:border-border-dark dark:bg-bg-dark shadow-lg dark:shadow-xl transition-colors duration-300 z-50"
       >
-        <div className="flex items-center justify-between pb-3 mb-3 border-b border-border-light dark:border-border-dark">
-          <h5 className="text-base font-semibold text-text-emphasis dark:text-text-emphasis flex items-center gap-2">
-            Notificaciones
+        <div className="flex flex-col h-full overflow-hidden">
+        {/* Header */}
+        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-bg-secondary/50 dark:bg-white/5 border-b border-border-light dark:border-border-dark">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            <h5 className="text-sm font-semibold text-text-emphasis dark:text-text-emphasis">
+              Notificaciones
+            </h5>
             {unreadCount > 0 && (
-              <span className="px-2 py-0.5 text-xs font-medium bg-warning-500 text-white rounded-full">
+              <span className="px-2 py-0.5 text-xs font-medium bg-brand-500 text-white rounded-full">
                 {unreadCount}
               </span>
             )}
-          </h5>
-          <div className="flex items-center gap-2">
+          </div>
+          <div className="flex items-center gap-1">
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-xs text-brand-500 hover:text-brand-600 transition-colors"
+                className="text-xs text-brand-500 hover:text-brand-600 font-medium px-2 py-1 rounded hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors"
               >
-                Marcar todo leído
+                Todo leído
               </button>
             )}
             <button
               onClick={toggleDropdown}
-              className="transition-all duration-200 text-text-secondary dark:text-text-tertiary hover:text-text-emphasis dark:hover:text-text-emphasis"
+              className="p-1.5 rounded-lg text-text-secondary hover:text-text-emphasis hover:bg-bg-secondary dark:text-text-tertiary dark:hover:text-text-emphasis dark:hover:bg-white/5 transition-colors"
             >
-              <svg
-                className="fill-current"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  fillRule="evenodd"
-                  clipRule="evenodd"
-                  d="M6.21967 7.28131C5.92678 6.98841 5.92678 6.51354 6.21967 6.22065C6.51256 5.92775 6.98744 5.92775 7.28033 6.22065L11.999 10.9393L16.7176 6.22078C17.0105 5.92789 17.4854 5.92788 17.7782 6.22078C18.0711 6.51367 18.0711 6.98855 17.7782 7.28144L13.0597 12L17.7782 16.7186C18.0711 17.0115 18.0711 17.4863 17.7782 17.7792C17.4854 18.0721 17.0105 18.0721 16.7176 17.7792L11.999 13.0607L7.28033 17.7794C6.98744 18.0722 6.51256 18.0722 6.21967 17.7794C5.92678 17.4865 5.92678 17.0116 6.21967 16.7187L10.9384 12L6.21967 7.28131Z"
-                  fill="currentColor"
-                />
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
         </div>
         
-        <ul className="flex flex-col h-auto overflow-y-auto custom-scrollbar max-h-80">
+        {/* Lista de notificaciones */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0" style={{ maxHeight: 'calc(480px - 120px)' }}>
           {loading && notifications.length === 0 ? (
-            <li className="p-4 text-center text-text-secondary">
-              <div className="animate-pulse flex flex-col items-center gap-2">
-                <div className="h-2 w-20 bg-gray-200 rounded"></div>
-                <div className="h-2 w-16 bg-gray-200 rounded"></div>
-              </div>
-            </li>
+            <div className="flex flex-col items-center justify-center h-full text-text-secondary">
+              <div className="w-8 h-8 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin mb-3"></div>
+              <p className="text-sm">Cargando notificaciones...</p>
+            </div>
           ) : notifications.length === 0 ? (
-            <li className="p-4 text-center text-text-secondary">
-              <div className="flex flex-col items-center gap-2">
-                <svg className="w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            <div className="flex flex-col items-center justify-center h-full text-text-secondary">
+              <div className="w-14 h-14 rounded-full bg-bg-secondary dark:bg-white/5 flex items-center justify-center mb-3">
+                <svg className="w-7 h-7 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
-                <p>No hay notificaciones</p>
               </div>
-            </li>
+              <p className="text-sm font-medium text-text-secondary">Sin notificaciones</p>
+              <p className="text-xs text-text-tertiary mt-1">Las notificaciones aparecerán aquí</p>
+            </div>
           ) : (
-            notifications.slice(0, 10).map((notification) => (
-              <li key={notification.NOTIFICATION_ID}>
-                <DropdownItem
-                  onItemClick={() => handleClick(notification.NOTIFICATION_ID)}
-                  className={`flex gap-3 rounded-lg border-b border-border-light p-3 px-4.5 py-3 hover:bg-brand-500 hover:text-white group dark:border-border-dark dark:hover:bg-brand-500 dark:hover:text-white ${
-                    !notification.READ ? 'bg-brand-50 dark:bg-brand-900/20' : ''
-                  }`}
-                >
-                  <span className="relative block w-9 h-9 rounded-full z-1 max-w-9 flex-shrink-0">
-                    <div className="w-full h-full rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center text-lg">
-                      {notificationTypeIcons[notification.TYPE] || '📢'}
-                    </div>
-                    {!notification.READ && (
-                      <span className="absolute bottom-0 right-0 z-10 h-2.5 w-2.5 rounded-full bg-brand-500 border-2 border-white dark:border-bg-dark"></span>
-                    )}
-                  </span>
-
-                  <span className="block flex-1 min-w-0">
-                    <span className="mb-1.5 block text-sm text-text-secondary group-hover:text-white dark:text-text-tertiary dark:group-hover:text-white">
-                      <span className="font-medium text-text-emphasis group-hover:text-white dark:text-text-emphasis dark:group-hover:text-white">
-                        {notification.TITLE}
-                      </span>
-                    </span>
-                    <span className="block text-xs text-text-secondary group-hover:text-white dark:text-text-tertiary dark:group-hover:text-white line-clamp-2">
-                      {notification.MESSAGE}
-                    </span>
-                    <span className="flex items-center gap-2 text-xs text-text-tertiary group-hover:text-white mt-1">
-                      {formatDistanceToNow(notification.CREATED_AT, { addSuffix: true })}
-                    </span>
-                  </span>
-                  
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteNotification(notification.NOTIFICATION_ID);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-error-500 hover:text-white rounded"
+            <ul className="divide-y divide-border-light dark:divide-border-dark">
+              {notifications.slice(0, 10).map((notification) => {
+                const typeStyle = getTypeStyle(notification.TYPE);
+                return (
+                  <li 
+                    key={notification.NOTIFICATION_ID} 
+                    className={`group relative hover:bg-bg-secondary/50 dark:hover:bg-white/5 transition-colors cursor-pointer ${!notification.READ ? 'bg-brand-50/50 dark:bg-brand-900/10' : ''}`}
+                    onClick={() => handleClick(notification.NOTIFICATION_ID)}
                   >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </DropdownItem>
-              </li>
-            ))
+                    <div className="flex gap-3 p-4">
+                      {/* Icono de tipo */}
+                      <div className={`relative flex-shrink-0 w-10 h-10 rounded-xl ${typeStyle.bg} flex items-center justify-center`}>
+                        <span className={`text-lg ${typeStyle.text}`}>
+                          {notificationTypeIcons[notification.TYPE] || '📢'}
+                        </span>
+                        {!notification.READ && (
+                          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-brand-500 rounded-full border-2 border-white dark:border-bg-dark"></span>
+                        )}
+                      </div>
+
+                      {/* Contenido */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <span className="text-sm font-semibold text-text-emphasis dark:text-text-emphasis truncate">
+                            {notification.TITLE}
+                          </span>
+                          {/* Badge de tipo */}
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium ${typeStyle.bg} ${typeStyle.text} flex-shrink-0`}>
+                            {typeStyle.label}
+                          </span>
+                        </div>
+                        <p className="text-xs text-text-secondary dark:text-text-tertiary line-clamp-2 mb-1.5">
+                          {notification.MESSAGE}
+                        </p>
+                        <div className="flex items-center gap-2 text-[10px] text-text-tertiary" title={formatDateTime(notification.CREATED_AT)}>
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>{formatDateTime(notification.CREATED_AT)}</span>
+                        </div>
+                      </div>
+
+                      {/* Botón marcar como leído (visible en hover) */}
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          markAsRead(notification.NOTIFICATION_ID);
+                        }}
+                        className={`opacity-0 group-hover:opacity-100 absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${
+                          notification.READ 
+                            ? 'text-text-tertiary hover:bg-bg-secondary dark:hover:bg-white/5' 
+                            : 'text-brand-500 hover:bg-brand-500 hover:text-white'
+                        }`}
+                        aria-label="Marcar como leído"
+                      >
+                        {notification.READ ? (
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        )}
+                      </span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           )}
-          
-          {notifications.length > 10 && (
-            <li className="p-2 text-center">
-              <button
-                onClick={() => fetchMore()}
-                className="text-sm text-brand-500 hover:text-brand-600"
-              >
-                Ver más notificaciones
-              </button>
-            </li>
-          )}
-        </ul>
+        </div>
         
-        <Link
-          to="/"
-          onClick={closeDropdown}
-          className="block px-4 py-2 mt-3 text-sm font-medium text-center rounded-lg text-text-primary bg-bg-main border border-border-light hover:bg-brand-500 hover:text-white dark:border-border-dark dark:bg-bg-dark dark:text-text-tertiary dark:hover:bg-brand-500 dark:hover:text-white transition-colors"
-        >
-          Ver Todas las Notificaciones
-        </Link>
+        {/* Footer */}
+        <div className="flex-shrink-0 p-3 border-t border-border-light dark:border-border-dark bg-bg-secondary/30 dark:bg-white/5">
+          <button
+            onClick={() => {
+              closeDropdown();
+              toast.success('Página de notificaciones - Próximamente');
+            }}
+            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-brand-500 dark:text-text-tertiary dark:hover:text-brand-400 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            Ver todas las notificaciones
+          </button>
+        </div>
+        </div>
       </Dropdown>
     </div>
   );

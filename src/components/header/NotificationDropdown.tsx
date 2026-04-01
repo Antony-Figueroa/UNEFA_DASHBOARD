@@ -180,32 +180,13 @@ export default function NotificationDropdown() {
                           </span>
                         </div>
                         
-                        {/* Mensaje - al hacer click abre un modal/chica con info completa */}
+                        {/* Mensaje */}
                         <p 
-                          className="text-xs text-text-secondary dark:text-text-tertiary line-clamp-2 mb-1.5 cursor-pointer hover:text-brand-500 dark:hover:text-brand-400 transition-colors"
-                          onClick={() => {
-                            // Mostrar toast con la info completa al hacer click
-                            toast.custom((t) => (
-                              <div
-                                className={`${
-                                  t.visible ? 'animate-enter' : 'animate-leave'
-                                } bg-white dark:bg-bg-dark max-w-sm p-4 rounded-xl shadow-xl border border-border-light dark:border-border-dark`}
-                              >
-                                <div className="font-semibold text-text-emphasis dark:text-text-emphasis mb-2">{notification.TITLE}</div>
-                                <div className="text-xs text-text-secondary dark:text-text-tertiary whitespace-pre-wrap mb-3">{notification.MESSAGE}</div>
-                                <div className="text-[10px] text-text-tertiary flex items-center gap-1">
-                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
-                                  {formatDateTime(notification.CREATED_AT)}
-                                </div>
-                              </div>
-                            ), { duration: 4000 });
-                          }}
+                          className="text-xs text-text-secondary dark:text-text-tertiary line-clamp-2 mb-1.5"
                         >
                           {notification.MESSAGE}
                         </p>
-                        
+
                         <div className="flex items-center gap-2 text-[10px] text-text-tertiary" title={formatDateTime(notification.CREATED_AT)}>
                           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />

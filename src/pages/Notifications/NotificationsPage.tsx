@@ -290,43 +290,15 @@ export default function NotificationsPage() {
                           </div>
                         </div>
                         
-                        {/* Mensaje - al hacer click muestra un toast con info completa */}
-                        <div className="group relative">
-                          <p 
-                            className="text-sm text-text-secondary dark:text-text-tertiary mb-2 line-clamp-2 cursor-pointer hover:text-brand-500 dark:hover:text-brand-400 transition-colors"
-                            onClick={() => {
-                              toast.custom((t) => (
-                                <div
-                                  className={`${
-                                    t.visible ? 'animate-enter' : 'animate-leave'
-                                  } bg-white dark:bg-bg-dark max-w-lg p-5 rounded-xl shadow-xl border border-border-light dark:border-border-dark`}
-                                >
-                                  <div className="font-semibold text-lg text-text-emphasis dark:text-text-emphasis mb-3">{notification.TITLE}</div>
-                                  <div className="text-sm text-text-secondary dark:text-text-tertiary whitespace-pre-wrap mb-4">{notification.MESSAGE}</div>
-                                  <div className="text-xs text-text-tertiary flex items-center gap-2 pt-3 border-t border-border-light dark:border-border-dark">
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    {formatDateTime(notification.CREATED_AT)}
-                                    {notification.READ_AT && (
-                                      <>
-                                        <span className="mx-1">•</span>
-                                        <span className="flex items-center gap-1">
-                                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                          </svg>
-                                          Leída {formatDateTime(notification.READ_AT)}
-                                        </span>
-                                      </>
-                                    )}
-                                  </div>
-                                </div>
-                              ), { duration: 5000 });
-                            }}
-                          >
-                            {notification.MESSAGE}
-                          </p>
-                        </div>
+                        {/* Mensaje - al hacer hover muestra un toast con info completa */}
+                        <p 
+                          className="text-sm text-text-secondary dark:text-text-tertiary mb-2 line-clamp-2 cursor-pointer hover:text-brand-500 dark:hover:text-brand-400 transition-colors"
+                          onMouseEnter={() => {
+                            toast.success(notification.MESSAGE);
+                          }}
+                        >
+                          {notification.MESSAGE}
+                        </p>
                         
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-tertiary">
                           <span className="flex items-center gap-1">

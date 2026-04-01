@@ -104,6 +104,28 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       weeklyBreakdown.push({ label: `Semana ${4-i}`, count: count || 0 });
     }
 
+    // 5. Pending Tasks
+    // Solicitudes pendientes (estado 'pending' o similar)
+    const { count: pendingRequestsCount } = await supabase
+      .from('t_student_requests')
+      .select('*', { count: 'exact', head: true })
+      .in('STATUS', ['pending', 'pending_review', 'Pendiente', 'pendiente']);
+
+    // Evaluaciones pendientes (sin calificar)
+    const { count: pendingEvaluationsCount } = await supabase
+      .from('t_evaluations')
+      .select('*', { count: 'exact', head: true })
+      .is('EVALUATION_DATE', null);
+
+    // Visitas próximas (próximos 7 días)
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    const { count: upcomingVisitsCount } = await supabase
+      .from('t_visits')
+      .select('*', { count: 'exact', head: true })
+      .gte('VISIT_DATE', new Date().toISOString())
+      .lte('VISIT_DATE', nextWeek.toISOString());
+
     res.json({
       totalStudents: totalStudents || 0,
       activeStudents: activeStudents || 0,
@@ -128,7 +150,9 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       totalEnrollments: 0,
       totalPreEnrollments: 0,
       activePeriods: 0,
-      pendingRequests: 0,
+      pendingRequests: pendingRequestsCount || 0,
+      pendingEvaluations: pendingEvaluationsCount || 0,
+      upcomingVisits: upcomingVisitsCount || 0,
       completionRate: 0,
       monthlyEnrollments: [],
       monthlyTarget: { target: 1000, current: activeStudents || 0, today: 0, percentage: 0 }

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import * as careersService from '../services/careers.service.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { auditCreate, auditUpdate, auditDelete, auditStatusChange } from '../utils/audit-helpers.js';
+import { sendNotificationByRole } from '../services/sse.service.js';
 
 const handleDbError = (res: Response, error: unknown) => {
   console.error('Database Error:', error);
@@ -68,6 +69,7 @@ export const getCareerById = async (req: Request, res: Response) => {
 export const createCareer = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId || 1;
+    const careerName = req.body.CAREER_NAME || req.body.name || '';
     const result = await careersService.createCareer(req.body, userId);
     
     // Auditoría de creación de carrera
@@ -75,10 +77,22 @@ export const createCareer = async (req: AuthRequest, res: Response) => {
       try {
         await auditCreate(req, 't_career', {
           ...req.body,
-          CAREER_NAME: String(req.body.CAREER_NAME || '').toUpperCase()
+          CAREER_NAME: String(careerName).toUpperCase()
         }, ['CAREER_NAME', 'CAREER_CODE', 'CAREER_ABBREVIATION', 'MINIMUM_GRADE', 'CAREER_TYPE']);
       } catch (auditError) {
         console.error('[Audit] Error auditing career creation:', auditError);
+      }
+      
+      // Notificar a todos los usuarios sobre la nueva carrera
+      try {
+        await sendNotificationByRole(
+          'all',
+          'system',
+          '🎓 Nueva Carrera Creada',
+          `Se ha creado la carrera "${careerName}".`
+        );
+      } catch (notifError) {
+        console.error('[CareersController] Error en notificación:', notifError);
       }
     }
     
@@ -95,6 +109,7 @@ export const updateCareer = async (req: AuthRequest, res: Response) => {
     
     // Obtener datos actuales antes de actualizar
     const currentCareer = await careersService.getCareerById(id);
+    const newCareerName = req.body.CAREER_NAME || req.body.name || '';
     const result = await careersService.updateCareer(id, req.body, userId);
     
     // Auditoría de actualización de carrera
@@ -107,6 +122,19 @@ export const updateCareer = async (req: AuthRequest, res: Response) => {
         );
       } catch (auditError) {
         console.error('[Audit] Error auditing career update:', auditError);
+      }
+      
+      // Notificar a todos los usuarios sobre la actualización
+      const oldName = (currentCareer.data as any)?.CAREER_NAME || 'la carrera';
+      try {
+        await sendNotificationByRole(
+          'all',
+          'system',
+          '✏️ Carrera Modificada',
+          `La carrera "${oldName}" ha sido actualizada.`
+        );
+      } catch (notifError) {
+        console.error('[CareersController] Error en notificación:', notifError);
       }
     }
     
@@ -123,6 +151,7 @@ export const deleteCareer = async (req: AuthRequest, res: Response) => {
     
     // Obtener datos actuales antes de eliminar
     const currentCareer = await careersService.getCareerById(id);
+    const deletedName = currentCareer.success ? (currentCareer.data as any)?.CAREER_NAME : '';
     
     await careersService.deleteCareer(id, userId);
     
@@ -135,6 +164,20 @@ export const deleteCareer = async (req: AuthRequest, res: Response) => {
         );
       } catch (auditError) {
         console.error('[Audit] Error auditing career deletion:', auditError);
+      }
+      
+      // Notificar a todos los usuarios sobre la eliminación
+      if (deletedName) {
+        try {
+          await sendNotificationByRole(
+            'all',
+            'system',
+            '🗑️ Carrera Eliminada',
+            `La carrera "${deletedName}" ha sido eliminada.`
+          );
+        } catch (notifError) {
+          console.error('[CareersController] Error en notificación:', notifError);
+        }
       }
     }
     

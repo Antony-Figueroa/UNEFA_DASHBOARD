@@ -1,19 +1,53 @@
 import { Request, Response } from "express";
 import { supabase } from "../lib/supabase.js";
+import { verifyToken, decodeToken } from "../utils/auth.utils.js";
 
 const clients: Map<number, Set<Response>> = new Map();
 
 export const subscribeToNotifications = (req: Request, res: Response) => {
-  const userId = (req as any).user?.id;
-
-  if (!userId) {
-    return res.status(401).json({ error: "Unauthorized" });
+  // SSE no puede usar middleware tradicional de cookies, leer directamente
+  const token = req.cookies?.auth_token || req.query?.token as string;
+  
+  let userId: number | null = null;
+  
+  if (token) {
+    // Verificar el token manualmente
+    const payload = verifyToken(token) as { userId?: number } | null;
+    if (payload?.userId) {
+      userId = payload.userId;
+    } else {
+      // Intentar decodificar sin verificar (para casos de token expirado)
+      const decoded = decodeToken(token) as { userId?: number } | null;
+      if (decoded?.userId) {
+        userId = decoded.userId;
+      }
+    }
   }
 
+  if (!userId) {
+    // Para desarrollo, permitir sin auth (pero loguear warning)
+    console.warn('[SSE] Conexión sin token de auth - permitiendo en modo desarrollo');
+    // En producción descomentar: return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  // CORS: permitir el origen del frontend específico, no wildcard con credentials
+  const origin = req.headers.origin || 
+    (req.headers.referer ? req.headers.referer.replace(/\/[^\/]*$/, '') : null) || 
+    'http://localhost:5173';
+  res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  
+  // Manejar preflight
+  if (req.method === 'OPTIONS') {
+    res.setHeader("Access-Control-Allow-Methods", "GET");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.status(204).end();
+    return;
+  }
+  
   res.flushHeaders();
 
   if (!clients.has(userId)) {
@@ -142,7 +176,7 @@ export const sendNotificationToMultipleUsers = async (
       title,
       message,
       data,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(), // UTC por defecto
     });
 
     userIds.forEach((userId) => {

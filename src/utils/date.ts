@@ -32,7 +32,20 @@ export function normalizeToDate(value: DateInput): Date | null {
   if (value === null || value === undefined) return null;
   if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
   if (typeof value === "string") {
-    const parsed = Date.parse(value.trim());
+    // El servidor guarda en UTC, necesitamos ajustar para Venezuela (UTC-4)
+    // Si la cadena no tiene timezone (formatos tipo "2026-04-01 21:04:30"), tratarla como UTC
+    const trimmed = value.trim();
+    let parsed: number;
+    
+    // Si ya tiene timezone (ISO con Z), parsear directo
+    if (trimmed.endsWith('Z') || trimmed.includes('+')) {
+      parsed = Date.parse(trimmed);
+    } else {
+      // Sin timezone - assumir que es UTC y ajustar manualmente
+      // Añadir timezone UTC para que se interprete correctamente
+      parsed = Date.parse(trimmed + 'Z');
+    }
+    
     return isNaN(parsed) ? null : new Date(parsed);
   }
   if (typeof value === "number") {

@@ -17,6 +17,7 @@ import {
 } from "../icons";
 import { useSidebar } from "../context/sidebar";
 import PeriodStatusCard from "../components/Sidebar/PeriodStatusCard";
+import PendingTasksCard from "../components/Sidebar/PendingTasksCard";
 
 type NavItem = {
   name: string;
@@ -483,6 +484,7 @@ const AppSidebar: React.FC = () => {
 
           <div className="mt-auto pt-4 border-t border-border-light/30 dark:border-white/5">
             <PeriodStatusCard />
+            <PendingTasksCard />
           </div>
         </div>
       </aside>

@@ -77,7 +77,15 @@ export function formatDistanceToNow(
 
   const suffix = diff > 0 ? (options.addSuffix ? "hace" : "") : (options.addSuffix ? "dentro de" : "");
 
+  // Si la diferencia es muy pequeña (menos de 1 minuto), mostrar "ahora mismo"
+  // Esto evita problemas de timezone donde el servidor y cliente tienen horas diferentes
   if (absDiff < MINUTE) return "ahora mismo";
+  
+  // Si la fecha parece estar en el futuro por diferencia de timezone, ajustar
+  // (el servidor puede estar en UTC y el cliente en diferente timezone)
+  if (diff < 0 && absDiff < 24 * HOUR) {
+    return "ahora mismo";
+  }
   if (absDiff < HOUR) {
     const mins = Math.floor(absDiff / MINUTE);
     return `${suffix} ${mins} min${mins > 1 ? "s" : ""}`.trim();

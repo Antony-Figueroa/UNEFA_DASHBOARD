@@ -72,13 +72,13 @@ export const Dropdown: React.FC<DropdownProps> = ({
           transition={{ duration: 0.15, ease: "easeOut" }}
           className={cn(
             "absolute z-40 mt-2 min-w-[180px] rounded-xl border border-border-light bg-bg-main shadow-theme-lg",
-            "dark:border-border-dark dark:bg-bg-dark overflow-hidden",
+            "dark:border-border-dark dark:bg-bg-dark",
             align === "right" ? "right-0" : "left-0",
             className
           )}
         >
           <div 
-            className="py-1.5" 
+            className="py-1.5 h-full flex flex-col" 
             role="menu" 
             aria-orientation="vertical"
             aria-labelledby="dropdown-button"

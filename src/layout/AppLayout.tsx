@@ -8,6 +8,7 @@ import AppSidebar from "./AppSidebar";
 import { DatabaseStatusBanner } from "../components/common/DatabaseStatusBanner";
 import TopBanner from "../components/layout/TopBanner";
 import { useSessionTimeout } from "../hooks/useSessionTimeout";
+import { PageTitleProvider } from "../hooks/usePageTitle";
 
 const LayoutContent = () => {
   const { isExpanded, isMobileOpen } = useSidebar();
@@ -47,7 +48,9 @@ const LayoutContent = () => {
 
 const AppLayout = () => (
   <SidebarProvider>
-    <LayoutContent />
+    <PageTitleProvider>
+      <LayoutContent />
+    </PageTitleProvider>
   </SidebarProvider>
 );
 

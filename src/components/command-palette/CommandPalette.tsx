@@ -1,17 +1,38 @@
 /**
  * @file CommandPalette.tsx
  * @description Modal de comandos tipo Raycast/Linear con Ctrl+K
- * Busca navegación, acciones rápidas y entidades del sistema
+ * Busca navegación, acciones rápidas y entidades del sistema (estudiantes, tutores, instituciones)
  */
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCommandPalette } from "./CommandPaletteContext";
 import { useAuth } from "../../context/auth";
 import { notificationService } from "../../features/notifications/services/notificationService";
+import { globalSearch, type GlobalSearchResponse } from "../../api/searchService";
 import toast from "react-hot-toast";
-import { SearchIcon, PlusIcon, UserIcon, FileIcon, UsersIcon, GridIcon, TableIcon, PageIcon, PieChartIcon, DocsIcon, SparklesIcon, LockIcon } from "../../icons";
+import { SearchIcon, PlusIcon, UserIcon, FileIcon, UsersIcon, GridIcon, TableIcon, PageIcon, PieChartIcon, DocsIcon, SparklesIcon, LockIcon, BoxCubeIcon } from "../../icons";
+
+// Iconos inline para instituciones y carreras
+const BuildingOfficeIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+    <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+    <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+    <path d="M10 6h4" />
+    <path d="M10 10h4" />
+    <path d="M10 14h4" />
+    <path d="M10 18h4" />
+  </svg>
+);
+
+const GraduationCapIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+    <path d="M6 12v5c0 1.657 3.134 3 7 3s7-1.343 7-3v-5" />
+  </svg>
+);
 
 // Icono de prueba (tubo de ensayo)
 const TestTubeIcon = ({ className }: { className?: string }) => (
@@ -118,9 +139,110 @@ export default function CommandPalette() {
   const { signOut } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [entityResults] = useState<SearchResult[]>([]);
+  const [entityResults, setEntityResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced search - ejecuta la búsqueda después de 300ms de inactividad
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (!searchTerm || searchTerm.length < 2) {
+      setEntityResults([]);
+      return;
+    }
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const response = await globalSearch({ 
+          q: searchTerm, 
+          limit: 5 
+        });
+        
+        if (response.success && response.data) {
+          const results: SearchResult[] = [];
+          
+          // Agregar estudiantes como resultados
+          response.data.students.forEach((s, idx) => {
+            results.push({
+              id: `student-${s.id}`,
+              name: s.name,
+              description: `${s.ci} · ${s.careerName || s.email || 'Sin carrera'}`,
+              type: 'student',
+              icon: <UsersIcon className="w-4 h-4" />,
+              action: () => {
+                navigate(`/students?search=${s.ci}`);
+                close();
+              }
+            });
+          });
+          
+          // Agregar tutores como resultados
+          response.data.tutors.forEach((t, idx) => {
+            results.push({
+              id: `tutor-${t.id}`,
+              name: t.name,
+              description: `${t.ci} · ${t.department || t.email || 'Sin departamento'}`,
+              type: 'tutor',
+              icon: <UserIcon className="w-4 h-4" />,
+              action: () => {
+                navigate(`/tutors?search=${t.ci}`);
+                close();
+              }
+            });
+          });
+          
+          // Agregar instituciones como resultados
+          response.data.institutions.forEach((i, idx) => {
+            results.push({
+              id: `institution-${i.id}`,
+              name: i.name,
+              description: `${i.rif} · ${i.region || 'Sin región'}`,
+              type: 'institution',
+              icon: <BuildingOfficeIcon className="w-4 h-4" />,
+              action: () => {
+                navigate(`/institutions?search=${i.rif}`);
+                close();
+              }
+            });
+          });
+          
+          // Agregar carreras como resultados
+          response.data.careers.forEach((c, idx) => {
+            results.push({
+              id: `career-${c.id}`,
+              name: c.name,
+              description: c.code || 'Carrera',
+              type: 'career',
+              icon: <GraduationCapIcon className="w-4 h-4" />,
+              action: () => {
+                navigate(`/careers?search=${c.code}`);
+                close();
+              }
+            });
+          });
+          
+          setEntityResults(results);
+        }
+      } catch (error) {
+        console.error('[CommandPalette] Error searching:', error);
+        setEntityResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300); // 300ms debounce
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchTerm, navigate, close]);
 
   // Normalizar texto para búsqueda (elimina tildes y convierte a minúsculas)
   const normalizeText = (text: string): string => {
@@ -370,8 +492,46 @@ export default function CommandPalette() {
               </div>
             )}
 
+            {/* Resultados de Entidades (Estudiantes, Tutores, Instituciones, Carreras) */}
+            {entityResults.length > 0 && (
+              <div className="px-2 py-1 mt-2">
+                <div className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-text-tertiary">
+                  {isSearching ? 'Buscando...' : 'Resultados'}
+                </div>
+                {entityResults.map((item, idx) => {
+                  const resultIndex = filteredNavigation.length + filteredActions.length + idx;
+                  const isSelected = selectedIndex === resultIndex;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={item.action}
+                      onMouseEnter={() => setSelectedIndex(resultIndex)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors ${
+                        isSelected
+                          ? "bg-brand-50 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300"
+                          : "text-text-primary dark:text-white hover:bg-gray-50 dark:hover:bg-white/5"
+                      }`}
+                    >
+                      <span className={`shrink-0 ${isSelected ? "text-brand-500" : "text-text-tertiary"}`}>
+                        {item.icon}
+                      </span>
+                      <span className="flex-1 font-medium">{item.name}</span>
+                      <span className="text-xs text-text-tertiary">{item.description}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Loading indicator */}
+            {isSearching && (
+              <div className="px-4 py-3 text-center text-text-tertiary text-sm">
+                <span className="inline-block animate-pulse">Buscando en el sistema...</span>
+              </div>
+            )}
+
             {/* Sin resultados */}
-            {allResults.length === 0 && (
+            {allResults.length === 0 && !isSearching && (
               <div className="px-4 py-8 text-center text-text-tertiary">
                 <p>No se encontraron resultados para "{searchTerm}"</p>
               </div>

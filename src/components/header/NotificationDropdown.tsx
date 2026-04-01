@@ -1,7 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
-import { Link } from "react-router";
 import toast from 'react-hot-toast';
 import { useNotifications } from "../../features/notifications/hooks/useNotifications";
 import { notificationTypeIcons } from "../../features/notifications/types";
@@ -26,6 +26,7 @@ const getTypeStyle = (type: string) => {
 
 export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
   const { 
     notifications, 
     unreadCount, 
@@ -144,11 +145,12 @@ export default function NotificationDropdown() {
             </div>
           ) : (
             <ul className="divide-y divide-border-light dark:divide-border-dark">
-              {notifications.slice(0, 10).map((notification) => {
+              {notifications.slice(0, 10).map((notification, index) => {
                 const typeStyle = getTypeStyle(notification.TYPE);
+                const key = notification.NOTIFICATION_ID ?? `notif-${index}`;
                 return (
                   <li 
-                    key={notification.NOTIFICATION_ID} 
+                    key={key} 
                     className={`group relative hover:bg-bg-secondary/50 dark:hover:bg-white/5 transition-colors cursor-pointer ${!notification.READ ? 'bg-brand-50/50 dark:bg-brand-900/10' : ''}`}
                     onClick={() => handleClick(notification.NOTIFICATION_ID)}
                   >
@@ -166,7 +168,10 @@ export default function NotificationDropdown() {
                       {/* Contenido */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-1">
-                          <span className="text-sm font-semibold text-text-emphasis dark:text-text-emphasis truncate">
+                          <span 
+                            className="text-sm font-semibold text-text-emphasis dark:text-text-emphasis truncate cursor-pointer hover:text-brand-500 dark:hover:text-brand-400 transition-colors"
+                            title={notification.TITLE}
+                          >
                             {notification.TITLE}
                           </span>
                           {/* Badge de tipo */}
@@ -174,9 +179,33 @@ export default function NotificationDropdown() {
                             {typeStyle.label}
                           </span>
                         </div>
-                        <p className="text-xs text-text-secondary dark:text-text-tertiary line-clamp-2 mb-1.5">
+                        
+                        {/* Mensaje - al hacer click abre un modal/chica con info completa */}
+                        <p 
+                          className="text-xs text-text-secondary dark:text-text-tertiary line-clamp-2 mb-1.5 cursor-pointer hover:text-brand-500 dark:hover:text-brand-400 transition-colors"
+                          onClick={() => {
+                            // Mostrar toast con la info completa al hacer click
+                            toast.custom((t) => (
+                              <div
+                                className={`${
+                                  t.visible ? 'animate-enter' : 'animate-leave'
+                                } bg-white dark:bg-bg-dark max-w-sm p-4 rounded-xl shadow-xl border border-border-light dark:border-border-dark`}
+                              >
+                                <div className="font-semibold text-text-emphasis dark:text-text-emphasis mb-2">{notification.TITLE}</div>
+                                <div className="text-xs text-text-secondary dark:text-text-tertiary whitespace-pre-wrap mb-3">{notification.MESSAGE}</div>
+                                <div className="text-[10px] text-text-tertiary flex items-center gap-1">
+                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  {formatDateTime(notification.CREATED_AT)}
+                                </div>
+                              </div>
+                            ), { duration: 4000 });
+                          }}
+                        >
                           {notification.MESSAGE}
                         </p>
+                        
                         <div className="flex items-center gap-2 text-[10px] text-text-tertiary" title={formatDateTime(notification.CREATED_AT)}>
                           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -223,7 +252,7 @@ export default function NotificationDropdown() {
           <button
             onClick={() => {
               closeDropdown();
-              toast.success('Página de notificaciones - Próximamente');
+              navigate('/notifications');
             }}
             className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-medium text-text-secondary hover:text-brand-500 dark:text-text-tertiary dark:hover:text-brand-400 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors"
           >

@@ -13,11 +13,33 @@ import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from "ax
  */
 interface RetryConfig extends InternalAxiosRequestConfig {
   _retryCount?: number;
-  silent?: boolean;
+  _retry?: boolean;
 }
 
 const isProd = import.meta.env.PROD;
 const baseURL = import.meta.env.VITE_API_URL || (isProd ? "/api" : "http://localhost:3000/api");
+
+/**
+ * Intenta renovar la sesión automáticamente antes de fallar con 401
+ */
+const tryRefreshSession = async (): Promise<boolean> => {
+  try {
+    const response = await axios.post(
+      `${baseURL}/auth/refresh`,
+      {},
+      { withCredentials: true }
+    );
+    
+    if (response.data?.success) {
+      sessionStorage.setItem('auth_last_refresh', Date.now().toString());
+      console.log('[API] Sesión renovada automáticamente');
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+};
 
 /**
  * Instancia central de Axios configurada con valores por defecto.
@@ -68,23 +90,31 @@ apiClient.interceptors.response.use(
     // Rutas de monitoreo que no deben ensuciar el log de errores
     const isMonitoringPath = config?.url?.includes('/health') || config?.url?.includes('/db-status');
 
-    // Verificar si el token fue renovado recientemente (evita falsos positivos)
-    const lastRefresh = sessionStorage.getItem('auth_last_refresh');
-    const timeSinceLastRefresh = lastRefresh ? Date.now() - parseInt(lastRefresh) : Infinity;
-    const wasRecentlyRefreshed = timeSinceLastRefresh < 60000; // Menos de 1 minuto
-    
-    // 1. Manejo de Sesión Expirada (401)
-    if (error.response?.status === 401 && !isPublicPage && !wasRecentlyRefreshed) {
-      // Evitar ráfagas de eventos duplicados
-      const lastExpEvent = sessionStorage.getItem('auth_last_exp_event');
-      const timeSinceLastExp = lastExpEvent ? Date.now() - parseInt(lastExpEvent) : Infinity;
+    // 1. Manejo de Sesión Expirada (401) con auto-refresh
+    if (error.response?.status === 401 && !isPublicPage && !config._retry) {
+      // Marcar que ya intentamos refresh para evitar loop infinito
+      config._retry = true;
       
-      if (timeSinceLastExp > 5000) { 
-        console.warn('[API] Sesión expirada o no autorizada. Redirigiendo...');
-        sessionStorage.setItem('auth_last_exp_event', Date.now().toString());
-        sessionStorage.setItem('auth_redirect_reason', 'expired');
-        window.dispatchEvent(new CustomEvent('unefa:auth:session-expired'));
+      // Verificar si el token fue renovado recientemente
+      const lastRefresh = sessionStorage.getItem('auth_last_refresh');
+      const timeSinceLastRefresh = lastRefresh ? Date.now() - parseInt(lastRefresh) : Infinity;
+      const wasRecentlyRefreshed = timeSinceLastRefresh < 60000;
+      
+      if (!wasRecentlyRefreshed) {
+        console.log('[API] Token expirado, intentando renovar sesión...');
+        const refreshed = await tryRefreshSession();
+        
+        if (refreshed) {
+          // Repetir la petición original con el nuevo token
+          console.log('[API] Sesión renovada, repitiendo petición:', config.url);
+          return apiClient(config);
+        }
       }
+      
+      // Si no se pudo renovar, notificar expiración
+      console.warn('[API] No se pudo renovar la sesión. Notificando al sistema...');
+      sessionStorage.setItem('auth_redirect_reason', 'expired');
+      window.dispatchEvent(new CustomEvent('unefa:auth:session-expired'));
       
       return Promise.reject(error);
     }

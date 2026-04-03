@@ -12,7 +12,6 @@ declare global {
   }
 }
 
-// Polyfill Buffer para el navegador (requerido por @react-pdf/renderer)
 window.Buffer = window.Buffer || Buffer;
 
 import { AppWrapper } from "./components/common/PageMeta.tsx";
@@ -20,6 +19,7 @@ import { ThemeProvider } from "./context/ThemeContext.tsx";
 import { ToastProvider } from "./context/ToastContext.tsx";
 import { AuthProvider } from "./context/AuthContext.tsx";
 import { DbStatusProvider } from "./context/DbStatusContext.tsx";
+import { OfflineProvider } from "./context/OfflineContext.tsx";
 import ErrorBoundary from "./components/common/ErrorBoundary.tsx";
 
 createRoot(document.getElementById("root")!).render(
@@ -52,13 +52,15 @@ createRoot(document.getElementById("root")!).render(
     >
       <ThemeProvider>
         <AuthProvider>
-          <ToastProvider>
-            <DbStatusProvider>
-              <AppWrapper>
-                <App />
-              </AppWrapper>
-            </DbStatusProvider>
-          </ToastProvider>
+          <OfflineProvider>
+            <ToastProvider>
+              <DbStatusProvider>
+                <AppWrapper>
+                  <App />
+                </AppWrapper>
+              </DbStatusProvider>
+            </ToastProvider>
+          </OfflineProvider>
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>

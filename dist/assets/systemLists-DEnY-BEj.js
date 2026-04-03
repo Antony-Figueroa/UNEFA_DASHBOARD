@@ -1,0 +1,1 @@
+const o=["Estado civil","Registro Civil","Rif","Prefijo RIF","Tipo de empresa","Tipo de Institucion","Sexo","Nacionalidad","Tipo de Practica","Rango Militar"],s=i=>o.some(e=>e.toLowerCase()===i.toLowerCase()),a="Esta lista es de configuración del sistema y no puede ser modificada.";export{a as P,s as i};

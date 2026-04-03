@@ -1,0 +1,1 @@
+import{a as e}from"./vendor-misc-BhdDpSyC.js";const r=t=>e.createElement("svg",{xmlns:"http://www.w3.org/2000/svg",width:24,height:24,viewBox:"0 0 24 24",fill:"none",...t},e.createElement("path",{d:"M14.375 5.75L8.125 12L14.375 18.25",stroke:"#344054",strokeWidth:1.5,strokeLinecap:"round",strokeLinejoin:"round"}));export{r as S};

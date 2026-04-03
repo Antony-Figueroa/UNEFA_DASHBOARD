@@ -9,6 +9,7 @@ import { DatabaseStatusBanner } from "../components/common/DatabaseStatusBanner"
 import TopBanner from "../components/layout/TopBanner";
 import { useSessionTimeout } from "../hooks/useSessionTimeout";
 import { PageTitleProvider } from "../hooks/usePageTitle";
+import { OfflineIndicator } from "../components/common/OfflineIndicator";
 
 const LayoutContent = () => {
   const { isExpanded, isMobileOpen } = useSidebar();
@@ -29,6 +30,7 @@ const LayoutContent = () => {
       <TopBanner />
       <AppSidebar />
       <Backdrop />
+      <OfflineIndicator variant="banner" />
       <div
         className="flex flex-col min-h-screen transition-all duration-300"
         style={{ 

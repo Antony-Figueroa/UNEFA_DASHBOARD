@@ -1,0 +1,30 @@
+directories:
+  output: release
+  buildResources: build
+appId: com.unefa.dashboard
+productName: UNEFA Dashboard
+files:
+  - filter:
+      - dist/**/*
+      - electron/**/*
+      - public/**/*
+npmRebuild: false
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+  artifactName: ${productName}-${version}-Portable.${ext}
+portable:
+  artifactName: ${productName}-${version}-Portable.${ext}
+mac:
+  target:
+    - dmg
+    - zip
+  artifactName: ${productName}-${version}.${ext}
+linux:
+  target:
+    - AppImage
+    - deb
+  artifactName: ${productName}-${version}.${ext}
+electronVersion: 41.1.1

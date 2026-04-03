@@ -1,0 +1,1 @@
+import{a as o,j as m}from"./vendor-misc-BhdDpSyC.js";import{i as x}from"./index-Dypf1Mx0.js";const i=o.forwardRef(({htmlFor:t,children:a,className:e,...r},s)=>m.jsx("label",{...r,ref:s,htmlFor:t,className:x("mb-1.5 block text-sm font-medium text-text-secondary dark:text-text-tertiary transition-colors",e),children:a}));i.displayName="Label";export{i as L};

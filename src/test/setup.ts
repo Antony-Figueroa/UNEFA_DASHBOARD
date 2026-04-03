@@ -6,7 +6,8 @@
 
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
-import { afterEach, beforeAll } from 'vitest';
+import { afterEach, beforeAll, vi } from 'vitest';
+import 'fake-indexeddb/auto';
 
 // Cleanup después de cada test
 afterEach(() => {
@@ -52,6 +53,21 @@ beforeAll(() => {
       removeEventListener: vi.fn(),
       dispatchEvent: vi.fn(),
     })),
+  });
+
+  // Mock de navigator.onLine
+  Object.defineProperty(navigator, 'onLine', {
+    writable: true,
+    value: true,
+  });
+
+  // Mock de crypto.randomUUID
+  if (!globalThis.crypto) {
+    globalThis.crypto = {} as Crypto;
+  }
+  Object.defineProperty(globalThis.crypto, 'randomUUID', {
+    writable: true,
+    value: vi.fn().mockReturnValue('test-uuid-1234'),
   });
 });
 

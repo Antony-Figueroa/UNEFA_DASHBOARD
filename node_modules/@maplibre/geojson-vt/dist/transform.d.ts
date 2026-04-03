@@ -1,0 +1,27 @@
+import type { GeoJSONVTInternalTile } from "./tile";
+export type GeoJSONVTFeaturePoint = {
+    id?: number | string | undefined;
+    type: 1;
+    tags: GeoJSON.GeoJsonProperties | null;
+    geometry: [number, number][];
+};
+export type GeoJSONVTFeatureNonPoint = {
+    id?: number | string | undefined;
+    type: 2 | 3;
+    tags: GeoJSON.GeoJsonProperties | null;
+    geometry: [number, number][][];
+};
+export type GeoJSONVTFeature = GeoJSONVTFeaturePoint | GeoJSONVTFeatureNonPoint;
+export type GeoJSONVTTile = GeoJSONVTInternalTile & {
+    transformed: true;
+    features: GeoJSONVTFeature[];
+};
+/**
+ * Transforms the coordinates of each feature in the given tile from
+ * mercator-projected space into (extent x extent) tile space.
+ * @param tile - the tile to transform, this gets modified in place
+ * @param extent - the tile extent (usually 4096)
+ * @returns the transformed tile
+ */
+export declare function transformTile(tile: GeoJSONVTInternalTile, extent: number): GeoJSONVTTile;
+//# sourceMappingURL=transform.d.ts.map

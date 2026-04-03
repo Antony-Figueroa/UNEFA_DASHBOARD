@@ -1,9 +1,18 @@
 import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from "axios";
+import {
+  getCachedData,
+  cacheData,
+  queueOfflineMutation,
+  shouldCacheEndpoint,
+  extractCacheKeyFromUrl,
+  type PendingMutation,
+} from '../lib/offline/index';
 
 /**
  * @file apiClient.ts
  * @description Cliente de API centralizado basado en Axios para la aplicación UNEFA DASHBOARD.
  * Implementa interceptores para manejo de autenticación, reintentos exponenciales y normalización de errores.
+ * También integra soporte offline con caché en IndexedDB.
  * 
  * @module core/api
  */
@@ -14,6 +23,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from "ax
 interface RetryConfig extends InternalAxiosRequestConfig {
   _retryCount?: number;
   silent?: boolean;
+  _skipOfflineCache?: boolean;
 }
 
 const isProd = import.meta.env.PROD;
@@ -21,14 +31,10 @@ const baseURL = import.meta.env.VITE_API_URL || (isProd ? "/api" : "http://local
 
 /**
  * Instancia central de Axios configurada con valores por defecto.
- * 
- * @example
- * import apiClient from '@/api/apiClient';
- * const data = await apiClient.get('/users');
  */
 const apiClient = axios.create({
   baseURL,
-  timeout: 40000, // 40s para manejar cold-starts en entornos como Render
+  timeout: 40000,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
@@ -37,12 +43,51 @@ const apiClient = axios.create({
 });
 
 /**
+ * Verifica si una petición debe ser cacheada.
+ */
+function shouldCacheRequest(config: InternalAxiosRequestConfig & RetryConfig): boolean {
+  const method = config.method?.toUpperCase();
+  if (method !== 'GET') return false;
+  if (config._skipOfflineCache) return false;
+  if (!config.url) return false;
+  
+  return shouldCacheEndpoint(config.url);
+}
+
+/**
  * Interceptor de solicitud.
- * Permite inyectar tokens o realizar transformaciones antes de enviar la petición.
+ * Maneja cache offline para peticiones GET.
  */
 apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    // Aquí se podrían añadir headers dinámicos si no se usan cookies (withCredentials)
+  async (config: InternalAxiosRequestConfig) => {
+    if (shouldCacheRequest(config) && !navigator.onLine) {
+      try {
+        const cacheKey = await extractCacheKeyFromUrl(config.url!);
+        const cachedData = await getCachedData<unknown>(cacheKey);
+        
+        if (cachedData) {
+          console.info(`[API] Serving cached data for: ${config.url}`);
+          const mockResponse = {
+            data: cachedData,
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            config: config,
+            isCached: true,
+          } as AxiosResponse;
+          
+          return Promise.reject({
+            ...new Error('CACHED_RESPONSE'),
+            isCachedResponse: true,
+            cachedResponse: mockResponse,
+            config,
+          });
+        }
+      } catch (error) {
+        console.warn('[API] Error reading cache:', error);
+      }
+    }
+    
     return config;
   },
   (error: AxiosError) => {
@@ -53,29 +98,47 @@ apiClient.interceptors.request.use(
 
 /**
  * Interceptor de respuesta.
- * Maneja la lógica de reintentos, expiración de sesión (401) y normalización de errores.
+ * Maneja la lógica de reintentos, expiración de sesión (401), normalización de errores,
+ * y cache de respuestas para offline.
  */
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  async (response: AxiosResponse) => {
+    const config = response.config as RetryConfig;
+    
+    if (shouldCacheRequest(config) && response.data) {
+      try {
+        const cacheKey = await extractCacheKeyFromUrl(config.url!);
+        await cacheData(cacheKey, response.data);
+        console.debug(`[API] Cached response for: ${config.url}`);
+      } catch (error) {
+        console.warn('[API] Error caching response:', error);
+      }
+    }
+    
+    return response;
+  },
   async (error: AxiosError) => {
     const config = error.config as RetryConfig;
     
-    // Rutas que no requieren redirección inmediata al login si fallan con 401
+    if (error.message === 'CACHED_RESPONSE' && (error as any).isCachedResponse) {
+      return (error as any).cachedResponse;
+    }
+    
+    if (error.message === 'CACHED_RESPONSE') {
+      return Promise.reject(error);
+    }
+    
     const publicPaths = ['/', '/signin', '/signup', '/first-login', '/password-recovery', '/reset-password'];
     const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
     const isPublicPage = publicPaths.includes(currentPath);
     
-    // Rutas de monitoreo que no deben ensuciar el log de errores
     const isMonitoringPath = config?.url?.includes('/health') || config?.url?.includes('/db-status');
 
-    // Verificar si el token fue renovado recientemente (evita falsos positivos)
     const lastRefresh = sessionStorage.getItem('auth_last_refresh');
     const timeSinceLastRefresh = lastRefresh ? Date.now() - parseInt(lastRefresh) : Infinity;
-    const wasRecentlyRefreshed = timeSinceLastRefresh < 60000; // Menos de 1 minuto
+    const wasRecentlyRefreshed = timeSinceLastRefresh < 60000;
     
-    // 1. Manejo de Sesión Expirada (401)
     if (error.response?.status === 401 && !isPublicPage && !wasRecentlyRefreshed) {
-      // Evitar ráfagas de eventos duplicados
       const lastExpEvent = sessionStorage.getItem('auth_last_exp_event');
       const timeSinceLastExp = lastExpEvent ? Date.now() - parseInt(lastExpEvent) : Infinity;
       
@@ -89,7 +152,6 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // 2. Logging de errores
     if (error.response?.status !== 401 && !isPublicPage && !isMonitoringPath && !config?.silent) {
       const isServerError = (error.response?.status ?? 0) >= 500 || !error.response;
       const logMethod = isServerError ? 'error' : 'warn';
@@ -101,16 +163,15 @@ apiClient.interceptors.response.use(
       });
     }
 
-    // 3. Lógica de Reintentos (Backoff Exponencial)
     const MAX_RETRIES = 3;
     const shouldRetry = 
       !isPublicPage && 
-      (error.code === 'ECONNABORTED' || // Timeout
-       error.code === 'ERR_NETWORK' ||    // Error de red
-       !error.response ||                 // Sin respuesta del servidor
-       error.response.status === 429 ||    // Too many requests
-       error.response.status === 503 ||    // Service unavailable
-       error.response.status >= 500);      // Errores de servidor
+      (error.code === 'ECONNABORTED' ||
+       error.code === 'ERR_NETWORK' ||
+       !error.response ||
+       error.response.status === 429 ||
+       error.response.status === 503 ||
+       error.response.status >= 500);
 
     if (config && shouldRetry && (config._retryCount ?? 0) < MAX_RETRIES) {
       config._retryCount = (config._retryCount ?? 0) + 1;
@@ -122,9 +183,58 @@ apiClient.interceptors.response.use(
       return apiClient(config);
     }
 
-    // 4. Error final si fallan todos los reintentos o no es reintentable
-    if (error.code === 'ERR_NETWORK' && !isPublicPage) {
+    if (error.code === 'ERR_NETWORK' && !isPublicPage && !config?.silent) {
       console.error('[API] Error crítico de red: Verifique su conexión.');
+      
+      if (shouldCacheRequest(config) && config?.url) {
+        try {
+          const cacheKey = await extractCacheKeyFromUrl(config.url);
+          const cachedData = await getCachedData<unknown>(cacheKey);
+          
+          if (cachedData) {
+            console.info(`[API] Serving cached data after network error for: ${config.url}`);
+            return {
+              data: cachedData,
+              status: 200,
+              statusText: 'OK (Cached)',
+              headers: {},
+              config: config,
+              isCached: true,
+            } as AxiosResponse;
+          }
+        } catch (cacheError) {
+          console.warn('[API] Error reading cache after network error:', cacheError);
+        }
+      }
+      
+      const method = config?.method?.toUpperCase();
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method || '') && config?.url) {
+        try {
+          const mutationType: PendingMutation['type'] = 
+            method === 'POST' ? 'create' :
+            method === 'DELETE' ? 'delete' : 'update';
+          
+          const mutationId = await queueOfflineMutation(
+            mutationType,
+            config.url,
+            method as PendingMutation['method'],
+            config.data
+          );
+          
+          console.info(`[API] Mutation queued for offline sync: ${mutationType} ${config.url}`, { mutationId });
+          
+          return {
+            data: { success: true, queued: true, mutationId },
+            status: 202,
+            statusText: 'Accepted (Offline)',
+            headers: {},
+            config: config,
+            isOfflineQueued: true,
+          } as AxiosResponse;
+        } catch (queueError) {
+          console.error('[API] Error queuing mutation:', queueError);
+        }
+      }
     }
 
     return Promise.reject(error);
@@ -132,3 +242,9 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
+
+export { apiClient as client };
+
+export function createOfflineAwareClient() {
+  return apiClient;
+}

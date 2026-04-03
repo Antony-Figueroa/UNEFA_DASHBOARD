@@ -1,0 +1,1 @@
+import{a}from"./vendor-misc-BhdDpSyC.js";const f=(t,e)=>{const[o,s]=a.useState(!1),c=a.useCallback(()=>{t?s(!0):e()},[t,e]),l=a.useCallback(()=>{s(!1),e()},[e]),n=a.useCallback(()=>{s(!1)},[]);return{showConfirmation:o,handleCloseAttempt:c,confirmClose:l,cancelClose:n}};export{f as u};

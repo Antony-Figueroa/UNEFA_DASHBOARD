@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
+use tauri::Manager;
 use tauri_plugin_shell::ShellExt;
-use tracing::{info, error};
+use tracing::info;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AppInfo {
@@ -32,7 +33,6 @@ pub async fn check_postgresql_status() -> Result<PostgreSQLStatus, String> {
     info!("Checking PostgreSQL status");
     
     use std::net::TcpStream;
-    use std::io::Read;
     
     match TcpStream::connect("127.0.0.1:5432") {
         Ok(_stream) => {

@@ -61,7 +61,7 @@ const port = process.env.PORT || 3000;
 
 // Leer orígenes permitidos desde env (coma-separados). Ejemplo:
 // ALLOWED_ORIGINS=https://your-frontend.vercel.app,http://localhost:5173
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:3000')
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:3000,http://tauri.localhost')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);

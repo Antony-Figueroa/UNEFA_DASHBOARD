@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use tauri::Manager;
-use tauri_plugin_shell::ShellExt;
 use tracing::info;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -62,7 +61,7 @@ pub async fn start_postgresql(app: tauri::AppHandle) -> Result<String, String> {
         .map_err(|e| format!("Failed to get app data dir: {}", e))?;
     
     let pg_data_dir = app_data_dir.join("postgres").join("data");
-    let pg_bin_dir = app_data_dir.join("postgres").join("bin");
+    let _pg_bin_dir = app_data_dir.join("postgres").join("bin");
     
     info!("PostgreSQL data directory: {:?}", pg_data_dir);
     

@@ -45,19 +45,7 @@
   },
   "plugins": {
     "shell": {
-      "open": true,
-      "scope": [
-        {
-          "name": "postgresql",
-          "cmd": "postgres",
-          "args": true
-        },
-        {
-          "name": "pg_ctl",
-          "cmd": "pg_ctl",
-          "args": true
-        }
-      ]
+      "open": true
     }
   }
 }

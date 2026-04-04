@@ -16,3 +16,4 @@ Thumbs.db
 .env*..env
 local
 !.env.example
+release/win-unpacked/resources/app.asar

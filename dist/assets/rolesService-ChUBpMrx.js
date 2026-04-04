@@ -1,0 +1,1 @@
+import{b as e}from"./index-I1U3uW0I.js";const n={getAll:async()=>(await e.get("/roles")).data,getById:async s=>(await e.get(`/roles/${s}`)).data,getPermissions:async()=>(await e.get("/roles/permissions")).data,getStats:async()=>(await e.get("/roles/stats")).data,create:async s=>(await e.post("/roles",s)).data,update:async(s,t)=>(await e.put(`/roles/${s}`,t)).data};export{n as r};

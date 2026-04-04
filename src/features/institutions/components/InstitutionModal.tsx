@@ -28,7 +28,7 @@ import { Dropdown } from "../../../components/ui/dropdown/Dropdown";
 import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
 import { useToast } from "../../../context/toast";
 import { cleanCedula, cleanPhone, cleanRif, formatRifDisplay, RIF_MAX_LENGTH, RIF_INPUT_CLASS, PHONE_LOCAL_MAX_LENGTH, formatPhoneLocalDisplay, PHONE_INPUT_CLASS } from "../../../utils/inputFormat";
-import { getInstitutionByRif } from "../services/institutionsService";
+import { getInstitutionByRif, checkRifExists } from "../services/institutionsService";
 import venezuelaData from "../../../data/venezuela.json";
 
 // Lazy load para evitar dependencia circular con CareerModal
@@ -189,6 +189,12 @@ export default function InstitutionModal({
   // Estado para el modal de nueva carrera
   const [isNewCareerModalOpen, setIsNewCareerModalOpen] = useState(false);
   const { addCareer } = useCareers();
+
+  // Estado para el modal de RIF duplicado (misma organización)
+  const [isRifDuplicateModalOpen, setIsRifDuplicateModalOpen] = useState(false);
+  const [rifDuplicateInstitutions, setRifDuplicateInstitutions] = useState<{ INSTITUTION_ID: number; INSTITUTION_NAME: string; RIF: string }[]>([]);
+  const [rifDuplicateCode, setRifDuplicateCode] = useState<string>("");
+  const [isConfirmingRifDuplicate, setIsConfirmingRifDuplicate] = useState(false);
 
   // Handle responsible removal confirmation
   const handleConfirmRemove = async () => {
@@ -831,71 +837,20 @@ export default function InstitutionModal({
                             const prefix = watch("rifPrefix") || 'J';
                             const fullRif = `${prefix}-${cleaned}`;
                             try {
-                              const existingData = await getInstitutionByRif(fullRif);
-                              if (existingData) {
-                                const message = existingData.status 
-                                  ? "Este RIF ya está registrado." 
-                                  : "RIF registrado (INACTIVO). Contacte a administración para reactivar.";
-                                
-                                setError("rifNumber", { 
-                                  type: "manual", 
-                                  message 
-                                });
-                                setExistingInstitution(existingData);
-                                setViewOnlyMode(true);
-
-                                const rifParts = existingData.rif ? existingData.rif.split("-") : ["", ""];
-                                const [phoneP, phoneN] = existingData.phone ? existingData.phone.split("-") : ["", ""];
-
-                                 let parsedEstado = "PORTUGUESA";
-                                 let parsedMunicipio = "";
-                                 let parsedParroquia = "";
-                                 let parsedDireccion = existingData.fiscalAddress || "";
-                                 let parsedRegion = existingData.region;
-                                 let parsedNucleo = existingData.nucleus;
-                                 let parsedExtension = existingData.extension;
-                                 let parsedTipoEmpresa = existingData.institutionType;
-
-                                 if (existingData.fiscalAddress) {
-                                   const parts = existingData.fiscalAddress.split(", ");
-                                   if (parts.length >= 8) {
-                                     parsedRegion = parts[0];
-                                     parsedNucleo = parts[1];
-                                     parsedExtension = parts[2];
-                                     parsedTipoEmpresa = parts[3];
-                                     parsedEstado = parts[4];
-                                     parsedMunicipio = parts[5];
-                                     parsedParroquia = parts[6];
-                                     parsedDireccion = parts.slice(7).join(", ");
-                                   } else if (parts.length >= 4) {
-                                     parsedEstado = parts[0];
-                                     parsedMunicipio = parts[1];
-                                     parsedParroquia = parts[2];
-                                     parsedDireccion = parts.slice(3).join(", ");
-                                   }
-                                 }
-
-                                 setValue("rifPrefix", rifParts[0] || "");
-                                 const formattedRif = formatRifDisplay(rifParts[1] || "");
-                                 setDisplayRifNumber(formattedRif);
-                                 setValue("rifNumber", rifParts[1] || "");
-                                 setValue("name", existingData.name || "");
-                                 setValue("phonePrefix", phoneP || "");
-                                 const formattedPhone = formatPhoneLocalDisplay(phoneN || "");
-                                 setDisplayPhoneNumber(formattedPhone);
-                                 setValue("phoneNumber", phoneN || "");
-                                 setValue("region", (parsedRegion || existingData.region || "").toUpperCase());
-                                 setValue("nucleus", (parsedNucleo || existingData.nucleus || "").toUpperCase());
-                                 setValue("extension", (parsedExtension || existingData.extension || "").toUpperCase());
-                                 setValue("institutionType", (parsedTipoEmpresa || existingData.institutionType || "").toUpperCase());
-                                 setValue("estado", parsedEstado?.toUpperCase() || "");
-                                 setValue("municipio", parsedMunicipio?.toUpperCase() || "");
-                                 setValue("parroquia", parsedParroquia?.toUpperCase() || "");
-                                 setValue("direccion", parsedDireccion);
-                                 
-                                 if (parsedMunicipio) setSelectedMunicipio(parsedMunicipio.toUpperCase());
-                                 if (parsedParroquia) setSelectedParroquia(parsedParroquia.toUpperCase());
-                                }
+                              // Usar checkRifExists para obtener más información
+                              const rifCheck = await checkRifExists(fullRif);
+                              
+                              if (rifCheck && rifCheck.exists) {
+                                // Existen instituciones con este RIF
+                                // Mostrar modal de confirmación
+                                setRifDuplicateInstitutions(rifCheck.institutions);
+                                setRifDuplicateCode(rifCheck.suggestedCode);
+                                setIsRifDuplicateModalOpen(true);
+                                setIsCheckingRif(false);
+                                return;
+                              }
+                              
+                              // Si no existe, continuar normalmente (no hay institución con este RIF)
                             } catch (err) {
                               console.error("Error checking RIF:", err);
                             } finally {
@@ -1590,6 +1545,52 @@ export default function InstitutionModal({
       message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
       confirmLabel="Cerrar sin guardar"
       cancelLabel="Continuar editando"
+    />
+
+    {/* Modal de confirmación de RIF duplicado */}
+    <UnifiedDialog
+      isOpen={isRifDuplicateModalOpen}
+      onClose={() => {
+        setIsRifDuplicateModalOpen(false);
+        // Si rechaza, mostrar error en el campo RIF
+        setError("rifNumber", {
+          type: "manual",
+          message: "Ya existe una institución registrada con este RIF"
+        });
+      }}
+      onConfirm={async () => {
+        // Usuario confirma que es parte de la misma organización
+        setIsConfirmingRifDuplicate(true);
+        setIsRifDuplicateModalOpen(false);
+        setIsCheckingRif(false);
+        
+        // Continuar con el flujo normal - el código con sufijo se generará en el backend
+        addToast({
+          type: "info",
+          title: "RIF duplicado",
+          message: `Se generará un código interno único: ${rifDuplicateCode}`
+        });
+      }}
+      variant="warning"
+      title="RIF ya existe"
+      message={
+        <div className="text-left">
+          <p className="mb-3">¿Esta institución es parte de la misma organización que las siguientes?</p>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 max-h-40 overflow-y-auto">
+            {rifDuplicateInstitutions.map((inst) => (
+              <div key={inst.INSTITUTION_ID} className="text-sm py-1 border-b border-gray-200 dark:border-gray-700 last:border-0">
+                <span className="font-medium">{inst.INSTITUTION_NAME}</span>
+                <span className="text-gray-500 ml-2">- RIF: {inst.RIF}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-sm text-gray-600">
+            Si confirma, se generará un código interno único para esta institución.
+          </p>
+        </div>
+      }
+      confirmLabel="Sí, es parte de la organización"
+      cancelLabel="No, es un error"
     />
 
     {/* Modal para agregar nueva opción a la lista */}

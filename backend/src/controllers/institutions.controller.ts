@@ -327,6 +327,11 @@ export const getInstitutionById = async (req: Request, res: Response) => {
 export const createInstitution = async (req: AuthRequest, res: Response) => {
   try {
     const i = req.body;
+    const normalizedRif = i.rif?.toUpperCase().trim();
+    
+    // Generar INSTITUTION_CODE único basado en RIF
+    const institutionCode = await generateInstitutionCode(null, normalizedRif);
+    
     const dbData: Record<string, any> = {
       INSTITUTION_NAME: i.name,
       INSTITUTION_ADDRESS: i.fiscalAddress,
@@ -337,7 +342,8 @@ export const createInstitution = async (req: AuthRequest, res: Response) => {
       INSTITUTION_TYPE: i.institutionType,
       PRACTICE_TYPE: i.internshipTypeId || i.practiceType || '1', // Manejar ambos nombres por compatibilidad
       STATUS: i.status ? 1 : 0,
-      RIF: i.rif,
+      RIF: normalizedRif,
+      INSTITUTION_CODE: institutionCode,
       CREATION_DATE: new Date().toISOString()
     };
 
@@ -359,6 +365,43 @@ export const createInstitution = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(mapDBToFrontend(data));
   } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+/**
+ * Obtiene una institución por su RIF (legacy, para compatibilidad).
+ */
+export const getInstitutionByRif = async (req: Request, res: Response) => {
+  try {
+    const { rif } = req.params;
+    
+    console.log(`[getInstitutionByRif] Buscando institución con RIF: ${rif}`);
+    
+    const data = await dbManager.withRetry(async (supabase) => {
+      const { data: inst, error } = await supabase
+        .from(TABLE_NAME)
+        .select('*')
+        .eq('RIF', rif.toUpperCase())
+        .maybeSingle();
+
+      if (error) {
+        console.error('[getInstitutionByRif] Error en query:', error);
+        throw error;
+      }
+
+      return inst;
+    }, 'getInstitutionByRif');
+
+    if (!data) {
+      console.log(`[getInstitutionByRif] No se encontró institución con RIF: ${rif}`);
+      return res.status(404).json({ message: 'Institución no encontrada', data: null });
+    }
+
+    console.log(`[getInstitutionByRif] Institución encontrada:`, data.INSTITUTION_ID);
+    res.json({ data: mapDBToFrontend(data) });
+  } catch (error: unknown) {
+    console.error('[getInstitutionByRif] Error:', error);
     handleDbError(res, error);
   }
 };
@@ -467,37 +510,90 @@ export const deleteInstitution = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getInstitutionByRif = async (req: Request, res: Response) => {
+/**
+ * Genera un INSTITUTION_CODE único basado en el RIF.
+ * Si ya existe una institución con ese RIF, agrega sufijo secuencial (-001, -002, etc.)
+ */
+const generateInstitutionCode = async (supabase: any, rif: string): Promise<string> => {
+  const normalizedRif = rif.toUpperCase().trim();
+  
+  // Buscar instituciones con este RIF (solo las que tienen INSTITUTION_CODE que empieza con el RIF)
+  const { data: existing, error: searchError } = await supabase
+    .from(TABLE_NAME)
+    .select('INSTITUTION_CODE')
+    .like('INSTITUTION_CODE', `${normalizedRif}%`)
+    .order('INSTITUTION_CODE', { ascending: false })
+    .limit(10);
+
+  if (searchError) {
+    console.error('[generateInstitutionCode] Error buscando:', searchError);
+    throw searchError;
+  }
+
+  if (!existing || existing.length === 0) {
+    // Primera institución con este RIF
+    return normalizedRif;
+  }
+
+  // Encontrar el siguiente número secuencial
+  let maxSeq = 0;
+  for (const inst of existing) {
+    const code = inst.INSTITUTION_CODE;
+    if (code === normalizedRif) {
+      maxSeq = Math.max(maxSeq, 0);
+    } else {
+      // Formato: J-30123456-001
+      const match = code.match(/-(\d{3})$/);
+      if (match) {
+        maxSeq = Math.max(maxSeq, parseInt(match[1], 10));
+      }
+    }
+  }
+
+  // Generar siguiente código
+  const nextSeq = maxSeq + 1;
+  return `${normalizedRif}-${nextSeq.toString().padStart(3, '0')}`;
+};
+
+/**
+ * Verifica si un RIF ya existe y devuelve las instituciones con ese RIF.
+ * Endpoint para validar antes de crear.
+ */
+export const checkRifExists = async (req: Request, res: Response) => {
   try {
     const { rif } = req.params;
+    const normalizedRif = rif.toUpperCase().trim();
     
-    console.log(`[getInstitutionByRif] Buscando institución con RIF: ${rif}`);
+    console.log(`[checkRifExists] Verificando RIF: ${normalizedRif}`);
     
     const data = await dbManager.withRetry(async (supabase) => {
-      // Usar select(*) en lugar de columnas específicas para evitar errores
-      const { data: inst, error } = await supabase
+      const { data: institutions, error } = await supabase
         .from(TABLE_NAME)
-        .select('*')
-        .eq('RIF', rif.toUpperCase())
-        .maybeSingle();  // Usa maybeSingle() en lugar de single() para evitar error si no encuentra
+        .select('INSTITUTION_ID, INSTITUTION_NAME, RIF, INSTITUTION_CODE, STATUS')
+        .eq('RIF', normalizedRif)
+        .order('INSTITUTION_ID', { ascending: true });
 
-      if (error) {
-        console.error('[getInstitutionByRif] Error en query:', error);
-        throw error;
-      }
+      if (error) throw error;
+      return institutions;
+    }, 'checkRifExists');
 
-      return inst;
-    }, 'getInstitutionByRif');
-
-    if (!data) {
-      console.log(`[getInstitutionByRif] No se encontró institución con RIF: ${rif}`);
-      return res.status(404).json({ message: 'Institución no encontrada', data: null });
-    }
-
-    console.log(`[getInstitutionByRif] Institución encontrada:`, data.INSTITUTION_ID);
-    res.json({ data: mapDBToFrontend(data) });
+    const exists = data && data.length > 0;
+    
+    // Generar código sugerido para crear nueva institución
+    const suggestedCode = exists 
+      ? await dbManager.withRetry(async (supabase) => generateInstitutionCode(supabase, normalizedRif), 'generateCode')
+      : normalizedRif;
+    
+    console.log(`[checkRifExists] RIF ${normalizedRif}: ${exists ? 'ya existe' : 'disponible'}`);
+    
+    res.json({
+      exists,
+      rif: normalizedRif,
+      institutions: data || [],
+      suggestedCode
+    });
   } catch (error: unknown) {
-    console.error('[getInstitutionByRif] Error:', error);
+    console.error('[checkRifExists] Error:', error);
     handleDbError(res, error);
   }
 };

@@ -3,6 +3,7 @@ import {
   getInstitutions, 
   getInstitutionById, 
   getInstitutionByRif,
+  checkRifExists,
   createInstitution, 
   updateInstitution, 
   deleteInstitution,
@@ -18,6 +19,7 @@ const router = Router();
 router.get('/', authenticateToken, requirePermission('institutions:view'), getInstitutions);
 router.get('/stats', authenticateToken, requirePermission('institutions:view'), getInstitutionStats);
 router.get('/by-rif/:rif', getInstitutionByRif);
+router.get('/check-rif/:rif', checkRifExists);
 router.get('/:id', authenticateToken, requirePermission('institutions:view'), getInstitutionById);
 router.get('/:id/careers', authenticateToken, requirePermission('institutions:view'), getInstitutionCareers);
 router.post('/', authenticateToken, requirePermission('institutions:create'), createInstitution);

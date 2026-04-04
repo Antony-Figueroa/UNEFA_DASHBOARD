@@ -72,6 +72,26 @@ export const getInstitutionByRif = async (rif: string): Promise<Institution | nu
 };
 
 /**
+ * Verifica si un RIF ya existe y devuelve las instituciones con ese RIF.
+ * @param rif - RIF a verificar
+ * @returns Objeto con exists, rif, institutions y suggestedCode
+ */
+export const checkRifExists = async (rif: string): Promise<{
+  exists: boolean;
+  rif: string;
+  institutions: { INSTITUTION_ID: number; INSTITUTION_NAME: string; RIF: string; INSTITUTION_CODE: string; STATUS: number }[];
+  suggestedCode: string;
+} | null> => {
+  try {
+    const response = await apiClient.get(`${API_URL}/check-rif/${rif}`);
+    return response.data;
+  } catch (error) {
+    console.error("[institutionsService] Error al verificar RIF:", error);
+    return null;
+  }
+};
+
+/**
  * Obtiene las carreras asociadas a una institución.
  * @param institutionId - ID de la institución
  */

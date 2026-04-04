@@ -17,3 +17,6 @@ Thumbs.db
 local
 !.env.example
 release/win-unpacked/resources/app.asar
+node_modules/electron/dist/electron.exe
+release/UNEFA Dashboard-2.0.2-Portable.exe
+release/win-unpacked/UNEFA Dashboard.exe

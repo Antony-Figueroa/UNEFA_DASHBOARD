@@ -221,17 +221,19 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
       }];
     }
     
-    if (institutions.length === 0) {
-      return res.status(400).json({ message: 'Debe seleccionar al menos una institución' });
-    }
+    // La institución ya no es obligatoria - se puede agregar después desde la institución
+    // if (institutions.length === 0) {
+    //   return res.status(400).json({ message: 'Debe seleccionar al menos una institución' });
+    // }
     
-    // Validar que todos los IDs sean válidos
+    // Validar que todos los IDs sean válidos (solo si hay instituciones)
     const validInstitutions = institutions.filter(inst => {
       const num = parseInt(inst.institutionId);
       return !isNaN(num) && num > 0;
     });
     
-    if (validInstitutions.length === 0) {
+    // Solo validar si hay instituciones - si está vacío, permitirlo
+    if (institutions.length > 0 && validInstitutions.length === 0) {
       return res.status(400).json({ message: 'Los IDs de institución deben ser números válidos' });
     }
     

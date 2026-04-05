@@ -8,6 +8,7 @@ import { useDebounce } from "../../../hooks/useDebounce";
 import Badge from "../../../components/ui/badge/Badge";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { CrudStatus } from "../../../hooks/useCrud";
+import { formatPhoneDisplay } from "../../../utils/inputFormat";
 
 /**
  * Genera un color consistente basado en el nombre de la carrera.
@@ -693,7 +694,7 @@ export default function StudentTable({
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary font-semibold uppercase">
                                         {s.fullNames}
                                     </TableCell>
-                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary whitespace-nowrap">{s.phone}</TableCell>
+                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary whitespace-nowrap">{formatPhoneDisplay(s.phone)}</TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">{s.email}</TableCell>
                                     <TableCell className="table-cell">
                                         {s.careerName ? (
@@ -795,7 +796,7 @@ export default function StudentTable({
                                             </div>
                                             <div className="col-span-2 flex flex-col items-center">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Teléfono</p>
-                                                <p className="text-sm text-text-secondary dark:text-text-tertiary font-medium">{s.phone}</p>
+                                                <p className="text-sm text-text-secondary dark:text-text-tertiary font-medium">{formatPhoneDisplay(s.phone)}</p>
                                             </div>
                                         </div>
 

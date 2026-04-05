@@ -108,9 +108,28 @@ export default function InstitutionalResponsibleViewModal({
               </div>
               <div className="sm:col-span-2">
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Instituciones</label>
-                <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">
-                  {responsible.institutions?.map(inst => inst.institutionName).join(", ") || "Sin institución"}
-                </p>
+                {responsible.institutions && responsible.institutions.length > 0 ? (
+                  <div className="space-y-2 mt-2">
+                    {responsible.institutions.map((inst, index) => (
+                      <div key={inst.institutionId || index} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-text-primary dark:text-white/90">
+                            {inst.institutionName || "Institución sin nombre"}
+                          </p>
+                          {inst.cargo && (
+                            <p className="text-xs text-text-secondary dark:text-text-tertiary mt-1">
+                              <span className="font-semibold">Cargo:</span> {inst.cargo}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">
+                    Sin institución
+                  </p>
+                )}
               </div>
             </div>
           </div>

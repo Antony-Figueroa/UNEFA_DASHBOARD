@@ -11,7 +11,6 @@ import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIc
 import { Institution } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { useDebounce } from "../../../hooks/useDebounce";
-import { maskRIF, maskPhone } from "../../../utils/maskData";
 
 interface InstitutionTableProps {
   data: Institution[];
@@ -401,10 +400,10 @@ export default function InstitutionTable({
                             />
                         </TableCell>
                         <TableCell className="font-medium text-text-primary dark:text-white/90">
-                            {maskRIF(i.rif)}
+                            {i.rif}
                         </TableCell>
                         <TableCell className="text-text-secondary dark:text-text-tertiary font-semibold">{i.name}</TableCell>
-                        <TableCell className="text-text-secondary dark:text-text-tertiary whitespace-nowrap">{maskPhone(i.phone)}</TableCell>
+                        <TableCell className="text-text-secondary dark:text-text-tertiary whitespace-nowrap">{i.phone}</TableCell>
                         <TableCell className="table-cell text-right">
                             <ActionButtons
                                 onView={onView ? () => onView(i) : undefined}

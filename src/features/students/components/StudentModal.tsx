@@ -12,6 +12,7 @@ import {
 } from "../types";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import CustomSelect from "../../../components/form/CustomSelect";
+import Badge from "../../../components/ui/badge/Badge";
 import FlatpickrDatePicker from "../../../components/form/FlatpickrDatePicker";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import { useToast } from "../../../context/toast";
@@ -47,6 +48,8 @@ interface StudentModalProps {
   isLoading?: boolean;
   /** ID único para tracking en modal stack (opcional) */
   modalId?: string;
+  /** Callback cuando se quiere editar un registro existente (convierte de crear a editar) */
+  onEditExisting?: (student: Student) => void;
 }
 
 /**
@@ -72,6 +75,7 @@ export default function StudentModal({
   dynamicLists,
   isLoading = false,
   modalId,
+  onEditExisting,
 }: StudentModalProps) {
   const [isCheckingCi, setIsCheckingCi] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
@@ -90,13 +94,103 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   const [viewOnlyMode, setViewOnlyMode] = useState(false);
 
   // Handle identification number input change with formatting
-  const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIdentificationNumberChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
     // Solo permitir números
     const digitsOnly = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
     const formatted = formatCedulaDisplay(digitsOnly, false);
     setDisplayIdentificationNumber(formatted);
     setValue("identificationNumber", digitsOnly, { shouldValidate: true });
+    
+    // Si se cambia la cédula y hay un existingStudent, limpiar el formulario
+    if (existingStudent) {
+      const currentStoredDigits = existingStudent.identificationNumber?.replace(/\D/g, '') || '';
+      // Si el usuario borró al menos 1 carácter o cambió algo
+      if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits) {
+        setExistingStudent(null);
+        setViewOnlyMode(false);
+        // Resetear los campos del formulario
+        reset({
+          identificationPrefix: "",
+          identificationNumber: "",
+          firstName: "",
+          middleName: "",
+          lastName: "",
+          secondLastName: "",
+          sex: "",
+          birthDate: "",
+          civilStatus: "",
+          phonePrefix: "",
+          phoneNumber: "",
+          email: "",
+          address: "",
+          careerId: "",
+          semester: "",
+          section: "",
+          regime: "",
+          studentType: "",
+          militaryRank: "",
+          works: "",
+        });
+        setDisplayPhoneNumber("");
+      }
+    }
+    
+    // Verificar si la cédula existe mientras escribe (7 u 8 dígitos)
+    if (!existingStudent && !editingStudent && (digitsOnly.length === 7 || digitsOnly.length === 8)) {
+      setIsCheckingCi(true);
+      const prefix = watch("identificationPrefix") || 'V';
+      const fullCi = `${prefix}-${digitsOnly}`;
+      try {
+        const editingId = editingStudent ? (editingStudent as any).studentId : undefined;
+        const res = await checkAvailability('ci', fullCi, editingId);
+        if (!res.available) {
+          const existingStudentData = await getStudentByCi(fullCi);
+          if (existingStudentData) {
+            setExistingStudent(existingStudentData);
+            setViewOnlyMode(true);
+            
+            // Parse phone number into prefix and local
+            let phonePrefix = "";
+            let phoneNumber = "";
+            if (existingStudentData.phone) {
+              const cleanPhone = existingStudentData.phone.replace(/[-\s]/g, '');
+              if (cleanPhone.length >= 4) {
+                phonePrefix = cleanPhone.substring(0, 4);
+                phoneNumber = cleanPhone.substring(4);
+              }
+            }
+
+            setValue("identificationPrefix", existingStudentData.identificationPrefix || 'V');
+            setDisplayIdentificationNumber(formatCedulaDisplay(existingStudentData.identificationNumber || ''));
+            setValue("identificationNumber", existingStudentData.identificationNumber || '');
+            setValue("firstName", existingStudentData.firstName || "");
+            setValue("middleName", existingStudentData.middleName || "");
+            setValue("lastName", existingStudentData.lastName || "");
+            setValue("secondLastName", existingStudentData.secondLastName || "");
+            setValue("sex", existingStudentData.sex || "");
+            setValue("birthDate", existingStudentData.birthDate || "");
+            setValue("civilStatus", existingStudentData.civilStatus || "");
+            setValue("phonePrefix", phonePrefix);
+            setDisplayPhoneNumber(formatPhoneDisplay(phoneNumber));
+            setValue("phoneNumber", phoneNumber);
+            setValue("email", existingStudentData.email || "");
+            setValue("address", existingStudentData.address || "");
+            setValue("careerId", existingStudentData.careerId || "");
+            setValue("semester", existingStudentData.semester || "");
+            setValue("section", existingStudentData.section || "");
+            setValue("regime", existingStudentData.regime || "");
+            setValue("studentType", existingStudentData.studentType || "");
+            setValue("militaryRank", existingStudentData.militaryRank || "");
+            setValue("works", existingStudentData.works || "");
+          }
+        }
+      } catch (err) {
+        console.error("Error checking CI:", err);
+      } finally {
+        setIsCheckingCi(false);
+      }
+    }
   };
 
   // Handle phone number input change with formatting
@@ -376,6 +470,10 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
 
 useEffect(() => {
     if (isOpen) {
+      // Limpiar estados de duplicado cuando se abre el modal
+      setExistingStudent(null);
+      setViewOnlyMode(false);
+      
       if (editingStudent) {
         // Separar prefijo y número de teléfono (ej: 04121234567)
         let phonePrefix = "";
@@ -444,6 +542,15 @@ useEffect(() => {
     }
   }, [isOpen, editingStudent, reset]);
 
+  // Cleanup adicional cuando se cierra el modal
+  useEffect(() => {
+    if (!isOpen) {
+      // Cuando el modal se cierra, asegurar limpieza
+      setExistingStudent(null);
+      setViewOnlyMode(false);
+    }
+  }, [isOpen]);
+
   const onSubmit = async (data: StudentFormInput) => {
     try {
       const validatedData = data as StudentFormOutput;
@@ -486,6 +593,7 @@ useEffect(() => {
 
   const handleClose = () => {
     setExistingStudent(null);
+    setViewOnlyMode(false);
     onClose();
   };
 
@@ -505,15 +613,6 @@ useEffect(() => {
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
         <form id="student-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 w-full">
-          {existingStudent && (
-            <div className="mb-4 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg">
-              <p className="text-sm text-warning-700 dark:text-warning-300">
-                Esta cédula ya está registrada. Los campos están en modo visualización. 
-                Haga clic en "Habilitar Edición" para modificar.
-              </p>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
             {/* Fila 1 */}
             <div>
@@ -531,7 +630,7 @@ useEffect(() => {
                         onBlur={field.onBlur}
                         value={field.value}
                         placeholder="Tipo"
-                        disabled={!!editingStudent || !!existingStudent}
+                        disabled={!!editingStudent}
                         error={!!errors.identificationPrefix}
                       />
                     )}
@@ -543,14 +642,23 @@ useEffect(() => {
                     onChange={handleIdentificationNumberChange}
                     placeholder="V00.000.000"
                     error={!!errors.identificationNumber}
-                    hint={isCheckingCi ? "Verificando..." : (errors.identificationNumber?.message || " ")}
-                    disabled={isCheckingCi || !!editingStudent || !!existingStudent}
+                    hint={
+                      <div className="flex items-center gap-2 mt-1">
+                        {existingStudent && (
+                          <Badge color="warning" variant="light" size="sm">
+                            Registro existente - Click en "Editar Registro" para modificar
+                          </Badge>
+                        )}
+                        {isCheckingCi && <span className="text-blue-600 animate-pulse">Verificando...</span>}
+                      </div>
+                    }
+                    disabled={!!editingStudent}
                     maxLength={CEDULA_MAX_LENGTH}
                     autoComplete="off"
                     className="tracking-widest"
                     onBlur={async (e) => {
-                      // Only check if not in existing student mode
-                      if (!existingStudent) {
+                      // Only check if not in existing student mode and not already checking
+                      if (!existingStudent && !editingStudent) {
                         const val = e.target.value;
                         const digitsOnly = val.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
                         if (digitsOnly.length >= 6) {
@@ -558,17 +666,8 @@ useEffect(() => {
                           const prefix = watch("identificationPrefix") || 'V';
                           const fullCi = `${prefix}-${digitsOnly}`;
                           try {
-                            const res = await checkAvailability('ci', fullCi, editingStudent?.studentId);
+                            const res = await checkAvailability('ci', fullCi, undefined);
                             if (!res.available) {
-                              const message = res.status === 0 
-                                  ? "Cédula registrada (INACTIVO). Contacte a administración para reactivar." 
-                                  : "Esta cédula ya está registrada.";
-                              
-                              setError("identificationNumber", { 
-                                type: "manual", 
-                                message 
-                              });
-
                               // Fetch existing student data and populate form
                               const existingStudentData = await getStudentByCi(fullCi);
                               if (existingStudentData) {
@@ -609,13 +708,6 @@ useEffect(() => {
                                 setValue("militaryRank", existingStudentData.militaryRank || "");
                                 setValue("works", existingStudentData.works || "");
                               }
-
-                              // Toast removido por solicitud del usuario
-                              // Las pistas visuales son suficientes
-                            } else {
-                              clearErrors("identificationNumber");
-                              setExistingStudent(null);
-                              setViewOnlyMode(false);
                             }
                           } catch (err) {
                             console.error("Error checking CI availability:", err);
@@ -637,10 +729,10 @@ useEffect(() => {
                 placeholder="Primer nombre"
                 error={!!errors.firstName}
                 hint={errors.firstName?.message}
-                disabled={!!existingStudent}
+                disabled={viewOnlyMode}
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, '').toUpperCase();
-                  setValue("firstName", val, { shouldValidate: true });
+                  setValue("firstName", val, { shouldValidate: true, shouldDirty: true });
                 }}
               />
             </div>
@@ -651,10 +743,10 @@ useEffect(() => {
                 placeholder="Segundo nombre"
                 error={!!errors.middleName}
                 hint={errors.middleName?.message}
-                disabled={!!existingStudent}
+                disabled={viewOnlyMode}
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, '').toUpperCase();
-                  setValue("middleName", val, { shouldValidate: true });
+                  setValue("middleName", val, { shouldValidate: true, shouldDirty: true });
                 }}
               />
             </div>
@@ -667,9 +759,10 @@ useEffect(() => {
                 placeholder="Primer apellido"
                 error={!!errors.lastName}
                 hint={errors.lastName?.message}
+                disabled={viewOnlyMode}
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, '').toUpperCase();
-                  setValue("lastName", val, { shouldValidate: true });
+                  setValue("lastName", val, { shouldValidate: true, shouldDirty: true });
                 }}
               />
             </div>
@@ -680,9 +773,10 @@ useEffect(() => {
                 placeholder="Segundo apellido"
                 error={!!errors.secondLastName}
                 hint={errors.secondLastName?.message}
+                disabled={viewOnlyMode}
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, '').toUpperCase();
-                  setValue("secondLastName", val, { shouldValidate: true });
+                  setValue("secondLastName", val, { shouldValidate: true, shouldDirty: true });
                 }}
               />
             </div>
@@ -699,6 +793,7 @@ useEffect(() => {
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     value={String(field.value)}
+                    disabled={viewOnlyMode}
                     error={!!errors.sex}
                   />
                 )}
@@ -716,7 +811,7 @@ useEffect(() => {
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">
                 Fecha de Nacimiento * {age !== null && <span className="text-brand-500 ml-1">({age} años)</span>}
               </label>
-              <Controller
+                <Controller
                 control={control}
                 name="birthDate"
                 render={({ field }) => (
@@ -727,6 +822,7 @@ useEffect(() => {
                     }}
                     onBlur={field.onBlur}
                     error={!!errors.birthDate}
+                    disabled={viewOnlyMode}
                     placeholder="Seleccione fecha"
                     options={{
                       maxDate: maxDate,
@@ -757,6 +853,7 @@ useEffect(() => {
                     value={String(field.value)}
                     onAddNew={() => openAddValueModal("Registro Civil", "civilStatus", "Agregar Estado Civil")}
                     addNewLabel="Agregar Estado Civil"
+                    disabled={viewOnlyMode}
                     error={!!errors.civilStatus}
                   />
                 )}
@@ -786,6 +883,7 @@ useEffect(() => {
                     onAddNew={() => openAddValueModal("PREFIJO", "phonePrefix", "Agregar Prefijo Telefónico")}
                     addNewLabel="Agregar Prefijo"
                         error={!!errors.phonePrefix}
+                        disabled={viewOnlyMode}
                       />
                     )}
                   />
@@ -797,6 +895,7 @@ useEffect(() => {
                     placeholder="123-4567"
                     error={!!errors.phoneNumber}
                     hint={errors.phoneNumber?.message || " "}
+                    disabled={viewOnlyMode}
                     maxLength={8}
                   />
                 </div>
@@ -818,10 +917,10 @@ useEffect(() => {
                 placeholder="Ingresa correo electrónico"
                 error={!!errors.email}
                 hint={isCheckingEmail ? "Verificando disponibilidad..." : (errors.email?.message || " ")}
-                disabled={isCheckingEmail}
+                disabled={viewOnlyMode}
                 autoComplete="off"
                 onChange={(e) => {
-                  setValue("email", e.target.value.toUpperCase(), { shouldValidate: true });
+                  setValue("email", e.target.value.toUpperCase(), { shouldValidate: true, shouldDirty: true });
                 }}
                 onBlur={async (e) => {
                   const value = e.target.value;
@@ -865,7 +964,7 @@ useEffect(() => {
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     value={String(field.value)}
-                    disabled={isLoading || (!!editingStudent && editingStudent.isInUse)}
+                    disabled={isLoading || (!!editingStudent && editingStudent.isInUse) || viewOnlyMode}
                     onAddNew={() => {
                       const evt = new CustomEvent("students:addCareer");
                       window.dispatchEvent(evt);
@@ -894,10 +993,11 @@ useEffect(() => {
                 placeholder="Semestre"
                 error={!!errors.semester}
                 hint={errors.semester?.message}
+                disabled={viewOnlyMode}
                 maxLength={2}
                 onChange={(e) => {
                   const val = e.target.value.replace(/\D/g, '').substring(0, 2);
-                  setValue("semester", val, { shouldValidate: true });
+                  setValue("semester", val, { shouldValidate: true, shouldDirty: true });
                 }}
               />
             </div>
@@ -908,10 +1008,11 @@ useEffect(() => {
                 placeholder="Sección"
                 error={!!errors.section}
                 hint={errors.section?.message}
+                disabled={viewOnlyMode}
                 maxLength={5}
                 onChange={(e) => {
                   const val = e.target.value.replace(/\D/g, '').substring(0, 5);
-                  setValue("section", val, { shouldValidate: true });
+                  setValue("section", val, { shouldValidate: true, shouldDirty: true });
                 }}
               />
             </div>
@@ -932,6 +1033,7 @@ useEffect(() => {
                     value={String(field.value)}
                     onAddNew={() => openAddValueModal("Regimen/Turno", "regime", "Agregar Régimen")}
                     addNewLabel="Agregar Régimen"
+                    disabled={viewOnlyMode}
                     error={!!errors.regime}
                   />
                 )}
@@ -956,6 +1058,7 @@ useEffect(() => {
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     value={String(field.value)}
+                    disabled={viewOnlyMode}
                     error={!!errors.studentType}
                   />
                 )}
@@ -985,6 +1088,7 @@ useEffect(() => {
                         value={String(field.value)}
                         onAddNew={() => openAddValueModal("Rango Militar", "militaryRank", "Agregar Rango Militar")}
                         addNewLabel="Agregar Rango Militar"
+                        disabled={viewOnlyMode}
                         error={!!errors.militaryRank}
                       />
                     );
@@ -1012,6 +1116,7 @@ useEffect(() => {
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     value={String(field.value)}
+                    disabled={viewOnlyMode}
                     error={!!errors.works}
                   />
                 )}
@@ -1032,10 +1137,11 @@ useEffect(() => {
                 error={!!errors.address}
                 hint={errors.address?.message}
                 autoComplete="off"
+                disabled={viewOnlyMode}
                 rows={2}
                 className="w-full"
                 onChange={(e) => {
-                  setValue("address", e.target.value.toUpperCase(), { shouldValidate: true });
+                  setValue("address", e.target.value.toUpperCase(), { shouldValidate: true, shouldDirty: true });
                 }}
               />
             </div>
@@ -1052,12 +1158,16 @@ useEffect(() => {
             viewOnlyMode ? (
             <AsyncButton 
               type="button"
-              className="w-full sm:w-auto min-h-12"
+              className="w-full sm:w-auto min-h-12 bg-warning-500 hover:bg-warning-600 text-white"
               onClick={() => {
-                setViewOnlyMode(false);
+                if (onEditExisting) {
+                  onEditExisting(existingStudent);
+                } else {
+                  setViewOnlyMode(false);
+                }
               }}
             >
-              Habilitar Edición
+              Editar Registro
             </AsyncButton>
             ) : (
             <AsyncButton 

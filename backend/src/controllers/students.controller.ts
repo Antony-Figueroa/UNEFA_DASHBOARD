@@ -730,7 +730,7 @@ export const getStudentByCi = async (req: Request, res: Response) => {
     const student = await dbManager.withRetry(async (supabase) => {
       const { data, error } = await supabase
         .from(TABLE_NAME)
-        .select('*')
+        .select(STUDENT_COLUMNS_BASE)
         .eq('STUDENTS_CI', ci)
         .maybeSingle();
       
@@ -742,7 +742,8 @@ export const getStudentByCi = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Estudiante no encontrado', data: null });
     }
 
-    res.json({ data: student });
+    // Map to frontend format so the modal gets properly populated
+    res.json({ data: mapDBToFrontend(student as unknown as DBStudent) });
   } catch (error: unknown) {
     handleDbError(res, error);
   }

@@ -107,9 +107,15 @@ type InstFormData = z.infer<typeof baseInstSchema>;
  * Creates a Zod schema with refinement for duplicate RIF validation.
  * @param existingInstitutions - List of institutions to check against.
  * @param editingInst - The institution currently being edited (if any).
+ * @param rifDuplicateStatus - Status of RIF duplicate confirmation (null/confirmed/rejected)
  */
-const createInstSchema = (existingInstitutions: Institution[], editingInst: Institution | null) => 
+const createInstSchema = (existingInstitutions: Institution[], editingInst: Institution | null, rifDuplicateStatus: 'confirmed' | 'rejected' | null) => 
   baseInstSchema.superRefine((data, ctx) => {
+    // Si el usuario ya confirmó que es parte de la misma organización, NO validar duplicado
+    if (rifDuplicateStatus === 'confirmed') {
+      return;
+    }
+    
     const fullRif = `${data.rifPrefix}-${data.rifNumber}`.toUpperCase();
     const isDuplicate = existingInstitutions.some(inst => 
       inst.rif.toUpperCase() === fullRif && inst.institutionId !== editingInst?.institutionId
@@ -193,8 +199,16 @@ export default function InstitutionModal({
   // Estado para el modal de RIF duplicado (misma organización)
   const [isRifDuplicateModalOpen, setIsRifDuplicateModalOpen] = useState(false);
   const [rifDuplicateInstitutions, setRifDuplicateInstitutions] = useState<{ INSTITUTION_ID: number; INSTITUTION_NAME: string; RIF: string }[]>([]);
-  const [rifDuplicateCode, setRifDuplicateCode] = useState<string>("");
-  const [isConfirmingRifDuplicate, setIsConfirmingRifDuplicate] = useState(false);
+  // rifDuplicateStatus: null = no ha respondido, 'confirmed' = sí es parte, 'rejected' = no es parte
+  const [rifDuplicateStatus, setRifDuplicateStatus] = useState<'confirmed' | 'rejected' | null>(null);
+  
+  // Guardar TODOS los valores del formulario cuando se abre el modal de confirmación
+  const [savedFormData, setSavedFormData] = useState<InstFormData | null>(null);
+  const [savedDisplayRifNumber, setSavedDisplayRifNumber] = useState<string>("");
+  const [savedDisplayPhoneNumber, setSavedDisplayPhoneNumber] = useState<string>("");
+
+  // Determinar si los campos deben estar deshabilitados (todos menos RIF)
+  const isFormDisabled = rifDuplicateStatus === 'rejected';
 
   // Handle responsible removal confirmation
   const handleConfirmRemove = async () => {
@@ -271,13 +285,66 @@ export default function InstitutionModal({
     }));
   }, [portuguesaData, selectedMunicipio]);
 
-  // Handle RIF number input change with formatting
-  const handleRifNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle RIF number input change with formatting and auto-verify
+  const handleRifNumberChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
     const cleaned = cleanRif(input);
     const formatted = formatRifDisplay(cleaned);
     setDisplayRifNumber(formatted);
     setValue("rifNumber", cleaned, { shouldValidate: true, shouldDirty: true });
+    
+    // Si el usuario cambia el RIF (lo borra o modifica), resetear todo el estado de confirmación
+    if (rifDuplicateStatus && cleaned.length < 9) {
+      setRifDuplicateStatus(null);
+      clearErrors("rifNumber");
+      setSavedFormData(null); // Limpiar datos guardados
+    }
+    
+    // Auto-verificar cuando complete los 9 dígitos
+    if (cleaned.length === 9 && !existingInstitution && !editingInst) {
+      setIsCheckingRif(true);
+      const prefix = watch("rifPrefix") || 'J';
+      const fullRif = `${prefix}-${cleaned}`;
+      try {
+        const rifCheck = await checkRifExists(fullRif);
+        
+        if (rifCheck && rifCheck.exists) {
+          // Si ya confirmó antes y el RIF es el mismo, no hacer nada
+          if (rifDuplicateStatus === 'confirmed') {
+            setIsCheckingRif(false);
+            return;
+          }
+          // Si ya rechazó antes, mostrar error
+          if (rifDuplicateStatus === 'rejected') {
+            setError("rifNumber", {
+              type: "manual",
+              message: "Ya existe una institución registrada con este RIF"
+            });
+            setIsCheckingRif(false);
+            return;
+          }
+          // Primera vez: mostrar modal de confirmación
+          // GUARDAR valores del RIF directamente de watch()
+          const currentRifValue = watch("rifNumber");
+          setSavedFormData(watch());
+          setSavedDisplayRifNumber(currentRifValue); // Guardar el valor sin formato
+          setSavedDisplayPhoneNumber(displayPhoneNumber);
+          setRifDuplicateInstitutions(rifCheck.institutions);
+          setIsRifDuplicateModalOpen(true);
+          setIsCheckingRif(false);
+          return;
+        }
+        
+        // Si no existe y había confirmación previa, resetear
+        if (rifDuplicateStatus === 'confirmed') {
+          setRifDuplicateStatus(null);
+        }
+      } catch (err) {
+        console.error("Error checking RIF:", err);
+      } finally {
+        setIsCheckingRif(false);
+      }
+    }
   };
 
   // Handle phone number input change with formatting
@@ -289,7 +356,7 @@ export default function InstitutionModal({
     setValue("phoneNumber", cleaned, { shouldValidate: true, shouldDirty: true });
   };
 
-  const instSchema = useMemo(() => createInstSchema(existingInstitutions, editingInst || null), [existingInstitutions, editingInst]);
+  const instSchema = useMemo(() => createInstSchema(existingInstitutions, editingInst || null, rifDuplicateStatus), [existingInstitutions, editingInst, rifDuplicateStatus]);
 
   const {
     register,
@@ -299,6 +366,7 @@ export default function InstitutionModal({
     watch,
     setValue,
     setError,
+    clearErrors,
     formState: { errors, isDirty, isValid },
   } = useForm<InstFormData>({
     resolver: zodResolver(instSchema),
@@ -709,6 +777,11 @@ export default function InstitutionModal({
         // Marcar como inicializado después de permitir que los valores se asienten
         setTimeout(() => setIsInitialized(true), 200);
       } else {
+        // NUEVA INSTITUCIÓN: siempre hacer reset
+        // Limpiar estados de RIF duplicado
+        setRifDuplicateStatus(null);
+        setSavedFormData(null);
+        
         reset({
           rifPrefix: "",
           rifNumber: "",
@@ -765,6 +838,8 @@ export default function InstitutionModal({
   const handleClose = () => {
     setExistingInstitution(null);
     setViewOnlyMode(false);
+    setRifDuplicateStatus(null); // Resetear estado de RIF duplicado al cerrar
+    setSavedFormData(null); // Limpiar datos guardados
     onClose();
   };
 
@@ -825,7 +900,7 @@ export default function InstitutionModal({
                       placeholder="12345678-9" 
                       className={`uppercase ${RIF_INPUT_CLASS}`}
                       error={!!errors.rifNumber}
-                      hint={errors.rifNumber?.message || (isCheckingRif ? "Verificando..." : " ")}
+                      hint={errors.rifNumber?.message || (isCheckingRif ? "Verificando..." : (rifDuplicateStatus === 'confirmed' ? "RIF ya existe, se generará código interno único" : " "))}
                       disabled={!!editingInst || !!existingInstitution}
                       maxLength={RIF_MAX_LENGTH}
                       onBlur={async (e) => {
@@ -840,17 +915,34 @@ export default function InstitutionModal({
                               // Usar checkRifExists para obtener más información
                               const rifCheck = await checkRifExists(fullRif);
                               
-                              if (rifCheck && rifCheck.exists) {
-                                // Existen instituciones con este RIF
-                                // Mostrar modal de confirmación
-                                setRifDuplicateInstitutions(rifCheck.institutions);
-                                setRifDuplicateCode(rifCheck.suggestedCode);
-                                setIsRifDuplicateModalOpen(true);
-                                setIsCheckingRif(false);
-                                return;
-                              }
-                              
-                              // Si no existe, continuar normalmente (no hay institución con este RIF)
+                               if (rifCheck && rifCheck.exists) {
+                                 // Si ya confirmó antes (sí es parte), continuar normalmente
+                                 if (rifDuplicateStatus === 'confirmed') {
+                                   setIsCheckingRif(false);
+                                   return;
+                                 }
+                                 // Si ya rechazó antes (no es parte), mostrar error
+                                 if (rifDuplicateStatus === 'rejected') {
+                                   setError("rifNumber", {
+                                     type: "manual",
+                                     message: "Ya existe una institución registrada con este RIF"
+                                   });
+                                   setIsCheckingRif(false);
+                                   return;
+                                 }
+                                 // Primera vez: mostrar modal de confirmación
+                                 setRifDuplicateInstitutions(rifCheck.institutions);
+                                 setIsRifDuplicateModalOpen(true);
+                                 setIsCheckingRif(false);
+                                 return;
+                               }
+                               
+                               // Si no existe, continuar normalmente (no hay institución con este RIF)
+                               // Y resetear el estado de confirmación
+                               if (rifDuplicateStatus) {
+                                 setRifDuplicateStatus(null);
+                                 clearErrors("rifNumber");
+                               }
                             } catch (err) {
                               console.error("Error checking RIF:", err);
                             } finally {
@@ -873,7 +965,8 @@ export default function InstitutionModal({
                 onChange: handleUppercaseChange
               })} 
               error={!!errors.name} 
-              hint={errors.name?.message} 
+              hint={errors.name?.message}
+              disabled={isFormDisabled || !!editingInst}
             />
           </div>
           
@@ -908,6 +1001,7 @@ export default function InstitutionModal({
                         value={field.value}
                         placeholder="Seleccione Estado"
                         error={!!errors.estado}
+                        disabled={isFormDisabled}
                       />
                     )}
                   />
@@ -932,6 +1026,7 @@ export default function InstitutionModal({
                         value={field.value}
                         placeholder="Seleccione Municipio"
                         error={!!errors.municipio}
+                        disabled={isFormDisabled}
                       />
                     )}
                   />
@@ -954,6 +1049,7 @@ export default function InstitutionModal({
                         value={field.value}
                         placeholder="Seleccione Parroquia"
                         error={!!errors.parroquia}
+                        disabled={isFormDisabled}
                       />
                     )}
                   />
@@ -968,6 +1064,7 @@ export default function InstitutionModal({
                     {...register("direccion", { onChange: handleUppercaseChange })}
                     error={!!errors.direccion}
                     rows={2}
+                    disabled={isFormDisabled}
                   />
                   {errors.direccion && <p className="mt-1 text-xs text-red-500">{errors.direccion.message}</p>}
                 </div>
@@ -990,6 +1087,7 @@ export default function InstitutionModal({
                       value={String(field.value ?? "")}
                       placeholder="Prefijo"
                       error={!!errors.phonePrefix}
+                      disabled={isFormDisabled}
                       onAddNew={() => openAddValueModal("PREFIJO", "phonePrefix", "Agregar Código de Área")}
                       addNewLabel="Nueva opción"
                     />
@@ -1005,6 +1103,7 @@ export default function InstitutionModal({
                   maxLength={PHONE_LOCAL_MAX_LENGTH}
                   error={!!errors.phoneNumber || !!errors.phonePrefix} 
                   hint={errors.phoneNumber?.message || errors.phonePrefix?.message || " "}
+                  disabled={isFormDisabled}
                 />
               </div>
             </div>
@@ -1022,6 +1121,8 @@ export default function InstitutionModal({
                   onChange={field.onChange}
                   value={String(field.value ?? "")}
                   placeholder="Seleccione región"
+                  error={!!errors.region}
+                  disabled={isFormDisabled}
                   onAddNew={() => openAddValueModal("Region", "region", "Agregar Región")}
                   addNewLabel="Nueva opción"
                 />
@@ -1044,6 +1145,8 @@ export default function InstitutionModal({
                   onChange={field.onChange}
                   value={String(field.value ?? "")}
                   placeholder="Seleccione núcleo"
+                  error={!!errors.nucleus}
+                  disabled={isFormDisabled}
                   onAddNew={() => openAddValueModal("Nucleo", "nucleus", "Agregar Núcleo")}
                   addNewLabel="Nueva opción"
                 />
@@ -1066,6 +1169,8 @@ export default function InstitutionModal({
                   onChange={field.onChange}
                   value={String(field.value ?? "")}
                   placeholder="Seleccione extensión"
+                  error={!!errors.extension}
+                  disabled={isFormDisabled}
                   onAddNew={() => openAddValueModal("Extensión", "extension", "Agregar Extensión")}
                   addNewLabel="Nueva opción"
                 />
@@ -1088,6 +1193,8 @@ export default function InstitutionModal({
                   onChange={field.onChange}
                   value={String(field.value ?? "")}
                   placeholder="Seleccione tipo"
+                  error={!!errors.institutionType}
+                  disabled={isFormDisabled}
                   onAddNew={() => openAddValueModal("Tipo de empresa", "institutionType", "Agregar Tipo de Empresa")}
                   addNewLabel="Nueva opción"
                 />
@@ -1111,6 +1218,8 @@ export default function InstitutionModal({
                   onChange={field.onChange}
                   value={String(field.value ?? "")}
                   placeholder="Seleccione el tipo"
+                  error={!!errors.internshipTypeId}
+                  disabled={isFormDisabled}
                 />
               )}
             />
@@ -1131,7 +1240,7 @@ export default function InstitutionModal({
                   onChange={field.onChange}
                   value={field.value}
                   placeholder={selectedInternshipType ? "Seleccione las carreras" : "Seleccione primero el tipo de práctica"}
-                  disabled={!selectedInternshipType}
+                  disabled={!selectedInternshipType || isFormDisabled}
                   onAddNew={() => setIsNewCareerModalOpen(true)}
                   addNewLabel="Crear nueva carrera"
                 />
@@ -1448,20 +1557,32 @@ export default function InstitutionModal({
         onClose={() => setConfirmSaveOpen(false)}
         onConfirm={async () => {
           if (pendingSave) {
-            const result = await onSave(pendingSave);
-            
-            // Si es nueva institución y se guardó exitosamente, preguntar si quiere agregar responsables
-            if (!editingInst && result && typeof result === 'object' && 'institutionId' in (result as any)) {
-              setPendingInstitutionId((result as any).institutionId);
+            try {
+              const result = await onSave(pendingSave);
+              
+              // Si es nueva institución y se guardó exitosamente, preguntar si quiere agregar responsables
+              if (!editingInst && result && typeof result === 'object' && 'institutionId' in (result as any)) {
+                setPendingInstitutionId((result as any).institutionId);
+                setConfirmSaveOpen(false);
+                // Mostrar pregunta para agregar responsables
+                setTimeout(() => {
+                  setAskAddResponsiblesOpen(true);
+                }, 100);
+                return;
+              }
               setConfirmSaveOpen(false);
-              // Mostrar pregunta para agregar responsables
-              setTimeout(() => {
-                setAskAddResponsiblesOpen(true);
-              }, 100);
-              return;
+            } catch (saveError) {
+              console.error("[InstitutionModal] Error al guardar:", saveError);
+              // NO cerrar el modal ni limpiar el formulario - el usuario debe poder reintentar
+              addToast({
+                variant: "error",
+                title: "Error al guardar",
+                message: "No se pudo guardar la institución. Por favor verifique los datos e intente de nuevo."
+              });
             }
+          } else {
+            setConfirmSaveOpen(false);
           }
-          setConfirmSaveOpen(false);
         }}
         variant="confirm"
         title={editingInst ? "Confirmar actualización" : "Confirmar registro"}
@@ -1551,25 +1672,27 @@ export default function InstitutionModal({
     <UnifiedDialog
       isOpen={isRifDuplicateModalOpen}
       onClose={() => {
+        // Solo cerrar el modal, no hacer nada más
         setIsRifDuplicateModalOpen(false);
-        // Si rechaza, mostrar error en el campo RIF
-        setError("rifNumber", {
-          type: "manual",
-          message: "Ya existe una institución registrada con este RIF"
-        });
       }}
       onConfirm={async () => {
         // Usuario confirma que es parte de la misma organización
-        setIsConfirmingRifDuplicate(true);
-        setIsRifDuplicateModalOpen(false);
-        setIsCheckingRif(false);
+        // Los valores ya están guardados en savedFormData cuando se abrió el modal
         
-        // Continuar con el flujo normal - el código con sufijo se generará en el backend
-        addToast({
-          type: "info",
-          title: "RIF duplicado",
-          message: `Se generará un código interno único: ${rifDuplicateCode}`
-        });
+        // FORZAR que los valores se mantengan inmediatamente
+        if (savedFormData) {
+          setValue("rifPrefix", savedFormData.rifPrefix);
+          setValue("rifNumber", savedFormData.rifNumber);
+          // Formatear el valor para display
+          setDisplayRifNumber(formatRifDisplay(savedFormData.rifNumber));
+          setDisplayPhoneNumber(savedDisplayPhoneNumber);
+        }
+        
+        setRifDuplicateStatus('confirmed');
+        setIsRifDuplicateModalOpen(false);
+        
+        // Limpiar cualquier error manual anterior
+        clearErrors("rifNumber");
       }}
       variant="warning"
       title="RIF ya existe"

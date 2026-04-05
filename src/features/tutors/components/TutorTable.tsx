@@ -10,7 +10,7 @@ import Badge from "../../../components/ui/badge/Badge";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { Career } from "../../careers/types";
 import { CrudStatus } from "../../../hooks/useCrud";
-import { maskIdentification, maskPhone } from "../../../utils/maskData";
+import { formatPhoneDisplay } from "../../../utils/inputFormat";
 
 /**
  * Genera un color basado en el nombre de la profesión para visualización consistente.
@@ -574,7 +574,7 @@ export default function TutorTable({
                                         </Tooltip>
                                     </TableCell>
                                     <TableCell className="table-cell font-medium text-text-primary dark:text-text-emphasis uppercase">
-                                        {t.identificationPrefix}-{maskIdentification(t.identificationNumber)}
+                                        {t.identificationPrefix}-{t.identificationNumber}
                                     </TableCell>
                                     <TableCell className="table-cell">
                                         <span className="text-sm font-medium text-text-secondary dark:text-text-secondary uppercase">
@@ -600,7 +600,7 @@ export default function TutorTable({
                                         </div>
                                     </TableCell>
                                     <TableCell className="table-cell text-sm text-text-secondary dark:text-text-tertiary">
-                                        {maskPhone(t.phone)}
+                                        {formatPhoneDisplay(t.phone)}
                                     </TableCell>
                                     <TableCell className="table-cell text-sm text-text-secondary dark:text-text-tertiary uppercase">
                                         {t.email}
@@ -670,7 +670,7 @@ export default function TutorTable({
                                             <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8 uppercase">
                                                 {t.firstName} {t.middleName || ""} {t.lastName} {t.secondLastName || ""}
                                             </h3>
-                                            <p className="text-xs text-text-tertiary mt-1 truncate uppercase">{t.identificationPrefix}-{maskIdentification(t.identificationNumber)}</p>
+                                            <p className="text-xs text-text-tertiary mt-1 truncate uppercase">{t.identificationPrefix}-{t.identificationNumber}</p>
                                         </div>
                                         <button
                                             onClick={async () => toggleRowExpansion(rowId)}
@@ -724,7 +724,7 @@ export default function TutorTable({
                                             </div>
                                             <div className="col-span-2 flex flex-col items-center">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Teléfono</p>
-                                                <p className="text-sm text-text-secondary dark:text-text-secondary font-medium">{maskPhone(t.phone)}</p>
+                                                <p className="text-sm text-text-secondary dark:text-text-secondary font-medium">{formatPhoneDisplay(t.phone)}</p>
                                             </div>
                                         </div>
 

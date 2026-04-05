@@ -9,6 +9,7 @@ import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import CustomSelect from "../../../components/form/CustomSelect";
 import MultiSelect from "../../../components/form/MultiSelect";
+import Badge from "../../../components/ui/badge/Badge";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { getCareers } from "../../careers/services/careersService";
@@ -39,6 +40,8 @@ interface TutorModalProps {
   tutors?: Tutor[];
   /** Unique ID for modal stack tracking (optional) */
   modalId?: string;
+  /** Callback cuando se quiere editar un registro existente (convierte de crear a editar) */
+  onEditExisting?: (tutor: Tutor) => void;
 }
 
 /**
@@ -55,6 +58,7 @@ export default function TutorModal({
   isLoading = false,
   tutors = [],
   modalId,
+  onEditExisting,
 }: TutorModalProps) {
   const [careers, setCareers] = useState<Career[]>([]);
   const [careersLoading, setCareersLoading] = useState(false);
@@ -74,12 +78,82 @@ export default function TutorModal({
   const [viewOnlyMode, setViewOnlyMode] = useState(false);
 
   // Handle identification number input change with formatting
-  const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIdentificationNumberChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
     const digitsOnly = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
     const formatted = formatCedulaDisplay(digitsOnly, false);
     setDisplayIdentificationNumber(formatted);
     setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
+    
+    // Si se cambia la cédula y hay un existingTutor, limpiar el formulario
+    if (existingTutor) {
+      const currentStoredDigits = existingTutor.identificationNumber?.replace(/\D/g, '') || '';
+      // Si el usuario borró al menos 1 carácter o cambió algo
+      if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits) {
+        setExistingTutor(null);
+        setViewOnlyMode(false);
+        // Resetear los campos del formulario
+        reset({
+          identificationPrefix: "",
+          identificationNumber: "",
+          firstName: "",
+          middleName: "",
+          lastName: "",
+          secondLastName: "",
+          sex: "",
+          phoneAreaCode: "",
+          phoneNumber: "",
+          email: "",
+          condition: "",
+          dedication: "",
+          category: "",
+          profession: "",
+          titulo: "",
+          carreras: [],
+        });
+        setDisplayPhoneNumber("");
+      }
+    }
+    
+    // Verificar si la cédula existe mientras escribe (7 u 8 dígitos)
+    if (!existingTutor && !editingTutor && (digitsOnly.length === 7 || digitsOnly.length === 8)) {
+      setIsCheckingCi(true);
+      const prefix = watch("identificationPrefix") || 'V';
+      const fullCi = `${prefix}-${digitsOnly}`;
+      try {
+        const existingData = await getTutorByCi(fullCi);
+        if (existingData) {
+          setExistingTutor(existingData);
+          setViewOnlyMode(true);
+
+          const areaCode = existingData.phone ? existingData.phone.substring(0, 4) : "";
+          const phoneNumber = existingData.phone ? existingData.phone.substring(4) : "";
+
+          setValue("identificationPrefix", existingData.identificationPrefix || 'V');
+          setDisplayIdentificationNumber(formatCedulaDisplay(existingData.identificationNumber || ''));
+          setValue("identificationNumber", existingData.identificationNumber || '');
+          setValue("firstName", existingData.firstName || "");
+          setValue("middleName", existingData.middleName || "");
+          setValue("lastName", existingData.lastName || "");
+          setValue("secondLastName", existingData.secondLastName || "");
+          setValue("sex", existingData.sex || "");
+          setValue("phoneAreaCode", areaCode);
+          setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+          setValue("phoneNumber", phoneNumber);
+          setValue("email", existingData.email || "");
+          setValue("condition", existingData.condition || "");
+          setValue("dedication", existingData.dedication || "");
+          setValue("category", existingData.category || "");
+          setValue("profession", existingData.profession || "");
+          setValue("titulo", existingData.titulo || "");
+          setValue("carreras", existingData.carreras || []);
+        }
+      } catch (err) {
+        console.error("Error checking CI:", err);
+      } finally {
+        setIsCheckingCi(false);
+      }
+    }
   };
 
   // Handle phone number input change with formatting
@@ -387,6 +461,10 @@ export default function TutorModal({
 
   useEffect(() => {
     if (isOpen) {
+      // Limpiar estados de duplicado cuando se abre el modal
+      setExistingTutor(null);
+      setViewOnlyMode(false);
+      
       if (editingTutor) {
         const areaCode = editingTutor.phone.substring(0, 4);
         const number = editingTutor.phone.substring(4);
@@ -438,6 +516,15 @@ export default function TutorModal({
       }
     }
   }, [isOpen, editingTutor, reset]);
+
+  // Cleanup adicional cuando se cierra el modal
+  useEffect(() => {
+    if (!isOpen) {
+      // Cuando el modal se cierra, asegurar limpieza
+      setExistingTutor(null);
+      setViewOnlyMode(false);
+    }
+  }, [isOpen]);
 
   const onSubmit: SubmitHandler<TutorFormData> = (data) => {
     try {
@@ -498,15 +585,6 @@ export default function TutorModal({
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
         <form id="tutor-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto py-2">
-          {existingTutor && (
-            <div className="mb-4 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg">
-              <p className="text-sm text-warning-700 dark:text-warning-300">
-                Esta cédula ya está registrada. Los campos están en modo visualización. 
-                Haga clic en "Habilitar Edición" para modificar.
-              </p>
-            </div>
-          )}
-          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
             {/* Cédula */}
             <div>
@@ -524,7 +602,7 @@ export default function TutorModal({
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         value={String(field.value)}
-                        disabled={isInUse || !!existingTutor}
+                    disabled={isInUse || !!editingTutor || !!existingTutor}
                         error={!!errors.identificationPrefix}
                       />
                     )}
@@ -536,8 +614,17 @@ export default function TutorModal({
                     onChange={handleIdentificationNumberChange}
                     placeholder="V00.000.000"
                     error={!!errors.identificationNumber}
-                    hint={isCheckingCi ? "Verificando..." : (errors.identificationNumber?.message || " ")}
-                    disabled={isInUse || !!editingTutor || !!existingTutor}
+                    hint={
+                      <div className="flex items-center gap-2 mt-1">
+                        {existingTutor && (
+                          <Badge color="warning" variant="light" size="sm">
+                            Registro existente - Click en "Editar Registro" para modificar
+                          </Badge>
+                        )}
+                        {isCheckingCi && <span className="text-blue-600 animate-pulse">Verificando...</span>}
+                      </div>
+                    }
+                    disabled={isInUse || !!editingTutor}
                     maxLength={CEDULA_MAX_LENGTH}
                     className="tracking-widest"
                     onBlur={async (e) => {
@@ -551,15 +638,6 @@ export default function TutorModal({
                           try {
                             const existingData = await getTutorByCi(fullCi);
                             if (existingData) {
-                              const message = existingData.status 
-                                ? "Esta cédula ya está registrada." 
-                                : "Cédula registrada (INACTIVO). Contacte a administración para reactivar.";
-                              
-                              setError("identificationNumber", { 
-                                type: "manual", 
-                                message 
-                              });
-
                               setExistingTutor(existingData);
                               setViewOnlyMode(true);
 
@@ -575,7 +653,7 @@ export default function TutorModal({
                               setValue("secondLastName", existingData.secondLastName || "");
                               setValue("sex", existingData.sex || "");
                               setValue("phoneAreaCode", areaCode);
-                              setDisplayPhoneNumber(formatPhoneDisplay(phoneNumber));
+                              setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
                               setValue("phoneNumber", phoneNumber);
                               setValue("email", existingData.email || "");
                               setValue("condition", existingData.condition || "");
@@ -609,7 +687,7 @@ export default function TutorModal({
                 {...register("firstName")}
                 placeholder="INGRESE PRIMER NOMBRE"
                 error={!!errors.firstName}
-                disabled={!!existingTutor}
+                disabled={viewOnlyMode}
                 onChange={(e) => {
                   e.target.value = e.target.value.toUpperCase();
                   register("firstName").onChange(e);
@@ -627,7 +705,7 @@ export default function TutorModal({
                 {...register("middleName")}
                 placeholder="INGRESE SEGUNDO NOMBRE"
                 error={!!errors.middleName}
-                disabled={!!existingTutor}
+                disabled={viewOnlyMode}
                 onChange={(e) => {
                   e.target.value = e.target.value.toUpperCase();
                   register("middleName").onChange(e);
@@ -645,7 +723,7 @@ export default function TutorModal({
                 {...register("lastName")}
                 placeholder="INGRESE PRIMER APELLIDO"
                 error={!!errors.lastName}
-                disabled={!!existingTutor}
+                disabled={viewOnlyMode}
                 onChange={(e) => {
                   e.target.value = e.target.value.toUpperCase();
                   register("lastName").onChange(e);
@@ -663,7 +741,7 @@ export default function TutorModal({
                 {...register("secondLastName")}
                 placeholder="INGRESE SEGUNDO APELLIDO"
                 error={!!errors.secondLastName}
-                disabled={!!existingTutor}
+                disabled={viewOnlyMode}
                 onChange={(e) => {
                   e.target.value = e.target.value.toUpperCase();
                   register("secondLastName").onChange(e);
@@ -688,7 +766,7 @@ export default function TutorModal({
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     value={String(field.value)}
-                    disabled={!!existingTutor}
+                    disabled={viewOnlyMode}
                     error={!!errors.sex}
                   />
                 )}
@@ -714,6 +792,7 @@ export default function TutorModal({
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         value={String(field.value)}
+                        disabled={viewOnlyMode}
                         error={!!errors.phoneAreaCode}
                         onAddNew={() => openAddValueModal("PREFIJO", "phoneAreaCode", "Agregar Código de Área")}
                         addNewLabel="Nueva opción"
@@ -727,6 +806,7 @@ export default function TutorModal({
                     onChange={handlePhoneNumberChange}
                     placeholder="000-0000"
                     error={!!errors.phoneNumber || !!errors.phoneAreaCode}
+                    disabled={viewOnlyMode}
                     maxLength={PHONE_LOCAL_MAX_LENGTH}
                     hint={errors.phoneNumber?.message || errors.phoneAreaCode?.message || " "}
                   />
@@ -742,6 +822,7 @@ export default function TutorModal({
                 placeholder="INGRESE CORREO ELECTRÓNICO"
                 type="email"
                 error={!!errors.email}
+                disabled={viewOnlyMode}
               />
               {errors.email && (
                 <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
@@ -762,6 +843,7 @@ export default function TutorModal({
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     value={String(field.value)}
+                    disabled={viewOnlyMode}
                     error={!!errors.condition}
                     onAddNew={() => openAddValueModal("Condición", "condition", "Agregar Condición")}
                     addNewLabel="Nueva opción"
@@ -787,6 +869,7 @@ export default function TutorModal({
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     value={String(field.value)}
+                    disabled={viewOnlyMode}
                     error={!!errors.dedication}
                     onAddNew={() => openAddValueModal("Dedicación", "dedication", "Agregar Dedicación")}
                     addNewLabel="Nueva opción"
@@ -812,6 +895,7 @@ export default function TutorModal({
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     value={String(field.value)}
+                    disabled={viewOnlyMode}
                     error={!!errors.category}
                     onAddNew={() => openAddValueModal("Categoría", "category", "Agregar Categoría")}
                     addNewLabel="Nueva opción"
@@ -837,6 +921,7 @@ export default function TutorModal({
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     value={String(field.value)}
+                    disabled={viewOnlyMode}
                     error={!!errors.profession}
                     onAddNew={() => openAddValueModal("Título", "profession", "Agregar Título")}
                     addNewLabel="Nueva opción"
@@ -858,12 +943,13 @@ export default function TutorModal({
                   <CustomSelect
                     id="titulo"
                     options={GRADO_INSTRUCCION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                    placeholder="Seleccione Grado de Instrucción"
+                    placeholder="Seleccione Grado de Instrcción"
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     value={String(field.value)}
+                    disabled={viewOnlyMode}
                     error={!!errors.titulo}
-                    onAddNew={() => openAddValueModal("GRADO DE INSTRUCCIÓN", "titulo", "Agregar Grado de Instrucción")}
+                    onAddNew={() => openAddValueModal("GRADO DE INSTRUCCIÓN", "titulo", "Agregar Grado de Instrcción")}
                     addNewLabel="Nueva opción"
                   />
                 )}
@@ -884,7 +970,7 @@ export default function TutorModal({
                     label="Carreras que Atiende *"
                     placeholder={careersLoading ? "Cargando carreras..." : (isInUse ? "Carreras asignadas (no editable)" : "Seleccione las carreras...")}
                     options={careerOptions}
-                    disabled={careersLoading || isInUse}
+                    disabled={careersLoading || isInUse || viewOnlyMode}
                   />
                 )}
               />
@@ -905,12 +991,16 @@ export default function TutorModal({
             viewOnlyMode ? (
               <AsyncButton 
                 type="button"
-                className="w-full sm:w-auto min-h-12"
+                className="w-full sm:w-auto min-h-12 bg-warning-500 hover:bg-warning-600 text-white"
                 onClick={() => {
-                  setViewOnlyMode(false);
+                  if (onEditExisting) {
+                    onEditExisting(existingTutor);
+                  } else {
+                    setViewOnlyMode(false);
+                  }
                 }}
               >
-                Habilitar Edición
+                Editar Registro
               </AsyncButton>
             ) : (
               <AsyncButton 

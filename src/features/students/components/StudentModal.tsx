@@ -26,7 +26,7 @@ import {
   StudentFormInput,
   StudentFormOutput
 } from "../constants/validation";
-import { formatCedulaDisplay, formatPhoneDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, formatPhoneDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS } from "../../../utils/inputFormat";
 
 /**
  * Propiedades del componente StudentModal.
@@ -172,7 +172,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
             setValue("birthDate", existingStudentData.birthDate || "");
             setValue("civilStatus", existingStudentData.civilStatus || "");
             setValue("phonePrefix", phonePrefix);
-            setDisplayPhoneNumber(formatPhoneDisplay(phoneNumber));
+                                setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
             setValue("phoneNumber", phoneNumber);
             setValue("email", existingStudentData.email || "");
             setValue("address", existingStudentData.address || "");
@@ -512,7 +512,7 @@ useEffect(() => {
           works: (editingStudent.works || "").toUpperCase(),
         });
         setDisplayIdentificationNumber(formatCedulaDisplay(editingStudent.identificationNumber, false));
-        setDisplayPhoneNumber(formatPhoneDisplay(editingStudent.phone || ""));
+        setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
       } else {
         reset({
           identificationPrefix: "",
@@ -696,7 +696,7 @@ useEffect(() => {
                                 setValue("birthDate", existingStudentData.birthDate || "");
                                 setValue("civilStatus", existingStudentData.civilStatus || "");
                                 setValue("phonePrefix", phonePrefix);
-                                setDisplayPhoneNumber(formatPhoneDisplay(phoneNumber));
+            setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
                                 setValue("phoneNumber", phoneNumber);
                                 setValue("email", existingStudentData.email || "");
                                 setValue("address", existingStudentData.address || "");

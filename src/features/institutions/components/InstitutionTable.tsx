@@ -11,6 +11,7 @@ import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIc
 import { Institution } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { useDebounce } from "../../../hooks/useDebounce";
+import { formatPhoneDisplay } from "../../../utils/inputFormat";
 
 interface InstitutionTableProps {
   data: Institution[];
@@ -403,7 +404,7 @@ export default function InstitutionTable({
                             {i.rif}
                         </TableCell>
                         <TableCell className="text-text-secondary dark:text-text-tertiary font-semibold">{i.name}</TableCell>
-                        <TableCell className="text-text-secondary dark:text-text-tertiary whitespace-nowrap">{i.phone}</TableCell>
+                        <TableCell className="text-text-secondary dark:text-text-tertiary whitespace-nowrap">{formatPhoneDisplay(i.phone)}</TableCell>
                         <TableCell className="table-cell text-right">
                             <ActionButtons
                                 onView={onView ? () => onView(i) : undefined}
@@ -462,7 +463,7 @@ export default function InstitutionTable({
                                 <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
                                     <div className="flex flex-col items-center">
                                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Teléfono</p>
-                                        <p className="text-sm text-text-primary dark:text-text-tertiary font-medium">{i.phone}</p>
+                                        <p className="text-sm text-text-primary dark:text-text-tertiary font-medium">{formatPhoneDisplay(i.phone)}</p>
                                     </div>
                                     <div className="flex flex-col items-center">
                                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Tipo</p>

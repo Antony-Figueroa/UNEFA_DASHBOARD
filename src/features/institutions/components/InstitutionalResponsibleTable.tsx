@@ -27,7 +27,7 @@ import { AsyncActionButton } from "../../../components/common/AsyncActionButton"
 import { useDebounce } from "../../../hooks/useDebounce";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { InstitutionalResponsible } from "../types";
-import { maskIdentification, maskPhone, maskEmail } from "../../../utils/maskData";
+import { cleanCedula, cleanPhone, formatPhoneDisplay, formatPhoneLocalDisplay, formatCedulaDisplay } from "../../../utils/inputFormat";
 
 /**
  * Props for the InstitutionalResponsibleTable component.
@@ -474,7 +474,7 @@ export default function InstitutionalResponsibleTable({
                     />
                   </TableCell>
                   <TableCell className="font-medium text-text-primary dark:text-white/90">
-                    {item.identificationPrefix}{maskIdentification(item.identificationNumber)}
+                    {item.identificationPrefix}-{item.identificationNumber}
                   </TableCell>
                   <TableCell className="text-text-secondary dark:text-text-tertiary font-semibold">
                     {item.firstName} {item.middleName}
@@ -483,10 +483,10 @@ export default function InstitutionalResponsibleTable({
                     {item.lastName} {item.secondLastName}
                   </TableCell>
                   <TableCell className="text-text-secondary dark:text-text-tertiary whitespace-nowrap">
-                    {maskPhone(item.phone)}
+                    {formatPhoneDisplay(item.phone)}
                   </TableCell>
                   <TableCell className="text-text-secondary dark:text-text-tertiary">
-                    {maskEmail(item.email)}
+                    {item.email}
                   </TableCell>
                   <TableCell className="text-center">
                     <Badge color="primary" variant="light" size="sm" shape="rounded">
@@ -540,7 +540,7 @@ export default function InstitutionalResponsibleTable({
                         {item.firstName} {item.lastName}
                       </h3>
                       <p className="text-xs text-text-secondary mt-1 truncate">
-                        {item.identificationPrefix}{maskIdentification(item.identificationNumber)}
+                        {item.identificationPrefix}-{item.identificationNumber}
                       </p>
                     </div>
                     <button
@@ -571,7 +571,7 @@ export default function InstitutionalResponsibleTable({
                           Correo
                         </p>
                         <p className="text-sm text-text-primary dark:text-text-tertiary font-medium truncate w-full max-w-62.5">
-                          {maskEmail(item.email)}
+                          {item.email}
                         </p>
                       </div>
                       <div className="col-span-2 flex flex-col items-center">
@@ -579,7 +579,7 @@ export default function InstitutionalResponsibleTable({
                           Teléfono
                         </p>
                         <p className="text-sm text-text-primary dark:text-text-tertiary font-medium">
-                          {maskPhone(item.phone)}
+                          {formatPhoneDisplay(item.phone)}
                         </p>
                       </div>
                     </div>

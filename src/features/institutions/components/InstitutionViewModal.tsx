@@ -198,7 +198,7 @@ export default function InstitutionViewModal({
                                                     <p className="text-sm font-semibold text-text-primary dark:text-white/90">
                                                         {resp.firstName} {resp.lastName}
                                                         <span className="text-[10px] font-medium text-text-tertiary ml-2 italic">
-                                                            ({resp.cargo || 'Sin cargo'})
+                                                            ({resp.institutions?.find(inst => inst.institutionId === institution?.institutionId)?.cargo || 'Sin cargo'})
                                                         </span>
                                                     </p>
                                                 </div>

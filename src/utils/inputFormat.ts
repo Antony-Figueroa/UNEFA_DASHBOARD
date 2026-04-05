@@ -92,29 +92,26 @@ export const formatPhoneDisplay = (value: string): string => {
   // Si tiene prefijo de 4 dígitos (0412, 0212, etc.)
   if (cleaned.length > 4) {
     const prefix = cleaned.slice(0, 4);
-    const number = cleaned.slice(4, 8);
-    return number ? `${prefix}-${number}` : prefix;
+    const number = cleaned.slice(4);
+    if (number.length > 0) {
+      return `${prefix}-${number.slice(0, 7)}`;
+    }
+    return prefix;
   }
   
   // Solo número local (sin prefijo)
   if (cleaned.length <= 4) return cleaned;
-  if (cleaned.length <= 7) return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
-  
-  // Máximo 7 dígitos del número local
-  return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}`;
+  return cleaned.slice(0, 7);
 };
 
 /**
- * Formatea un número de teléfono local (7 dígitos) para visualización (000-0000)
+ * Formatea un número de teléfono local (7 dígitos) para visualización
  * @param value - Solo los 7 dígitos del número
- * @returns Teléfono local con formato visual
+ * @returns Teléfono local sin formato (solo dígitos)
  */
 export const formatPhoneLocalDisplay = (value: string): string => {
   if (!value) return '';
-  const cleaned = value.replace(/\D/g, '').substring(0, 7);
-  
-  if (cleaned.length <= 3) return cleaned;
-  return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}`;
+  return value.replace(/\D/g, '').substring(0, 7);
 };
 
 /**

@@ -192,6 +192,19 @@ export default function InstitutionModal({
   const [askAddResponsiblesOpen, setAskAddResponsiblesOpen] = useState(false);
   const [newlyAddedResponsibles, setNewlyAddedResponsibles] = useState<InstitutionalResponsible[]>([]);
 
+  // Resetear estados cuando se abre el modal
+  useEffect(() => {
+    if (isOpen) {
+      // Resetear todo los estados relacionados con el flujo de responsables
+      setShowResponsibleSection(false);
+      setPendingInstitutionId(null);
+      setAskAddResponsiblesOpen(false);
+      setNewlyAddedResponsibles([]);
+      setRifDuplicateStatus(null);
+      setSavedFormData(null);
+    }
+  }, [isOpen]);
+
   // Estado para el modal de nueva carrera
   const [isNewCareerModalOpen, setIsNewCareerModalOpen] = useState(false);
   const { addCareer } = useCareers();
@@ -1643,7 +1656,7 @@ export default function InstitutionModal({
         onClose={() => {
           setAskAddResponsiblesOpen(false);
           setPendingInstitutionId(null);
-          onClose();
+          // No cerrar el modal padre - solo el diálogo
         }}
         onConfirm={() => {
           setAskAddResponsiblesOpen(false);

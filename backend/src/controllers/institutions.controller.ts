@@ -73,9 +73,8 @@ const mapDBToFrontend = (i: any) => ({
   extension: i.EXTENSION, // This will be replaced by getFullName later in getInstitutions
   institutionType: i.INSTITUTION_TYPE, // This will be replaced by getFullName later in getInstitutions
   practiceTypes: i.PRACTICE_TYPE ? [i.PRACTICE_TYPE] : [],
-  // Support both single internshipTypeId (from main table) and array (from pivot)
-  internshipTypeId: i.INTERNSHIP_TYPE_ID ? String(i.INTERNSHIP_TYPE_ID) : 
-                  (i.internshipTypeIds && i.internshipTypeIds.length > 0 ? String(i.internshipTypeIds[0]) : undefined),
+  // internshipTypeId should come from PRACTICE_TYPE (stored as '1', '2', '3')
+  internshipTypeId: i.PRACTICE_TYPE ? String(i.PRACTICE_TYPE) : undefined,
   internshipTypeIds: i.internshipTypeIds || [],
   status: i.STATUS === 1,
   registrationDate: i.CREATION_DATE,
@@ -330,7 +329,7 @@ export const createInstitution = async (req: AuthRequest, res: Response) => {
     const normalizedRif = i.rif?.toUpperCase().trim();
     
     // Generar INSTITUTION_CODE único basado en RIF
-    const institutionCode = await generateInstitutionCode(null, normalizedRif);
+    const institutionCode = await generateInstitutionCode(normalizedRif);
     
     const dbData: Record<string, any> = {
       INSTITUTION_NAME: i.name,
@@ -514,21 +513,24 @@ export const deleteInstitution = async (req: AuthRequest, res: Response) => {
  * Genera un INSTITUTION_CODE único basado en el RIF.
  * Si ya existe una institución con ese RIF, agrega sufijo secuencial (-001, -002, etc.)
  */
-const generateInstitutionCode = async (supabase: any, rif: string): Promise<string> => {
+const generateInstitutionCode = async (rif: string): Promise<string> => {
   const normalizedRif = rif.toUpperCase().trim();
   
-  // Buscar instituciones con este RIF (solo las que tienen INSTITUTION_CODE que empieza con el RIF)
-  const { data: existing, error: searchError } = await supabase
-    .from(TABLE_NAME)
-    .select('INSTITUTION_CODE')
-    .like('INSTITUTION_CODE', `${normalizedRif}%`)
-    .order('INSTITUTION_CODE', { ascending: false })
-    .limit(10);
+  // Buscar instituciones con este RIF usando dbManager
+  const existing = await dbManager.withRetry(async (supabase) => {
+    const { data, error } = await supabase
+      .from(TABLE_NAME)
+      .select('INSTITUTION_CODE')
+      .like('INSTITUTION_CODE', `${normalizedRif}%`)
+      .order('INSTITUTION_CODE', { ascending: false })
+      .limit(10);
 
-  if (searchError) {
-    console.error('[generateInstitutionCode] Error buscando:', searchError);
-    throw searchError;
-  }
+    if (error) {
+      console.error('[generateInstitutionCode] Error buscando:', error);
+      throw error;
+    }
+    return data;
+  }, 'generateInstitutionCode');
 
   if (!existing || existing.length === 0) {
     // Primera institución con este RIF
@@ -581,7 +583,7 @@ export const checkRifExists = async (req: Request, res: Response) => {
     
     // Generar código sugerido para crear nueva institución
     const suggestedCode = exists 
-      ? await dbManager.withRetry(async (supabase) => generateInstitutionCode(supabase, normalizedRif), 'generateCode')
+      ? await generateInstitutionCode(normalizedRif)
       : normalizedRif;
     
     console.log(`[checkRifExists] RIF ${normalizedRif}: ${exists ? 'ya existe' : 'disponible'}`);

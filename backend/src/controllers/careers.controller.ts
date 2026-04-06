@@ -66,6 +66,19 @@ export const getCareerById = async (req: Request, res: Response) => {
   }
 };
 
+export const getCareerByCode = async (req: Request, res: Response) => {
+  try {
+    const { code } = req.params;
+    const result = await careersService.getCareerByCode(code);
+    if (!result) {
+      return res.status(404).json({ message: 'Carrera no encontrada', data: null });
+    }
+    res.json({ data: result });
+  } catch (error) {
+    handleDbError(res, error);
+  }
+};
+
 export const createCareer = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId || 1;

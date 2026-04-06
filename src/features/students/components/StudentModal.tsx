@@ -306,7 +306,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
     resolver: zodResolver(studentSchema),
     mode: "all",
     defaultValues: editingStudent ? { ...editingStudent } : {
-      identificationPrefix: "",
+      identificationPrefix: "V",
       identificationNumber: "",
       firstName: "",
       middleName: "",
@@ -515,7 +515,7 @@ useEffect(() => {
         setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
       } else {
         reset({
-          identificationPrefix: "",
+          identificationPrefix: "V",
           identificationNumber: "",
           firstName: "",
           middleName: "",
@@ -613,6 +613,16 @@ useEffect(() => {
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
         <form id="student-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 w-full">
+          {existingStudent && viewOnlyMode && (
+            <div className="flex items-center space-x-3 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-warning-700 dark:text-warning-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.492-1.646-1.742-2.98l5.58-9.92zM11 13a1 1 0 10-2 0v-3a1 1 0 112 0v3zm-1-8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+              </svg>
+              <span className="text-sm font-medium text-warning-700 dark:text-warning-400">
+                Registro existente - Click en 'Editar Registro' para modificar
+              </span>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
             {/* Fila 1 */}
             <div>
@@ -642,16 +652,7 @@ useEffect(() => {
                     onChange={handleIdentificationNumberChange}
                     placeholder="V00.000.000"
                     error={!!errors.identificationNumber}
-                    hint={
-                      <div className="flex items-center gap-2 mt-1">
-                        {existingStudent && (
-                          <Badge color="warning" variant="light" size="sm">
-                            Registro existente - Click en "Editar Registro" para modificar
-                          </Badge>
-                        )}
-                        {isCheckingCi && <span className="text-blue-600 animate-pulse">Verificando...</span>}
-                      </div>
-                    }
+                    hint={errors.identificationNumber?.message || (isCheckingCi ? <span className="text-blue-600 animate-pulse">Verificando...</span> : undefined)}
                     disabled={!!editingStudent}
                     maxLength={CEDULA_MAX_LENGTH}
                     autoComplete="off"

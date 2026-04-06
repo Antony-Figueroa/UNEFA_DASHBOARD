@@ -385,7 +385,7 @@ export default function InstitutionModal({
     resolver: zodResolver(instSchema),
     mode: "onChange",
     defaultValues: {
-      rifPrefix: "",
+      rifPrefix: "G",
       rifNumber: "",
       name: "",
       phonePrefix: "",
@@ -796,7 +796,7 @@ export default function InstitutionModal({
         setSavedFormData(null);
         
         reset({
-          rifPrefix: "",
+          rifPrefix: "G",
           rifNumber: "",
           name: "",
           phonePrefix: "",

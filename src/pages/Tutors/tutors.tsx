@@ -189,6 +189,28 @@ export default function TutorsPage() {
         setIsModalOpen(true);
     };
 
+    // Maneja la transición de "crear nuevo" a "editar existente" cuando se detecta duplicado
+    const handleEditFromExisting = (existingTutor: any) => {
+        // Cerrar el modal inmediatamente
+        setIsModalOpen(false);
+        
+        // Limpiar cualquier estado residual del modal de creación
+        // Luego abrir en modo edición
+        setTimeout(() => {
+            setEditingTutor(existingTutor);
+            setIsModalOpen(true);
+        }, 200);
+    };
+
+    // Cleanup del existingTutor cuando se cierra el modal
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        // Delay para asegurar que el modal se cierre antes de limpiar
+        setTimeout(() => {
+            setEditingTutor(null);
+        }, 100);
+    };
+
     /**
      * Maneja el guardado (creación o edición) de un tutor.
      * 
@@ -382,11 +404,12 @@ export default function TutorsPage() {
 
                     <TutorModal
                         isOpen={isModalOpen}
-                        onClose={() => setIsModalOpen(false)}
+                        onClose={handleCloseModal}
                         onSave={handleSave}
                         editingTutor={editingTutor}
                         isLoading={loadingAction}
                         tutors={tutors}
+                        onEditExisting={handleEditFromExisting}
                     />
 
                     <TutorViewModal

@@ -206,6 +206,26 @@ export default function StudentsPage() {
         setIsModalOpen(true);
     };
 
+    // Maneja la transición de "crear nuevo" a "editar existente" cuando se detecta duplicado
+    const handleEditFromExisting = (existingStudent: any) => {
+        // Cerrar el modal inmediatamente
+        setIsModalOpen(false);
+        // Delay para asegurar que el modal se cierre antes de limpiar
+        setTimeout(() => {
+            setEditingStudent(existingStudent);
+            setIsModalOpen(true);
+        }, 200);
+    };
+
+    // Cleanup del existingStudent cuando se cierra el modal
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        // Delay para asegurar que el modal se cierre antes de limpiar
+        setTimeout(() => {
+            setEditingStudent(null);
+        }, 100);
+    };
+
     const handleExportExcel = () => {
         const columns: ExportColumn<Record<string, unknown>>[] = [
             { key: 'identificationNumber', label: 'Cédula' },
@@ -456,12 +476,13 @@ export default function StudentsPage() {
 
                     <StudentModal
                         isOpen={isModalOpen}
-                        onClose={() => setIsModalOpen(false)}
+                        onClose={handleCloseModal}
                         onSave={handleSave}
                         editingStudent={editingStudent}
                         careerOptions={careerOptions}
                         dynamicLists={dynamicLists}
                         isLoading={loadingAction}
+                        onEditExisting={handleEditFromExisting}
                     />
                     <CareerModal
                         isOpen={isCareerModalOpen}

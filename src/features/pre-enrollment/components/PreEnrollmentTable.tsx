@@ -588,7 +588,7 @@ export default function PreEnrollmentTable({
                                         </Tooltip>
                                     </TableCell>
                                     <TableCell className="table-cell font-medium text-text-primary dark:text-text-emphasis">
-                                        {s.identificationPrefix}-{maskIdentification(s.identificationNumber)}
+                                        {s.identificationPrefix}-{s.identificationNumber}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
                                         {s.studentName}
@@ -661,7 +661,7 @@ export default function PreEnrollmentTable({
                                             <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8 uppercase">
                                                 {s.studentName}
                                             </h3>
-                                            <p className="text-xs text-text-secondary mt-1 truncate uppercase">{s.identificationPrefix}-{maskIdentification(s.identificationNumber)}</p>
+                                            <p className="text-xs text-text-secondary mt-1 truncate">{s.identificationPrefix}-{s.identificationNumber}</p>
                                         </div>
                                         <button
                                             onClick={async () => toggleRowExpansion(preEnrollmentId)}

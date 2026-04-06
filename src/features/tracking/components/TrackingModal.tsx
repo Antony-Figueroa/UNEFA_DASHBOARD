@@ -208,7 +208,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
      */
     const handleVisitRegister = () => {
         if (tracking?.trackingId) {
-            navigate(`/tracking/visits/${tracking.trackingId}`);
+            navigate(`/visit-registration/${tracking.trackingId}`);
         }
     };
 

@@ -59,7 +59,6 @@ export default function TrackingPage() {
         onConfirm: () => void;
         variant: 'info' | 'error' | 'warning' | 'success';
     } | null>(null);
-    const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
 
     /**
      * Carga las estadísticas de seguimiento desde el servidor.
@@ -217,11 +216,10 @@ export default function TrackingPage() {
     };
 
     const tableData = useMemo(() => trackings
-        .filter(t => t.status === (activeTab === 'active'))
         .map(t => ({
             ...t,
             creationDate: t.creationDate.toLocaleDateString(),
-        })), [trackings, activeTab]);
+        })), [trackings]);
 
     return (
         <ErrorBoundary
@@ -268,24 +266,7 @@ export default function TrackingPage() {
 
                     <div className="space-y-6">
                         <TrackingStatsChart stats={stats} loading={statsLoading} />
-                        <ComponentCard title={activeTab === 'active' ? "Seguimientos Activos" : "Seguimientos Inactivos"}>
-                            <div className="mb-6 flex border-b border-border-light dark:border-white/5">
-                                <button
-                                    onClick={() => setActiveTab('active')}
-                                    className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === 'active' ? "text-brand-500" : "text-text-secondary hover:text-text-primary"}`}
-                                >
-                                    Activos
-                                    {activeTab === 'active' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500" />}
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('inactive')}
-                                    className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === 'inactive' ? "text-brand-500" : "text-text-secondary hover:text-text-primary"}`}
-                                >
-                                    Inactivos
-                                    {activeTab === 'inactive' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500" />}
-                                </button>
-                            </div>
-
+                        <ComponentCard title="Seguimientos">
                             <div className="animate-fadeIn">
                                 <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />}>
                                     <TrackingTable

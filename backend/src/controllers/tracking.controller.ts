@@ -20,10 +20,14 @@ interface DBTrackingResponse extends DBProfessionalPractice {
     STUDENTS_CI: string;
     NAME: string;
     SURNAME: string;
-  }
+    t_career?: {
+      CAREER_ID: number;
+      CAREER_NAME: string;
+    };
+  };
 }
 
-const mapDBToFrontend = (p: DBProfessionalPractice) => ({
+const mapDBToFrontend = (p: DBTrackingResponse) => ({
   trackingId: String(p.PROFESSIONAL_PRACTICE_ID),
   studentIdNumber: p.STUDENT_CI,
   studentName: `${p.STUDENT_NAME} ${p.STUDENT_SURNAME}`,
@@ -32,7 +36,8 @@ const mapDBToFrontend = (p: DBProfessionalPractice) => ({
   route: p.TOUR,
   observations: p.OBSERVATION,
   status: p.STATUS === 1,
-  creationDate: new Date(p.CREATION_DATE)
+  creationDate: new Date(p.CREATION_DATE),
+  careerName: p.t_students?.t_career?.CAREER_NAME || null
 });
 
 export const getTrackings = async (_req: Request, res: Response) => {
@@ -45,9 +50,14 @@ export const getTrackings = async (_req: Request, res: Response) => {
         t_students:STUDENTS_ID (
           STUDENTS_CI,
           NAME,
-          SURNAME
+          SURNAME,
+          t_career:CAREER_ID (
+            CAREER_ID,
+            CAREER_NAME
+          )
         )
       `)
+      .eq('PRACTICES_STATUS', 2)
       .eq('STATUS', 1);
 
     if (error) throw error;
@@ -56,7 +66,8 @@ export const getTrackings = async (_req: Request, res: Response) => {
       ...p,
       STUDENT_CI: p.t_students?.STUDENTS_CI || "",
       STUDENT_NAME: p.t_students?.NAME || "",
-      STUDENT_SURNAME: p.t_students?.SURNAME || ""
+      STUDENT_SURNAME: p.t_students?.SURNAME || "",
+      CAREER_NAME: p.t_students?.t_career?.CAREER_NAME || null
     })).map(mapDBToFrontend);
 
     res.json(formattedData);

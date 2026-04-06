@@ -238,6 +238,7 @@ export default function PeriodModal({
      * No debe ejecutarse durante la inicialización para evitar sobrescribir los valores sugeridos.
      */
     useEffect(() => {
+        // Solo ejecutar si hay un año seleccionado (no cadena vacía)
         if (!isOpen || periodo || !yearValue || isInitializing.current) return;
 
         const selectedYearNum = parseInt(yearValue);
@@ -482,7 +483,19 @@ export default function PeriodModal({
                                                 disabled={isCulminado || isInCurso}
                                                 value={field.value ?? ''}
                                                 onChange={(dateStr) => {
-                                                    const date = dateStr ? new Date(dateStr + 'T00:00:00') : null;
+                                                    // Parsear fecha desde formato dd/mm/yyyy
+                                                    const parseDate = (str: string): Date | null => {
+                                                        if (!str) return null;
+                                                        const parts = str.split('/');
+                                                        if (parts.length !== 3) return null;
+                                                        const day = parseInt(parts[0], 10);
+                                                        const month = parseInt(parts[1], 10) - 1;
+                                                        const year = parseInt(parts[2], 10);
+                                                        if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+                                                        // Crear fecha en hora local del mediodía para evitar problemas de timezone
+                                                        return new Date(year, month, day, 12, 0, 0);
+                                                    };
+                                                    const date = parseDate(dateStr);
                                                     field.onChange(date);
                                                     if (date) {
                                                         const minDuration = 16 * 7 * 24 * 60 * 60 * 1000;
@@ -520,7 +533,21 @@ export default function PeriodModal({
                                             <FlatpickrDatePicker
                                                 disabled={isCulminado}
                                                 value={field.value ?? ''}
-                                                onChange={(dateStr) => field.onChange(dateStr ? new Date(dateStr + 'T00:00:00') : null)}
+                                                onChange={(dateStr) => {
+                                                    // Parsear fecha desde formato dd/mm/yyyy
+                                                    const parseDate = (str: string): Date | null => {
+                                                        if (!str) return null;
+                                                        const parts = str.split('/');
+                                                        if (parts.length !== 3) return null;
+                                                        const day = parseInt(parts[0], 10);
+                                                        const month = parseInt(parts[1], 10) - 1;
+                                                        const year = parseInt(parts[2], 10);
+                                                        if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+                                                        // Crear fecha en hora local del mediodía para evitar problemas de timezone
+                                                        return new Date(year, month, day, 12, 0, 0);
+                                                    };
+                                                    field.onChange(parseDate(dateStr));
+                                                }}
                                                 options={{
                                                     minDate: minEndDate,
                                                     maxDate: maxEndDate,

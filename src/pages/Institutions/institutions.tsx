@@ -501,11 +501,17 @@ export default function InstitutionsPage() {
           try {
             if (editingInst) {
               await editInstitution({ ...editingInst, ...data } as UpdateInstitutionPayload);
+              // Notificar que una institución fue editada
+              const evt = new CustomEvent("institution:saved");
+              window.dispatchEvent(evt);
               setIsModalOpen(false);
             } else {
               const newInst = await addInstitution(data as CreateInstitutionPayload);
 
               if (newInst) {
+                // Notificar que una nueva institución fue creada
+                const evt = new CustomEvent("institution:saved");
+                window.dispatchEvent(evt);
                 return { institutionId: newInst.institutionId, name: newInst.name };
               }
             }

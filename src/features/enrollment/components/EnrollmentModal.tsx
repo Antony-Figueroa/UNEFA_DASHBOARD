@@ -199,6 +199,8 @@ export default function EnrollmentModal({
 
   const idNumber = useWatch({ control, name: "identificationNumber" });
   const idPrefix = useWatch({ control, name: "identificationPrefix" });
+  const selectedCareerName = useWatch({ control, name: "careerName" });
+  const selectedPracticeType = useWatch({ control, name: "practiceType" });
   const selectedInstitutionId = useWatch({ control, name: "institutionId" });
   const selectedAcademicTutorId = useWatch({ control, name: "academicTutorId" });
   const selectedMethodologicalTutorId = useWatch({ control, name: "methodologicalTutorId" });
@@ -423,17 +425,20 @@ export default function EnrollmentModal({
       try {
         const careerData = await getCareers();
         setCareersState(careerData.filter((c: any) => c.status));
-        // Mostrar notificación de éxito
-        console.log("[EnrollmentModal] Carrera agregada exitosamente");
+        console.log("[EnrollmentModal] Carrera actualizada exitosamente");
       } catch (error) {
         console.error("[EnrollmentModal] Error al recargar carreras:", error);
       }
     };
 
+    // Escuchar evento de nueva carrera creada
     window.addEventListener("enrollment:careerAdded", handleCareerAdded);
+    // Escuchar evento de carrera editada (actualizada)
+    window.addEventListener("career:saved", handleCareerAdded);
 
     return () => {
       window.removeEventListener("enrollment:careerAdded", handleCareerAdded);
+      window.removeEventListener("career:saved", handleCareerAdded);
     };
   }, []);
 
@@ -591,10 +596,39 @@ export default function EnrollmentModal({
       }
     };
 
+    // Escuchar evento de nuevo tutor creado
     window.addEventListener("enrollment:tutorAdded", handleTutorAdded);
+    // Escuchar evento de tutor editado (actualizado)
+    window.addEventListener("tutor:saved", handleTutorAdded);
 
     return () => {
       window.removeEventListener("enrollment:tutorAdded", handleTutorAdded);
+      window.removeEventListener("tutor:saved", handleTutorAdded);
+    };
+  }, []);
+
+  /**
+   * Efecto para escuchar cuando se crea/actualiza una institución y recargar la lista.
+   */
+  useEffect(() => {
+    const handleInstitutionSaved = async () => {
+      try {
+        const institutionData = await getInstitutions();
+        setInstitutions(institutionData.filter(i => i.status));
+        console.log("[EnrollmentModal] Instituciones actualizadas");
+      } catch (error) {
+        console.error("[EnrollmentModal] Error al recargar instituciones:", error);
+      }
+    };
+
+    // Escuchar evento de nueva institución creada
+    window.addEventListener("enrollment:addInstitution", handleInstitutionSaved);
+    // Escuchar evento de institución editada
+    window.addEventListener("institution:saved", handleInstitutionSaved);
+
+    return () => {
+      window.removeEventListener("enrollment:addInstitution", handleInstitutionSaved);
+      window.removeEventListener("institution:saved", handleInstitutionSaved);
     };
   }, []);
 
@@ -968,23 +1002,56 @@ export default function EnrollmentModal({
                   <Controller
                     name="academicTutorId"
                     control={control}
-                    render={({ field }) => (
-                      <CustomSelect
-                        options={tutors
-                          .filter(t => t.tutorId !== selectedMethodologicalTutorId)
-                          .map(t => ({
+                    render={({ field }) => {
+                      const careerId = String(selectedCareerName);
+                      const filteredTutors = tutors.filter(t => {
+                        // Excluir el tutor metodológico seleccionado
+                        if (t.tutorId === selectedMethodologicalTutorId) return false;
+                        // Filtrar por carrera si hay una seleccionada
+                        if (careerId && t.carreras) {
+                          return t.carreras.some((c: string) => String(c) === careerId || c === careerId);
+                        }
+                        return true;
+                      });
+                      
+                      return (
+                        <CustomSelect
+                          options={filteredTutors.map(t => ({
                             value: t.tutorId,
                             label: `${t.firstName} ${t.lastName}`
                           }))}
-                        placeholder="Seleccione el tutor académico"
-                        onChange={field.onChange}
-                        value={String(field.value)}
-                        className="rounded-xl h-[48px]"
-                      />
-                    )}
+                          placeholder={careerId 
+                            ? (filteredTutors.length === 0 
+                                ? "No hay tutores para esta carrera" 
+                                : "Seleccione el tutor académico")
+                            : "Seleccione un estudiante primero"}
+                          onChange={field.onChange}
+                          value={String(field.value)}
+                          className="rounded-xl h-[48px]"
+                          disabled={!careerId}
+                          onAddNew={careerId ? () => {
+                            const evt = new CustomEvent("enrollment:addTutor");
+                            window.dispatchEvent(evt);
+                          } : undefined}
+                          addNewLabel={careerId && filteredTutors.length > 0 ? "Nuevo Tutor Académico" : undefined}
+                        />
+                      );
+                    }}
                   />
                   {errors.academicTutorId && (
                     <p className="text-[11px] font-bold text-error-500">{errors.academicTutorId.message}</p>
+                  )}
+                  {selectedCareerName && tutors.filter(t => {
+                    if (t.tutorId === selectedMethodologicalTutorId) return false;
+                    const careerId = String(selectedCareerName);
+                    if (careerId && t.carreras) {
+                      return t.carreras.some((c: string) => String(c) === careerId || c === careerId);
+                    }
+                    return true;
+                  }).length === 0 && (
+                    <p className="text-[11px] font-bold text-amber-600">
+                      No hay tutores asignados a esta carrera. ¿Desea crear uno?
+                    </p>
                   )}
                   <Button
                     type="button"
@@ -1015,37 +1082,57 @@ export default function EnrollmentModal({
                   <Controller
                     name="methodologicalTutorId"
                     control={control}
-                    render={({ field }) => (
-                      <CustomSelect
-                        options={tutors
-                          .filter(t => t.tutorId !== selectedAcademicTutorId)
-                          .map(t => ({
+                    render={({ field }) => {
+                      const careerId = String(selectedCareerName);
+                      const filteredTutors = tutors.filter(t => {
+                        // Excluir el tutor académico seleccionado
+                        if (t.tutorId === selectedAcademicTutorId) return false;
+                        // Filtrar por carrera si hay una seleccionada
+                        if (careerId && t.carreras) {
+                          return t.carreras.some((c: string) => String(c) === careerId || c === careerId);
+                        }
+                        return true;
+                      });
+                      
+                      return (
+                        <CustomSelect
+                          options={filteredTutors.map(t => ({
                             value: t.tutorId,
                             label: `${t.firstName} ${t.lastName}`
                           }))}
-                        placeholder="Seleccione el tutor metodológico"
-                        onChange={field.onChange}
-                        value={String(field.value)}
-                        className="rounded-xl h-[48px]"
-                      />
-                    )}
+                          placeholder={careerId 
+                            ? (filteredTutors.length === 0 
+                                ? "No hay tutores para esta carrera" 
+                                : "Seleccione el tutor metodológico")
+                            : "Seleccione un estudiante primero"}
+                          onChange={field.onChange}
+                          value={String(field.value)}
+                          className="rounded-xl h-[48px]"
+                          disabled={!careerId}
+                          onAddNew={careerId ? () => {
+                            const evt = new CustomEvent("enrollment:addTutor");
+                            window.dispatchEvent(evt);
+                          } : undefined}
+                          addNewLabel={careerId && filteredTutors.length > 0 ? "Nuevo Tutor Metodológico" : undefined}
+                        />
+                      );
+                    }}
                   />
                   {errors.methodologicalTutorId && (
                     <p className="text-[11px] font-bold text-error-500">{errors.methodologicalTutorId.message}</p>
                   )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      const evt = new CustomEvent("enrollment:addTutor");
-                      window.dispatchEvent(evt);
-                    }}
-                    className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start rounded-lg font-bold"
-                  >
-                    <SearchIcon className="w-4 h-4 mr-1" />
-                    Nuevo Tutor Metodológico
-                  </Button>
+                  {selectedCareerName && tutors.filter(t => {
+                    if (t.tutorId === selectedAcademicTutorId) return false;
+                    const careerId = String(selectedCareerName);
+                    if (careerId && t.carreras) {
+                      return t.carreras.some((c: string) => String(c) === careerId || c === careerId);
+                    }
+                    return true;
+                  }).length === 0 && (
+                    <p className="text-[11px] font-bold text-amber-600">
+                      No hay tutores asignados a esta carrera. ¿Desea crear uno?
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -1065,38 +1152,65 @@ export default function EnrollmentModal({
                     <Controller
                       name="institutionId"
                       control={control}
-                      render={({ field }) => (
-                        <CustomSelect
-                          options={institutions.map(i => ({
-                            value: i.institutionId,
-                            label: `${i.name}${i.region || i.nucleus ? ` (${[i.region, i.nucleus].filter(Boolean).join(' - ')})` : ''}`
-                          }))}
-                          placeholder="Seleccione la institución"
-                          onChange={(val) => {
-                            field.onChange(val);
-                            setValue("institutionResponsibleId", "");
-                          }}
-                          value={String(field.value)}
-                          className="rounded-xl h-[48px]"
-                        />
-                      )}
+                      render={({ field }) => {
+                        const careerId = String(selectedCareerName);
+                        const practiceTypeId = String(selectedPracticeType);
+                        const filteredInstitutions = institutions.filter(inst => {
+                          // Filtrar por tipo de práctica si hay uno seleccionado
+                          if (practiceTypeId && inst.internshipTypeIds) {
+                            const hasPracticeType = inst.internshipTypeIds.some((t: string | number) => {
+                              const instTypeId = String(t);
+                              return instTypeId === practiceTypeId || instTypeId === String(Number(practiceTypeId));
+                            });
+                            if (!hasPracticeType) return false;
+                          }
+                          // Filtrar por carrera si hay una seleccionada
+                          if (careerId && inst.careerIds) {
+                            return inst.careerIds.some((c: string | number) => {
+                              const instCareerId = String(c);
+                              return instCareerId === careerId || instCareerId === String(Number(careerId));
+                            });
+                          }
+                          return true;
+                        });
+                        
+                        return (
+                          <>
+                            <CustomSelect
+                              options={filteredInstitutions.map(i => ({
+                                value: i.institutionId,
+                                label: `${i.name}${i.region || i.nucleus ? ` (${[i.region, i.nucleus].filter(Boolean).join(' - ')})` : ''}`
+                              }))}
+                              placeholder={selectedPracticeType && careerId 
+                                ? (filteredInstitutions.length === 0 
+                                    ? "No hay instituciones para esta carrera y tipo de práctica" 
+                                    : "Seleccione la institución")
+                                : "Seleccione un estudiante primero"}
+                              onChange={(val) => {
+                                field.onChange(val);
+                                setValue("institutionResponsibleId", "");
+                              }}
+                              value={String(field.value)}
+                              className="rounded-xl h-[48px]"
+                              disabled={!selectedPracticeType || !careerId}
+                              onAddNew={selectedPracticeType && careerId ? () => {
+                                const evt = new CustomEvent("enrollment:addInstitution");
+                                window.dispatchEvent(evt);
+                              } : undefined}
+                              addNewLabel={selectedPracticeType && careerId && filteredInstitutions.length > 0 ? "Nueva Institución" : undefined}
+                            />
+                            {selectedPracticeType && selectedCareerName && filteredInstitutions.length === 0 && (
+                              <p className="text-[11px] font-bold text-amber-600">
+                                No hay instituciones para esta carrera y tipo de práctica. ¿Desea crear una?
+                              </p>
+                            )}
+                          </>
+                        );
+                      }}
                     />
                     {errors.institutionId && (
                       <p className="text-[11px] font-bold text-error-500">{errors.institutionId.message}</p>
                     )}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        const evt = new CustomEvent("enrollment:addInstitution");
-                        window.dispatchEvent(evt);
-                      }}
-                      className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start rounded-lg font-bold"
-                    >
-                      <SearchIcon className="w-4 h-4 mr-1" />
-                      Nueva Institución
-                    </Button>
                   </div>
 
                   {/* Responsable */}

@@ -265,6 +265,9 @@ export default function CareersPage() {
       } else {
         await addCareer(payload as CreateCareerPayload);
       }
+      // Notificar a otros componentes que una carrera fue guardada (creada o editada)
+      const evt = new CustomEvent("career:saved");
+      window.dispatchEvent(evt);
       setIsModalOpen(false);
     } catch (e) {
       console.error(e);

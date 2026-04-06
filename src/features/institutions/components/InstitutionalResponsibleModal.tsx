@@ -41,7 +41,7 @@ const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
  */
 const institutionSchema = z.object({
   institutionId: z.string().min(1, "Institución requerida"),
-  cargo: z.string().optional(),
+  cargo: z.string().min(1, "El cargo es obligatorio"),
 });
 
 const respSchema = z.object({
@@ -72,8 +72,8 @@ const respSchema = z.object({
   email: z.string()
     .min(1, "El correo es obligatorio")
     .email("Correo electrónico inválido"),
-  // institutions ya no es obligatorio (puede agregarse después desde la institución)
-  institutions: z.array(institutionSchema),
+  // institutions es obligatorio - debe tener al menos una institución con cargo
+  institutions: z.array(institutionSchema).min(1, "Debe agregar al menos una institución con su cargo"),
 });
 
 /**

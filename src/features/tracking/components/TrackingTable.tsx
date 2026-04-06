@@ -116,29 +116,7 @@ const ActionButtons = ({
                     fullWidth={isMobile}
                 />
             )}
-            {status ? (
-                canDelete && (
-                    <AsyncActionButton
-                        onClick={async () => onRequestConfirm('delete')}
-                        icon={<TrashIcon />}
-                        tooltip="Inactivar"
-                        label={isMobile ? "Inactivar Seguimiento" : undefined}
-                        variant="danger"
-                        fullWidth={isMobile}
-                    />
-                )
-            ) : (
-                canRestore && (
-                    <AsyncActionButton
-                        onClick={async () => onRequestConfirm('restore')}
-                        icon={<RefreshIcon />}
-                        tooltip="Restaurar"
-                        label={isMobile ? "Restaurar Seguimiento" : undefined}
-                        variant="success"
-                        fullWidth={isMobile}
-                    />
-                )
-            )}
+            {/* Botón de Visitas en la botonera (versión móvil) */}
             {onVisitRegistration && (
                 <AsyncActionButton
                     onClick={async () => onVisitRegistration()}
@@ -285,7 +263,9 @@ export default function TrackingTable({
                         <TableRow>
                             <TableCell isHeader>Cédula</TableCell>
                             <TableCell isHeader>Estudiante</TableCell>
+                            <TableCell isHeader>Carrera</TableCell>
                             <TableCell isHeader>Título Informe</TableCell>
+                            <TableCell isHeader>Visitas</TableCell>
                             <TableCell isHeader className="text-right pr-10">&nbsp;</TableCell>
                         </TableRow>
                     </TableHeader>
@@ -298,14 +278,25 @@ export default function TrackingTable({
                                 <TableCell className="text-text-secondary dark:text-text-tertiary">
                                     {item.studentName}
                                 </TableCell>
+                                <TableCell className="text-text-secondary dark:text-text-tertiary">
+                                    {item.careerName || "-"}
+                                </TableCell>
                                 <TableCell className="text-text-secondary dark:text-text-tertiary max-w-xs truncate">
                                     {item.reportTitle}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    {onVisitRegistration && (
+                                        <AsyncActionButton
+                                            onClick={async () => onVisitRegistration(item)}
+                                            icon={<CalendarIcon />}
+                                            tooltip="Registro de Visitas"
+                                            variant="primary"
+                                        />
+                                    )}
                                 </TableCell>
                                 <TableCell className="table-cell text-right">
                                     <ActionButtons
                                         onView={onView ? () => onView(item) : undefined}
-                                        onVisitRegistration={onVisitRegistration ? () => onVisitRegistration(item) : undefined}
-                                        onActivityLogs={onActivityLogs ? () => onActivityLogs(item) : undefined}
                                         onRequestConfirm={(type) => handleRequestConfirm(type, item)}
                                         status={item.status}
                                         canEdit={!!onEdit}

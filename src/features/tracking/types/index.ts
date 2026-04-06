@@ -33,6 +33,8 @@ export interface Tracking {
     status: boolean;
     /** Fecha de creación del registro */
     creationDate: Date;
+    /** Nombre de la carrera del estudiante */
+    careerName?: string;
 }
 
 /**
@@ -42,6 +44,8 @@ export interface Tracking {
 export interface TrackingRowData extends Omit<Tracking, "creationDate"> {
     /** Fecha de creación formateada como string */
     creationDate: string;
+    /** Nombre de la carrera del estudiante */
+    careerName?: string;
 }
 
 /**

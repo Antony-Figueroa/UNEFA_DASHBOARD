@@ -32,6 +32,8 @@ interface TrackingApiDTO {
     status: boolean;
     /** Fecha de creación (ISO string o timestamp) */
     creationDate?: string | number;
+    /** Nombre de la carrera del estudiante */
+    careerName?: string;
 }
 
 /**
@@ -50,6 +52,7 @@ const fromApi = (dto: TrackingApiDTO): Tracking => ({
     observations: dto.observations,
     status: dto.status,
     creationDate: dto.creationDate ? new Date(dto.creationDate) : new Date(),
+    careerName: dto.careerName,
 });
 
 /**

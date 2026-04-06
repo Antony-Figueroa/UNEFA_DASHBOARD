@@ -71,6 +71,31 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
       }
       
       input.value = formatted;
+      
+      // Si la fecha está completa (8 dígitos = ddmmyyyy), actualizar el calendario inmediatamente
+      if (val.length === 8) {
+        const day = val.slice(0, 2);
+        const month = val.slice(2, 4);
+        const year = val.slice(4, 8);
+        const completeDate = `${day}/${month}/${year}`;
+        
+        // Validar que sea una fecha válida (validar día y mes)
+        const nDay = parseInt(day, 10);
+        const nMonth = parseInt(month, 10);
+        
+        if (nDay >= 1 && nDay <= 31 && nMonth >= 1 && nMonth <= 12 && parseInt(year, 10) >= 1900) {
+          // Verificar que la fecha sea real (no 31 de febrero etc)
+          const testDate = new Date(parseInt(year, 10), nMonth - 1, nDay);
+          if (testDate.getMonth() === nMonth - 1 && testDate.getDate() === nDay) {
+            // Sincronizar con flatpickr - FORZAR actualización sin limpiar el input
+            if (fpInstance.current) {
+              fpInstance.current.setDate(completeDate, false, 'd/m/Y'); // false = no dispara onChange
+            }
+            // Notificar el cambio al componente padre
+            onChange?.(completeDate);
+          }
+        }
+      }
     };
 
     // Función para completar la fecha al perder el foco
@@ -181,13 +206,44 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
       }, 100);
     };
 
-    // Función para validar la tecla presionada
-    const handleKeyDown = (e: KeyboardEvent) => {
+    // Función para validar la tecla presionada y procesar Enter
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // Permitir números, controles, y /
       const isNumber = /[0-9]/.test(e.key);
       const isControl = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'].includes(e.key);
+      const isSlash = e.key === '/';
       
-      if (!isNumber && !isControl) {
+      if (!isNumber && !isControl && !isSlash) {
         e.preventDefault();
+        return;
+      }
+      
+      // Al presionar Enter, procesar la fecha como si fuera blur
+      if (e.key === 'Enter') {
+        const input = e.currentTarget;
+        const val = input.value;
+        
+        // Si la fecha está completa (dd/mm/yyyy), procesarla
+        if (val && val.length === 10) {
+          const parts = val.split('/');
+          if (parts.length === 3 && parts[0].length === 2 && parts[1].length === 2 && parts[2].length === 4) {
+            const day = parseInt(parts[0]);
+            const month = parseInt(parts[1]);
+            const year = parseInt(parts[2]);
+            
+            if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 1900 && year <= 2100) {
+              const dateObj = new Date(year, month - 1, day);
+              
+              // Actualizar flatpickr
+              if (fpInstance.current) {
+                fpInstance.current.setDate(dateObj, true, 'd/m/Y');
+              }
+              
+              // Notificar cambio
+              onChange?.(val);
+            }
+          }
+        }
       }
     };
 

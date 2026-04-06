@@ -12,11 +12,12 @@ import Input from "../../../components/form/input/InputField";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import CustomSelect from "../../../components/form/CustomSelect";
+import Badge from "../../../components/ui/badge/Badge";
 import { 
-  InstitutionalResponsible, 
-  CreateInstitutionalResponsiblePayload, 
-  UpdateInstitutionalResponsiblePayload,
-  CreateInstitutionPayload
+   InstitutionalResponsible, 
+   CreateInstitutionalResponsiblePayload, 
+   UpdateInstitutionalResponsiblePayload,
+   CreateInstitutionPayload
 } from "../types";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
@@ -27,6 +28,7 @@ import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/syst
 import { useToast } from "../../../context/toast";
 import { formatCedulaDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS, PHONE_LOCAL_MAX_LENGTH, formatPhoneLocalDisplay, PHONE_INPUT_CLASS } from "../../../utils/inputFormat";
 import { useInstitutions } from "../hooks/useInstitutions";
+import { getResponsibleByCi } from "../services/institutionalResponsiblesService";
 
 // Lazy load para evitar dependencia circular con InstitutionModal
 const InstitutionModal = lazy(() => import("./InstitutionModal"));
@@ -83,25 +85,27 @@ type RespFormData = z.infer<typeof respSchema>;
  * Props for the InstitutionalResponsibleModal component.
  */
 interface InstitutionalResponsibleModalProps {
-  /** Whether the modal is visible */
-  isOpen: boolean;
-  /** Callback to close the modal */
-  onClose: () => void;
-  /** Callback fired when the form is submitted successfully */
-  onSave: (data: CreateInstitutionalResponsiblePayload | UpdateInstitutionalResponsiblePayload) => Promise<void> | void;
-  /** The responsible record being edited, or null if creating a new one */
-  editingResp?: InstitutionalResponsible | null;
-  /** Options for the institution selection dropdown */
-  institutionOptions: { value: string; label: string }[];
-  /** Whether a background action is in progress */
-  isLoading?: boolean;
-  /** Preselected institution ID (used when creating from institution modal) */
-  preselectedInstitutionId?: string;
-  /** Preselected institution name for display */
-  preselectedInstitutionName?: string;
-  /** Unique ID for modal stack tracking (optional) */
-  modalId?: string;
-}
+   /** Whether the modal is visible */
+   isOpen: boolean;
+   /** Callback to close the modal */
+   onClose: () => void;
+   /** Callback fired when the form is submitted successfully */
+   onSave: (data: CreateInstitutionalResponsiblePayload | UpdateInstitutionalResponsiblePayload) => Promise<void> | void;
+   /** The responsible record being edited, or null if creating a new one */
+   editingResp?: InstitutionalResponsible | null;
+   /** Options for the institution selection dropdown */
+   institutionOptions: { value: string; label: string }[];
+   /** Whether a background action is in progress */
+   isLoading?: boolean;
+   /** Preselected institution ID (used when creating from institution modal) */
+   preselectedInstitutionId?: string;
+   /** Preselected institution name for display */
+   preselectedInstitutionName?: string;
+   /** Unique ID for modal stack tracking (optional) */
+   modalId?: string;
+   /** Callback to handle editing an existing responsible (duplicate detection flow) */
+   onEditExisting?: (existingResponsible: any) => void;
+ }
 
 /**
  * Modal component for creating or editing institutional responsible records.
@@ -119,15 +123,16 @@ interface InstitutionalResponsibleModalProps {
  * ```
  */
 export default function InstitutionalResponsibleModal({
-  isOpen,
-  onClose,
-  onSave,
-  editingResp,
-  institutionOptions,
-  isLoading = false,
-  preselectedInstitutionId,
-  preselectedInstitutionName,
-  modalId,
+   isOpen,
+   onClose,
+   onSave,
+   editingResp,
+   institutionOptions,
+   isLoading = false,
+   preselectedInstitutionId,
+   preselectedInstitutionName,
+   modalId,
+   onEditExisting,
 }: InstitutionalResponsibleModalProps) {
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const { fetchMultipleLists } = useLists();
@@ -145,24 +150,103 @@ export default function InstitutionalResponsibleModal({
   const [displayIdentificationNumber, setDisplayIdentificationNumber] = useState("");
   const [displayPhoneNumber, setDisplayPhoneNumber] = useState("");
 
-  // State for duplicate detection
-  const [isCheckingCi, setIsCheckingCi] = useState(false);
-  const [existingResponsible, setExistingResponsible] = useState<any | null>(null);
-  const [viewOnlyMode, setViewOnlyMode] = useState(false);
+   // State for duplicate detection
+   const [isCheckingCi, setIsCheckingCi] = useState(false);
+   const [existingResponsible, setExistingResponsible] = useState<any | null>(null);
+   const [viewOnlyMode, setViewOnlyMode] = useState(false);
+
+   // Check if institutional responsible exists by CI
+   const checkInstitutionalResponsibleByCi = async (ci: string) => {
+     // Clean CI: remove any non-digits and take first 7-8 digits for check
+     const cleanCi = ci.replace(/\D/g, '');
+     // Only check if we have at least 7 digits (minimum for a valid CI)
+     if (cleanCi.length < 7) {
+       return;
+     }
+ 
+     setIsCheckingCi(true);
+     try {
+       const existingData = await getResponsibleByCi(cleanCi);
+       if (existingData) {
+         setExistingResponsible(existingData);
+         setViewOnlyMode(true);
+         // Fill form with existing data
+         fillFormWithExistingData(existingData);
+       } else {
+         setExistingResponsible(null);
+         setViewOnlyMode(false);
+       }
+     } catch (error) {
+       console.error('[InstitutionalResponsibleModal] Error checking CI:', error);
+       setExistingResponsible(null);
+         setViewOnlyMode(false);
+     } finally {
+       setIsCheckingCi(false);
+     }
+   };
+
+   // Fill form fields with existing responsible data
+   const fillFormWithExistingData = (responsible: any) => {
+     // Format CI for display
+     const { identificationPrefix, identificationNumber } = responsible;
+     const fullCi = `${identificationPrefix}-${identificationNumber}`;
+     setDisplayIdentificationNumber(formatCedulaDisplay(fullCi.replace('-', ''), false));
+     
+     // Extract phone prefix and number
+     let phonePrefix = '0412';
+     let phoneNumber = '';
+     if (responsible.phone) {
+       const cleanPhone = responsible.phone.replace(/\D/g, '');
+       if (cleanPhone.length >= 4) {
+         phonePrefix = cleanPhone.substring(0, 4);
+         phoneNumber = cleanPhone.substring(4);
+       } else {
+         phoneNumber = cleanPhone;
+       }
+     }
+     setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+     
+     // Set form values
+     setValue("identificationPrefix", identificationPrefix, { shouldValidate: true, shouldDirty: true });
+     setValue("identificationNumber", identificationNumber, { shouldValidate: true, shouldDirty: true });
+     setValue("firstName", responsible.firstName || '', { shouldValidate: true, shouldDirty: true });
+     setValue("middleName", responsible.middleName || '', { shouldValidate: true, shouldDirty: true });
+     setValue("lastName", responsible.lastName || '', { shouldValidate: true, shouldDirty: true });
+     setValue("secondLastName", responsible.secondLastName || '', { shouldValidate: true, shouldDirty: true });
+     setValue("phonePrefix", phonePrefix, { shouldValidate: true, shouldDirty: true });
+     setValue("phoneNumber", phoneNumber, { shouldValidate: true, shouldDirty: true });
+     setValue("email", responsible.email || '', { shouldValidate: true, shouldDirty: true });
+     
+     // Handle institutions - map to form structure
+     if (responsible.institutions && Array.isArray(responsible.institutions)) {
+       const formInstitutions = responsible.institutions.map((inst: any) => ({
+         institutionId: String(inst.institutionId),
+         cargo: inst.cargo || ''
+       }));
+       setValue("institutions", formInstitutions, { shouldValidate: true, shouldDirty: true });
+     } else {
+       setValue("institutions", [], { shouldValidate: true, shouldDirty: true });
+     }
+   };
 
   // State for new institution modal
   const [isNewInstitutionModalOpen, setIsNewInstitutionModalOpen] = useState(false);
   const { addInstitution } = useInstitutions();
 
-  // Handle identification number input change with formatting
-  const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const input = e.target.value;
-    // Solo permitir números
-    const digitsOnly = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
-    const formatted = formatCedulaDisplay(digitsOnly, false);
-    setDisplayIdentificationNumber(formatted);
-    setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
-  };
+   // Handle identification number input change with formatting
+   const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+     const input = e.target.value;
+     // Solo permitir números
+     const digitsOnly = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
+     const formatted = formatCedulaDisplay(digitsOnly, false);
+     setDisplayIdentificationNumber(formatted);
+     setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
+     
+     // Trigger CI check when we have 7-8 digits
+     if (digitsOnly.length >= 7 && digitsOnly.length <= 8) {
+       checkInstitutionalResponsibleByCi(digitsOnly);
+     }
+   };
 
   // Handle phone number input change with formatting
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -410,11 +494,21 @@ export default function InstitutionalResponsibleModal({
     setConfirmSaveOpen(true);
   };
 
-  const handleClose = () => {
-    setExistingResponsible(null);
-    setViewOnlyMode(false);
-    onClose();
-  };
+   const handleClose = () => {
+     setExistingResponsible(null);
+     setViewOnlyMode(false);
+     onClose();
+   };
+
+   // Handle clicking the "Editar Registro" button to edit existing responsible
+   const handleEditExisting = () => {
+     if (onEditExisting && existingResponsible) {
+       onEditExisting(existingResponsible);
+     } else {
+       // Fallback: just close the modal
+       onClose();
+     }
+   };
 
   return (
     <>
@@ -427,16 +521,18 @@ export default function InstitutionalResponsibleModal({
           </div>
         </ModalHeader>
 
-        <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
-          <form onSubmit={handleSubmit(onSubmit)} className="max-w-5xl mx-auto py-6">
-            {existingResponsible && (
-              <div className="mb-4 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg">
-                <p className="text-sm text-warning-700 dark:text-warning-300">
-                  Esta cédula ya está registrada. Los campos están en modo visualización. 
-                  Haga clic en "Habilitar Edición" para modificar.
-                </p>
-              </div>
-            )}
+         <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
+           <form onSubmit={handleSubmit(onSubmit)} className="max-w-5xl mx-auto py-6">
+             {existingResponsible && viewOnlyMode && (
+               <div className="mb-4 flex items-center space-x-3 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg">
+                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-warning-700 dark:text-warning-400" viewBox="0 0 20 20" fill="currentColor">
+                   <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.492-1.646-1.742-2.98l5.58-9.92zM11 13a1 1 0 10-2 0v-3a1 1 0 112 0v3zm-1-8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                 </svg>
+                 <span className="text-sm font-medium text-warning-700 dark:text-warning-400">
+                   Registro existente - Click en 'Editar Registro' para modificar
+                 </span>
+               </div>
+             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Columna Izquierda: Datos Personales */}
@@ -691,65 +787,64 @@ export default function InstitutionalResponsibleModal({
         </ModalBody>
 
         <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
-          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-6xl mx-auto">
-            <Button 
-              variant="outline" 
-              onClick={handleCloseAttempt} 
-              type="button" 
-              className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
-              disabled={isLoading}
-            >
-              Cancelar
-            </Button>
-            {existingResponsible ? (
-              viewOnlyMode ? (
-                <AsyncButton 
-                  type="button"
-                  className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
-                  onClick={() => {
-                    setViewOnlyMode(false);
-                  }}
-                >
-                  Habilitar Edición
-                </AsyncButton>
-              ) : (
-                <AsyncButton 
-                  type="submit" 
-                  className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
-                  loading={isLoading}
-                  disabled={!isValid}
-                >
-                  Guardar Cambios
-                </AsyncButton>
-              )
-            ) : editingResp ? (
-              <AsyncButton 
-                variant="primary" 
-                type="button"
-                className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
-                loading={isLoading}
-                disabled={!isDirty}
-                onClick={() => {
-                  const form = document.querySelector('form');
-                  if (form) {
-                    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-                  }
-                }}
-              >
-                Actualizar
-              </AsyncButton>
-            ) : (
-              <AsyncButton 
-                variant="primary" 
-                type="submit" 
-                className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
-                loading={isLoading}
-                disabled={!isValid}
-              >
-                Guardar
-              </AsyncButton>
-            )}
-          </div>
+           <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-6xl mx-auto">
+             <Button 
+               variant="outline" 
+               onClick={handleCloseAttempt} 
+               type="button" 
+               className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
+               disabled={isLoading}
+             >
+               Cancelar
+             </Button>
+             {existingResponsible ? (
+               viewOnlyMode ? (
+                 <AsyncButton 
+                   variant="warning"
+                   type="button"
+                   className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
+                   onClick={handleEditExisting}
+                 >
+                   Editar Registro
+                 </AsyncButton>
+               ) : (
+                 <AsyncButton 
+                   type="submit" 
+                   className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
+                   loading={isLoading}
+                   disabled={!isValid}
+                 >
+                   Guardar Cambios
+                 </AsyncButton>
+               )
+             ) : editingResp ? (
+               <AsyncButton 
+                 variant="primary" 
+                 type="button"
+                 className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
+                 loading={isLoading}
+                 disabled={!isDirty}
+                 onClick={() => {
+                   const form = document.querySelector('form');
+                   if (form) {
+                     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                   }
+                 }}
+               >
+                 Actualizar
+               </AsyncButton>
+             ) : (
+               <AsyncButton 
+                 variant="primary" 
+                 type="submit" 
+                 className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
+                 loading={isLoading}
+                 disabled={!isValid}
+               >
+                 Guardar
+               </AsyncButton>
+             )}
+           </div>
         </ModalFooter>
       </Modal>
 

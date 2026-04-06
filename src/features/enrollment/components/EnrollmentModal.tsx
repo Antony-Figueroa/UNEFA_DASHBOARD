@@ -910,6 +910,11 @@ export default function EnrollmentModal({
                             onChange={(val) => field.onChange(val)}
                             value={field.value ? String(field.value) : ""}
                             className="rounded-xl h-[48px]"
+                            onAddNew={() => {
+                              const evt = new CustomEvent("enrollment:addCareer");
+                              window.dispatchEvent(evt);
+                            }}
+                            addNewLabel="Agregar Carrera"
                           />
                         )}
                       />

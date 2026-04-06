@@ -8,6 +8,7 @@
 
 import { Career, CreateCareerPayload, UpdateCareerPayload } from "../types";
 import { createCrudService } from "../../../api/crudServiceFactory";
+import apiClient from "../../../api/apiClient";
 
 const API_URL = "/careers";
 
@@ -107,3 +108,18 @@ export const createCareer = careerService.create;
 export const updateCareer = careerService.update;
 export const deleteCareer = careerService.delete;
 export const toggleCareerStatus = careerService.toggleStatus!;
+
+/**
+ * Obtiene una carrera por su código.
+ * @param code - Código de la carrera.
+ * @returns Promesa con los datos de la carrera o null si no existe.
+ */
+export const getCareerByCode = async (code: string): Promise<Career | null> => {
+  try {
+    const response = await apiClient.get(`${API_URL}/by-code/${code}`, { silent: true, withCredentials: true } as any);
+    return response.data?.data || null;
+  } catch {
+    // 404 es comportamiento esperado (código no existe), no es error
+    return null;
+  }
+};

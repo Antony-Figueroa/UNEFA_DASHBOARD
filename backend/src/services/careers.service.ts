@@ -198,6 +198,27 @@ export const getCareerById = async (id: string) => {
   return career;
 };
 
+export const getCareerByCode = async (code: string) => {
+  try {
+    const career = await dbManager.withRetry(async (supabase) => {
+      const { data, error } = await supabase
+        .from(TABLE_NAME)
+        .select(`*, ${RELATION_TABLE} ( INTERNSHIP_TYPE_ID )`)
+        .eq('CAREER_CODE', code)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) return null;
+      return mapRecord(data as Record<string, unknown>);
+    });
+
+    return career;
+  } catch (error) {
+    console.error("[careersService] Error in getCareerByCode:", error);
+    return null;
+  }
+};
+
 export const createCareer = async (payload: Record<string, unknown>, userId: number = 1) => {
   const { INTERNSHIP_TYPE_IDS, ...careerData } = payload;
   const now = new Date().toISOString();

@@ -9,8 +9,8 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   success?: boolean;
   /** Indica si hay un error en el campo. */
   error?: boolean;
-  /** Mensaje de ayuda o error que aparece debajo del input. */
-  hint?: string;
+  /** Mensaje de ayuda o error que aparece debajo del input. Puede ser string o ReactNode para badges */
+  hint?: string | React.ReactNode;
   /** Icono opcional a la izquierda del input. */
   leftIcon?: React.ReactNode;
   /** Icono opcional a la derecha del input. */
@@ -115,15 +115,15 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
         </div>
 
         {hint && (
-          <p
+          <div
             id={`${props.id}-hint`}
             className={cn(
               "text-xs font-medium animate-in fade-in slide-in-from-top-1",
               error ? "text-error-500" : success ? "text-success-500" : "text-text-secondary"
             )}
           >
-            {hint}
-          </p>
+            {typeof hint === 'string' ? hint : hint}
+          </div>
         )}
       </div>
     );

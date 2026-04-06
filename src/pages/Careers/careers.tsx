@@ -210,6 +210,17 @@ export default function CareersPage() {
     }, 300);
   };
 
+  // Maneja la transición de "crear nuevo" a "editar existente" cuando se detecta duplicado
+  const handleEditExisting = (existingCareer: Career) => {
+    // Cerrar el modal inmediatamente
+    setIsModalOpen(false);
+    // Delay para asegurar que el modal se cierre antes de limpiar
+    setTimeout(() => {
+      setEditingCareer(existingCareer);
+      setIsModalOpen(true);
+    }, 200);
+  };
+
   /**
    * Cierra el modal de tipo de práctica y limpia el estado de edición.
    */
@@ -638,6 +649,7 @@ export default function CareersPage() {
         }}
         lastCreatedInternshipTypeId={lastCreatedInternshipTypeId}
         onConsumeLastCreatedInternshipType={() => setLastCreatedInternshipTypeId(null)}
+        onEditExisting={handleEditExisting}
       />
 
       <CareerViewModal

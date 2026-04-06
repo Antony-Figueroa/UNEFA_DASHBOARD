@@ -51,6 +51,9 @@ import * as listsService from './services/lists.service.js';
 import * as usersService from './services/users.service.js';
 import { startPeriodScheduler } from './services/period-scheduler.service.js';
 
+// Detectar si estamos en Vercel (serverless)
+const isVercel = !!process.env.VERCEL;
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -76,14 +79,18 @@ dbManager.connect().catch(err => {
 listsService.ensurePhonePrefixesSeeded().catch(() => {});
 usersService.ensureRolesSeeded().catch(() => {});
 
-// Iniciar scheduler de notificaciones de períodos (después de 10 segundos para dar tiempo a que todo esté listo)
-setTimeout(() => {
-  try {
-    startPeriodScheduler();
-  } catch (err: unknown) {
-    console.error('[Scheduler] Error starting:', err);
-  }
-}, 10000);
+// Iniciar scheduler de notificaciones de períodos (SOLO en modo tradicional, NO en Vercel)
+if (!isVercel) {
+  setTimeout(() => {
+    try {
+      startPeriodScheduler();
+    } catch (err: unknown) {
+      console.error('[Scheduler] Error starting:', err);
+    }
+  }, 10000);
+} else {
+  console.log('[Vercel] Scheduler disabled — use Vercel Cron Jobs instead');
+}
 
 // Security config (dev friendly)
 app.use(helmet({
@@ -232,7 +239,17 @@ app.use('/api/visits', visitsRoutes);
 app.use('/api/documents', documentsRoutes);
 app.use('/api/permissions', permissionRoutes);
 app.use('/api/security-questions', securityQuestionsRoutes);
-app.get('/api/notifications/stream', subscribeToNotifications);
+// SSE endpoint — deshabilitado en Vercel (no compatible con serverless)
+if (isVercel) {
+  app.get('/api/notifications/stream', (_req, res) => {
+    res.status(501).json({
+      message: 'SSE no disponible en serverless. Use polling o un servicio externo como Supabase Realtime.',
+      alternative: '/api/notifications?limit=20&offset=0'
+    });
+  });
+} else {
+  app.get('/api/notifications/stream', subscribeToNotifications);
+}
 
 // Servir archivos estáticos del frontend (Vite build)
 // Intentar encontrar la carpeta dist en lugares comunes

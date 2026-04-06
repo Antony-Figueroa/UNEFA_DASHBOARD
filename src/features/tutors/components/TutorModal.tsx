@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, lazy } from "react";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -14,6 +14,11 @@ import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { getCareers } from "../../careers/services/careersService";
 import { Career } from "../../careers/types";
+import CareerModal from "../../careers/components/CareerModal";
+import InternshipTypeModal from "../../internship-types/components/InternshipTypeModal";
+import { getInternshipTypes, mapToOptions } from "../../internship-types/services/internshipTypesService";
+import { InternshipTypeOption } from "../../internship-types/types";
+import { InternshipType } from "../../internship-types/types";
 import { useLists } from "../../lists/hooks/useLists";
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
@@ -68,14 +73,24 @@ export default function TutorModal({
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [pendingSave, setPendingSave] = useState<CreateTutorPayload | UpdateTutorPayload | null>(null);
 
-  // State for display values with formatting
-  const [displayIdentificationNumber, setDisplayIdentificationNumber] = useState("");
-  const [displayPhoneNumber, setDisplayPhoneNumber] = useState("");
-
-  // State for duplicate detection
-  const [isCheckingCi, setIsCheckingCi] = useState(false);
-  const [existingTutor, setExistingTutor] = useState<any | null>(null);
-  const [viewOnlyMode, setViewOnlyMode] = useState(false);
+   // State for display values with formatting
+   const [displayIdentificationNumber, setDisplayIdentificationNumber] = useState("");
+   const [displayPhoneNumber, setDisplayPhoneNumber] = useState("");
+ 
+   // State for duplicate detection
+   const [isCheckingCi, setIsCheckingCi] = useState(false);
+   const [existingTutor, setExistingTutor] = useState<any | null>(null);
+   const [viewOnlyMode, setViewOnlyMode] = useState(false);
+   
+   // State for career modal
+   const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
+   const [editingCareer, setEditingCareer] = useState<Career | null>(null);
+   const [internshipOptions, setInternshipOptions] = useState<InternshipTypeOption[]>([]);
+   
+   // State for internship type modal (triggered from CareerModal)
+   const [isInternshipTypeModalOpen, setIsInternshipTypeModalOpen] = useState(false);
+   const [editingInternshipType, setEditingInternshipType] = useState<InternshipType | null>(null);
+   const [existingInternshipTypes, setExistingInternshipTypes] = useState<InternshipType[]>([]);
 
   // Handle identification number input change with formatting
   const handleIdentificationNumberChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -409,7 +424,7 @@ export default function TutorModal({
     resolver: zodResolver(tutorSchema),
     mode: "onChange",
     defaultValues: {
-      identificationPrefix: "",
+      identificationPrefix: "V",
       identificationNumber: "",
       firstName: "",
       middleName: "",
@@ -447,8 +462,18 @@ export default function TutorModal({
         setCareersLoading(false);
       }
     };
+    const fetchInternshipTypes = async () => {
+      try {
+        const types = await getInternshipTypes();
+        setInternshipOptions(mapToOptions(types));
+        setExistingInternshipTypes(types);
+      } catch (error) {
+        console.error("Error fetching internship types:", error);
+      }
+    };
     if (isOpen) {
       fetchCareers();
+      fetchInternshipTypes();
     }
   }, [isOpen]);
 
@@ -494,7 +519,7 @@ export default function TutorModal({
         setDisplayPhoneNumber(formatPhoneLocalDisplay(numberOnly));
       } else {
         reset({
-          identificationPrefix: "",
+          identificationPrefix: "V",
           identificationNumber: "",
           firstName: "",
           middleName: "",
@@ -585,6 +610,16 @@ export default function TutorModal({
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
         <form id="tutor-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto py-2">
+          {existingTutor && viewOnlyMode && (
+            <div className="flex items-center space-x-3 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-warning-700 dark:text-warning-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.492-1.646-1.742-2.98l5.58-9.92zM11 13a1 1 0 10-2 0v-3a1 1 0 112 0v3zm-1-8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+              </svg>
+              <span className="text-sm font-medium text-warning-700 dark:text-warning-400">
+                Registro existente - Click en 'Editar Registro' para modificar
+              </span>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
             {/* Cédula */}
             <div>
@@ -602,7 +637,7 @@ export default function TutorModal({
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         value={String(field.value)}
-                    disabled={isInUse || !!editingTutor || !!existingTutor}
+                    disabled={isInUse || !!editingTutor}
                         error={!!errors.identificationPrefix}
                       />
                     )}
@@ -614,16 +649,7 @@ export default function TutorModal({
                     onChange={handleIdentificationNumberChange}
                     placeholder="V00.000.000"
                     error={!!errors.identificationNumber}
-                    hint={
-                      <div className="flex items-center gap-2 mt-1">
-                        {existingTutor && (
-                          <Badge color="warning" variant="light" size="sm">
-                            Registro existente - Click en "Editar Registro" para modificar
-                          </Badge>
-                        )}
-                        {isCheckingCi && <span className="text-blue-600 animate-pulse">Verificando...</span>}
-                      </div>
-                    }
+                    hint={errors.identificationNumber?.message || (isCheckingCi ? <span className="text-blue-600 animate-pulse">Verificando...</span> : undefined)}
                     disabled={isInUse || !!editingTutor}
                     maxLength={CEDULA_MAX_LENGTH}
                     className="tracking-widest"
@@ -960,24 +986,25 @@ export default function TutorModal({
             </div>
 
             {/* Carreras */}
-            <div className="lg:col-span-3">
-              <Controller
-                name="carreras"
-                control={control}
-                render={({ field }) => (
-                  <MultiSelect
-                    {...field}
-                    label="Carreras que Atiende *"
-                    placeholder={careersLoading ? "Cargando carreras..." : (isInUse ? "Carreras asignadas (no editable)" : "Seleccione las carreras...")}
-                    options={careerOptions}
-                    disabled={careersLoading || isInUse || viewOnlyMode}
-                  />
-                )}
-              />
-              {errors.carreras && (
-                <p className="mt-1 text-xs text-red-500">{errors.carreras.message}</p>
-              )}
-            </div>
+                 <div className="lg:col-span-3">
+                   <Controller
+                     name="carreras"
+                     control={control}
+                     render={({ field }) => (
+                       <MultiSelect
+                         {...field}
+                         label="Carreras que Atiende *"
+                         placeholder={careersLoading ? "Cargando carreras..." : (isInUse ? "Carreras asignadas (no editable)" : "Seleccione las carreras...")}
+                         options={careerOptions}
+                         disabled={careersLoading || isInUse || viewOnlyMode}
+                         onAddNew={() => {
+                           setIsCareerModalOpen(true);
+                         }}
+                         addNewLabel="Crear nueva carrera"
+                       />
+                     )}
+                   />
+                 </div>
           </div>
         </form>
       </ModalBody>
@@ -1112,6 +1139,52 @@ export default function TutorModal({
         </AsyncButton>
       </ModalFooter>
     </Modal>
+
+    {/* Modal para crear nueva carrera */}
+    <CareerModal
+      isOpen={isCareerModalOpen}
+      onClose={() => {
+        setIsCareerModalOpen(false);
+        setEditingCareer(null);
+      }}
+      onSave={async () => {
+        // Recargar carreras después de crear una nueva
+        const allCareers = await getCareers();
+        setCareers(allCareers.filter(c => c.status));
+        setIsCareerModalOpen(false);
+        setEditingCareer(null);
+      }}
+      editingCareer={editingCareer}
+      internshipOptions={internshipOptions}
+      isLoading={false}
+      hasPendingEvaluations={false}
+      isInUse={false}
+      existingCareers={careers}
+      onAddInternshipType={() => {
+        // Open the internship type modal
+        setIsInternshipTypeModalOpen(true);
+        setEditingInternshipType(null);
+      }}
+    />
+    
+    {/* Modal para crear nuevo tipo de práctica (desde CareerModal) */}
+    <InternshipTypeModal
+      isOpen={isInternshipTypeModalOpen}
+      onClose={() => {
+        setIsInternshipTypeModalOpen(false);
+        setEditingInternshipType(null);
+      }}
+      onSave={async () => {
+        // Recargar tipos de práctica después de crear uno nuevo
+        const types = await getInternshipTypes();
+        setInternshipOptions(mapToOptions(types));
+        setExistingInternshipTypes(types);
+        setIsInternshipTypeModalOpen(false);
+        setEditingInternshipType(null);
+      }}
+      editingItem={editingInternshipType}
+      existingTypes={existingInternshipTypes}
+    />
   </>
   );
 }

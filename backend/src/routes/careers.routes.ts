@@ -3,6 +3,7 @@ import {
   getCareers, 
   getCareersByInternshipType,
   getCareerById, 
+  getCareerByCode,
   createCareer, 
   updateCareer, 
   deleteCareer,
@@ -15,6 +16,7 @@ const router = Router();
 
 router.get('/', getCareers);
 router.get('/by-type/:typeId', getCareersByInternshipType);
+router.get('/by-code/:code', getCareerByCode);
 router.get('/:id', getCareerById);
 router.post('/', createCareer);
 router.put('/:id', updateCareer);

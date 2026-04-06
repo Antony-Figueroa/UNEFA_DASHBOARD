@@ -18,8 +18,10 @@ import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import Badge from "../../../components/ui/badge/Badge";
 
 import { InternshipTypeOption } from "../../internship-types/types";
+import { getCareerByCode } from "../services/careersService";
 
 /**
  * Propiedades del componente CareerModal.
@@ -46,6 +48,8 @@ interface CareerModalProps {
   onAddInternshipType?: () => void;
   lastCreatedInternshipTypeId?: string | number | null;
   onConsumeLastCreatedInternshipType?: () => void;
+  /** Callback cuando se quiere editar un registro existente (convierte de crear a editar) */
+  onEditExisting?: (career: Career) => void;
 }
 
 /**
@@ -123,9 +127,67 @@ export default function CareerModal({
   onAddInternshipType,
   lastCreatedInternshipTypeId,
   onConsumeLastCreatedInternshipType,
+  onEditExisting,
 }: CareerModalProps) {
   // Ref para evitar lecturas de estado desactualizadas durante la inicialización del modal
   const isInitializing = useRef(false);
+
+  // Estado para verificar si el código ya existe
+  const [isCheckingCode, setIsCheckingCode] = useState(false);
+  // Estado para carrera existente (cuando se detecta duplicado)
+  const [existingCareer, setExistingCareer] = useState<Career | null>(null);
+  // Estado para modo solo lectura (cuando se detecta duplicado)
+  const [viewOnlyMode, setViewOnlyMode] = useState(false);
+
+  // Manejar cambio en el código de carrera
+  const handleCareerCodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target.value;
+    const codeOnly = input.replace(/\D/g, '').substring(0, 8);
+    
+    // Si el usuario modifica el código, salir del modo viewOnly
+    if (existingCareer && viewOnlyMode) {
+      const currentStoredCode = String(existingCareer.careerCode || '');
+      if (codeOnly !== currentStoredCode) {
+        setExistingCareer(null);
+        setViewOnlyMode(false);
+      }
+    }
+    
+    // Verificar en background cuando el código tiene 4-5 dígitos
+    if (!existingCareer && !editingCareer && codeOnly.length >= 4 && codeOnly.length <= 5) {
+      setIsCheckingCode(true);
+      try {
+        const existingCareerData = await getCareerByCode(codeOnly);
+        if (existingCareerData) {
+          setExistingCareer(existingCareerData);
+          setViewOnlyMode(true);
+          
+          // Llenar TODOS los campos EXCEPTO careerCode (el usuario lo está escribiendo)
+          // NO usar shouldValidate para que Zod no dispare el error de duplicado
+          setValue("careerName", existingCareerData.careerName || "", { shouldDirty: true });
+          setValue("minimumGrade", String(Math.floor(existingCareerData.minimumGrade || 0)), { shouldDirty: true });
+          setValue("careerAbbreviation", existingCareerData.careerAbbreviation || "", { shouldDirty: true });
+          setValue("careerType", existingCareerData.careerType as 'CORTA' | 'LARGA', { shouldDirty: true });
+          setValue("internshipTypeIds", (existingCareerData.internshipTypeIds || []).map(String), { shouldDirty: true });
+          
+          // Limpiar errores de validación ya que los datos autocompletados
+          // pertenecen a la misma carrera existente (no es un duplicado real)
+          clearErrors();
+        } else {
+          setExistingCareer(null);
+          setViewOnlyMode(false);
+        }
+      } catch {
+        setExistingCareer(null);
+        setViewOnlyMode(false);
+      } finally {
+        setIsCheckingCode(false);
+      }
+    } else if (codeOnly.length < 4) {
+      setExistingCareer(null);
+      setViewOnlyMode(false);
+    }
+  };
 
   const {
     register,
@@ -135,9 +197,10 @@ export default function CareerModal({
     watch,
     setValue,
     getValues,
+    clearErrors,
     formState: { errors, isDirty, isValid },
   } = useForm<CareerFormData>({
-    resolver: zodResolver(createCareerSchema(existingCareers, editingCareer?.careerId)),
+    resolver: zodResolver(createCareerSchema(existingCareers, editingCareer?.careerId ?? existingCareer?.careerId)),
     mode: "all",
     defaultValues: {
       careerName: "",
@@ -173,6 +236,10 @@ export default function CareerModal({
   useEffect(() => {
     if (isOpen) {
       isInitializing.current = true;
+      // Limpiar estados de duplicado al abrir
+      setExistingCareer(null);
+      setViewOnlyMode(false);
+      
       if (editingCareer) {
         reset({
           careerName: editingCareer.careerName,
@@ -233,6 +300,20 @@ export default function CareerModal({
     }
   };
 
+  // Cleanup cuando se cierra el modal
+  useEffect(() => {
+    if (!isOpen) {
+      setExistingCareer(null);
+      setViewOnlyMode(false);
+    }
+  }, [isOpen]);
+
+  const handleClose = () => {
+    setExistingCareer(null);
+    setViewOnlyMode(false);
+    onClose();
+  };
+
   // Mapear opciones para que el value sea el ID (necesario para MultiSelect en este modal)
   const mappedInternshipOptions = useMemo(() => 
     internshipOptions.map(opt => ({
@@ -246,7 +327,7 @@ export default function CareerModal({
     <>
       <Modal
         isOpen={isOpen}
-        onClose={handleCloseAttempt}
+        onClose={handleClose}
         onCloseAttempt={handleCloseAttempt}
         showCloseButton
       >
@@ -286,7 +367,38 @@ export default function CareerModal({
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+             {existingCareer && viewOnlyMode && (
+               <div className="md:col-span-2 flex items-center space-x-3 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg">
+                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-warning-700 dark:text-warning-400" viewBox="0 0 20 20" fill="currentColor">
+                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.492-1.646-1.742-2.98l5.58-9.92zM11 13a1 1 0 10-2 0v-3a1 1 0 112 0v3zm-1-8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                 </svg>
+                 <span className="text-sm font-medium text-warning-700 dark:text-warning-400">
+                   Registro existente - Click en 'Editar Registro' para modificar
+                 </span>
+               </div>
+             )}
+             <div className="md:col-span-2">
+               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Código *</label>
+               <Input
+                 {...register("careerCode")}
+                 type="text"
+                 placeholder="Ej: 0501"
+                 maxLength={5}
+                 error={!!errors.careerCode}
+                hint={errors.careerCode?.message}
+                 disabled={!!editingCareer}
+                 onChange={(e) => {
+                   e.target.value = e.target.value.replace(/\D/g, '');
+                   register("careerCode").onChange(e);
+                   handleCareerCodeChange(e);
+                 }}
+               />
+               {editingCareer && (
+                 <p className="mt-1 text-[10px] text-text-tertiary italic">El código no es editable.</p>
+               )}
+             </div>
+
             <div className="md:col-span-2">
               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nombre de la Carrera *</label>
               <Input
@@ -294,31 +406,13 @@ export default function CareerModal({
                 placeholder="Ej: INGENIERÍA DE SISTEMAS"
                 error={!!errors.careerName}
                 hint={errors.careerName?.message}
+                disabled={viewOnlyMode}
                 onChange={(e) => {
                   e.target.value = e.target.value.replace(/[0-9]/g, '').toUpperCase();
                   register("careerName").onChange(e);
+                  setValue("careerName", e.target.value, { shouldDirty: true, shouldValidate: true });
                 }}
               />
-            </div>
-
-            <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Código *</label>
-              <Input
-                {...register("careerCode")}
-                type="text"
-                placeholder="Ej: 0501"
-                maxLength={8}
-                error={!!errors.careerCode}
-                hint={errors.careerCode?.message}
-                disabled={!!editingCareer}
-                onChange={(e) => {
-                  e.target.value = e.target.value.replace(/\D/g, '');
-                  register("careerCode").onChange(e);
-                }}
-              />
-              {editingCareer && (
-                <p className="mt-1 text-[10px] text-text-tertiary italic">El código no es editable.</p>
-              )}
             </div>
 
             <div>
@@ -333,7 +427,7 @@ export default function CareerModal({
                     onChange={field.onChange}
                     onBlur={field.onBlur}
                     placeholder="Seleccione tipo"
-                    disabled={isInUse}
+                    disabled={isInUse || viewOnlyMode}
                     error={!!errors.careerType}
                   />
                 )}
@@ -358,11 +452,11 @@ export default function CareerModal({
                       onChange={field.onChange}
                       onBlur={field.onBlur}
                       placeholder="Seleccione Nota Mínima"
-                      disabled={isInUse && hasPendingEvaluations}
+                      disabled={(isInUse && hasPendingEvaluations) || viewOnlyMode}
                       error={!!errors.minimumGrade}
                     />
                   )}
-                />
+              />
                 {isInUse && hasPendingEvaluations && (
                   <p className="mt-1 text-xs text-warning-600 dark:text-warning-400 font-medium italic">
                     Bloqueado: Estudiantes en proceso de evaluación.
@@ -380,9 +474,11 @@ export default function CareerModal({
                 placeholder="Ej: TSU-ENF"
                 error={!!errors.careerAbbreviation}
                 hint={errors.careerAbbreviation?.message}
+                disabled={viewOnlyMode}
                 onChange={(e) => {
                   e.target.value = e.target.value.replace(/[0-9]/g, '').toUpperCase();
                   register("careerAbbreviation").onChange(e);
+                  setValue("careerAbbreviation", e.target.value, { shouldDirty: true, shouldValidate: true });
                 }}
               />
             </div>
@@ -431,7 +527,7 @@ export default function CareerModal({
                       field.onChange(selectedIds);
                     }}
                     placeholder="Seleccione tipos de prácticas"
-                    disabled={hasPendingEvaluations || isInUse}
+                    disabled={hasPendingEvaluations || isInUse || viewOnlyMode}
                     error={!!errors.internshipTypeIds}
                     onAddNew={onAddInternshipType}
                     addNewLabel="Nuevo tipo de práctica"
@@ -454,9 +550,31 @@ export default function CareerModal({
           <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
           </Button>
-          <AsyncButton type="submit" form="career-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid || (editingCareer ? !isDirty : false)}>
-            {editingCareer ? "Actualizar Registro" : "Guardar Carrera"}
-          </AsyncButton>
+          {existingCareer ? (
+            viewOnlyMode ? (
+              <AsyncButton 
+                type="button"
+                className="w-full sm:w-auto min-h-12 bg-warning-500 hover:bg-warning-600 text-white"
+                onClick={() => {
+                  if (onEditExisting) {
+                    onEditExisting(existingCareer);
+                  } else {
+                    setViewOnlyMode(false);
+                  }
+                }}
+              >
+                Editar Registro
+              </AsyncButton>
+            ) : (
+              <AsyncButton type="submit" form="career-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid}>
+                Guardar Cambios
+              </AsyncButton>
+            )
+          ) : (
+            <AsyncButton type="submit" form="career-form" loading={isLoading} className="w-full sm:w-auto min-h-12" disabled={!isValid || (editingCareer ? !isDirty : false)}>
+              {editingCareer ? "Actualizar Registro" : "Guardar Carrera"}
+            </AsyncButton>
+          )}
         </div>
       </ModalFooter>
     </Modal>

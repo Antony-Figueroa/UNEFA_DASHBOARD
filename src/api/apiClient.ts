@@ -14,6 +14,8 @@ import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from "ax
 interface RetryConfig extends InternalAxiosRequestConfig {
   _retryCount?: number;
   _retry?: boolean;
+  /** Silencia los logs de error para esta petición */
+  silent?: boolean;
 }
 
 const isProd = import.meta.env.PROD;

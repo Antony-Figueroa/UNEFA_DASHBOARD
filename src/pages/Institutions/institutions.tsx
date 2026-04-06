@@ -219,15 +219,26 @@ export default function InstitutionsPage() {
       });
   }, [responsibles, respPdfSearchTerm]);
 
-  const handleOpenAddModal = () => {
-    if (mainTab === "Instituciones") {
-      setEditingInst(null);
-      setIsModalOpen(true);
-    } else {
-      setEditingResp(null);
-      setIsRespModalOpen(true);
-    }
-  };
+   const handleOpenAddModal = () => {
+     if (mainTab === "Instituciones") {
+       setEditingInst(null);
+       setIsModalOpen(true);
+     } else {
+       setEditingResp(null);
+       setIsRespModalOpen(true);
+     }
+   };
+
+   // Maneja la transición de "crear nuevo" a "editar existente" cuando se detecta duplicado
+   const handleEditFromExisting = (existingResponsible: any) => {
+     // Cerrar el modal inmediatamente
+     setIsRespModalOpen(false);
+     // Delay para asegurar que el modal se cierre antes de limpiar
+     setTimeout(() => {
+       setEditingResp(existingResponsible);
+       setIsRespModalOpen(true);
+     }, 200);
+   };
 
   const handleOpenEditModal = async (inst: InstitutionRowData) => {
     const original = institutions.find(i => i.institutionId === inst.institutionId);
@@ -516,61 +527,62 @@ export default function InstitutionsPage() {
         onCareerCreated={() => refreshCareers()}
       />
 
-      <InstitutionalResponsibleModal
-        isOpen={isRespModalOpen}
-        onClose={() => {
-          setIsRespModalOpen(false);
-          setPendingResponsibleForInstitution(null);
-          if (isAddingMultipleResponsibles) {
-            setIsAddingMultipleResponsibles(false);
-            setNewlyCreatedInstitution(null);
-          }
-        }}
-        onSave={async (data) => {
-          try {
-            if (editingResp) {
-              await editResponsible({ ...editingResp, ...data } as UpdateInstitutionalResponsiblePayload);
-              setIsRespModalOpen(false);
-            } else {
-              await addResponsible(data as CreateInstitutionalResponsiblePayload);
-
-              if (isAddingMultipleResponsibles && newlyCreatedInstitution) {
-                setConfirmation({
-                  isOpen: true,
-                  title: "Responsable Registrado",
-                  message: "¿Desea agregar otro responsable para la misma institución?",
-                  onConfirm: () => {
-                    setIsRespModalOpen(false);
-                    setTimeout(() => {
-                      setIsRespModalOpen(true);
-                    }, 100);
-                  },
-                  confirmText: "Agregar otro",
-                  variant: "info",
-                });
-              } else {
-                setIsRespModalOpen(false);
-                setIsAddingMultipleResponsibles(false);
-                setNewlyCreatedInstitution(null);
-                setPendingResponsibleForInstitution(null);
-              }
-            }
-          } catch (error) {
-            console.error("Error saving responsible:", error);
-          }
-        }}
-        editingResp={editingResp}
-        institutionOptions={institutionOptions}
-        isLoading={loadingAction}
-        preselectedInstitutionId={
-          pendingResponsibleForInstitution?.id ||
-          (isAddingMultipleResponsibles ? newlyCreatedInstitution?.id : undefined)
-        }
-        preselectedInstitutionName={
-          pendingResponsibleForInstitution?.name ||
-          (isAddingMultipleResponsibles ? newlyCreatedInstitution?.name : undefined)
-        }
-      />
+       <InstitutionalResponsibleModal
+         isOpen={isRespModalOpen}
+         onClose={() => {
+           setIsRespModalOpen(false);
+           setPendingResponsibleForInstitution(null);
+           if (isAddingMultipleResponsibles) {
+             setIsAddingMultipleResponsibles(false);
+             setNewlyCreatedInstitution(null);
+           }
+         }}
+         onSave={async (data) => {
+           try {
+             if (editingResp) {
+               await editResponsible({ ...editingResp, ...data } as UpdateInstitutionalResponsiblePayload);
+               setIsRespModalOpen(false);
+             } else {
+               await addResponsible(data as CreateInstitutionalResponsiblePayload);
+ 
+               if (isAddingMultipleResponsibles && newlyCreatedInstitution) {
+                 setConfirmation({
+                   isOpen: true,
+                   title: "Responsable Registrado",
+                   message: "¿Desea agregar otro responsable para la misma institución?",
+                   onConfirm: () => {
+                     setIsRespModalOpen(false);
+                     setTimeout(() => {
+                       setIsRespModalOpen(true);
+                     }, 100);
+                   },
+                   confirmText: "Agregar otro",
+                   variant: "info",
+                 });
+               } else {
+                 setIsRespModalOpen(false);
+                 setIsAddingMultipleResponsibles(false);
+                 setNewlyCreatedInstitution(null);
+                 setPendingResponsibleForInstitution(null);
+               }
+             }
+           } catch (error) {
+             console.error("Error saving responsible:", error);
+           }
+         }}
+         editingResp={editingResp}
+         institutionOptions={institutionOptions}
+         isLoading={loadingAction}
+         preselectedInstitutionId={
+           pendingResponsibleForInstitution?.id ||
+           (isAddingMultipleResponsibles ? newlyCreatedInstitution?.id : undefined)
+         }
+         preselectedInstitutionName={
+           pendingResponsibleForInstitution?.name ||
+           (isAddingMultipleResponsibles ? newlyCreatedInstitution?.name : undefined)
+         }
+         onEditExisting={handleEditFromExisting}
+       />
 
       {/* Modal de visualización de institución — con responsables conectados */}
       <InstitutionViewModal

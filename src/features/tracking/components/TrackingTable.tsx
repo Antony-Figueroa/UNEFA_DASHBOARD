@@ -13,7 +13,6 @@ import {
     Pagination,
 } from "../../../components/ui/table";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
-import Badge from "../../../components/ui/badge/Badge";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { TableSkeleton } from "../../../components/ui/skeleton";
 import InputField from "../../../components/form/input/InputField";
@@ -287,8 +286,6 @@ export default function TrackingTable({
                             <TableCell isHeader>Cédula</TableCell>
                             <TableCell isHeader>Estudiante</TableCell>
                             <TableCell isHeader>Título Informe</TableCell>
-                            <TableCell isHeader>Traslado</TableCell>
-                            <TableCell isHeader>Estado</TableCell>
                             <TableCell isHeader className="text-right pr-10">&nbsp;</TableCell>
                         </TableRow>
                     </TableHeader>
@@ -303,16 +300,6 @@ export default function TrackingTable({
                                 </TableCell>
                                 <TableCell className="text-text-secondary dark:text-text-tertiary max-w-xs truncate">
                                     {item.reportTitle}
-                                </TableCell>
-                                <TableCell>
-                                    <Badge color={item.transfer ? "info" : "light"}>
-                                        {item.transfer ? "Sí" : "No"}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>
-                                    <Badge color={item.status ? "success" : "error"}>
-                                        {item.status ? "Activo" : "Inactivo"}
-                                    </Badge>
                                 </TableCell>
                                 <TableCell className="table-cell text-right">
                                     <ActionButtons

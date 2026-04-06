@@ -243,8 +243,16 @@ export default function StudentsPage() {
     useEffect(() => {
         const handleAddCareer = () => setIsCareerModalOpen(true);
         window.addEventListener("students:addCareer", handleAddCareer);
+        
+        // Escuchar cuando una carrera es creada o editada para recargar la lista
+        const handleCareerSaved = () => {
+            // useCareers automatically refreshes, but we can trigger a refresh if needed
+        };
+        window.addEventListener("career:saved", handleCareerSaved);
+        
         return () => {
             window.removeEventListener("students:addCareer", handleAddCareer);
+            window.removeEventListener("career:saved", handleCareerSaved);
         };
     }, []);
 

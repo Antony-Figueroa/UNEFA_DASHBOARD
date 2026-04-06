@@ -109,6 +109,17 @@ export default function TutorsPage() {
         return () => clearTimeout(timer);
     }, []);
 
+    // Escuchar cuando una carrera es guardada (creada o editada)
+    useEffect(() => {
+        const handleCareerSaved = () => {
+            // useCareers handles refresh automatically
+        };
+        window.addEventListener("career:saved", handleCareerSaved);
+        return () => {
+            window.removeEventListener("career:saved", handleCareerSaved);
+        };
+    }, []);
+
     const {
         tutors,
         status,
@@ -234,6 +245,9 @@ export default function TutorsPage() {
                     } else {
                         await addTutor(payload as CreateTutorPayload);
                     }
+                    // Notificar que un tutor fue guardado (creado o editado)
+                    const evt = new CustomEvent("tutor:saved");
+                    window.dispatchEvent(evt);
                     setIsModalOpen(false);
                 } catch (e) {
                     console.error("[TutorsPage] Error al guardar el tutor:", e);

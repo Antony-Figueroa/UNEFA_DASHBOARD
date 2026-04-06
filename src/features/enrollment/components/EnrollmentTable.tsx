@@ -536,7 +536,7 @@ export default function EnrollmentTable({
                                     <TableCell className="table-cell font-medium text-text-primary dark:text-text-emphasis">
                                         <div className="flex flex-col">
                                             <span>{s.studentName}</span>
-                                            <span className="text-xs text-text-tertiary uppercase">{s.identificationPrefix}-{maskIdentification(s.identificationNumber)}</span>
+                                            <span className="text-xs text-text-tertiary">{s.identificationPrefix}-{s.identificationNumber}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">
@@ -603,7 +603,7 @@ export default function EnrollmentTable({
                                             <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8 uppercase">
                                                 {s.studentName}
                                             </h3>
-                                            <p className="text-xs text-text-tertiary mt-1 truncate uppercase">{s.identificationPrefix}-{maskIdentification(s.identificationNumber)}</p>
+                                            <p className="text-xs text-text-tertiary mt-1 truncate">{s.identificationPrefix}-{s.identificationNumber}</p>
                                         </div>
                                         <button
                                             onClick={async () => toggleRowExpansion(s.enrollmentId ?? "")}

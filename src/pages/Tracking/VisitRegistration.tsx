@@ -20,6 +20,8 @@ interface PracticeInfo {
   studentCi: string;
   institutionName: string;
   tutorName: string;
+  periodStartDate?: Date;
+  periodEndDate?: Date;
 }
 
 export default function VisitRegistration() {
@@ -48,14 +50,25 @@ export default function VisitRegistration() {
     visit: null
   });
   const [practiceInfo, setPracticeInfo] = useState<PracticeInfo | null>(null);
+  const [statsKey, setStatsKey] = useState(0);
 
   useEffect(() => {
     if (id) {
       const practiceId = parseInt(id);
       fetchVisitsByPractice(practiceId);
       fetchStats({ practiceId });
+      // Force re-render stats
+      setStatsKey(prev => prev + 1);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useEffect(() => {
+    // Update stats key when stats change
+    if (stats) {
+      setStatsKey(prev => prev + 1);
+    }
+  }, [stats]);
 
   useEffect(() => {
     if (visits.length > 0) {
@@ -65,7 +78,9 @@ export default function VisitRegistration() {
         studentName: firstVisit.studentName,
         studentCi: firstVisit.studentCi,
         institutionName: firstVisit.institutionName,
-        tutorName: firstVisit.tutorName
+        tutorName: firstVisit.tutorName,
+        periodStartDate: firstVisit.periodStartDate ? new Date(firstVisit.periodStartDate) : undefined,
+        periodEndDate: firstVisit.periodEndDate ? new Date(firstVisit.periodEndDate) : undefined
       });
     }
   }, [visits]);
@@ -178,7 +193,7 @@ export default function VisitRegistration() {
       )}
 
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" key={`stats-${statsKey}`}>
           <ComponentCard title="Total Visitas">
             <div className="text-center py-2">
               <p className="text-3xl font-bold text-brand-500">{stats.totalVisits}</p>
@@ -289,6 +304,8 @@ export default function VisitRegistration() {
         tutorId={1}
         loading={loading}
         mode="edit"
+        periodStartDate={practiceInfo?.periodStartDate}
+        periodEndDate={practiceInfo?.periodEndDate}
       />
 
       <UnifiedDialog

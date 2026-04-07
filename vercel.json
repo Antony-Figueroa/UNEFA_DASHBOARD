@@ -1,12 +1,15 @@
 {
-  "rewrites": [
+  "projects": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index.ts"
+      "path": "frontend",
+      "scope": "unefa-dashboard",
+      "team": "personal"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "path": "backend",
+      "scope": "unefa-dashboard", 
+      "team": "personal"
     }
-  ]
+  ],
+  "regions": ["scl1"]
 }

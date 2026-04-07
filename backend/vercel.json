@@ -12,12 +12,6 @@
       "dest": "src/api/index.ts"
     }
   ],
-  "functions": {
-    "src/api/index.ts": {
-      "maxDuration": 60,
-      "memory": 1024
-    }
-  },
   "env": {
     "NODE_ENV": "production",
     "VERCEL": "1"

@@ -1,14 +1,30 @@
-node_modules
-dist
+# Environment files (Vercel sets these)
 .env
 .env.local
+.env.*
+.env.production
 *.log
 .DS_Store
+
+# Development & IDE
 coverage
 .vscode
 .git
+
+# Docker
 docker-compose.yml
 Dockerfile
+
+# Not needed for serverless
 scripts/
+tests/
 migrations/
 prisma/
+
+# Heavy folders
+storage/
+e2e/
+
+# Docs
+*.md
+!README.md

@@ -183,7 +183,8 @@ export const generateReport = async (req: Request, res: Response) => {
       'tracking': 'Seguimiento',
       'certificates': 'Certificados',
       'institutions': 'Instituciones',
-      'tutores-academicos': 'Relación de Tutores Académicos'
+      'tutores-academicos': 'Relación de Tutores Académicos',
+      'resumen-pasantias': 'Resumen Pasantias'
     };
 
     await dbManager.getConnection()
@@ -377,6 +378,120 @@ export interface CulminatedStudentReportRow {
   certificateNumber?: string;
   certifiedAt?: string;
 }
+
+export const getResumenPasantiasReport = async (req: Request, res: Response) => {
+  try {
+    const { periodId, careerId } = req.query;
+    const supabase = dbManager.getConnection();
+
+    // Consultamos las practicas profesionales
+    const { data: practices, error } = await supabase
+      .from('t_professional_practices')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        PERIOD_ID,
+        INSTITUTION_ID,
+        STUDENTS_ID,
+        t_institution (
+          INSTITUTION_ID,
+          INSTITUTION_NAME,
+          REGION,
+          NUCLEUS,
+          EXTENSION,
+          INSTITUTION_TYPE
+        ),
+        t_students (
+          STUDENTS_ID,
+          CAREER_ID,
+          t_career (
+            CAREER_ID,
+            CAREER_NAME
+          )
+        ),
+        t_professional_practices_tutor (
+          TUTOR_TYPE
+        )
+      `)
+      .eq('STATUS', 1);
+
+    if (error) throw error;
+
+    // Agrupamos por (Region, Nucleo, Extension, Carrera, Empresa)
+    const summaryMap = new Map<string, any>();
+
+    (practices as any[]).forEach(practice => {
+      const institution = practice.t_institution;
+      const student = practice.t_students;
+      const career = student?.t_career;
+
+      if (!institution || !student || !career) return;
+
+      if (periodId && practice.PERIOD_ID !== parseInt(periodId as string)) return;
+      if (careerId && career.CAREER_ID !== parseInt(careerId as string)) return;
+
+      const key = `${institution.REGION}-${institution.NUCLEUS}-${institution.EXTENSION}-${career.CAREER_ID}-${institution.INSTITUTION_ID}`;
+
+      if (!summaryMap.has(key)) {
+        summaryMap.set(key, {
+          region: getRegionName(institution.REGION) || institution.REGION,
+          nucleo: institution.NUCLEUS,
+          extension: institution.EXTENSION,
+          carrera: career.CAREER_NAME,
+          empresa: institution.INSTITUTION_NAME,
+          tipoEmpresa: institution.INSTITUTION_TYPE,
+          estudiantes: new Set(),
+          tutoresAcad: 0,
+          tutoresInst: 0,
+          observacion: ''
+        });
+      }
+
+      const record = summaryMap.get(key)!;
+      record.estudiantes.add(student.STUDENTS_ID);
+
+      // Contar tutores (evitar contar dobles si ya estaban, pero aquí es simple, contamos por práctica)
+      const tutores = practice.t_professional_practices_tutor || [];
+      const hasAcad = tutores.some((t: any) => t.TUTOR_TYPE === 'ACADEMICO');
+      const hasInst = tutores.some((t: any) => t.TUTOR_TYPE === 'INSTITUCIONAL');
+
+      if (hasAcad) record.tutoresAcad += 1;
+      if (hasInst) record.tutoresInst += 1;
+    });
+
+    const reportData = Array.from(summaryMap.values()).map((item, index) => ({
+      nro: index + 1,
+      region: item.region,
+      nucleo: item.nucleo,
+      extension: item.extension,
+      carrera: item.carrera,
+      cantidadTutoresAcad: item.tutoresAcad,
+      cantidadEstudiantes: item.estudiantes.size,
+      empresa: item.empresa,
+      tipoEmpresa: item.tipoEmpresa,
+      cantidadTutoresInst: item.tutoresInst,
+      observacion: item.observacion
+    }));
+
+    // Ordenar alfabéticamente
+    reportData.sort((a, b) => {
+      if (a.region !== b.region) return a.region.localeCompare(b.region);
+      if (a.carrera !== b.carrera) return a.carrera.localeCompare(b.carrera);
+      return a.empresa.localeCompare(b.empresa);
+    });
+
+    res.json({
+      success: true,
+      data: reportData,
+      meta: {
+        total: reportData.length
+      }
+    });
+
+  } catch (error) {
+    console.error('Resumen Pasantias Report Error:', error);
+    res.status(500).json({ message: 'Error al obtener reporte de resumen pasantias', error });
+  }
+};
 
 export const getCulminatedStudentsReport = async (req: Request, res: Response) => {
   try {

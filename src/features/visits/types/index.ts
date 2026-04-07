@@ -17,6 +17,10 @@ export interface Visit {
   status: boolean;
   createdAt: string;
   updatedAt: string;
+  /** Fecha de inicio del período académico */
+  periodStartDate?: string;
+  /** Fecha de fin del período académico */
+  periodEndDate?: string;
 }
 
 export interface CreateVisitPayload {
@@ -32,6 +36,8 @@ export interface CreateVisitPayload {
 }
 
 export interface UpdateVisitPayload {
+  /** ID de la práctica (necesario para validar duplicados de fecha) */
+  practiceId?: number;
   visitDate?: string;
   visitType?: 'PRESENCIAL' | 'VIRTUAL' | 'TELEFONICA';
   visitCase?: VisitCase;

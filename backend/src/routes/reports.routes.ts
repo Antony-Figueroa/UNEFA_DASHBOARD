@@ -6,7 +6,8 @@ import {
   getRecentReports,
   generateReport,
   getTutorsAcademicReport,
-  getCulminatedStudentsReport
+  getCulminatedStudentsReport,
+  getResumenPasantiasReport
 } from '../controllers/reports.controller.js';
 
 const router = Router();
@@ -16,6 +17,7 @@ router.get('/students-by-career', getStudentsByCareer);
 router.get('/enrollments-by-period', getEnrollmentsByPeriod);
 router.get('/recent', getRecentReports);
 router.get('/tutores-academicos', getTutorsAcademicReport);
+router.get('/resumen-pasantias', getResumenPasantiasReport);
 router.get('/culminated-students', getCulminatedStudentsReport);
 router.post('/generate', generateReport);
 

@@ -188,7 +188,6 @@ const navItems: NavItem[] = [
       { name: "Inscripción", path: "/enrollment" },
       { name: "Seguimiento", path: "/tracking" },
       { name: "Evaluaciones", path: "/evaluations" },
-      { name: "Culminación", path: "/culmination" },
     ],
   },
   { name: "Solicitudes", icon: <DocsIcon />, roles: [0, 1, 2], path: "/admin/requests" },

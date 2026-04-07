@@ -112,6 +112,14 @@ export const reportsService = {
     return response.data as TutorAcademicReportResponse;
   },
 
+  getResumenPasantiasReport: async (periodId?: number, careerId?: number) => {
+    const params = new URLSearchParams();
+    if (periodId) params.append('periodId', periodId.toString());
+    if (careerId) params.append('careerId', careerId.toString());
+    const response = await apiClient.get(`/reports/resumen-pasantias?${params.toString()}`);
+    return response.data;
+  },
+
   generateReport: async (type: string, period?: string, format?: string) => {
     const response = await apiClient.post('/reports/generate', {
       type,

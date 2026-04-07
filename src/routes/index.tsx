@@ -22,7 +22,6 @@ const Maintenance = lazy(() => import("../pages/Config/Maintenance"));
 const Backups = lazy(() => import("../pages/Config/Backups"));
 const LandingConfigPage = lazy(() => import("../pages/Config/LandingConfigPage"));
 const NotificationsPage = lazy(() => import("../pages/Notifications/NotificationsPage"));
-const Culmination = lazy(() => import("../pages/Culmination/Culmination"));
 const Reports = lazy(() => import("../pages/Reports/Reports"));
 const CulminatedStudentsReport = lazy(() => import("../pages/Reports/CulminatedStudentsReport"));
 const Manuals = lazy(() => import("../pages/Manuals/Manuals"));
@@ -45,6 +44,7 @@ const StudentEvaluations = lazy(() => import("../pages/Student/StudentEvaluation
 const AdminRequests = lazy(() => import("../pages/Admin/AdminRequests"));
 
 const EvaluationsList = lazy(() => import("../pages/Evaluations/EvaluationsList"));
+const EvaluationsAndCulmination = lazy(() => import("../pages/EvaluationsAndCulmination/EvaluationsAndCulmination"));
 
 const Calendar = lazy(() => import("../pages/Calendar"));
 const Blank = lazy(() => import("../pages/Blank"));
@@ -169,8 +169,7 @@ export const AppRoutes = () => {
             <Route path="/tracking" element={<TrackingPage />} />
             <Route path="/visit-registration/:id" element={<VisitRegistration />} />
             <Route path="/activity-logs/:practiceId" element={<ActivityLogPage />} />
-            <Route path="/culmination" element={<Culmination />} />
-            <Route path="/evaluations" element={<EvaluationsList />} />
+            <Route path="/evaluations" element={<EvaluationsAndCulmination />} />
 
             {/* Reports */}
             <Route path="/reports" element={<Reports />} />

@@ -27,6 +27,13 @@ interface VisitWithDetails extends VisitRecord {
   };
   t_professional_practices?: {
     PROFESSIONAL_PRACTICE_ID: number;
+    START_DATE?: string;
+    END_DATE?: string;
+    t_internships_period?: {
+      PERIOD_ID: number;
+      START_DATE: string;
+      END_DATE: string;
+    };
     t_students?: {
       STUDENTS_ID: number;
       STUDENTS_CI: string;
@@ -80,6 +87,13 @@ export const getVisitsByPractice = async (req: Request, res: Response) => {
         ),
         t_professional_practices (
           PROFESSIONAL_PRACTICE_ID,
+          START_DATE,
+          END_DATE,
+          t_internships_period (
+            PERIOD_ID,
+            START_DATE,
+            END_DATE
+          ),
           t_students (
             STUDENTS_ID,
             STUDENTS_CI,
@@ -101,7 +115,18 @@ export const getVisitsByPractice = async (req: Request, res: Response) => {
       return res.status(500).json({ message: 'Error al obtener visitas', error });
     }
 
-    const visits = (data as unknown as VisitWithDetails[]).map(mapVisitToFrontend);
+    // Add period dates to each visit
+    const visits = (data as unknown as VisitWithDetails[]).map(v => {
+      const visit = mapVisitToFrontend(v);
+      // Get period dates from professional practice or periods table
+      const practice = v.t_professional_practices;
+      const period = practice?.t_internships_period;
+      return {
+        ...visit,
+        periodStartDate: period?.START_DATE || practice?.START_DATE,
+        periodEndDate: period?.END_DATE || practice?.END_DATE
+      };
+    });
 
     res.json({
       success: true,
@@ -231,6 +256,65 @@ export const getVisitById = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Verifica si ya existe una visita con la misma fecha (misma hora) para la práctica.
+ * Considera duplicado si existe una visita activa (STATUS=1) con exactamente la misma fecha.
+ */
+const checkDuplicateVisit = async (supabase: any, practiceId: number, visitDate: string, excludeVisitId?: number): Promise<{ isDuplicate: boolean; existingVisit?: any }> => {
+  // Parsear la fecha de la visita y normalizar a UTC midnight para comparar solo fecha
+  const visitDateNormalized = new Date(visitDate).toISOString();
+  
+  let query = supabase
+    .from('t_practice_visits')
+    .select('VISIT_ID, VISIT_DATE, VISIT_TYPE')
+    .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+    .eq('STATUS', 1);
+  
+  // Si estamos editando, excluir la visita actual
+  if (excludeVisitId) {
+    query = query.neq('VISIT_ID', excludeVisitId);
+  }
+  
+  const { data, error } = await query;
+  
+  if (error) {
+    console.error('[checkDuplicateVisit] Error:', error);
+    return { isDuplicate: false };
+  }
+  
+  // Verificar si hay alguna visita con exactamente la misma fecha
+  const duplicate = (data || []).find((v: any) => {
+    const existingDate = new Date(v.VISIT_DATE).toISOString();
+    return existingDate === visitDateNormalized;
+  });
+  
+  return { 
+    isDuplicate: !!duplicate, 
+    existingVisit: duplicate 
+  };
+};
+
+/**
+ * Valida que la fecha de la visita no sea futura.
+ */
+const validateFutureDate = (visitDate: string): { valid: boolean; message?: string } => {
+  const now = new Date();
+  const visitDateParsed = new Date(visitDate);
+  
+  // Normalizar a medianoche para comparar solo fecha (sin hora)
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const visitDay = new Date(visitDateParsed.getFullYear(), visitDateParsed.getMonth(), visitDateParsed.getDate());
+  
+  if (visitDay > today) {
+    return { 
+      valid: false, 
+      message: 'La fecha de la visita no puede ser futura' 
+    };
+  }
+  
+  return { valid: true };
+};
+
 export const createVisit = async (req: Request, res: Response) => {
   try {
     const {
@@ -245,8 +329,32 @@ export const createVisit = async (req: Request, res: Response) => {
       recommendations
     } = req.body;
 
+    // Validar que no sea fecha futura
+    const futureDateValidation = validateFutureDate(visitDate);
+    if (!futureDateValidation.valid) {
+      return res.status(400).json({ 
+        message: futureDateValidation.message,
+        code: 'FUTURE_DATE_NOT_ALLOWED'
+      });
+    }
+
     const userId = (req as any).user?.userId;
     const supabase = dbManager.getConnection();
+
+    // Verificar duplicados
+    const { isDuplicate, existingVisit } = await checkDuplicateVisit(supabase, practiceId, visitDate);
+    if (isDuplicate) {
+      const existingDate = new Date(existingVisit.VISIT_DATE).toLocaleString('es-VE');
+      return res.status(409).json({ 
+        message: `Ya existe una visita registrada para esta práctica en la fecha ${existingDate}. No se permiten visitas duplicadas.`,
+        code: 'DUPLICATE_VISIT_DATE',
+        existingVisit: {
+          visitId: existingVisit.VISIT_ID,
+          visitDate: existingVisit.VISIT_DATE,
+          visitType: existingVisit.VISIT_TYPE
+        }
+      });
+    }
 
     const { data, error } = await supabase
       .from('t_practice_visits')
@@ -313,8 +421,40 @@ export const updateVisit = async (req: Request, res: Response) => {
       hoursWorked,
       activitiesPerformed,
       observations,
-      recommendations
+      recommendations,
+      practiceId // needed for duplicate check
     } = req.body;
+
+    // Validar que no sea fecha futura (si se está actualizando la fecha)
+    if (visitDate) {
+      const futureDateValidation = validateFutureDate(visitDate);
+      if (!futureDateValidation.valid) {
+        return res.status(400).json({ 
+          message: futureDateValidation.message,
+          code: 'FUTURE_DATE_NOT_ALLOWED'
+        });
+      }
+
+      // Verificar duplicados solo si se está cambiando la fecha
+      const { isDuplicate, existingVisit } = await checkDuplicateVisit(
+        dbManager.getConnection(), 
+        practiceId, 
+        visitDate,
+        parseInt(id)
+      );
+      if (isDuplicate) {
+        const existingDate = new Date(existingVisit.VISIT_DATE).toLocaleString('es-VE');
+        return res.status(409).json({ 
+          message: `Ya existe una visita registrada para esta práctica en la fecha ${existingDate}. No se permiten visitas duplicadas.`,
+          code: 'DUPLICATE_VISIT_DATE',
+          existingVisit: {
+            visitId: existingVisit.VISIT_ID,
+            visitDate: existingVisit.VISIT_DATE,
+            visitType: existingVisit.VISIT_TYPE
+          }
+        });
+      }
+    }
 
     const supabase = dbManager.getConnection();
 

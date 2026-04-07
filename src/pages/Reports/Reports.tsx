@@ -17,7 +17,7 @@ import { getInstitutions } from "../../features/institutions/services/institutio
 import { getEnrollments } from "../../features/enrollment/services/enrollmentService";
 import toast from "react-hot-toast";
 import { DocumentProps } from "@react-pdf/renderer";
-import { generateAnexo4Excel } from "../../utils/unefaExcelReports";
+import { generateAnexo4Excel, generateResumenPasantiasExcel } from "../../utils/unefaExcelReports";
 
 interface ReportMetric {
   label: string;
@@ -26,7 +26,7 @@ interface ReportMetric {
   trend?: "up" | "down" | "stable";
 }
 
-type ReportType = "students" | "enrollments" | "tracking" | "certificates" | "institutions" | "tutores-academicos" | "culminated-students" | "";
+type ReportType = "students" | "enrollments" | "tracking" | "certificates" | "institutions" | "tutores-academicos" | "culminated-students" | "resumen-pasantias" | "";
 
 export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
@@ -76,10 +76,10 @@ export default function ReportsPage() {
   const reportConfig: Record<Exclude<ReportType, "">, {
     title: string;
     subtitle: string;
-    loadTable?: () => Promise<TutorAcademicReportRow[]>;
+    loadTable?: () => Promise<any[]>;
     loadPDF?: () => Promise<unknown[]>;
     pdfTemplate: (data: unknown[]) => ReactElement<DocumentProps>;
-    columns: { header: string; accessor: keyof TutorAcademicReportRow | ((item: TutorAcademicReportRow) => React.ReactNode); className?: string }[];
+    columns: { header: string; accessor: string | ((item: any) => React.ReactNode); className?: string }[];
   }> = {
     "students": {
       title: "Reporte de Estudiantes",
@@ -118,6 +118,25 @@ export default function ReportsPage() {
         { header: "Teléfono", accessor: "telefono" },
         { header: "Correo", accessor: "correo" },
         { header: "Estudiantes", accessor: (row: TutorAcademicReportRow) => row.cantidadEstudiantes, className: "text-center font-bold" },
+      ]
+    },
+    "resumen-pasantias": {
+      title: "Resumen de Pasantías",
+      subtitle: "Reporte resumen general de las prácticas profesionales",
+      loadTable: async () => {
+        const response = await reportsService.getResumenPasantiasReport();
+        return response.data;
+      },
+      pdfTemplate: () => <></>,
+      columns: [
+        { header: "N°", accessor: "nro" },
+        { header: "Región", accessor: "region" },
+        { header: "Núcleo", accessor: "nucleo" },
+        { header: "Carrera", accessor: "carrera" },
+        { header: "Estudiantes", accessor: "cantidadEstudiantes" },
+        { header: "Tutores Acad.", accessor: "cantidadTutoresAcad" },
+        { header: "Empresa", accessor: "empresa" },
+        { header: "Tipo", accessor: "tipoEmpresa" },
       ]
     },
     "institutions": {
@@ -219,13 +238,19 @@ export default function ReportsPage() {
     }
   };
 
-  const exportTableToExcel = (data: TutorAcademicReportRow[], fileName: string) => {
+  const exportTableToExcel = (data: any[], fileName: string) => {
     const currentReportType = reportType;
     
     // Si es el reporte de tutores (Anexo 4), usar el generador especializado
     if (currentReportType === "tutores-academicos") {
       generateAnexo4Excel(data, fileName);
       toast.success('Reporte Anexo 4 generado exitosamente');
+      return;
+    }
+    
+    if (currentReportType === "resumen-pasantias") {
+      generateResumenPasantiasExcel(data, periodFilter || "Todos", fileName);
+      toast.success('Reporte Resumen Pasantías generado exitosamente');
       return;
     }
 
@@ -435,11 +460,11 @@ export default function ReportsPage() {
                     { value: "certificates", label: "Certificados" },
                     { value: "institutions", label: "Instituciones" },
                     { value: "tutores-academicos", label: "ANEXO 4 - Tutores Académicos" },
-                    { value: "culminated-students", label: "Estudiantes Culminados" },
+                    { value: "resumen-pasantias", label: "RESUMEN PASANTIAS" },
+                    { value: "culminated-students", label: "Estudiantes Culminados" }
                   ]}
                   value={reportType}
-                  onChange={(e) => setReportType(e as unknown as ReportType)}
-                  className="w-full"
+                  onChange={(e) => setReportType(e as ReportType)}
                 />
               </div>
               <div>

@@ -150,14 +150,14 @@ export const updateTracking = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const db = DatabaseManager.getInstance();
-    const { reportTitle, transfer, route, observations, status } = req.body;
+    const { reportTitle, transfer, route, observations } = req.body;
 
+    // No actualizamos el STATUS - solo actualizamos los datos del seguimiento
     const updateData = {
       REPORT_TITLE: reportTitle,
       TRANSFER: transfer ? 1 : 0,
       TOUR: route,
-      OBSERVATION: observations,
-      STATUS: status ? 1 : 0
+      OBSERVATION: observations
     };
 
     const { data, error } = await db.getConnection()
@@ -169,7 +169,11 @@ export const updateTracking = async (req: Request, res: Response) => {
         t_students:STUDENTS_ID (
           STUDENTS_CI,
           NAME,
-          SURNAME
+          SURNAME,
+          t_career:CAREER_ID (
+            CAREER_ID,
+            CAREER_NAME
+          )
         )
       `)
       .single();

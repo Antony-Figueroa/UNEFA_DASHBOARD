@@ -50,6 +50,20 @@ export const subscribeToNotifications = (req: Request, res: Response) => {
   
   res.flushHeaders();
 
+  // Si no hay userId, no podemos registrar al cliente en el Map
+  if (!userId) {
+    // Mantener conexión viva pero sin notificaciones específicas de usuario
+    const heartbeatInterval = setInterval(() => {
+      res.write(`: heartbeat\n\n`);
+    }, 30000);
+
+    req.on("close", () => {
+      clearInterval(heartbeatInterval);
+      console.log('[SSE] Client disconnected (no auth)');
+    });
+    return;
+  }
+
   if (!clients.has(userId)) {
     clients.set(userId, new Set());
   }

@@ -1,15 +1,8 @@
 {
-  "projects": [
+  "rewrites": [
     {
-      "path": "frontend",
-      "scope": "unefa-dashboard",
-      "team": "personal"
-    },
-    {
-      "path": "backend",
-      "scope": "unefa-dashboard", 
-      "team": "personal"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
-  ],
-  "regions": ["scl1"]
+  ]
 }

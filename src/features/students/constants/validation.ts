@@ -26,7 +26,9 @@ export const studentSchema = z.object({
   birthDate: z.string()
     .min(1, "La fecha de nacimiento es obligatoria")
     .refine((date) => {
-      const birth = new Date(date);
+      if (!date) return false;
+      const birth = new Date(date.includes('T') ? date : `${date}T12:00:00`);
+      if (isNaN(birth.getTime())) return false;
       const today = new Date();
       let age = today.getFullYear() - birth.getFullYear();
       const m = today.getMonth() - birth.getMonth();

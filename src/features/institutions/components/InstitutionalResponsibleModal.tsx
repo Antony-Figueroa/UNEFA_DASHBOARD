@@ -667,8 +667,8 @@ export default function InstitutionalResponsibleModal({
               </div>
 
               {/* Columna Derecha: Instituciones */}
-              <div className="lg:col-span-1">
-                <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Instituciones</label>
+               <div className="lg:col-span-1">
+                 <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Instituciones *</label>
                 {preselectedInstitutionId ? (
                   <div className="space-y-2">
                     <div className="px-4 py-2.5 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-lg flex items-center justify-between">
@@ -833,17 +833,22 @@ export default function InstitutionalResponsibleModal({
                >
                  Actualizar
                </AsyncButton>
-             ) : (
-               <AsyncButton 
-                 variant="primary" 
-                 type="submit" 
-                 className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
-                 loading={isLoading}
-                 disabled={!isValid}
-               >
-                 Guardar
-               </AsyncButton>
-             )}
+) : (
+                <AsyncButton 
+                  variant="primary" 
+                  type="button"
+                  className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
+                  loading={isLoading}
+                  disabled={!isValid}
+                  onClick={() => {
+                    handleSubmit(onSubmit)().catch(err => {
+                      console.error("[InstitutionalResponsibleModal] Error en validación:", err);
+                    });
+                  }}
+                >
+                  Guardar
+                </AsyncButton>
+              )}
            </div>
         </ModalFooter>
       </Modal>
@@ -854,9 +859,25 @@ export default function InstitutionalResponsibleModal({
         onClose={() => setConfirmSaveOpen(false)}
         onConfirm={async () => {
           if (pendingSave) {
-            await onSave(pendingSave);
+            try {
+              await onSave(pendingSave);
+              addToast({
+                variant: "success",
+                title: editingResp ? "Actualizado" : "Guardado",
+                message: editingResp ? "Responsable actualizado exitosamente" : "Responsable guardado exitosamente"
+              });
+            } catch (error: any) {
+              console.error("[InstitutionalResponsibleModal] Error guardando:", error);
+              const errorMessage = error?.response?.data?.message || error?.message || "No se pudo guardar el responsable";
+              addToast({
+                variant: "error",
+                title: "Error",
+                message: errorMessage
+              });
+              return;
+            }
+            setConfirmSaveOpen(false);
           }
-          setConfirmSaveOpen(false);
         }}
         variant="confirm"
         title={editingResp ? "Confirmar actualización" : "Confirmar registro"}

@@ -1115,11 +1115,16 @@ export default function InstitutionModal({
                   className={PHONE_INPUT_CLASS}
                   maxLength={PHONE_LOCAL_MAX_LENGTH}
                   error={!!errors.phoneNumber || !!errors.phonePrefix} 
-                  hint={errors.phoneNumber?.message || errors.phonePrefix?.message || " "}
                   disabled={isFormDisabled}
                 />
               </div>
             </div>
+            {errors.phoneNumber && (
+              <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
+                <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
+                {errors.phoneNumber.message}
+              </p>
+            )}
           </div>
 
           <div>

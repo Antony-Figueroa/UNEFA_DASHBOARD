@@ -895,16 +895,15 @@ useEffect(() => {
                     onChange={handlePhoneNumberChange}
                     placeholder="123-4567"
                     error={!!errors.phoneNumber}
-                    hint={errors.phoneNumber?.message || " "}
                     disabled={viewOnlyMode}
                     maxLength={8}
                   />
                 </div>
               </div>
-              {(errors.phonePrefix || errors.phoneNumber) && (
+              {errors.phoneNumber && (
                 <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
                   <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
-                  {errors.phoneNumber?.message || errors.phonePrefix?.message}
+                  {errors.phoneNumber.message}
                 </p>
               )}
             </div>

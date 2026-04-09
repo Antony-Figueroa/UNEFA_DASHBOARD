@@ -35,6 +35,7 @@ import { generateCertificatePDF } from '../../components/ui/pdf/templates/Certif
 import { EvaluationModal } from '../../features/evaluations/components/EvaluationModal';
 import EvaluationDetailModal from '../../features/evaluations/components/EvaluationDetailModal';
 import { EvaluatorType } from '../../features/evaluations/types';
+import { StudentDetailModal } from '../../features/student-detail/components/StudentDetailModal';
 
 // Pestañas del módulo
 type TabType = 'evaluations' | 'results' | 'culmination';
@@ -125,6 +126,11 @@ export default function EvaluationsAndCulminationPage() {
   // Modal de detalles de evaluación
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedEvaluationId, setSelectedEvaluationId] = useState<number | null>(null);
+
+  // Modal de detalle del estudiante
+  const [studentDetailOpen, setStudentDetailOpen] = useState(false);
+  const [selectedStudentPracticeId, setSelectedStudentPracticeId] = useState<number | null>(null);
+  const [selectedStudentName, setSelectedStudentName] = useState('');
 
   // Cargar datos
   const fetchPractices = async () => {
@@ -687,7 +693,19 @@ export default function EvaluationsAndCulminationPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {practice.culminationStatus === 'pending' && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => {
+                          setSelectedStudentPracticeId(practice.practiceId);
+                          setSelectedStudentName(practice.studentName);
+                          setStudentDetailOpen(true);
+                        }}
+                      >
+                        <EyeIcon className="w-4 h-4" />
+                      </Button>
+                      {/* Solo mostrar Aprobar si tiene resultado de evaluaciones (aprobado) */}
+                      {practice.culminationStatus === 'pending' && practice.result === 'approved' && (
                         <Button size="sm" variant="outline" onClick={() => handleApprove(practice)}>
                           Aprobar
                         </Button>
@@ -738,7 +756,8 @@ export default function EvaluationsAndCulminationPage() {
                 </p>
               )}
               <div className="pt-3 border-t border-border-default dark:border-border-dark">
-                {practice.culminationStatus === 'pending' && (
+                {/* Solo mostrar Aprobar si tiene resultado de evaluaciones (aprobado) */}
+                {practice.culminationStatus === 'pending' && practice.result === 'approved' && (
                   <Button size="sm" variant="outline" onClick={() => handleApprove(practice)}>Aprobar</Button>
                 )}
                 {practice.culminationStatus === 'approved' && (
@@ -887,6 +906,18 @@ export default function EvaluationsAndCulminationPage() {
           setSelectedEvaluationId(null);
         }}
         evaluationId={selectedEvaluationId}
+      />
+
+      {/* Modal de Detalle del Estudiante */}
+      <StudentDetailModal
+        isOpen={studentDetailOpen}
+        onClose={() => {
+          setStudentDetailOpen(false);
+          setSelectedStudentPracticeId(null);
+          setSelectedStudentName('');
+        }}
+        practiceId={selectedStudentPracticeId || 0}
+        studentName={selectedStudentName}
       />
     </>
   );

@@ -51,6 +51,7 @@ export interface PracticeWithEvaluations {
   /** Información académica */
   careerId: number;
   careerName: string;
+  minimumGrade: number;
   
   /** Información de la institución */
   institutionId: number;

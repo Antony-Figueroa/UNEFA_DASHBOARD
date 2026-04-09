@@ -8,8 +8,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test:env": "tsx src/test-env-readonly.ts",
-    "postinstall": "npm run build"
+    "test:env": "tsx src/test-env-readonly.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

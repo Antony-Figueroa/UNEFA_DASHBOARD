@@ -38,6 +38,8 @@ export interface UnifiedDialogProps {
   cancelLabel?: string;
   /** Indica si la acción de confirmación está en estado de carga. */
   isLoading?: boolean;
+  /** Tamaño del modal: sm, md, lg, xl, 2xl. Por defecto "md" */
+  size?: "sm" | "md" | "lg" | "xl" | "2xl";
 }
 
 /**
@@ -67,6 +69,7 @@ export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
   confirmLabel,
   cancelLabel = "Cancelar",
   isLoading = false,
+  size = "md",
 }) => {
   const [internalLoading, setInternalLoading] = React.useState(false);
   const isMounted = React.useRef(false);
@@ -136,7 +139,7 @@ export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
       onClose={onClose}
       className="max-w-md overflow-hidden"
       showCloseButton
-      size="md"
+      size={size}
       zIndex={2000}
     >
       <ModalBody className="flex flex-col items-center text-center px-6 pt-8 pb-4 sm:px-10 sm:pt-12 sm:pb-6">

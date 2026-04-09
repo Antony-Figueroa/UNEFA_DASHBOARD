@@ -49,7 +49,8 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
           CAREER_ID,
           t_career (
             CAREER_ID,
-            CAREER_NAME
+            CAREER_NAME,
+            MINIMUM_GRADE
           )
         ),
         t_institution (
@@ -187,10 +188,13 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
         finalGrade = Math.round(finalGrade * 100) / 100;
       }
 
-      // Determinar resultado
+      // Obtener nota mínima de la carrera
+      const minimumGrade = career?.MINIMUM_GRADE || 10;
+
+      // Determinar resultado usando la nota mínima de la carrera
       let practiceResult: 'approved' | 'failed' | 'pending' = 'pending';
       if (finalGrade !== null) {
-        practiceResult = finalGrade >= 10 ? 'approved' : 'failed';
+        practiceResult = finalGrade >= minimumGrade ? 'approved' : 'failed';
       }
 
       // Estado de culminación
@@ -203,6 +207,7 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
         }
       }
 
+      // Devolver también la nota mínima para uso en el frontend
       const studentName = student 
         ? `${student.NAME || ''} ${student.SECOND_NAME || ''} ${student.SURNAME || ''} ${student.SECOND_SURNAME || ''}`.trim().replace(/\s+/g, ' ')
         : '';
@@ -213,6 +218,7 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
         studentName,
         careerId: career?.CAREER_ID || 0,
         careerName: career?.CAREER_NAME || '',
+        minimumGrade,
         institutionId: p.t_institution?.INSTITUTION_ID || 0,
         institutionName: p.t_institution?.INSTITUTION_NAME || '',
         periodId: period?.PERIOD_ID || 0,
@@ -374,7 +380,245 @@ export const getEvaluationStats = async (req: AuthRequest, res: Response) => {
     console.error('[EvaluationStats] Error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error al obtener estadísticas'
+      message: 'Error al obtener prácticas'
+    });
+  }
+};
+
+/**
+ * Obtiene el detalle completo de un estudiante y su práctica
+ */
+export const getStudentDetail = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const practiceId = parseInt(id, 10);
+    
+    if (isNaN(practiceId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de práctica inválido'
+      });
+    }
+    
+    const supabase = dbManager.getConnection();
+
+    // Obtener práctica con información relacionada
+    const { data: practice, error } = await supabase
+      .from('t_professional_practices')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        START_DATE,
+        END_DATE,
+        GRADE,
+        PRACTICES_STATUS,
+        EVALUATION_STATUS,
+        ENROLLMENT,
+        t_students (
+          STUDENTS_CI,
+          NAME,
+          SECOND_NAME,
+          SURNAME,
+          SECOND_SURNAME,
+          CAREER_ID,
+          t_career (
+            CAREER_ID,
+            CAREER_NAME
+          )
+        ),
+        t_institution (
+          INSTITUTION_ID,
+          INSTITUTION_NAME
+        ),
+        t_internships_period (
+          PERIOD_ID,
+          DESCRIPTION
+        ),
+        t_internship_type (
+          INTERNSHIP_TYPE_ID,
+          NAME
+        )
+      `)
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .eq('STATUS', 1)
+      .single();
+
+    if (error || !practice) {
+      return res.status(404).json({
+        success: false,
+        message: 'Práctica no encontrada'
+      });
+    }
+
+    const student = (practice as any).t_students;
+    const career = (student as any)?.t_career?.[0];
+    const period = (practice as any).t_internships_period;
+    const practiceType = (practice as any).t_internship_type;
+    const institution = (practice as any).t_institution;
+
+    // Obtener evaluaciones
+    const { data: evaluations } = await supabase
+      .from('t_evaluation')
+      .select('*')
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .eq('STATUS', 1);
+
+    // Obtener visitas
+    const { data: visits } = await supabase
+      .from('t_practice_visits')
+      .select('*')
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .eq('STATUS', 1)
+      .order('VISIT_DATE', { ascending: false });
+
+    // Obtener documentos
+    const { data: documents } = await supabase
+      .from('t_documents')
+      .select('*')
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .eq('STATUS', 1)
+      .order('CREATION_DATE', { ascending: false });
+
+    // Obtener culminación
+    const { data: culmination } = await supabase
+      .from('t_practice_culmination')
+      .select('*')
+      .eq('PRACTICE_ID', practiceId)
+      .single();
+
+    // Obtener horas trabajadas desde tracking
+    const { data: tracking } = await supabase
+      .from('t_tracking')
+      .select('HOURS_WORKED')
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .eq('STATUS', 1);
+
+    let totalHours = (tracking || []).reduce((sum, t) => sum + (t.HOURS_WORKED || 0), 0);
+    
+    // Si no hay horas en tracking, obtenerlas de las visitas
+    if (totalHours === 0 && visits && visits.length > 0) {
+      totalHours = visits.reduce((sum, v) => sum + (v.HOURS_WORKED || 0), 0);
+    }
+
+    // Procesar estado de evaluaciones
+    const evalStatusMap: Record<string, { completed: boolean; score: number | null }> = {
+      INSTITUCIONAL: { completed: false, score: null },
+      ACADEMICO: { completed: false, score: null },
+      COMITE: { completed: false, score: null }
+    };
+
+    let finalGrade: number | null = null;
+    let evalStatus: 'pending' | 'partial' | 'completed' = 'pending';
+
+    (evaluations || []).forEach(e => {
+      if (evalStatusMap[e.EVALUATOR_TYPE]) {
+        evalStatusMap[e.EVALUATOR_TYPE] = {
+          completed: true,
+          score: e.TOTAL_SCORE || null
+        };
+      }
+    });
+
+    const completedCount = Object.values(evalStatusMap).filter(e => e.completed).length;
+    if (completedCount === 3) {
+      evalStatus = 'completed';
+      finalGrade = 
+        (evalStatusMap.INSTITUCIONAL.score! * 0.40) +
+        (evalStatusMap.ACADEMICO.score! * 0.30) +
+        (evalStatusMap.COMITE.score! * 0.30);
+      finalGrade = Math.round(finalGrade * 100) / 100;
+    } else if (completedCount > 0) {
+      evalStatus = 'partial';
+    }
+
+    // Etiquetas de estado
+    const statusLabels: Record<number, string> = {
+      1: 'Pre Inscripto',
+      2: 'Inscripto',
+      3: 'Culminado',
+      0: 'Retirado'
+    };
+
+    // Procesar culminación
+    let culminStatus: 'pending' | 'approved' | 'certified' = 'pending';
+    let certificateNumber: string | undefined;
+    let certifiedAt: string | undefined;
+
+    if (culmination) {
+      if (culmination.STATUS === 2) {
+        culminStatus = 'certified';
+        certificateNumber = culmination.CERTIFICATE_NUMBER;
+        certifiedAt = culmination.CERTIFIED_AT;
+      } else if (culmination.STATUS === 1) {
+        culminStatus = 'approved';
+      }
+    }
+
+    const studentName = student 
+      ? `${student.NAME || ''} ${student.SECOND_NAME || ''} ${student.SURNAME || ''} ${student.SECOND_SURNAME || ''}`.trim().replace(/\s+/g, ' ')
+      : '';
+
+    res.json({
+      success: true,
+      data: {
+        student: {
+          studentCi: student?.STUDENTS_CI || '',
+          studentName,
+          careerId: career?.CAREER_ID || 0,
+          careerName: career?.CAREER_NAME || ''
+        },
+        practice: {
+          practiceId: practice.PROFESSIONAL_PRACTICE_ID,
+          enrollment: practice.ENROLLMENT || '',
+          startDate: practice.START_DATE || '',
+          endDate: practice.END_DATE || '',
+          institutionId: institution?.INSTITUTION_ID || 0,
+          institutionName: institution?.INSTITUTION_NAME || '',
+          periodId: period?.PERIOD_ID || 0,
+          periodName: period?.DESCRIPTION || '',
+          practiceTypeId: practiceType?.INTERNSHIP_TYPE_ID || 0,
+          practiceTypeName: practiceType?.NAME || '',
+          totalHours,
+          practicesStatus: practice.PRACTICES_STATUS,
+          practicesStatusLabel: statusLabels[practice.PRACTICES_STATUS] || 'Desconocido'
+        },
+        evaluations: {
+          institucional: evalStatusMap.INSTITUCIONAL,
+          academico: evalStatusMap.ACADEMICO,
+          comite: evalStatusMap.COMITE,
+          finalGrade,
+          status: evalStatus
+        },
+        visits: (visits || []).map(v => ({
+          visitId: v.VISIT_ID,
+          visitDate: v.VISIT_DATE,
+          visitType: v.VISIT_TYPE,
+          visitCase: v.VISIT_CASE || '',
+          hoursWorked: v.HOURS_WORKED || 0,
+          activitiesPerformed: v.ACTIVITIES_PERFORMED || '',
+          observations: v.OBSERVATIONS || '',
+          recommendations: v.RECOMMENDATIONS || ''
+        })),
+        documents: (documents || []).map(d => ({
+          documentId: d.DOCUMENT_ID,
+          documentType: d.DOCUMENT_TYPE || '',
+          fileName: d.FILE_NAME || '',
+          filePath: d.FILE_PATH || '',
+          status: d.DOCUMENT_STATUS || 'PENDING',
+          uploadedAt: d.CREATION_DATE || ''
+        })),
+        culmination: {
+          status: culminStatus,
+          certificateNumber,
+          certifiedAt
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('[getStudentDetail] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener detalle del estudiante'
     });
   }
 };

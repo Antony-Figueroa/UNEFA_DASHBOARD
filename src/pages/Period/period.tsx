@@ -240,15 +240,29 @@ export default function Period() {
      * 
      * @param periodoRow - Datos de la fila del periodo a restaurar.
      */
-    const handleRestore = async (periodoRow: PeriodoRowData) => {
-        try {
-            const originalPeriodo = periodos.find(p => p.periodId === periodoRow.periodId);
-            if (originalPeriodo) {
-                await editPeriod({ ...originalPeriodo, status: true });
-            }
-        } catch (e) {
-            console.error("[PeriodPage] Error al restaurar periodo:", e);
+    const handleRestore = (periodoRow: PeriodoRowData) => {
+        const originalPeriodo = periodos.find(p => p.periodId === periodoRow.periodId);
+        if (!originalPeriodo) {
+            console.error("[PeriodPage] No se encontró el periodo original para restaurar:", periodoRow.periodId);
+            return;
         }
+
+        setConfirmation({
+            isOpen: true,
+            title: 'Confirmar Restauración',
+            message: `¿Estás seguro de que deseas restaurar el período "${originalPeriodo.description}"? Volverá a aparecer en la pestaña de activos.`,
+            onConfirm: async () => {
+                try {
+                    await editPeriod({ ...originalPeriodo, status: true });
+                } catch (e) {
+                    console.error("[PeriodPage] Error al restaurar periodo:", e);
+                } finally {
+                    setConfirmation(null);
+                }
+            },
+            confirmText: 'Restaurar',
+            variant: 'success'
+        });
     };
 
     /**

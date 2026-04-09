@@ -834,10 +834,15 @@ export default function TutorModal({
                     error={!!errors.phoneNumber || !!errors.phoneAreaCode}
                     disabled={viewOnlyMode}
                     maxLength={PHONE_LOCAL_MAX_LENGTH}
-                    hint={errors.phoneNumber?.message || errors.phoneAreaCode?.message || " "}
                   />
                 </div>
               </div>
+              {errors.phoneNumber && (
+                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
+                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
+                  {errors.phoneNumber.message}
+                </p>
+              )}
             </div>
 
             {/* Correo */}

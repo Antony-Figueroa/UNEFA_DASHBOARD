@@ -14,6 +14,7 @@ const INSTITUTION_COLUMNS_TO_AUDIT = [
 ];
 
 const INSTITUTION_COLUMNS = 'INSTITUTION_ID, INSTITUTION_NAME, INSTITUTION_ADDRESS, INSTITUTION_CONTACT, PRACTICE_TYPE, CAREER_ID, REGION, NUCLEUS, EXTENSION, CREATION_DATE, INSTITUTION_TYPE, STATUS, RIF';
+const INSTITUTION_INTERNSHIP_TYPE_TABLE = 't_institution_internship_type';
 
 interface AppError extends Error {
   code?: string;
@@ -175,18 +176,34 @@ export const getInstitutions = async (_req: Request, res: Response) => {
 
     // 5. Value list for mapping
     let listValues: any[] = [];
+    let internshipTypeNames: Record<string, string> = {};
+
     try {
-      const response = await dbManager.withRetry(async (supabase) => {
-        const { data, error } = await supabase
-          .from('t_value_list')
-          .select('NAME, ABBREVIATION')
-          .eq('STATUS', 1);
-        if (error) throw error;
-        return data;
-      }, 'getListValuesForMapping');
-      listValues = response || [];
+      const [listRes, typeRes] = await Promise.all([
+        dbManager.withRetry(async (supabase) => {
+          const { data, error } = await supabase
+            .from('t_value_list')
+            .select('NAME, ABBREVIATION')
+            .eq('STATUS', 1);
+          if (error) throw error;
+          return data;
+        }, 'getListValuesForMapping'),
+        dbManager.withRetry(async (supabase) => {
+          const { data, error } = await supabase
+            .from('t_internship_type')
+            .select('INTERNSHIP_TYPE_ID, NAME')
+            .eq('STATUS', 1);
+          if (error) throw error;
+          return data;
+        }, 'getInternshipTypeNames')
+      ]);
+
+      listValues = listRes || [];
+      (typeRes || []).forEach((t: any) => {
+        internshipTypeNames[String(t.INTERNSHIP_TYPE_ID)] = t.NAME;
+      });
     } catch (err) { 
-      console.warn('[getInstitutions] Falló carga de t_value_list, se usarán valores crudos:', err);
+      console.warn('[getInstitutions] Falló carga de mapeos (listas o tipos):', err);
     }
 
     const nameMap: Record<string, string> = {};
@@ -202,14 +219,32 @@ export const getInstitutions = async (_req: Request, res: Response) => {
     };
 
     // 6. Final Result
-    const result = data.map(i => ({
-      ...mapDBToFrontend(i),
-      region: getFullName(i.REGION),
-      nucleus: getFullName(i.NUCLEUS),
-      extension: getFullName(i.EXTENSION),
-      institutionType: getFullName(i.INSTITUTION_TYPE),
-      practiceType: getFullName(i.PRACTICE_TYPE)
-    }));
+    const result = data.map(i => {
+      const frontend = mapDBToFrontend(i);
+      
+      // Humanizar el tipo de práctica principal (campo legacy)
+      const mainTypeId = i.PRACTICE_TYPE ? String(i.PRACTICE_TYPE) : '';
+      const practiceTypeName = internshipTypeNames[mainTypeId] || getFullName(i.PRACTICE_TYPE);
+      
+      // Humanizar el array de tipos de práctica (relaciones modernas)
+      let pTypes = (frontend.internshipTypeIds || []).map((id: string) => internshipTypeNames[id] || id);
+      
+      // Asegurarnos de que el tipo principal esté incluido y humanizado
+      if (practiceTypeName && !pTypes.includes(practiceTypeName)) {
+        if (pTypes.length === 0) pTypes = [practiceTypeName];
+        else pTypes.unshift(practiceTypeName);
+      }
+
+      return {
+        ...frontend,
+        region: getFullName(i.REGION),
+        nucleus: getFullName(i.NUCLEUS),
+        extension: getFullName(i.EXTENSION),
+        institutionType: getFullName(i.INSTITUTION_TYPE),
+        practiceType: practiceTypeName,
+        practiceTypes: pTypes
+      };
+    });
     
     cacheManager.set(cacheKey, result, CACHE_TTL);
     res.json(result);
@@ -355,6 +390,17 @@ export const createInstitution = async (req: AuthRequest, res: Response) => {
 
       if (error) throw error;
 
+      // Sincronizar tabla pivote de tipos de práctica
+      const internshipTypeId = i.internshipTypeId || i.practiceType;
+      if (internshipTypeId) {
+        await supabase
+          .from(INSTITUTION_INTERNSHIP_TYPE_TABLE)
+          .insert([{
+            INSTITUTION_ID: inst.INSTITUTION_ID,
+            INTERNSHIP_TYPE_ID: parseInt(String(internshipTypeId))
+          }]);
+      }
+
       return inst as DBInstitution;
     }, 'createInstitution');
 
@@ -438,6 +484,24 @@ export const updateInstitution = async (req: AuthRequest, res: Response) => {
         .single();
 
       if (error) throw error;
+
+      // Sincronizar tabla pivote de tipos de práctica
+      const internshipTypeId = i.internshipTypeId || i.practiceType;
+      if (internshipTypeId) {
+        // Primero eliminamos existentes
+        await supabase
+          .from(INSTITUTION_INTERNSHIP_TYPE_TABLE)
+          .delete()
+          .eq('INSTITUTION_ID', parseInt(id));
+          
+        // Luego insertamos la actual
+        await supabase
+          .from(INSTITUTION_INTERNSHIP_TYPE_TABLE)
+          .insert([{
+            INSTITUTION_ID: parseInt(id),
+            INTERNSHIP_TYPE_ID: parseInt(String(internshipTypeId))
+          }]);
+      }
 
       if (oldData) {
         await auditUpdate(req, 't_institution', oldData as Record<string, any>, dbData, INSTITUTION_COLUMNS_TO_AUDIT);

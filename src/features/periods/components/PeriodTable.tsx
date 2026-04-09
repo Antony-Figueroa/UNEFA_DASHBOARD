@@ -123,6 +123,7 @@ const ActionButtons = ({
 }: ActionButtonsProps) => {
     const currentPeriodStatus = getSafePeriodStatus(periodo);
     const hasStatus = !!periodo.periodStatus;
+    const isInactive = periodo.status === false; // Período en papelera (inactivo)
 
     const containerClasses = isMobile 
         ? "flex flex-col gap-3 pt-2" 
@@ -130,6 +131,7 @@ const ActionButtons = ({
 
     return (
         <div className={containerClasses}>
+            {/* Botón siempre disponible: Ver Detalles */}
             {onView && (
                 <AsyncActionButton
                     onClick={async () => onView()}
@@ -140,37 +142,9 @@ const ActionButtons = ({
                     fullWidth={isMobile}
                 />
             )}
-            {hasStatus && currentPeriodStatus !== 3 && onEdit && (
-                <AsyncActionButton
-                    onClick={async () => onEdit()}
-                    icon={<EditIcon />}
-                    tooltip={currentPeriodStatus === 2 ? "Editar (Solo Fecha Fin)" : "Editar"}
-                    label={isMobile ? (currentPeriodStatus === 2 ? "Editar Fecha Fin" : "Editar Período") : undefined}
-                    variant="primary"
-                    fullWidth={isMobile}
-                />
-            )}
-            {hasStatus && currentPeriodStatus === 1 && canActivate && onActivate && (
-                <AsyncActionButton
-                    onClick={async () => onActivate()}
-                    icon={<CheckCircleIcon />}
-                    tooltip="Activar"
-                    label={isMobile ? "Activar Período" : undefined}
-                    variant="success"
-                    fullWidth={isMobile}
-                />
-            )}
-            {hasStatus && currentPeriodStatus === 2 && onCulminate && (
-                <AsyncActionButton
-                    onClick={async () => onCulminate()}
-                    icon={<CheckCircleIcon />}
-                    tooltip="Culminar"
-                    label={isMobile ? "Culminar Período" : undefined}
-                    variant="success"
-                    fullWidth={isMobile}
-                />
-            )}
-            {!hasStatus && onRestore && (
+            
+            {/* SI el período está INACTIVO: solo mostrar botón de Restaurar */}
+            {isInactive && onRestore && (
                 <AsyncActionButton
                     onClick={async () => onRestore()}
                     icon={<RefreshIcon />}
@@ -180,16 +154,52 @@ const ActionButtons = ({
                     fullWidth={isMobile}
                 />
             )}
-            {hasStatus && currentPeriodStatus === 1 && onDelete && (
-                <AsyncActionButton
-                    onClick={async () => onDelete()}
-                    icon={<TrashIcon />}
-                    tooltip={isDisabled ? disabledTooltip : "Eliminar"}
-                    label={isMobile ? "Eliminar Período" : undefined}
-                    variant="danger"
-                    fullWidth={isMobile}
-                    disabled={isDisabled}
-                />
+            
+            {/* SI el período está ACTIVO: mostrar toda la botonera normal */}
+            {!isInactive && (
+                <>
+                    {hasStatus && currentPeriodStatus !== 3 && onEdit && (
+                        <AsyncActionButton
+                            onClick={async () => onEdit()}
+                            icon={<EditIcon />}
+                            tooltip={currentPeriodStatus === 2 ? "Editar (Solo Fecha Fin)" : "Editar"}
+                            label={isMobile ? (currentPeriodStatus === 2 ? "Editar Fecha Fin" : "Editar Período") : undefined}
+                            variant="primary"
+                            fullWidth={isMobile}
+                        />
+                    )}
+                    {hasStatus && currentPeriodStatus === 1 && canActivate && periodo.status && onActivate && (
+                        <AsyncActionButton
+                            onClick={async () => onActivate()}
+                            icon={<CheckCircleIcon />}
+                            tooltip="Activar"
+                            label={isMobile ? "Activar Período" : undefined}
+                            variant="success"
+                            fullWidth={isMobile}
+                        />
+                    )}
+                    {hasStatus && currentPeriodStatus === 2 && onCulminate && (
+                        <AsyncActionButton
+                            onClick={async () => onCulminate()}
+                            icon={<CheckCircleIcon />}
+                            tooltip="Culminar"
+                            label={isMobile ? "Culminar Período" : undefined}
+                            variant="success"
+                            fullWidth={isMobile}
+                        />
+                    )}
+                    {hasStatus && currentPeriodStatus === 1 && onDelete && (
+                        <AsyncActionButton
+                            onClick={async () => onDelete()}
+                            icon={<TrashIcon />}
+                            tooltip={isDisabled ? disabledTooltip : "Eliminar"}
+                            label={isMobile ? "Eliminar Período" : undefined}
+                            variant="danger"
+                            fullWidth={isMobile}
+                            disabled={isDisabled}
+                        />
+                    )}
+                </>
             )}
         </div>
     );

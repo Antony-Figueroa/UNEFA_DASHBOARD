@@ -236,10 +236,12 @@ export default function PeriodModal({
     /**
      * Efecto para sincronizar el año del calendario cuando cambia el selector de año.
      * No debe ejecutarse durante la inicialización para evitar sobrescribir los valores sugeridos.
+     * Solo se ejecuta cuando se está creando un nuevo período (no editando).
      */
     useEffect(() => {
-        // Solo ejecutar si hay un año seleccionado (no cadena vacía)
-        if (!isOpen || periodo || !yearValue || isInitializing.current) return;
+        // Solo ejecutar si hay un año seleccionado Y es un NUEVO período (periodo es null/undefined)
+        // Y no estamos en inicialización
+        if (!isOpen || periodo !== null || !yearValue || isInitializing.current) return;
 
         const selectedYearNum = parseInt(yearValue);
         if (isNaN(selectedYearNum)) return;
@@ -263,7 +265,7 @@ export default function PeriodModal({
                 setValue('startDate', newDate, { shouldValidate: true });
             }
         }
-    }, [yearValue, isOpen, periodo, minNewPeriodStartDate, setValue, watch]);
+    }, [yearValue, isOpen, periodo, minNewPeriodStartDate, setValue]); // Removed watch to avoid unnecessary re-runs
 
     /**
      * Efecto para limpiar el formulario cuando el modal se cierra.
@@ -282,82 +284,102 @@ export default function PeriodModal({
 
     /**
      * Efecto para inicializar o resetear el formulario cuando el modal se abre.
+     * Solo se ejecuta cuando isOpen es true Y hay un periodo definido (modo edición).
      */
     useEffect(() => {
-        if (isOpen) {
-            isInitializing.current = true;
-            
-            if (periodo) {
-                // Dividir el lapso existente (ej: "1-2025") en año y tipo
-                const [tipo, year] = periodo.description.split('-');
-                const inicio = periodo.startDate; 
-                const fin = periodo.endDate;     
-                
-                reset({
-                    year: year,
-                    periodoTipo: tipo as '1' | '2',
-                    startDate: !isNaN(inicio.getTime()) ? inicio : undefined,
-                    endDate: !isNaN(fin.getTime()) ? fin : undefined,
-                });
-            } else {
-                // --- Autocompletado para un nuevo periodo ---
-                let nextYear = new Date().getFullYear().toString();
-                let nextPeriodoTipo: '1' | '2' = '1';
-                let autoStartDate: Date | undefined = undefined;
+        // Solo ejecutar cuando el modal está abierto Y hay un periodo para editar
+        if (!isOpen) return;
+        
+        // Si no hay periodo, no hacer nada (esperar a que el usuario seleccione año)
+        // El autocompletado para nuevo periodo se maneja en el useEffect de más abajo
+        if (!periodo) return;
+        
+        isInitializing.current = true;
+        
+        // Dividir el lapse existing (ej: "1-2025") en año y tipo
+        const [tipo, year] = periodo.description.split('-');
+        const inicio = periodo.startDate; 
+        const fin = periodo.endDate;     
+        
+        reset({
+            year: year,
+            periodoTipo: tipo as '1' | '2',
+            startDate: !isNaN(inicio.getTime()) ? inicio : undefined,
+            endDate: !isNaN(fin.getTime()) ? fin : undefined,
+        });
+        
+        // Finalizar inicialización después de un breve delay
+        setTimeout(() => {
+            isInitializing.current = false;
+        }, 100);
+    }, [isOpen, periodo]); // Solo depender de isOpen y periodo, no de reset
+    
+    /**
+     * Efecto separado para autocompletar cuando se crea un NUEVO período.
+     * Se ejecuta cuando no hay periodo (creación) y el usuario selecciona un año.
+     */
+    useEffect(() => {
+        // Solo para nuevo periodo (periodo es null/undefined) y cuando el modal está abierto
+        if (!isOpen || periodo) return;
+        
+        isInitializing.current = true;
+        
+        // --- Autocompletado para un nuevo periodo ---
+        let nextYear = new Date().getFullYear().toString();
+        let nextPeriodoTipo: '1' | '2' = '1';
+        let autoStartDate: Date | undefined = undefined;
 
-                if (existingPeriods.length > 0) {
-                    const lastPeriod = [...existingPeriods].sort((a, b) => getLapsoValue(b.description) - getLapsoValue(a.description))[0];
-                    const [lastTipo, lastYearStr] = lastPeriod.description.split('-');
-                    const lastYearNum = parseInt(lastYearStr);
+        if (existingPeriods.length > 0) {
+            const lastPeriod = [...existingPeriods].sort((a, b) => getLapsoValue(b.description) - getLapsoValue(a.description))[0];
+            const [lastTipo, lastYearStr] = lastPeriod.description.split('-');
+            const lastYearNum = parseInt(lastYearStr);
 
-                    if (!isNaN(lastYearNum)) {
-                        if (lastTipo === '1') {
-                            nextYear = lastYearStr;
-                            nextPeriodoTipo = '2';
-                        } else {
-                            nextYear = (lastYearNum + 1).toString();
-                            nextPeriodoTipo = '1';
-                        }
-                    }
-
-                    const dayAfterLastEnd = new Date(lastPeriod.endDate);
-                    dayAfterLastEnd.setDate(dayAfterLastEnd.getDate() + 1);
-                    dayAfterLastEnd.setHours(0, 0, 0, 0); 
-                    autoStartDate = dayAfterLastEnd;
-
-                    if (autoStartDate.getFullYear() < parseInt(nextYear)) {
-                        autoStartDate = new Date(parseInt(nextYear), 0, 1);
-                    }
-                }
-
-                const initialValues = {
-                    year: nextYear,
-                    periodoTipo: nextPeriodoTipo,
-                    startDate: autoStartDate,
-                    endDate: autoStartDate ? new Date(autoStartDate.getTime() + (16 * 7 * 24 * 60 * 60 * 1000)) : undefined,
-                };
-
-                reset(initialValues);
-
-                if (initialValues.startDate) {
-                    setValue('startDate', initialValues.startDate, { shouldValidate: true });
-                }
-                if (initialValues.endDate) {
-                    setValue('endDate', initialValues.endDate, { shouldValidate: true });
+            if (!isNaN(lastYearNum)) {
+                if (lastTipo === '1') {
+                    nextYear = lastYearStr;
+                    nextPeriodoTipo = '2';
+                } else {
+                    nextYear = (lastYearNum + 1).toString();
+                    nextPeriodoTipo = '1';
                 }
             }
-            
-            // Finalizar inicialización después de un breve delay para permitir que watch() se actualice
-            setTimeout(() => {
-                isInitializing.current = false;
-            }, 50);
-        }
-    }, [periodo, isOpen, reset, existingPeriods, setValue]);
 
-   /**
-    * Maneja el envío del formulario, valida las fechas y llama a la función onSave.
-    */
-   const onSubmit: SubmitHandler<PeriodFormData> = (data) => {
+            const dayAfterLastEnd = new Date(lastPeriod.endDate);
+            dayAfterLastEnd.setDate(dayAfterLastEnd.getDate() + 1);
+            dayAfterLastEnd.setHours(0, 0, 0, 0); 
+            autoStartDate = dayAfterLastEnd;
+
+            if (autoStartDate.getFullYear() < parseInt(nextYear)) {
+                autoStartDate = new Date(parseInt(nextYear), 0, 1);
+            }
+        }
+
+        const initialValues = {
+            year: nextYear,
+            periodoTipo: nextPeriodoTipo,
+            startDate: autoStartDate,
+            endDate: autoStartDate ? new Date(autoStartDate.getTime() + (16 * 7 * 24 * 60 * 60 * 1000)) : undefined,
+        };
+
+        reset(initialValues);
+
+        if (initialValues.startDate) {
+            setValue('startDate', initialValues.startDate, { shouldValidate: true });
+        }
+        if (initialValues.endDate) {
+            setValue('endDate', initialValues.endDate, { shouldValidate: true });
+        }
+        
+        // Finalizar inicialización después de un breve delay
+        setTimeout(() => {
+            isInitializing.current = false;
+        }, 100);
+    }, [isOpen, existingPeriods, reset, setValue]);
+
+    /**
+     * Maneja el envío del formulario, valida las fechas y llama a la función onSave.
+     */
+    const onSubmit: SubmitHandler<PeriodFormData> = (data) => {
         setPendingData(data);
         setShowConfirmDialog(true);
     };

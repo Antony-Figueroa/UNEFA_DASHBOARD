@@ -13,7 +13,6 @@ import {
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import CustomSelect from "../../../components/form/CustomSelect";
 import Badge from "../../../components/ui/badge/Badge";
-import FlatpickrDatePicker from "../../../components/form/FlatpickrDatePicker";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import { useToast } from "../../../context/toast";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
@@ -809,26 +808,26 @@ useEffect(() => {
 
             {/* Fila 3 */}
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">
+<label className="mb-2.5 block text-black dark:text-white font-medium text-sm">
                 Fecha de Nacimiento * {age !== null && <span className="text-brand-500 ml-1">({age} años)</span>}
               </label>
                 <Controller
                 control={control}
                 name="birthDate"
                 render={({ field }) => (
-                  <FlatpickrDatePicker
+                  <input
+                    type="date"
+                    id="birthDate"
                     value={field.value}
-                    onChange={(dateStr) => {
-                      field.onChange(dateStr);
-                    }}
+                    onChange={(e) => field.onChange(e.target.value)}
                     onBlur={field.onBlur}
-                    error={!!errors.birthDate}
+                    className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm transition-all ${
+                      errors.birthDate 
+                        ? 'border-error-500 focus:border-error-500 text-error-500' 
+                        : 'border-border-medium focus:border-brand-300 focus:ring-brand-500/10 text-text-primary'
+                    } dark:bg-bg-dark dark:text-text-emphasis dark:border-border-dark dark:focus:border-brand-800 ${viewOnlyMode ? 'opacity-50 cursor-not-allowed bg-bg-secondary' : ''}`}
+                    max={maxDate ? maxDate.toISOString().split('T')[0] : undefined}
                     disabled={viewOnlyMode}
-                    placeholder="Seleccione fecha"
-                    options={{
-                      maxDate: maxDate,
-                      showMonths: 1,
-                    }}
                   />
                 )}
               />

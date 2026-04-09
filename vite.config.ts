@@ -15,29 +15,16 @@ export default defineConfig(() => {
     ],
     build: {
       chunkSizeWarningLimit: 600,
+      // Disable manualChunks to prevent React 19 compatibility issues
+      // The automatic chunking is more stable
       rollupOptions: {
         output: {
           manualChunks(id) {
+            // Only create custom chunks for large, stable libraries
+            // Let React and other core libs be bundled together
             if (id.includes("node_modules")) {
-              // Keep polyfills isolated so React core doesn't end up importing from vendor-misc
-              // (Vite warns about circular chunks when that happens).
-              if (
-                /[\\/]node_modules[\\/](process|buffer|util|stream|events|inherits|readable-stream|string_decoder|safe-buffer|util-deprecate)[\\/]/.test(id)
-              ) {
-                return "vendor-node-polyfills";
-              }
-
-              // NOTE: Avoid extracting a separate React-core chunk here.
-              // React (and the node polyfills it may reference) can easily create circular chunks with vendor-misc.
-              // Keeping React core in the default vendor-misc chunk avoids Vite's circular chunk warning.
-              if (/[\\/]node_modules[\\/]react-dom[\\/]/.test(id) || /[\\/]node_modules[\\/]scheduler[\\/]/.test(id)) {
-                return "vendor-react-dom";
-              }
-              if (id.includes("react-router")) {
-                return "vendor-router";
-              }
-              if (id.includes("@react-pdf") || id.includes("pdfkit") || id.includes("fontkit")) {
-                return "vendor-pdf";
+              if (id.includes("@supabase")) {
+                return "vendor-supabase";
               }
               if (id.includes("apexcharts") || id.includes("react-apexcharts")) {
                 return "vendor-charts";
@@ -51,47 +38,28 @@ export default defineConfig(() => {
               if (id.includes("@fullcalendar")) {
                 return "vendor-calendar";
               }
-              if (id.includes("@tsparticles") || id.includes("tsparticles")) {
-                return "vendor-particles";
-              }
-              if (id.includes("maplibre-gl")) {
-                return "vendor-maplibre";
-              }
-              if (id.includes("@react-jvectormap")) {
-                return "vendor-jvectormap";
-              }
-              if (id.includes("swiper")) {
-                return "vendor-swiper";
-              }
-              if (id.includes("react-hook-form") || id.includes("@hookform")) {
-                return "vendor-forms";
-              }
               if (id.includes("axios")) {
                 return "vendor-http";
               }
               if (id.includes("zod")) {
                 return "vendor-validation";
               }
-              if (id.includes("react-dropzone")) {
-                return "vendor-dropzone";
-              }
-              if (id.includes("react-markdown") || id.includes("remark-gfm")) {
-                return "vendor-markdown";
+              if (id.includes("react-hook-form") || id.includes("@hookform")) {
+                return "vendor-forms";
               }
               if (id.includes("flatpickr") || id.includes("react-flatpickr")) {
                 return "vendor-datepicker";
               }
-              if (id.includes("@supabase")) {
-                return "vendor-supabase";
-              }
-              if (id.includes("clsx") || id.includes("tailwind-merge")) {
-                return "vendor-utils";
-              }
-              return "vendor-misc";
+              // Keep React bundled together by default - fixes "Cannot set properties of undefined" error
+              return;
             }
           },
         },
       },
+    },
+    define: {
+      // Ensure process.env is defined for React 19
+      'process.env': '{}',
     },
     optimizeDeps: {
       include: ["@react-pdf/renderer"],

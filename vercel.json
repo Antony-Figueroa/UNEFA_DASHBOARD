@@ -6,17 +6,10 @@
     {
       "source": "/api/(.*)",
       "destination": "https://unefa-dashboard.onrender.com/api/$1"
-    }
-  ],
-  "headers": [
+    },
     {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        }
-      ]
+      "source": "/((?!.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|json|html)$).*)",
+      "destination": "/index.html"
     }
   ]
 }

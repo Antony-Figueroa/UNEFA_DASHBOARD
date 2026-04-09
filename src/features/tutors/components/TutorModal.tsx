@@ -174,7 +174,7 @@ export default function TutorModal({
   // Handle phone number input change with formatting
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
-    const cleaned = cleanPhone(input);
+    const cleaned = cleanPhone(input).substring(0, 7);
     const formatted = formatPhoneLocalDisplay(cleaned);
     setDisplayPhoneNumber(formatted);
     setValue("phoneNumber", cleaned, { shouldValidate: true, shouldDirty: true });
@@ -369,6 +369,7 @@ export default function TutorModal({
     sex: z.string().min(1, "Seleccione el sexo"),
     phoneAreaCode: z.string().min(1, "El código de área es obligatorio"),
     phoneNumber: z.string()
+      .min(1, "El número de teléfono es obligatorio")
       .length(7, "El número de teléfono debe tener exactamente 7 dígitos")
       .regex(/^\d+$/, "Solo se admiten números"),
     email: z.string().email("Formato de correo electrónico inválido").min(1, "El correo es obligatorio").transform(val => val.toUpperCase()),

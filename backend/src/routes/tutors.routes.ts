@@ -13,7 +13,7 @@ const router = Router();
 router.get('/', getTutors);
 router.get('/by-ci/:ci', getTutorByCi);
 router.post('/', createTutor);
-router.patch('/:id', updateTutor);
+router.put('/:id', updateTutor);
 router.delete('/:id', deleteTutor);
 router.patch('/:id/status', toggleTutorStatus);
 

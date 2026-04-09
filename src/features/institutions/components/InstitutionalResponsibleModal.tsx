@@ -68,7 +68,7 @@ const respSchema = z.object({
   phoneNumber: z.string()
     .min(1, "El número de teléfono es obligatorio")
     .regex(/^\d+$/, "Solo se admiten números")
-    .min(7, "El número debe tener al menos 7 dígitos"),
+    .length(7, "El número de teléfono debe tener exactamente 7 dígitos"),
   email: z.string()
     .min(1, "El correo es obligatorio")
     .email("Correo electrónico inválido"),
@@ -251,7 +251,7 @@ export default function InstitutionalResponsibleModal({
   // Handle phone number input change with formatting
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
-    const cleaned = cleanPhone(input);
+    const cleaned = cleanPhone(input).substring(0, 7);
     const formatted = formatPhoneLocalDisplay(cleaned);
     setDisplayPhoneNumber(formatted);
     setValue("phoneNumber", cleaned, { shouldValidate: true, shouldDirty: true });

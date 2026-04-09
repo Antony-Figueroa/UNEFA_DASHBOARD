@@ -1156,23 +1156,80 @@ export default function EnrollmentModal({
                         const careerId = String(selectedCareerName);
                         const practiceTypeId = String(selectedPracticeType);
                         const filteredInstitutions = institutions.filter(inst => {
-                          // Filtrar por tipo de práctica si hay uno seleccionado
-                          if (practiceTypeId && inst.internshipTypeIds) {
-                            const hasPracticeType = inst.internshipTypeIds.some((t: string | number) => {
-                              const instTypeId = String(t);
-                              return instTypeId === practiceTypeId || instTypeId === String(Number(practiceTypeId));
+                             // 1. Filtrar por tipo de práctica si hay uno seleccionado
+                             if (practiceTypeId && practiceTypeId !== "Pendiente...") {
+                               // Intentar encontrar el match en el array moderno
+                               let hasMatch = false;
+                               
+                               if (inst.internshipTypeIds && Array.isArray(inst.internshipTypeIds) && inst.internshipTypeIds.length > 0) {
+                                 hasMatch = inst.internshipTypeIds.some((t: string | number) => {
+                                   const instTypeId = String(t);
+                                   const practiceTypeObj = practiceOptions.find(p => String(p.id) === instTypeId || p.value === instTypeId);
+                                   const practiceTypeName = practiceTypeObj ? practiceTypeObj.value : instTypeId;
+                                   
+                                   return instTypeId === practiceTypeId || 
+                                          instTypeId === String(Number(practiceTypeId)) || 
+                                          practiceTypeName === practiceTypeId;
+                                 });
+                               }
+                               
+                               // Fallback al campo legacy si no hubo match o no hay array
+                               if (!hasMatch && inst.practiceType) {
+                                 const practiceTypeObj = practiceOptions.find(p => p.value === practiceTypeId);
+                                 const targetId = practiceTypeObj ? String(practiceTypeObj.id) : practiceTypeId;
+                                 const instPracticeType = String(inst.practiceType);
+                                 
+                                 hasMatch = instPracticeType === targetId || 
+                                            instPracticeType === practiceTypeId ||
+                                            (practiceTypeObj ? instPracticeType === practiceTypeObj.value : false);
+                               }
+                               
+                               if (!hasMatch) return false;
+                             }
+                             
+                             // 2. Filtrar por carrera si hay una seleccionada
+                             if (careerId && careerId !== "Pendiente...") {
+                               // Extraer ID numérico para comparación robusta
+                               const careerObj = careersState.find(c => 
+                                 c.careerName === careerId || String(c.careerId) === careerId
+                               );
+                               const targetCareerId = careerObj ? String(careerObj.careerId) : careerId;
+
+                               if (inst.careerIds && Array.isArray(inst.careerIds) && inst.careerIds.length > 0) {
+                                 const matchesCareer = inst.careerIds.some((c: string | number) => {
+                                   const instCareerId = String(c);
+                                   return instCareerId === targetCareerId || instCareerId === careerId;
+                                 });
+                                 if (!matchesCareer) return false;
+                               } else if ((inst as any).careerId) {
+                                 // Fallback al campo legacy/singular
+                                 const instCareerId = String((inst as any).careerId);
+                                 if (instCareerId !== targetCareerId && instCareerId !== careerId) {
+                                   return false;
+                                 }
+                               } else {
+                                 // Si no tiene ninguna asociación de carrera, la excluimos
+                                 return false;
+                               }
+                             }
+                             
+                             return true;
+                           });
+                          
+                          // Consola para depuración si la lista está vacía pero hay datos seleccionados
+                          if (selectedPracticeType && careerId && filteredInstitutions.length === 0 && institutions.length > 0) {
+                            console.log("Depuración Instituciones:", {
+                              practiceTypeId,
+                              careerId,
+                              institutionsTotal: institutions.length,
+                              sample: institutions.slice(0, 2).map(i => ({
+                                id: i.institutionId,
+                                name: i.name,
+                                typeIds: i.internshipTypeIds,
+                                careerIds: i.careerIds
+                              }))
                             });
-                            if (!hasPracticeType) return false;
                           }
-                          // Filtrar por carrera si hay una seleccionada
-                          if (careerId && inst.careerIds) {
-                            return inst.careerIds.some((c: string | number) => {
-                              const instCareerId = String(c);
-                              return instCareerId === careerId || instCareerId === String(Number(careerId));
-                            });
-                          }
-                          return true;
-                        });
                         
                         return (
                           <>

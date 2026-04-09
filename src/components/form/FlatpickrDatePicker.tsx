@@ -52,7 +52,7 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
       optionsRef.current = options;
     }, [options]);
 
-    // Función para formatear la entrada manual
+    // Función para formatear la entrada manual (sin autocompletar)
     const handleInput = (e: React.FormEvent<HTMLInputElement>) => {
       const input = e.currentTarget;
       let val = input.value.replace(/\D/g, ''); // Solo números
@@ -71,31 +71,8 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
       }
       
       input.value = formatted;
-      
-      // Si la fecha está completa (8 dígitos = ddmmyyyy), actualizar el calendario inmediatamente
-      if (val.length === 8) {
-        const day = val.slice(0, 2);
-        const month = val.slice(2, 4);
-        const year = val.slice(4, 8);
-        const completeDate = `${day}/${month}/${year}`;
-        
-        // Validar que sea una fecha válida (validar día y mes)
-        const nDay = parseInt(day, 10);
-        const nMonth = parseInt(month, 10);
-        
-        if (nDay >= 1 && nDay <= 31 && nMonth >= 1 && nMonth <= 12 && parseInt(year, 10) >= 1900) {
-          // Verificar que la fecha sea real (no 31 de febrero etc)
-          const testDate = new Date(parseInt(year, 10), nMonth - 1, nDay);
-          if (testDate.getMonth() === nMonth - 1 && testDate.getDate() === nDay) {
-            // Sincronizar con flatpickr - FORZAR actualización sin limpiar el input
-            if (fpInstance.current) {
-              fpInstance.current.setDate(completeDate, false, 'd/m/Y'); // false = no dispara onChange
-            }
-            // Notificar el cambio al componente padre
-            onChange?.(completeDate);
-          }
-        }
-      }
+      // NO autocompletar el calendario mientras escribe
+      // El usuario debe seleccionar una fecha válida del calendario o escribir dd/mm/yyyy completo
     };
 
     // Función para completar la fecha al perder el foco
@@ -124,12 +101,12 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
         }
 
         const val = input.value;
-        // Si el input no está vacío y no está completo (dd/mm/yyyy)
-        if (val && val.length > 0) {
+        // Solo procesar si la fecha ya está completa (dd/mm/yyyy)
+        if (val && val.length === 10 && /^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
           const parts = val.split('/');
-          let day = parts[0] || '';
-          let month = parts[1] || '';
-          let year = parts[2] || '';
+          const day = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10);
+          const year = parseInt(parts[2], 10);
 
           // Obtener límites de las opciones desde el ref
           const currentOptions = optionsRef.current;
@@ -139,67 +116,29 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
           const minYear = minDate.getFullYear();
           const maxYear = maxDate.getFullYear();
 
-          // 1. Completar el año si está incompleto o ausente
-          if (year.length === 0) {
-            year = String(minYear);
-          } else if (year.length < 4) {
-            if (year.length <= 2) {
-              const proposedYear = parseInt('20' + year.padStart(2, '0'));
-              if (proposedYear >= minYear && proposedYear <= maxYear) {
-                year = String(proposedYear);
-              } else {
-                year = String(minYear);
-              }
-            } else {
-              year = year.padEnd(4, '0');
-            }
+          // Validar que sea una fecha válida
+          if (year < minYear || year > maxYear || month < 1 || month > 12 || day < 1 || day > 31) {
+            return; // No autofill si los valores están fuera de rango
           }
 
-          // 2. Completar mes y día si faltan
-          if (month.length === 0) {
-            month = String(minDate.getMonth() + 1).padStart(2, '0');
-          } else if (month.length < 2) {
-            month = month.padStart(2, '0');
-          }
-
-          if (day.length === 0) {
-            day = String(minDate.getDate()).padStart(2, '0');
-          } else if (day.length < 2) {
-            day = day.padStart(2, '0');
-          }
-
-          // 3. Validar valores numéricos básicos (mes 1-12, día 1-31)
-          let nDay = Math.max(1, Math.min(31, parseInt(day) || 1));
-          let nMonth = Math.max(1, Math.min(12, parseInt(month) || 1));
-          let nYear = parseInt(year);
-
-          // 4. Crear objeto fecha para validación final de rango
-          let finalDate = new Date(nYear, nMonth - 1, nDay);
+          // Crear objeto fecha para validación final
+          const finalDate = new Date(year, month - 1, day);
           
-          if (finalDate.getMonth() !== nMonth - 1) {
-            finalDate = new Date(nYear, nMonth, 0); // Último día del mes anterior
+          if (finalDate.getMonth() !== month - 1) {
+            return; // Fecha inválida (ej. 31/02/2010)
           }
 
-          // 5. Aplicar restricciones de minDate y maxDate
-          if (finalDate < minDate) finalDate = new Date(minDate);
-          if (finalDate > maxDate) finalDate = new Date(maxDate);
+          // Verificar restricciones de rango
+          if (finalDate < minDate) return;
+          if (finalDate > maxDate) return;
 
-          // 6. Formatear resultado final
-          const fDay = String(finalDate.getDate()).padStart(2, '0');
-          const fMonth = String(finalDate.getMonth() + 1).padStart(2, '0');
-          const fYear = String(finalDate.getFullYear());
-
-          const completedDate = `${fDay}/${fMonth}/${fYear}`;
-          input.value = completedDate;
-
-          // Sincronizar con la instancia de Flatpickr y disparar onChange
+          // La fecha es válida, sincronizar con flatpickr
           if (fpInstance.current) {
-            fpInstance.current.setDate(completedDate, true, 'd/m/Y');
+            fpInstance.current.setDate(val, true, 'd/m/Y');
           }
-
-          // Disparar evento de input para compatibilidad adicional
-          const event = new Event('input', { bubbles: true });
-          input.dispatchEvent(event);
+          
+          // Notificar cambio
+          onChange?.(val);
         }
         
         onBlur?.();

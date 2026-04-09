@@ -9,16 +9,4 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('[Supabase Frontend] VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'set' : 'undefined');
 }
 
-// Solo crear cliente si tenemos las credenciales
-export const supabase = (supabaseUrl && supabaseAnonKey) 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
-
-// Hook para usar supabase de forma segura
-export const getSupabaseClient = () => {
-  if (!supabase) {
-    console.error('[Supabase] Client not initialized - missing credentials');
-    return null;
-  }
-  return supabase;
-};
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

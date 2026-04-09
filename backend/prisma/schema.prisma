@@ -213,11 +213,11 @@ model TInstitutionManager {
   EMAIL               String
   CREATION_DATE       DateTime
   STATUS              Int       @default(1)
-  INSTITUTION_ID      Int
+  INSTITUTION_ID      Int?
   cargo               String?
 
-  // Relaciones
-  institution         TInstitution @relation(fields: [INSTITUTION_ID], references: [INSTITUTION_ID])
+  // Relacion opcional - puede ser null
+  institution         TInstitution? @relation(fields: [INSTITUTION_ID], references: [INSTITUTION_ID])
   professionalPractices TProfessionalPractice[]
 
   @@map("t_institution_manager")

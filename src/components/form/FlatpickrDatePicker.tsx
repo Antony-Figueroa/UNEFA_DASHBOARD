@@ -197,8 +197,8 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
         const realMinDate = options?.minDate ? new Date(options.minDate) : undefined;
         const realMaxDate = options?.maxDate ? new Date(options.maxDate) : undefined;
 
-        // Determinar fecha inicial para la vista (si no hay valor)
-        const initialDefaultDate = value || defaultValue || options?.defaultDate || realMaxDate || realMinDate || undefined;
+        // NO usar fecha por defecto - dejar vacío si no hay valor
+        const initialDefaultDate = value || defaultValue || undefined;
 
         // Función para deshabilitar años en el dropdown que están fuera del rango real
         const updateYearOptions = (instance: any) => {
@@ -393,19 +393,10 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
           fpInstance.current = null;
         }
       };
-    }, [defaultValue, value, onChange, placeholder, disabled, error, options]);
+    }, [defaultValue, placeholder, disabled, error]);
 
-    // Actualizar valor cuando cambie
-    useEffect(() => {
-      if (fpInstance.current && value !== undefined) {
-        const currentDate = fpInstance.current.selectedDates[0];
-        const newDate = value ? (value instanceof Date ? value : new Date(value)) : null;
-        
-        if (newDate?.getTime() !== currentDate?.getTime()) {
-          fpInstance.current.setDate(value || '', false);
-        }
-      }
-    }, [value]);
+    // NO usar efecto para sincronizar valor - causa loops infinitos
+    // El onChange del flatpickr ya notifica al padre
 
     // Actualizar estado deshabilitado
     useEffect(() => {

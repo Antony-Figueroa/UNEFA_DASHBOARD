@@ -1347,7 +1347,14 @@ export default function InstitutionModal({
                             {resp.firstName} {resp.lastName}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {resp.identificationPrefix}-{resp.identificationNumber} • {resp.email}{resp.cargo && ` • ${resp.cargo}`}
+                            {resp.identificationPrefix}-{resp.identificationNumber} • {resp.email}
+                            {(() => {
+                              const currentInst = resp.institutions?.find(i => 
+                                String(i.institutionId) === String(editingInst?.institutionId)
+                              );
+                              const cargoDisplay = currentInst?.cargo || resp.cargo;
+                              return cargoDisplay ? ` • ${cargoDisplay}` : '';
+                            })()}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 ml-4">

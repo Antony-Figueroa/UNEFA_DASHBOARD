@@ -1278,10 +1278,14 @@ export default function EnrollmentModal({
                       control={control}
                       render={({ field }) => (
                         <CustomSelect
-                          options={filteredResponsibles.map(r => ({
-                            value: r.responsibleId,
-                            label: `${r.firstName} ${r.lastName}`
-                          }))}
+                          options={filteredResponsibles.map(r => {
+                            const instRel = r.institutions?.find(i => String(i.institutionId) === String(selectedInstitutionId));
+                            const cargoDisplay = instRel?.cargo || r.cargo;
+                            return {
+                              value: r.responsibleId,
+                              label: `${r.firstName} ${r.lastName}${cargoDisplay ? ` (${cargoDisplay})` : ""}`
+                            };
+                          })}
                           placeholder={
                             !selectedInstitutionId 
                               ? "Seleccione primero la institución" 

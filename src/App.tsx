@@ -15,11 +15,18 @@ import { ModalStackProvider } from "./components/ui/modal/ModalContext";
 import { CommandPaletteProvider } from "./components/command-palette/CommandPaletteContext";
 import CommandPalette from "./components/command-palette/CommandPalette";
 import { useCommandPaletteEvents } from "./hooks/useCommandPaletteEvents";
+import { useSessionRefresh } from "./hooks/useSessionRefresh";
+import { useAuth } from "./context/auth";
 
 /**
  * Componente interno que contiene el hook de eventos del CommandPalette
  */
 function AppContent() {
+  const { user } = useAuth();
+  
+  // Activar renovación automática de sesión cuando el usuario está autenticado
+  useSessionRefresh();
+  
   useCommandPaletteEvents();
   return <AppRoutes />;
 }

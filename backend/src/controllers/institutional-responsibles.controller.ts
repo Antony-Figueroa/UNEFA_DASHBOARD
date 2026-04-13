@@ -72,14 +72,14 @@ interface DBInstitutionalResponsible {
 const getInstitutionsForManager = async (supabase: any, managerId: number) => {
   const { data: pivotData, error: pivotError } = await supabase
     .from(PIVOT_TABLE)
-    .select('"INSTITUTION_ID", cargo')
-    .eq('"MANAGER_ID"', managerId);
+    .select('INSTITUTION_ID, cargo')
+    .eq('MANAGER_ID', managerId);
 
   if (pivotError || !pivotData || pivotData.length === 0) {
     return [];
   }
 
-  const institutionIds = pivotData.map((d: any) => d.INSTITUTION_ID);
+  const institutionIds = pivotData.map((d: any) => d.INSTITUTION_ID !== undefined ? d.INSTITUTION_ID : d.institution_id);
 
   const { data: instData } = await supabase
     .from('t_institution')
@@ -89,11 +89,14 @@ const getInstitutionsForManager = async (supabase: any, managerId: number) => {
   const instMap = new Map((instData || []).map((i: any) => [i.INSTITUTION_ID, i.INSTITUTION_NAME]));
 
   // Devolver array de objetos - cada relación es independiente
-  return pivotData.map((p: any) => ({
-    institutionId: String(p.INSTITUTION_ID),
-    institutionName: instMap.get(p.INSTITUTION_ID) || 'N/A',
-    cargo: p.cargo || ''
-  }));
+  return pivotData.map((p: any) => {
+    const iId = p.INSTITUTION_ID !== undefined ? p.INSTITUTION_ID : p.institution_id;
+    return {
+      institutionId: String(iId),
+      institutionName: instMap.get(iId) || 'N/A',
+      cargo: p.cargo || p.CARGO || ''
+    };
+  });
 };
 
 const mapDBToFrontend = (r: DBInstitutionalResponsible) => ({
@@ -130,18 +133,25 @@ export const getInstitutionalResponsibles = async (_req: Request, res: Response)
       // Obtener relaciones de la tabla pivote CON cargo
       const { data: pivotData } = await supabase
         .from(PIVOT_TABLE)
-        .select('"MANAGER_ID", "INSTITUTION_ID", cargo');
+        .select('MANAGER_ID, INSTITUTION_ID, cargo');
 
       // Agrupar instituciones por manager CON su cargo
       const managerInstitutions = new Map<number, Array<{ institutionId: string; institutionName: string; cargo: string }>>();
       (pivotData || []).forEach((p: any) => {
-        const existing = managerInstitutions.get(p.MANAGER_ID) || [];
-        existing.push({
-          institutionId: String(p.INSTITUTION_ID),
-          institutionName: instMap.get(p.INSTITUTION_ID) || 'N/A',
-          cargo: p.cargo || ''
-        });
-        managerInstitutions.set(p.MANAGER_ID, existing);
+        const mKey = p.MANAGER_ID !== undefined ? 'MANAGER_ID' : 'manager_id';
+        const iKey = p.INSTITUTION_ID !== undefined ? 'INSTITUTION_ID' : 'institution_id';
+        const mId = p[mKey];
+        const iId = p[iKey];
+        
+        if (mId !== undefined && iId !== undefined) {
+          const existing = managerInstitutions.get(mId) || [];
+          existing.push({
+            institutionId: String(iId),
+            institutionName: instMap.get(iId) || 'N/A',
+            cargo: p.cargo || p.CARGO || ''
+          });
+          managerInstitutions.set(mId, existing);
+        }
       });
 
       return (responsibles || []).map((r: any) => {
@@ -379,7 +389,7 @@ export const updateInstitutionalResponsible = async (req: Request, res: Response
         await supabase
           .from(PIVOT_TABLE)
           .delete()
-          .eq('"MANAGER_ID"', id);
+          .eq('MANAGER_ID', id);
 
         // Insertar nuevas relaciones CON cargo
         if (newInstitutions.length > 0) {

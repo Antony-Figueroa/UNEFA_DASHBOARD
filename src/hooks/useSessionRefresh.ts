@@ -1,15 +1,17 @@
 /**
  * @file useSessionRefresh.ts
- * @description Hook para renovar automáticamente la sesión cuando hay actividad del usuario
+ * @description Hook para renovar automáticamente la sesión cuando hay actividad del usuario o cambios de ruta
  */
 
 import { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router';
 import * as authService from '../features/auth/services/authService';
 
 const SESSION_REFRESH_INTERVAL = 20 * 60 * 1000; // 20 minutos (1/3 de la duración total)
 const INACTIVITY_THRESHOLD = 5 * 60 * 1000; // 5 minutos de inactividad
 
 export const useSessionRefresh = () => {
+  const location = useLocation();
   const lastActivityRef = useRef(Date.now());
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isRefreshing = useRef(false);
@@ -88,12 +90,27 @@ export const useSessionRefresh = () => {
       activityEvents.forEach(event => {
         document.removeEventListener(event, handleActivity);
       });
-      
+
       if (refreshTimerRef.current) {
         clearTimeout(refreshTimerRef.current);
       }
     };
   }, []);
+
+  // Renovar sesión al cambiar de ruta
+  useEffect(() => {
+    // Solo renovar si hay un usuario autenticado y la ruta cambia
+    if (location.pathname) {
+      const lastRefresh = sessionStorage.getItem('auth_last_refresh');
+      const timeSinceLastRefresh = lastRefresh ? Date.now() - parseInt(lastRefresh) : Infinity;
+      const wasRecentlyRefreshed = timeSinceLastRefresh < 30000; // 30 segundos
+
+      if (!wasRecentlyRefreshed) {
+        console.log(`[SessionRefresh] Cambio de ruta detectado: ${location.pathname}`);
+        refreshSession();
+      }
+    }
+  }, [location.pathname]);
 
   return { refreshSession };
 };

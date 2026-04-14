@@ -582,7 +582,8 @@ export default function InstitutionalResponsibleModal({
                       placeholder="Ingrese el primer nombre" 
                       {...register("firstName")} 
                       error={!!errors.firstName} 
-                      hint={errors.firstName?.message || " "} 
+                      hint={errors.firstName?.message || " "}
+                      disabled={!!existingResponsible}
                     />
                   </div>
                   <div>
@@ -591,7 +592,8 @@ export default function InstitutionalResponsibleModal({
                       placeholder="Ingrese el segundo nombre" 
                       {...register("middleName")} 
                       error={!!errors.middleName} 
-                      hint={errors.middleName?.message || " "} 
+                      hint={errors.middleName?.message || " "}
+                      disabled={!!existingResponsible}
                     />
                   </div>
                 </div>
@@ -604,7 +606,8 @@ export default function InstitutionalResponsibleModal({
                       placeholder="Ingrese el primer apellido" 
                       {...register("lastName")} 
                       error={!!errors.lastName} 
-                      hint={errors.lastName?.message || " "} 
+                      hint={errors.lastName?.message || " "}
+                      disabled={!!existingResponsible}
                     />
                   </div>
                   <div>
@@ -613,7 +616,8 @@ export default function InstitutionalResponsibleModal({
                       placeholder="Ingrese el segundo apellido" 
                       {...register("secondLastName")} 
                       error={!!errors.secondLastName} 
-                      hint={errors.secondLastName?.message || " "} 
+                      hint={errors.secondLastName?.message || " "}
+                      disabled={!!existingResponsible}
                     />
                   </div>
                 </div>
@@ -635,6 +639,7 @@ export default function InstitutionalResponsibleModal({
                               value={String(field.value ?? "")}
                               placeholder="Prefijo"
                               error={!!errors.phonePrefix}
+                              disabled={!!existingResponsible}
                               onAddNew={() => openAddValueModal("PREFIJO", "phonePrefix", "Agregar Código de Área")}
                               addNewLabel="Nueva opción"
                             />
@@ -650,6 +655,7 @@ export default function InstitutionalResponsibleModal({
                           error={!!errors.phoneNumber || !!errors.phonePrefix} 
                           maxLength={PHONE_LOCAL_MAX_LENGTH}
                           hint={errors.phoneNumber?.message || errors.phonePrefix?.message || " "}
+                          disabled={!!existingResponsible}
                         />
                       </div>
                     </div>
@@ -660,7 +666,8 @@ export default function InstitutionalResponsibleModal({
                       placeholder="Ingrese el correo electrónico" 
                       {...register("email")} 
                       error={!!errors.email} 
-                      hint={errors.email?.message || " "} 
+                      hint={errors.email?.message || " "}
+                      disabled={!!existingResponsible}
                     />
                   </div>
                 </div>
@@ -676,7 +683,7 @@ export default function InstitutionalResponsibleModal({
                         {preselectedInstitutionName || institutionOptions.find(o => o.value === preselectedInstitutionId)?.label || "Institución seleccionada"}
                       </p>
                     </div>
-                    <Controller
+                        <Controller
                       name="institutions"
                       control={control}
                       render={({ field }) => {
@@ -688,6 +695,7 @@ export default function InstitutionalResponsibleModal({
                             placeholder="Cargo en esta empresa (ej: Gerente, Supervisor)"
                             className="uppercase"
                             value={currentCargo}
+                            disabled={!!existingResponsible}
                             onChange={(e) => {
                               const newValue = (value || []).map((i: any) => 
                                 String(i.institutionId) === String(preselectedInstitutionId)
@@ -738,6 +746,7 @@ export default function InstitutionalResponsibleModal({
                             }}
                             value=""
                             placeholder="Agregar institución..."
+                            disabled={!!existingResponsible}
                             onAddNew={() => setIsNewInstitutionModalOpen(true)}
                             addNewLabel="Crear nueva institución"
                           />
@@ -757,16 +766,19 @@ export default function InstitutionalResponsibleModal({
                                     className="w-32 px-2 py-1 text-xs uppercase border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                                     value={inst.cargo || ""}
                                     onChange={(e) => handleCargoChange(inst.institutionId, e.target.value)}
+                                    disabled={!!existingResponsible}
                                   />
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveInstitution(inst.institutionId)}
-                                    className="text-red-500 hover:text-red-700"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                  </button>
+                                  {!existingResponsible && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveInstitution(inst.institutionId)}
+                                      className="text-red-500 hover:text-red-700"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                      </svg>
+                                    </button>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -797,27 +809,18 @@ export default function InstitutionalResponsibleModal({
              >
                Cancelar
              </Button>
-             {existingResponsible ? (
-               viewOnlyMode ? (
-                 <AsyncButton 
-                   variant="warning"
-                   type="button"
-                   className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
-                   onClick={handleEditExisting}
-                 >
-                   Editar Registro
-                 </AsyncButton>
-               ) : (
-                 <AsyncButton 
-                   type="submit" 
-                   className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
-                   loading={isLoading}
-                   disabled={!isValid}
-                 >
-                   Guardar Cambios
-                 </AsyncButton>
-               )
-) : editingResp ? (
+            {existingResponsible ? (
+                viewOnlyMode ? (
+                  <AsyncButton 
+                    variant="warning"
+                    type="button"
+                    className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
+                    onClick={handleEditExisting}
+                  >
+                    Editar Registro
+                  </AsyncButton>
+                ) : null  // Cuando no está en viewOnlyMode (después de hacer click), se maneja en edit mode
+              ) : editingResp ? (
                 <AsyncButton 
                   variant="primary" 
                   type="button"

@@ -33,7 +33,7 @@ import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/syst
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { formatCedulaDisplay, cleanCedula, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
-import { UserCircleIcon, ShieldCheckIcon, DocsIcon, SearchIcon, UsersIcon } from "../../../icons";
+import { UserCircleIcon, ShieldCheckIcon, DocsIcon, SearchIcon, UsersIcon, PlusIcon } from "../../../icons";
 import { cn } from "../../../utils/cn";
 import Badge from "../../../components/ui/badge/Badge";
 
@@ -750,7 +750,7 @@ export default function EnrollmentModal({
                 }}
                 className="text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20 rounded-xl font-bold"
               >
-                <SearchIcon className="w-4 h-4 mr-1" />
+                <PlusIcon className="w-4 h-4 mr-1" />
                 Nueva Preinscripción
               </Button>
             </div>
@@ -822,23 +822,14 @@ export default function EnrollmentModal({
 
               {/* Card: Perfil del Estudiante */}
               <div className={cn(
-                "bg-white dark:bg-white/5 rounded-2xl border transition-all duration-500 overflow-hidden relative",
+                "bg-white dark:bg-white/5 rounded-2xl border transition-all duration-500 overflow-hidden",
                 watch("studentName")
-                  ? "border-brand-500/20 shadow-lg shadow-brand-500/5 opacity-100 translate-y-0" 
-                  : "border-border-light/50 opacity-40 grayscale translate-y-2 pointer-events-none"
+                  ? "border-brand-500/20 shadow-lg shadow-brand-500/5" 
+                  : "border-border-light/50"
               )}>
-                {!watch("studentName") && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-slate-50/50 dark:bg-transparent z-10">
-                    <p className="text-xs font-bold text-text-tertiary uppercase tracking-tighter">Esperando selección...</p>
-                  </div>
-                )}
-                
                 <div className="p-6 sm:p-7 space-y-5">
                   <div className="flex items-center gap-5">
-                    <div className={cn(
-                      "h-14 w-14 rounded-2xl flex items-center justify-center text-white transition-all duration-500",
-                      watch("studentName") ? "bg-brand-500 shadow-lg shadow-brand-500/20 rotate-0" : "bg-slate-200 rotate-3"
-                    )}>
+                    <div className="h-14 w-14 rounded-2xl flex items-center justify-center text-white bg-brand-500 shadow-lg shadow-brand-500/20">
                       <UserCircleIcon className="w-9 h-9" />
                     </div>
                     <div className="space-y-1">
@@ -855,17 +846,6 @@ export default function EnrollmentModal({
                           return career?.careerName || "Carrera Académica";
                         })()}
                       </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border-light dark:border-white/5">
-                    <div className="space-y-1">
-                      <span className="text-[9px] font-bold text-text-tertiary uppercase tracking-widest">Documento</span>
-                      <p className="text-sm font-bold text-text-primary">{idPrefix || '-'}-{idNumber || '-------'}</p>
-                    </div>
-                    <div className="space-y-1 text-right">
-                      <span className="text-[9px] font-bold text-text-tertiary uppercase tracking-widest">Período</span>
-                      <p className="text-sm font-bold text-text-primary truncate">{watch("period") || '-------'}</p>
                     </div>
                   </div>
                 </div>
@@ -903,19 +883,13 @@ export default function EnrollmentModal({
                   <div className="space-y-3">
                     <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Tipo Práctica *</label>
                     {editingEntry ? (
-                      <Controller
-                        name="practiceType"
-                        control={control}
-                        render={({ field }) => (
-                          <CustomSelect
-                            options={practiceOptions}
-                            placeholder={field.value || "Tipo de práctica"}
-                            onChange={field.onChange}
-                            value={field.value}
-                            className="rounded-xl h-[48px]"
-                          />
-                        )}
-                      />
+                      <div className={cn(
+                        "h-[48px] px-4 rounded-xl border flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50",
+                        "border-gray-300 dark:border-gray-600"
+                      )}>
+                        <ShieldCheckIcon className="w-4 h-4 text-brand-500" />
+                        <span className="text-sm font-bold text-brand-700 dark:text-brand-400">{watch("practiceType") || "No especificado"}</span>
+                      </div>
                     ) : (
                       <div className={cn(
                         "h-[48px] px-4 rounded-xl border flex items-center gap-3 transition-colors",
@@ -931,27 +905,18 @@ export default function EnrollmentModal({
                   <div className="col-span-2 space-y-3">
                     <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Carrera</label>
                     {editingEntry ? (
-                      <Controller
-                        name="careerName"
-                        control={control}
-                        render={({ field }) => (
-                          <CustomSelect
-                            options={careersState.map(c => ({
-                              value: String(c.careerId),
-                              label: c.careerName
-                            }))}
-                            placeholder="Seleccionar carrera"
-                            onChange={(val) => field.onChange(val)}
-                            value={field.value ? String(field.value) : ""}
-                            className="rounded-xl h-[48px]"
-                            onAddNew={() => {
-                              const evt = new CustomEvent("enrollment:addCareer");
-                              window.dispatchEvent(evt);
-                            }}
-                            addNewLabel="Agregar Carrera"
-                          />
-                        )}
-                      />
+                      <div className={cn(
+                        "h-[48px] px-4 rounded-xl border flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50",
+                        "border-gray-300 dark:border-gray-600"
+                      )}>
+                        <BookOpenIcon className="w-4 h-4 text-brand-500" />
+                        <span className="text-sm font-bold text-brand-700 dark:text-brand-400 truncate">
+                          {(() => {
+                            const career = careersState.find(c => String(c.careerId) === String(watch("careerName")));
+                            return career?.careerName || watch("careerName") || "No especificado";
+                          })()}
+                        </span>
+                      </div>
                     ) : (
                       <div className={cn(
                         "h-[48px] px-4 rounded-xl border flex items-center gap-3 transition-colors",
@@ -1003,7 +968,10 @@ export default function EnrollmentModal({
                     name="academicTutorId"
                     control={control}
                     render={({ field }) => {
-                      const careerId = String(selectedCareerName);
+                      // Buscar careerId desde careersState usando careerName o careerId directo
+                      const careerObj = careersState.find(c => c.careerName === selectedCareerName || String(c.careerId) === selectedCareerName);
+                      const careerId = careerObj ? String(careerObj.careerId) : String(selectedCareerName);
+                      
                       const filteredTutors = tutors.filter(t => {
                         // Excluir el tutor metodológico seleccionado
                         if (t.tutorId === selectedMethodologicalTutorId) return false;
@@ -1020,7 +988,7 @@ export default function EnrollmentModal({
                             value: t.tutorId,
                             label: `${t.firstName} ${t.lastName}`
                           }))}
-                          placeholder={careerId 
+                          placeholder={careerId || editingEntry
                             ? (filteredTutors.length === 0 
                                 ? "No hay tutores para esta carrera" 
                                 : "Seleccione el tutor académico")
@@ -1028,12 +996,7 @@ export default function EnrollmentModal({
                           onChange={field.onChange}
                           value={String(field.value)}
                           className="rounded-xl h-[48px]"
-                          disabled={!careerId}
-                          onAddNew={careerId ? () => {
-                            const evt = new CustomEvent("enrollment:addTutor");
-                            window.dispatchEvent(evt);
-                          } : undefined}
-                          addNewLabel={careerId && filteredTutors.length > 0 ? "Nuevo Tutor Académico" : undefined}
+                          disabled={!careerId && !editingEntry}
                         />
                       );
                     }}
@@ -1041,31 +1004,6 @@ export default function EnrollmentModal({
                   {errors.academicTutorId && (
                     <p className="text-[11px] font-bold text-error-500">{errors.academicTutorId.message}</p>
                   )}
-                  {selectedCareerName && tutors.filter(t => {
-                    if (t.tutorId === selectedMethodologicalTutorId) return false;
-                    const careerId = String(selectedCareerName);
-                    if (careerId && t.carreras) {
-                      return t.carreras.some((c: string) => String(c) === careerId || c === careerId);
-                    }
-                    return true;
-                  }).length === 0 && (
-                    <p className="text-[11px] font-bold text-amber-600">
-                      No hay tutores asignados a esta carrera. ¿Desea crear uno?
-                    </p>
-                  )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      const evt = new CustomEvent("enrollment:addTutor");
-                      window.dispatchEvent(evt);
-                    }}
-                    className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start rounded-lg font-bold"
-                  >
-                    <SearchIcon className="w-4 h-4 mr-1" />
-                    Nuevo Tutor Académico
-                  </Button>
                 </div>
               </div>
 
@@ -1083,7 +1021,10 @@ export default function EnrollmentModal({
                     name="methodologicalTutorId"
                     control={control}
                     render={({ field }) => {
-                      const careerId = String(selectedCareerName);
+                      // Buscar careerId desde careersState usando careerName o careerId directo
+                      const careerObj = careersState.find(c => c.careerName === selectedCareerName || String(c.careerId) === selectedCareerName);
+                      const careerId = careerObj ? String(careerObj.careerId) : String(selectedCareerName);
+                      
                       const filteredTutors = tutors.filter(t => {
                         // Excluir el tutor académico seleccionado
                         if (t.tutorId === selectedAcademicTutorId) return false;
@@ -1100,7 +1041,7 @@ export default function EnrollmentModal({
                             value: t.tutorId,
                             label: `${t.firstName} ${t.lastName}`
                           }))}
-                          placeholder={careerId 
+                          placeholder={careerId || editingEntry
                             ? (filteredTutors.length === 0 
                                 ? "No hay tutores para esta carrera" 
                                 : "Seleccione el tutor metodológico")
@@ -1108,30 +1049,13 @@ export default function EnrollmentModal({
                           onChange={field.onChange}
                           value={String(field.value)}
                           className="rounded-xl h-[48px]"
-                          disabled={!careerId}
-                          onAddNew={careerId ? () => {
-                            const evt = new CustomEvent("enrollment:addTutor");
-                            window.dispatchEvent(evt);
-                          } : undefined}
-                          addNewLabel={careerId && filteredTutors.length > 0 ? "Nuevo Tutor Metodológico" : undefined}
+                          disabled={!careerId && !editingEntry}
                         />
                       );
                     }}
                   />
                   {errors.methodologicalTutorId && (
                     <p className="text-[11px] font-bold text-error-500">{errors.methodologicalTutorId.message}</p>
-                  )}
-                  {selectedCareerName && tutors.filter(t => {
-                    if (t.tutorId === selectedAcademicTutorId) return false;
-                    const careerId = String(selectedCareerName);
-                    if (careerId && t.carreras) {
-                      return t.carreras.some((c: string) => String(c) === careerId || c === careerId);
-                    }
-                    return true;
-                  }).length === 0 && (
-                    <p className="text-[11px] font-bold text-amber-600">
-                      No hay tutores asignados a esta carrera. ¿Desea crear uno?
-                    </p>
                   )}
                 </div>
               </div>
@@ -1297,26 +1221,16 @@ export default function EnrollmentModal({
                           value={String(field.value || "")}
                           disabled={!selectedInstitutionId || filteredResponsibles.length === 0}
                           className="rounded-xl h-[48px]"
+                          onAddNew={selectedInstitutionId ? () => {
+                            const evt = new CustomEvent("enrollment:addResponsible", { detail: { institutionId: selectedInstitutionId } });
+                            window.dispatchEvent(evt);
+                          } : undefined}
+                          addNewLabel={selectedInstitutionId ? "Nuevo Responsable" : undefined}
                         />
                       )}
                     />
                     {errors.institutionResponsibleId && (
                       <p className="text-[11px] font-bold text-error-500">{errors.institutionResponsibleId.message}</p>
-                    )}
-                    {selectedInstitutionId && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          const evt = new CustomEvent("enrollment:addResponsible", { detail: { institutionId: selectedInstitutionId } });
-                          window.dispatchEvent(evt);
-                        }}
-                        className="text-brand-600 hover:text-brand-700 dark:text-brand-400 mt-1 self-start rounded-lg font-bold"
-                      >
-                        <SearchIcon className="w-4 h-4 mr-1" />
-                        Nuevo Responsable
-                      </Button>
                     )}
                   </div>
                 </div>

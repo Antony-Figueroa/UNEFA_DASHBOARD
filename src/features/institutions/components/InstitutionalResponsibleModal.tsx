@@ -817,22 +817,22 @@ export default function InstitutionalResponsibleModal({
                    Guardar Cambios
                  </AsyncButton>
                )
-             ) : editingResp ? (
-               <AsyncButton 
-                 variant="primary" 
-                 type="button"
-                 className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
-                 loading={isLoading}
-                 disabled={!isDirty}
-                 onClick={() => {
-                   const form = document.querySelector('form');
-                   if (form) {
-                     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-                   }
-                 }}
-               >
-                 Actualizar
-               </AsyncButton>
+) : editingResp ? (
+                <AsyncButton 
+                  variant="primary" 
+                  type="button"
+                  className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
+                  loading={isLoading}
+                  disabled={!isValid}  // Habilitar solo si el formulario es válido (no depende de isDirty para permitir guardar)
+                  onClick={() => {
+                    const form = document.querySelector('form');
+                    if (form) {
+                      form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                    }
+                  }}
+                >
+                  Actualizar
+                </AsyncButton>
 ) : (
                 <AsyncButton 
                   variant="primary" 

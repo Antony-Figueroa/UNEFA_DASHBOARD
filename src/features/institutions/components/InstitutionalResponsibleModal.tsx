@@ -823,7 +823,7 @@ export default function InstitutionalResponsibleModal({
                   type="button"
                   className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
                   loading={isLoading}
-                  disabled={!isValid}  // Habilitar solo si el formulario es válido (no depende de isDirty para permitir guardar)
+                  disabled={!isValid && !isDirty}  // Habilitar si el formulario es válido O si hay cambios
                   onClick={() => {
                     const form = document.querySelector('form');
                     if (form) {

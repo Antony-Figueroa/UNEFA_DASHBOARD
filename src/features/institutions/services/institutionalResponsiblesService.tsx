@@ -63,6 +63,31 @@ export const responsibleService = createCrudService<InstitutionalResponsible, Cr
  * Obtiene un responsable institucional por su cédula de identidad.
  * @param ci - Cédula de identidad (formato: V-12345678)
  */
+/**
+ * Verifica si una cédula de identidad está disponible para registro.
+ * @param ci - Cédula de identidad a verificar (formato: V-12345678).
+ * @param excludeId - ID del responsable a excluir (útil en ediciones).
+ * @returns Promesa con el estado de disponibilidad.
+ */
+export const checkAvailability = async (
+  ci: string,
+  excludeId?: string
+): Promise<{ available: boolean; status?: number; responsibleId?: number }> => {
+  try {
+    const response = await apiClient.get(`${API_URL}/check-availability`, {
+      params: { ci, excludeId }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("[responsibleService] Error al verificar disponibilidad de CI:", error);
+    throw error;
+  }
+};
+
+/**
+ * Obtiene un responsable institucional por su cédula de identidad.
+ * @param ci - Cédula de identidad (formato: V-12345678)
+ */
 export const getResponsibleByCi = async (ci: string): Promise<InstitutionalResponsible | null> => {
   try {
     const response = await apiClient.get(`${API_URL}/by-ci/${ci}`, { silent: true } as any);

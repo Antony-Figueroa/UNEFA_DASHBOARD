@@ -155,7 +155,17 @@ export const getInstitutionalResponsibles = async (_req: Request, res: Response)
       });
 
       return (responsibles || []).map((r: any) => {
-        const institutions = managerInstitutions.get(r.MANAGER_ID) || [];
+        let institutions = managerInstitutions.get(r.MANAGER_ID) || [];
+        
+        // BACKWARD COMPATIBILITY: Si no hay instituciones en pivote, usar datos de tabla principal
+        if (institutions.length === 0 && r.INSTITUTION_ID) {
+          institutions = [{
+            institutionId: String(r.INSTITUTION_ID),
+            institutionName: instMap.get(r.INSTITUTION_ID) || 'N/A',
+            cargo: r.cargo || ''
+          }];
+        }
+        
         return {
           ...r,
           institutions
@@ -183,8 +193,23 @@ export const getInstitutionalResponsibleByCi = async (req: Request, res: Respons
       if (error) throw error;
       if (!responsible) return null;
 
-      // Obtener instituciones desde la tabla pivote (ahora devuelve array de objetos)
-      const institutions = await getInstitutionsForManager(supabase, responsible.MANAGER_ID);
+      // Obtener instituciones desde la tabla pivote
+      let institutions = await getInstitutionsForManager(supabase, responsible.MANAGER_ID);
+
+      // BACKWARD COMPATIBILITY: Si no hay instituciones en pivote, usar datos de tabla principal
+      if (institutions.length === 0 && responsible.INSTITUTION_ID) {
+        const { data: instData } = await supabase
+          .from('t_institution')
+          .select('INSTITUTION_ID, INSTITUTION_NAME')
+          .eq('INSTITUTION_ID', responsible.INSTITUTION_ID)
+          .maybeSingle();
+
+        institutions = [{
+          institutionId: String(responsible.INSTITUTION_ID),
+          institutionName: instData?.INSTITUTION_NAME || 'N/A',
+          cargo: responsible.cargo || ''
+        }];
+      }
 
       return {
         ...responsible,
@@ -473,6 +498,44 @@ export const toggleInstitutionalResponsibleStatus = async (req: Request, res: Re
     });
 
     res.json(mapDBToFrontend(data));
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+/**
+ * Verifica si una cédula está disponible para registro.
+ */
+export const checkIdAvailability = async (req: Request, res: Response) => {
+  try {
+    const { ci, excludeId } = req.query;
+    
+    if (!ci) {
+      return res.status(400).json({ message: 'Faltan parámetros: ci es requerido' });
+    }
+
+    const result = await dbManager.withRetry(async (supabase) => {
+      let query = supabase
+        .from(TABLE_NAME)
+        .select('MANAGER_ID, STATUS');
+
+      query = query.eq('MANAGER_CI', ci as string);
+
+      if (excludeId) {
+        query = query.neq('MANAGER_ID', parseInt(excludeId as string));
+      }
+
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      
+      return data;
+    }, 'checkAvailability');
+
+    res.json({
+      available: !result,
+      status: result?.STATUS,
+      responsibleId: result?.MANAGER_ID
+    });
   } catch (error: unknown) {
     handleDbError(res, error);
   }

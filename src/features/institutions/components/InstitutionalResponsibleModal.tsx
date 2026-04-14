@@ -28,7 +28,7 @@ import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/syst
 import { useToast } from "../../../context/toast";
 import { formatCedulaDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS, PHONE_LOCAL_MAX_LENGTH, formatPhoneLocalDisplay, PHONE_INPUT_CLASS } from "../../../utils/inputFormat";
 import { useInstitutions } from "../hooks/useInstitutions";
-import { getResponsibleByCi } from "../services/institutionalResponsiblesService";
+import { checkAvailability, getResponsibleByCi } from "../services/institutionalResponsiblesService";
 
 // Lazy load para evitar dependencia circular con InstitutionModal
 const InstitutionModal = lazy(() => import("./InstitutionModal"));
@@ -68,7 +68,7 @@ const respSchema = z.object({
   phoneNumber: z.string()
     .min(1, "El número de teléfono es obligatorio")
     .regex(/^\d+$/, "Solo se admiten números")
-    .length(7, "El número de teléfono debe tener exactamente 7 dígitos"),
+    .min(7, "El número de teléfono debe tener 7 dígitos"),
   email: z.string()
     .min(1, "El correo es obligatorio")
     .email("Correo electrónico inválido"),
@@ -155,35 +155,44 @@ export default function InstitutionalResponsibleModal({
    const [existingResponsible, setExistingResponsible] = useState<any | null>(null);
    const [viewOnlyMode, setViewOnlyMode] = useState(false);
 
-   // Check if institutional responsible exists by CI
-   const checkInstitutionalResponsibleByCi = async (ci: string) => {
-     // Clean CI: remove any non-digits and take first 7-8 digits for check
-     const cleanCi = ci.replace(/\D/g, '');
-     // Only check if we have at least 7 digits (minimum for a valid CI)
-     if (cleanCi.length < 7) {
-       return;
-     }
- 
-     setIsCheckingCi(true);
-     try {
-       const existingData = await getResponsibleByCi(cleanCi);
-       if (existingData) {
-         setExistingResponsible(existingData);
-         setViewOnlyMode(true);
-         // Fill form with existing data
-         fillFormWithExistingData(existingData);
-       } else {
-         setExistingResponsible(null);
-         setViewOnlyMode(false);
-       }
-     } catch (error) {
-       console.error('[InstitutionalResponsibleModal] Error checking CI:', error);
-       setExistingResponsible(null);
-         setViewOnlyMode(false);
-     } finally {
-       setIsCheckingCi(false);
-     }
-   };
+// Check if institutional responsible exists by CI
+    const checkInstitutionalResponsibleByCi = async (ci: string) => {
+      // Clean CI: remove any non-digits
+      const cleanCi = ci.replace(/\D/g, '');
+      // Only check if we have exactly 7 or 8 digits
+      if (cleanCi.length !== 7 && cleanCi.length !== 8) {
+        return;
+      }
+
+      setIsCheckingCi(true);
+      const prefix = watch("identificationPrefix") || 'V';
+      const fullCi = `${prefix}-${cleanCi}`;
+      try {
+        // First check if CI is available (not in use)
+        const editingId = editingResp ? (editingResp as any).responsibleId : undefined;
+        const res = await checkAvailability(fullCi, editingId);
+        if (!res.available) {
+          // CI is already registered, get the existing data
+          const existingData = await getResponsibleByCi(fullCi);
+          if (existingData) {
+            setExistingResponsible(existingData);
+            setViewOnlyMode(true);
+            // Fill form with existing data
+            fillFormWithExistingData(existingData);
+          }
+        } else {
+          // CI is available, clear any existing data
+          setExistingResponsible(null);
+          setViewOnlyMode(false);
+        }
+      } catch (error) {
+        console.error('[InstitutionalResponsibleModal] Error checking CI:', error);
+        setExistingResponsible(null);
+        setViewOnlyMode(false);
+      } finally {
+        setIsCheckingCi(false);
+      }
+    };
 
    // Fill form fields with existing responsible data
    const fillFormWithExistingData = (responsible: any) => {
@@ -217,36 +226,61 @@ export default function InstitutionalResponsibleModal({
      setValue("phoneNumber", phoneNumber, { shouldValidate: true, shouldDirty: true });
      setValue("email", responsible.email || '', { shouldValidate: true, shouldDirty: true });
      
-     // Handle institutions - map to form structure
-     if (responsible.institutions && Array.isArray(responsible.institutions)) {
-       const formInstitutions = responsible.institutions.map((inst: any) => ({
-         institutionId: String(inst.institutionId),
-         cargo: inst.cargo || ''
-       }));
-       setValue("institutions", formInstitutions, { shouldValidate: true, shouldDirty: true });
-     } else {
-       setValue("institutions", [], { shouldValidate: true, shouldDirty: true });
-     }
-   };
+// Handle institutions - map to form structure
+      if (responsible.institutions && Array.isArray(responsible.institutions)) {
+        const formInstitutions = responsible.institutions.map((inst: any) => ({
+          institutionId: String(inst.institutionId),
+          institutionName: inst.institutionName || '',
+          cargo: inst.cargo || ''
+        }));
+        setValue("institutions", formInstitutions, { shouldValidate: true, shouldDirty: true });
+      } else {
+        setValue("institutions", [], { shouldValidate: true, shouldDirty: true });
+      }
+    };
 
   // State for new institution modal
   const [isNewInstitutionModalOpen, setIsNewInstitutionModalOpen] = useState(false);
   const { addInstitution } = useInstitutions();
 
-   // Handle identification number input change with formatting
-   const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-     const input = e.target.value;
-     // Solo permitir números
-     const digitsOnly = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
-     const formatted = formatCedulaDisplay(digitsOnly, false);
-     setDisplayIdentificationNumber(formatted);
-     setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
-     
-     // Trigger CI check when we have 7-8 digits
-     if (digitsOnly.length >= 7 && digitsOnly.length <= 8) {
-       checkInstitutionalResponsibleByCi(digitsOnly);
-     }
-   };
+// Handle identification number input change with formatting
+    const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const input = e.target.value;
+      // Solo permitir números
+      const digitsOnly = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
+      const formatted = formatCedulaDisplay(digitsOnly, false);
+      setDisplayIdentificationNumber(formatted);
+      setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
+      
+      // Si se cambia la cédula y hay un existingResponsible, limpiar el formulario
+      if (existingResponsible) {
+        const currentStoredDigits = existingResponsible.identificationNumber?.replace(/\D/g, '') || '';
+        // Si el usuario borró al menos 1 carácter o cambió algo
+        if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits) {
+          setExistingResponsible(null);
+          setViewOnlyMode(false);
+          // Resetear los campos del formulario
+          reset({
+            identificationPrefix: "",
+            identificationNumber: "",
+            firstName: "",
+            middleName: "",
+            lastName: "",
+            secondLastName: "",
+            phonePrefix: "",
+            phoneNumber: "",
+            email: "",
+            institutions: []
+          });
+          setDisplayPhoneNumber("");
+        }
+      }
+      
+// Trigger CI check ONLY when we have exactly 7 or 8 digits (not before)
+      if (!existingResponsible && !editingResp && (digitsOnly.length === 7 || digitsOnly.length === 8)) {
+        checkInstitutionalResponsibleByCi(digitsOnly);
+      }
+    };
 
   // Handle phone number input change with formatting
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -322,6 +356,27 @@ export default function InstitutionalResponsibleModal({
 
     if (isOpen) {
       loadOptions();
+      
+      // Limpiar estados cuando se abre el modal para nuevo registro
+      if (!editingResp) {
+        setExistingResponsible(null);
+        setViewOnlyMode(false);
+        setDisplayIdentificationNumber("");
+        setDisplayPhoneNumber("");
+        // Resetear formulario
+        reset({
+          identificationPrefix: "",
+          identificationNumber: "",
+          firstName: "",
+          middleName: "",
+          lastName: "",
+          secondLastName: "",
+          phonePrefix: "",
+          phoneNumber: "",
+          email: "",
+          institutions: []
+        });
+      }
     }
   }, [isOpen, fetchMultipleLists]);
 
@@ -500,15 +555,12 @@ export default function InstitutionalResponsibleModal({
      onClose();
    };
 
-   // Handle clicking the "Editar Registro" button to edit existing responsible
-   const handleEditExisting = () => {
-     if (onEditExisting && existingResponsible) {
-       onEditExisting(existingResponsible);
-     } else {
-       // Fallback: just close the modal
-       onClose();
-     }
-   };
+// Handle clicking the "Editar Registro" button to edit existing responsible
+    const handleEditExisting = () => {
+      // Salir del modo viewOnly para permitir edición
+      setViewOnlyMode(false);
+      setExistingResponsible(null);
+    };
 
   return (
     <>
@@ -526,7 +578,7 @@ export default function InstitutionalResponsibleModal({
              {existingResponsible && viewOnlyMode && (
                <div className="mb-4 flex items-center space-x-3 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg">
                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-warning-700 dark:text-warning-400" viewBox="0 0 20 20" fill="currentColor">
-                   <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.492-1.646-1.742-2.98l5.58-9.92zM11 13a1 1 0 10-2 0v-3a1 1 0 112 0v3zm-1-8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.492-1.646-1.742-2.98l5.58-9.92zM11 13a1 1 0 10-2 0v-3a1 1 0 112 0v3zm-1-8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
                  </svg>
                  <span className="text-sm font-medium text-warning-700 dark:text-warning-400">
                    Registro existente - Click en 'Editar Registro' para modificar
@@ -553,7 +605,7 @@ export default function InstitutionalResponsibleModal({
                             onBlur={field.onBlur}
                             value={field.value}
                             placeholder="Tipo"
-                            disabled={!!editingResp}
+disabled={!!editingResp}
                             error={!!errors.identificationPrefix}
                           />
                         )}
@@ -568,7 +620,7 @@ export default function InstitutionalResponsibleModal({
                         hint={isCheckingCi ? "Verificando..." : (errors.identificationNumber?.message || " ")}
                         className="tracking-widest"
                         maxLength={CEDULA_MAX_LENGTH}
-                        disabled={!!editingResp || !!existingResponsible}
+                        disabled={!!editingResp}
                       />
                     </div>
                   </div>
@@ -668,6 +720,7 @@ export default function InstitutionalResponsibleModal({
                       error={!!errors.email} 
                       hint={errors.email?.message || " "}
                       disabled={!!existingResponsible}
+                      
                     />
                   </div>
                 </div>
@@ -695,7 +748,7 @@ export default function InstitutionalResponsibleModal({
                             placeholder="Cargo en esta empresa (ej: Gerente, Supervisor)"
                             className="uppercase"
                             value={currentCargo}
-                            disabled={!!existingResponsible}
+                            
                             onChange={(e) => {
                               const newValue = (value || []).map((i: any) => 
                                 String(i.institutionId) === String(preselectedInstitutionId)
@@ -741,12 +794,12 @@ export default function InstitutionalResponsibleModal({
                               .filter(opt => !selectedInstitutions.some((s: any) => s.institutionId === opt.value))
                               .map(opt => ({ value: String(opt.value), label: opt.label }))
                             }
-                            onChange={(val) => {
+onChange={(val) => {
                               if (val) handleAddInstitution(val);
                             }}
-                            value=""
                             placeholder="Agregar institución..."
                             disabled={!!existingResponsible}
+                            
                             onAddNew={() => setIsNewInstitutionModalOpen(true)}
                             addNewLabel="Crear nueva institución"
                           />
@@ -754,19 +807,20 @@ export default function InstitutionalResponsibleModal({
                           {selectedInstitutions.length > 0 && (
                             <div className="space-y-2 mt-2">
                               {selectedInstitutions.map((inst: any) => (
-                                <div key={inst.institutionId} className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">
+                                <div key={inst.institutionId} className={`flex items-center gap-2 p-2 rounded-lg border ${existingResponsible ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600' : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'}`}>
+                                  <div className={`flex-1 min-w-0 ${existingResponsible ? 'opacity-60' : ''}`}>
+                                    <p className={`text-sm font-medium truncate ${existingResponsible ? 'text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
                                       {inst.institutionName || institutionOptions.find(o => o.value === inst.institutionId)?.label || "Institución"}
                                     </p>
                                   </div>
                                   <input
                                     type="text"
                                     placeholder="Cargo"
-                                    className="w-32 px-2 py-1 text-xs uppercase border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                    className={`w-32 px-2 py-1 text-xs uppercase border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${existingResponsible ? 'border-gray-300 dark:border-gray-600 opacity-60 cursor-not-allowed' : 'border-gray-300 dark:border-gray-600'}`}
                                     value={inst.cargo || ""}
                                     onChange={(e) => handleCargoChange(inst.institutionId, e.target.value)}
                                     disabled={!!existingResponsible}
+                                    readOnly={!!existingResponsible}
                                   />
                                   {!existingResponsible && (
                                     <button

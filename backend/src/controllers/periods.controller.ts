@@ -234,28 +234,17 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
 
       const isInUse = usageData && usageData.length > 0;
 
-      // Mapeo de nombres de campo del request a nombres de columna de la BD
-      const fieldToColumnMap: Record<string, string> = {
-        description: 'DESCRIPTION',
-        startDate: 'START_DATE',
-        code: 'T_INTERNSHIPS_CODE'
-      };
-
-      // Si está en uso, solo permitir modificar ciertos campos
+      // Si está en uso, solo permitir modificar periodStatus y status (no description/startDate/code)
+      // Esto permite activar/culminar períodos que ya tienen registros asociados
       if (isInUse) {
-        const restrictedFields = ['description', 'startDate', 'code'];
-        const tryingToModifyRestricted = restrictedFields.some(field => {
+        const forbiddenFields = ['description', 'startDate', 'code'];
+        const hasForbiddenChange = forbiddenFields.some(field => {
           const value = req.body[field];
-          // Solo bloquear si el campo existe Y es diferente al valor actual
           if (value === undefined || value === null) return false;
-          
-          // Usar el mapeo para obtener el nombre de columna correcto
-          const columnName = fieldToColumnMap[field] || field;
-          const oldValue = oldData[columnName];
-          return String(oldValue) !== String(value);
+          return true; // Si el campo está presente, es un cambio prohibido
         });
 
-        if (tryingToModifyRestricted) {
+        if (hasForbiddenChange) {
           const usageError = new Error('No se puede modificar este campo porque el período tiene registros asociados') as AppError;
           usageError.code = '403';
           throw usageError;

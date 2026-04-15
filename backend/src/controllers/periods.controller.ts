@@ -234,55 +234,69 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
 
       const isInUse = usageData && usageData.length > 0;
 
-      // Si está en uso, solo permitir modificar periodStatus y status (no description/startDate/code)
-      // Esto permite activar/culminar períodos que ya tienen registros asociados
-      // Pero sí se permite si el valor NO ha cambiado (mismo valor que ya tiene)
+      // Debug: ver qué campos vienen en el request
+      console.log('[PeriodUpdate] req.body:', JSON.stringify(req.body));
+      
+      // Si está en uso y se está cambiando SOLO periodStatus (activar=2 o culminar=3), permitir
+      // No validar campos forbidden porque el cambio de estado es válido
       if (isInUse) {
-        const forbiddenFields = ['description', 'startDate', 'code'];
+        const newPeriodStatus = req.body.periodStatus;
+        const currentStatus = oldData.STATUS;
         
-        // Función para normalizar valores antes de comparar
-        const normalizeForCompare = (field: string, newVal: unknown, oldVal: unknown): boolean => {
-          if (newVal === undefined || newVal === null) return false;
+        // Solo permitir si: viene periodStatus Y el status enviado es igual al actual (no se está cambiando status)
+        const isOnlyChangingPeriodStatus = newPeriodStatus !== undefined && 
+          (req.body.status === undefined || req.body.status === currentStatus || req.body.status === (currentStatus === 1 ? true : false));
+        
+        console.log('[PeriodUpdate] currentStatus:', currentStatus, 'req.body.status:', req.body.status, 'isOnlyChanging:', isOnlyChangingPeriodStatus);
+        
+        if (isOnlyChangingPeriodStatus) {
+          // periodStatus 2 = activar, 3 = culminar - ambos son válidos
+          // Permitir cambio de periodStatus sin validar otros campos
+        } else {
+          // Para otros casos (cambio de status/borrado o cambio de description/startDate/code)
+          // validar que no hayan cambiado campos forbidden
+          const forbiddenFields = ['description', 'startDate', 'code'];
           
-          let normalizedNew = String(newVal);
-          let normalizedOld = String(oldVal);
-          
-          // Si es un timestamp (número grande), convertir la fecha antigua a timestamp también
-          if (field === 'startDate' || field === 'endDate') {
-            if (!isNaN(Number(newVal)) && Number(newVal) > 1e9) {
-              // El nuevo valor es un timestamp, convertir el viejo también
-              if (oldVal && typeof oldVal === 'string' && oldVal.includes('-')) {
-                const oldDate = new Date(oldVal);
-                if (!isNaN(oldDate.getTime())) {
-                  normalizedOld = String(Math.floor(oldDate.getTime() / 1000));
+          const normalizeForCompare = (field: string, newVal: unknown, oldVal: unknown): boolean => {
+            if (newVal === undefined || newVal === null) return false;
+            
+            let normalizedNew = String(newVal);
+            let normalizedOld = String(oldVal);
+            
+            if (field === 'startDate' || field === 'endDate') {
+              if (!isNaN(Number(newVal)) && Number(newVal) > 1e9) {
+                if (oldVal && typeof oldVal === 'string' && oldVal.includes('-')) {
+                  const oldDate = new Date(oldVal);
+                  if (!isNaN(oldDate.getTime())) {
+                    normalizedOld = String(Math.floor(oldDate.getTime() / 1000));
+                  }
                 }
               }
             }
-          }
-          
-          return normalizedNew !== normalizedOld;
-        };
-        
-        const hasForbiddenChange = forbiddenFields.some(field => {
-          const value = req.body[field];
-          if (value === undefined || value === null) return false;
-          
-          // Map field to DB column
-          const columnMap: Record<string, string> = {
-            description: 'DESCRIPTION',
-            startDate: 'START_DATE',
-            code: 'T_INTERNSHIPS_CODE'
+            
+            return normalizedNew !== normalizedOld;
           };
-          const column = columnMap[field];
-          const oldValue = oldData[column];
           
-          return normalizeForCompare(field, value, oldValue);
-        });
+          const hasForbiddenChange = forbiddenFields.some(field => {
+            const value = req.body[field];
+            if (value === undefined || value === null) return false;
+            
+            const columnMap: Record<string, string> = {
+              description: 'DESCRIPTION',
+              startDate: 'START_DATE',
+              code: 'T_INTERNSHIPS_CODE'
+            };
+            const column = columnMap[field];
+            const oldValue = oldData[column];
+            
+            return normalizeForCompare(field, value, oldValue);
+          });
 
-        if (hasForbiddenChange) {
-          const usageError = new Error('No se puede modificar este campo porque el período tiene registros asociados') as AppError;
-          usageError.code = '403';
-          throw usageError;
+          if (hasForbiddenChange) {
+            const usageError = new Error('No se puede modificar este campo porque el período tiene registros asociados') as AppError;
+            usageError.code = '403';
+            throw usageError;
+          }
         }
       }
 

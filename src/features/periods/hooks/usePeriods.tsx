@@ -13,11 +13,58 @@ import { useCrud } from "../../../hooks/useCrud";
  * Etiquetas para la visualización de detalles en alertas y comparaciones.
  */
 const PERIOD_LABELS: Record<string, string> = {
-    description: "Descripción del Período",
+    description: "Período",
     startDate: "Fecha de Inicio",
     endDate: "Fecha de Cierre",
-    status: "Estado (Habilitado)",
-    periodStatus: "Fase del Período",
+    status: "Estado",
+    periodStatus: "Fase",
+    isInUse: "Registros Asociados",
+};
+
+// Mapeo de valores de periodStatus a texto legible
+const getPeriodStatusLabel = (value: unknown): string => {
+    if (value === 1 || value === "1") return "Pendiente";
+    if (value === 2 || value === "2") return "En Curso";
+    if (value === 3 || value === "3") return "Culminado";
+    return String(value);
+};
+
+// Mapeo de valores de status a texto legible
+const getStatusLabel = (value: unknown): string => {
+    if (value === 1 || value === "1" || value === true) return "Activo";
+    if (value === 0 || value === "0" || value === false) return "Inactivo";
+    return String(value);
+};
+
+// Mapeo de isInUse a texto legible
+const getInUseLabel = (value: unknown): string => {
+    if (value === 1 || value === "1" || value === true) return "Sí";
+    if (value === 0 || value === "0" || value === false) return "No";
+    return String(value);
+};
+
+/**
+ * Transforma los datos del período para mostrar valores legibles en la comparación.
+ */
+const transformPeriodForDisplay = (period: Record<string, unknown>): Record<string, unknown> => {
+    const transformed: Record<string, unknown> = { ...period };
+    
+    // Transformar periodStatus
+    if (transformed.periodStatus !== undefined) {
+        transformed.periodStatus = getPeriodStatusLabel(transformed.periodStatus);
+    }
+    
+    // Transformar status
+    if (transformed.status !== undefined) {
+        transformed.status = getStatusLabel(transformed.status);
+    }
+    
+    // Transformar isInUse
+    if (transformed.isInUse !== undefined) {
+        transformed.isInUse = getInUseLabel(transformed.isInUse);
+    }
+    
+    return transformed;
 };
 
 /**
@@ -62,7 +109,7 @@ export const usePeriods = () => {
                     message: (
                         <>
                             <p>El período <strong>{newPeriod.description}</strong> ha sido registrado exitosamente.</p>
-                            <RecordDetails data={newPeriod as unknown as Record<string, unknown>} labels={PERIOD_LABELS} />
+                            <RecordDetails data={transformPeriodForDisplay(newPeriod as unknown as Record<string, unknown>)} labels={PERIOD_LABELS} />
                         </>
                     ),
                 });
@@ -115,7 +162,13 @@ export const usePeriods = () => {
                     message: (
                         <>
                             {toastMessage}
-                            {oldPeriod && <ChangeComparison oldData={oldPeriod as unknown as Record<string, unknown>} newData={updatedPeriod as unknown as Record<string, unknown>} labels={PERIOD_LABELS} />}
+                            {oldPeriod && (
+                                <ChangeComparison 
+                                    oldData={transformPeriodForDisplay(oldPeriod as unknown as Record<string, unknown>)} 
+                                    newData={transformPeriodForDisplay(updatedPeriod as unknown as Record<string, unknown>)} 
+                                    labels={PERIOD_LABELS} 
+                                />
+                            )}
                         </>
                     ),
                 });

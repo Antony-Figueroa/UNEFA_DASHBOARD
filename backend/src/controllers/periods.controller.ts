@@ -239,6 +239,30 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
       // Pero sí se permite si el valor NO ha cambiado (mismo valor que ya tiene)
       if (isInUse) {
         const forbiddenFields = ['description', 'startDate', 'code'];
+        
+        // Función para normalizar valores antes de comparar
+        const normalizeForCompare = (field: string, newVal: unknown, oldVal: unknown): boolean => {
+          if (newVal === undefined || newVal === null) return false;
+          
+          let normalizedNew = String(newVal);
+          let normalizedOld = String(oldVal);
+          
+          // Si es un timestamp (número grande), convertir la fecha antigua a timestamp también
+          if (field === 'startDate' || field === 'endDate') {
+            if (!isNaN(Number(newVal)) && Number(newVal) > 1e9) {
+              // El nuevo valor es un timestamp, convertir el viejo también
+              if (oldVal && typeof oldVal === 'string' && oldVal.includes('-')) {
+                const oldDate = new Date(oldVal);
+                if (!isNaN(oldDate.getTime())) {
+                  normalizedOld = String(Math.floor(oldDate.getTime() / 1000));
+                }
+              }
+            }
+          }
+          
+          return normalizedNew !== normalizedOld;
+        };
+        
         const hasForbiddenChange = forbiddenFields.some(field => {
           const value = req.body[field];
           if (value === undefined || value === null) return false;
@@ -252,8 +276,7 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
           const column = columnMap[field];
           const oldValue = oldData[column];
           
-          // Only block if the value is actually different
-          return String(oldValue) !== String(value);
+          return normalizeForCompare(field, value, oldValue);
         });
 
         if (hasForbiddenChange) {

@@ -236,12 +236,24 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
 
       // Si está en uso, solo permitir modificar periodStatus y status (no description/startDate/code)
       // Esto permite activar/culminar períodos que ya tienen registros asociados
+      // Pero sí se permite si el valor NO ha cambiado (mismo valor que ya tiene)
       if (isInUse) {
         const forbiddenFields = ['description', 'startDate', 'code'];
         const hasForbiddenChange = forbiddenFields.some(field => {
           const value = req.body[field];
           if (value === undefined || value === null) return false;
-          return true; // Si el campo está presente, es un cambio prohibido
+          
+          // Map field to DB column
+          const columnMap: Record<string, string> = {
+            description: 'DESCRIPTION',
+            startDate: 'START_DATE',
+            code: 'T_INTERNSHIPS_CODE'
+          };
+          const column = columnMap[field];
+          const oldValue = oldData[column];
+          
+          // Only block if the value is actually different
+          return String(oldValue) !== String(value);
         });
 
         if (hasForbiddenChange) {

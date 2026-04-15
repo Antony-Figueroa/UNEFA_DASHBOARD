@@ -36,6 +36,7 @@ import { formatCedulaDisplay, cleanCedula, CEDULA_MAX_LENGTH } from "../../../ut
 import { UserCircleIcon, ShieldCheckIcon, DocsIcon, SearchIcon, UsersIcon, PlusIcon } from "../../../icons";
 import { cn } from "../../../utils/cn";
 import Badge from "../../../components/ui/badge/Badge";
+import { NAME_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
 // Inline icons for missing ones
 const BookOpenIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -89,7 +90,10 @@ const enrollmentSchema = z.object({
     .min(1, "La identificación es obligatoria")
     .regex(/^\d+$/, "Solo se admiten números"),
   studentName: z.string()
-    .min(1, "El nombre del estudiante es obligatorio"),
+    .min(1, "El nombre del estudiante es obligatorio")
+    .max(100, "El nombre es demasiado largo")
+    .regex(NAME_PATTERN, "Solo letras y espacios")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
   period: z.string().min(1, "Seleccione el período"),
   practiceType: z.string().min(1, "Seleccione el tipo de práctica"),
   careerName: z.string().optional(),

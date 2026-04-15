@@ -26,6 +26,7 @@ import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/syst
 import { useToast } from "../../../context/toast";
 import { formatCedulaDisplay, formatPhoneLocalDisplay, formatPhoneDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS, PHONE_LOCAL_MAX_LENGTH } from "../../../utils/inputFormat";
 import { getTutorByCi } from "../services/tutorsService";
+import { NAME_PATTERN, SAFE_EMAIL_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
 /**
  * Props for the TutorModal component.
@@ -352,19 +353,27 @@ export default function TutorModal({
       .regex(/^\d+$/, "Solo se admiten números"),
     firstName: z.string()
       .min(1, "El primer nombre es obligatorio")
-      .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "Solo se admiten letras y signos diacríticos")
+      .max(100, "El nombre es demasiado largo")
+      .regex(NAME_PATTERN, "Solo letras y espacios")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
       .transform(val => val.toUpperCase()),
     middleName: z.string()
-      .transform(val => val.toUpperCase())
-      .refine(val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val), "Solo se admiten letras y signos diacríticos")
+      .max(100, "El nombre es demasiado largo")
+      .regex(NAME_PATTERN, "Solo letras y espacios")
+      .refine(val => !val || isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val ? val.toUpperCase() : "")
       .optional(),
     lastName: z.string()
       .min(1, "El primer apellido es obligatorio")
-      .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/, "Solo se admiten letras y signos diacríticos")
+      .max(100, "El apellido es demasiado largo")
+      .regex(NAME_PATTERN, "Solo letras y espacios")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
       .transform(val => val.toUpperCase()),
     secondLastName: z.string()
-      .transform(val => val.toUpperCase())
-      .refine(val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(val), "Solo se admiten letras y signos diacríticos")
+      .max(100, "El apellido es demasiado largo")
+      .regex(NAME_PATTERN, "Solo letras y espacios")
+      .refine(val => !val || isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val ? val.toUpperCase() : "")
       .optional(),
     sex: z.string().min(1, "Seleccione el sexo"),
     phoneAreaCode: z.string().min(1, "El código de área es obligatorio"),
@@ -372,12 +381,38 @@ export default function TutorModal({
       .min(1, "El número de teléfono es obligatorio")
       .length(7, "El número de teléfono debe tener exactamente 7 dígitos")
       .regex(/^\d+$/, "Solo se admiten números"),
-    email: z.string().email("Formato de correo electrónico inválido").min(1, "El correo es obligatorio").transform(val => val.toUpperCase()),
-    condition: z.string().min(1, "La condición es obligatoria").transform(val => val.toUpperCase()),
-    dedication: z.string().min(1, "La dedicación es obligatoria").transform(val => val.toUpperCase()),
-    category: z.string().min(1, "La categoría es obligatoria").transform(val => val.toUpperCase()),
-    profession: z.string().min(1, "El título es obligatorio").transform(val => val.toUpperCase()),
-    titulo: z.string().min(1, "El grado de instrucción es obligatorio").transform(val => val.toUpperCase()),
+    email: z.string()
+      .min(1, "El correo es obligatorio")
+      .email("Formato de correo electrónico inválido")
+      .max(255, "El email es demasiado largo")
+      .regex(SAFE_EMAIL_PATTERN, "Email con caracteres no permitidos")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val.toUpperCase()),
+    condition: z.string()
+      .min(1, "La condición es obligatoria")
+      .max(100, "El texto es demasiado largo")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val.toUpperCase()),
+    dedication: z.string()
+      .min(1, "La dedicación es obligatoria")
+      .max(100, "El texto es demasiado largo")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val.toUpperCase()),
+    category: z.string()
+      .min(1, "La categoría es obligatoria")
+      .max(100, "El texto es demasiado largo")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val.toUpperCase()),
+    profession: z.string()
+      .min(1, "El título es obligatorio")
+      .max(200, "El texto es demasiado largo")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val.toUpperCase()),
+    titulo: z.string()
+      .min(1, "El grado de instrucción es obligatorio")
+      .max(200, "El texto es demasiado largo")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val.toUpperCase()),
     carreras: z.array(z.string()).min(1, "Debe seleccionar al menos una carrera"),
   }).superRefine((data, ctx) => {
     // Validar duplicidad de cédula

@@ -17,15 +17,25 @@ import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import { useToast } from '../../../context/toast';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
 import Input from '../../../components/form/input/InputField';
+import { SAFE_LONG_TEXT_PATTERN, isSafeInput } from '../../../utils/inputValidation';
 
 const visitSchema = z.object({
   visitDate: z.string().min(1, 'La fecha es requerida'),
   visitType: z.enum(['PRESENCIAL', 'VIRTUAL', 'TELEFONICA']),
   visitCase: z.enum(['VISITA_INICIAL', 'SEGUIMIENTO_REGULAR', 'REVISION_BITACORAS', 'EVALUACION_PARCIAL', 'SEGUIMIENTO_PROBLEMAS', 'CAMBIO_EMPRESA', 'CAMBIO_TUTOR', 'SUSPENSION', 'REANUDACION', 'EVALUACION_FINAL', 'CERTIFICACION']),
   hoursWorked: z.coerce.number().min(0, 'Las horas deben ser positivas').max(24, 'Máximo 24 horas'),
-  activitiesPerformed: z.string().min(10, 'Mínimo 10 caracteres'),
-  observations: z.string().optional(),
-  recommendations: z.string().optional()
+  activitiesPerformed: z.string()
+    .min(10, 'Mínimo 10 caracteres')
+    .max(2000, "El texto es demasiado largo")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
+  observations: z.string()
+    .max(1000, "Las observaciones son demasiado largas")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+    .optional(),
+  recommendations: z.string()
+    .max(1000, "Las recomendaciones son demasiado largas")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+    .optional()
 }).refine(
   (data) => {
     // Validación: la fecha no puede ser futura

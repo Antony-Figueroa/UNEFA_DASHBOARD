@@ -19,6 +19,7 @@ import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { NAME_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
 /**
  * Propiedades del componente InternshipTypeModal.
@@ -49,7 +50,9 @@ const createInternshipTypeSchema = (existingTypes: InternshipType[], editingItem
   z.object({
     name: z.string()
       .min(1, "El nombre es obligatorio")
-      .regex(/^[A-ZÁÉÍÓÚÑ\s]+$/, "El nombre solo permite letras y acentos")
+      .max(100, "El nombre es demasiado largo")
+      .regex(NAME_PATTERN, "Solo letras y espacios")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
       .transform(val => val.toUpperCase())
       .refine(val => {
         const normalizedVal = val.trim().toUpperCase();

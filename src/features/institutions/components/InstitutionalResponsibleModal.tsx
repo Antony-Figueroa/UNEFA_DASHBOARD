@@ -8,32 +8,26 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "../../../components/ui/modal";
-import Input from "../../../components/form/input/InputField";
-import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
-import CustomSelect from "../../../components/form/CustomSelect";
-import Badge from "../../../components/ui/badge/Badge";
-import { 
-   InstitutionalResponsible, 
-   CreateInstitutionalResponsiblePayload, 
-   UpdateInstitutionalResponsiblePayload,
-   CreateInstitutionPayload
-} from "../types";
-import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
-import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
-import { useLists } from "../../lists/hooks/useLists";
-import { List } from "../../lists/types";
-import * as listsService from "../../lists/services/listsService";
-import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
-import { useToast } from "../../../context/toast";
-import { formatCedulaDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS, PHONE_LOCAL_MAX_LENGTH, formatPhoneLocalDisplay, PHONE_INPUT_CLASS } from "../../../utils/inputFormat";
 import { useInstitutions } from "../hooks/useInstitutions";
 import { checkAvailability, getResponsibleByCi } from "../services/institutionalResponsiblesService";
+import { CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload, InstitutionalResponsible, CreateInstitutionPayload } from "../types";
+import { useLists } from "../../lists/hooks/useLists";
+import { useToast } from "../../../context/toast";
+import { formatCedulaDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_DIGITS, CEDULA_MAX_LENGTH, PHONE_LOCAL_MAX_LENGTH, PHONE_INPUT_CLASS } from "../../../utils/inputFormat";
+import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
+import Input from "../../../components/form/input/InputField";
+import CustomSelect from "../../../components/form/CustomSelect";
+import Button from "../../../components/ui/button/Button";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
+import Badge from "../../../components/ui/badge/Badge";
+import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
+import { List } from "../../lists/types";
+import * as listsService from "../../lists/services/listsService";
+import { NAME_PATTERN, SAFE_EMAIL_PATTERN, SAFE_TEXT_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
 // Lazy load para evitar dependencia circular con InstitutionModal
 const InstitutionModal = lazy(() => import("./InstitutionModal"));
-
-const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
 
 /**
  * Zod schema for institutional responsible form data.
@@ -41,7 +35,11 @@ const nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
  */
 const institutionSchema = z.object({
   institutionId: z.string().min(1, "Institución requerida"),
-  cargo: z.string().min(1, "El cargo es obligatorio"),
+  cargo: z.string()
+    .min(1, "El cargo es obligatorio")
+    .max(200, "El cargo es demasiado largo")
+    .regex(SAFE_TEXT_PATTERN, "Caracteres no permitidos")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
 });
 
 const respSchema = z.object({
@@ -52,16 +50,24 @@ const respSchema = z.object({
     .min(7, "La cédula debe tener al menos 7 dígitos"),
   firstName: z.string()
     .min(1, "El primer nombre es obligatorio")
-    .regex(nameRegex, "Solo se admiten letras"),
+    .max(100, "El nombre es demasiado largo")
+    .regex(NAME_PATTERN, "Solo letras y espacios")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
   middleName: z.string()
-    .regex(nameRegex, "Solo se admiten letras")
+    .max(100, "El nombre es demasiado largo")
+    .regex(NAME_PATTERN, "Solo letras y espacios")
+    .refine(val => !val || isSafeInput(val), { message: "Caracteres no permitidos" })
     .optional()
     .or(z.literal("")),
   lastName: z.string()
     .min(1, "El primer apellido es obligatorio")
-    .regex(nameRegex, "Solo se admiten letras"),
+    .max(100, "El apellido es demasiado largo")
+    .regex(NAME_PATTERN, "Solo letras y espacios")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
   secondLastName: z.string()
-    .regex(nameRegex, "Solo se admiten letras")
+    .max(100, "El apellido es demasiado largo")
+    .regex(NAME_PATTERN, "Solo letras y espacios")
+    .refine(val => !val || isSafeInput(val), { message: "Caracteres no permitidos" })
     .optional()
     .or(z.literal("")),
   phonePrefix: z.string().min(1, "Seleccione un prefijo"),
@@ -71,7 +77,10 @@ const respSchema = z.object({
     .min(7, "El número de teléfono debe tener 7 dígitos"),
   email: z.string()
     .min(1, "El correo es obligatorio")
-    .email("Correo electrónico inválido"),
+    .email("Correo electrónico inválido")
+    .max(255, "El email es demasiado largo")
+    .regex(SAFE_EMAIL_PATTERN, "Email con caracteres no permitidos")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
   // institutions es obligatorio - debe tener al menos una institución con cargo
   institutions: z.array(institutionSchema).min(1, "Debe agregar al menos una institución con su cargo"),
 });

@@ -20,7 +20,14 @@ const handleDbError = (res: Response, error: unknown) => {
   const dbError = error as AppError;
   
   let userMessage = 'Error en la base de datos';
-  if (dbError.code === '23502') {
+  let statusCode = 500;
+  
+  if (dbError.code === '400') {
+    // Validation errors - return the specific message
+    statusCode = 400;
+    userMessage = dbError.message || 'Error de validación';
+    return res.status(statusCode).json({ message: userMessage });
+  } else if (dbError.code === '23502') {
     userMessage = `Error: El campo ${dbError.details?.match(/"([^"]+)"/)?.[1] || 'requerido'} no puede estar vacío`;
   } else if (dbError.code === '23505') {
     userMessage = 'Error: Ya existe un registro con estos datos (duplicado)';
@@ -29,9 +36,12 @@ const handleDbError = (res: Response, error: unknown) => {
   } else if (dbError.code === '404') {
     userMessage = dbError.message || 'Registro no encontrado';
     return res.status(404).json({ message: userMessage });
+  } else if (dbError.code === '403') {
+    userMessage = dbError.message || 'Acción no permitida';
+    return res.status(403).json({ message: userMessage });
   }
 
-  res.status(500).json({ 
+  res.status(statusCode).json({ 
     message: userMessage, 
     error: dbError.message || 'Unknown database error',
     details: dbError.details,

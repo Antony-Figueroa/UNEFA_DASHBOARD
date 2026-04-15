@@ -416,6 +416,23 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
       }
     }, [options]);
 
+    // Sincronizar valor cuando cambie externamente (para modales de edición)
+    useEffect(() => {
+      if (fpInstance.current && value !== undefined) {
+        // Si el valor es un Date, convertir a string
+        if (value instanceof Date && !isNaN(value.getTime())) {
+          const formatted = `${String(value.getDate()).padStart(2, '0')}/${String(value.getMonth() + 1).padStart(2, '0')}/${value.getFullYear()}`;
+          const currentValue = fpInstance.current.selectedDates[0];
+          // Solo actualizar si es diferente
+          if (!currentValue || currentValue.getTime() !== value.getTime()) {
+            fpInstance.current.setDate(value, false);
+          }
+        } else if (typeof value === 'string' && value) {
+          fpInstance.current.setDate(value, false);
+        }
+      }
+    }, [value]);
+
     return (
       <div className={cn('w-full', className)}>
         {label && <Label htmlFor={id}>{label}</Label>}

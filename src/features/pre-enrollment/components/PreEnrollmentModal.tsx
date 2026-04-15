@@ -31,6 +31,7 @@ import { useLists } from "../../lists/hooks/useLists";
 import { generateMatricula } from "../../../utils/matricula";
 import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
 import { UserCircleIcon, ShieldCheckIcon, DocsIcon, InfoIcon, SearchIcon, PlusIcon } from "../../../icons";
+import { NAME_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
 /**
  * Propiedades del componente PreEnrollmentModal.
@@ -63,7 +64,10 @@ const preEnrollmentSchema = z.object({
     .regex(/^\d+$/, "Solo se admiten números"),
   /** Nombre completo del estudiante (autocompletado) */
   studentName: z.string()
-    .min(1, "El nombre del estudiante es obligatorio"),
+    .min(1, "El nombre del estudiante es obligatorio")
+    .max(100, "El nombre es demasiado largo")
+    .regex(NAME_PATTERN, "Solo letras y espacios")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
   /** Teléfono de contacto (autocompletado) */
   phone: z.string()
     .min(1, "El teléfono es obligatorio"),
@@ -75,6 +79,11 @@ const preEnrollmentSchema = z.object({
   enrollmentCode: z.string().min(1, "La matrícula es obligatoria"),
   /** Nombre de la carrera (informativo) */
   careerName: z.string().optional(),
+  /** Observaciones */
+  observations: z.string()
+    .max(500, "Las observaciones son demasiado largas")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+    .optional(),
 });
 
 /**

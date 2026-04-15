@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router';
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
 import { useToast } from '../../../context/toast';
+import { isSafeInput } from '../../../utils/inputValidation';
 
 /**
  * Propiedades del componente TrackingModal.
@@ -46,7 +47,10 @@ const trackingSchema = z.object({
     reportTitle: z.string().min(1, { message: 'El título del informe es obligatorio.' }),
     transfer: z.string().min(1, { message: 'Seleccione si hubo traslado.' }),
     route: z.string().min(1, { message: 'El recorrido es obligatorio.' }),
-    observations: z.string().optional(),
+    observations: z.string()
+        .max(1000, "Las observaciones son demasiado largas")
+        .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+        .optional(),
 });
 
 /**

@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { NAME_PATTERN, SAFE_EMAIL_PATTERN, SAFE_TEXT_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
 export const studentSchema = z.object({
   identificationPrefix: z.string().min(1, "Seleccione un prefijo"),
@@ -8,19 +9,27 @@ export const studentSchema = z.object({
     .regex(/^\d+$/, "Solo se admiten números"),
   firstName: z.string()
     .min(1, "El primer nombre es obligatorio")
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s']+$/, "Solo se admiten letras, espacios y apóstrofes")
+    .max(100, "El nombre es demasiado largo")
+    .regex(NAME_PATTERN, "Solo letras y espacios")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
     .transform(val => val.trim().replace(/\s+/g, ' ')),
   middleName: z.string()
+    .max(100, "El nombre es demasiado largo")
+    .regex(NAME_PATTERN, "Solo letras y espacios")
+    .refine(val => !val || isSafeInput(val), { message: "Caracteres no permitidos" })
     .transform(val => val ? val.trim().replace(/\s+/g, ' ') : "")
-    .refine(val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s']+$/.test(val), "Solo se admiten letras, espacios y apóstrofes")
     .default(""),
   lastName: z.string()
     .min(1, "El primer apellido es obligatorio")
-    .regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s']+$/, "Solo se admiten letras, espacios y apóstrofes")
+    .max(100, "El apellido es demasiado largo")
+    .regex(NAME_PATTERN, "Solo letras y espacios")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
     .transform(val => val.trim().replace(/\s+/g, ' ')),
   secondLastName: z.string()
+    .max(100, "El apellido es demasiado largo")
+    .regex(NAME_PATTERN, "Solo letras y espacios")
+    .refine(val => !val || isSafeInput(val), { message: "Caracteres no permitidos" })
     .transform(val => val ? val.trim().replace(/\s+/g, ' ') : "")
-    .refine(val => !val || /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s']+$/.test(val), "Solo se admiten letras, espacios y apóstrofes")
     .default(""),
   sex: z.string().min(1, "Seleccione el sexo"),
   birthDate: z.string()
@@ -44,8 +53,15 @@ export const studentSchema = z.object({
     .regex(/^\d+$/, "Solo se admiten números"),
   email: z.string()
     .email("Email inválido")
-    .min(1, "El email es obligatorio"),
-  address: z.string().min(1, "La dirección es obligatoria"),
+    .min(1, "El email es obligatorio")
+    .max(255, "El email es demasiado largo")
+    .regex(SAFE_EMAIL_PATTERN, "Email con caracteres no permitidos")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
+  address: z.string()
+    .min(1, "La dirección es obligatoria")
+    .max(500, "La dirección es demasiado larga")
+    .regex(SAFE_TEXT_PATTERN, "Caracteres no permitidos")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
   careerId: z.union([z.string(), z.number()]).refine(val => String(val).length > 0, "La carrera es obligatoria"),
   semester: z.string()
     .min(1, "El semestre es obligatorio")

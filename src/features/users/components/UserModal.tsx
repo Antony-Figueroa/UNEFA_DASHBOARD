@@ -14,6 +14,7 @@ import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { AuthUser } from "../../../context/auth";
 import { useToast } from "../../../context/toast";
 import { formatCedulaDisplay, cleanCedula, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
+import { NAME_PATTERN, SAFE_EMAIL_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
 /**
  * Propiedades para el componente UserModal.

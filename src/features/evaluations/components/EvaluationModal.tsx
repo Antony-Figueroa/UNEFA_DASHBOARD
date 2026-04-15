@@ -6,11 +6,18 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/
 import Button from '../../../components/ui/button/Button';
 import { EvaluatorType, EVALUATOR_TYPE_LABELS, SCORE_RANGE, EvaluationCriteria } from '../types';
 import { useEvaluations } from '../hooks/useEvaluations';
+import { isSafeInput } from '../../../utils/inputValidation';
 
 const schema = z.object({
-  evaluatorName: z.string().min(3, 'Nombre del evaluador requerido'),
+  evaluatorName: z.string()
+    .min(3, 'Nombre del evaluador requerido')
+    .max(100, "El nombre es demasiado largo")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
   evaluatorCi: z.string().optional(),
-  observations: z.string().optional()
+  observations: z.string()
+    .max(1000, "Las observaciones son demasiado largas")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+    .optional()
 });
 
 type FormData = z.infer<typeof schema>;

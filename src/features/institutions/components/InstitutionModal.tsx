@@ -30,6 +30,7 @@ import { useToast } from "../../../context/toast";
 import { cleanCedula, cleanPhone, cleanRif, formatRifDisplay, RIF_MAX_LENGTH, RIF_INPUT_CLASS, PHONE_LOCAL_MAX_LENGTH, formatPhoneLocalDisplay, PHONE_INPUT_CLASS } from "../../../utils/inputFormat";
 import { getInstitutionByRif, checkRifExists } from "../services/institutionsService";
 import venezuelaData from "../../../data/venezuela.json";
+import { NAME_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
 // Lazy load para evitar dependencia circular con CareerModal
 const CareerModal = lazy(() => import("../../careers/components/CareerModal"));
@@ -80,7 +81,11 @@ const baseInstSchema = z.object({
   rifNumber: z.string()
     .min(1, "El número de RIF es obligatorio")
     .regex(/^\d{9}$/, "El RIF debe tener exactamente 9 números"),
-  name: z.string().min(1, "El nombre es obligatorio").max(200, "El nombre no puede exceder 200 caracteres"),
+  name: z.string()
+    .min(1, "El nombre es obligatorio")
+    .max(200, "El nombre no puede exceder 200 caracteres")
+    .regex(NAME_PATTERN, "Solo letras y espacios")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
   phonePrefix: z.string().min(1, "Seleccione un prefijo"),
   phoneNumber: z.string()
     .min(1, "El número de teléfono es obligatorio")

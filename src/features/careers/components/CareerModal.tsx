@@ -19,6 +19,7 @@ import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import Badge from "../../../components/ui/badge/Badge";
+import { NAME_PATTERN, SAFE_TEXT_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
 import { InternshipTypeOption } from "../../internship-types/types";
 import { getCareerByCode } from "../services/careersService";
@@ -61,7 +62,9 @@ const createCareerSchema = (existingCareers: Career[], editingCareerId?: string 
   z.object({
     careerName: z.string()
       .min(1, "El nombre de la carrera es obligatorio")
-      .regex(/^[A-ZÁÉÍÓÚÑ\s]+$/, "El nombre solo permite letras y acentos (sin números)")
+      .max(100, "El nombre es demasiado largo")
+      .regex(NAME_PATTERN, "Solo letras y espacios")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
       .transform(val => val.toUpperCase())
       .refine(val => {
         const normalizedVal = val.trim().toUpperCase();
@@ -84,7 +87,9 @@ const createCareerSchema = (existingCareers: Career[], editingCareerId?: string 
     minimumGrade: z.string().min(1, "Debe seleccionar una nota mínima"),
     careerAbbreviation: z.string()
       .min(1, "La abreviatura es obligatoria")
-      .regex(/^[A-ZÁÉÍÓÚÑ\W\s]+$/, "La abreviatura no permite números")
+      .max(50, "La abreviatura es demasiado larga")
+      .regex(SAFE_TEXT_PATTERN, "Caracteres no permitidos")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
       .transform(val => val.toUpperCase()),
     careerType: z.enum(['CORTA', 'LARGA'], {
       message: "Debe seleccionar un tipo de carrera"
@@ -138,18 +143,31 @@ export default function CareerModal({
   const [existingCareer, setExistingCareer] = useState<Career | null>(null);
   // Estado para modo solo lectura (cuando se detecta duplicado)
   const [viewOnlyMode, setViewOnlyMode] = useState(false);
+  // Estado para evitar que el efecto自动 establezca默认值 después de limpiar
+  const [justCleared, setJustCleared] = useState(false);
 
   // Manejar cambio en el código de carrera
   const handleCareerCodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
     const codeOnly = input.replace(/\D/g, '').substring(0, 8);
     
-    // Si el usuario modifica el código, salir del modo viewOnly
+    // Si el usuario modifica el código, salir del modo viewOnly y limpiar el formulario
     if (existingCareer && viewOnlyMode) {
       const currentStoredCode = String(existingCareer.careerCode || '');
       if (codeOnly !== currentStoredCode) {
         setExistingCareer(null);
         setViewOnlyMode(false);
+        setJustCleared(true);
+        // Limpiar los campos del formulario
+        setValue("careerCode", codeOnly, { shouldValidate: false });
+        setValue("careerName", "", { shouldValidate: false });
+        setValue("careerAbbreviation", "", { shouldValidate: false });
+        setValue("minimumGrade", "", { shouldValidate: false });
+        setValue("careerType", "" as any, { shouldValidate: false });
+        setValue("internshipTypeIds", [], { shouldValidate: false });
+        
+        // Resetear el flag después de un tick
+        setTimeout(() => setJustCleared(false), 0);
       }
     }
     
@@ -217,10 +235,14 @@ export default function CareerModal({
 
   // Efecto para establecer automáticamente la nota mínima en 16 al escribir el código
   useEffect(() => {
-    if (!editingCareer && careerCode && careerCode.length > 0 && !minimumGrade && !isInitializing.current) {
+    // No establecer默认值 si acabamos de limpiar (justCleared) o si el campo ya tiene valor
+    if (justCleared || minimumGrade) {
+      return;
+    }
+    if (!editingCareer && careerCode && careerCode.length > 0) {
       setValue("minimumGrade", "16", { shouldValidate: true });
     }
-  }, [careerCode, minimumGrade, setValue, editingCareer]);
+  }, [careerCode, minimumGrade, setValue, editingCareer, justCleared]);
 
   const {
     showConfirmation,

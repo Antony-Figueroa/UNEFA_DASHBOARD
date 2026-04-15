@@ -234,12 +234,25 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
 
       const isInUse = usageData && usageData.length > 0;
 
+      // Mapeo de nombres de campo del request a nombres de columna de la BD
+      const fieldToColumnMap: Record<string, string> = {
+        description: 'DESCRIPTION',
+        startDate: 'START_DATE',
+        code: 'T_INTERNSHIPS_CODE'
+      };
+
       // Si está en uso, solo permitir modificar ciertos campos
       if (isInUse) {
         const restrictedFields = ['description', 'startDate', 'code'];
         const tryingToModifyRestricted = restrictedFields.some(field => {
           const value = req.body[field];
-          return value !== undefined && value !== null;
+          // Solo bloquear si el campo existe Y es diferente al valor actual
+          if (value === undefined || value === null) return false;
+          
+          // Usar el mapeo para obtener el nombre de columna correcto
+          const columnName = fieldToColumnMap[field] || field;
+          const oldValue = oldData[columnName];
+          return String(oldValue) !== String(value);
         });
 
         if (tryingToModifyRestricted) {

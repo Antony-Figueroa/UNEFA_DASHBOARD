@@ -1,6 +1,15 @@
 import * as z from "zod";
 import { NAME_PATTERN, SAFE_EMAIL_PATTERN, SAFE_TEXT_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
+// Helper para validar campos opcionales - permite vacío o valores válidos
+const optionalName = z.string()
+  .max(100, "El nombre es demasiado largo")
+  .refine(val => !val || NAME_PATTERN.test(val), { message: "Solo letras y espacios" })
+  .refine(val => !val || isSafeInput(val), { message: "Caracteres no permitidos" })
+  .transform(val => val ? val.trim().replace(/\s+/g, ' ') : "")
+  .optional()
+  .or(z.literal(""));
+
 export const studentSchema = z.object({
   identificationPrefix: z.string().min(1, "Seleccione un prefijo"),
   identificationNumber: z.string()
@@ -13,24 +22,14 @@ export const studentSchema = z.object({
     .regex(NAME_PATTERN, "Solo letras y espacios")
     .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
     .transform(val => val.trim().replace(/\s+/g, ' ')),
-  middleName: z.string()
-    .max(100, "El nombre es demasiado largo")
-    .regex(NAME_PATTERN, "Solo letras y espacios")
-    .refine(val => !val || isSafeInput(val), { message: "Caracteres no permitidos" })
-    .transform(val => val ? val.trim().replace(/\s+/g, ' ') : "")
-    .default(""),
+  middleName: optionalName,
   lastName: z.string()
     .min(1, "El primer apellido es obligatorio")
     .max(100, "El apellido es demasiado largo")
     .regex(NAME_PATTERN, "Solo letras y espacios")
     .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
     .transform(val => val.trim().replace(/\s+/g, ' ')),
-  secondLastName: z.string()
-    .max(100, "El apellido es demasiado largo")
-    .regex(NAME_PATTERN, "Solo letras y espacios")
-    .refine(val => !val || isSafeInput(val), { message: "Caracteres no permitidos" })
-    .transform(val => val ? val.trim().replace(/\s+/g, ' ') : "")
-    .default(""),
+  secondLastName: optionalName,
   sex: z.string().min(1, "Seleccione el sexo"),
   birthDate: z.string()
     .min(1, "La fecha de nacimiento es obligatoria")

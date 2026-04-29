@@ -25,3 +25,6 @@ dist-ssr
 
 .vercel
 .env*.local
+
+# Engram AI agent memory
+.engram/

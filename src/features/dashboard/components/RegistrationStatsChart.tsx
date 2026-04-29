@@ -10,7 +10,7 @@ import ReactApexChart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
 import { DashboardStats } from '../types';
 import { Skeleton } from '../../../components/ui/skeleton';
-import { FiTrendingUp, FiCalendar } from 'react-icons/fi';
+import { FiTrendingUp, FiCalendar, FiInfo } from 'react-icons/fi';
 
 /**
  * Props for the RegistrationStatsChart component.
@@ -33,6 +33,13 @@ interface RegistrationStatsChartProps {
  */
 const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, loading }) => {
   const [filter, setFilter] = useState<'7d' | '30d' | 'all'>('30d');
+
+  // Verificar si hay datos suficientes para el filtro seleccionado
+  const hasEnoughData = (filterKey: '7d' | '30d' | 'all') => {
+    if (filterKey === '7d') return data.length >= 7;
+    if (filterKey === '30d') return data.length >= 30;
+    return data.length > 0;
+  };
 
   const filteredData = useMemo(() => {
     if (filter === '7d') return data.slice(-7);
@@ -227,33 +234,68 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
           
           {/* Filter Buttons */}
           <div className="flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
-            {(['7d', '30d', 'all'] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
-                  filter === f
-                    ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-700 dark:text-brand-400'
-                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                }`}
-                aria-label={`Filtrar por ${filterLabels[f]}`}
-              >
-                {filterLabels[f]}
-              </button>
-            ))}
+            {(['7d', '30d', 'all'] as const).map((f) => {
+              const isDisabled = !hasEnoughData(f);
+              return (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  disabled={isDisabled}
+                  className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
+                    filter === f
+                      ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-700 dark:text-brand-400'
+                      : isDisabled
+                        ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                  }`}
+                  aria-label={`Filtrar por ${filterLabels[f]}${isDisabled ? ' (no disponible)' : ''}`}
+                >
+                  {filterLabels[f]}{isDisabled && ' ✕'}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* Chart */}
+      {/* Chart or Empty State */}
       <div className="h-80">
-        <ReactApexChart 
-          key={`chart-${filter}-${filteredData.length}`}
-          options={options} 
-          series={series} 
-          type="area" 
-          height={320} 
-        />
+        {loading ? (
+          <Skeleton height={300} className="rounded-xl" />
+        ) : data.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-center p-6">
+            <div className="size-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+              <FiTrendingUp className="size-8 text-gray-400" />
+            </div>
+            <h4 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Sin datos de registro
+            </h4>
+            <p className="text-sm text-gray-500 dark:text-gray-500 max-w-xs">
+              No hay registros de estudiantes todavía. Los datos aparecerán aquí cuando se inscriban nuevos estudiantes.
+            </p>
+          </div>
+        ) : !hasEnoughData(filter) ? (
+          <div className="h-full flex flex-col items-center justify-center text-center p-6">
+            <div className="size-16 rounded-full bg-warning-100 dark:bg-warning-900/30 flex items-center justify-center mb-4">
+              <FiInfo className="size-8 text-warning-600 dark:text-warning-400" />
+            </div>
+            <h4 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Datos insuficientes
+            </h4>
+            <p className="text-sm text-gray-500 dark:text-gray-500 max-w-xs">
+              Solo hay {data.length} día{data.length !== 1 ? 's' : ''} de datos disponibles. 
+              Selecciona "{filter === '7d' ? '30d' : 'Todo'}" para ver más información.
+            </p>
+          </div>
+        ) : (
+          <ReactApexChart 
+            key={`chart-${filter}-${filteredData.length}`}
+            options={options} 
+            series={series} 
+            type="area" 
+            height={320} 
+          />
+        )}
       </div>
 
       {/* Mobile Total */}

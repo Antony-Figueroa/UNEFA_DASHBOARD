@@ -359,10 +359,11 @@ export default function TutorModal({
       .transform(val => val.toUpperCase()),
     middleName: z.string()
       .max(100, "El nombre es demasiado largo")
-      .regex(NAME_PATTERN, "Solo letras y espacios")
+      .refine(val => !val || NAME_PATTERN.test(val), { message: "Solo letras y espacios" })
       .refine(val => !val || isSafeInput(val), { message: "Caracteres no permitidos" })
       .transform(val => val ? val.toUpperCase() : "")
-      .optional(),
+      .optional()
+      .or(z.literal("")),
     lastName: z.string()
       .min(1, "El primer apellido es obligatorio")
       .max(100, "El apellido es demasiado largo")
@@ -371,10 +372,11 @@ export default function TutorModal({
       .transform(val => val.toUpperCase()),
     secondLastName: z.string()
       .max(100, "El apellido es demasiado largo")
-      .regex(NAME_PATTERN, "Solo letras y espacios")
+      .refine(val => !val || NAME_PATTERN.test(val), { message: "Solo letras y espacios" })
       .refine(val => !val || isSafeInput(val), { message: "Caracteres no permitidos" })
       .transform(val => val ? val.toUpperCase() : "")
-      .optional(),
+      .optional()
+      .or(z.literal("")),
     sex: z.string().min(1, "Seleccione el sexo"),
     phoneAreaCode: z.string().min(1, "El código de área es obligatorio"),
     phoneNumber: z.string()

@@ -55,7 +55,7 @@ const respSchema = z.object({
     .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
   middleName: z.string()
     .max(100, "El nombre es demasiado largo")
-    .regex(NAME_PATTERN, "Solo letras y espacios")
+    .refine(val => !val || NAME_PATTERN.test(val), { message: "Solo letras y espacios" })
     .refine(val => !val || isSafeInput(val), { message: "Caracteres no permitidos" })
     .optional()
     .or(z.literal("")),
@@ -66,7 +66,7 @@ const respSchema = z.object({
     .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
   secondLastName: z.string()
     .max(100, "El apellido es demasiado largo")
-    .regex(NAME_PATTERN, "Solo letras y espacios")
+    .refine(val => !val || NAME_PATTERN.test(val), { message: "Solo letras y espacios" })
     .refine(val => !val || isSafeInput(val), { message: "Caracteres no permitidos" })
     .optional()
     .or(z.literal("")),

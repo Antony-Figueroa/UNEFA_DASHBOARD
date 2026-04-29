@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FiArrowUp, FiArrowDown, FiTrendingUp, FiUsers } from 'react-icons/fi';
+import { FiArrowUp, FiArrowDown, FiTrendingUp, FiUsers, FiInfo } from 'react-icons/fi';
 import { DashboardStats } from '../types';
 import { Skeleton } from '../../../components/ui/skeleton';
 
@@ -88,6 +88,11 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
 
   const { totalLastMonth, percentageChange, trend, weeklyBreakdown, dailyBreakdown } = growth;
 
+  // Check if there's meaningful data
+  const hasData = totalLastMonth > 0 || weeklyBreakdown.some(w => w.count > 0) || dailyBreakdown.some(d => d.count > 0);
+  const hasWeeklyData = weeklyBreakdown.length > 0 && weeklyBreakdown.some(w => w.count > 0);
+  const hasDailyData = dailyBreakdown.length > 0 && dailyBreakdown.some(d => d.count > 0);
+
   const getTrendColor = () => {
     if (trend === 'up') return 'text-success-600 dark:text-success-400';
     if (trend === 'down') return 'text-error-600 dark:text-error-400';
@@ -124,43 +129,59 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
         </p>
       </div>
 
-      {/* Main Stats */}
+      {/* Main Stats or Empty State */}
       <div className="mb-8">
-        <div className="flex items-end gap-4 mb-2">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-4xl font-bold text-gray-900 dark:text-white"
-          >
-            <AnimatedNumber value={totalLastMonth} />
-          </motion.div>
+        {!hasData ? (
+          <div className="text-center py-8">
+            <div className="size-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4">
+              <FiUsers className="size-8 text-gray-400" />
+            </div>
+            <h4 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Sin estudiantes este mes
+            </h4>
+            <p className="text-sm text-gray-500 dark:text-gray-500">
+              No hay registros de estudiantes este mes todavía.
+            </p>
+          </div>
+        ) : (
+          <>
+          <div className="flex items-end gap-4 mb-2">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="text-4xl font-bold text-gray-900 dark:text-white"
+            >
+              <AnimatedNumber value={totalLastMonth} />
+            </motion.div>
+            
+            <motion.div 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.4 }}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ${getTrendBg()} ${getTrendColor()}`}
+            >
+              {trend === 'up' ? <FiArrowUp className="size-4" /> : 
+              trend === 'down' ? <FiArrowDown className="size-4" /> : 
+              <FiTrendingUp className="size-4" />}
+              <span>{Math.abs(percentageChange)}%</span>
+            </motion.div>
+          </div>
           
-          <motion.div 
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4, delay: 0.4 }}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ${getTrendBg()} ${getTrendColor()}`}
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-sm text-text-tertiary"
           >
-            {trend === 'up' ? <FiArrowUp className="size-4" /> : 
-             trend === 'down' ? <FiArrowDown className="size-4" /> : 
-             <FiTrendingUp className="size-4" />}
-            <span>{Math.abs(percentageChange)}%</span>
-          </motion.div>
-        </div>
-        
-        <motion.p 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="text-sm text-text-tertiary"
-        >
-          {trend === 'up' ? 'Incremento' : trend === 'down' ? 'Disminución' : 'Sin cambios'} 
-          {' '}respecto al mes pasado
-        </motion.p>
+            {trend === 'up' ? 'Incremento' : trend === 'down' ? 'Disminución' : 'Sin cambios'} 
+            {' '}respecto al mes pasado
+          </motion.p>
+          </>
+        )}
       </div>
 
-      {/* Weekly Breakdown */}
+      {/* Weekly Breakdown or Empty */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <h4 className="text-xs font-bold uppercase tracking-wider text-text-secondary">
@@ -169,6 +190,7 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
           <span className="text-xs text-text-tertiary">{weeklyBreakdown.reduce((a, b) => a + b.count, 0)} total</span>
         </div>
         
+        {hasWeeklyData ? (
         <div className="flex items-end justify-between gap-3">
           {weeklyBreakdown.map((item, i) => {
             const height = item.count > 0 ? Math.max((item.count / maxWeekly) * 100, 15) : 8;
@@ -201,13 +223,19 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
             );
           })}
         </div>
+        ) : (
+          <div className="h-24 flex items-center justify-center text-gray-400 text-sm">
+            Sin datos semanales
+          </div>
+        )}
       </div>
 
-      {/* Daily Activity */}
+      {/* Daily Activity or Empty */}
       <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800">
         <h4 className="text-xs font-bold uppercase tracking-wider text-text-secondary mb-3">
           Últimos 7 días
         </h4>
+        {hasDailyData ? (
         <div className="flex items-center gap-2">
           {dailyBreakdown.map((item, i) => {
             const hasActivity = item.count > 0;
@@ -233,6 +261,16 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
             );
           })}
         </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+                <div className="w-full h-8 rounded-md bg-gray-200 dark:bg-gray-700" />
+                <span className="text-[10px] font-medium text-text-tertiary">-</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </motion.div>
   );

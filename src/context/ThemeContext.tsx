@@ -54,7 +54,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   const setBrandColor = useCallback((color: BrandColorKey) => {
     setBrandColorState(color);
     
-    apiClient.put("/api/user/theme", { brandColor: color }).catch((err) => {
+    apiClient.put("/user/theme", { brandColor: color }).catch((err) => {
       console.warn("[Theme] Could not sync brand color to server:", err.message);
     });
   }, []);

@@ -114,6 +114,106 @@ export interface ImportResult {
   errors: string[];
 }
 
+export interface ImportValidationRow {
+  row: number;
+ cedula: string;
+  nombre_apellido: string;
+  status: 'valid' | 'warning' | 'error';
+  messages: string[];
+}
+
+export interface ImportValidationResponse {
+  valid: boolean;
+  rows: ImportValidationRow[];
+  summary: {
+    total: number;
+    validCount: number;
+    warningCount: number;
+    errorCount: number;
+  };
+}
+
+export interface ImportExecuteResponse {
+  success: boolean;
+  created: number;
+  updated: number;
+  failed: number;
+  results: {
+    row: number;
+    status: 'created' | 'updated' | 'error';
+    message: string;
+    studentId?: string;
+  }[];
+}
+
+/**
+ * Valida un archivo Excel de estudiantes sin guardar en BD.
+ * @param file - Archivo Excel a validar.
+ * @returns Resultado de validación.
+ */
+export const validateImport = async (file: File): Promise<ImportValidationResponse> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await apiClient.post(`${API_URL}/import/validate`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error("[studentsService] Error al validar importación:", error);
+    return {
+      valid: false,
+      rows: [],
+      summary: { total: 0, validCount: 0, warningCount: 0, errorCount: 0 }
+    };
+  }
+};
+
+/**
+ * Ejecuta la importación de estudiantes desde un archivo Excel.
+ * @param file - Archivo Excel a importar.
+ * @param confirmed - Indica si el usuario confirmó las advertencias.
+ * @returns Resultado de importación.
+ */
+export const executeImport = async (file: File, confirmed: boolean = false): Promise<ImportExecuteResponse> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('confirmed', String(confirmed));
+    
+    const response = await apiClient.post(`${API_URL}/import/execute`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error("[studentsService] Error al ejecutar importación:", error);
+    return {
+      success: false,
+      created: 0,
+      updated: 0,
+      failed: 0,
+      results: []
+    };
+  }
+};
+
+/**
+ * Descarga la plantilla de importación de estudiantes.
+ * @returns Blob con el archivo Excel de la plantilla.
+ */
+export const downloadTemplate = async (): Promise<Blob> => {
+  try {
+    const response = await apiClient.get(`${API_URL}/import/template`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  } catch (error) {
+    console.error("[studentsService] Error al descargar plantilla:", error);
+    throw error;
+  }
+};
+
 export const importStudents = async (data: Record<string, unknown>[]): Promise<ImportResult> => {
   try {
     const response = await apiClient.post(`${API_URL}/import`, { students: data });

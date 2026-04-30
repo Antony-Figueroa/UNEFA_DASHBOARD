@@ -27,6 +27,7 @@
     "multer": "^2.0.2",
     "nodemailer": "^7.0.12",
     "prisma": "^7.5.0",
+    "xlsx": "^0.18.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {

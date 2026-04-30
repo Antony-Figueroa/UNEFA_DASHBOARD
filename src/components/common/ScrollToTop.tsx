@@ -48,7 +48,7 @@ const ScrollToTop: React.FC = () => {
           whileTap={{ scale: 0.9 }}
           onClick={scrollToTop}
           aria-label="Volver arriba"
-          className="fixed bottom-5 right-5 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#2d90c4] text-white shadow-lg transition-colors hover:bg-[#2579a5] focus:outline-none focus:ring-2 focus:ring-[#2d90c4] focus:ring-offset-2"
+          className="fixed bottom-20 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-[#2d90c4] text-white shadow-lg transition-colors hover:bg-[#2579a5] focus:outline-none focus:ring-2 focus:ring-[#2d90c4] focus:ring-offset-2"
         >
           <svg
             className="h-6 w-6"

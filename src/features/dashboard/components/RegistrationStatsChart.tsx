@@ -2,6 +2,7 @@
  * @file RegistrationStatsChart.tsx
  * @description Component that renders student registration trends over time using an area chart.
  * Includes time-range filtering (7 days, 30 days, all) with animations.
+ * Enhanced with contextual tooltips and clearer visual hierarchy.
  */
 
 import React, { useState, useMemo } from 'react';
@@ -10,7 +11,7 @@ import ReactApexChart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
 import { DashboardStats } from '../types';
 import { Skeleton } from '../../../components/ui/skeleton';
-import { FiTrendingUp, FiCalendar, FiInfo } from 'react-icons/fi';
+import { FiTrendingUp, FiCalendar, FiActivity, FiLayers } from 'react-icons/fi';
 
 /**
  * Props for the RegistrationStatsChart component.
@@ -34,145 +35,124 @@ interface RegistrationStatsChartProps {
 const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, loading }) => {
   const [filter, setFilter] = useState<'7d' | '30d' | 'all'>('30d');
 
-  // Verificar si hay datos suficientes para el filtro seleccionado
-  const hasEnoughData = (filterKey: '7d' | '30d' | 'all') => {
-    if (filterKey === '7d') return data.length >= 7;
-    if (filterKey === '30d') return data.length >= 30;
-    return data.length > 0;
-  };
-
+  // Mostrar todos los datos disponibles sin bloquear filtros
   const filteredData = useMemo(() => {
-    if (filter === '7d') return data.slice(-7);
-    if (filter === '30d') return data.slice(-30);
-    return data;
+    if (!data || data.length === 0) return [];
+    const available = filter === '7d' ? 7 : filter === '30d' ? 30 : data.length;
+    return data.slice(-available);
   }, [data, filter]);
 
   const totalRegistrations = useMemo(() => {
+    if (!filteredData || filteredData.length === 0) return 0;
     return filteredData.reduce((acc, curr) => acc + curr.count, 0);
   }, [filteredData]);
 
+  const stats = useMemo(() => {
+    if (!filteredData || filteredData.length === 0) return { avg: 0, max: 0, min: 0 };
+    const counts = filteredData.map(d => d.count);
+    return {
+      avg: Math.round(counts.reduce((a, b) => a + b, 0) / counts.length),
+      max: Math.max(...counts),
+      min: Math.min(...counts)
+    };
+  }, [filteredData]);
+
   const series = [{
-    name: 'Estudiantes Registrados',
-    data: filteredData.map(d => d.count)
+    name: 'Registros',
+    data: filteredData?.map(d => d.count) || []
   }];
+
+  const BRAND_COLOR = '#054F94';
+  const BRAND_LIGHT = '#67baff';
 
   const options: ApexOptions = {
     chart: {
       type: 'area',
-      height: 350,
-      toolbar: {
-        show: false
+      height: 320,
+      toolbar: { show: false },
+      zoom: { enabled: false },
+      fontFamily: 'Outfit, system-ui, sans-serif',
+      animations: {
+        enabled: true,
+        speed: 600,
+        animateGradually: { enabled: true, delay: 100 },
       },
-      zoom: {
-        enabled: false
-      },
-      fontFamily: 'Inter, system-ui, sans-serif',
+      sparkline: { enabled: false },
     },
-    dataLabels: {
-      enabled: false
-    },
+    dataLabels: { enabled: false },
     stroke: {
       curve: 'smooth',
-      width: 3,
-      colors: ['#054F94']
+      width: 2.5,
+      colors: [BRAND_COLOR],
+      lineCap: 'round',
     },
     fill: {
-      type: 'gradient',
+      type: 'linear',
       gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.4,
-        opacityTo: 0.05,
-        stops: [0, 100],
-        colorStops: [
-          { offset: 0, color: '#054F94', opacity: 0.4 },
-          { offset: 100, color: '#054F94', opacity: 0.05 }
-        ]
-      }
+        shadeIntensity: 0.8,
+        opacityFrom: 0.5,
+        opacityTo: 0.1,
+        stops: [0, 90, 100],
+        inverseColors: false,
+      },
     },
     xaxis: {
-      categories: filteredData.map(d => d.date),
+      categories: filteredData?.map(d => d.date) || [],
       labels: {
         rotate: -45,
         style: {
-          fontSize: '11px',
-          fontFamily: 'Inter, system-ui, sans-serif',
-          colors: '#64748b'
-        }
+          fontSize: '9px',
+          fontFamily: 'Outfit, system-ui, sans-serif',
+          colors: '#98a2b3',
+        },
+        formatter: (val) => String(val).length > 5 ? String(val).slice(0, 5) : String(val),
       },
-      axisBorder: {
-        show: false
-      },
-      axisTicks: {
-        show: false
-      },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
       crosshairs: {
         show: true,
-        position: 'back',
-        stroke: {
-          color: '#054F94',
-          width: 1,
-          dashArray: 3,
-        },
+        position: 'front',
+        stroke: { color: BRAND_COLOR, width: 1, dashArray: 4 },
       },
+      tooltip: { enabled: false },
     },
     yaxis: {
       labels: {
         style: {
-          fontSize: '11px',
-          fontFamily: 'Inter, system-ui, sans-serif',
-          colors: '#64748b'
+          fontSize: '10px',
+          fontFamily: 'Outfit, system-ui, sans-serif',
+          colors: '#98a2b3',
         },
-        formatter: (value) => Math.round(value).toString()
-      }
+        formatter: (value) => Math.round(value).toString(),
+        offsetX: -10,
+      },
+      min: 0,
     },
-    colors: ['#054F94'],
+    colors: [BRAND_COLOR],
     tooltip: {
       theme: 'light',
-      x: {
-        format: 'dd MMM yyyy'
-      },
+      x: { show: false },
       y: {
-        title: {
-          formatter: () => 'Estudiantes:'
-        }
+        title: { formatter: () => '' },
+        formatter: (val) => `${val} registros`,
       },
-      style: {
-        fontSize: '12px',
-        fontFamily: 'Inter, system-ui, sans-serif',
-      },
-      marker: {
-        show: true,
-      },
+      style: { fontSize: '11px', fontFamily: 'Outfit, sans-serif' },
+      marker: { show: true },
     },
     grid: {
       borderColor: '#f1f5f9',
-      strokeDashArray: 4,
-      xaxis: {
-        lines: {
-          show: false
-        }
-      },
-      yaxis: {
-        lines: {
-          show: true
-        }
-      },
-      padding: {
-        top: 10,
-        right: 10,
-        bottom: 0,
-        left: 10
-      }
+      strokeDashArray: 3,
+      xaxis: { lines: { show: false } },
+      yaxis: { lines: { show: true } },
+      padding: { top: 5, right: 15, bottom: 0, left: 0 },
     },
     markers: {
-      size: 5,
+      size: 3,
       colors: ['#fff'],
-      strokeColors: '#054F94',
-      strokeWidth: 2,
-      hover: {
-        size: 7,
-      }
-    }
+      strokeColors: BRAND_COLOR,
+      strokeWidth: 1.5,
+      hover: { size: 5 },
+    },
   };
 
   if (loading) {
@@ -207,85 +187,69 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="h-full w-full rounded-2xl border border-border-light bg-white p-6 shadow-sm dark:border-border-dark dark:bg-gray-900"
     >
-      {/* Header */}
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="flex items-center justify-center size-8 rounded-lg bg-brand-50 dark:bg-brand-500/10">
-              <FiTrendingUp className="size-4 text-brand-600 dark:text-brand-400" />
-            </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-              Estadísticas de Registro
-            </h3>
+      {/* Header - Cleaner hierarchy */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center justify-center size-8 rounded-lg bg-brand-50 dark:bg-brand-500/10">
+            <FiTrendingUp className="size-3.5 text-brand-600 dark:text-brand-400" />
           </div>
-          <p className="text-sm text-text-secondary dark:text-text-tertiary">
-            Visualización de nuevos estudiantes registrados
-          </p>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+              Registro de Estudiantes
+            </h3>
+            <p className="text-[10px] text-text-secondary dark:text-text-tertiary">
+              Histórico de inscripciones
+            </p>
+          </div>
         </div>
         
-        <div className="flex items-center gap-4">
-          {/* Total Counter */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-50 dark:bg-brand-500/10">
-            <FiCalendar className="size-4 text-brand-600 dark:text-brand-400" />
-            <span className="text-sm font-semibold text-brand-600 dark:text-brand-400">
-              {totalRegistrations} registros
+        <div className="flex items-center gap-2">
+          {/* Total Counter - Hidden on small screens, show on larger */}
+          <div className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-md bg-brand-50 dark:bg-brand-500/10">
+            <FiCalendar className="size-3 text-brand-600 dark:text-brand-400" />
+            <span className="text-xs font-bold text-brand-600 dark:text-brand-400">
+              {totalRegistrations}
             </span>
           </div>
           
-          {/* Filter Buttons */}
-          <div className="flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
-            {(['7d', '30d', 'all'] as const).map((f) => {
-              const isDisabled = !hasEnoughData(f);
-              return (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  disabled={isDisabled}
-                  className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
-                    filter === f
-                      ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-700 dark:text-brand-400'
-                      : isDisabled
-                        ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                  }`}
-                  aria-label={`Filtrar por ${filterLabels[f]}${isDisabled ? ' (no disponible)' : ''}`}
-                >
-                  {filterLabels[f]}{isDisabled && ' ✕'}
-                </button>
-              );
-            })}
+          {/* Filter Buttons - Always enabled */}
+          <div className="flex rounded bg-gray-100 dark:bg-gray-800 p-0.5">
+            {(['7d', '30d', 'all'] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`rounded text-[10px] font-medium px-2 py-0.5 transition-all ${
+                  filter === f
+                    ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-700 dark:text-brand-400'
+                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                }`}
+              >
+                {filterLabels[f]}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Chart or Empty State */}
-      <div className="h-80">
+      <div className="h-72">
         {loading ? (
-          <Skeleton height={300} className="rounded-xl" />
+          <Skeleton height={280} className="rounded-xl" />
         ) : data.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6">
-            <div className="size-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
-              <FiTrendingUp className="size-8 text-gray-400" />
+          <div className="h-full flex flex-col items-center justify-center text-center p-6 rounded-xl bg-gray-50/50 dark:bg-gray-800/30 border border-dashed border-gray-200 dark:border-gray-700">
+            <div className="size-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+              <FiTrendingUp className="size-6 text-gray-400" />
             </div>
-            <h4 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">
-              Sin datos de registro
+            <h4 className="text-base font-semibold text-gray-600 dark:text-gray-400 mb-2">
+              Sin registros aún
             </h4>
-            <p className="text-sm text-gray-500 dark:text-gray-500 max-w-xs">
-              No hay registros de estudiantes todavía. Los datos aparecerán aquí cuando se inscriban nuevos estudiantes.
+            <p className="text-sm text-gray-500 dark:text-gray-500 max-w-sm mx-auto">
+              Las inscripciones aparecerán aquí cuando se registren estudiantes
             </p>
-          </div>
-        ) : !hasEnoughData(filter) ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6">
-            <div className="size-16 rounded-full bg-warning-100 dark:bg-warning-900/30 flex items-center justify-center mb-4">
-              <FiInfo className="size-8 text-warning-600 dark:text-warning-400" />
+            <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
+              <span className="w-2 h-2 rounded-full bg-gray-300 animate-pulse" />
+              <span>Esperando datos...</span>
             </div>
-            <h4 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">
-              Datos insuficientes
-            </h4>
-            <p className="text-sm text-gray-500 dark:text-gray-500 max-w-xs">
-              Solo hay {data.length} día{data.length !== 1 ? 's' : ''} de datos disponibles. 
-              Selecciona "{filter === '7d' ? '30d' : 'Todo'}" para ver más información.
-            </p>
           </div>
         ) : (
           <ReactApexChart 
@@ -293,10 +257,37 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
             options={options} 
             series={series} 
             type="area" 
-            height={320} 
+            height={280} 
           />
         )}
       </div>
+
+      {/* Quick Stats */}
+      {data.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+          <div className="text-center p-2 rounded-lg bg-brand-50/50 dark:bg-brand-500/5">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <FiLayers className="size-3 text-brand-500" />
+              <span className="text-[9px] font-medium text-brand-600 dark:text-brand-400">PROMEDIO</span>
+            </div>
+            <span className="text-lg font-bold text-brand-600 dark:text-brand-400">{stats.avg}</span>
+          </div>
+          <div className="text-center p-2 rounded-lg bg-success-50/50 dark:bg-success-500/5">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <FiTrendingUp className="size-3 text-success-500" />
+              <span className="text-[9px] font-medium text-success-600 dark:text-success-400">MÁXIMO</span>
+            </div>
+            <span className="text-lg font-bold text-success-600 dark:text-success-400">{stats.max}</span>
+          </div>
+          <div className="text-center p-2 rounded-lg bg-gray-50/50 dark:bg-gray-800/50">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <FiActivity className="size-3 text-gray-400" />
+              <span className="text-[9px] font-medium text-gray-500">MÍNIMO</span>
+            </div>
+            <span className="text-lg font-bold text-gray-500 dark:text-gray-400">{stats.min}</span>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Total */}
       <div className="mt-4 flex sm:hidden items-center justify-center gap-2 px-3 py-2 rounded-lg bg-brand-50 dark:bg-brand-500/10">

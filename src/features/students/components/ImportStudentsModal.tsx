@@ -328,39 +328,48 @@ export const ImportStudentsModal: React.FC<ImportStudentsModalProps> = ({
         </div>
       )}
 
-      {/* Tabla de preview */}
+      {/* Tabla de preview con más datos */}
       {validationRows.length > 0 && (
-        <div className="border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
-          <table className="w-full text-sm">
+        <div className="border rounded-lg overflow-hidden max-h-[500px] overflow-x-auto">
+          <table className="w-full text-xs min-w-[800px]">
             <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10">
               <tr>
-                <th className="px-3 py-3 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">#</th>
-                <th className="px-3 py-3 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Cédula</th>
-                <th className="px-3 py-3 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 w-48">Nombre</th>
-                <th className="px-3 py-3 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Estado</th>
-                <th className="px-3 py-3 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Mensajes</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">#</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Prefijo</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Cédula</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Nombre</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Apellido</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Sexo</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Nacimiento</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Email</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Carrera</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">Estado</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {validationRows.slice(0, 50).map((row, idx) => (
+              {validationRows.slice(0, 100).map((row, idx) => (
                 <tr key={idx} className={`
                   ${row.status === "error" ? "bg-red-50 dark:bg-red-900/10" : ""}
                   ${row.status === "warning" ? "bg-yellow-50 dark:bg-yellow-900/10" : ""}
+                  ${row.status === "valid" ? "bg-green-50/30" : ""}
                 `}>
-                  <td className="px-3 py-2 text-gray-500">{row.row}</td>
-                  <td className="px-3 py-2 font-mono text-xs">{row.cedula}</td>
-                  <td className="px-3 py-2">{row.nombre_apellido}</td>
-                  <td className="px-3 py-2">{getStatusBadge(row.status)}</td>
-                  <td className="px-3 py-2 text-gray-600 dark:text-gray-400 max-w-xs truncate">
-                    {formatMessage(row.messages)}
-                  </td>
+                  <td className="px-2 py-2 text-gray-500">{row.row}</td>
+                  <td className="px-2 py-2 font-mono">{row.cedula?.split('-')[0] || ''}</td>
+                  <td className="px-2 py-2 font-mono">{row.cedula?.split('-')[1] || ''}</td>
+                  <td className="px-2 py-2">{row.nombre_apellido?.split(' ')[0] || ''}</td>
+                  <td className="px-2 py-2">{row.nombre_apellido?.split(' ').slice(1).join(' ') || ''}</td>
+                  <td className="px-2 py-2">{row.sexo || ''}</td>
+                  <td className="px-2 py-2">{row.birthDate || ''}</td>
+                  <td className="px-2 py-2">{row.email || ''}</td>
+                  <td className="px-2 py-2">{row.career || ''}</td>
+                  <td className="px-2 py-2">{getStatusBadge(row.status)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {validationRows.length > 50 && (
+          {validationRows.length > 100 && (
             <div className="px-3 py-2 text-center text-sm text-gray-500 bg-gray-50 dark:bg-gray-800">
-              Mostrando 50 de {validationRows.length} filas
+              Mostrando 100 de {validationRows.length} filas
             </div>
           )}
         </div>

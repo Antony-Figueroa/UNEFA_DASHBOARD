@@ -61,6 +61,11 @@ export interface ValidationResult {
   cedula: string;
   fullName: string;
   messages: string[];
+  // Datos adicionales para el frontend
+  sexo?: string;
+  birthDate?: string;
+  email?: string;
+  career?: string;
   existingStudent?: {
     studentId: number;
     status: number;
@@ -348,27 +353,37 @@ export const validateRow = (
 ): ValidationResult => {
   const messages: string[] = [];
   
-  // 1. Cédula - siempre de la config
+  // 1. Cédula - verificar que ambos campos existan
   const validPrefixes = config.prefixes.map(p => (p.abbreviation || p.name).toUpperCase());
   const prefixValue = row.cedulaPrefix?.toUpperCase() || '';
-  if (!row.cedulaPrefix || !validPrefixes.includes(prefixValue)) {
+  const numberValue = row.cedulaNumber?.trim() || '';
+  const cedulaFull = `${prefixValue}-${numberValue}`;
+  
+  // Solo validar si hay datos de cédula
+  if (!prefixValue && !numberValue) {
+    messages.push('Cédula requerida');
+  } else if (prefixValue && !validPrefixes.includes(prefixValue)) {
     messages.push(`Prefijo CI inválido. Usar: ${validPrefixes.join(', ')}`);
-  }
-  if (!row.cedulaNumber || row.cedulaNumber.length < 5) {
-    messages.push('Cédula inválida o vacía');
+  } else if (numberValue && numberValue.length < 5) {
+    messages.push('Cédula debe tener al menos 5 dígitos');
+  } else if (prefixValue && numberValue) {
+    // Cédula válida
+  } else if (prefixValue && !numberValue) {
+    messages.push('Falta el número de cédula');
   }
   
   const fullCedula = normalizeCedula(row.cedulaPrefix, row.cedulaNumber);
   
-  // 2. Nombres
+  // 2. Nombres - solo warning si faltan
   if (!row.firstName) messages.push('Primer nombre requerido');
   if (!row.lastName) messages.push('Apellido requerido');
   
-  const fullName = `${row.firstName} ${row.middleName || ''} ${row.lastName} ${row.secondLastName || ''}`.trim();
+  const fullName = `${row.firstName || ''} ${row.middleName || ''} ${row.lastName || ''} ${row.secondLastName || ''}`.trim();
   
-  // 3. Sexo
-  const validSexes = config.sexes.map(s => s.abbreviation || s.name);
-  if (!row.sex || !validSexes.includes(row.sex.toUpperCase())) {
+  // 3. Sexo - solo validar si está presente
+  const validSexes = config.sexes.map(s => (s.abbreviation || s.name).toUpperCase());
+  const sexValue = row.sex?.toUpperCase() || '';
+  if (row.sex && !validSexes.includes(sexValue)) {
     messages.push(`Sexo inválido. Usar: ${validSexes.join(', ')}`);
   }
   
@@ -421,11 +436,17 @@ export const validateRow = (
     messages.push(`Semestre inválido. Usar: ${validSemesters.join(', ')}`);
   }
   
-  // 10. Trabaja
-  const workResult = normalizeValue(row.works || 'NO', config.workOptions);
+  // 10. Trabaja - solo warning si está presente
+  const workValue = row.works?.toUpperCase() || 'NO';
+  if (row.works) {
+    const workValues = config.workOptions.map(w => (w.abbreviation || w.name).toUpperCase());
+    if (workValues.length > 0 && !workValues.includes(workValue)) {
+      messages.push(`Valor de TRABAJA inválido. Usar: ${workValues.join(', ')}`);
+    }
+  }
   
-  // 11. Rango militar (si trabaja = SI)
-  if (workResult.value === 'SI' && !row.militaryRank) {
+  // 11. Rango militar - solo si trabaja = SI
+  if (workValue === 'SI' && !row.militaryRank) {
     messages.push('Si TRABAJA = SI, debe especificar RANGO_MILITAR');
   }
   
@@ -448,6 +469,11 @@ export const validateRow = (
     cedula: fullCedula,
     fullName,
     messages: messages.filter(m => m),
+    // Datos adicionales
+    sexo: row.sex,
+    birthDate: row.birthDate,
+    email: row.email,
+    career: row.careerCode,
     existingStudent: existingInfo,
     age
   };

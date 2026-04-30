@@ -116,10 +116,15 @@ export interface ImportResult {
 
 export interface ImportValidationRow {
   row: number;
- cedula: string;
+  cedula: string;
   nombre_apellido: string;
   status: 'valid' | 'warning' | 'error';
   messages: string[];
+  // Datos adicionales para mostrar
+  sexo?: string;
+  birthDate?: string;
+  email?: string;
+  career?: string;
 }
 
 export interface ImportValidationResponse {

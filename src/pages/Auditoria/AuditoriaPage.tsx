@@ -252,6 +252,54 @@ export default function AuditoriaPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
+  // Estado para cambios sin ver
+  const [lastViewedChange, setLastViewedChange] = useState<string>('');
+  const [hasNewChanges, setHasNewChanges] = useState(false);
+
+  // Cargar contadores al inicio (solo para mostrar en tabs)
+  useEffect(() => {
+    const loadCounts = async () => {
+      try {
+        // Cargar solo el conteo de cambios en BD (sin datos completos)
+        const statsRes = await apiClient.get('/audit/stats?days=7');
+        if (statsRes.data.success && statsRes.data.data) {
+          setChangeStats({
+            total: statsRes.data.data.totalChanges || 0,
+            inserts: statsRes.data.data.operations?.INSERT || 0,
+            updates: statsRes.data.data.operations?.UPDATE || 0,
+            deletes: statsRes.data.data.operations?.DELETE || 0
+          });
+          // Obtener la fecha del último cambio para comparar
+          const logsRes = await apiClient.get('/audit?limit=1');
+          if (logsRes.data.success && logsRes.data.data?.length > 0) {
+            const lastDate = logsRes.data.data[0].dateTime;
+            const lastViewed = localStorage.getItem('lastViewedChangeLog');
+            if (lastViewed && lastDate > lastViewed) {
+              setHasNewChanges(true);
+            }
+          }
+        }
+        
+        // Cargar stats de auth
+        const authRes = await apiClient.get('/auth/all-logs?limit=1');
+        if (authRes.data.success) {
+          setAuthStats(prev => ({ ...prev, total: authRes.data.meta?.total || 0 }));
+        }
+        
+        // Cargar stats de activity
+        const actRes = await apiClient.get('/activity-logs?limit=1');
+        if (actRes.data.success) {
+          setActivityStats(prev => ({ ...prev, total: actRes.data.meta?.total || 0 }));
+        }
+      } catch (error) {
+        console.error('[Auditoria] Error cargando contadores:', error);
+      }
+    };
+    
+    loadCounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Reset page when date filters change
   useEffect(() => {
     setAuthPage(1);
@@ -341,10 +389,14 @@ export default function AuditoriaPage() {
       }
       
       if (tablesResponse.data.success) {
-        setTables(tablesResponse.data.data?.map((t: any) => ({
-          value: t.physicalName || t.name,
-          label: t.name || t.physicalName
-        })) || []);
+        // Filtrar opciones sin nombre y agregar clave única
+        const validTables = (tablesResponse.data.data || [])
+          .filter((t: any) => t.name || t.physicalName)
+          .map((t: any, idx: number) => ({
+            value: t.physicalName || t.name || `table-${idx}`,
+            label: t.name || t.physicalName || `Tabla ${idx + 1}`
+          }));
+        setTables(validTables);
       }
     } catch (error) {
       console.error('[Auditoria] Error fetching change logs:', error);
@@ -528,11 +580,20 @@ export default function AuditoriaPage() {
       
       // Manejar formatos comunes de PostgreSQL: "2024-01-15T10:30:00" o "2024-01-15 10:30:00"
       if (typeof dateStr === 'string') {
-        // Reemplazar espacio por T si es formato PostgreSQL sin timezone
-        const normalized = dateStr.includes(' ') && !dateStr.includes('T') 
-          ? dateStr.replace(' ', 'T') + 'Z' 
-          : dateStr;
-        date = new Date(normalized);
+        // Si ya tiene timezone (contiene T y Z o +), usarla directamente
+        // Si es formato PostgreSQL sin timezone (2024-01-15 10:30:00), tratarla como hora local
+        if (dateStr.includes('Z') || dateStr.includes('+')) {
+          date = new Date(dateStr);
+        } else if (dateStr.includes('T') && !dateStr.includes('Z')) {
+          // tiene T pero no Z, agregar timezone local
+          date = new Date(dateStr);
+        } else if (dateStr.includes(' ') && !dateStr.includes('T')) {
+          // formato "2024-01-15 10:30:00" - tratarlo como hora local
+          const normalized = dateStr.replace(' ', 'T');
+          date = new Date(normalized);
+        } else {
+          date = new Date(dateStr);
+        }
       } else {
         date = new Date(dateStr);
       }
@@ -546,7 +607,8 @@ export default function AuditoriaPage() {
         month: '2-digit',
         year: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        hour12: true
       });
     } catch {
       return String(dateStr || '-');
@@ -555,9 +617,18 @@ export default function AuditoriaPage() {
 
   const tabs = [
     { id: 'auth' as TabType, label: 'Autenticación', icon: EyeIcon, count: authTotal },
-    { id: 'changes' as TabType, label: 'Cambios en BD', icon: EditIcon, count: changeTotal },
+    { id: 'changes' as TabType, label: 'Cambios en BD', icon: EditIcon, count: changeStats.total, hasNew: hasNewChanges },
     { id: 'activities' as TabType, label: 'Bitácora Actividades', icon: CalendarIcon, count: activityLogs.length }
   ];
+
+  // Marcar cambios como vistos al entrar a la pestaña
+  const handleTabClick = (tabId: TabType) => {
+    setActiveTab(tabId);
+    if (tabId === 'changes') {
+      setHasNewChanges(false);
+      localStorage.setItem('lastViewedChangeLog', new Date().toISOString());
+    }
+  };
 
   return (
     <>
@@ -573,8 +644,8 @@ export default function AuditoriaPage() {
           {tabs.map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+              onClick={() => handleTabClick(tab.id)}
+              className={`relative flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
                   ? 'border-brand-500 text-brand-600 dark:text-brand-400'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
@@ -585,6 +656,10 @@ export default function AuditoriaPage() {
               <span className="ml-1 px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-700">
                 {tab.count}
               </span>
+              {/* Indicador de cambios nuevos */}
+              {(tab as any).hasNew && activeTab !== tab.id && (
+                <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-error-500 animate-pulse" />
+              )}
             </button>
           ))}
         </div>

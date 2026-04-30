@@ -13,7 +13,6 @@ import {
   TableIcon,
   UserCircleIcon,
   DocsIcon,
-  SparklesIcon,
 } from "../icons";
 import { useSidebar } from "../context/sidebar";
 import PeriodStatusCard from "../components/Sidebar/PeriodStatusCard";
@@ -204,7 +203,6 @@ const navItems: NavItem[] = [
       { name: "Landing Page", path: "/configure/landing" },
     ],
   },
-  { icon: <SparklesIcon />, name: "IA", path: "/ai-assistant" },
   { icon: <DocsIcon />, name: "Manuales", path: "/manuals" },
 ];
 

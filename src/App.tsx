@@ -11,6 +11,7 @@ import { BrowserRouter as Router } from "react-router";
 import { AppRoutes } from "./routes";
 import ToastContainer from "./components/ui/toast/ToastContainer";
 import ScrollToTop from "./components/common/ScrollToTop";
+import IAButton from "./components/common/IAButton";
 import { ModalStackProvider } from "./components/ui/modal/ModalContext";
 import { CommandPaletteProvider } from "./components/command-palette/CommandPaletteContext";
 import CommandPalette from "./components/command-palette/CommandPalette";
@@ -28,7 +29,12 @@ function AppContent() {
   useSessionRefresh();
   
   useCommandPaletteEvents();
-  return <AppRoutes />;
+  return (
+    <>
+      <IAButton />
+      <AppRoutes />
+    </>
+  );
 }
 
 /**

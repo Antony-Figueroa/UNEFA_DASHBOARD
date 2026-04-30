@@ -14,11 +14,12 @@ import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
-import { PlusCircleIcon } from "../../icons/actions";
+import { PlusCircleIcon, FileText, Download } from "lucide-react";
 import { DownloadIcon } from "../../icons";
 import StudentTable from "../../features/students/components/StudentTable";
 import StudentModal from "../../features/students/components/StudentModal";
 import StudentViewModal from "../../features/students/components/StudentViewModal";
+import ImportStudentsModal from "../../features/students/components/ImportStudentsModal";
 import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
 import { StudentPDF } from "../../components/ui/pdf/templates/StudentPDF";
 import UnifiedReportModal from "../../components/common/UnifiedReportModal";
@@ -103,6 +104,7 @@ export default function StudentsPage() {
         toggleStatus,
         bulkRemoveStudents,
         bulkRestoreStudents,
+        refreshStudents,
     } = useStudents();
 
     // Event listener for opening edit modal from StudentModal
@@ -136,6 +138,7 @@ export default function StudentsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [viewStudent, setViewStudent] = useState<StudentRowData | null>(null);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
     const [pdfSearchTerm, setPdfSearchTerm] = useState("");
     const [pdfCareerFilter, setPdfCareerFilter] = useState("");
@@ -423,9 +426,16 @@ export default function StudentsPage() {
                             <Button
                                 variant="outline"
                                 onClick={() => setIsPDFModalOpen(true)}
-                                startIcon={<DownloadIcon className="h-5 w-5" />}
+                                startIcon={<FileText className="h-5 w-5" />}
                             >
                                 Reporte
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsImportModalOpen(true)}
+                                startIcon={<Download className="h-5 w-5" />}
+                            >
+                                Importar
                             </Button>
                             <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
                                 Nuevo Estudiante
@@ -523,6 +533,15 @@ export default function StudentsPage() {
                         onClose={() => setViewStudent(null)}
                         onEdit={handleEdit}
                         student={viewStudent}
+                    />
+
+                    <ImportStudentsModal
+                        isOpen={isImportModalOpen}
+                        onClose={() => setIsImportModalOpen(false)}
+                        onImportComplete={(created, updated) => {
+                            // Refresh students after import
+                            refreshStudents();
+                        }}
                     />
 
                     <UnifiedReportModal

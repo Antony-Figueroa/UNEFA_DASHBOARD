@@ -2,6 +2,7 @@
  * @file CareerDistributionChart.tsx
  * @description Componente rediseñado que muestra la distribución de estudiantes por carrera
  * con visualización moderna tipo tarjetas y gráfico circular mejorado.
+ * Enhanced with clearer interactions and consistent states.
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -15,8 +16,10 @@ import {
   FiBarChart2, 
   FiUsers,
   FiTrendingUp,
-  FiAward,
-  FiBookOpen
+  FiBookOpen,
+  FiGrid,
+  FiStar,
+  FiArchive
 } from 'react-icons/fi';
 
 interface CareerDistributionChartProps {
@@ -26,7 +29,7 @@ interface CareerDistributionChartProps {
 
 const STORAGE_KEY = 'dashboard-career-view-preference';
 
-// Colores institucionales UNEFA extendidos
+// Colores institucionales UNEFA
 const careerColors = [
   '#054F94', // Azul UNEFA principal
   '#C5A059', // Dorado insignias
@@ -35,12 +38,21 @@ const careerColors = [
   '#0A6FBF', // Azul medio
   '#B8860B', // Oro oscuro
   '#033563', // Azul muy oscuro
-  '#FFD700', // Amarillo dorado
+  '#12B76A', // Verde success
 ];
 
-// Iconos para diferentes tipos de carreras (simulados)
+// Iconos para carreras usando react-icons
 const getCareerIcon = (index: number) => {
-  const icons = ['⚙️', '💻', '🏗️', '⚡', '📊', '🔧', '🌐', '📡', '🏭', '🔬'];
+  const icons = [
+    <FiArchive key="0" className="text-brand-600" />,
+    <FiUsers key="1" className="text-brand-500" />,
+    <FiTrendingUp key="2" className="text-success-500" />,
+    <FiBarChart2 key="3" className="text-warning-500" />,
+    <FiPieChart key="4" className="text-brand-400" />,
+    <FiBookOpen key="5" className="text-brand-600" />,
+    <FiGrid key="6" className="text-gray-500" />,
+    <FiStar key="7" className="text-yellow-500" />,
+  ];
   return icons[index % icons.length];
 };
 
@@ -77,15 +89,51 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-border-light bg-white p-6 shadow-sm dark:border-border-dark dark:bg-gray-900">
-        <div className="flex items-center justify-between mb-6">
-          <Skeleton height={28} width={220} />
-          <Skeleton height={40} width={120} />
+      <div className="rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
+        <div className="flex items-center justify-between mb-5">
+          <Skeleton height={24} width={180} />
+          <Skeleton height={32} width={100} />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} height={140} className="rounded-xl" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <Skeleton key={i} height={100} className="rounded-lg" />
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state
+  if (data.length === 0) {
+    return (
+      <div className="rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="flex items-center justify-center size-9 rounded-xl bg-brand-50 dark:bg-brand-500/10">
+            <FiBookOpen className="size-4 text-brand-600 dark:text-brand-400" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+              Distribución por Carrera
+            </h3>
+            <p className="text-xs text-text-secondary dark:text-text-tertiary">
+              Sin datos disponibles
+            </p>
+          </div>
+        </div>
+        <div className="h-64 flex flex-col items-center justify-center text-center p-6 rounded-xl bg-gray-50/50 dark:bg-gray-800/30 border border-dashed border-gray-200 dark:border-gray-700">
+          <div className="size-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+            <FiBookOpen className="size-6 text-gray-400" />
+          </div>
+          <h4 className="text-base font-semibold text-gray-600 dark:text-gray-400 mb-2">
+            Sin carreras registradas
+          </h4>
+          <p className="text-sm text-gray-500 dark:text-gray-500 max-w-sm mx-auto">
+            Las carreras y su distribución aparecerán aquí cuando se agreguen al sistema
+          </p>
+          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
+            <span className="w-2 h-2 rounded-full bg-gray-300 animate-pulse" />
+            <span>Esperando datos...</span>
+          </div>
         </div>
       </div>
     );
@@ -228,57 +276,54 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
   }];
 
   return (
-    <div className="rounded-2xl border border-border-light bg-white p-6 shadow-sm dark:border-border-dark dark:bg-gray-900">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center size-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 shadow-lg shadow-brand-500/30">
-            <FiBookOpen className="size-5 text-white" />
+    <div className="rounded-2xl border border-border-light bg-white p-4 shadow-sm dark:border-border-dark dark:bg-gray-900">
+      {/* Header - Compact */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center justify-center size-8 rounded-lg bg-brand-50 dark:bg-brand-500/10">
+            <FiBookOpen className="size-3.5 text-brand-600 dark:text-brand-400" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
               Distribución por Carrera
             </h3>
-            <p className="text-sm text-text-secondary">
-              {data.length} carreras activas • {totalStudents.toLocaleString()} estudiantes
+            <p className="text-[10px] text-text-secondary dark:text-text-tertiary">
+              {data.length} carrera{data.length !== 1 ? 's' : ''} • {totalStudents.toLocaleString()} est.
             </p>
           </div>
         </div>
         
-        {/* View Toggle */}
-        <div className="flex items-center gap-2 p-1 rounded-xl bg-gray-100 dark:bg-gray-800">
+        {/* View Toggle - Compact */}
+        <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-gray-100 dark:bg-gray-800">
           <button
             onClick={() => setViewType('cards')}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-all ${
               viewType === 'cards'
                 ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-700 dark:text-brand-400'
                 : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
             }`}
           >
-            <FiAward className="size-4" />
-            <span className="hidden sm:inline">Tarjetas</span>
+            <FiGrid className="size-3" />
           </button>
           <button
             onClick={() => setViewType('donut')}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-all ${
               viewType === 'donut'
                 ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-700 dark:text-brand-400'
                 : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
             }`}
           >
-            <FiPieChart className="size-4" />
-            <span className="hidden sm:inline">Circular</span>
+            <FiPieChart className="size-3" />
           </button>
           <button
             onClick={() => setViewType('bar')}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-all ${
               viewType === 'bar'
                 ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-700 dark:text-brand-400'
                 : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
             }`}
           >
-            <FiBarChart2 className="size-4" />
-            <span className="hidden sm:inline">Barras</span>
+            <FiBarChart2 className="size-3" />
           </button>
         </div>
       </div>
@@ -293,37 +338,39 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            {/* Top 3 Highlight */}
+            {/* Top 3 Highlight - Enhanced */}
             {topCareers.length > 0 && (
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <FiTrendingUp className="size-4 text-brand-500" />
-                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Carreras con más estudiantes
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2.5">
+                  <FiStar className="size-3 text-yellow-500" />
+                  <span className="text-[10px] font-medium text-text-secondary dark:text-text-tertiary uppercase tracking-wider">
+                    Top 3
                   </span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {topCareers.map((career, i) => (
                     <motion.div
                       key={career.careerName}
-                      initial={{ opacity: 0, scale: 0.9 }}
+                      initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * 0.1 }}
-                      className="relative overflow-hidden rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 p-4 text-white shadow-lg"
+                      transition={{ delay: i * 0.06 }}
+                      className="relative overflow-hidden rounded-lg bg-gradient-to-br from-brand-600 to-brand-500 p-3 text-white"
                     >
-                      <div className="absolute top-0 right-0 size-20 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+                      <div className="absolute top-0 right-0 size-12 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
                       <div className="relative">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-2xl">{getCareerIcon(i)}</span>
-                          <span className="text-xs font-bold bg-white/20 px-2 py-0.5 rounded-full">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-base">{getCareerIcon(i)}</span>
+                          <span className="text-[9px] font-semibold bg-white/20 px-1.5 py-0.5 rounded">
                             #{i + 1}
                           </span>
                         </div>
-                        <p className="text-sm font-medium text-white/90 line-clamp-2 mb-1">
+                        <p className="text-xs font-medium text-white/90 line-clamp-2 mb-0.5">
                           {career.careerName}
                         </p>
-                        <p className="text-2xl font-bold">{career.studentCount}</p>
-                        <p className="text-xs text-white/70">{career.percentage}% del total</p>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-lg font-bold">{career.studentCount}</span>
+                          <span className="text-[9px] text-white/70">({career.percentage}%)</span>
+                        </div>
                       </div>
                     </motion.div>
                   ))}
@@ -331,64 +378,53 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
               </div>
             )}
 
-            {/* All Careers Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {/* All Careers Grid - Compact cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
               {sortedData.map((career, i) => {
                 const color = careerColors[i % careerColors.length];
-
                 const progressWidth = (career.studentCount / maxStudents) * 100;
                 
                 return (
                   <motion.div
                     key={career.careerName}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white p-4 transition-all duration-300 hover:shadow-lg hover:border-brand-300 dark:border-gray-700 dark:bg-gray-800"
+                    transition={{ delay: i * 0.02 }}
+                    className="group relative overflow-hidden rounded-md border border-gray-100 bg-white p-2.5 transition-all duration-150 hover:shadow-sm hover:border-brand-200 dark:border-gray-700 dark:bg-gray-800"
                   >
-                    {/* Color accent */}
+                    {/* Color accent bar */}
                     <div 
-                      className="absolute top-0 left-0 w-1 h-full transition-all duration-300"
+                      className="absolute top-0 left-0 w-0.5 h-full transition-all duration-200 group-hover:w-1"
                       style={{ backgroundColor: color }}
                     />
                     
-                    <div className="pl-3">
-                      <div className="flex items-start justify-between mb-3">
-                        <span className="text-2xl">{getCareerIcon(i)}</span>
-                        <div className="flex items-center gap-1 text-xs font-semibold text-gray-500">
-                          <FiUsers className="size-3" />
+                    <div className="pl-1.5">
+                      <div className="flex items-start justify-between mb-1">
+                        <span className="text-sm">{getCareerIcon(i)}</span>
+                        <span className="text-[9px] font-medium text-text-tertiary">
                           {career.percentage}%
-                        </div>
+                        </span>
                       </div>
                       
-                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-1 line-clamp-2 min-h-[2.5rem]">
+                      <h4 className="text-[11px] font-medium text-gray-900 dark:text-white mb-1.5 line-clamp-2 leading-tight">
                         {career.careerName}
                       </h4>
                       
-                      <div className="flex items-baseline gap-1 mb-2">
-                        <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {career.studentCount}
-                        </span>
-                        <span className="text-xs text-gray-500">estudiantes</span>
-                      </div>
+                      <span className="text-base font-bold text-gray-900 dark:text-white">
+                        {career.studentCount}
+                      </span>
                       
                       {/* Progress bar */}
-                      <div className="relative h-1.5 bg-gray-100 rounded-full overflow-hidden dark:bg-gray-700">
+                      <div className="relative h-0.5 bg-gray-100 rounded-full overflow-hidden mt-1.5 dark:bg-gray-700">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${progressWidth}%` }}
-                          transition={{ duration: 0.8, delay: i * 0.05 + 0.3 }}
+                          transition={{ duration: 0.4, delay: i * 0.02 + 0.1 }}
                           className="absolute h-full rounded-full"
                           style={{ backgroundColor: color }}
                         />
                       </div>
                     </div>
-                    
-                    {/* Hover effect overlay */}
-                    <div 
-                      className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none"
-                      style={{ backgroundColor: color }}
-                    />
                   </motion.div>
                 );
               })}
@@ -403,42 +439,42 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+            className="grid grid-cols-1 lg:grid-cols-2 gap-4"
           >
             <div className="flex items-center justify-center">
               <ReactApexChart
                 options={donutOptions}
                 series={donutSeries}
                 type="donut"
-                height={400}
+                height={280}
               />
             </div>
             
-            <div className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar pr-2">
+            <div className="space-y-1.5 max-h-72 overflow-y-auto custom-scrollbar pr-2">
               {sortedData.map((career, i) => (
                 <motion.div
                   key={career.careerName}
-                  initial={{ opacity: 0, x: 20 }}
+                  initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  transition={{ delay: i * 0.02 }}
+                  className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   <div
-                    className="size-4 rounded-full flex-shrink-0"
+                    className="size-2.5 rounded-full flex-shrink-0"
                     style={{ backgroundColor: careerColors[i % careerColors.length] }}
                   />
-                  <span className="text-2xl">{getCareerIcon(i)}</span>
+                  <span className="text-sm">{getCareerIcon(i)}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    <p className="text-[11px] font-medium text-gray-900 dark:text-white truncate">
                       {career.careerName}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {career.percentage}% • {career.studentCount} estudiantes
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="text-sm font-bold text-gray-900 dark:text-white">
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">
                       {career.studentCount}
+                    </span>
+                    <span className="text-[9px] text-text-tertiary ml-1">
+                      {career.percentage}%
                     </span>
                   </div>
                 </motion.div>
@@ -459,35 +495,35 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
               options={barOptions}
               series={barSeries}
               type="bar"
-              height={Math.max(data.length * 50, 300)}
+              height={Math.max(data.length * 35, 200)}
             />
             
-            {/* Summary stats below chart */}
-            <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 rounded-xl bg-brand-50 dark:bg-brand-900/20">
-                  <p className="text-2xl font-bold text-brand-600 dark:text-brand-400">
+            {/* Quick stats */}
+            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+              <div className="grid grid-cols-4 gap-1.5">
+                <div className="text-center p-1.5 rounded-md bg-brand-50 dark:bg-brand-900/20">
+                  <p className="text-sm font-bold text-brand-600 dark:text-brand-400">
                     {data.length}
                   </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Carreras</p>
+                  <p className="text-[9px] text-gray-500">Carreras</p>
                 </div>
-                <div className="text-center p-4 rounded-xl bg-success-50 dark:bg-success-900/20">
-                  <p className="text-2xl font-bold text-success-600 dark:text-success-400">
+                <div className="text-center p-1.5 rounded-md bg-success-50 dark:bg-success-900/20">
+                  <p className="text-sm font-bold text-success-600 dark:text-success-400">
                     {data.length > 0 ? Math.round(totalStudents / data.length) : 0}
                   </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Promedio</p>
+                  <p className="text-[9px] text-gray-500">Prom.</p>
                 </div>
-                <div className="text-center p-4 rounded-xl bg-warning-50 dark:bg-warning-900/20">
-                  <p className="text-2xl font-bold text-warning-600 dark:text-warning-400">
+                <div className="text-center p-1.5 rounded-md bg-warning-50 dark:bg-warning-900/20">
+                  <p className="text-sm font-bold text-warning-600 dark:text-warning-400">
                     {sortedData[0]?.studentCount || 0}
                   </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Máximo</p>
+                  <p className="text-[9px] text-gray-500">Máx</p>
                 </div>
-                <div className="text-center p-4 rounded-xl bg-gray-50 dark:bg-gray-800">
-                  <p className="text-2xl font-bold text-gray-600 dark:text-gray-400">
+                <div className="text-center p-1.5 rounded-md bg-gray-50 dark:bg-gray-800">
+                  <p className="text-sm font-bold text-gray-500 dark:text-gray-400">
                     {sortedData[sortedData.length - 1]?.studentCount || 0}
                   </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Mínimo</p>
+                  <p className="text-[9px] text-gray-500">Mín</p>
                 </div>
               </div>
             </div>

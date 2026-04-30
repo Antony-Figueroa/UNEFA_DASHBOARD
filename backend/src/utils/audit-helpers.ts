@@ -33,10 +33,14 @@ export const auditCreate = async (
   const ctx = getAuditContext(req);
   
   const changes = columnsToLog
-    .filter(col => recordData[col] !== undefined)
+    .filter(col => {
+      const val = recordData[col];
+      // Ignorar valores undefined, null o vacíos
+      return val !== undefined && val !== null && String(val).trim() !== '';
+    })
     .map(col => ({
       columnName: col,
-      newValue: String(recordData[col] ?? '')
+      newValue: String(recordData[col] ?? '').trim()
     }));
 
   if (changes.length > 0) {
@@ -66,12 +70,15 @@ export const auditUpdate = async (
     .filter(col => {
       const oldVal = oldData[col];
       const newVal = newData[col];
-      return oldVal !== newVal && (oldVal !== undefined || newVal !== undefined);
+      // Comparar valores recortando espacios para evitar falsos positivos
+      const oldTrimmed = String(oldVal ?? '').trim();
+      const newTrimmed = String(newVal ?? '').trim();
+      return oldTrimmed !== newTrimmed && (oldVal !== undefined || newVal !== undefined);
     })
     .map(col => ({
       columnName: col,
-      oldValue: String(oldData[col] ?? ''),
-      newValue: String(newData[col] ?? '')
+      oldValue: String(oldData[col] ?? '').trim(),
+      newValue: String(newData[col] ?? '').trim()
     }));
 
   if (changes.length > 0) {

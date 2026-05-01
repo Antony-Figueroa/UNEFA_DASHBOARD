@@ -116,36 +116,33 @@ export const getCareers = async () => {
       });
     });
 
-    return result;
-
-    // 2. Verificar uso de forma eficiente (opcional, pero ayuda a la UI)
-    // Para simplificar, consultaremos si existen en las tablas relacionadas
+    // 6. Verificar uso de forma eficiente (estudiantes, instituciones, prácticas)
     const { data: studentUsage } = await supabase.from('t_students').select('CAREER_ID').eq('STATUS', 1);
     const { data: institutionUsage } = await supabase.from('t_institution').select('CAREER_ID').eq('STATUS', 1);
     const { data: practiceUsage } = await supabase.from('t_professional_practices').select('CAREER_ID').eq('STATUS', 1);
 
-    // 3. Verificar si hay evaluaciones pendientes para la restricción de nota mínima
+    // 7. Verificar si hay evaluaciones pendientes para la restricción de nota mínima
     const { data: pendingEvals } = await supabase
       .from('t_professional_practices')
       .select('CAREER_ID')
       .eq('STATUS', 1)
-      .eq('INTERNSHIP_STATUS', 1); // Asumimos 1 como pendiente de evaluación
+      .eq('INTERNSHIP_STATUS', 1);
 
     const usedIds = new Set([
-      ...(studentUsage || []).map(s => s.CAREER_ID),
-      ...(institutionUsage || []).map(i => i.CAREER_ID),
-      ...(practiceUsage || []).map(p => p.CAREER_ID)
+      ...(studentUsage || []).map(s => String(s.CAREER_ID)),
+      ...(institutionUsage || []).map(i => String(i.CAREER_ID)),
+      ...(practiceUsage || []).map(p => String(p.CAREER_ID))
     ]);
 
-    const pendingEvalIds = new Set((pendingEvals || []).map(p => p.CAREER_ID));
+    const pendingEvalIds = new Set((pendingEvals || []).map(p => String(p.CAREER_ID)));
 
-    return (careers || []).map((c: Record<string, unknown>) => {
-      const careerId = c.CAREER_ID as string | number;
-      return mapRecord({ 
-        ...c, 
-        IS_IN_USE: usedIds.has(careerId),
-        HAS_PENDING_EVALUATIONS: pendingEvalIds.has(careerId)
-      });
+    return result.map((career: Career) => {
+      const careerId = String(career.careerId);
+      return {
+        ...career,
+        isInUse: usedIds.has(careerId),
+        hasPendingEvaluations: pendingEvalIds.has(careerId)
+      };
     });
   }, 'getCareers');
 

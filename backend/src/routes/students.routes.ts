@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { 
-  getStudents, 
-  getStudentById, 
-  createStudent, 
-  updateStudent, 
+import {
+  getStudents,
+  getStudentById,
+  createStudent,
+  updateStudent,
   deleteStudent,
   toggleStudentStatus,
   checkIdAvailability,
@@ -12,7 +12,8 @@ import {
   getStudentByCi,
   changeStudentRegistration,
   importStudents,
-  exportStudents
+  exportStudents,
+  searchStudentForEnrollment
 } from '../controllers/students.controller.js';
 import { validateImport, executeImport, getTemplate } from '../controllers/students-import.controller.js';
 import { authenticateToken, requirePermission } from '../middlewares/auth.middleware.js';
@@ -43,6 +44,7 @@ router.get('/', authenticateToken, requirePermission('students:view'), getStuden
 router.get('/stats', authenticateToken, requirePermission('students:view'), getStudentStats);
 router.get('/check-availability', authenticateToken, checkIdAvailability);
 router.get('/by-ci/:ci', authenticateToken, getStudentByCi);
+router.get('/search', authenticateToken, searchStudentForEnrollment);
 router.get('/export', authenticateToken, requirePermission('students:view'), exportStudents);
 router.get('/import/template', authenticateToken, requirePermission('students:create'), getTemplate);
 router.get('/:id', authenticateToken, requirePermission('students:view'), getStudentById);

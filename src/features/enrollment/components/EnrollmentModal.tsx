@@ -10,6 +10,7 @@ import AsyncButton from "../../../components/ui/button/AsyncButton";
 import CustomSelect from "../../../components/form/CustomSelect";
 import { Student } from "../../students/types";
 import { getStudents } from "../../students/services/studentsService";
+import { useStudentSearch } from "../hooks/useStudentSearch";
 import { getPeriods } from "../../periods/services/periodService";
 import { getTutors } from "../../tutors/services/tutorsService";
 import { getInstitutions } from "../../institutions/services/institutionsService";
@@ -155,6 +156,9 @@ export default function EnrollmentModal({
   const { responsibles } = useInstitutionalResponsibles();
   const { fetchMultipleLists } = useLists();
   const { addToast } = useToast();
+
+  // Hook de búsqueda optimizada de estudiantes
+  const { result: searchResult, isSearching: isSearchingStudent, searchByCi: searchStudent, clearSearch, isFound, hasError } = useStudentSearch(500);
 
   // Estado para agregar nuevos valores a las listas
   const [isValueModalOpen, setIsValueModalOpen] = useState(false);
@@ -446,93 +450,60 @@ export default function EnrollmentModal({
     };
   }, []);
 
-  const lookupStudent = useCallback(async (prefix: string, number: string) => {
-    if (number.length < 5) return;
-    
-    setIsSearching(true);
-    setPreEnrollmentError(null);
-    try {
-      const [students, preEnrollments, careerData, enrollments] = await Promise.all([
-        getStudents(),
-        getPreEnrollments(),
-        getCareers(),
-        enrollmentService.getEnrollments(),
-      ]);
-
-      const student = students.data.find(
-        (s: Student) => s.identificationPrefix === prefix && s.identificationNumber === number
-      );
-
-      const preEnrollment = preEnrollments.find(
-        (p: PreEnrollment) => p.identificationPrefix === prefix && p.identificationNumber === number && p.status
-      );
-
-      // Verificar si ya tiene una inscripción activa
-      const activeEnrollment = enrollments.find(
-        (e) => e.identificationPrefix === prefix && e.identificationNumber === number && e.status === true
-      );
-
-      if (activeEnrollment) {
-        setPreEnrollmentError("El estudiante ya posee una inscripción activa. No puede proceder.");
-        return;
-      }
-
-      // Verificar si tiene inscripción culminada (inactiva pero con código)
-      const culminatedEnrollment = enrollments.find(
-        (e) => e.identificationPrefix === prefix && e.identificationNumber === number && e.enrollmentCode
-      );
-
-      if (culminatedEnrollment) {
-        setPreEnrollmentError("El estudiante ya possui uma inscrição concluída. Não é possível registrar uma nova inscrição.");
-        return;
-      }
-
-      // Verificar pre-inscripción activa solo si no tiene inscripción previa
-      if (!preEnrollment) {
-        setPreEnrollmentError("El estudiante no posee una pre-inscripción activa. No puede proceder.");
+  // Effect que dispara la búsqueda cuando cambia el número de identificación
+  useEffect(() => {
+    if (!editingEntry && !initialData && idNumber && idNumber.length >= 5) {
+      searchStudent(idPrefix, idNumber);
+    } else if (idNumber.length < 5) {
+      clearSearch();
+      // Limpiar campos cuando se borra la cédula
+      if (!editingEntry && !initialData) {
         setValue("studentName", "");
         setValue("careerName", "");
-        return;
+        setValue("period", "");
+        setValue("practiceType", "");
+        setValue("enrollmentCode", "");
       }
-
-      if (student) {
-        setValue("studentName", `${student.firstName} ${student.lastName}`);
-        
-        // Autocompletar Carrera
-        const studentCareer = careerData.find(c => String(c.careerId) === String(student.careerId));
-        if (studentCareer) {
-          setValue("careerName", String(studentCareer.careerId));
-        } else {
-          setValue("careerName", "");
-        }
-        
-        setValue("period", preEnrollment.period);
-        setValue("practiceType", preEnrollment.practiceType);
-
-        const abbr = (studentCareer?.careerAbbreviation || "GEN").toUpperCase();
-        const code = generateMatricula({
-          careerAbbreviation: abbr,
-          regime: student.regime,
-          semester: student.semester,
-          section: student.section,
-        });
-        setValue("enrollmentCode", code);
-      }
-    } catch (error) {
-      console.error("Error buscando estudiante:", error);
-    } finally {
-      setIsSearching(false);
     }
-  }, [setValue]);
+  }, [idNumber, idPrefix, editingEntry, initialData, searchStudent, clearSearch, setValue]);
 
+  // Effect que procesa el resultado de la búsqueda y autocompleta el formulario
   useEffect(() => {
-    if (!editingEntry && idNumber) {
-      const timer = setTimeout(() => {
-        lookupStudent(idPrefix, idNumber);
-      }, 500);
-      return () => clearTimeout(timer);
+    if (searchResult.status === "found" && searchResult.student && searchResult.preEnrollment) {
+      // Autocompletar con datos del estudiante encontrado
+      setValue("studentName", `${searchResult.student.name} ${searchResult.student.surname}`);
+      setValue("careerName", searchResult.student.careerId ? String(searchResult.student.careerId) : "");
+      setValue("period", searchResult.preEnrollment.period);
+      setValue("practiceType", searchResult.preEnrollment.practiceType);
+
+      // Generar código de matrícula
+      const abbr = (searchResult.student.careerName ? searchResult.student.careerName.substring(0, 3).toUpperCase() : "GEN");
+      const code = generateMatricula({
+        careerAbbreviation: abbr,
+        regime: searchResult.student.regime || "D1",
+        semester: searchResult.student.semester || "1",
+        section: searchResult.student.section || "A",
+      });
+      setValue("enrollmentCode", code);
+    } else if (searchResult.status === "idle" || searchResult.status === "searching") {
+      // No hacer nada mientras está buscando
+    } else {
+      // Limpiar campos si hay error o no se encontró
+      if (!editingEntry && !initialData) {
+        setValue("studentName", "");
+        setValue("careerName", "");
+      }
     }
-  }, [idNumber, idPrefix, lookupStudent, editingEntry]);
+  }, [searchResult, setValue, editingEntry, initialData]);
+
+  // Sincronizar error del resultado de búsqueda
+  useEffect(() => {
+    if (searchResult.errorMessage) {
+      setPreEnrollmentError(searchResult.errorMessage);
+    } else {
+      setPreEnrollmentError(null);
+    }
+  }, [searchResult.errorMessage]);
 
   useEffect(() => {
     if (initialData && isOpen) {
@@ -804,12 +775,12 @@ export default function EnrollmentModal({
                         error={!!errors.identificationNumber || !!preEnrollmentError}
                         className={cn(
                           "rounded-xl h-[48px] font-bold tracking-wider",
-                          isSearching && "animate-pulse"
+                          isSearchingStudent && "animate-pulse"
                         )}
                         disabled={!!editingEntry || !!initialData}
                         maxLength={ENROLLMENT_CEDULA_MAX_LENGTH}
                       />
-                      {isSearching && (
+                      {isSearchingStudent && (
                         <div className="absolute right-4 top-1/2 -translate-y-1/2">
                           <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-500 border-t-transparent"></div>
                         </div>
@@ -820,6 +791,130 @@ export default function EnrollmentModal({
                     <p className="text-[11px] font-bold text-error-500 flex items-center gap-1.5 animate-pulse">
                       {errors.identificationNumber.message || preEnrollmentError}
                     </p>
+                  )}
+
+                  {/* Feedback visual según estado de búsqueda */}
+                  {searchResult.status === "not_found" && (
+                    <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <svg className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <div className="text-sm">
+                          <p className="font-medium text-amber-800 dark:text-amber-200">
+                            Estudiante no encontrado
+                          </p>
+                          <p className="text-amber-700 dark:text-amber-300 text-xs mt-1">
+                            {searchResult.errorMessage}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="mt-2 border-amber-300 text-amber-700 hover:bg-amber-100 dark:border-amber-600 dark:text-amber-300 dark:hover:bg-amber-900/30"
+                            onClick={() => {
+                              const evt = new CustomEvent("enrollment:addPreEnrollment");
+                              window.dispatchEvent(evt);
+                            }}
+                          >
+                            Crear Pre-inscripción
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {searchResult.status === "already_enrolled" && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <svg className="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                        <div className="text-sm">
+                          <p className="font-medium text-red-800 dark:text-red-200">
+                            Inscripción activa
+                          </p>
+                          <p className="text-red-700 dark:text-red-300 text-xs mt-1">
+                            {searchResult.errorMessage}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {searchResult.status === "already_culminated" && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <svg className="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                        <div className="text-sm">
+                          <p className="font-medium text-red-800 dark:text-red-200">
+                            Inscripción culminada
+                          </p>
+                          <p className="text-red-700 dark:text-red-300 text-xs mt-1">
+                            {searchResult.errorMessage}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {searchResult.status === "no_pre_enrollment" && (
+                    <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <svg className="w-5 h-5 text-orange-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <div className="text-sm">
+                          <p className="font-medium text-orange-800 dark:text-orange-200">
+                            Sin pre-inscripción activa
+                          </p>
+                          <p className="text-orange-700 dark:text-orange-300 text-xs mt-1">
+                            {searchResult.errorMessage}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="mt-2 border-orange-300 text-orange-700 hover:bg-orange-100 dark:border-orange-600 dark:text-orange-300 dark:hover:bg-orange-900/30"
+                            onClick={() => {
+                              const evt = new CustomEvent("enrollment:addPreEnrollment");
+                              window.dispatchEvent(evt);
+                            }}
+                          >
+                            Crear Pre-inscripción
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {searchResult.status === "error" && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-3">
+                      <div className="flex items-start gap-2">
+                        <svg className="w-5 h-5 text-red-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div className="text-sm">
+                          <p className="font-medium text-red-800 dark:text-red-200">
+                            Error de conexión
+                          </p>
+                          <p className="text-red-700 dark:text-red-300 text-xs mt-1">
+                            {searchResult.errorMessage}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="mt-2 border-red-300 text-red-700 hover:bg-red-100 dark:border-red-600 dark:text-red-300 dark:hover:bg-red-900/30"
+                            onClick={() => searchStudent(idPrefix, idNumber)}
+                          >
+                            Reintentar
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1001,6 +1096,11 @@ export default function EnrollmentModal({
                           value={String(field.value)}
                           className="rounded-xl h-[48px]"
                           disabled={!careerId && !editingEntry}
+                          onAddNew={() => {
+                            const evt = new CustomEvent("enrollment:addTutor");
+                            window.dispatchEvent(evt);
+                          }}
+                          addNewLabel="Nuevo Tutor"
                         />
                       );
                     }}
@@ -1054,6 +1154,11 @@ export default function EnrollmentModal({
                           value={String(field.value)}
                           className="rounded-xl h-[48px]"
                           disabled={!careerId && !editingEntry}
+                          onAddNew={() => {
+                            const evt = new CustomEvent("enrollment:addTutor");
+                            window.dispatchEvent(evt);
+                          }}
+                          addNewLabel="Nuevo Tutor"
                         />
                       );
                     }}

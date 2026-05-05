@@ -1095,3 +1095,143 @@ export const exportStudents = async (req: Request, res: Response) => {
     handleDbError(res, error);
   }
 };
+
+/**
+ * Busca un estudiante por CI para proceso de inscripción.
+ * Retorna información completa sobre el estudiante, pre-inscripción e inscripción.
+ * Endpoint optimizado para evitar cargar todos los datos.
+ */
+export const searchStudentForEnrollment = async (req: Request, res: Response) => {
+  try {
+    const { ci_prefix, ci_number } = req.query;
+
+    if (!ci_prefix || !ci_number) {
+      return res.status(400).json({
+        success: false,
+        message: 'Se requieren ci_prefix y ci_number'
+      });
+    }
+
+    const ciFull = `${ci_prefix}-${ci_number}`;
+
+    // 1. Buscar estudiante por CI
+    const { data: student, error: studentError } = await supabase
+      .from(TABLE_NAME)
+      .select(`
+        STUDENTS_ID,
+        STUDENTS_CI,
+        NAME,
+        SURNAME,
+        CAREER_ID,
+        SEMESTER,
+        SECTION,
+        REGIME,
+        STATUS
+      `)
+      .eq('STUDENTS_CI', ciFull)
+      .maybeSingle();
+
+    if (studentError) {
+      console.error('[searchStudentForEnrollment] Error buscando estudiante:', studentError);
+      return res.status(500).json({
+        success: false,
+        message: 'Error al buscar estudiante'
+      });
+    }
+
+    // 2. Si no existe el estudiante, retornar not_found
+    if (!student) {
+      return res.json({
+        exists: false,
+        message: `No se encontró ningún estudiante con CI ${ciFull}`
+      });
+    }
+
+    // 3. Verificar pre-inscripción activa
+    const { data: preEnrollments } = await supabase
+      .from('t_pre_enrollments')
+      .select('PRE_ENROLLMENT_ID, PERIOD, PRACTICE_TYPE, STATUS')
+      .eq('IDENTIFICATION_PREFIX', ci_prefix)
+      .eq('IDENTIFICATION_NUMBER', ci_number)
+      .eq('STATUS', true)
+      .limit(1);
+
+    const activePreEnrollment = preEnrollments?.[0] || null;
+
+    // 4. Verificar inscripciones existentes
+    let enrollmentStatus: 'active' | 'culminated' | 'none' = 'none';
+    let enrollmentCode: string | undefined;
+
+    const { data: enrollments } = await supabase
+      .from('t_enrollments')
+      .select('ENROLLMENT_ID, ENROLLMENT_CODE, STATUS')
+      .eq('IDENTIFICATION_PREFIX', ci_prefix)
+      .eq('IDENTIFICATION_NUMBER', ci_number);
+
+    if (enrollments && enrollments.length > 0) {
+      // Buscar inscripción activa - comparación numérica porque STATUS es likely 1 (activo) o 0 (inactivo)
+      // También verificar por ENROLLMENT_CODE - si existe y STATUS es 1, está activa
+      const activeEnrollment = enrollments.find((e: any) => {
+        const status = e.STATUS;
+        const hasCode = !!e.ENROLLMENT_CODE;
+        // Está activa si: STATUS = 1 Y tiene ENROLLMENT_CODE
+        return (status === 1 || status === true) && hasCode;
+      });
+
+      if (activeEnrollment) {
+        enrollmentStatus = 'active';
+        enrollmentCode = activeEnrollment.ENROLLMENT_CODE;
+      } else {
+        // Buscar inscripción culminada (inactiva pero con código)
+        const culminatedEnrollment = enrollments.find((e: any) => e.ENROLLMENT_CODE);
+        if (culminatedEnrollment) {
+          enrollmentStatus = 'culminated';
+          enrollmentCode = culminatedEnrollment.ENROLLMENT_CODE;
+        }
+      }
+    }
+
+    // 5. Obtener nombre de carrera si existe
+    let careerName: string | undefined;
+    if (student.CAREER_ID) {
+      const { data: career } = await supabase
+        .from('t_career')
+        .select('CAREER_NAME')
+        .eq('CAREER_ID', student.CAREER_ID)
+        .maybeSingle();
+      careerName = career?.CAREER_NAME;
+    }
+
+    // 6. Retornar respuesta completa
+    console.log('[searchStudentForEnrollment] Enviando respuesta - enrollmentStatus:', enrollmentStatus, 'enrollmentCode:', enrollmentCode);
+
+    res.json({
+      exists: true,
+      student: {
+        id: student.STUDENTS_ID,
+        ci: student.STUDENTS_CI,
+        name: student.NAME,
+        surname: student.SURNAME,
+        careerId: student.CAREER_ID,
+        careerName: careerName,
+        regime: student.REGIME,
+        semester: student.SEMESTER,
+        section: student.SECTION,
+        status: student.STATUS
+      },
+      preEnrollment: activePreEnrollment ? {
+        active: true,
+        period: activePreEnrollment.PERIOD,
+        practiceType: activePreEnrollment.PRACTICE_TYPE
+      } : null,
+      enrollment: {
+        status: enrollmentStatus,
+        enrollmentCode
+      }
+    });
+
+  } catch (error: unknown) {
+    console.error('[searchStudentForEnrollment] Error:', error);
+    handleDbError(res, error);
+  }
+};

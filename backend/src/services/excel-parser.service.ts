@@ -213,7 +213,7 @@ export const generateTemplate = async (config: TemplateConfig): Promise<Buffer> 
     'TIPO_ESTUDIANTE', 'RANGO_MILITAR', 'TRABAJA'
   ];
 
-  // Obtener valores por defecto de la config
+  // Valores por defecto válidos - siempre tener algo
   const pref = config.prefixes[0]?.abbreviation || 'V';
   const sex = config.sexes[0]?.abbreviation || 'M';
   const civil = config.civilStatuses[0]?.name || 'SOLTERO';
@@ -223,11 +223,30 @@ export const generateTemplate = async (config: TemplateConfig): Promise<Buffer> 
   const semester = config.semesters[0] || '1';
   const section = config.sections[0] || 'A';
   const tipo = config.studentTypes[0]?.abbreviation || '';
-  const trabaja = config.workOptions[0]?.abbreviation || 'NO';
+  const trabaja = 'NO'; // Siempre NO para evitar error de rango militar
 
+  // Ejemplo COMPLETO válido (toda la fila con datos)
   const example = [
-    pref, '12345678', 'Juan', '', 'Pérez', '', sex, '2010-01-15', civil, phonePref, '3456789',
-    'email@ejemplo.com', '', career, regime, semester, section, tipo, '', trabaja
+    pref,                      // PREFIJO_CI
+    '99999999',                // CEDULA (número alto para evitar conflictos)
+    'Juan',                   // PRIMER_NOMBRE
+    'Antonio',                // SEGUNDO_NOMBRE
+    'Pérez',                 // APELLIDO
+    'García',                // SEGUNDO_APELLIDO
+    sex,                      // SEXO
+    '2010-01-15',             // FECHA_NACIMIENTO (16+ años)
+    civil,                    // ESTADO_CIVIL
+    phonePref,                // PREFIJO_TELEFONO
+    '1234567',                // TELEFONO
+    'juan.perez@test.com',   // CORREO
+    'Caracas',                // DIRECCION
+    career,                   // CARRERA
+    regime,                   // REGIMEN
+    semester,                 // SEMESTRE
+    section,                  // SECCION
+    tipo,                     // TIPO_ESTUDIANTE
+    '',                       // RANGO_MILITAR (vacío porque TRABAJA=NO)
+    trabaja                   // TRABAJA
   ];
 
   const sheet = XLSX.utils.aoa_to_sheet([headers, example]);
@@ -354,7 +373,9 @@ export const validateRow = (
   const messages: string[] = [];
   
   // 1. Cédula - verificar que ambos campos existan
-  const validPrefixes = config.prefixes.map(p => (p.abbreviation || p.name).toUpperCase());
+  const validPrefixes = config.prefixes.length > 0 
+    ? config.prefixes.map(p => (p.abbreviation || p.name).toUpperCase())
+    : ['V', 'E', 'J', 'P', 'G']; // defaults si no hay lista
   const prefixValue = row.cedulaPrefix?.toUpperCase() || '';
   const numberValue = row.cedulaNumber?.trim() || '';
   const cedulaFull = `${prefixValue}-${numberValue}`;
@@ -381,9 +402,11 @@ export const validateRow = (
   const fullName = `${row.firstName || ''} ${row.middleName || ''} ${row.lastName || ''} ${row.secondLastName || ''}`.trim();
   
   // 3. Sexo - solo validar si está presente
-  const validSexes = config.sexes.map(s => (s.abbreviation || s.name).toUpperCase());
+  const validSexes = config.sexes.length > 0 
+    ? config.sexes.map(s => (s.abbreviation || s.name).toUpperCase())
+    : ['M', 'F']; // defaults
   const sexValue = row.sex?.toUpperCase() || '';
-  if (row.sex && !validSexes.includes(sexValue)) {
+  if (row.sex && validSexes.length > 0 && !validSexes.includes(sexValue)) {
     messages.push(`Sexo inválido. Usar: ${validSexes.join(', ')}`);
   }
   

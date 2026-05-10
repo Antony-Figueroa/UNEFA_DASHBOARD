@@ -23,7 +23,7 @@ import { getStudents } from "../../students/services/studentsService";
 import { getPeriods } from "../../periods/services/periodService";
 import { getInternshipTypes, getInternshipTypesByCareer } from "../../internship-types/services/internshipTypesService";
 import { getCareers } from "../../careers/services/careersService";
-import { getPreEnrollments } from "../services/preEnrollmentService";
+import { getPreEnrollments, getCompletedPracticeTypes } from "../services/preEnrollmentService";
 import * as enrollmentService from "../../enrollment/services/enrollmentService";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
@@ -45,6 +45,8 @@ interface PreEnrollmentModalProps {
   onSave: (payload: CreatePreEnrollmentPayload | UpdatePreEnrollmentPayload) => Promise<void> | void;
   /** Registro que se está editando (opcional) */
   editingEntry?: PreEnrollment | null;
+  /** Opciones de carreras para el selector */
+  careerOptions: { value: string; label: string }[];
   /** Estado de carga de la operación de guardado */
   isLoading?: boolean;
   /** Cédula inicial opcional para pre-llenar el formulario */
@@ -73,7 +75,15 @@ const preEnrollmentSchema = z.object({
     .min(1, "El teléfono es obligatorio"),
   /** Período académico para la pre-inscripción */
   period: z.string().min(1, "Seleccione el período"),
-  /** Tipo de práctica (autocompletado según la carrera) */
+  /** Carrera */
+  careerId: z.string().min(1, "Seleccione la carrera"),
+  /** Semestre */
+  semester: z.string().min(1, "Seleccione el semestre"),
+  /** Sección */
+  section: z.string().min(1, "Seleccione la sección"),
+  /** Régimen */
+  regime: z.string().min(1, "Seleccione el régimen"),
+  /** Tipo de práctica */
   practiceType: z.string().min(1, "Seleccione el tipo de práctica"),
   /** Código de matrícula generado automáticamente */
   enrollmentCode: z.string().min(1, "La matrícula es obligatoria"),
@@ -108,6 +118,7 @@ export default function PreEnrollmentModal({
   editingEntry,
   isLoading = false,
   initialCi = null,
+  careerOptions = [],
 }: PreEnrollmentModalProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [periods, setPeriods] = useState<Periodo[]>([]);
@@ -117,6 +128,7 @@ export default function PreEnrollmentModal({
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingData, setPendingData] = useState<PreEnrollmentFormData | null>(null);
+  const [practiceTypeOptions, setPracticeTypeOptions] = useState<{ value: string; label: string }[]>([]);
   const { fetchMultipleLists } = useLists();
   const { addToast } = useToast();
 
@@ -142,6 +154,10 @@ export default function PreEnrollmentModal({
     { value: "E", label: "E" },
   ];
 
+  const SEMESTER_OPTIONS = options["Semestre"] || [];
+  const SECTION_OPTIONS = options["Seccion"] || [];
+  const REGIME_OPTIONS = options["Regimen/Turno"] || [];
+
   const { 
     register,
     handleSubmit,
@@ -160,6 +176,10 @@ export default function PreEnrollmentModal({
       studentName: "",
       phone: "",
       period: "",
+      careerId: "",
+      semester: "",
+      section: "",
+      regime: "",
       practiceType: "",
       enrollmentCode: "",
       careerName: "",
@@ -171,9 +191,18 @@ export default function PreEnrollmentModal({
   
   // Watch all fields for live verification panel
   const watchedStudentName = useWatch({ control, name: "studentName" });
+  const watchedCareerId = useWatch({ control, name: "careerId" });
   const watchedCareerName = useWatch({ control, name: "careerName" });
+  const watchedSemester = useWatch({ control, name: "semester" });
+  const watchedSection = useWatch({ control, name: "section" });
+  const watchedRegime = useWatch({ control, name: "regime" });
   const watchedPracticeType = useWatch({ control, name: "practiceType" });
   const watchedEnrollmentCode = useWatch({ control, name: "enrollmentCode" });
+
+  const handleAddSection = () => {
+    const evt = new CustomEvent("preenrollment:addListValue", { detail: { listName: "Seccion" } });
+    window.dispatchEvent(evt);
+  };
 
   /**
    * Efecto para cargar la lista de estudiantes disponibles al abrir el modal.
@@ -226,10 +255,14 @@ export default function PreEnrollmentModal({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [periodData] = await Promise.all([
+        const [periodData, internshipTypesData] = await Promise.all([
           getPeriods(),
           getInternshipTypes()
         ]);
+
+        setPracticeTypeOptions(
+          internshipTypesData.map((t: any) => ({ value: t.name?.toUpperCase() || "", label: t.name?.toUpperCase() || "" }))
+        );
         
         const pendingPeriods = periodData
           .filter((p: Periodo) => p.periodStatus === 1 && p.status)
@@ -268,7 +301,7 @@ export default function PreEnrollmentModal({
   useEffect(() => {
     const loadOptions = async () => {
       try {
-        const data = await fetchMultipleLists(["Nacionalidad"]);
+        const data = await fetchMultipleLists(["Nacionalidad", "Semestre", "Seccion", "Regimen/Turno"]);
         const mappedOptions: Record<string, { value: string; label: string }[]> = {};
         
         Object.entries(data).forEach(([key, values]) => {
@@ -297,9 +330,6 @@ const clearStudentFields = useCallback(() => {
     setValue("studentName", "");
     setValue("phone", "");
     setDisplayPhone("");
-    setValue("careerName", "");
-    setValue("practiceType", "");
-    setValue("enrollmentCode", "");
     clearErrors("identificationNumber");
   }, [setValue, clearErrors]);
 
@@ -319,9 +349,8 @@ const clearStudentFields = useCallback(() => {
     
     setIsSearching(true);
     try {
-      const [studentsResponse, careers, enrollments, preEnrollments] = await Promise.all([
+      const [studentsResponse, enrollments, preEnrollments] = await Promise.all([
         getStudents(),
-        getCareers(),
         enrollmentService.getEnrollments(),
         getPreEnrollments(),
       ]);
@@ -361,26 +390,7 @@ if (student) {
         setValue("studentName", `${student.firstName} ${student.lastName}`, { shouldValidate: true, shouldDirty: true });
         setValue("phone", student.phone || "", { shouldValidate: true, shouldDirty: true });
         setDisplayPhone(formatPhoneDisplay(student.phone || ""));
-        setValue("careerName", student.careerName || "", { shouldValidate: true, shouldDirty: true });
         clearErrors("identificationNumber");
-        
-        if (student.careerId) {
-          const types = await getInternshipTypesByCareer(student.careerId);
-          if (types.length > 0) {
-            setValue("practiceType", types[0].name, { shouldValidate: true, shouldDirty: true });
-          } else {
-            setValue("practiceType", "", { shouldValidate: true, shouldDirty: true });
-          }
-        }
-
-        const careerAbbr = (careers as any[]).find((c: any) => String(c.careerId) === String(student.careerId))?.careerAbbreviation || "GEN";
-        const enrollmentCode = generateMatricula({
-          careerAbbreviation: careerAbbr,
-          regime: student.regime,
-          semester: student.semester,
-          section: student.section,
-        });
-        setValue("enrollmentCode", enrollmentCode, { shouldValidate: true, shouldDirty: true });
       } else {
         clearStudentFields();
         const message = "El estudiante no se encuentra registrado.";
@@ -425,7 +435,6 @@ if (student) {
         setDisplayIdentificationNumber(detail.identificationNumber || "");
         setValue("studentName", detail.firstName && detail.lastName ? `${detail.firstName} ${detail.lastName}` : "", { shouldValidate: true, shouldDirty: true });
         setValue("phone", detail.phone || "", { shouldValidate: true, shouldDirty: true });
-        setValue("careerName", detail.careerName || "", { shouldValidate: true, shouldDirty: true });
         
         // Esperar un momento y luego buscar el estudiante para completar campos automáticos
         timeoutId = setTimeout(() => {
@@ -440,6 +449,83 @@ if (student) {
     };
   }, [setValue, lookupStudent]);
 
+  // Auto-generar enrollment code cuando cambian campos académicos
+  useEffect(() => {
+    if (!watchedCareerId || !watchedSemester || !watchedSection || !watchedRegime) return;
+    const generateCode = async () => {
+      try {
+        const [careersRes] = await Promise.all([getCareers()]);
+        const careerAbbr = (careersRes as any[]).find(c => String(c.careerId) === String(watchedCareerId))?.careerAbbreviation || "GEN";
+        const code = generateMatricula({
+          careerAbbreviation: careerAbbr,
+          regime: watchedRegime,
+          semester: watchedSemester,
+          section: watchedSection,
+        });
+        setValue("enrollmentCode", code, { shouldValidate: true });
+      } catch {
+        // Silently fail - enrollment code won't update
+      }
+    };
+    generateCode();
+  }, [watchedCareerId, watchedSemester, watchedSection, watchedRegime, setValue]);
+
+  // Auto-poblar careerName cuando cambia careerId
+  useEffect(() => {
+    if (!watchedCareerId) {
+      setValue("careerName", "", { shouldValidate: true });
+      return;
+    }
+    const career = careerOptions.find(c => String(c.value) === String(watchedCareerId));
+    if (career) {
+      setValue("careerName", career.label, { shouldValidate: true });
+    }
+  }, [watchedCareerId, careerOptions, setValue]);
+
+  // Auto-select practice type based on career
+  useEffect(() => {
+    const autoSelectPracticeType = async () => {
+      if (!watchedCareerId) {
+        setValue("practiceType", "", { shouldValidate: true });
+        return;
+      }
+      try {
+        const types = await getInternshipTypesByCareer(watchedCareerId);
+        const sortedTypes = [...types].sort((a, b) => a.priority - b.priority);
+
+        setPracticeTypeOptions(
+          sortedTypes.map(t => ({ value: t.name?.toUpperCase() || "", label: t.name?.toUpperCase() || "" }))
+        );
+
+        if (sortedTypes.length === 1) {
+          setValue("practiceType", sortedTypes[0].name.toUpperCase(), { shouldValidate: true });
+        } else if (sortedTypes.length > 1) {
+          const studentPrefix = getValues("identificationPrefix");
+          const studentNumber = getValues("identificationNumber");
+          const period = getValues("period");
+
+          if (studentPrefix && studentNumber && studentNumber.length >= 5 && period) {
+            const completedTypeIds = await getCompletedPracticeTypes(
+              studentPrefix, studentNumber, period, watchedCareerId
+            );
+            const nextType = sortedTypes.find(t => !completedTypeIds.includes(t.id));
+            if (nextType) {
+              setValue("practiceType", nextType.name.toUpperCase(), { shouldValidate: true });
+            } else {
+              setValue("practiceType", sortedTypes[0].name.toUpperCase(), { shouldValidate: true });
+            }
+          } else {
+            setValue("practiceType", sortedTypes[0].name.toUpperCase(), { shouldValidate: true });
+          }
+        }
+      } catch (error) {
+        console.error("[PreEnrollmentModal] Error auto-selecting practice type:", error);
+      }
+    };
+
+    autoSelectPracticeType();
+  }, [watchedCareerId, setValue, getValues]);
+
   useEffect(() => {
     if (isOpen) {
       if (editingEntry) {
@@ -449,6 +535,10 @@ if (student) {
           studentName: editingEntry.studentName,
           phone: editingEntry.phone,
           period: editingEntry.period,
+          careerId: editingEntry.careerId,
+          semester: editingEntry.semester,
+          section: editingEntry.section,
+          regime: editingEntry.regime,
           practiceType: editingEntry.practiceType,
           enrollmentCode: editingEntry.enrollmentCode,
           careerName: editingEntry.careerName,
@@ -463,6 +553,10 @@ if (student) {
           studentName: "",
           phone: "",
           period: getValues("period"),
+          careerId: "",
+          semester: "",
+          section: "",
+          regime: "",
           practiceType: "",
           enrollmentCode: "",
           careerName: "",
@@ -476,6 +570,10 @@ if (student) {
           studentName: "",
           phone: "",
           period: "",
+          careerId: "",
+          semester: "",
+          section: "",
+          regime: "",
           practiceType: "",
           enrollmentCode: "",
           careerName: "",
@@ -512,16 +610,18 @@ if (student) {
         const updatePayload: UpdatePreEnrollmentPayload = {
           ...normalized,
           identificationPrefix: normalized.identificationPrefix as "V" | "E",
+          regime: normalized.regime as "DIURNO" | "NOCTURNO" | "MIXTO",
           preEnrollmentId: editingEntry.preEnrollmentId,
           careerName: normalized.careerName || "",
-        };
+        } as UpdatePreEnrollmentPayload;
         await onSave(updatePayload);
       } else {
         const createPayload: CreatePreEnrollmentPayload = {
           ...normalized,
           identificationPrefix: normalized.identificationPrefix as "V" | "E",
+          regime: normalized.regime as "DIURNO" | "NOCTURNO" | "MIXTO",
           careerName: normalized.careerName || "",
-        };
+        } as CreatePreEnrollmentPayload;
         await onSave(createPayload);
       }
       setShowConfirmDialog(false);
@@ -639,37 +739,21 @@ if (student) {
                                 key={student.studentId}
                                 type="button"
                                 className="w-full px-5 py-3 text-left hover:bg-brand-50/50 dark:hover:bg-brand-500/10 transition-all border-b border-border-light/40 last:border-0 group"
-                                onClick={async () => {
-                                  const enrollments = await enrollmentService.getEnrollments();
-                                  const alreadyEnrolled = enrollments.find(e => e.identificationPrefix === student.identificationPrefix && e.identificationNumber === student.identificationNumber && e.status);
-                                  if (alreadyEnrolled) {
-                                    addToast({ variant: "error", title: "Validación", message: "Estudiante con inscripción activa." });
-                                    setError("identificationNumber", { type: "manual", message: "Ya inscrito." });
-                                    return;
-                                  }
-                                  setValue("identificationNumber", student.identificationNumber);
-                                  setValue("identificationPrefix", student.identificationPrefix);
-                                  setDisplayIdentificationNumber(formatCedulaDisplay(student.identificationNumber, false)); // Sin prefijo
-                                  setValue("studentName", `${student.firstName} ${student.lastName}`, { shouldValidate: true, shouldDirty: true });
-                                  setValue("phone", student.phone || "", { shouldValidate: true, shouldDirty: true });
-                                  setValue("careerName", student.careerName || "", { shouldValidate: true, shouldDirty: true });
-                                  
-                                  if (student.careerId) {
-                                    const types = await getInternshipTypesByCareer(student.careerId);
-                                    if (types.length > 0) setValue("practiceType", types[0].name, { shouldValidate: true, shouldDirty: true });
-                                  }
-                                  
-                                  const careersRes = await getCareers();
-                                  const careerAbbr = (careersRes as any[]).find(c => String(c.careerId) === String(student.careerId))?.careerAbbreviation || "GEN";
-                                  const enrollmentCode = generateMatricula({
-                                    careerAbbreviation: careerAbbr,
-                                    regime: student.regime,
-                                    semester: student.semester,
-                                    section: student.section,
-                                  });
-                                  setValue("enrollmentCode", enrollmentCode, { shouldValidate: true, shouldDirty: true });
-                                  setShowSuggestions(false);
-                                }}
+                                  onClick={async () => {
+                                    const enrollments = await enrollmentService.getEnrollments();
+                                    const alreadyEnrolled = enrollments.find(e => e.identificationPrefix === student.identificationPrefix && e.identificationNumber === student.identificationNumber && e.status);
+                                    if (alreadyEnrolled) {
+                                      addToast({ variant: "error", title: "Validación", message: "Estudiante con inscripción activa." });
+                                      setError("identificationNumber", { type: "manual", message: "Ya inscrito." });
+                                      return;
+                                    }
+                                    setValue("identificationNumber", student.identificationNumber);
+                                    setValue("identificationPrefix", student.identificationPrefix);
+                                    setDisplayIdentificationNumber(formatCedulaDisplay(student.identificationNumber, false));
+                                    setValue("studentName", `${student.firstName} ${student.lastName}`, { shouldValidate: true, shouldDirty: true });
+                                    setValue("phone", student.phone || "", { shouldValidate: true, shouldDirty: true });
+                                    setShowSuggestions(false);
+                                  }}
                               >
                                 <div className="font-bold text-text-primary group-hover:text-brand-600 transition-colors">{student.identificationPrefix}-{student.identificationNumber}</div>
                                 <div className="text-[11px] text-text-tertiary">{student.firstName} {student.lastName}</div>
@@ -748,11 +832,122 @@ if (student) {
                     </div>
                     <div>
                       <h3 className="text-base font-bold text-text-primary dark:text-white">Datos Académicos</h3>
-                      <p className="text-[10px] text-text-tertiary font-bold uppercase tracking-tighter">Configuración automática</p>
+                      <p className="text-[10px] text-text-tertiary font-bold uppercase tracking-tighter">Configuración manual</p>
                     </div>
                   </div>
 
                   <div className="space-y-6">
+                    {/* Carrera */}
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Carrera *</label>
+                      <Controller
+                        name="careerId"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomSelect
+                            id="careerId"
+                            options={careerOptions}
+                            onChange={field.onChange}
+                            value={field.value}
+                            placeholder="Seleccione la carrera..."
+                            error={!!errors.careerId}
+                            className="rounded-xl h-[48px]"
+                          />
+                        )}
+                      />
+                      {errors.careerId && <p className="text-[11px] font-bold text-error-500">{errors.careerId.message}</p>}
+                    </div>
+
+                    {/* Semestre */}
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Semestre *</label>
+                      <Controller
+                        name="semester"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomSelect
+                            id="semester"
+                            options={SEMESTER_OPTIONS}
+                            onChange={field.onChange}
+                            value={field.value}
+                            placeholder="Seleccione el semestre..."
+                            error={!!errors.semester}
+                            className="rounded-xl h-[48px]"
+                          />
+                        )}
+                      />
+                      {errors.semester && <p className="text-[11px] font-bold text-error-500">{errors.semester.message}</p>}
+                    </div>
+
+                    {/* Sección */}
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Sección *</label>
+                      <Controller
+                        name="section"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomSelect
+                            id="section"
+                            options={SECTION_OPTIONS}
+                            onChange={field.onChange}
+                            value={field.value}
+                            placeholder="Seleccione la sección..."
+                            error={!!errors.section}
+                            onAddNew={handleAddSection}
+                            addNewLabel="Agregar nueva sección"
+                            className="rounded-xl h-[48px]"
+                          />
+                        )}
+                      />
+                      {errors.section && <p className="text-[11px] font-bold text-error-500">{errors.section.message}</p>}
+                    </div>
+
+                    {/* Régimen */}
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Régimen *</label>
+                      <Controller
+                        name="regime"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomSelect
+                            id="regime"
+                            options={REGIME_OPTIONS}
+                            onChange={field.onChange}
+                            value={field.value}
+                            placeholder="Seleccione el régimen..."
+                            error={!!errors.regime}
+                            className="rounded-xl h-[48px]"
+                          />
+                        )}
+                      />
+                      {errors.regime && <p className="text-[11px] font-bold text-error-500">{errors.regime.message}</p>}
+                    </div>
+
+                    {/* Tipo de Práctica */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Tipo de Práctica *</label>
+                        <Badge color="info" variant="light" size="sm" className="font-bold text-[9px] px-1.5 backdrop-blur-sm">AUTO</Badge>
+                      </div>
+                      <Controller
+                        name="practiceType"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomSelect
+                            id="practiceType"
+                            options={practiceTypeOptions}
+                            onChange={field.onChange}
+                            value={field.value}
+                            placeholder="Seleccione el tipo..."
+                            error={!!errors.practiceType}
+                            disabled={true}
+                            className="rounded-xl h-[48px] bg-slate-50/50"
+                          />
+                        )}
+                      />
+                      {errors.practiceType && <p className="text-[11px] font-bold text-error-500">{errors.practiceType.message}</p>}
+                    </div>
+
                     {/* Período */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
@@ -769,23 +964,11 @@ if (student) {
                             onChange={field.onChange}
                             value={field.value}
                             placeholder="Cargando períodos..."
-                            disabled={true} // Siempre deshabilitado porque es automático
+                            disabled={true}
                             className="rounded-xl h-[48px] bg-slate-50/50"
                           />
                         )}
                       />
-                    </div>
-
-                    {/* Tipo de Práctica */}
-                    <div className="space-y-3">
-                       <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Tipo de Práctica</label>
-                       <div className={cn(
-                         "h-[48px] px-4 rounded-xl border flex items-center gap-3 transition-colors",
-                         watchedPracticeType ? "bg-brand-50/30 border-brand-200 text-brand-700 font-bold" : "bg-slate-50 border-border-light text-text-tertiary italic"
-                       )}>
-                         <ShieldCheckIcon className={cn("w-4 h-4", watchedPracticeType ? "text-brand-500" : "text-slate-300")} />
-                         <span className="text-sm">{watchedPracticeType || "Pendiente de selección..."}</span>
-                       </div>
                     </div>
 
                     {/* Matrícula */}
@@ -815,7 +998,7 @@ if (student) {
                         <h4 className="text-sm font-bold">Información Importante</h4>
                       </div>
                       <p className="text-[11px] text-brand-100 font-medium leading-relaxed">
-                        Los datos académicos se generan automáticamente basándose en el historial y carrera del estudiante seleccionado. Verifique que el período sea el correcto antes de guardar.
+                        Complete los datos académicos del estudiante. La matrícula se genera automáticamente al seleccionar carrera, semestre, sección y régimen.
                       </p>
                    </div>
                 </div>
@@ -829,6 +1012,10 @@ if (student) {
               <Input {...register("studentName")} readOnly />
               <Input {...register("phone")} readOnly />
               <Input {...register("careerName")} readOnly />
+              <Input {...register("careerId")} readOnly />
+              <Input {...register("semester")} readOnly />
+              <Input {...register("section")} readOnly />
+              <Input {...register("regime")} readOnly />
             </div>
           </form>
         </ModalBody>

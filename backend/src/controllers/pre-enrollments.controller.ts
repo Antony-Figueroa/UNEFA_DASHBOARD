@@ -39,7 +39,6 @@ interface Student {
   NAME: string;
   SURNAME: string;
   CONTACT_PHONE?: string;
-  t_career?: { CAREER_NAME: string };
 }
 
 interface ProfessionalPracticeTutor {
@@ -66,9 +65,14 @@ interface ProfessionalPractice {
   ENROLLMENT: string;
   INTERNSHIP_STATUS?: number;
   INTERNSHIP_TYPE_ID?: number;
+  CAREER_ID?: number;
+  SEMESTER?: string;
+  SECTION?: string;
+  REGIME?: string;
   t_students?: Student;
   t_internships_period?: { DESCRIPTION: string };
   t_internship_type?: { NAME: string };
+  t_career?: { CAREER_NAME: string };
   t_professional_practices_tutor?: ProfessionalPracticeTutor[];
 }
 
@@ -83,9 +87,9 @@ export const getPreEnrollments = async (req: Request, res: Response) => {
             STUDENTS_CI,
             NAME,
             SURNAME,
-            CONTACT_PHONE,
-            t_career (CAREER_NAME)
+            CONTACT_PHONE
           ),
+          t_career (CAREER_NAME),
           t_internships_period (DESCRIPTION),
           t_internship_type (NAME),
           t_professional_practices_tutor (TUTOR_ID)
@@ -106,7 +110,11 @@ export const getPreEnrollments = async (req: Request, res: Response) => {
         identificationNumber: ciParts[1] || '',
         studentName: `${item.t_students?.NAME || ''} ${item.t_students?.SURNAME || ''}`.trim(),
         phone: item.t_students?.CONTACT_PHONE || '',
-        careerName: item.t_students?.t_career?.CAREER_NAME || '',
+        careerId: item.CAREER_ID?.toString() || '',
+        careerName: item.t_career?.CAREER_NAME || '',
+        semester: item.SEMESTER || '',
+        section: item.SECTION || '',
+        regime: item.REGIME || '',
         period: item.t_internships_period?.DESCRIPTION || '',
         practiceType: item.t_internship_type?.NAME || '',
         enrollmentCode: item.ENROLLMENT || '',
@@ -129,7 +137,11 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
       identificationNumber,
       period,
       practiceType,
-      enrollmentCode
+      enrollmentCode,
+      careerId,
+      semester,
+      section,
+      regime
     } = req.body;
 
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
@@ -227,6 +239,19 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
         throw err;
       }
 
+      // 4b. Buscar Carrera (opcional para pre-inscripciones, se puede seleccionar después)
+      let careerIdNumber: number | null = null;
+      if (careerId) {
+        const { data: careerData } = await supabase
+          .from('t_career')
+          .select('CAREER_ID')
+          .eq('CAREER_ID', careerId)
+          .maybeSingle();
+        if (careerData) {
+          careerIdNumber = careerData.CAREER_ID;
+        }
+      }
+
       // 5. Preparar institución y responsable (opcional para pre-inscripciones)
       // Estos campos ahora son nullable, se asignan durante la inscripción正式
       let finalInstId: number | null = null;
@@ -272,7 +297,11 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
           OBSERVATION: '',
           ENROLLMENT: enrollmentCode,
           INTERNSHIP_STATUS: 1, 
-          INTERNSHIP_TYPE_ID: typeData.INTERNSHIP_TYPE_ID
+          INTERNSHIP_TYPE_ID: typeData.INTERNSHIP_TYPE_ID,
+          CAREER_ID: careerIdNumber,
+          SEMESTER: semester || '',
+          SECTION: section || '',
+          REGIME: regime || ''
         }])
         .select(`
           *,
@@ -280,8 +309,9 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
             STUDENTS_CI,
             NAME,
             SURNAME,
-            t_career (CAREER_NAME)
+            CONTACT_PHONE
           ),
+          t_career (CAREER_NAME),
           t_internships_period (DESCRIPTION),
           t_internship_type (NAME)
         `)
@@ -297,7 +327,11 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
         identificationNumber: ciParts[1] || '',
         studentName: `${insertedData.t_students?.NAME || ''} ${insertedData.t_students?.SURNAME || ''}`.trim(),
         phone: insertedData.t_students?.CONTACT_PHONE || '',
-        careerName: insertedData.t_students?.t_career?.CAREER_NAME || '',
+        careerId: insertedData.CAREER_ID?.toString() || '',
+        careerName: insertedData.t_career?.CAREER_NAME || '',
+        semester: insertedData.SEMESTER || '',
+        section: insertedData.SECTION || '',
+        regime: insertedData.REGIME || '',
         period: insertedData.t_internships_period?.DESCRIPTION || '',
         practiceType: insertedData.t_internship_type?.NAME || '',
         enrollmentCode: insertedData.ENROLLMENT || '',
@@ -318,10 +352,10 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
 export const updatePreEnrollment = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { period, practiceType, enrollmentCode, status } = req.body;
+    const { period, practiceType, enrollmentCode, status, careerId, semester, section, regime } = req.body;
 
     const result = await dbManager.withRetry(async (supabase) => {
-      let periodId, internshipTypeId;
+      let periodId, internshipTypeId, careerIdNumber;
       
       if (period) {
         const { data: p } = await supabase.from('t_internships_period').select('PERIOD_ID').eq('DESCRIPTION', period).single();
@@ -333,11 +367,20 @@ export const updatePreEnrollment = async (req: Request, res: Response) => {
         internshipTypeId = t?.INTERNSHIP_TYPE_ID;
       }
 
+      if (careerId) {
+        const { data: c } = await supabase.from('t_career').select('CAREER_ID').eq('CAREER_ID', careerId).single();
+        careerIdNumber = c?.CAREER_ID;
+      }
+
       const updateData: Partial<ProfessionalPractice> = {};
       if (periodId !== undefined) updateData.PERIOD_ID = periodId;
       if (internshipTypeId !== undefined) updateData.INTERNSHIP_TYPE_ID = internshipTypeId;
       if (enrollmentCode) updateData.ENROLLMENT = enrollmentCode;
       if (status !== undefined) updateData.STATUS = status ? 1 : 0;
+      if (careerIdNumber !== undefined) updateData.CAREER_ID = careerIdNumber;
+      if (semester !== undefined) updateData.SEMESTER = semester;
+      if (section !== undefined) updateData.SECTION = section;
+      if (regime !== undefined) updateData.REGIME = regime;
 
       const { data, error } = await supabase
         .from(TABLE_NAME)
@@ -351,6 +394,54 @@ export const updatePreEnrollment = async (req: Request, res: Response) => {
     });
 
     res.json(result);
+  } catch (error) {
+    handleDbError(res, error);
+  }
+};
+
+export const getTypesByStudent = async (req: Request, res: Response) => {
+  try {
+    const { prefix, ci, period, careerId } = req.query;
+
+    if (!prefix || !ci || !period || !careerId) {
+      return res.status(400).json({ message: 'prefix, ci, period, and careerId are required' });
+    }
+
+    const result = await dbManager.withRetry(async (supabase) => {
+      const fullCI = `${prefix}-${ci}`;
+
+      const { data: student, error: studentError } = await supabase
+        .from('t_students')
+        .select('STUDENTS_ID')
+        .eq('STUDENTS_CI', fullCI)
+        .maybeSingle();
+
+      if (studentError) throw studentError;
+      if (!student) return [];
+
+      const { data: periodData, error: periodError } = await supabase
+        .from('t_internships_period')
+        .select('PERIOD_ID')
+        .eq('DESCRIPTION', String(period))
+        .maybeSingle();
+
+      if (periodError) throw periodError;
+      if (!periodData) return [];
+
+      const { data, error } = await supabase
+        .from(TABLE_NAME)
+        .select(`INTERNSHIP_TYPE_ID`)
+        .eq('STUDENTS_ID', student.STUDENTS_ID)
+        .eq('PERIOD_ID', periodData.PERIOD_ID)
+        .eq('CAREER_ID', Number(careerId))
+        .eq('STATUS', 1);
+
+      if (error) throw error;
+
+      return (data || []).map((r: { INTERNSHIP_TYPE_ID: number }) => r.INTERNSHIP_TYPE_ID);
+    });
+
+    res.json({ typeIds: result });
   } catch (error) {
     handleDbError(res, error);
   }

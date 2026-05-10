@@ -20,10 +20,10 @@ interface DBTrackingResponse extends DBProfessionalPractice {
     STUDENTS_CI: string;
     NAME: string;
     SURNAME: string;
-    t_career?: {
-      CAREER_ID: number;
-      CAREER_NAME: string;
-    };
+  };
+  t_career?: {
+    CAREER_ID: number;
+    CAREER_NAME: string;
   };
 }
 
@@ -37,7 +37,7 @@ const mapDBToFrontend = (p: DBTrackingResponse) => ({
   observations: p.OBSERVATION,
   status: p.STATUS === 1,
   creationDate: new Date(p.CREATION_DATE),
-  careerName: p.t_students?.t_career?.CAREER_NAME || null
+  careerName: p.t_career?.CAREER_NAME || null
 });
 
 export const getTrackings = async (_req: Request, res: Response) => {
@@ -50,11 +50,11 @@ export const getTrackings = async (_req: Request, res: Response) => {
         t_students:STUDENTS_ID (
           STUDENTS_CI,
           NAME,
-          SURNAME,
-          t_career:CAREER_ID (
-            CAREER_ID,
-            CAREER_NAME
-          )
+          SURNAME
+        ),
+        t_career:CAREER_ID (
+          CAREER_ID,
+          CAREER_NAME
         )
       `)
       .eq('PRACTICES_STATUS', 2)
@@ -67,7 +67,7 @@ export const getTrackings = async (_req: Request, res: Response) => {
       STUDENT_CI: p.t_students?.STUDENTS_CI || "",
       STUDENT_NAME: p.t_students?.NAME || "",
       STUDENT_SURNAME: p.t_students?.SURNAME || "",
-      CAREER_NAME: p.t_students?.t_career?.CAREER_NAME || null
+      CAREER_NAME: p.t_career?.CAREER_NAME || null
     })).map(mapDBToFrontend);
 
     res.json(formattedData);
@@ -169,11 +169,11 @@ export const updateTracking = async (req: Request, res: Response) => {
         t_students:STUDENTS_ID (
           STUDENTS_CI,
           NAME,
-          SURNAME,
-          t_career:CAREER_ID (
-            CAREER_ID,
-            CAREER_NAME
-          )
+          SURNAME
+        ),
+        t_career:CAREER_ID (
+          CAREER_ID,
+          CAREER_NAME
         )
       `)
       .single();

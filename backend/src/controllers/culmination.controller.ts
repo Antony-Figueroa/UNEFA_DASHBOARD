@@ -41,11 +41,10 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
           NAME,
           SECOND_NAME,
           SURNAME,
-          SECOND_SURNAME,
-          CAREER_ID,
-          t_career (
-            CAREER_NAME
-          )
+          SECOND_SURNAME
+        ),
+        t_career (
+          CAREER_NAME
         ),
         t_institution (
           INSTITUTION_NAME
@@ -94,7 +93,7 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
 
     let records: CulminationRecord[] = practices.map((p: any) => {
       const student = p.t_students;
-      const career = student?.t_career;
+      const career = p.t_career;
       const trackingData = hoursMap.get(p.PROFESSIONAL_PRACTICE_ID) || { total: 0, lastDate: '' };
       
       const studentName = student 
@@ -217,9 +216,9 @@ export const generateCertificate = async (req: Request, res: Response) => {
           NAME,
           SECOND_NAME,
           SURNAME,
-          SECOND_SURNAME,
-          t_career ( CAREER_NAME )
+          SECOND_SURNAME
         ),
+        t_career ( CAREER_NAME ),
         t_institution ( INSTITUTION_NAME ),
         t_internships_period ( DESCRIPTION )
       `)
@@ -247,7 +246,7 @@ export const generateCertificate = async (req: Request, res: Response) => {
         number: certificateNumber,
         studentName,
         studentCi: student?.STUDENTS_CI || '',
-        career: student?.t_career?.CAREER_NAME || '',
+        career: (practice as any).t_career?.CAREER_NAME || '',
         institution: (practice as any).t_institution?.INSTITUTION_NAME || '',
         period: (practice as any).t_internships_period?.DESCRIPTION || '',
         grade: (practice as any).GRADE,

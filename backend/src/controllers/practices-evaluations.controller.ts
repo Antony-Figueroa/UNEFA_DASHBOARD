@@ -45,13 +45,12 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
           NAME,
           SECOND_NAME,
           SURNAME,
-          SECOND_SURNAME,
+          SECOND_SURNAME
+        ),
+        t_career (
           CAREER_ID,
-          t_career (
-            CAREER_ID,
-            CAREER_NAME,
-            MINIMUM_GRADE
-          )
+          CAREER_NAME,
+          MINIMUM_GRADE
         ),
         t_institution (
           INSTITUTION_ID,
@@ -144,7 +143,7 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
     // Procesar prácticas
     let processedPractices = (practices as any[]).map(p => {
       const student = p.t_students;
-      const career = student?.t_career;
+      const career = p.t_career;
       const practiceType = p.t_internship_type;
       const period = p.t_internships_period;
       const evaluations = (allEvaluations || []).filter(e => e.PROFESSIONAL_PRACTICE_ID === p.PROFESSIONAL_PRACTICE_ID);
@@ -418,12 +417,11 @@ export const getStudentDetail = async (req: AuthRequest, res: Response) => {
           NAME,
           SECOND_NAME,
           SURNAME,
-          SECOND_SURNAME,
+          SECOND_SURNAME
+        ),
+        t_career (
           CAREER_ID,
-          t_career (
-            CAREER_ID,
-            CAREER_NAME
-          )
+          CAREER_NAME
         ),
         t_institution (
           INSTITUTION_ID,
@@ -450,7 +448,7 @@ export const getStudentDetail = async (req: AuthRequest, res: Response) => {
     }
 
     const student = (practice as any).t_students;
-    const career = (student as any)?.t_career?.[0];
+    const career = (practice as any).t_career;
     const period = (practice as any).t_internships_period;
     const practiceType = (practice as any).t_internship_type;
     const institution = (practice as any).t_institution;

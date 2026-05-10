@@ -6,6 +6,7 @@
 
 import { PreEnrollment, CreatePreEnrollmentPayload, UpdatePreEnrollmentPayload } from "../types";
 import { createCrudService } from "../../../api/crudServiceFactory";
+import apiClient from "../../../api/apiClient";
 
 /** URL base para los endpoints de pre-inscripción */
 const API_URL = "/pre-enrollments";
@@ -36,6 +37,21 @@ export const preEnrollmentService = createCrudService<PreEnrollment, CreatePreEn
   mapFromApi,
   idField: 'preEnrollmentId'
 });
+
+/**
+ * Obtiene los IDs de tipos de práctica ya registrados para un estudiante en un período y carrera.
+ */
+export const getCompletedPracticeTypes = async (
+  prefix: string,
+  ci: string,
+  period: string,
+  careerId: string
+): Promise<number[]> => {
+  const response = await apiClient.get<{ typeIds: number[] }>('/pre-enrollments/types-by-student', {
+    params: { prefix, ci, period, careerId }
+  });
+  return response.data.typeIds;
+};
 
 // Exportaciones individuales para mantener compatibilidad
 export const getPreEnrollments = preEnrollmentService.getAll;

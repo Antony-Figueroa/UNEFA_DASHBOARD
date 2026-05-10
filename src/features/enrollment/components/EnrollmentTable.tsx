@@ -199,16 +199,7 @@ export default function EnrollmentTable({
     }, [practiceTypeFilter, allCareers, careerFilter, practiceTypeOptions]);
 
     const computeMatricula = (row: EnrollmentRowData): string => {
-        const ci = `${row.identificationPrefix}-${row.identificationNumber}`;
-        const student = students.find(s => `${s.identificationPrefix}-${s.identificationNumber}` === ci);
-        if (!student) return "";
-        const abbr = careerAbbrById[String(student.careerId ?? "")] || "GEN";
-        return generateMatricula({
-            careerAbbreviation: abbr,
-            regime: student.regime,
-            semester: student.semester,
-            section: student.section,
-        });
+        return row.enrollmentCode || "";
     };
 
     const filteredData = useMemo(() => {

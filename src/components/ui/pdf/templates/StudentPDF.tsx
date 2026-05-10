@@ -15,9 +15,7 @@ export const StudentPDF: React.FC<StudentPDFProps> = ({ data }) => {
         {/* Table Header */}
         <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
           <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Cédula</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 3 }]}>Nombre Completo</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Carrera</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1 }]}>Sem/Sec</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 5 }]}>Nombre Completo</Text>
         </View>
 
         {/* Table Body */}
@@ -26,14 +24,8 @@ export const StudentPDF: React.FC<StudentPDFProps> = ({ data }) => {
             <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>
               {student.identificationPrefix}-{student.identificationNumber}
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 3 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 5 }]}>
               {`${student.firstName} ${student.lastName}`}
-            </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>
-              {student.careerName || "N/A"}
-            </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 1 }]}>
-              {`${student.semester}-${student.section}`}
             </Text>
           </View>
         ))}

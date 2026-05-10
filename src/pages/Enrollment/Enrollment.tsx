@@ -542,6 +542,7 @@ export default function EnrollmentPage() {
                             }
                         }}
                         isLoading={preEnrollmentLoading}
+                        careerOptions={careerOptions.map(c => ({ value: c.value, label: c.text || c.value }))}
                     />
 
                     <TutorModal

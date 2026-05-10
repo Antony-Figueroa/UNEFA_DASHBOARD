@@ -499,7 +499,7 @@ export default function EnrollmentModal({
         setValue("studentName", `${student.firstName} ${student.lastName}`);
         
         // Autocompletar Carrera
-        const studentCareer = careerData.find(c => String(c.careerId) === String(student.careerId));
+        const studentCareer = careerData.find(c => String(c.careerId) === String(preEnrollment.careerId));
         if (studentCareer) {
           setValue("careerName", String(studentCareer.careerId));
         } else {
@@ -512,9 +512,9 @@ export default function EnrollmentModal({
         const abbr = (studentCareer?.careerAbbreviation || "GEN").toUpperCase();
         const code = generateMatricula({
           careerAbbreviation: abbr,
-          regime: student.regime,
-          semester: student.semester,
-          section: student.section,
+          regime: preEnrollment.regime,
+          semester: preEnrollment.semester,
+          section: preEnrollment.section,
         });
         setValue("enrollmentCode", code);
       }

@@ -420,6 +420,7 @@ export default function PreEnrollmentPage() {
                         editingEntry={editingEntry}
                         isLoading={loadingAction}
                         initialCi={initialCi}
+                        careerOptions={careerOptions}
                     />
 
                     <PreEnrollmentViewModal
@@ -435,15 +436,12 @@ export default function PreEnrollmentPage() {
                         onSave={async (payload) => {
                             try {
                                 await addStudent(payload as any);
-                                // Transformar datos del estudiante para el modal de pre-inscripción
-                                const careerOption = careerOptions.find(c => c.value === payload.careerId);
                                 const studentData = {
                                     identificationPrefix: payload.identificationPrefix,
                                     identificationNumber: payload.identificationNumber,
                                     firstName: payload.firstName,
                                     lastName: payload.lastName,
                                     phone: payload.phone,
-                                    careerName: careerOption?.label || "",
                                 };
                                 const evt = new CustomEvent("preenrollment:setStudentId", { detail: studentData });
                                 window.dispatchEvent(evt);
@@ -453,7 +451,6 @@ export default function PreEnrollmentPage() {
                             }
                         }}
                         editingStudent={null}
-                        careerOptions={careerOptions}
                         isLoading={studentLoading}
                         modalId="preenrollment-student"
                     />

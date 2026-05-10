@@ -11,7 +11,7 @@ const CACHE_PREFIX = 'students:';
 const STUDENT_COLUMNS_TO_AUDIT = [
   'STUDENTS_CI', 'NAME', 'SECOND_NAME', 'SURNAME', 'SECOND_SURNAME',
   'GENDER', 'BIRTHDATE', 'MARITAL_STATUS', 'CONTACT_PHONE', 'EMAIL',
-  'ADDRESS', 'CAREER_ID', 'SEMESTER', 'SECTION', 'REGIME',
+  'ADDRESS',
   'STUDENT_TYPE', 'MILITARY_RANK', 'EMPLOYMENT', 'STATUS'
 ];
 
@@ -29,10 +29,6 @@ const STUDENT_COLUMNS_BASE = `
   CONTACT_PHONE, 
   EMAIL, 
   ADDRESS, 
-  CAREER_ID, 
-  SEMESTER, 
-  SECTION, 
-  REGIME, 
   STUDENT_TYPE, 
   MILITARY_RANK, 
   EMPLOYMENT, 
@@ -41,7 +37,7 @@ const STUDENT_COLUMNS_BASE = `
 `;
 
 // Columnas con relaciones para lectura
-const STUDENT_COLUMNS = `${STUDENT_COLUMNS_BASE}, t_career(CAREER_NAME), t_professional_practices(INTERNSHIP_STATUS, PRACTICES_STATUS)`;
+const STUDENT_COLUMNS = `${STUDENT_COLUMNS_BASE}, t_professional_practices(INTERNSHIP_STATUS, PRACTICES_STATUS)`;
 
 interface AppError extends Error {
   code?: string;
@@ -87,12 +83,7 @@ interface DBStudent {
   CONTACT_PHONE: string;
   EMAIL: string;
   ADDRESS: string;
-  CAREER_ID: number;
-  t_career?: { CAREER_NAME: string } | { CAREER_NAME: string }[];
   t_professional_practices?: { INTERNSHIP_STATUS: number, PRACTICES_STATUS: number }[];
-  SEMESTER: number;
-  SECTION: string;
-  REGIME: string;
   STUDENT_TYPE: string;
   MILITARY_RANK: string;
   EMPLOYMENT: boolean;
@@ -220,11 +211,9 @@ export const getStudentStats = async (req: Request, res: Response) => {
 };
 
 const mapDBToFrontend = (s: DBStudent) => {
-  // Mapeo inverso para mostrar nombres completos en el frontend si el DB usa códigos
   const genderMap: Record<string, string> = { 'M': 'MASCULINO', 'F': 'FEMENINO', 'O': 'OTRO' };
   const maritalMap: Record<string, string> = { 'S': 'SOLTERO', 'C': 'CASADO', 'D': 'DIVORCIADO', 'V': 'VIUDO' };
   const typeMap: Record<string, string> = { 'CIV': 'CIVIL', 'MIL': 'MILITAR' };
-  const regimeMap: Record<string, string> = { 'D1': 'DIURNO', 'N1': 'NOCTURNO', 'M1': 'MIXTO' };
 
   return {
     studentId: String(s.STUDENTS_ID),
@@ -240,11 +229,6 @@ const mapDBToFrontend = (s: DBStudent) => {
     phone: s.CONTACT_PHONE,
     email: s.EMAIL,
     address: s.ADDRESS,
-    careerId: String(s.CAREER_ID),
-    careerName: Array.isArray(s.t_career) ? s.t_career[0]?.CAREER_NAME : s.t_career?.CAREER_NAME,
-    semester: String(s.SEMESTER),
-    section: s.SECTION,
-    regime: regimeMap[s.REGIME.trim()] || s.REGIME,
     studentType: typeMap[s.STUDENT_TYPE.trim()] || s.STUDENT_TYPE,
     militaryRank: s.MILITARY_RANK,
     works: s.EMPLOYMENT ? (String(s.EMPLOYMENT).toUpperCase() === 'SI' || s.EMPLOYMENT === true ? "SI" : "NO") : "NO",
@@ -260,15 +244,10 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
     console.log('[Students] Attempting to create student with data:', JSON.stringify(s, null, 2));
     
     // Validación básica de campos requeridos
-    if (!s.identificationNumber || !s.firstName || !s.lastName || !s.careerId) {
+    if (!s.identificationNumber || !s.firstName || !s.lastName) {
       return res.status(400).json({ 
-        message: 'Error: Faltan campos requeridos (Cédula, Nombres, Apellidos y Carrera son obligatorios)' 
+        message: 'Error: Faltan campos requeridos (Cédula, Nombres y Apellidos son obligatorios)' 
       });
-    }
-
-    const careerId = parseInt(s.careerId);
-    if (isNaN(careerId)) {
-      return res.status(400).json({ message: 'Error: El ID de carrera debe ser un número válido' });
     }
 
     const studentsCi = `${s.identificationPrefix || 'V'}-${s.identificationNumber}`;
@@ -360,7 +339,6 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
     const genderMap: Record<string, string> = { 'MASCULINO': 'M', 'FEMENINO': 'F', 'OTRO': 'O' };
     const maritalMap: Record<string, string> = { 'SOLTERO': 'S', 'CASADO': 'C', 'DIVORCIADO': 'D', 'VIUDO': 'V' };
     const typeMap: Record<string, string> = { 'CIVIL': 'CIV', 'MILITAR': 'MIL' };
-    const regimeMap: Record<string, string> = { 'DIURNO': 'D1', 'NOCTURNO': 'N1', 'MIXTO': 'M1' };
 
     const dbData = {
       STUDENTS_CI: studentsCi,
@@ -374,10 +352,6 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
       EMAIL: s.email,
       ADDRESS: s.address,
       MARITAL_STATUS: maritalMap[s.civilStatus?.toUpperCase()] || 'S',
-      CAREER_ID: careerId,
-      SEMESTER: s.semester ? String(s.semester) : '1',
-      SECTION: s.section ? String(s.section) : '1',
-      REGIME: regimeMap[s.regime?.toUpperCase()] || 'D1',
       STUDENT_TYPE: typeMap[s.studentType?.toUpperCase()] || 'CIV',
       MILITARY_RANK: s.militaryRank || null,
       EMPLOYMENT: s.works === "SI" ? "SI" : "NO",
@@ -400,7 +374,7 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
         throw insertError;
       }
 
-      // 2. Obtener el registro completo con la relación t_career
+      // 2. Obtener el registro completo
       const { data, error: fetchError } = await supabase
         .from(TABLE_NAME)
         .select(STUDENT_COLUMNS)
@@ -434,15 +408,10 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
     console.log(`[Students] Attempting to update student ${id} with data:`, JSON.stringify(s, null, 2));
 
     // Validación básica de campos requeridos
-    if (!s.identificationNumber || !s.firstName || !s.lastName || !s.careerId) {
+    if (!s.identificationNumber || !s.firstName || !s.lastName) {
       return res.status(400).json({ 
-        message: 'Error: Faltan campos requeridos (Cédula, Nombres, Apellidos y Carrera son obligatorios)' 
+        message: 'Error: Faltan campos requeridos (Cédula, Nombres y Apellidos son obligatorios)' 
       });
-    }
-
-    const careerId = parseInt(s.careerId);
-    if (isNaN(careerId)) {
-      return res.status(400).json({ message: 'Error: El ID de carrera debe ser un número válido' });
     }
 
     const studentsCi = `${s.identificationPrefix || 'V'}-${s.identificationNumber}`;
@@ -512,7 +481,6 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
     const genderMap: Record<string, string> = { 'MASCULINO': 'M', 'FEMENINO': 'F', 'OTRO': 'O' };
     const maritalMap: Record<string, string> = { 'SOLTERO': 'S', 'CASADO': 'C', 'DIVORCIADO': 'D', 'VIUDO': 'V' };
     const typeMap: Record<string, string> = { 'CIVIL': 'CIV', 'MILITAR': 'MIL' };
-    const regimeMap: Record<string, string> = { 'DIURNO': 'D1', 'NOCTURNO': 'N1', 'MIXTO': 'M1' };
 
     const dbData = {
       STUDENTS_CI: studentsCi,
@@ -526,10 +494,6 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
       EMAIL: s.email,
       ADDRESS: s.address,
       MARITAL_STATUS: maritalMap[s.civilStatus?.toUpperCase()] || 'S',
-      CAREER_ID: careerId,
-      SEMESTER: s.semester ? String(s.semester) : '1',
-      SECTION: s.section ? String(s.section) : '1',
-      REGIME: regimeMap[s.regime?.toUpperCase()] || 'D1',
       STUDENT_TYPE: typeMap[s.studentType?.toUpperCase()] || 'CIV',
       MILITARY_RANK: s.militaryRank || null,
       EMPLOYMENT: s.works === "SI" ? "SI" : "NO",
@@ -557,7 +521,7 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
         throw updateError;
       }
 
-      // 2. Obtener el registro actualizado con la relación t_career
+      // 2. Obtener el registro actualizado
       const { data, error: fetchError } = await supabase
         .from(TABLE_NAME)
         .select(STUDENT_COLUMNS)
@@ -830,26 +794,12 @@ export const changeStudentRegistration = async (req: AuthRequest, res: Response)
       });
     }
 
-    if (changeType === 'regime' && hasActivePractice) {
-      return res.status(400).json({ 
-        message: 'No se puede cambiar el régimen. El estudiante tiene una práctica activa.',
-        code: 'ACTIVE_PRACTICE_BLOCK'
-      });
-    }
-
     // Perform the update based on change type
     let updateData: Record<string, unknown> = {};
     let oldValue = '';
     let newValueFormatted = newValue;
 
-    if (changeType === 'regime') {
-      const validRegimes = ['DIURNO', 'NOCTURNO', 'MIXTO'];
-      if (!validRegimes.includes(newValue.toUpperCase())) {
-        return res.status(400).json({ message: 'Régimen inválido. Debe ser DIURNO, NOCTURNO o MIXTO' });
-      }
-      oldValue = student.REGIME || '';
-      updateData.REGIME = newValue.toUpperCase();
-    } else if (changeType === 'tutor') {
+    if (changeType === 'tutor') {
       // Verify tutor exists
       const tutor = await dbManager.withRetry(async (supabase) => {
         const { data, error } = await supabase
@@ -1000,10 +950,6 @@ export const importStudents = async (req: Request, res: Response) => {
             PHONE: studentData.phone,
             EMAIL: studentData.email,
             ADDRESS: studentData.address || '',
-            CAREER_ID: studentData.careerId,
-            SEMESTER: studentData.semester || '01',
-            SECTION: studentData.section || '001',
-            REGIME: studentData.regime || 'DIURNO',
             STUDENT_TYPE: studentData.studentType || 'CIVIL',
             MILITARY_RANK: studentData.militaryRank || 'NO APLICA',
             WORKS: studentData.works || 'NO',
@@ -1033,25 +979,15 @@ export const importStudents = async (req: Request, res: Response) => {
 
 export const exportStudents = async (req: Request, res: Response) => {
   try {
-    const { status, careerId, regime } = req.query;
+    const { status } = req.query;
 
     let query = supabase
       .from('t_students')
-      .select(`
-        *,
-        t_career(CAREER_NAME),
-        t_institution(INSTITUTION_NAME)
-      `)
+      .select('*')
       .order('FIRST_NAME', { ascending: true });
 
     if (status !== undefined) {
       query = query.eq('STATUS', status === 'true');
-    }
-    if (careerId) {
-      query = query.eq('CAREER_ID', careerId);
-    }
-    if (regime) {
-      query = query.eq('REGIME', regime);
     }
 
     const { data, error } = await query;
@@ -1077,11 +1013,6 @@ export const exportStudents = async (req: Request, res: Response) => {
       phone: student.PHONE,
       email: student.EMAIL,
       address: student.ADDRESS,
-      careerId: student.CAREER_ID,
-      careerName: student.t_career?.CAREER_NAME,
-      semester: student.SEMESTER,
-      section: student.SECTION,
-      regime: student.REGIME,
       studentType: student.STUDENT_TYPE,
       militaryRank: student.MILITARY_RANK,
       works: student.WORKS,

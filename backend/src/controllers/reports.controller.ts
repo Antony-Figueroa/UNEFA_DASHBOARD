@@ -245,13 +245,12 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
             EXTENSION
           ),
           t_students (
-            STUDENTS_ID,
+            STUDENTS_ID
+          ),
+          t_career (
             CAREER_ID,
-            t_career (
-              CAREER_ID,
-              CAREER_NAME,
-              CAREER_ABBREVIATION
-            )
+            CAREER_NAME,
+            CAREER_ABBREVIATION
           )
         )
       `)
@@ -275,7 +274,7 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
       const tutor = tp.t_tutors;
       const practice = tp.t_professional_practices;
       const student = practice?.t_students;
-      const career = student?.t_career;
+      const career = practice?.t_career;
       const institution = practice?.t_institution;
 
       if (!tutor || !practice) return;
@@ -401,12 +400,11 @@ export const getResumenPasantiasReport = async (req: Request, res: Response) => 
           INSTITUTION_TYPE
         ),
         t_students (
-          STUDENTS_ID,
+          STUDENTS_ID
+        ),
+        t_career (
           CAREER_ID,
-          t_career (
-            CAREER_ID,
-            CAREER_NAME
-          )
+          CAREER_NAME
         ),
         t_professional_practices_tutor (
           TUTOR_TYPE
@@ -422,7 +420,7 @@ export const getResumenPasantiasReport = async (req: Request, res: Response) => 
     (practices as any[]).forEach(practice => {
       const institution = practice.t_institution;
       const student = practice.t_students;
-      const career = student?.t_career;
+      const career = practice?.t_career;
 
       if (!institution || !student || !career) return;
 
@@ -515,12 +513,11 @@ export const getCulminatedStudentsReport = async (req: Request, res: Response) =
           NAME,
           SECOND_NAME,
           SURNAME,
-          SECOND_SURNAME,
+          SECOND_SURNAME
+        ),
+        t_career (
           CAREER_ID,
-          t_career (
-            CAREER_ID,
-            CAREER_NAME
-          )
+          CAREER_NAME
         ),
         t_institution (
           INSTITUTION_ID,
@@ -579,7 +576,7 @@ export const getCulminatedStudentsReport = async (req: Request, res: Response) =
 
     let filteredPractices = practices.filter((p: any) => {
       if (periodId && p.PERIOD_ID !== Number(periodId)) return false;
-      if (careerId && p.t_students?.CAREER_ID !== Number(careerId)) return false;
+      if (careerId && p.t_career?.CAREER_ID !== Number(careerId)) return false;
       if (institutionId && p.INSTITUTION_ID !== Number(institutionId)) return false;
       return true;
     });
@@ -592,7 +589,7 @@ export const getCulminatedStudentsReport = async (req: Request, res: Response) =
         id: p.PROFESSIONAL_PRACTICE_ID,
         studentCi: student?.STUDENTS_CI || '',
         studentName: `${student?.NAME || ''} ${student?.SECOND_NAME || ''} ${student?.SURNAME || ''} ${student?.SECOND_SURNAME || ''}`.trim(),
-        careerName: student?.t_career?.CAREER_NAME || '',
+        careerName: p.t_career?.CAREER_NAME || '',
         institutionName: p.t_institution?.INSTITUTION_NAME || '',
         practiceType: p.t_internship_type?.NAME || '',
         tutorName: tutor ? `${tutor.NAME || ''} ${tutor.SECOND_NAME || ''} ${tutor.SURNAME || ''} ${tutor.SECOND_SURNAME || ''}`.trim() : '',

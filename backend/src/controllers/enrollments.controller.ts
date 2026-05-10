@@ -44,9 +44,6 @@ interface Student {
   SECOND_NAME?: string;
   SURNAME: string;
   SECOND_SURNAME?: string;
-  t_career?: {
-    CAREER_NAME: string;
-  };
 }
 
 interface TutorAssociation {
@@ -80,6 +77,9 @@ interface ProfessionalPractice {
   INTERNSHIP_STATUS?: number;
   INTERNSHIP_TYPE_ID?: number;
   t_students?: Student;
+  t_career?: {
+    CAREER_NAME: string;
+  };
   t_internships_period?: { DESCRIPTION: string };
   t_internship_type?: { NAME: string };
   t_institution?: { 
@@ -113,9 +113,9 @@ export const getEnrollments = async (req: Request, res: Response) => {
             NAME,
             SECOND_NAME,
             SURNAME,
-            SECOND_SURNAME,
-            t_career (CAREER_NAME)
+            SECOND_SURNAME
           ),
+          t_career (CAREER_NAME),
           t_internships_period (DESCRIPTION),
           t_internship_type (NAME),
           t_institution (
@@ -181,7 +181,7 @@ export const getEnrollments = async (req: Request, res: Response) => {
         identificationPrefix: ciParts[0] || 'V',
         identificationNumber: ciParts[1] || '',
         studentName: `${item.t_students?.NAME || ''} ${item.t_students?.SURNAME || ''}`.trim(),
-        careerName: item.t_students?.t_career?.CAREER_NAME || '',
+        careerName: item.t_career?.CAREER_NAME || '',
         academicTutorId: academicTutor?.TUTOR_ID?.toString() || '',
         academicTutorName: academicTutor ? `${academicTutor.t_tutors?.NAME || ''} ${academicTutor.t_tutors?.SURNAME || ''}`.trim() : '',
         academicTutorPhone: academicTutor?.t_tutors?.CONTACT_PHONE || '',
@@ -333,9 +333,9 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
             NAME,
             SECOND_NAME,
             SURNAME,
-            SECOND_SURNAME,
-            t_career (CAREER_NAME)
+            SECOND_SURNAME
           ),
+          t_career (CAREER_NAME),
           t_internships_period (DESCRIPTION),
           t_internship_type (NAME),
           t_institution (INSTITUTION_NAME),
@@ -361,7 +361,7 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
         identificationPrefix: ciParts[0] || 'V',
         identificationNumber: ciParts[1] || '',
         studentName: `${item.t_students?.NAME || ''} ${item.t_students?.SURNAME || ''}`.trim(),
-        careerName: item.t_students?.t_career?.CAREER_NAME || '',
+        careerName: item.t_career?.CAREER_NAME || '',
         academicTutorId: academicTutor?.TUTOR_ID?.toString() || '',
         academicTutorName: academicTutor ? `${academicTutor.t_tutors?.NAME || ''} ${academicTutor.t_tutors?.SURNAME || ''}`.trim() : '',
         methodologicalTutorId: methodologicalTutor?.TUTOR_ID?.toString() || '',

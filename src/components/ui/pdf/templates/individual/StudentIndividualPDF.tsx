@@ -290,22 +290,6 @@ export const StudentIndividualPDF: React.FC<StudentIndividualPDFProps> = ({ data
             <Text style={styles.sectionTitle}>Datos Académicos</Text>
           </View>
           <View style={styles.infoGrid}>
-            <View style={styles.infoItemFull}>
-              <Text style={styles.infoLabel}>Carrera</Text>
-              <Text style={styles.infoValueHighlight}>{student.careerName || "No asignada"}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Semestre</Text>
-              <Text style={styles.infoValue}>{student.semester}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Sección</Text>
-              <Text style={styles.infoValue}>{student.section}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Régimen</Text>
-              <Text style={styles.infoValue}>{student.regime}</Text>
-            </View>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Tipo de Estudiante</Text>
               <Text style={styles.infoValue}>{student.studentType}</Text>

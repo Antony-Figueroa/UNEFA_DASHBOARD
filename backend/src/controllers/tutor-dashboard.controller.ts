@@ -138,9 +138,9 @@ export const getTutorStudents = async (req: AuthRequest, res: Response) => {
             NAME,
             SURNAME,
             EMAIL,
-            CONTACT_PHONE,
-            t_career (CAREER_NAME)
+            CONTACT_PHONE
           ),
+          t_career (CAREER_NAME),
           t_institution (
             INSTITUTION_NAME
           ),
@@ -198,7 +198,7 @@ export const getTutorStudents = async (req: AuthRequest, res: Response) => {
         studentName: `${student?.NAME || ''} ${student?.SURNAME || ''}`.trim(),
         studentEmail: student?.EMAIL || '',
         studentPhone: student?.CONTACT_PHONE || '',
-        careerName: student?.t_career?.CAREER_NAME || '',
+        careerName: practice?.t_career?.CAREER_NAME || '',
         institutionName: institution?.INSTITUTION_NAME || '',
         period: period?.DESCRIPTION || '',
         practiceType: practiceType?.NAME || '',
@@ -445,9 +445,9 @@ export const getTutorReports = async (req: AuthRequest, res: Response) => {
           t_students (
             STUDENTS_CI,
             NAME,
-            SURNAME,
-            t_career (CAREER_NAME)
+            SURNAME
           ),
+          t_career (CAREER_NAME),
           t_institution (
             INSTITUTION_NAME
           ),
@@ -478,7 +478,7 @@ export const getTutorReports = async (req: AuthRequest, res: Response) => {
         return {
           studentCi: student?.STUDENTS_CI || '',
           studentName: `${student?.NAME || ''} ${student?.SURNAME || ''}`.trim(),
-          careerName: student?.t_career?.CAREER_NAME || '',
+          careerName: practice?.t_career?.CAREER_NAME || '',
           institutionName: institution?.INSTITUTION_NAME || '',
           period: period?.DESCRIPTION || '',
           status: statusMap[practice.PRACTICES_STATUS] || 'Desconocido',
@@ -652,9 +652,9 @@ export const getTutorPractice = async (req: AuthRequest, res: Response) => {
           NAME,
           SURNAME,
           EMAIL,
-          CONTACT_PHONE,
-          t_career (CAREER_NAME)
+          CONTACT_PHONE
         ),
+        t_career (CAREER_NAME),
         t_institution (
           INSTITUTION_NAME
         ),
@@ -689,7 +689,7 @@ export const getTutorPractice = async (req: AuthRequest, res: Response) => {
         studentName: `${student?.NAME || ''} ${student?.SURNAME || ''}`.trim(),
         studentEmail: student?.EMAIL || '',
         studentPhone: student?.CONTACT_PHONE || '',
-        careerName: student?.t_career?.CAREER_NAME || '',
+        careerName: (practice as any)?.t_career?.CAREER_NAME || '',
         institutionName: institution?.INSTITUTION_NAME || '',
         period: period?.DESCRIPTION || '',
         practiceType: practiceType?.NAME || '',

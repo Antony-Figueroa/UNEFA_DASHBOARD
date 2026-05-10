@@ -41,22 +41,6 @@ export interface Student {
   /** Dirección de habitación completa */
   address: string;
 
-  // Datos Académicos
-  /** ID de la carrera asociada (opcional si no se ha asignado) */
-  careerId?: string;
-  /** Nombre de la carrera para visualización (opcional) */
-  careerName?: string;
-  /** ID de la institución donde realiza pasantía (opcional) */
-  institutionId?: string;
-  /** Nombre de la institución para visualización (opcional) */
-  institutionName?: string;
-  /** Semestre actual (ej: 04) */
-  semester: string;
-  /** Sección asignada (ej: 236) */
-  section: string;
-  /** Régimen de estudio */
-  regime: "DIURNO" | "NOCTURNO" | "MIXTO";
-
   // Datos de Clasificación
   /** Clasificación del estudiante */
   studentType: "CIVIL" | "MILITAR";

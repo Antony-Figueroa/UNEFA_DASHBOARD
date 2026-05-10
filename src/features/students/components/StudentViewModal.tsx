@@ -115,18 +115,6 @@ export default function StudentViewModal({
                             <h4 className="font-bold text-text-primary dark:text-white/90 uppercase text-xs tracking-wider">Datos Académicos</h4>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                            <div className="sm:col-span-2">
-                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Carrera</label>
-                                <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">{student.careerName || "No asignada"}</p>
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Semestre / Sección</label>
-                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{student.semester} - {student.section}</p>
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Régimen</label>
-                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{student.regime}</p>
-                            </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipo / Rango</label>
                                 <p className="text-sm font-bold text-text-primary dark:text-white/90">{student.studentType} - {student.militaryRank}</p>

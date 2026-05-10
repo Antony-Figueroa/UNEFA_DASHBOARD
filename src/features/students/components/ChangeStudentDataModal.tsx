@@ -13,7 +13,7 @@ import { useInstitutions } from "../../institutions/hooks/useInstitutions";
 import { useStudents } from "../hooks/useStudents";
 
 const changeSchema = z.object({
-  changeType: z.enum(["institution", "tutor", "regime"]),
+  changeType: z.enum(["institution", "tutor"]),
   newValue: z.string().min(1, "El nuevo valor es requerido"),
   reason: z.string().optional()
 });
@@ -79,20 +79,12 @@ export default function ChangeStudentDataModal({
     [tutors]
   );
 
-  const regimeOptions = [
-    { value: "DIURNO", label: "DIURNO" },
-    { value: "NOCTURNO", label: "NOCTURNO" },
-    { value: "MIXTO", label: "MIXTO" }
-  ];
-
   const getOptions = () => {
     switch (selectedChangeType) {
       case "institution":
         return institutionOptions;
       case "tutor":
         return tutorOptions;
-      case "regime":
-        return regimeOptions;
       default:
         return [];
     }
@@ -102,11 +94,9 @@ export default function ChangeStudentDataModal({
     if (!student) return "";
     switch (selectedChangeType) {
       case "institution":
-        return student.institutionId || "";
+        return "";
       case "tutor":
         return "";
-      case "regime":
-        return student.regime || "";
       default:
         return "";
     }
@@ -161,8 +151,7 @@ export default function ChangeStudentDataModal({
 
   const changeTypeOptions = [
     { value: "institution", label: "Institución" },
-    { value: "tutor", label: "Tutor" },
-    { value: "regime", label: "Régimen" }
+    { value: "tutor", label: "Tutor" }
   ];
 
   return (
@@ -215,25 +204,13 @@ export default function ChangeStudentDataModal({
                 <label className="block text-sm font-medium text-text-primary mb-1">
                   Nuevo Valor *
                 </label>
-                {selectedChangeType === "regime" ? (
-                  <select
-                    {...register("newValue")}
-                    className="w-full px-4 py-2.5 bg-bg-secondary dark:bg-white/5 border border-border-light dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
-                  >
-                    <option value="">Seleccione...</option>
-                    {regimeOptions.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <CustomSelect
-                    options={getOptions()}
-                    value={getCurrentValue()}
-                    onChange={(val) => setValue("newValue", val)}
-                    placeholder={`Seleccione ${selectedChangeType}...`}
-                    searchable
-                  />
-                )}
+                <CustomSelect
+                  options={getOptions()}
+                  value={getCurrentValue()}
+                  onChange={(val) => setValue("newValue", val)}
+                  placeholder={`Seleccione ${selectedChangeType}...`}
+                  searchable
+                />
                 {errors.newValue && (
                   <p className="mt-1 text-xs text-red-500">{errors.newValue.message}</p>
                 )}

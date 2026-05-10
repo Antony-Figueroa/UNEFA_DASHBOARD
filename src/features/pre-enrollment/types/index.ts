@@ -25,8 +25,16 @@ export interface PreEnrollment {
   period: string;
   /** Tipo de práctica (ej: ORDINARIA) */
   practiceType: string;
+  /** ID de la carrera */
+  careerId: string;
   /** Nombre de la carrera */
   careerName: string;
+  /** Semestre (ej: 04) */
+  semester: string;
+  /** Sección (ej: 536) */
+  section: string;
+  /** Régimen de estudio */
+  regime: "DIURNO" | "NOCTURNO" | "MIXTO";
   /** Código de matrícula (ej: ING-AI-111-336-S3) */
   enrollmentCode: string;
   

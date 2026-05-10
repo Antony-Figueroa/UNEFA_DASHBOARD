@@ -18,10 +18,6 @@ import { AxiosError } from "axios";
 const STUDENT_LABELS: Record<string, string> = {
   firstName: "Nombre",
   lastName: "Apellido",
-  careerName: "Carrera",
-  semester: "Semestre",
-  section: "Sección",
-  regime: "Régimen",
   identificationNumber: "Cédula",
   email: "Correo",
   phone: "Teléfono",
@@ -75,7 +71,7 @@ export const useStudents = () => {
               <RecordDetails
                 data={newStudent as unknown as Record<string, unknown>}
                 labels={STUDENT_LABELS}
-                fields={['identificationNumber', 'careerName', 'semester']}
+                fields={['identificationNumber']}
               />
             </>
           ),

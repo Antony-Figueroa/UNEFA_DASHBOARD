@@ -76,7 +76,7 @@ export const getStudentByCi = async (ci: string): Promise<Student | null> => {
 };
 
 export interface ChangeRegistrationPayload {
-  changeType: 'institution' | 'tutor' | 'regime';
+  changeType: 'institution' | 'tutor';
   newValue: string;
   reason?: string;
 }
@@ -236,14 +236,10 @@ export const importStudents = async (data: Record<string, unknown>[]): Promise<I
 
 export const exportStudents = async (filters?: {
   status?: boolean;
-  careerId?: string;
-  regime?: string;
 }): Promise<Student[]> => {
   try {
     const params = new URLSearchParams();
     if (filters?.status !== undefined) params.append('status', String(filters.status));
-    if (filters?.careerId) params.append('careerId', filters.careerId);
-    if (filters?.regime) params.append('regime', filters.regime);
     
     const response = await apiClient.get(`${API_URL}/export?${params.toString()}`);
     return response.data.data || [];

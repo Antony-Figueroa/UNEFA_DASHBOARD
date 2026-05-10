@@ -61,14 +61,6 @@ export const studentSchema = z.object({
     .max(500, "La dirección es demasiado larga")
     .regex(SAFE_TEXT_PATTERN, "Caracteres no permitidos")
     .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
-  careerId: z.union([z.string(), z.number()]).refine(val => String(val).length > 0, "La carrera es obligatoria"),
-  semester: z.string()
-    .min(1, "El semestre es obligatorio")
-    .regex(/^\d+$/, "Solo se admiten números"),
-  section: z.string()
-    .min(1, "La sección es obligatoria")
-    .regex(/^\d+$/, "Solo se admiten números"),
-  regime: z.string().min(1, "Seleccione el régimen"),
   studentType: z.string().min(1, "Seleccione el tipo de estudiante"),
   militaryRank: z.string().default("NO APLICA"),
   works: z.string().min(1, "Seleccione si trabaja"),

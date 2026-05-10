@@ -39,8 +39,6 @@ interface StudentModalProps {
   onSave: (student: CreateStudentPayload | UpdateStudentPayload) => Promise<void> | void;
   /** Estudiante en edición (null si es creación) */
   editingStudent?: Student | null;
-  /** Opciones de carreras para el selector */
-  careerOptions: { value: string | number; label: string }[];
   /** Listas dinámicas cargadas previamente (opcional) */
   dynamicLists?: Record<string, ListValue[]>;
   /** Indica si hay una operación de guardado en curso */
@@ -61,7 +59,6 @@ interface StudentModalProps {
  *   isOpen={isOpen} 
  *   onClose={() => setIsOpen(false)} 
  *   onSave={handleSave} 
- *   careerOptions={careers}
  * />
  * ```
  */
@@ -70,7 +67,6 @@ export default function StudentModal({
   onClose,
   onSave,
   editingStudent,
-  careerOptions,
   dynamicLists,
   isLoading = false,
   modalId,
@@ -123,10 +119,6 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
           phoneNumber: "",
           email: "",
           address: "",
-          careerId: "",
-          semester: "",
-          section: "",
-          regime: "",
           studentType: "",
           militaryRank: "",
           works: "",
@@ -134,7 +126,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         setDisplayPhoneNumber("");
       }
     }
-    
+
     // Verificar si la cédula existe mientras escribe (7 u 8 dígitos)
     if (!existingStudent && !editingStudent && (digitsOnly.length === 7 || digitsOnly.length === 8)) {
       setIsCheckingCi(true);
@@ -175,10 +167,6 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
             setValue("phoneNumber", phoneNumber);
             setValue("email", existingStudentData.email || "");
             setValue("address", existingStudentData.address || "");
-            setValue("careerId", existingStudentData.careerId || "");
-            setValue("semester", existingStudentData.semester || "");
-            setValue("section", existingStudentData.section || "");
-            setValue("regime", existingStudentData.regime || "");
             setValue("studentType", existingStudentData.studentType || "");
             setValue("militaryRank", existingStudentData.militaryRank || "");
             setValue("works", existingStudentData.works || "");
@@ -274,11 +262,6 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
 
   const VENEZUELA_PHONE_PREFIXES = options.PREFIJO || [];
 
-  const REGIME_OPTIONS = options["Regimen/Turno"] || [
-    { value: "DIURNO", label: "DIURNO" },
-    { value: "NOCTURNO", label: "NOCTURNO" },
-  ];
-
   const STUDENT_TYPE_OPTIONS = options["Tipo de estudiante"] || [
     { value: "CIVIL", label: "CIVIL" },
     { value: "MILITAR", label: "MILITAR" },
@@ -318,10 +301,6 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
       phoneNumber: "",
       email: "",
       address: "",
-      careerId: "",
-      semester: "",
-      section: "",
-      regime: "",
       studentType: "",
       militaryRank: "",
       works: "",
@@ -375,24 +354,11 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   const [isValueModalOpen, setIsValueModalOpen] = useState(false);
   const [valueModalTitle, setValueModalTitle] = useState<string>("");
   const [targetListName, setTargetListName] = useState<string>("");
-  const [targetField, setTargetField] = useState<"civilStatus" | "phonePrefix" | "regime" | "militaryRank">("civilStatus");
+  const [targetField, setTargetField] = useState<"civilStatus" | "phonePrefix" | "militaryRank">("civilStatus");
   const [newValueInput, setNewValueInput] = useState<string>("");
   const [savingNewValue, setSavingNewValue] = useState(false);
 
-  useEffect(() => {
-    const handleSetCareerId = (e: Event) => {
-      const id = (e as CustomEvent).detail;
-      if (id !== undefined && id !== null) {
-        setValue("careerId", String(id), { shouldValidate: true, shouldDirty: true });
-      }
-    };
-    window.addEventListener("students:setCareerId", handleSetCareerId as EventListener);
-    return () => {
-      window.removeEventListener("students:setCareerId", handleSetCareerId as EventListener);
-    };
-  }, [setValue]);
-
-  const openAddValueModal = (listName: string, field: "civilStatus" | "phonePrefix" | "regime" | "militaryRank", title: string, preset: string = "") => {
+  const openAddValueModal = (listName: string, field: "civilStatus" | "phonePrefix" | "militaryRank", title: string, preset: string = "") => {
     // Verificar si la lista está protegida
     if (isProtectedList(listName)) {
       addToast({
@@ -502,10 +468,6 @@ useEffect(() => {
           phoneNumber: phoneNumber,
           email: (editingStudent.email || "").toUpperCase(),
           address: (editingStudent.address || "").toUpperCase(),
-          careerId: String(editingStudent.careerId || ""),
-          semester: editingStudent.semester || "",
-          section: editingStudent.section || "",
-          regime: (editingStudent.regime || "").toUpperCase(),
           studentType: (editingStudent.studentType || "").toUpperCase(),
           militaryRank: (editingStudent.militaryRank || "").toUpperCase(),
           works: (editingStudent.works || "").toUpperCase(),
@@ -527,10 +489,6 @@ useEffect(() => {
           phoneNumber: "",
           email: "",
           address: "",
-          careerId: "",
-          semester: "",
-          section: "",
-          regime: "",
           studentType: "",
           militaryRank: "",
           works: "",
@@ -566,10 +524,6 @@ useEffect(() => {
         phone: `${validatedData.phonePrefix}${validatedData.phoneNumber}`,
         email: validatedData.email.toUpperCase(),
         address: validatedData.address.toUpperCase(),
-        careerId: String(validatedData.careerId),
-        semester: validatedData.semester,
-        section: validatedData.section,
-        regime: validatedData.regime.toUpperCase() as Student["regime"],
         studentType: validatedData.studentType.toUpperCase() as Student["studentType"],
         militaryRank: validatedData.militaryRank.toUpperCase(),
         works: validatedData.works.toUpperCase() as Student["works"],
@@ -700,10 +654,6 @@ useEffect(() => {
                                 setValue("phoneNumber", phoneNumber);
                                 setValue("email", existingStudentData.email || "");
                                 setValue("address", existingStudentData.address || "");
-                                setValue("careerId", existingStudentData.careerId || "");
-                                setValue("semester", existingStudentData.semester || "");
-                                setValue("section", existingStudentData.section || "");
-                                setValue("regime", existingStudentData.regime || "");
                                 setValue("studentType", existingStudentData.studentType || "");
                                 setValue("militaryRank", existingStudentData.militaryRank || "");
                                 setValue("works", existingStudentData.works || "");
@@ -949,101 +899,6 @@ useEffect(() => {
               />
             </div>
 
-            {/* Fila 5 Académica */}
-            <div>
-              <label htmlFor="careerId" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Carrera *</label>
-              <Controller
-                name="careerId"
-                control={control}
-                render={({ field }) => (
-                  <CustomSelect
-                    id="careerId"
-                    options={careerOptions.map((opt) => ({ value: String(opt.value), label: opt.label.toUpperCase() }))}
-                    placeholder="Seleccione Carrera"
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={String(field.value)}
-                    disabled={isLoading || (!!editingStudent && editingStudent.isInUse) || viewOnlyMode}
-                    onAddNew={() => {
-                      const evt = new CustomEvent("students:addCareer");
-                      window.dispatchEvent(evt);
-                    }}
-                    addNewLabel="Agregar Carrera"
-                    error={!!errors.careerId}
-                  />
-                )}
-              />
-              {errors.careerId && (
-                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
-                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
-                  {errors.careerId.message}
-                </p>
-              )}
-              {editingStudent?.isInUse && (
-                <p className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
-                  Campo bloqueado: El estudiante tiene registros de pre-inscripción activos.
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Semestre *</label>
-              <Input
-                {...register("semester")}
-                placeholder="Semestre"
-                error={!!errors.semester}
-                hint={errors.semester?.message}
-                disabled={viewOnlyMode}
-                maxLength={2}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').substring(0, 2);
-                  setValue("semester", val, { shouldValidate: true, shouldDirty: true });
-                }}
-              />
-            </div>
-            <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Sección *</label>
-              <Input
-                {...register("section")}
-                placeholder="Sección"
-                error={!!errors.section}
-                hint={errors.section?.message}
-                disabled={viewOnlyMode}
-                maxLength={5}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').substring(0, 5);
-                  setValue("section", val, { shouldValidate: true, shouldDirty: true });
-                }}
-              />
-            </div>
-
-            {/* Fila 6 Clasificación */}
-            <div>
-              <label htmlFor="regime" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Régimen *</label>
-              <Controller
-                name="regime"
-                control={control}
-                render={({ field }) => (
-                  <CustomSelect
-                    id="regime"
-                    options={REGIME_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                    placeholder="Seleccione Régimen"
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={String(field.value)}
-                    onAddNew={() => openAddValueModal("Regimen/Turno", "regime", "Agregar Régimen")}
-                    addNewLabel="Agregar Régimen"
-                    disabled={viewOnlyMode}
-                    error={!!errors.regime}
-                  />
-                )}
-              />
-              {errors.regime && (
-                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
-                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
-                  {errors.regime.message}
-                </p>
-              )}
-            </div>
             <div>
               <label htmlFor="studentType" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Tipo Estudiante *</label>
               <Controller

@@ -5,25 +5,10 @@ import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIc
 import { StudentRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { useDebounce } from "../../../hooks/useDebounce";
-import Badge from "../../../components/ui/badge/Badge";
+
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { CrudStatus } from "../../../hooks/useCrud";
 import { formatPhoneDisplay } from "../../../utils/inputFormat";
-
-/**
- * Genera un color consistente basado en el nombre de la carrera.
- * 
- * @param careerName - Nombre de la carrera.
- * @returns Variante de color para el Badge.
- */
-const getCareerColor = (careerName: string): "primary" | "success" | "error" | "warning" | "info" => {
-    const colors: ("primary" | "success" | "error" | "warning" | "info")[] = ["primary", "success", "error", "warning", "info"];
-    let hash = 0;
-    for (let i = 0; i < careerName.length; i++) {
-        hash = careerName.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-};
 
 /**
  * Propiedades del componente StudentTable.
@@ -55,16 +40,13 @@ interface StudentTableProps {
     inactiveMode?: boolean;
     /** Pestaña activa actual (Activas o Inactivas) */
     activeTab?: "Activas" | "Inactivas";
-    /** Opciones para el filtro de carrera */
-    careerOptions?: { value: string | number; label: string }[];
-    /** Opciones para el filtro de régimen */
-    regimeOptions?: { value: string; label: string }[];
+
     /** Indica si hay una acción en curso (loading de acción) */
     loading?: boolean;
 }
 
 /** Claves permitidas para el ordenamiento de la tabla */
-type SortKey = "identificationNumber" | "fullNames" | "email" | "careerName" | "enrollmentDate";
+type SortKey = "identificationNumber" | "fullNames" | "email" | "enrollmentDate";
 /** Direcciones permitidas para el ordenamiento */
 type SortOrder = "asc" | "desc";
 
@@ -227,14 +209,12 @@ export default function StudentTable({
     onSelectionChange,
     inactiveMode = false,
     activeTab = "Activas",
-    careerOptions = [],
-    regimeOptions = [],
+
     loading = false,
 }: StudentTableProps) {
     const [idFilter, setIdFilter] = useState("");
     const [nameFilter, setNameFilter] = useState("");
-    const [careerFilter, setCareerFilter] = useState("");
-    const [regimeFilter, setRegimeFilter] = useState("");
+
     const [dateFromFilter, setDateFromFilter] = useState("");
     const [dateToFilter, setDateToFilter] = useState("");
 
@@ -282,14 +262,9 @@ export default function StudentTable({
     const filteredData = useMemo(() => {
         const idSearch = debouncedIdFilter.trim().toLowerCase();
         const nameSearch = debouncedNameFilter.trim().toLowerCase();
-        const careerSearch = careerFilter;
-
         const filtered = data.filter((s) => {
             const matchesId = !idSearch || s.identificationNumber.toLowerCase().includes(idSearch);
             const matchesName = !nameSearch || (s.fullNames || "").toLowerCase().includes(nameSearch);
-            const matchesCareer = !careerSearch || s.careerId === careerSearch;
-            const matchesRegime = !regimeFilter || s.regime === regimeFilter;
-
             // Filtros de fecha
             let matchesDateFrom = true;
             let matchesDateTo = true;
@@ -310,8 +285,7 @@ export default function StudentTable({
 
             const matchesTab = activeTab === "Activas" ? !!s.status : !s.status;
 
-            return matchesId && matchesName && matchesCareer && 
-                   matchesRegime && 
+            return matchesId && matchesName && 
                    matchesDateFrom && matchesDateTo &&
                    matchesTab;
         });
@@ -345,12 +319,12 @@ export default function StudentTable({
         });
 
         return filtered;
-    }, [debouncedIdFilter, debouncedNameFilter, careerFilter, data, regimeFilter, debouncedDateFromFilter, debouncedDateToFilter, activeTab, sortConfig.key, sortConfig.order]);
+    }, [debouncedIdFilter, debouncedNameFilter, data, debouncedDateFromFilter, debouncedDateToFilter, activeTab, sortConfig.key, sortConfig.order]);
 
     // Reset page when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedIdFilter, debouncedNameFilter, careerFilter, regimeFilter]);
+    }, [debouncedIdFilter, debouncedNameFilter]);
 
     const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -414,8 +388,6 @@ export default function StudentTable({
     const clearFilters = () => {
         setIdFilter("");
         setNameFilter("");
-        setCareerFilter("");
-        setRegimeFilter("");
         setDateFromFilter("");
         setDateToFilter("");
     };
@@ -493,48 +465,6 @@ export default function StudentTable({
 
 
 
-                    {/* Filtro por Carrera */}
-                    <div className="relative">
-                        <select
-                            value={careerFilter}
-                            onChange={(e) => setCareerFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
-                        >
-                            <option value="" className="dark:bg-bg-dark">Todas las Carreras</option>
-                            {careerOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    </div>
-
-                    {/* Filtro por Régimen */}
-                    <div className="relative">
-                        <select
-                            value={regimeFilter}
-                            onChange={(e) => setRegimeFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
-                        >
-                            <option value="" className="dark:bg-bg-dark">Todos los Regímenes</option>
-                            {regimeOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                    </div>
-
                     {/* Filtro Fecha Desde */}
                     <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-text-tertiary pointer-events-none">Desde</span>
@@ -563,7 +493,7 @@ export default function StudentTable({
                         <div className="text-xs text-text-secondary dark:text-text-tertiary">
                             Mostrando <span className="font-bold text-text-primary dark:text-text-emphasis">{filteredData.length}</span> resultados
                         </div>
-                        {(idFilter || nameFilter || careerFilter || regimeFilter) && (
+                        {(idFilter || nameFilter) && (
                             <button
                                 onClick={clearFilters}
                                 className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
@@ -661,9 +591,6 @@ export default function StudentTable({
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("email")}>
                                 <div className="flex items-center">Correo Electrónico <SortIndicator column="email" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("careerName")}>
-                                <div className="flex items-center">Carrera <SortIndicator column="careerName" /></div>
-                            </TableCell>
                             <TableCell isHeader className="table-header-cell text-right"> </TableCell>
                         </TableRow>
                     </TableHeader>
@@ -696,15 +623,6 @@ export default function StudentTable({
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary whitespace-nowrap">{formatPhoneDisplay(s.phone)}</TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">{s.email}</TableCell>
-                                    <TableCell className="table-cell">
-                                        {s.careerName ? (
-                                            <Badge color={getCareerColor(s.careerName)} variant="light" size="sm" shape="rounded">
-                                                {s.careerName}
-                                            </Badge>
-                                        ) : (
-                                            <span className="text-text-tertiary">N/A</span>
-                                        )}
-                                    </TableCell>
                                     <TableCell className="table-cell text-right relative">
                                         <ActionButtons
                                             onView={onView ? () => onView(s) : undefined}
@@ -724,7 +642,7 @@ export default function StudentTable({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell className="table-cell py-24 text-center" colSpan={7}>
+                                    <TableCell className="table-cell py-24 text-center" colSpan={6}>
                                     <div className="flex flex-col items-center justify-center animate-fadeIn">
                                         <div className="mb-4 rounded-full bg-bg-secondary p-4 dark:bg-white/5">
                                             <svg className="h-8 w-8 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -733,7 +651,7 @@ export default function StudentTable({
                                         </div>
                                         <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron estudiantes</h3>
                                         <p className="mt-1 text-xs text-text-secondary dark:text-text-tertiary">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                        {(idFilter || nameFilter || careerFilter || regimeFilter || dateFromFilter || dateToFilter) && (
+                        {(idFilter || nameFilter || dateFromFilter || dateToFilter) && (
                                             <button
                                                 onClick={clearFilters}
                                                 className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
@@ -779,18 +697,6 @@ export default function StudentTable({
                                     <div className="mt-4 space-y-6 animate-fadeIn border-t border-border-light dark:border-border-dark pt-6">
                                         <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
                                             <div className="col-span-2 flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Carrera</p>
-                                                <div className="flex justify-center w-full">
-                                                    {s.careerName ? (
-                                                        <Badge color={getCareerColor(s.careerName)} variant="light" size="sm">
-                                                            {s.careerName}
-                                                        </Badge>
-                                                    ) : (
-                                                        <span className="text-xs text-text-tertiary font-medium">N/A</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="col-span-2 flex flex-col items-center">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Correo</p>
                                                 <p className="text-sm text-text-secondary dark:text-text-tertiary font-medium truncate w-full max-w-62.5">{s.email}</p>
                                             </div>
@@ -828,7 +734,7 @@ export default function StudentTable({
                         </div>
                         <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron estudiantes</h3>
                         <p className="mt-1 text-xs text-text-secondary dark:text-text-tertiary max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                        {(idFilter || nameFilter || careerFilter) && (
+                        {(idFilter || nameFilter) && (
                             <button
                                 onClick={clearFilters}
                                 className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"

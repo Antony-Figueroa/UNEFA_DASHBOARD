@@ -128,10 +128,6 @@ export default function StudentsPage() {
     const { careers, addCareer } = useCareers();
     const { activeOptions: activeInternshipOptions, fetchAll: fetchInternshipTypes } = useInternshipTypes();
 
-    const careerOptions = useMemo(() =>
-        careers.map(c => ({ value: c.careerId, label: c.careerName.toUpperCase() })),
-        [careers]);
-
     const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
@@ -141,8 +137,6 @@ export default function StudentsPage() {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
     const [pdfSearchTerm, setPdfSearchTerm] = useState("");
-    const [pdfCareerFilter, setPdfCareerFilter] = useState("");
-    const [pdfRegimeFilter, setPdfRegimeFilter] = useState("");
     const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
     const [dateRangeFilter] = useState<{ start: string; end: string } | null>(null);
 
@@ -183,8 +177,6 @@ export default function StudentsPage() {
      */
     const pdfFilteredData = useMemo(() => {
         const search = pdfSearchTerm.trim().toLowerCase();
-        const careerSearch = pdfCareerFilter.trim();
-        const regimeSearch = pdfRegimeFilter.trim().toLowerCase();
 
         return (Array.isArray(students) ? students : [])
             .filter((s) => {
@@ -193,13 +185,11 @@ export default function StudentsPage() {
                     (s.identificationNumber || "").toLowerCase().includes(search) ||
                     fullName.includes(search);
 
-                const matchesCareer = !careerSearch || String(s.careerId) === careerSearch;
-                const matchesRegime = !regimeSearch || (s.regime || "").toLowerCase() === regimeSearch;
                 const matchesStatus = !!s.status;
 
-                return matchesSearch && matchesCareer && matchesRegime && matchesStatus;
+                return matchesSearch && matchesStatus;
             });
-    }, [students, pdfSearchTerm, pdfCareerFilter, pdfRegimeFilter]);
+    }, [students, pdfSearchTerm]);
 
     /**
      * Inicia el flujo de creación de un nuevo estudiante.
@@ -482,11 +472,6 @@ export default function StudentsPage() {
                                 selectedIds={selectedIds}
                                 onSelectionChange={setSelectedIds}
                                 inactiveMode={activeTab === "Inactivas"}
-                                careerOptions={careerOptions}
-                                regimeOptions={dynamicLists["Regimen/Turno"]?.map(v => ({ value: v.name.toUpperCase(), label: v.name.toUpperCase() })) || [
-                                    { value: "DIURNO", label: "DIURNO" },
-                                    { value: "NOCTURNO", label: "NOCTURNO" }
-                                ]}
                                 loading={loadingAction}
                             />
                         </SkeletonLoader>
@@ -497,7 +482,6 @@ export default function StudentsPage() {
                         onClose={handleCloseModal}
                         onSave={handleSave}
                         editingStudent={editingStudent}
-                        careerOptions={careerOptions}
                         dynamicLists={dynamicLists}
                         isLoading={loadingAction}
                         onEditExisting={handleEditFromExisting}
@@ -562,49 +546,12 @@ export default function StudentsPage() {
                         onSearchChange={setPdfSearchTerm}
                         renderFilters={() => (
                             <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
-                                        Carrera
-                                    </label>
-                                    <select
-                                        value={pdfCareerFilter}
-                                        onChange={(e) => setPdfCareerFilter(e.target.value)}
-                                        className="w-full px-4 py-2.5 bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
-                                    >
-                                        <option value="">Todas las Carreras</option>
-                                        {careerOptions.map((opt) => (
-                                            <option key={opt.value} value={opt.value}>
-                                                {opt.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
-                                        Régimen
-                                    </label>
-                                    <select
-                                        value={pdfRegimeFilter}
-                                        onChange={(e) => setPdfRegimeFilter(e.target.value)}
-                                        className="w-full px-4 py-2.5 bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
-                                    >
-                                        <option value="">Todos los Regímenes</option>
-                                        {dynamicLists["Regimen/Turno"]?.map((opt) => (
-                                            <option key={opt.id} value={opt.name.toUpperCase()}>
-                                                {opt.name.toUpperCase()}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                                <p className="text-sm text-text-tertiary">Filtre por nombre o cédula usando el campo de búsqueda.</p>
                             </div>
                         )}
                         columns={[
                             { header: "Cédula", accessor: (s) => `${s.identificationPrefix}-${s.identificationNumber}` },
                             { header: "Estudiante", accessor: (s) => `${s.firstName} ${s.lastName}` },
-                            { header: "Carrera", accessor: "careerName" },
-                            { header: "Sem/Sec", accessor: (s) => `${s.semester}-${s.section}` },
-                            { header: "Régimen", accessor: "regime" },
                         ]}
                     />
 

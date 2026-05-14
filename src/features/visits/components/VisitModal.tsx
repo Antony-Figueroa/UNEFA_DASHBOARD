@@ -3,7 +3,7 @@
  * @description Gestiona la validación de campos, fechas del período académico y confirmación de guardado.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -18,8 +18,12 @@ import { useToast } from '../../../context/toast';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
 import Input from '../../../components/form/input/InputField';
 import { SAFE_LONG_TEXT_PATTERN, isSafeInput } from '../../../utils/inputValidation';
+import { useTutors } from '../../tutors/hooks/useTutors';
+import TutorModal from '../../tutors/components/TutorModal';
+import { createTutor } from '../../tutors/services/tutorsService';
 
 const visitSchema = z.object({
+  tutorId: z.string().min(1, 'El tutor es requerido'),
   visitDate: z.string().min(1, 'La fecha es requerida'),
   visitType: z.enum(['PRESENCIAL', 'VIRTUAL', 'TELEFONICA']),
   visitCase: z.enum(['VISITA_INICIAL', 'SEGUIMIENTO_REGULAR', 'REVISION_BITACORAS', 'EVALUACION_PARCIAL', 'SEGUIMIENTO_PROBLEMAS', 'CAMBIO_EMPRESA', 'CAMBIO_TUTOR', 'SUSPENSION', 'REANUDACION', 'EVALUACION_FINAL', 'CERTIFICACION']),
@@ -118,6 +122,7 @@ export default function VisitModal({
     resolver: zodResolver(visitSchema) as any,
     mode: 'all',
     defaultValues: {
+      tutorId: String(practiceId ? tutorId : ''),
       visitDate: new Date().toISOString().slice(0, 16),
       visitType: 'PRESENCIAL',
       visitCase: 'SEGUIMIENTO_REGULAR',
@@ -130,6 +135,11 @@ export default function VisitModal({
 
   const { showConfirmation, handleCloseAttempt, confirmClose, cancelClose } = useUnsavedChanges(isDirty, onClose);
 
+  // Estados para el selector de tutor
+  const { tutors, refreshTutors } = useTutors();
+  const [tutorOptions, setTutorOptions] = useState<{ value: string; label: string }[]>([]);
+  const [isTutorModalOpen, setIsTutorModalOpen] = useState(false);
+
   // Cleanup cuando se cierra el modal
   useEffect(() => {
     if (!isOpen) {
@@ -138,6 +148,38 @@ export default function VisitModal({
       setDisplayHours('');
     }
   }, [isOpen]);
+
+  // Construir opciones de tutores para el selector
+  useEffect(() => {
+    const options = tutors.map(t => ({
+      value: String(t.tutorId),
+      label: `${t.firstName} ${t.lastName} (${t.identificationPrefix}-${t.identificationNumber})`
+    }));
+    setTutorOptions(options);
+  }, [tutors]);
+
+  // Callback cuando se guarda un nuevo tutor desde TutorModal
+  const handleTutorCreated = async (tutorData: any) => {
+    try {
+      const newTutor = await createTutor(tutorData);
+      if (newTutor) {
+        await refreshTutors();
+        setValue('tutorId', String(newTutor.tutorId));
+        setIsTutorModalOpen(false);
+        addToast({
+          variant: 'success',
+          title: 'Tutor registrado',
+          message: `${newTutor.firstName} ${newTutor.lastName} ha sido agregado exitosamente`
+        });
+      }
+    } catch (error: any) {
+      addToast({
+        variant: 'error',
+        title: 'Error al crear tutor',
+        message: error.response?.data?.message || 'No se pudo crear el tutor'
+      });
+    }
+  };
 
   useEffect(() => {
     if (visit) {
@@ -218,6 +260,8 @@ export default function VisitModal({
   const handleConfirmSave = async () => {
     if (!pendingData) return;
 
+    const tutorIdFromForm = parseInt(pendingData.tutorId);
+
     const payload: CreateVisitPayload | UpdateVisitPayload = isEditing
       ? {
           practiceId, // Necesario para validar duplicados en backend
@@ -231,7 +275,7 @@ export default function VisitModal({
         }
       : {
           practiceId,
-          tutorId,
+          tutorId: tutorIdFromForm,
           visitDate: new Date(pendingData.visitDate).toISOString(),
           visitType: pendingData.visitType,
           visitCase: pendingData.visitCase,
@@ -291,6 +335,45 @@ export default function VisitModal({
 
         <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
           <form id="visit-form" onSubmit={handleSubmit(onSubmitForm as any)} className="space-y-6 w-full">
+            {/* Fila 0: Selector de Tutor (primero) */}
+            <div className="grid grid-cols-1 gap-x-6 gap-y-5">
+              <div>
+                <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">
+                  Tutor que realizó la Visita *
+                </label>
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <Controller
+                      name="tutorId"
+                      control={control}
+                      render={({ field }) => (
+                        <CustomSelect
+                          id="tutorId"
+                          options={tutorOptions}
+                          onChange={(value) => field.onChange(value)}
+                          onBlur={field.onBlur}
+                          value={field.value}
+                          placeholder="Seleccione un tutor"
+                          error={!!errors.tutorId}
+                          onAddNew={() => setIsTutorModalOpen(true)}
+                          addNewLabel="Agregar nuevo tutor"
+                          searchable
+                          searchPlaceholder="Buscar tutor..."
+                          className="w-full"
+                        />
+                      )}
+                    />
+                    {errors.tutorId && (
+                      <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
+                        <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
+                        {errors.tutorId.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Fila 1: Fecha, Tipo y Caso */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
               <div>
@@ -548,6 +631,15 @@ export default function VisitModal({
         cancelLabel="Continuar editando"
         variant="warning"
         onConfirm={confirmClose}
+      />
+
+      {/* Modal para agregar nuevo tutor (usando TutorModal existente) */}
+      <TutorModal
+        isOpen={isTutorModalOpen}
+        onClose={() => setIsTutorModalOpen(false)}
+        onSave={handleTutorCreated}
+        isLoading={false}
+        modalId={`${modalId}-tutor`}
       />
     </>
   );

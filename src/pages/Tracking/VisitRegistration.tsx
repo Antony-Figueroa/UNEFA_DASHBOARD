@@ -13,16 +13,7 @@ import { useVisits } from "../../features/visits/hooks/useVisits";
 import { Visit, CreateVisitPayload, UpdateVisitPayload, VISIT_TYPES } from "../../features/visits/types";
 import VisitModal from "../../features/visits/components/VisitModal";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
-
-interface PracticeInfo {
-  practiceId: number;
-  studentName: string;
-  studentCi: string;
-  institutionName: string;
-  tutorName: string;
-  periodStartDate?: Date;
-  periodEndDate?: Date;
-}
+import { getTrackingById, TrackingDetailDTO } from "../../features/tracking/services/trackingService";
 
 export default function VisitRegistration() {
   const { id } = useParams<{ id: string }>();
@@ -49,16 +40,30 @@ export default function VisitRegistration() {
     isOpen: false,
     visit: null
   });
-  const [practiceInfo, setPracticeInfo] = useState<PracticeInfo | null>(null);
+  const [practiceInfo, setPracticeInfo] = useState<TrackingDetailDTO | null>(null);
+  const [loadingPractice, setLoadingPractice] = useState(false);
   const [statsKey, setStatsKey] = useState(0);
 
   useEffect(() => {
     if (id) {
       const practiceId = parseInt(id);
+      
+      // Fetch tracking info immediately (independent of visits)
+      setLoadingPractice(true);
+      getTrackingById(id)
+        .then(data => {
+          setPracticeInfo(data);
+        })
+        .catch(err => {
+          console.error('[VisitRegistration] Error fetching tracking info:', err);
+        })
+        .finally(() => {
+          setLoadingPractice(false);
+        });
+      
+      // Fetch visits and stats
       fetchVisitsByPractice(practiceId);
       fetchStats({ practiceId });
-      // Force re-render stats
-      setStatsKey(prev => prev + 1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
@@ -69,21 +74,6 @@ export default function VisitRegistration() {
       setStatsKey(prev => prev + 1);
     }
   }, [stats]);
-
-  useEffect(() => {
-    if (visits.length > 0) {
-      const firstVisit = visits[0];
-      setPracticeInfo({
-        practiceId: firstVisit.practiceId,
-        studentName: firstVisit.studentName,
-        studentCi: firstVisit.studentCi,
-        institutionName: firstVisit.institutionName,
-        tutorName: firstVisit.tutorName,
-        periodStartDate: firstVisit.periodStartDate ? new Date(firstVisit.periodStartDate) : undefined,
-        periodEndDate: firstVisit.periodEndDate ? new Date(firstVisit.periodEndDate) : undefined
-      });
-    }
-  }, [visits]);
 
   const handleOpenModal = (visit?: Visit) => {
     setSelectedVisit(visit || null);
@@ -168,13 +158,21 @@ export default function VisitRegistration() {
         </Button>
       </div>
 
-      {practiceInfo && (
+      {loadingPractice ? (
+        <ComponentCard title="Información de la Práctica" className="mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-20 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+            ))}
+          </div>
+        </ComponentCard>
+      ) : practiceInfo ? (
         <ComponentCard title="Información de la Práctica" className="mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="p-4 rounded-lg bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20">
               <p className="text-xs font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400 mb-1">Estudiante</p>
               <p className="text-lg font-semibold text-text-primary dark:text-text-emphasis">{practiceInfo.studentName}</p>
-              <p className="text-sm text-text-secondary">{practiceInfo.studentCi}</p>
+              <p className="text-sm text-text-secondary">{practiceInfo.studentIdNumber}</p>
             </div>
             <div className="p-4 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
               <p className="text-xs font-bold uppercase tracking-wider text-text-tertiary mb-1">Institución</p>
@@ -190,7 +188,7 @@ export default function VisitRegistration() {
             </div>
           </div>
         </ComponentCard>
-      )}
+      ) : null}
 
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" key={`stats-${statsKey}`}>
@@ -304,8 +302,8 @@ export default function VisitRegistration() {
         tutorId={1}
         loading={loading}
         mode="edit"
-        periodStartDate={practiceInfo?.periodStartDate}
-        periodEndDate={practiceInfo?.periodEndDate}
+        periodStartDate={practiceInfo?.periodStartDate ? new Date(practiceInfo.periodStartDate) : undefined}
+        periodEndDate={practiceInfo?.periodEndDate ? new Date(practiceInfo.periodEndDate) : undefined}
       />
 
       <UnifiedDialog

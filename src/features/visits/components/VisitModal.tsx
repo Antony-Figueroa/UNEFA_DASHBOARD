@@ -263,7 +263,7 @@ export default function VisitModal({
   // Construir opciones de tutores para el selector con conteo de visitas
   useEffect(() => {
     const options = tutors.map(t => {
-      const visitCount = tutorVisitCounts.find(tc => tc.tutorId === t.tutorId)?.visitCount || 0;
+      const visitCount = tutorVisitCounts.find(tc => String(tc.tutorId) === String(t.tutorId))?.visitCount || 0;
       const countLabel = visitCount > 0 ? ` (${visitCount} visita${visitCount !== 1 ? 's' : ''})` : '';
       return {
         value: String(t.tutorId),
@@ -645,7 +645,7 @@ export default function VisitModal({
                 {errors.visitType && (
                   <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
                     <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
-                    {errors.visitType.message}
+                    {String(errors.visitType.message || '')}
                   </p>
                 )}
               </div>
@@ -676,7 +676,7 @@ export default function VisitModal({
                 {errors.visitCase && (
                   <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
                     <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
-                    {errors.visitCase.message}
+                    {String(errors.visitCase.message || '')}
                   </p>
                 )}
               </div>
@@ -916,7 +916,7 @@ export default function VisitModal({
         cancelLabel="Cancelar"
         variant="confirm"
         onConfirm={handleSaveNewValue}
-        confirmLoading={isAddingValue}
+        isLoading={isAddingValue}
       />
     </>
   );

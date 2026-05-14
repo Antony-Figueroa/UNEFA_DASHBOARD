@@ -12,7 +12,7 @@ import AsyncButton from '../../../components/ui/button/AsyncButton';
 import CustomSelect from '../../../components/form/CustomSelect';
 import TextArea from '../../../components/form/input/TextArea';
 import FlatpickrDatePicker from '../../../components/form/FlatpickrDatePicker';
-import { Visit, CreateVisitPayload, UpdateVisitPayload, VISIT_TYPES, VISIT_CASES } from '../types';
+import { Visit, CreateVisitPayload, UpdateVisitPayload, LEGACY_VISIT_TYPES, LEGACY_VISIT_CASES, ListOption } from '../types';
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import { useToast } from '../../../context/toast';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
@@ -21,17 +21,25 @@ import { SAFE_LONG_TEXT_PATTERN, isSafeInput } from '../../../utils/inputValidat
 import { useTutors } from '../../tutors/hooks/useTutors';
 import TutorModal from '../../tutors/components/TutorModal';
 import { createTutor } from '../../tutors/services/tutorsService';
+import { visitsService, TutorVisitCount } from '../services/visitsService';
+import { useLists } from '../../lists/hooks/useLists';
+import * as listsService from '../../lists/services/listsService';
 
 const visitSchema = z.object({
   tutorId: z.string().min(1, 'El tutor es requerido'),
   visitDate: z.string().min(1, 'La fecha es requerida'),
-  visitType: z.enum(['PRESENCIAL', 'VIRTUAL', 'TELEFONICA']),
-  visitCase: z.enum(['VISITA_INICIAL', 'SEGUIMIENTO_REGULAR', 'REVISION_BITACORAS', 'EVALUACION_PARCIAL', 'SEGUIMIENTO_PROBLEMAS', 'CAMBIO_EMPRESA', 'CAMBIO_TUTOR', 'SUSPENSION', 'REANUDACION', 'EVALUACION_FINAL', 'CERTIFICACION']),
+  visitType: z.string().min(1, 'El tipo de visita es requerido'),
+  visitCase: z.string().min(1, 'El caso de seguimiento es requerido'),
   hoursWorked: z.coerce.number().min(0, 'Las horas deben ser positivas').max(24, 'Máximo 24 horas'),
   activitiesPerformed: z.string()
     .min(10, 'Mínimo 10 caracteres')
     .max(2000, "El texto es demasiado largo")
-    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+    .refine(val => {
+      // Validar mínimo de 2 palabras significativas
+      const words = val.trim().split(/\s+/).filter(w => w.length >= 2);
+      return words.length >= 2;
+    }, { message: "Debe incluir al menos 2 palabras (no contar caracteres sueltos)" }),
   observations: z.string()
     .max(1000, "Las observaciones son demasiado largas")
     .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
@@ -45,12 +53,23 @@ const visitSchema = z.object({
     // Validación: la fecha no puede ser futura
     const visitDateParsed = new Date(data.visitDate);
     const today = new Date();
-    today.setHours(23, 59, 59, 999); // Fin del día de hoy
+    today.setHours(23, 59, 59, 999);
     return visitDateParsed <= today;
   },
   {
     message: 'La fecha de la visita no puede ser futura',
     path: ['visitDate']
+  }
+).refine(
+  (data) => {
+    // Validación: observaciones requeridas para casos de problemas
+    // Esta validación se hace en el onSubmitForm en lugar del schema
+    // porque visitCase ahora es dinámico y depende de las listas
+    return true; // Siempre pasa aquí, la validación real está en onSubmitForm
+  },
+  {
+    message: 'Placeholder - no se usa',
+    path: ['observations']
   }
 );
 
@@ -73,6 +92,8 @@ interface VisitModalProps {
   modalId?: string;
   /** Nombre del estudiante para mostrar en el header (opcional) */
   studentName?: string;
+  /** Horas acumuladas de prácticas para mostrar como referencia (opcional) */
+  hoursAccumulated?: number;
 }
 
 export default function VisitModal({
@@ -87,7 +108,8 @@ export default function VisitModal({
   periodStartDate,
   periodEndDate,
   modalId,
-  studentName
+  studentName,
+  hoursAccumulated
 }: VisitModalProps) {
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [pendingData, setPendingData] = useState<VisitFormData | null>(null);
@@ -98,8 +120,23 @@ export default function VisitModal({
 
   // Calcular fechas válidas para la fecha de visita
   // La fecha máxima SIEMPRE es "hoy" (no se permiten fechas futuras)
-  const now = new Date();
-  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+  const today = new Date();
+  
+  // Formatear hoy en formato local YYYY-MM-DDTHH:mm para el input datetime-local
+  const formatLocalDateTime = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+  
+  const maxDateLocal = formatLocalDateTime(today);
+  const minDateLocal = periodStartDate ? formatLocalDateTime(periodStartDate) : '2020-01-01T00:00';
+  
+  // La fecha máxima para Zod (fin del día de hoy)
+  const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
   
   // La fecha mínima es el inicio del período académico o una fecha muy antigua
   const minDate = periodStartDate || new Date('2020-01-01');
@@ -125,10 +162,10 @@ export default function VisitModal({
     resolver: zodResolver(visitSchema) as any,
     mode: 'all',
     defaultValues: {
-      tutorId: String(practiceId ? tutorId : ''),
-      visitDate: new Date().toISOString().slice(0, 16),
-      visitType: 'PRESENCIAL',
-      visitCase: 'SEGUIMIENTO_REGULAR',
+      tutorId: '',
+      visitDate: '',
+      visitType: '' as any,
+      visitCase: '' as any,
       hoursWorked: 0,
       activitiesPerformed: '',
       observations: '',
@@ -142,6 +179,19 @@ export default function VisitModal({
   const { tutors, refreshTutors } = useTutors();
   const [tutorOptions, setTutorOptions] = useState<{ value: string; label: string }[]>([]);
   const [isTutorModalOpen, setIsTutorModalOpen] = useState(false);
+  const [tutorVisitCounts, setTutorVisitCounts] = useState<TutorVisitCount[]>([]);
+
+  // Estados para listas dinámicas (combos configurables)
+  const { fetchMultipleLists, loading: loadingLists } = useLists();
+  const [visitTypeOptions, setVisitTypeOptions] = useState<ListOption[]>([]);
+  const [visitCaseOptions, setVisitCaseOptions] = useState<ListOption[]>([]);
+
+  // Estados para modal de agregar nuevo valor a lista
+  const [isAddValueModalOpen, setIsAddValueModalOpen] = useState(false);
+  const [addValueListType, setAddValueListType] = useState<'VISIT_TYPE' | 'VISIT_CASE' | null>(null);
+  const [newValueName, setNewValueName] = useState('');
+  const [newValueAbbreviation, setNewValueAbbreviation] = useState('');
+  const [isAddingValue, setIsAddingValue] = useState(false);
 
   // Cleanup cuando se cierra el modal
   useEffect(() => {
@@ -149,17 +199,79 @@ export default function VisitModal({
       setConfirmSaveOpen(false);
       setPendingData(null);
       setDisplayHours('');
+      setIsAddValueModalOpen(false);
+      setNewValueName('');
+      setNewValueAbbreviation('');
     }
   }, [isOpen]);
 
-  // Construir opciones de tutores para el selector
+  // Cargar conteo de visitas por tutor cuando se abre el modal
   useEffect(() => {
-    const options = tutors.map(t => ({
-      value: String(t.tutorId),
-      label: `${t.firstName} ${t.lastName} (${t.identificationPrefix}-${t.identificationNumber})`
-    }));
+    if (isOpen) {
+      visitsService.getVisitsCountByTutor()
+        .then(counts => setTutorVisitCounts(counts))
+        .catch(err => console.error('[VisitModal] Error loading visit counts:', err));
+    }
+  }, [isOpen]);
+
+  // Cargar listas dinámicas (combos configurables) desde t_list
+  const loadLists = async () => {
+    try {
+      const lists = await fetchMultipleLists(['VISIT_TYPE', 'VISIT_CASE']);
+
+      // Procesar tipos de visita
+      const visitTypes = lists.VISIT_TYPE || [];
+      if (visitTypes.length > 0) {
+        setVisitTypeOptions(
+          visitTypes
+            .filter(v => v.status) // Solo activos
+            .map(v => ({ value: v.id, label: v.name }))
+            .sort((a, b) => a.label.localeCompare(b.label))
+        );
+      } else {
+        // Fallback a legacy si no hay listas configuradas
+        setVisitTypeOptions(LEGACY_VISIT_TYPES);
+      }
+
+      // Procesar casos de seguimiento
+      const visitCases = lists.VISIT_CASE || [];
+      if (visitCases.length > 0) {
+        setVisitCaseOptions(
+          visitCases
+            .filter(v => v.status) // Solo activos
+            .map(v => ({ value: v.id, label: v.name }))
+            .sort((a, b) => a.label.localeCompare(b.label))
+        );
+      } else {
+        // Fallback a legacy si no hay listas configuradas
+        setVisitCaseOptions(LEGACY_VISIT_CASES);
+      }
+    } catch (err) {
+      console.error('[VisitModal] Error loading dynamic lists:', err);
+      // En caso de error, usar opciones legacy
+      setVisitTypeOptions(LEGACY_VISIT_TYPES);
+      setVisitCaseOptions(LEGACY_VISIT_CASES);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      loadLists();
+    }
+  }, [isOpen, fetchMultipleLists]);
+
+  // Construir opciones de tutores para el selector con conteo de visitas
+  useEffect(() => {
+    const options = tutors.map(t => {
+      const visitCount = tutorVisitCounts.find(tc => tc.tutorId === t.tutorId)?.visitCount || 0;
+      const countLabel = visitCount > 0 ? ` (${visitCount} visita${visitCount !== 1 ? 's' : ''})` : '';
+      return {
+        value: String(t.tutorId),
+        label: `${t.firstName} ${t.lastName} (${t.identificationPrefix}-${t.identificationNumber})${countLabel}`
+      };
+    });
     setTutorOptions(options);
-  }, [tutors]);
+  }, [tutors, tutorVisitCounts]);
 
   // Callback cuando se guarda un nuevo tutor desde TutorModal
   const handleTutorCreated = async (tutorData: any) => {
@@ -184,12 +296,80 @@ export default function VisitModal({
     }
   };
 
+  // Abrir modal para agregar nuevo valor a lista
+  const handleAddNewVisitType = () => {
+    setAddValueListType('VISIT_TYPE');
+    setNewValueName('');
+    setNewValueAbbreviation('');
+    setIsAddValueModalOpen(true);
+  };
+
+  const handleAddNewVisitCase = () => {
+    setAddValueListType('VISIT_CASE');
+    setNewValueName('');
+    setNewValueAbbreviation('');
+    setIsAddValueModalOpen(true);
+  };
+
+  // Guardar nuevo valor en la lista
+  const handleSaveNewValue = async () => {
+    if (!addValueListType || !newValueName.trim()) {
+      addToast({
+        variant: 'error',
+        title: 'Nombre requerido',
+        message: 'Debe ingresar un nombre para el nuevo valor'
+      });
+      return;
+    }
+
+    setIsAddingValue(true);
+    try {
+      const listName = addValueListType;
+      // Obtener la lista para saber su ID
+      const list = await listsService.getListByName(listName);
+
+      // Crear el nuevo valor
+      await listsService.createValue(
+        String(list.id),
+        newValueName.trim(),
+        newValueAbbreviation.trim() || undefined
+      );
+
+      // Recargar las listas
+      await loadLists();
+
+      addToast({
+        variant: 'success',
+        title: 'Valor agregado',
+        message: `"${newValueName.trim()}" ha sido agregado a ${addValueListType === 'VISIT_TYPE' ? 'Tipos de Visita' : 'Casos de Seguimiento'}`
+      });
+
+      setIsAddValueModalOpen(false);
+      setNewValueName('');
+      setNewValueAbbreviation('');
+    } catch (err: any) {
+      console.error('[VisitModal] Error adding new value:', err);
+      addToast({
+        variant: 'error',
+        title: 'Error al agregar',
+        message: err.response?.data?.message || 'No se pudo agregar el nuevo valor'
+      });
+    } finally {
+      setIsAddingValue(false);
+    }
+  };
+
+  // Reset form when modal opens (for new visits) or when visit changes (for editing)
   useEffect(() => {
+    if (!isOpen) return;
+
     if (visit) {
+      // Editing existing visit - populate all fields
       reset({
+        tutorId: String(visit.tutorId),
         visitDate: visit.visitDate.slice(0, 16),
-        visitType: visit.visitType,
-        visitCase: visit.visitCase || 'SEGUIMIENTO_REGULAR',
+        visitType: visit.visitType as any,
+        visitCase: (visit.visitCase || 'SEGUIMIENTO_REGULAR') as any,
         hoursWorked: visit.hoursWorked,
         activitiesPerformed: visit.activitiesPerformed,
         observations: visit.observations || '',
@@ -197,10 +377,12 @@ export default function VisitModal({
       });
       setDisplayHours(visit.hoursWorked > 0 ? String(visit.hoursWorked) : '');
     } else {
+      // New visit - clear all fields
       reset({
-        visitDate: new Date().toISOString().slice(0, 16),
-        visitType: 'PRESENCIAL',
-        visitCase: 'SEGUIMIENTO_REGULAR',
+        tutorId: '',
+        visitDate: '',
+        visitType: '' as any,
+        visitCase: '' as any,
         hoursWorked: 0,
         activitiesPerformed: '',
         observations: '',
@@ -254,6 +436,32 @@ export default function VisitModal({
         message: dateValidation.message || 'Error en la fecha'
       });
       return;
+    }
+
+    // Validar observaciones requeridas para casos de problemas
+    const selectedCase = visitCaseOptions.find(c => c.value === data.visitCase);
+    const caseLabel = selectedCase?.label?.toUpperCase() || '';
+
+    if (caseLabel.includes('PROBLEMA')) {
+      const obs = (data.observations || '').trim();
+      if (obs.length < 5) {
+        addToast({
+          variant: 'error',
+          title: 'Observaciones requeridas',
+          message: 'Las observaciones son obligatorias para casos de "Seguimiento a Problemas"'
+        });
+        return;
+      }
+      // Verificar que tenga al menos 1 palabra significativa
+      const words = obs.split(/\s+/).filter(w => w.length >= 2);
+      if (words.length < 1) {
+        addToast({
+          variant: 'error',
+          title: 'Observaciones inválidas',
+          message: 'Las observaciones deben contener al menos 1 palabra significativa'
+        });
+        return;
+      }
     }
 
     setPendingData(data);
@@ -383,30 +591,20 @@ export default function VisitModal({
             {/* Fila 1: Fecha, Tipo y Caso */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
               <div>
-                <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">
+                <label htmlFor="visitDate" className="mb-2.5 block text-black dark:text-white font-medium text-sm">
                   Fecha y Hora de la Visita *
                 </label>
-                <Controller
-                  name="visitDate"
-                  control={control}
-                  render={({ field }) => (
-                    <FlatpickrDatePicker
-                      value={field.value}
-                      onChange={(dateStr) => {
-                        field.onChange(dateStr);
-                      }}
-                      onBlur={field.onBlur}
-                      error={!!errors.visitDate}
-                      placeholder="Seleccione fecha y hora"
-                      options={{
-                        enableTime: true,
-                        dateFormat: 'Y-m-d H:i',
-                        time_24hr: true,
-                        minDate: periodStartDate ? periodStartDate.toISOString() : undefined,
-                        maxDate: maxDate.toISOString()
-                      }}
-                    />
-                  )}
+                <input
+                  type="datetime-local"
+                  id="visitDate"
+                  {...register('visitDate')}
+                  min={minDateLocal}
+                  max={maxDateLocal}
+                  className={`w-full rounded-lg border bg-white dark:bg-dark px-4 py-2.5 text-sm text-black dark:text-white
+                    ${errors.visitDate
+                      ? 'border-error-500 focus:border-error-500 focus:ring-1 focus:ring-error-500'
+                      : 'border-stroke dark:border-stroke-dark focus:border-brand-500 focus:ring-1 focus:ring-brand-500'
+                    }`}
                 />
                 {errors.visitDate && (
                   <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
@@ -431,12 +629,16 @@ export default function VisitModal({
                   render={({ field }) => (
                     <CustomSelect
                       id="visitType"
-                      options={VISIT_TYPES.map(t => ({ value: t.value, label: t.label }))}
+                      options={visitTypeOptions}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
                       value={field.value}
                       placeholder="Seleccionar tipo"
                       error={!!errors.visitType}
+                      onAddNew={handleAddNewVisitType}
+                      addNewLabel="Agregar nuevo tipo de visita"
+                      searchable
+                      searchPlaceholder="Buscar tipo..."
                     />
                   )}
                 />
@@ -458,12 +660,16 @@ export default function VisitModal({
                   render={({ field }) => (
                     <CustomSelect
                       id="visitCase"
-                      options={VISIT_CASES.map(c => ({ value: c.value, label: c.label }))}
+                      options={visitCaseOptions}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
                       value={field.value}
                       placeholder="Seleccionar caso"
                       error={!!errors.visitCase}
+                      onAddNew={handleAddNewVisitCase}
+                      addNewLabel="Agregar nuevo caso"
+                      searchable
+                      searchPlaceholder="Buscar caso..."
                     />
                   )}
                 />
@@ -481,49 +687,61 @@ export default function VisitModal({
               <label htmlFor="hoursWorked" className="mb-2.5 block text-black dark:text-white font-medium text-sm">
                 Horas Trabajadas *
               </label>
-              <Input
-                id="hoursWorked"
-                type="text"
-                inputMode="decimal"
-                maxLength={2}
-                value={displayHours}
-                placeholder="0.0"
-                error={!!errors.hoursWorked}
-                hint={errors.hoursWorked?.message === 'expected number, received NaN' 
-                  ? 'Ingrese un número válido' 
-                  : errors.hoursWorked?.message}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  // Solo permitir números y punto/coma decimal
-                  const cleaned = value.replace(/[^0-9.,]/g, '');
-                  // Reemplazar coma por punto para consistencia
-                  const normalized = cleaned.replace(',', '.');
-                  // Limitar a un solo punto decimal
-                  const parts = normalized.split('.');
-                  const finalValue = parts.length > 2 
-                    ? `${parts[0]}.${parts.slice(1).join('')}` 
-                    : normalized;
-                  // Limitar a máximo 2 decimales
-                  const limited = finalValue.includes('.') 
-                    ? finalValue.replace(/(\.\d{2})\d*/, '$1')
-                    : finalValue;
-                  
-                  setDisplayHours(limited);
-                  
-                  // Actualizar el valor en el formulario
-                  const numValue = limited === '' ? 0 : parseFloat(limited);
-                  setValue('hoursWorked', numValue, { shouldValidate: true, shouldDirty: true });
-                }}
-                onBlur={() => {
-                  // Formatear al perder el foco
-                  const num = parseFloat(displayHours);
-                  if (!isNaN(num) && num > 0) {
-                    setDisplayHours(num.toFixed(1));
-                    setValue('hoursWorked', num, { shouldValidate: true });
-                  }
-                }}
-                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
+              <div className="relative">
+                <Input
+                  id="hoursWorked"
+                  type="text"
+                  inputMode="decimal"
+                  maxLength={2}
+                  value={displayHours}
+                  placeholder="0.0"
+                  error={!!errors.hoursWorked}
+                  hint={errors.hoursWorked?.message === 'expected number, received NaN'
+                    ? 'Ingrese un número válido'
+                    : errors.hoursWorked?.message}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Solo permitir números y punto/coma decimal
+                    const cleaned = value.replace(/[^0-9.,]/g, '');
+                    // Reemplazar coma por punto para consistencia
+                    const normalized = cleaned.replace(',', '.');
+                    // Limitar a un solo punto decimal
+                    const parts = normalized.split('.');
+                    const finalValue = parts.length > 2
+                      ? `${parts[0]}.${parts.slice(1).join('')}`
+                      : normalized;
+                    // Limitar a máximo 2 decimales
+                    const limited = finalValue.includes('.')
+                      ? finalValue.replace(/(\.\d{2})\d*/, '$1')
+                      : finalValue;
+
+                    setDisplayHours(limited);
+
+                    // Actualizar el valor en el formulario
+                    const numValue = limited === '' ? 0 : parseFloat(limited);
+                    setValue('hoursWorked', numValue, { shouldValidate: true, shouldDirty: true });
+                  }}
+                  onBlur={() => {
+                    // Formatear al perder el foco
+                    const num = parseFloat(displayHours);
+                    if (!isNaN(num) && num > 0) {
+                      setDisplayHours(num.toFixed(1));
+                      setValue('hoursWorked', num, { shouldValidate: true });
+                    }
+                  }}
+                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                {typeof hoursAccumulated === 'number' && hoursAccumulated > 0 && (
+                  <div className="mt-1.5 flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20">
+                    <svg className="w-3.5 h-3.5 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-[11px] text-blue-700 dark:text-blue-300">
+                      Acumuladas: <span className="font-semibold">{hoursAccumulated.toFixed(1)} hrs</span>
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Actividades realizadas */}
@@ -616,7 +834,8 @@ export default function VisitModal({
             {pendingData && (
               <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm space-y-1">
                 <p><strong>Fecha:</strong> {new Date(pendingData.visitDate).toLocaleString('es-VE')}</p>
-                <p><strong>Tipo:</strong> {VISIT_TYPES.find(t => t.value === pendingData.visitType)?.label}</p>
+                <p><strong>Tipo:</strong> {visitTypeOptions.find(t => t.value === pendingData.visitType)?.label || pendingData.visitType}</p>
+                <p><strong>Caso:</strong> {visitCaseOptions.find(c => c.value === pendingData.visitCase)?.label || pendingData.visitCase}</p>
                 <p><strong>Horas:</strong> {pendingData.hoursWorked}</p>
               </div>
             )}
@@ -646,6 +865,58 @@ export default function VisitModal({
         onSave={handleTutorCreated}
         isLoading={false}
         modalId={`${modalId}-tutor`}
+      />
+
+      {/* Modal para agregar nuevo valor a lista (VISIT_TYPE o VISIT_CASE) */}
+      <UnifiedDialog
+        isOpen={isAddValueModalOpen}
+        onClose={() => setIsAddValueModalOpen(false)}
+        title={
+          addValueListType === 'VISIT_TYPE'
+            ? 'Agregar Tipo de Visita'
+            : 'Agregar Caso de Seguimiento'
+        }
+        message={
+          <div className="space-y-4">
+            <p className="text-sm text-text-secondary dark:text-text-tertiary">
+              Ingrese el nombre y opcionalmente una abreviación para el nuevo valor.
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label htmlFor="newValueName" className="mb-1.5 block text-sm font-medium text-text-primary dark:text-text-emphasis">
+                  Nombre *
+                </label>
+                <input
+                  id="newValueName"
+                  type="text"
+                  value={newValueName}
+                  onChange={(e) => setNewValueName(e.target.value)}
+                  placeholder={addValueListType === 'VISIT_TYPE' ? 'Ej: Presencial' : 'Ej: Seguimiento Regular'}
+                  className="w-full rounded-lg border border-border-medium bg-white dark:bg-bg-dark px-4 py-2.5 text-sm text-text-primary dark:text-text-emphasis placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/10 dark:border-border-dark"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label htmlFor="newValueAbbreviation" className="mb-1.5 block text-sm font-medium text-text-primary dark:text-text-emphasis">
+                  Abreviación (opcional)
+                </label>
+                <input
+                  id="newValueAbbreviation"
+                  type="text"
+                  value={newValueAbbreviation}
+                  onChange={(e) => setNewValueAbbreviation(e.target.value)}
+                  placeholder="Ej: PR"
+                  className="w-full rounded-lg border border-border-medium bg-white dark:bg-bg-dark px-4 py-2.5 text-sm text-text-primary dark:text-text-emphasis placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/10 dark:border-border-dark"
+                />
+              </div>
+            </div>
+          </div>
+        }
+        confirmLabel="Agregar"
+        cancelLabel="Cancelar"
+        variant="confirm"
+        onConfirm={handleSaveNewValue}
+        confirmLoading={isAddingValue}
       />
     </>
   );

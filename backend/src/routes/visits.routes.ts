@@ -7,7 +7,8 @@ import {
   createVisit,
   updateVisit,
   deleteVisit,
-  getVisitStats
+  getVisitStats,
+  getVisitsCountByTutor
 } from '../controllers/visits.controller.js';
 
 const router = Router();
@@ -16,6 +17,7 @@ router.use(authenticateToken);
 
 router.get('/practice/:practiceId', getVisitsByPractice);
 router.get('/stats', getVisitStats);
+router.get('/count-by-tutor', getVisitsCountByTutor);
 router.get('/', getAllVisits);
 router.get('/:id', getVisitById);
 router.post('/', createVisit);

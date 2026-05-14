@@ -304,6 +304,7 @@ export default function VisitRegistration() {
         mode="edit"
         periodStartDate={practiceInfo?.periodStartDate ? new Date(practiceInfo.periodStartDate) : undefined}
         periodEndDate={practiceInfo?.periodEndDate ? new Date(practiceInfo.periodEndDate) : undefined}
+        studentName={practiceInfo?.studentName}
       />
 
       <UnifiedDialog

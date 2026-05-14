@@ -71,6 +71,8 @@ interface VisitModalProps {
   periodEndDate?: Date;
   /** ID único para tracking en modal stack (opcional) */
   modalId?: string;
+  /** Nombre del estudiante para mostrar en el header (opcional) */
+  studentName?: string;
 }
 
 export default function VisitModal({
@@ -84,7 +86,8 @@ export default function VisitModal({
   mode = 'edit',
   periodStartDate,
   periodEndDate,
-  modalId
+  modalId,
+  studentName
 }: VisitModalProps) {
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [pendingData, setPendingData] = useState<VisitFormData | null>(null);
@@ -326,9 +329,12 @@ export default function VisitModal({
               {isEditing ? 'Editar Visita de Seguimiento' : 'Registrar Nueva Visita'}
             </span>
             <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
-              {isEditing 
-                ? 'Modifica los detalles de la visita de seguimiento' 
-                : 'Completa la información de la visita de seguimiento'}
+              {studentName 
+                ? `Estudiante: ${studentName}`
+                : (isEditing 
+                  ? 'Modifica los detalles de la visita de seguimiento' 
+                  : 'Completa la información de la visita de seguimiento')
+              }
             </p>
           </div>
         </ModalHeader>

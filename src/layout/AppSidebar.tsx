@@ -480,7 +480,6 @@ const AppSidebar: React.FC = () => {
           </nav>
 
           <div className="mt-auto pt-4 border-t border-border-light/30 dark:border-white/5">
-            <PeriodStatusCard />
             <PendingTasksCard />
           </div>
         </div>

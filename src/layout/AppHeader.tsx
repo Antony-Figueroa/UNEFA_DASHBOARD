@@ -6,14 +6,23 @@ import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
 import { SearchIcon } from "../icons";
+import { usePeriods } from "../features/periods/hooks/usePeriods";
+import { useMemo } from "react";
+import { Tooltip } from "../components/ui/tooltip/Tooltip";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
   const headerRef = useRef<HTMLElement>(null);
   const { user } = useAuth();
+  const { periodos } = usePeriods();
   const isAuthenticated = !!user;
   const { open: openCommandPalette } = useCommandPalette();
+
+  const currentPeriod = useMemo(() => {
+    if (!periodos || periodos.length === 0) return null;
+    return periodos.find(p => p.periodStatus === 2 && p.status) || null;
+  }, [periodos]);
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
@@ -105,18 +114,82 @@ const AppHeader: React.FC = () => {
           </button>
 
           <div className="hidden lg:block flex-1 max-w-md ml-5">
-            <div className="relative">
+            <div className="relative flex items-center gap-3">
+              <div className="relative flex-1">
+                <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-text-tertiary pointer-events-none" />
+                <input
+                  ref={inputRef}
+                  type="text"
+                  placeholder="Buscar..."
+                  className="h-10 w-full rounded-xl border border-border-light/50 bg-gray-50/50 py-2 pl-10 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-brand-300 focus:bg-white focus:ring-2 focus:ring-brand-500/10 transition-all duration-200 dark:border-white/10 dark:bg-white/3 dark:text-white dark:placeholder:text-white/30 dark:focus:border-brand-500 dark:focus:bg-white/5"
+                />
+                <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden xl:inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium text-text-tertiary bg-white border border-border-light rounded dark:bg-white/5 dark:border-white/10">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+              </div>
+
+              {/* Indicador de período actual */}
+              {currentPeriod && (
+                <Tooltip
+                  content={
+                    <div className="px-1">
+                      <p className="font-bold text-sm">{currentPeriod.description}</p>
+                      <div className="flex items-center gap-1.5 mt-1.5 pt-1.5 border-t border-white/20">
+                        <svg className="w-3.5 h-3.5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                        </svg>
+                        <span className="text-xs opacity-90">
+                          {new Date(currentPeriod.startDate).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          {' → '}
+                          {new Date(currentPeriod.endDate).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+                    </div>
+                  }
+                >
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-success-50/60 dark:bg-success-500/10 border border-success-200/40 dark:border-success-500/20 shrink-0 cursor-default select-none">
+                    <div className="relative flex items-center justify-center w-4 h-4 rounded-full bg-success-500">
+                      <span className="absolute -inset-0 rounded-full bg-success-400 animate-ping opacity-50" />
+                      <span className="w-1 h-1 rounded-full bg-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-success-600 dark:text-success-400 leading-none whitespace-nowrap">Período</p>
+                      <p className="text-[11px] font-semibold text-text-primary dark:text-white mt-0.5 truncate leading-tight whitespace-nowrap">
+                        {currentPeriod.description}
+                      </p>
+                    </div>
+                  </div>
+                </Tooltip>
+              )}
+            </div>
+          </div>
+
+          {/* Versión móvil: buscar y período en la misma línea */}
+          <div className="flex lg:hidden items-center gap-2 flex-1">
+            <div className="relative flex-1">
               <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-text-tertiary pointer-events-none" />
               <input
-                ref={inputRef}
                 type="text"
                 placeholder="Buscar..."
                 className="h-10 w-full rounded-xl border border-border-light/50 bg-gray-50/50 py-2 pl-10 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-brand-300 focus:bg-white focus:ring-2 focus:ring-brand-500/10 transition-all duration-200 dark:border-white/10 dark:bg-white/3 dark:text-white dark:placeholder:text-white/30 dark:focus:border-brand-500 dark:focus:bg-white/5"
               />
-              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 hidden xl:inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium text-text-tertiary bg-white border border-border-light rounded dark:bg-white/5 dark:border-white/10">
-                <span className="text-xs">⌘</span>K
-              </kbd>
             </div>
+
+            {/* Indicador de período actual - móvil */}
+            {currentPeriod && (
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-success-50/60 dark:bg-success-500/10 border border-success-200/40 dark:border-success-500/20 shrink-0 cursor-default"
+                title={`${currentPeriod.description} (${new Date(currentPeriod.startDate).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })} - ${new Date(currentPeriod.endDate).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })})`}
+              >
+                <div className="relative flex items-center justify-center w-3.5 h-3.5 rounded-full bg-success-500">
+                  <span className="absolute -inset-0 rounded-full bg-success-400 animate-ping opacity-50" />
+                  <span className="w-1 h-1 rounded-full bg-white" />
+                </div>
+                <span className="text-[10px] font-semibold text-success-600 dark:text-success-400 whitespace-nowrap">
+                  {currentPeriod.description}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

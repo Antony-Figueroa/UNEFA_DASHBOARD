@@ -277,10 +277,114 @@ export const deleteTracking = async (req: Request, res: Response) => {
 
     if (error) throw error;
 
-    res.status(204).send();
+    res.json({ message: "Seguimiento eliminado exitosamente" });
   } catch (error: unknown) {
     const err = error as Error;
     console.error("[TrackingController] Error in deleteTracking:", err);
     res.status(500).json({ error: err.message || "Error al eliminar seguimiento" });
+  }
+};
+
+export const getTrackingById = async (req: Request, res: Response) => {
+  console.log("[TrackingController] getTrackingById called with id:", req.params.id);
+  try {
+    const { id } = req.params;
+    const db = DatabaseManager.getInstance();
+
+    console.log("[TrackingController] Querying for PROFESSIONAL_PRACTICE_ID:", id);
+    
+    // Query con JOIN correcto a través de t_professional_practices_tutor para tutor académico
+    const { data, error } = await db.getConnection()
+      .from('t_professional_practices')
+      .select(`
+        *,
+        t_students:STUDENTS_ID (
+          STUDENTS_CI,
+          NAME,
+          SURNAME
+        ),
+        t_career:CAREER_ID (
+          CAREER_ID,
+          CAREER_NAME
+        ),
+        t_institution:INSTITUTION_ID (
+          INSTITUTION_ID,
+          INSTITUTION_NAME
+        ),
+        t_internships_period:PERIOD_ID (
+          PERIOD_ID,
+          START_DATE,
+          END_DATE
+        ),
+        t_professional_practices_tutor (
+          TUTOR_ID,
+          TUTOR_TYPE,
+          t_tutors (
+            NAME,
+            SURNAME
+          )
+        )
+      `)
+      .eq('PROFESSIONAL_PRACTICE_ID', id)
+      .eq('STATUS', 1)
+      .single();
+
+    console.log("[TrackingController] Query result - data:", !!data, "error:", error);
+    if (data) {
+      console.log("[TrackingController] Found practice:", data.PROFESSIONAL_PRACTICE_ID);
+    }
+
+    if (error) {
+      console.log("[TrackingController] DB Error:", JSON.stringify(error));
+      return res.status(500).json({ error: "Error de base de datos: " + error.message });
+    }
+    
+    if (!data) {
+      console.log("[TrackingController] No data found - returning 404");
+      return res.status(404).json({ error: "Seguimiento no encontrado" });
+    }
+
+    const practice = data as any;
+    const student = practice.t_students || {};
+    const career = practice.t_career || {};
+    const institution = practice.t_institution || {};
+    const period = practice.t_internships_period || {};
+    
+    // Buscar tutor académico (TUTOR_TYPE = 'ACADEMICO' o el primero disponible)
+    let tutorName = "";
+    if (practice.t_professional_practices_tutor && practice.t_professional_practices_tutor.length > 0) {
+      const academicTutor = practice.t_professional_practices_tutor.find(
+        (t: any) => t.TUTOR_TYPE === 'ACADEMICO' || t.TUTOR_TYPE === 'ACADÉMICO'
+      ) || practice.t_professional_practices_tutor[0];
+      if (academicTutor?.t_tutors) {
+        tutorName = `${academicTutor.t_tutors.NAME || ""} ${academicTutor.t_tutors.SURNAME || ""}`.trim();
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        trackingId: String(practice.PROFESSIONAL_PRACTICE_ID),
+        studentIdNumber: student.STUDENTS_CI || "",
+        studentName: `${student.NAME || ""} ${student.SURNAME || ""}`.trim(),
+        careerName: career.CAREER_NAME || null,
+        institutionName: institution.INSTITUTION_NAME || "",
+        tutorName: tutorName,
+        periodStartDate: period.START_DATE || null,
+        periodEndDate: period.END_DATE || null,
+        reportTitle: practice.REPORT_TITLE || "",
+        transfer: practice.TRANSFER === 1,
+        route: practice.TOUR || "",
+        observations: practice.OBSERVATION || "",
+        status: practice.STATUS === 1,
+        creationDate: new Date(practice.CREATION_DATE),
+        startDate: practice.START_DATE || null,
+        endDate: practice.END_DATE || null
+      }
+    });
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error("[TrackingController] Error in getTrackingById:", err);
+    res.status(500).json({ error: err.message || "Error al obtener seguimiento" });
   }
 };

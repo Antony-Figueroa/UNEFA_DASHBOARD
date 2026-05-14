@@ -8,7 +8,6 @@ import UserDropdown from "../components/header/UserDropdown";
 import { SearchIcon } from "../icons";
 import { usePeriods } from "../features/periods/hooks/usePeriods";
 import { useMemo } from "react";
-import { Tooltip } from "../components/ui/tooltip/Tooltip";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
@@ -130,36 +129,20 @@ const AppHeader: React.FC = () => {
 
               {/* Indicador de período actual */}
               {currentPeriod && (
-                <Tooltip
-                  content={
-                    <div className="px-1">
-                      <p className="font-bold text-sm">{currentPeriod.description}</p>
-                      <div className="flex items-center gap-1.5 mt-1.5 pt-1.5 border-t border-white/20">
-                        <svg className="w-3.5 h-3.5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                        </svg>
-                        <span className="text-xs opacity-90">
-                          {new Date(currentPeriod.startDate).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })}
-                          {' → '}
-                          {new Date(currentPeriod.endDate).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })}
-                        </span>
-                      </div>
-                    </div>
-                  }
-                >
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-success-50/60 dark:bg-success-500/10 border border-success-200/40 dark:border-success-500/20 shrink-0 cursor-default select-none">
-                    <div className="relative flex items-center justify-center w-4 h-4 rounded-full bg-success-500">
-                      <span className="absolute -inset-0 rounded-full bg-success-400 animate-ping opacity-50" />
-                      <span className="w-1 h-1 rounded-full bg-white" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-success-600 dark:text-success-400 leading-none whitespace-nowrap">Período</p>
-                      <p className="text-[11px] font-semibold text-text-primary dark:text-white mt-0.5 truncate leading-tight whitespace-nowrap">
-                        {currentPeriod.description}
-                      </p>
-                    </div>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-success-50/60 dark:bg-success-500/10 border border-success-200/40 dark:border-success-500/20 shrink-0 cursor-default select-none">
+                  <div className="flex items-center justify-center w-4 h-4 rounded-full bg-success-500">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white" />
                   </div>
-                </Tooltip>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-success-600 dark:text-success-400 leading-none whitespace-nowrap">Período</p>
+                    <p className="text-sm font-semibold text-text-primary dark:text-white mt-0.5 truncate leading-tight whitespace-nowrap">
+                      {currentPeriod.description}
+                    </p>
+                    <p className="text-xs text-success-500 dark:text-success-400/70 mt-0.5 leading-tight whitespace-nowrap">
+                      {new Date(currentPeriod.startDate).toLocaleDateString('es-VE', { day: '2-digit', month: 'short' })} → {new Date(currentPeriod.endDate).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -177,17 +160,16 @@ const AppHeader: React.FC = () => {
 
             {/* Indicador de período actual - móvil */}
             {currentPeriod && (
-              <div
-                className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-success-50/60 dark:bg-success-500/10 border border-success-200/40 dark:border-success-500/20 shrink-0 cursor-default"
-                title={`${currentPeriod.description} (${new Date(currentPeriod.startDate).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })} - ${new Date(currentPeriod.endDate).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: 'numeric' })})`}
-              >
-                <div className="relative flex items-center justify-center w-3.5 h-3.5 rounded-full bg-success-500">
-                  <span className="absolute -inset-0 rounded-full bg-success-400 animate-ping opacity-50" />
-                  <span className="w-1 h-1 rounded-full bg-white" />
+              <div className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-success-50/60 dark:bg-success-500/10 border border-success-200/40 dark:border-success-500/20 shrink-0 cursor-default select-none">
+                <div className="flex items-center justify-center w-4 h-4 rounded-full bg-success-500">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white" />
                 </div>
-                <span className="text-[10px] font-semibold text-success-600 dark:text-success-400 whitespace-nowrap">
-                  {currentPeriod.description}
-                </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold text-success-600 dark:text-success-400 whitespace-nowrap leading-tight">{currentPeriod.description}</p>
+                  <p className="text-[9px] text-success-500/70 dark:text-success-400/50 whitespace-nowrap leading-tight">
+                    {new Date(currentPeriod.startDate).toLocaleDateString('es-VE', { day: '2-digit', month: 'short' })} → {new Date(currentPeriod.endDate).toLocaleDateString('es-VE', { day: '2-digit', month: 'short' })}
+                  </p>
+                </div>
               </div>
             )}
           </div>

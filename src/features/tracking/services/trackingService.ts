@@ -172,6 +172,36 @@ export interface TrackingStats {
 }
 
 /**
+ * Datos completos de un seguimiento individual.
+ */
+export interface TrackingDetailDTO {
+    trackingId: string;
+    studentIdNumber: string;
+    studentName: string;
+    careerName: string | null;
+    institutionName: string;
+    tutorName: string;
+    periodStartDate: string | null;
+    periodEndDate: string | null;
+    reportTitle: string;
+    transfer: boolean;
+    route: string;
+    observations: string;
+    status: boolean;
+    creationDate: string;
+    startDate: string | null;
+    endDate: string | null;
+}
+
+/**
+ * Respuesta de la API para obtener un seguimiento individual.
+ */
+interface GetTrackingByIdResponse {
+    success: boolean;
+    data: TrackingDetailDTO;
+}
+
+/**
  * Obtiene las estadísticas de seguimiento para visualizaciones.
  * 
  * @returns Promesa con las estadísticas.
@@ -182,6 +212,22 @@ export const getTrackingStats = async (): Promise<TrackingStats> => {
         return response.data;
     } catch (error) {
         console.error("[trackingService] Error al obtener estadísticas de seguimiento:", error);
+        throw error;
+    }
+};
+
+/**
+ * Obtiene los detalles de un seguimiento específico por su ID.
+ * 
+ * @param id - ID del seguimiento.
+ * @returns Promesa con los detalles del seguimiento.
+ */
+export const getTrackingById = async (id: string): Promise<TrackingDetailDTO> => {
+    try {
+        const response = await apiClient.get<GetTrackingByIdResponse>(`${API_URL}/${id}`);
+        return response.data.data;
+    } catch (error) {
+        console.error("[trackingService] Error al obtener seguimiento:", error);
         throw error;
     }
 };

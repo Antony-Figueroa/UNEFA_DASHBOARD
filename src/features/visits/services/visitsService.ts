@@ -7,6 +7,18 @@ import {
   VisitStatsResponse
 } from '../types';
 
+/** Tipo para el conteo de visitas por tutor */
+export interface TutorVisitCount {
+  tutorId: number;
+  tutorName: string;
+  visitCount: number;
+}
+
+interface GetVisitsCountByTutorResponse {
+  success: boolean;
+  data: TutorVisitCount[];
+}
+
 export const visitsService = {
   getVisitsByPractice: async (practiceId: number): Promise<VisitsResponse> => {
     const response = await apiClient.get(`/visits/practice/${practiceId}`);
@@ -61,6 +73,12 @@ export const visitsService = {
     
     const response = await apiClient.get(`/visits/stats?${queryParams.toString()}`);
     return response.data;
+  },
+
+  /** Obtiene el conteo de visitas por tutor para mostrar en el selector */
+  getVisitsCountByTutor: async (): Promise<TutorVisitCount[]> => {
+    const response = await apiClient.get<GetVisitsCountByTutorResponse>('/visits/count-by-tutor');
+    return response.data.data;
   }
 };
 

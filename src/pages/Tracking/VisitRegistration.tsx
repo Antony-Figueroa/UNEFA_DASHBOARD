@@ -3,16 +3,18 @@ import { useParams, useNavigate } from 'react-router';
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
+import { AsyncActionButton } from "../../components/common/AsyncActionButton";
 import Button from "../../components/ui/button/Button";
 import Badge from "../../components/ui/badge/Badge";
 import { ArrowLeftIcon, EditIcon, TrashIcon, EyeIcon } from "../../icons/actions";
 import { PlusIcon } from "../../icons";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../components/ui/table";
 import { EmptyState } from "../../components/ui/table/EmptyState";
+import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/modal";
+import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { useVisits } from "../../features/visits/hooks/useVisits";
 import { Visit, CreateVisitPayload, UpdateVisitPayload, VISIT_TYPES } from "../../features/visits/types";
 import VisitModal from "../../features/visits/components/VisitModal";
-import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { getTrackingById, TrackingDetailDTO } from "../../features/tracking/services/trackingService";
 
 export default function VisitRegistration() {
@@ -254,29 +256,25 @@ export default function VisitRegistration() {
                       </p>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setViewDialog({ isOpen: true, visit })}
-                        >
-                          <EyeIcon className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleOpenModal(visit)}
-                        >
-                          <EditIcon className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setDeleteDialog({ isOpen: true, visitId: visit.visitId })}
-                          className="text-error-500 hover:bg-error-50 dark:hover:bg-error-500/10"
-                        >
-                          <TrashIcon className="w-4 h-4" />
-                        </Button>
+                      <div className="flex justify-end gap-3">
+                        <AsyncActionButton
+                          onClick={async () => setViewDialog({ isOpen: true, visit })}
+                          icon={<EyeIcon />}
+                          tooltip="Ver Detalles"
+                          variant="primary"
+                        />
+                        <AsyncActionButton
+                          onClick={async () => handleOpenModal(visit)}
+                          icon={<EditIcon />}
+                          tooltip="Editar"
+                          variant="primary"
+                        />
+                        <AsyncActionButton
+                          onClick={async () => setDeleteDialog({ isOpen: true, visitId: visit.visitId })}
+                          icon={<TrashIcon />}
+                          tooltip="Eliminar"
+                          variant="danger"
+                        />
                       </div>
                     </TableCell>
                   </TableRow>
@@ -305,58 +303,127 @@ export default function VisitRegistration() {
         periodStartDate={practiceInfo?.periodStartDate ? new Date(practiceInfo.periodStartDate) : undefined}
         periodEndDate={practiceInfo?.periodEndDate ? new Date(practiceInfo.periodEndDate) : undefined}
         studentName={practiceInfo?.studentName}
+        hoursAccumulated={visits.reduce((sum, v) => sum + (v.hoursWorked || 0), 0)}
       />
 
-      <UnifiedDialog
+      <Modal
         isOpen={viewDialog.isOpen}
         onClose={() => setViewDialog({ isOpen: false, visit: null })}
-        title="Detalle de la Visita"
-        message={
-          viewDialog.visit ? (
-            <div className="space-y-4 py-2">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs font-bold uppercase text-text-tertiary">Fecha</p>
-                  <p className="text-sm font-medium">{formatDate(viewDialog.visit.visitDate)}</p>
+        size="5xl"
+        showCloseButton
+      >
+        <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">Detalle de la Visita</ModalHeader>
+        <ModalBody className="overflow-y-auto custom-scrollbar grow px-6 sm:px-12 py-8">
+          {viewDialog.visit && (
+            <div className="space-y-10 max-w-5xl mx-auto py-2">
+              {/* Sección: Información de la Visita */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b border-border-light dark:border-white/5 pb-2">
+                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                  <h4 className="font-bold text-text-primary dark:text-white/90 uppercase text-xs tracking-wider">Información de la Visita</h4>
                 </div>
-                <div>
-                  <p className="text-xs font-bold uppercase text-text-tertiary">Tipo</p>
-                  <Badge color={getVisitTypeBadge(viewDialog.visit.visitType)} variant="light">
-                    {getVisitTypeLabel(viewDialog.visit.visitType)}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase text-text-tertiary">Horas Trabajadas</p>
-                  <p className="text-sm font-medium">{viewDialog.visit.hoursWorked} horas</p>
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase text-text-tertiary">Tutor</p>
-                  <p className="text-sm font-medium">{viewDialog.visit.tutorName}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Fecha</label>
+                    <p className="text-sm font-semibold text-text-primary dark:text-white/90">{formatDate(viewDialog.visit.visitDate)}</p>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipo</label>
+                    <Badge color={getVisitTypeBadge(viewDialog.visit.visitType)} variant="solid" size="sm">
+                      {getVisitTypeLabel(viewDialog.visit.visitType)}
+                    </Badge>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Horas Trabajadas</label>
+                    <p className="text-sm font-bold text-brand-600 dark:text-brand-400">
+                      {viewDialog.visit.hoursWorked} <span className="text-xs font-normal text-text-tertiary">horas</span>
+                    </p>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Caso de Visita</label>
+                    <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                      {viewDialog.visit.visitCase?.replace(/_/g, ' ') || 'Seguimiento Regular'}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div>
-                <p className="text-xs font-bold uppercase text-text-tertiary mb-1">Actividades Realizadas</p>
-                <p className="text-sm text-text-secondary">{viewDialog.visit.activitiesPerformed}</p>
+
+              {/* Sección: Tutor Asignado */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b border-border-light dark:border-white/5 pb-2">
+                  <div className="h-2 w-2 rounded-full bg-brand-500"></div>
+                  <h4 className="font-bold text-text-primary dark:text-white/90 uppercase text-xs tracking-wider">Tutor Asignado</h4>
+                </div>
+                <div className="flex items-center gap-3 p-4 rounded-lg bg-gray-50 dark:bg-white/5">
+                  <div className="size-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                    <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                      {viewDialog.visit.tutorName?.split(' ').map(n => n[0]).join('').slice(0, 2) || '??'}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest mb-0.5">Nombre</p>
+                    <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                      {viewDialog.visit.tutorName || 'No especificado'}
+                    </p>
+                  </div>
+                </div>
               </div>
+
+              {/* Sección: Actividades Realizadas */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 border-b border-border-light dark:border-white/5 pb-2">
+                  <div className="h-2 w-2 rounded-full bg-success-500"></div>
+                  <h4 className="font-bold text-text-primary dark:text-white/90 uppercase text-xs tracking-wider">Actividades Realizadas</h4>
+                </div>
+                <div className="p-4 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10">
+                  <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
+                    {viewDialog.visit.activitiesPerformed || 'Sin actividades registradas'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Observaciones (si existen) */}
               {viewDialog.visit.observations && (
-                <div>
-                  <p className="text-xs font-bold uppercase text-text-tertiary mb-1">Observaciones</p>
-                  <p className="text-sm text-text-secondary">{viewDialog.visit.observations}</p>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 border-b border-border-light dark:border-white/5 pb-2">
+                    <div className="h-2 w-2 rounded-full bg-warning-500"></div>
+                    <h4 className="font-bold text-text-primary dark:text-white/90 uppercase text-xs tracking-wider">Observaciones</h4>
+                  </div>
+                  <div className="p-4 rounded-lg bg-warning-50 dark:bg-warning-500/10 border border-warning-100 dark:border-warning-500/20">
+                    <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
+                      {viewDialog.visit.observations}
+                    </p>
+                  </div>
                 </div>
               )}
+
+              {/* Recomendaciones (si existen) */}
               {viewDialog.visit.recommendations && (
-                <div>
-                  <p className="text-xs font-bold uppercase text-text-tertiary mb-1">Recomendaciones</p>
-                  <p className="text-sm text-text-secondary">{viewDialog.visit.recommendations}</p>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 border-b border-border-light dark:border-white/5 pb-2">
+                    <div className="h-2 w-2 rounded-full bg-info-500"></div>
+                    <h4 className="font-bold text-text-primary dark:text-white/90 uppercase text-xs tracking-wider">Recomendaciones</h4>
+                  </div>
+                  <div className="p-4 rounded-lg bg-info-50 dark:bg-info-500/10 border border-info-100 dark:border-info-500/20">
+                    <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
+                      {viewDialog.visit.recommendations}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
-          ) : null
-        }
-        confirmLabel="Cerrar"
-        variant="info"
-        onConfirm={() => setViewDialog({ isOpen: false, visit: null })}
-      />
+          )}
+        </ModalBody>
+        <ModalFooter className="shrink-0">
+          <Button
+            variant="outline"
+            onClick={() => setViewDialog({ isOpen: false, visit: null })}
+            className="flex-1 sm:flex-none"
+          >
+            Cerrar
+          </Button>
+        </ModalFooter>
+      </Modal>
 
       <UnifiedDialog
         isOpen={deleteDialog.isOpen}

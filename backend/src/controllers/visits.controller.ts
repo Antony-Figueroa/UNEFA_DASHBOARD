@@ -593,3 +593,56 @@ export const getVisitStats = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error al obtener estadísticas', error });
   }
 };
+
+/**
+ * Obtiene el conteo de visitas por tutor para mostrar en el selector.
+ * Retorna todos los tutores activos con su cantidad de visitas.
+ */
+export const getVisitsCountByTutor = async (req: Request, res: Response) => {
+  try {
+    const supabase = dbManager.getConnection();
+
+    // Primero obtener todos los tutores activos
+    const { data: tutors, error: tutorsError } = await supabase
+      .from('t_tutors')
+      .select('TUTOR_ID, NAME, SURNAME')
+      .eq('STATUS', 1);
+
+    if (tutorsError) {
+      console.error('[VisitsController] Error fetching tutors:', tutorsError);
+      return res.status(500).json({ message: 'Error al obtener tutores', error: tutorsError });
+    }
+
+    // Obtener conteo de visitas por tutor
+    const { data: visitCounts, error: visitsError } = await supabase
+      .from('t_practice_visits')
+      .select('TUTOR_ID', { count: 'exact' })
+      .eq('STATUS', 1);
+
+    if (visitsError) {
+      console.error('[VisitsController] Error fetching visit counts:', visitsError);
+      return res.status(500).json({ message: 'Error al obtener conteo', error: visitsError });
+    }
+
+    // Agrupar conteos por tutor
+    const countsMap: Record<number, number> = {};
+    (visitCounts || []).forEach((v: any) => {
+      countsMap[v.TUTOR_ID] = (countsMap[v.TUTOR_ID] || 0) + 1;
+    });
+
+    // Combinar tutores con sus conteos
+    const result = (tutors || []).map(tutor => ({
+      tutorId: tutor.TUTOR_ID,
+      tutorName: `${tutor.NAME || ''} ${tutor.SURNAME || ''}`.trim(),
+      visitCount: countsMap[tutor.TUTOR_ID] || 0
+    }));
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('[VisitsController] Error:', error);
+    res.status(500).json({ message: 'Error al obtener conteo por tutor', error });
+  }
+};

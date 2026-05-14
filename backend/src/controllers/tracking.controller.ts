@@ -286,7 +286,6 @@ export const deleteTracking = async (req: Request, res: Response) => {
 };
 
 export const getTrackingById = async (req: Request, res: Response) => {
-  console.log("[TrackingController] getTrackingById called with id:", req.params.id);
   try {
     const { id } = req.params;
     const db = DatabaseManager.getInstance();

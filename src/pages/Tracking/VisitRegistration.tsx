@@ -170,7 +170,7 @@ export default function VisitRegistration() {
         </ComponentCard>
       ) : practiceInfo ? (
         <ComponentCard title="Información de la Práctica" className="mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="p-4 rounded-lg bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20">
               <p className="text-xs font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400 mb-1">Estudiante</p>
               <p className="text-lg font-semibold text-text-primary dark:text-text-emphasis">{practiceInfo.studentName}</p>
@@ -183,6 +183,10 @@ export default function VisitRegistration() {
             <div className="p-4 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
               <p className="text-xs font-bold uppercase tracking-wider text-text-tertiary mb-1">Tutor Académico</p>
               <p className="text-lg font-semibold text-text-primary dark:text-text-emphasis">{practiceInfo.tutorName}</p>
+            </div>
+            <div className="p-4 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+              <p className="text-xs font-bold uppercase tracking-wider text-text-tertiary mb-1">Tutor Metodológico</p>
+              <p className="text-lg font-semibold text-text-primary dark:text-text-emphasis">{practiceInfo.tutorMethodologicalName || 'No asignado'}</p>
             </div>
             <div className="p-4 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
               <p className="text-xs font-bold uppercase tracking-wider text-text-tertiary mb-1">Total Horas</p>

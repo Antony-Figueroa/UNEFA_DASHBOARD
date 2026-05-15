@@ -351,12 +351,20 @@ export const getTrackingById = async (req: Request, res: Response) => {
     
     // Buscar tutor académico (TUTOR_TYPE = 'ACADEMICO' o el primero disponible)
     let tutorName = "";
+    let tutorMethodologicalName = "";
     if (practice.t_professional_practices_tutor && practice.t_professional_practices_tutor.length > 0) {
       const academicTutor = practice.t_professional_practices_tutor.find(
         (t: any) => t.TUTOR_TYPE === 'ACADEMICO' || t.TUTOR_TYPE === 'ACADÉMICO'
       ) || practice.t_professional_practices_tutor[0];
       if (academicTutor?.t_tutors) {
         tutorName = `${academicTutor.t_tutors.NAME || ""} ${academicTutor.t_tutors.SURNAME || ""}`.trim();
+      }
+      
+      const methodologicalTutor = practice.t_professional_practices_tutor.find(
+        (t: any) => t.TUTOR_TYPE === 'METODOLOGICO' || t.TUTOR_TYPE === 'METODOLÓGICO'
+      );
+      if (methodologicalTutor?.t_tutors) {
+        tutorMethodologicalName = `${methodologicalTutor.t_tutors.NAME || ""} ${methodologicalTutor.t_tutors.SURNAME || ""}`.trim();
       }
     }
 
@@ -369,6 +377,7 @@ export const getTrackingById = async (req: Request, res: Response) => {
         careerName: career.CAREER_NAME || null,
         institutionName: institution.INSTITUTION_NAME || "",
         tutorName: tutorName,
+        tutorMethodologicalName: tutorMethodologicalName,
         periodStartDate: period.START_DATE || null,
         periodEndDate: period.END_DATE || null,
         reportTitle: practice.REPORT_TITLE || "",

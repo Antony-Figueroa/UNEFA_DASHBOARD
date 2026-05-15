@@ -181,6 +181,7 @@ export interface TrackingDetailDTO {
     careerName: string | null;
     institutionName: string;
     tutorName: string;
+    tutorMethodologicalName: string;
     periodStartDate: string | null;
     periodEndDate: string | null;
     reportTitle: string;

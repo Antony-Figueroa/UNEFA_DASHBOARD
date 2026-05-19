@@ -4,6 +4,7 @@ import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { validatePassword } from '../utils/security.utils.js';
 import { getConfig } from '../services/config.service.js';
 import { auditCreate, auditUpdate } from '../utils/audit-helpers.js';
+import { nowStringVenezuela } from '../utils/date.utils.js';
 
 const handleAuthError = (res: Response, error: unknown) => {
   console.error('Auth Error:', error);
@@ -70,7 +71,7 @@ export const login = async (req: Request, res: Response) => {
       try {
         await auditCreate(req, 't_user', {
           USER_ID: (result.user as any).id,
-          LAST_LOGIN: new Date().toISOString()
+          LAST_LOGIN: nowStringVenezuela()
         }, ['LAST_LOGIN']);
       } catch (auditError) {
         console.error('[Audit] Error auditing login:', auditError);

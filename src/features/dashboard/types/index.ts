@@ -32,6 +32,14 @@ export interface DashboardStats {
   activePeriods: number;
   /** Number of pending requests awaiting action */
   pendingRequests: number;
+  /** Number of pending evaluations */
+  pendingEvaluations: number;
+  /** Number of completed evaluations */
+  completedEvaluations: number;
+  /** Distribution of students by tutor */
+  tutorDistribution: { tutorName: string; count: number }[];
+  /** Distribution of students by institution */
+  institutionDistribution: { institutionName: string; count: number }[];
   /** Overall completion rate percentage (0-100) */
   completionRate: number;
   
@@ -41,6 +49,12 @@ export interface DashboardStats {
     date: string;
     /** Number of registrations on that date */
     count: number;
+    /** Students registered on that date */
+    students?: {
+      firstName: string;
+      lastName: string;
+      idNumber: string;
+    }[];
   }[];
 
   /** Metrics comparing current month performance with previous ones */

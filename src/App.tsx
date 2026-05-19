@@ -24,14 +24,15 @@ import { useAuth } from "./context/auth";
  */
 function AppContent() {
   const { user } = useAuth();
-  
+
   // Activar renovación automática de sesión cuando el usuario está autenticado
   useSessionRefresh();
-  
+
   useCommandPaletteEvents();
   return (
     <>
-      <IAButton />
+      {/* Solo mostrar botón IA si el usuario está autenticado */}
+      {user && <IAButton />}
       <AppRoutes />
     </>
   );

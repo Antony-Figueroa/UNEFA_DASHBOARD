@@ -17,9 +17,9 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
     onSelect,
     maxVisible = 3
 }) => {
-    if (suggestions.length === 0) return null;
+    if (!suggestions || suggestions.length === 0) return null;
 
-    const visibleSuggestions = suggestions.slice(0, maxVisible);
+    const visibleSuggestions = (suggestions || []).slice(0, maxVisible);
 
     return (
         <div className="border-t border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 px-6 py-4">

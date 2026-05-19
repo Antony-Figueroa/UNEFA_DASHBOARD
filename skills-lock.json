@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "groq-api": {
+      "source": "diskd-ai/groq-api",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "27055c11307595b3d2f4a6a251a2bea13be4061de7a30a9cc42a55eb96de6bdd"
+    }
+  }
+}

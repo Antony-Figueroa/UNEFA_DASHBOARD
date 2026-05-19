@@ -104,29 +104,53 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
                                 No hay conversaciones guardadas.
                             </div>
                         ) : (
-                            sessions.map(session => (
+                            sessions.map(session => {
+                                    const messageCount = session.messages?.length || 0;
+                                    const lastMessage = session.messages?.[session.messages.length - 1];
+                                    const isToday = new Date(session.updatedAt).toDateString() === new Date().toDateString();
+                                    
+                                    return (
                                 <div
                                     key={session.id}
                                     onClick={() => {
                                         onSelectSession(session.id);
                                         onClose();
                                     }}
-                                    className={`group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${currentSessionId === session.id
+                                    className={`group flex items-start justify-between p-3 rounded-lg cursor-pointer transition-all ${currentSessionId === session.id
                                         ? 'bg-brand-50 dark:bg-brand-900/20 border border-brand-100 dark:border-brand-800'
                                         : 'hover:bg-gray-50 dark:hover:bg-gray-800 border border-transparent'
                                         }`}
                                 >
                                     <div className="flex flex-col min-w-0 flex-1">
-                                        <span className={`text-sm truncate ${currentSessionId === session.id
-                                            ? 'text-brand-900 dark:text-brand-300 font-semibold'
-                                            : 'text-gray-700 dark:text-gray-300 font-medium'
-                                            }`}>
-                                            {session.title || 'Conversación sin título'}
-                                        </span>
-                                        <span className="text-[10px] text-gray-500 dark:text-gray-500 mt-0.5">
-                                            {new Date(session.updatedAt).toLocaleDateString('es-VE', {
-                                                day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
-                                            })}
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-sm truncate ${currentSessionId === session.id
+                                                ? 'text-brand-900 dark:text-brand-300 font-semibold'
+                                                : 'text-gray-700 dark:text-gray-300 font-medium'
+                                                }`}>
+                                                {session.title || 'Conversación sin título'}
+                                            </span>
+                                            {messageCount > 0 && (
+                                                <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                                                    {messageCount}
+                                                </span>
+                                            )}
+                                        </div>
+                                        
+                                        {lastMessage && (
+                                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1 truncate italic">
+                                                {lastMessage.role === 'user' ? '👤 ' : '🤖 '}
+                                                {lastMessage.content.substring(0, 40)}
+                                                {lastMessage.content.length > 40 ? '...' : ''}
+                                            </p>
+                                        )}
+                                        
+                                        <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5">
+                                            {isToday 
+                                                ? `Hoy ${new Date(session.updatedAt).toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit' })}`
+                                                : new Date(session.updatedAt).toLocaleDateString('es-VE', {
+                                                    day: '2-digit', month: 'short'
+                                                })
+                                            }
                                         </span>
                                     </div>
 
@@ -138,7 +162,8 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
                                         <TrashBinIcon className="h-3.5 w-3.5" />
                                     </button>
                                 </div>
-                            ))
+                                    );
+                                })
                         )}
                     </div>
 

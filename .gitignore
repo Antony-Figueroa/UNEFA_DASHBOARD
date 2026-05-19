@@ -28,3 +28,6 @@ dist-ssr
 
 # Engram AI agent memory
 .engram/
+
+# Playwright MCP artifacts
+.playwright-mcp/

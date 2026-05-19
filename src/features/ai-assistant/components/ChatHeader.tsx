@@ -1,6 +1,8 @@
 import React from 'react';
 import { ChatHeaderProps } from '../types';
 import { TrashBinIcon } from '../../../icons';
+import { exportConversation } from '../services/exportService';
+import { Message } from '../types';
 
 const SettingsIcon = () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -9,8 +11,6 @@ const SettingsIcon = () => (
     </svg>
 );
 
-
-
 const ClockIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" />
@@ -18,15 +18,46 @@ const ClockIcon = () => (
     </svg>
 );
 
+const DownloadIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+);
+
+const CopyIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+    </svg>
+);
+
 /**
  * Header profesional del asistente de IA UNEFA
  * Diseño institucional con badge oficial
  */
-export const ChatHeader: React.FC<ChatHeaderProps> = ({
+export const ChatHeader: React.FC<ChatHeaderProps & { messages?: Message[]; title?: string; onExport?: (format: 'json' | 'text') => void }> = ({
     onClearChat,
     onSettingsClick,
-    onHistoryToggle
+    onHistoryToggle,
+    messages,
+    title = 'Conversación',
+    onExport,
 }) => {
+
+    const handleExportJSON = () => {
+        if (messages && messages.length > 0) {
+            exportConversation(messages, title, 'json');
+        }
+    };
+
+    const handleExportText = () => {
+        if (messages && messages.length > 0) {
+            exportConversation(messages, title, 'text');
+        }
+    };
+
     return (
         <div className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950/50 backdrop-blur-md sticky top-0 z-10">
             <div className="flex items-center justify-between px-6 py-5">
@@ -48,6 +79,28 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                 <div className="flex items-center gap-3">
                     {/* Actions */}
                     <div className="flex items-center gap-1">
+                        {/* Export buttons */}
+                        {messages && messages.length > 0 && (
+                            <>
+                                <button
+                                    onClick={handleExportJSON}
+                                    className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                    aria-label="Exportar como JSON"
+                                    title="Exportar JSON"
+                                >
+                                    <span className="text-xs font-bold">{'{}'}</span>
+                                </button>
+                                <button
+                                    onClick={handleExportText}
+                                    className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                    aria-label="Exportar como texto"
+                                    title="Exportar TXT"
+                                >
+                                    <DownloadIcon />
+                                </button>
+                            </>
+                        )}
+
                         {onHistoryToggle && (
                             <button
                                 onClick={onHistoryToggle}

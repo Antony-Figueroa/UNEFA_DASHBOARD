@@ -11,8 +11,10 @@ import { useState, useCallback, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { streamChatFromBackend } from '../services/BackendChatService';
 import * as chatSessionsService from '../services/chatSessionsService';
+import { notifyNewMessage, requestNotificationPermission } from '../services/notificationService';
 import { Message, ChatSession, UseAIChatReturn } from '../types';
 import { detectIntent } from '../utils/intentDetector';
+import { useChatConfig } from './useChatConfig';
 
 // ============================================
 // Sugerencias predefinidas por defecto
@@ -39,8 +41,8 @@ export const useAIChat = (): UseAIChatReturn => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>(DEFAULT_SUGGESTIONS);
-  const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [currentSession, setCurrentSession] = useState<any | null>(null);
+  const [sessions, setSessions] = useState<any[]>([]);
 
   // ============================================
   // Effects - Cargar sesiones al inicio
@@ -129,9 +131,11 @@ export const useAIChat = (): UseAIChatReturn => {
         : 'Conversación';
 
       // Convertir mensajes al formato de la BD
-      const messagesToSave = messages.map(m => ({
+      const messagesToSave = messages
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .map(m => ({
         id: m.id,
-        role: m.role,
+        role: m.role as 'user' | 'assistant',
         content: m.content,
         timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : new Date().toISOString(),
       }));

@@ -121,6 +121,8 @@ export interface UseAIChatReturn {
   loadSession: (sessionId: string) => Promise<void>;
   deleteSession: (sessionId: string) => Promise<void>;
   suggestions: string[];
+  sessions: any[];
+  createNewSession?: () => Promise<any>;
 }
 
 // ============================================
@@ -165,6 +167,7 @@ export interface ChatInputProps {
   placeholder?: string;
   maxLength?: number;
   allowAttachments?: boolean;
+  onFileAnalyzed?: (analysis: string, file: File) => void;
 }
 
 export interface AISuggestionsProps {

@@ -1,224 +1,362 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { Message, UseAIChatReturn, ChatSession } from '../types';
-import { useStreamResponse } from './useStreamResponse';
-import { useAuth } from '../../../context/auth';
-import { chatHistoryService } from '../services/ChatHistoryService';
+/**
+ * useAIChat - Hook para el Chat de IA con historial de sesiones
+ *
+ * Funcionalidades:
+ * - Chat con IA
+ * - Historial de sesiones guardado en DB
+ * - Sugerencias contextuales
+ */
+
+import { useState, useCallback, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { streamChatFromBackend } from '../services/BackendChatService';
+import * as chatSessionsService from '../services/chatSessionsService';
+import { Message, ChatSession, UseAIChatReturn } from '../types';
+import { detectIntent } from '../utils/intentDetector';
+
+// ============================================
+// Sugerencias predefinidas por defecto
+// ============================================
+
+const DEFAULT_SUGGESTIONS = [
+  '¿Cuántos estudiantes hay activos?',
+  'Muéstrame las carreras disponibles',
+  '¿Cuáles son las estadísticas del sistema?',
+  'Dame un resumen de las pasantías',
+];
+
+// ============================================
+// Hook Principal
+// ============================================
 
 export const useAIChat = (): UseAIChatReturn => {
-    const { user, checkAuth } = useAuth();
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+  // ============================================
+  // States
+  // ============================================
 
-    const currentSessionRef = useRef<ChatSession | null>(null);
-    const messagesRef = useRef<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>(DEFAULT_SUGGESTIONS);
+  const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
 
-    useEffect(() => {
-        currentSessionRef.current = currentSession;
-    }, [currentSession]);
+  // ============================================
+  // Effects - Cargar sesiones al inicio
+  // ============================================
 
-    useEffect(() => {
-        messagesRef.current = messages;
-    }, [messages]);
+  useEffect(() => {
+    loadSessions();
+  }, []);
 
-    const { 
-        streamingText, 
-        isStreaming, 
-        startStreaming, 
-        handleChunk, 
-        endStreaming 
-    } = useStreamResponse((fullText) => {
-        const assistantMessage: Message = {
-            id: Date.now().toString(),
-            role: 'assistant',
-            content: fullText,
-            timestamp: new Date(),
-        };
-        
-        const newMessages = [...messagesRef.current, assistantMessage];
-        setMessages(newMessages);
+  // ============================================
+  // Functions - Sesiones
+  // ============================================
 
-        if (user && currentSessionRef.current) {
-            const updatedSession = {
-                ...currentSessionRef.current,
-                messages: newMessages,
-                updatedAt: new Date()
-            };
-            chatHistoryService.saveSession(user.id, updatedSession);
-            setCurrentSession(updatedSession);
-        }
-    });
+  /**
+   * Carga todas las sesiones del usuario
+   */
+  const loadSessions = useCallback(async () => {
+    try {
+      const loadedSessions = await chatSessionsService.getSessions();
+      setSessions(loadedSessions);
+    } catch (error) {
+      console.error('[useAIChat] Error loading sessions:', error);
+    }
+  }, []);
 
-    useEffect(() => {
-        if (!user) {
-            setMessages([]);
-            setCurrentSession(null);
-            return;
-        }
+  /**
+   * Carga una sesión específica
+   */
+  const loadSession = useCallback(async (sessionId: string) => {
+    try {
+      const session = await chatSessionsService.getSession(sessionId);
+      if (session) {
+        setCurrentSession(session);
+        // Convertir mensajes del formato de BD al formato de la app
+        const convertedMessages: Message[] = session.messages.map((m, idx) => ({
+          id: m.id || `msg-${idx}`,
+          role: m.role,
+          content: m.content,
+          timestamp: new Date(m.timestamp),
+          status: 'sent' as const,
+        }));
+        setMessages(convertedMessages);
+        console.log('[useAIChat] Session loaded:', session.title);
+      }
+    } catch (error) {
+      console.error('[useAIChat] Error loading session:', error);
+      toast.error('Error al cargar la sesión');
+    }
+  }, []);
 
-        setError(null);
+  /**
+   * Crea una nueva sesión
+   */
+  const createNewSession = useCallback(async () => {
+    try {
+      const newSession = await chatSessionsService.createSession();
+      if (newSession) {
+        setCurrentSession(newSession);
+        setMessages([]);
+        setSessions(prev => [newSession, ...prev]);
+        toast.success('Nueva conversación iniciada');
+        return newSession;
+      }
+    } catch (error) {
+      console.error('[useAIChat] Error creating session:', error);
+      toast.error('Error al crear sesión');
+    }
+    return null;
+  }, []);
 
-        const loadLastSession = async () => {
-            try {
-                const sessions = await chatHistoryService.getSessions(user.id);
-                if (sessions.length > 0) {
-                    const last = sessions[0];
-                    setCurrentSession(last);
-                    setMessages(last.messages);
-                } else {
-                    const newSession = chatHistoryService.createNewSession(user.id);
-                    setCurrentSession(newSession);
-                    setMessages([]);
-                }
-            } catch (err) {
-                console.error('Error loading chat session:', err);
-                setError('No se pudo cargar el historial de chat.');
-            }
-        };
+  /**
+   * Guarda la sesión actual
+   */
+  const saveCurrentSession = useCallback(async () => {
+    if (!currentSession) {
+      // Crear nueva sesión si no hay una activa
+      await createNewSession();
+      return;
+    }
 
-        loadLastSession();
-    }, [user]);
+    try {
+      // Generar título desde el primer mensaje del usuario
+      const firstUserMessage = messages.find(m => m.role === 'user');
+      const title = firstUserMessage
+        ? firstUserMessage.content.substring(0, 50) + (firstUserMessage.content.length > 50 ? '...' : '')
+        : 'Conversación';
 
-    const pingSession = useCallback(async () => {
-        if (!user) return;
-        try {
-            await checkAuth();
-        } catch (err) {
-            console.warn('[AI Heartbeat] Error al refrescar sesión:', err);
-        }
-    }, [user, checkAuth]);
+      // Convertir mensajes al formato de la BD
+      const messagesToSave = messages.map(m => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : new Date().toISOString(),
+      }));
 
-    useEffect(() => {
-        if (!user) return;
-        const interval = setInterval(pingSession, 5 * 60 * 1000);
-        return () => clearInterval(interval);
-    }, [user, pingSession]);
+      await chatSessionsService.updateSession(currentSession.id, {
+        title,
+        messages: messagesToSave,
+      });
 
-    const sendMessage = useCallback(async (content: string) => {
-        const trimmedContent = content.trim();
-        if (!trimmedContent || isLoading || isStreaming) return;
+      console.log('[useAIChat] Session saved');
+    } catch (error) {
+      console.error('[useAIChat] Error saving session:', error);
+    }
+  }, [currentSession, messages, createNewSession]);
 
-        if (!user) {
-            setError('Debes iniciar sesión para usar el chat.');
-            return;
-        }
-
-        if (!currentSession) {
-            setError('No hay una sesión de chat activa.');
-            return;
-        }
-
-        const userMessage: Message = {
-            id: Date.now().toString(),
-            role: 'user',
-            content: trimmedContent,
-            timestamp: new Date(),
-        };
-
-        const updatedMessages = [...messages, userMessage];
-        setMessages(updatedMessages);
-        
-        pingSession();
-        
-        const currentTitle = currentSession.title;
-        const needsTitleUpdate = !currentTitle || currentTitle === "Nueva conversación" || currentSession.messages.length === 0;
-        const newTitle = needsTitleUpdate ? trimmedContent.substring(0, 40) : currentTitle;
-
-        const updatedSession: ChatSession = {
-            ...currentSession,
-            messages: updatedMessages,
-            title: newTitle,
-            updatedAt: new Date()
-        };
-        
-        chatHistoryService.saveSession(user.id, updatedSession);
-        setCurrentSession(updatedSession);
-
-        setIsLoading(true);
-        setError(null);
-
-        try {
-            startStreaming();
-            await streamChatFromBackend(
-                updatedMessages,
-                (chunk: string) => handleChunk(chunk)
-            );
-            endStreaming();
-        } catch (err: any) {
-            console.error('Error sending message:', err);
-            setError(err.message || 'Error al comunicarse con la IA');
-            endStreaming();
-        } finally {
-            setIsLoading(false);
-        }
-    }, [messages, startStreaming, handleChunk, endStreaming, user, currentSession, isLoading, isStreaming, pingSession]);
-
-    const clearHistory = useCallback(() => {
-        if (user) {
-            const newSession = chatHistoryService.createNewSession(user.id);
-            setCurrentSession(newSession);
-            setMessages([]);
-            chatHistoryService.saveSession(user.id, newSession);
-        }
-        setError(null);
-    }, [user]);
-
-    const retryLastMessage = useCallback(async () => {
-        const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
-        if (lastUserMsg) {
-            setMessages(prev => prev.filter(m => m.id !== prev[prev.length - 1].id));
-            await sendMessage(lastUserMsg.content);
-        }
-    }, [messages, sendMessage]);
-
-    const allMessages = isStreaming 
-        ? [...messages, { 
-            id: 'streaming', 
-            role: 'assistant' as const, 
-            content: streamingText, 
-            timestamp: new Date(),
-            status: 'streaming' as const
-          }]
-        : messages;
-
-    const loadSession = useCallback(async (sessionId: string) => {
-        if (!user) return;
-        const sessions = await chatHistoryService.getSessions(user.id);
-        const session = sessions.find(s => s.id === sessionId);
-        if (session) {
-            setCurrentSession(session);
-            setMessages(session.messages);
-        }
-    }, [user]);
-
-    const deleteSession = useCallback(async (sessionId: string) => {
-        if (!user) return;
-        await chatHistoryService.deleteSession(user.id, sessionId);
+  /**
+   * Elimina una sesión
+   */
+  const deleteSession = useCallback(async (sessionId: string) => {
+    try {
+      const success = await chatSessionsService.deleteSession(sessionId);
+      if (success) {
+        setSessions(prev => prev.filter(s => s.id !== sessionId));
         if (currentSession?.id === sessionId) {
-            clearHistory();
+          setCurrentSession(null);
+          setMessages([]);
         }
-    }, [user, currentSession, clearHistory]);
+        toast.success('Sesión eliminada');
+      }
+    } catch (error) {
+      console.error('[useAIChat] Error deleting session:', error);
+      toast.error('Error al eliminar sesión');
+    }
+  }, [currentSession]);
 
-    const suggestions = [
-        '¿Cómo va el progreso de inscripciones?',
-        '¿Cuántos estudiantes activos hay?',
-        '¿Resumen de periodos académicos?',
-        '¿Qué procesos están activos hoy?'
-    ];
+  // ============================================
+  // Functions - Mensajes y Sugerencias
+  // ============================================
 
-    return {
-        messages: allMessages,
-        isLoading,
-        isStreaming,
-        error,
-        sendMessage,
-        clearHistory,
-        retryLastMessage,
-        currentSession,
-        loadSession,
-        deleteSession,
-        suggestions
+  /**
+   * Actualiza las sugerencias basadas en el intent
+   */
+  const updateSuggestionsBasedOnIntent = useCallback((message: string) => {
+    const intent = detectIntent(message);
+
+    // Sugerencias específicas por tipo de intent
+    const intentSuggestions: Record<string, string[]> = {
+      students: [
+        '¿Cuántos estudiantes hay activos?',
+        'Ver lista de estudiantes',
+        'Estudiantes por carrera',
+      ],
+      careers: [
+        '¿Cuántas carreras hay?',
+        'Ver carreras activas',
+        'Carreras con más estudiantes',
+      ],
+      periods: [
+        '¿Qué período está activo?',
+        'Ver todos los períodos',
+        'Período actual',
+      ],
+      internships: [
+        '¿Cuántas pasantías hay activas?',
+        'Ver listado de pasantías',
+        'Resumen de prácticas',
+      ],
+      tutors: [
+        '¿Cuántos tutores hay?',
+        'Ver lista de tutores',
+        'Tutores por carrera',
+      ],
+      institutions: [
+        '¿Cuántas empresas colaboradoras?',
+        'Ver instituciones',
+        'Empresas con más prácticas',
+      ],
+      statistics: [
+        'Estadísticas del sistema',
+        'Resumen general',
+        'Diagnóstico completo',
+      ],
     };
+
+    if (intent.entity && intentSuggestions[intent.entity]) {
+      setSuggestions(intentSuggestions[intent.entity]);
+    } else {
+      setSuggestions(DEFAULT_SUGGESTIONS);
+    }
+  }, []);
+
+  /**
+   * Envía un mensaje al chat de IA
+   */
+  const sendMessage = useCallback(async (content: string) => {
+    if (!content.trim()) return;
+
+    // Crear mensaje del usuario
+    const userMessage: Message = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      role: 'user',
+      content: content.trim(),
+      timestamp: new Date(),
+      status: 'sent',
+    };
+
+    // Agregar mensaje del usuario
+    setMessages(prev => [...prev, userMessage]);
+    setError(null);
+    setIsLoading(true);
+    setIsStreaming(true);
+
+    // Actualizar sugerencias basadas en el intent
+    updateSuggestionsBasedOnIntent(content);
+
+    // Crear placeholder para respuesta del asistente
+    const assistantMessageId = `msg-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+      status: 'streaming',
+    };
+
+    setMessages(prev => [...prev, assistantMessage]);
+
+    try {
+      console.log('[useAIChat] Sending message:', content.substring(0, 50));
+
+      // Llamar al backend
+      await streamChatFromBackend(
+        [...messages, userMessage],
+        (chunk: string) => {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === assistantMessageId
+                ? { ...msg, content: msg.content + chunk }
+                : msg
+            )
+          );
+        }
+      );
+
+      // Marcar streaming como completo
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === assistantMessageId
+            ? { ...msg, status: 'sent' }
+            : msg
+        )
+      );
+
+      // Guardar sesión después de recibir respuesta
+      setTimeout(() => saveCurrentSession(), 1000);
+
+      console.log('[useAIChat] Message completed successfully');
+
+    } catch (err: any) {
+      console.error('[useAIChat] Error:', err.message);
+
+      const errorMessage = err.message || 'Error al comunicarse con la IA';
+      setError(errorMessage);
+
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === assistantMessageId
+            ? {
+                ...msg,
+                content: '❌ Lo siento, hubo un error al procesar tu mensaje. Por favor, intenta de nuevo.',
+                status: 'error',
+              }
+            : msg
+        )
+      );
+
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+      setIsStreaming(false);
+    }
+  }, [messages, updateSuggestionsBasedOnIntent, saveCurrentSession]);
+
+  /**
+   * Limpia el historial de mensajes
+   */
+  const clearHistory = useCallback(() => {
+    setMessages([]);
+    setCurrentSession(null);
+    setSuggestions(DEFAULT_SUGGESTIONS);
+  }, []);
+
+  /**
+   * Reintenta el último mensaje
+   */
+  const retryLastMessage = useCallback(async () => {
+    const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+    if (lastUserMessage) {
+      await sendMessage(lastUserMessage.content);
+    }
+  }, [messages, sendMessage]);
+
+  // ============================================
+  // Return
+  // ============================================
+
+  return {
+    messages,
+    isLoading,
+    isStreaming,
+    error,
+    sendMessage,
+    clearHistory,
+    retryLastMessage,
+    currentSession,
+    loadSession,
+    deleteSession,
+    suggestions,
+    sessions,
+    createNewSession,
+  };
 };
+
+// ============================================
+// Export default
+// ============================================
+
+export default useAIChat;

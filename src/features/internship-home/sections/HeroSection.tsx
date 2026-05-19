@@ -92,7 +92,7 @@ const HeroSection: React.FC = memo(() => {
                 Impulsa tu carrera con
                 <RotatingText
                   texts={['Creatividad', 'Excelencia', 'Valor', 'Éxito']}
-                  mainClassName="px-2 sm:px-2 md:px-3 bg-[#2d90c4] text-white overflow-hidden py-0.5 sm:py-1 md:py-2 justify-center rounded-lg"
+                  mainClassName="px-2 sm:px-2 md:px-3 bg-[var(--color-btn-primary-bg)] text-white overflow-hidden py-0.5 sm:py-1 md:py-2 justify-center rounded-lg"
                   staggerFrom={"last"}
                   initial={{ y: "100%" }}
                   animate={{ y: "0%" }}

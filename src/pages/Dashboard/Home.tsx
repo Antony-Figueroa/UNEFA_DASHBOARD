@@ -5,6 +5,9 @@ import { useDashboardStats } from "../../features/dashboard/hooks/useDashboardSt
 import RegistrationStatsChart from "../../features/dashboard/components/RegistrationStatsChart";
 import CareerDistributionChart from "../../features/dashboard/components/CareerDistributionChart";
 import GrowthMetrics from "../../features/dashboard/components/GrowthMetrics";
+import EvaluationStatsChart from "../../features/dashboard/components/EvaluationStatsChart";
+import TutorDistributionChart from "../../features/dashboard/components/TutorDistributionChart";
+import InstitutionDistributionChart from "../../features/dashboard/components/InstitutionDistributionChart";
 import { useToast } from "../../context/toast";
 import { useEffect } from "react";
 
@@ -68,6 +71,23 @@ export default function Home() {
           <CareerDistributionChart 
             data={stats?.careerDistribution || []} 
             loading={loading} 
+          />
+        </div>
+
+        {/* 4. Evaluaciones, Tutores e Instituciones */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <EvaluationStatsChart 
+            pending={stats?.pendingEvaluations || 0}
+            completed={stats?.completedEvaluations || 0}
+            loading={loading}
+          />
+          <TutorDistributionChart 
+            data={stats?.tutorDistribution || []}
+            loading={loading}
+          />
+          <InstitutionDistributionChart 
+            data={stats?.institutionDistribution || []}
+            loading={loading}
           />
         </div>
       </div>

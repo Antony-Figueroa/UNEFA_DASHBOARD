@@ -89,10 +89,14 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
 
   const { totalLastMonth, percentageChange, trend, weeklyBreakdown, dailyBreakdown } = growth;
 
+  // Validar datos
+  const safeWeeklyBreakdown = Array.isArray(weeklyBreakdown) ? weeklyBreakdown : [];
+  const safeDailyBreakdown = Array.isArray(dailyBreakdown) ? dailyBreakdown : [];
+
   // Check if there's meaningful data
-  const hasData = totalLastMonth > 0 || weeklyBreakdown.some(w => w.count > 0) || dailyBreakdown.some(d => d.count > 0);
-  const hasWeeklyData = weeklyBreakdown.length > 0 && weeklyBreakdown.some(w => w.count > 0);
-  const hasDailyData = dailyBreakdown.length > 0 && dailyBreakdown.some(d => d.count > 0);
+  const hasData = (totalLastMonth || 0) > 0 || safeWeeklyBreakdown.some(w => (w?.count || 0) > 0) || safeDailyBreakdown.some(d => (d?.count || 0) > 0);
+  const hasWeeklyData = safeWeeklyBreakdown.length > 0 && safeWeeklyBreakdown.some(w => (w?.count || 0) > 0);
+  const hasDailyData = safeDailyBreakdown.length > 0 && safeDailyBreakdown.some(d => (d?.count || 0) > 0);
 
   const getTrendColor = () => {
     if (trend === 'up') return 'text-success-600 dark:text-success-400';
@@ -106,7 +110,7 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
     return 'bg-gray-50 dark:bg-gray-500/10';
   };
 
-  const maxWeekly = Math.max(...weeklyBreakdown.map(w => w.count), 1);
+  const maxWeekly = Math.max(...safeWeeklyBreakdown.map(w => w?.count || 0), 1);
 
   return (
     <motion.div 
@@ -115,17 +119,22 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="flex h-full flex-col rounded-2xl border border-border-light bg-white p-6 shadow-sm dark:border-border-dark dark:bg-gray-900"
     >
-      {/* Header */}
+      {/* Header - Enhanced */}
       <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="flex items-center justify-center size-8 rounded-lg bg-brand-50 dark:bg-brand-500/10">
-            <FiUsers className="size-4 text-brand-600 dark:text-brand-400" />
-          </div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+        <div className="flex items-center gap-3 mb-1">
+          <motion.div 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="flex items-center justify-center size-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-600 dark:to-brand-700 shadow-lg shadow-brand-500/20"
+          >
+            <FiUsers className="size-5 text-white" />
+          </motion.div>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">
             Estudiantes este Mes
           </h3>
         </div>
-        <p className="text-sm text-text-secondary dark:text-text-tertiary">
+        <p className="text-sm text-text-secondary dark:text-text-tertiary ml-[52px]">
           Comparativa con el mes anterior
         </p>
       </div>
@@ -165,12 +174,12 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.4 }}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-sm font-medium ${getTrendBg()} ${getTrendColor()}`}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold ${getTrendBg()} ${getTrendColor()}`}
             >
-              {trend === 'up' ? <FiArrowUp className="size-3.5" /> : 
-              trend === 'down' ? <FiArrowDown className="size-3.5" /> : 
-              <FiTrendingUp className="size-3.5" />}
-              <span>{Math.abs(percentageChange)}%</span>
+              {trend === 'up' ? <FiArrowUp className="size-4" /> : 
+              trend === 'down' ? <FiArrowDown className="size-4" /> : 
+              <FiTrendingUp className="size-4" />}
+              <span>{Math.abs(isNaN(percentageChange) || !isFinite(percentageChange) ? 0 : percentageChange)}%</span>
             </motion.div>
           </div>
           
@@ -187,22 +196,23 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
         )}
       </div>
 
-      {/* Weekly Breakdown - Enhanced with clearer labels */}
+      {/* Weekly Breakdown - Enhanced with clearer labels and tooltips */}
       <div className="mb-5">
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-xs font-semibold text-text-secondary dark:text-text-tertiary uppercase tracking-wider">
             Semanas
           </h4>
           <span className="text-[10px] font-medium text-text-tertiary bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-            {weeklyBreakdown.reduce((a, b) => a + b.count, 0)} total
+            {safeWeeklyBreakdown.reduce((a, b) => a + (b?.count || 0), 0)} total
           </span>
         </div>
         
         {hasWeeklyData ? (
         <div className="flex items-end justify-between gap-2">
-          {weeklyBreakdown.map((item, i) => {
-            const height = item.count > 0 ? Math.max((item.count / maxWeekly) * 100, 20) : 8;
-            const isMax = item.count === maxWeekly;
+          {safeWeeklyBreakdown.map((item, i) => {
+            const count = item?.count || 0;
+            const height = count > 0 ? Math.max((count / maxWeekly) * 100, 20) : 8;
+            const isMax = count === maxWeekly;
             return (
               <motion.div 
                 key={i} 
@@ -223,13 +233,13 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
                     }`}
                   />
                 </div>
-                <span className="text-[9px] font-medium text-text-tertiary">{item.label}</span>
+                <span className="text-[9px] font-medium text-text-tertiary">{item?.label || `S${i+1}`}</span>
                 
                 {/* Enhanced Tooltip with context */}
-                <div className="absolute -top-9 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-                  <div className="bg-brand-600 dark:bg-brand-500 text-white text-[10px] px-2 py-1.5 rounded-lg whitespace-nowrap shadow-lg">
-                    <span className="font-bold">{item.count}</span> estudiantes
-                    {isMax && <span className="ml-1 text-brand-200">★</span>}
+                <div className="absolute -top-12 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                  <div className="bg-gray-900 dark:bg-gray-700 text-white text-[10px] px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-xl">
+                    <div className="font-bold">{count} estudiante{count !== 1 ? 's' : ''}</div>
+                    {isMax && <div className="text-brand-300 text-[9px] mt-0.5">★ Mayor actividad</div>}
                   </div>
                 </div>
               </motion.div>
@@ -243,22 +253,23 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
         )}
       </div>
 
-      {/* Daily Activity - Simplified and clearer */}
+      {/* Daily Activity - Enhanced with tooltips */}
       <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800">
         <h4 className="text-xs font-semibold text-text-secondary dark:text-text-tertiary uppercase tracking-wider mb-3">
           Últimos 7 días
         </h4>
         {hasDailyData ? (
         <div className="flex items-end justify-between gap-1.5">
-          {dailyBreakdown.map((item, i) => {
-            const hasActivity = item.count > 0;
-            const maxCount = Math.max(...dailyBreakdown.map(d => d.count), 1);
-            const height = hasActivity ? Math.max((item.count / maxCount) * 32, 8) : 4;
+          {safeDailyBreakdown.map((item, i) => {
+            const count = item?.count || 0;
+            const hasActivity = count > 0;
+            const maxCount = Math.max(...safeDailyBreakdown.map(d => d?.count || 0), 1);
+            const height = hasActivity ? Math.max((count / maxCount) * 32, 8) : 4;
             
             return (
               <motion.div 
                 key={i} 
-                className="flex-1 flex flex-col items-center gap-1 group"
+                className="flex-1 flex flex-col items-center gap-1 group relative"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1 + i * 0.04 }}
@@ -270,8 +281,14 @@ const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ growth, loading }) => {
                     transition={{ duration: 0.3, delay: 1.05 + i * 0.04 }}
                     className={`w-3 rounded-sm ${hasActivity ? 'bg-brand-500' : 'bg-gray-200 dark:bg-gray-700'}`}
                   />
+                  {/* Tooltip para días */}
+                  <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                    <div className="bg-gray-900 dark:bg-gray-700 text-white text-[9px] px-2 py-1 rounded whitespace-nowrap">
+                      {count} {count === 1 ? 'registro' : 'registros'}
+                    </div>
+                  </div>
                 </div>
-                <span className="text-[9px] font-medium text-text-tertiary">{item.label}</span>
+                <span className="text-[9px] font-medium text-text-tertiary">{item?.label || '-'}</span>
               </motion.div>
             );
           })}

@@ -5,7 +5,7 @@
  * Enhanced with clearer interactions and consistent states.
  */
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactApexChart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
@@ -16,6 +16,8 @@ import {
   FiBarChart2, 
   FiUsers,
   FiTrendingUp,
+  FiTrendingDown,
+  FiMinus,
   FiBookOpen,
   FiGrid,
   FiStar,
@@ -26,8 +28,6 @@ interface CareerDistributionChartProps {
   data: DashboardStats['careerDistribution'];
   loading?: boolean;
 }
-
-const STORAGE_KEY = 'dashboard-career-view-preference';
 
 // Colores institucionales UNEFA
 const careerColors = [
@@ -57,19 +57,7 @@ const getCareerIcon = (index: number) => {
 };
 
 const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data, loading }) => {
-  const [viewType, setViewType] = useState<'cards' | 'donut' | 'bar'>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved === 'cards' || saved === 'donut' || saved === 'bar') {
-        return saved;
-      }
-    }
-    return 'cards';
-  });
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, viewType);
-  }, [viewType]);
+  const [viewType, setViewType] = useState<'cards' | 'donut' | 'bar'>('cards');
 
   const totalStudents = useMemo(() => 
     data.reduce((acc, curr) => acc + curr.studentCount, 0),
@@ -143,36 +131,41 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
   const donutOptions: ApexOptions = {
     chart: {
       type: 'donut',
-      fontFamily: 'Inter, system-ui, sans-serif',
+      fontFamily: 'Outfit, system-ui, sans-serif',
     },
     labels: data.map(d => d.careerName),
     colors: careerColors,
+    legend: {
+      show: false // Ocultar leyenda del gráfico para usar la nuestra
+    },
     plotOptions: {
       pie: {
         donut: {
-          size: '65%',
+          size: '70%',
           labels: {
             show: true,
             name: {
               show: true,
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: 600,
               color: '#64748b',
+              offsetY: -10,
             },
             value: {
               show: true,
-              fontSize: '32px',
+              fontSize: '28px',
               fontWeight: 700,
-              color: '#1f2937',
+              color: '#054F94',
+              offsetY: 5,
               formatter: (val) => val,
             },
             total: {
               show: true,
               showAlways: true,
-              label: 'Total Estudiantes',
-              fontSize: '13px',
-              fontWeight: 600,
-              color: '#64748b',
+              label: 'Total',
+              fontSize: '12px',
+              fontWeight: 500,
+              color: '#94a3b8',
               formatter: () => totalStudents.toLocaleString()
             }
           }
@@ -180,7 +173,6 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
       }
     },
     dataLabels: { enabled: false },
-    legend: { show: false },
     tooltip: {
       theme: 'dark',
       style: {
@@ -276,18 +268,23 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
   }];
 
   return (
-    <div className="rounded-2xl border border-border-light bg-white p-4 shadow-sm dark:border-border-dark dark:bg-gray-900">
-      {/* Header - Compact */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center justify-center size-8 rounded-lg bg-brand-50 dark:bg-brand-500/10">
-            <FiBookOpen className="size-3.5 text-brand-600 dark:text-brand-400" />
-          </div>
+    <div className="rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
+      {/* Header - Enhanced */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
+        <div className="flex items-center gap-3">
+          <motion.div 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="flex items-center justify-center size-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-600 dark:to-brand-700 shadow-lg shadow-brand-500/20"
+          >
+            <FiBookOpen className="size-5 text-white" />
+          </motion.div>
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+            <h3 className="text-base font-bold text-gray-900 dark:text-white tracking-tight">
               Distribución por Carrera
             </h3>
-            <p className="text-[10px] text-text-secondary dark:text-text-tertiary">
+            <p className="text-xs text-text-secondary dark:text-text-tertiary">
               {data.length} carrera{data.length !== 1 ? 's' : ''} • {totalStudents.toLocaleString()} est.
             </p>
           </div>
@@ -338,38 +335,61 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            {/* Top 3 Highlight - Enhanced */}
+            {/* Top 3 Highlight - Enhanced with more visual impact */}
             {topCareers.length > 0 && (
-              <div className="mb-4">
-                <div className="flex items-center gap-2 mb-2.5">
-                  <FiStar className="size-3 text-yellow-500" />
-                  <span className="text-[10px] font-medium text-text-secondary dark:text-text-tertiary uppercase tracking-wider">
-                    Top 3
+              <div className="mb-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <FiStar className="size-3.5 text-yellow-500" />
+                  <span className="text-[11px] font-semibold text-text-secondary dark:text-text-tertiary uppercase tracking-wider">
+                    Top Carreras
+                  </span>
+                  <span className="ml-auto text-[10px] font-medium text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10 px-2 py-0.5 rounded-full">
+                    {totalStudents} estudiantes
                   </span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {topCareers.map((career, i) => (
                     <motion.div
                       key={career.careerName}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: i * 0.06 }}
-                      className="relative overflow-hidden rounded-lg bg-gradient-to-br from-brand-600 to-brand-500 p-3 text-white"
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      transition={{ delay: i * 0.08, duration: 0.4 }}
+                      className="relative overflow-hidden rounded-xl bg-gradient-to-br from-brand-600 to-brand-500 p-4 text-white shadow-lg shadow-brand-500/25"
                     >
-                      <div className="absolute top-0 right-0 size-12 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/3 translate-x-1/3" />
+                      <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/5 rounded-full translate-y-1/3 -translate-x-1/3" />
                       <div className="relative">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-base">{getCareerIcon(i)}</span>
-                          <span className="text-[9px] font-semibold bg-white/20 px-1.5 py-0.5 rounded">
+                        <div className="flex items-center justify-between mb-3">
+                          <motion.div 
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: i * 0.1 + 0.2 }}
+                            className="flex items-center justify-center size-9 rounded-lg bg-white/20 backdrop-blur-sm"
+                          >
+                            <span className="text-lg">{getCareerIcon(i)}</span>
+                          </motion.div>
+                          <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full">
                             #{i + 1}
                           </span>
                         </div>
-                        <p className="text-xs font-medium text-white/90 line-clamp-2 mb-0.5">
+                        <p className="text-xs font-medium text-white/90 line-clamp-2 mb-2">
                           {career.careerName}
                         </p>
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-lg font-bold">{career.studentCount}</span>
-                          <span className="text-[9px] text-white/70">({career.percentage}%)</span>
+                        <div className="flex items-end justify-between">
+                          <div className="flex items-baseline gap-2">
+                            <motion.span 
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ delay: i * 0.1 + 0.3 }}
+                              className="text-2xl font-bold"
+                            >
+                              {career.studentCount}
+                            </motion.span>
+                            <span className="text-[10px] text-white/70">est.</span>
+                          </div>
+                          <span className="text-sm font-semibold text-white/90">
+                            {career.percentage}%
+                          </span>
                         </div>
                       </div>
                     </motion.div>
@@ -439,43 +459,56 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3 }}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-4"
+            className="grid grid-cols-1 lg:grid-cols-5 gap-5"
           >
-            <div className="flex items-center justify-center">
+            {/* Gráfico circular más grande */}
+            <div className="lg:col-span-2 flex items-center justify-center">
               <ReactApexChart
                 options={donutOptions}
                 series={donutSeries}
                 type="donut"
-                height={280}
+                height={320}
               />
             </div>
             
-            <div className="space-y-1.5 max-h-72 overflow-y-auto custom-scrollbar pr-2">
+            {/* Leyenda detallada */}
+            <div className="lg:col-span-3 space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-2">
               {sortedData.map((career, i) => (
                 <motion.div
                   key={career.careerName}
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.02 }}
-                  className="flex items-center gap-2 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  transition={{ delay: i * 0.03 }}
+                  className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all hover:shadow-sm"
                 >
                   <div
-                    className="size-2.5 rounded-full flex-shrink-0"
+                    className="size-4 rounded-full flex-shrink-0 shadow-sm"
                     style={{ backgroundColor: careerColors[i % careerColors.length] }}
                   />
-                  <span className="text-sm">{getCareerIcon(i)}</span>
+                  <span className="text-base">{getCareerIcon(i)}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-medium text-gray-900 dark:text-white truncate">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                       {career.careerName}
                     </p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${career.percentage}%` }}
+                          transition={{ delay: i * 0.05 + 0.2, duration: 0.5 }}
+                          className="h-full rounded-full"
+                          style={{ backgroundColor: careerColors[i % careerColors.length] }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-xs font-bold text-gray-900 dark:text-white">
+                  <div className="text-right min-w-[60px]">
+                    <span className="text-sm font-bold text-gray-900 dark:text-white">
                       {career.studentCount}
                     </span>
-                    <span className="text-[9px] text-text-tertiary ml-1">
+                    <p className="text-[9px] text-text-secondary dark:text-text-tertiary">
                       {career.percentage}%
-                    </span>
+                    </p>
                   </div>
                 </motion.div>
               ))}
@@ -491,39 +524,54 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3 }}
           >
+            {/* Header stats */}
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-50 dark:bg-brand-500/10">
+                <FiUsers className="size-4 text-brand-600 dark:text-brand-400" />
+                <span className="text-sm font-bold text-brand-600 dark:text-brand-400">
+                  {totalStudents}
+                </span>
+                <span className="text-[10px] text-brand-500">est.</span>
+              </div>
+              <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" />
+              <span className="text-xs font-medium text-text-secondary dark:text-text-tertiary">
+                {data.length} carreras registradas
+              </span>
+            </div>
+            
             <ReactApexChart
               options={barOptions}
               series={barSeries}
               type="bar"
-              height={Math.max(data.length * 35, 200)}
+              height={Math.max(data.length * 45, 250)}
             />
             
-            {/* Quick stats */}
-            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
-              <div className="grid grid-cols-4 gap-1.5">
-                <div className="text-center p-1.5 rounded-md bg-brand-50 dark:bg-brand-900/20">
-                  <p className="text-sm font-bold text-brand-600 dark:text-brand-400">
+            {/* Quick stats - Enhanced */}
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <div className="grid grid-cols-4 gap-3">
+                <div className="text-center p-3 rounded-xl bg-gradient-to-br from-brand-50 to-brand-100 dark:from-brand-900/30 dark:to-brand-800/20 border border-brand-100 dark:border-brand-800">
+                  <p className="text-lg font-bold text-brand-600 dark:text-brand-400">
                     {data.length}
                   </p>
-                  <p className="text-[9px] text-gray-500">Carreras</p>
+                  <p className="text-[10px] font-medium text-brand-500 dark:text-brand-400">Carreras</p>
                 </div>
-                <div className="text-center p-1.5 rounded-md bg-success-50 dark:bg-success-900/20">
-                  <p className="text-sm font-bold text-success-600 dark:text-success-400">
+                <div className="text-center p-3 rounded-xl bg-gradient-to-br from-success-50 to-success-100 dark:from-success-900/30 dark:to-success-800/20 border border-success-100 dark:border-success-800">
+                  <p className="text-lg font-bold text-success-600 dark:text-success-400">
                     {data.length > 0 ? Math.round(totalStudents / data.length) : 0}
                   </p>
-                  <p className="text-[9px] text-gray-500">Prom.</p>
+                  <p className="text-[10px] font-medium text-success-500 dark:text-success-400">Promedio</p>
                 </div>
-                <div className="text-center p-1.5 rounded-md bg-warning-50 dark:bg-warning-900/20">
-                  <p className="text-sm font-bold text-warning-600 dark:text-warning-400">
+                <div className="text-center p-3 rounded-xl bg-gradient-to-br from-warning-50 to-warning-100 dark:from-warning-900/30 dark:to-warning-800/20 border border-warning-100 dark:border-warning-800">
+                  <p className="text-lg font-bold text-warning-600 dark:text-warning-400">
                     {sortedData[0]?.studentCount || 0}
                   </p>
-                  <p className="text-[9px] text-gray-500">Máx</p>
+                  <p className="text-[10px] font-medium text-warning-500 dark:text-warning-400">Máximo</p>
                 </div>
-                <div className="text-center p-1.5 rounded-md bg-gray-50 dark:bg-gray-800">
-                  <p className="text-sm font-bold text-gray-500 dark:text-gray-400">
+                <div className="text-center p-3 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/30 dark:to-gray-700/20 border border-gray-100 dark:border-gray-700">
+                  <p className="text-lg font-bold text-gray-600 dark:text-gray-400">
                     {sortedData[sortedData.length - 1]?.studentCount || 0}
                   </p>
-                  <p className="text-[9px] text-gray-500">Mín</p>
+                  <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">Mínimo</p>
                 </div>
               </div>
             </div>

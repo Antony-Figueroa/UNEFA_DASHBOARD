@@ -1,6 +1,7 @@
 import { dbManager } from '../lib/db-manager.js';
 import { comparePassword, hashPassword, generateToken, verifyToken as verifyJWT } from '../utils/auth.utils.js';
 import { sendLoginNotification, sendSecurityAlert, sendPasswordRecoveryEmail, sendPasswordChangedNotification } from '../utils/email.utils.js';
+import { nowStringVenezuela, nowInVenezuela } from '../utils/date.utils.js';
 import crypto from 'crypto';
 
 const tokenBlacklist = new Map<string, { userId: number; userCi: string; expiresAt: number }>();
@@ -350,7 +351,7 @@ export const changePassword = async (
         await supabase.from('t_password_history').insert({
           USER_ID: userId,
           KEY: currentKey.KEY,
-          CREATION_DATE: new Date().toISOString()
+          CREATION_DATE: nowStringVenezuela()
         });
       } catch (e) {
         console.warn('[Auth] No se pudo guardar en el historial (posiblemente la tabla no existe):', e);
@@ -363,18 +364,18 @@ export const changePassword = async (
     await supabase.from('t_user_key').update({ STATUS: 0 }).eq('USER_ID', userId).eq('STATUS', 1);
 
     // 4. Insertar nueva clave
-    const now = new Date().toISOString();
+    const nowVe = nowStringVenezuela();
     const expiry = new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString();
     
     await supabase.from('t_user_key').insert({
       USER_ID: userId,
       KEY: hashedPassword,
-      START_DATE: now,
+      START_DATE: nowVe,
       END_DATE: expiry,
       STATUS: 1,
       IS_TEMPORARY: false,
       MODIF_USER_ID: userId,
-      MODIF_USER_DATE: now,
+      MODIF_USER_DATE: nowVe,
       ELIM_USER_ID: 0,
       ELIM_USER_DATE: '2025-01-01 00:00:00',
       REST_USER_ID: 0,
@@ -640,7 +641,7 @@ export const verifySecurityQuestions = async (userId: number, answers: { questio
 export const resetPassword = async (userId: number, newPassword: string) => {
   return await dbManager.withRetry(async (supabase) => {
     const hashedPassword = await hashPassword(newPassword);
-    const now = new Date().toISOString();
+    const nowVe = nowStringVenezuela();
     const expiry = new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString();
 
     // 1. Desactivar clave anterior
@@ -650,12 +651,12 @@ export const resetPassword = async (userId: number, newPassword: string) => {
     await supabase.from('t_user_key').insert({
       USER_ID: userId,
       KEY: hashedPassword,
-      START_DATE: now,
+      START_DATE: nowVe,
       END_DATE: expiry,
       STATUS: 1,
       IS_TEMPORARY: false,
       MODIF_USER_ID: userId,
-      MODIF_USER_DATE: now,
+      MODIF_USER_DATE: nowVe,
       ELIM_USER_ID: 0,
       ELIM_USER_DATE: '2025-01-01 00:00:00',
       REST_USER_ID: 0,

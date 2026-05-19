@@ -11,6 +11,8 @@ import * as chatSessionsService from '../services/chat-sessions.service.js';
 import { aiProviderFactory, getToolsForProvider } from '../services/ai-provider.factory.js';
 import { initializeAITools, getAvailableTools, executeAITool } from '../services/ai-tools.service.js';
 import { processMessageWithTools } from '../services/tool-use.service.js';
+import { analyzeFile } from '../services/vision.service.js';
+import * as chatConfigService from '../services/chat-config.service.js';
 
 // ============================================
 // Initialize AI Tools al cargar el módulo
@@ -276,6 +278,22 @@ export const getSessions = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getSession = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const session = await chatSessionsService.getSessionById(id, req.user!.userId);
+    
+    if (!session) {
+      res.status(404).json({ success: false, message: 'Sesión no encontrada' });
+      return;
+    }
+    
+    res.json({ success: true, data: session });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const createSession = async (req: AuthRequest, res: Response) => {
   try {
     const { title } = req.body;
@@ -381,21 +399,56 @@ export const chatWithAINoStream = async (req: AuthRequest, res: Response) => {
     let toolUseDetected = false;
     let toolCount = 0;
 
-    if (USE_GROQ && intent.entity && intent.action !== 'none') {
-      // Usar procesamiento completo de Tool Use
-      console.log(`[AI Chat NoStream:${requestId}] Using full Tool Use processing`);
-      const toolResult = await processMessageWithTools(messages, enhancedSystemPrompt);
-      responseText = toolResult.text;
-      toolUseDetected = toolResult.toolUse;
-      toolCount = toolResult.toolCount;
-    } else {
-      // Usar chat normal sin Tool Use
-      responseText = await (USE_GROQ ? sendChatGroq : (await import('../services/google-ai.service.js')).sendChat)({
-        messages,
-        systemInstruction: enhancedSystemPrompt,
-        maxTokens: 4096,
-        temperature: 0.7,
-      });
+    // Try Groq first, fallback to Google on error
+    try {
+      if (USE_GROQ && intent.entity && intent.action !== 'none') {
+        // Usar procesamiento completo de Tool Use
+        console.log(`[AI Chat NoStream:${requestId}] Using full Tool Use processing`);
+        const toolResult = await processMessageWithTools(messages, enhancedSystemPrompt);
+        responseText = toolResult.text;
+        toolUseDetected = toolResult.toolUse;
+        toolCount = toolResult.toolCount;
+      } else if (USE_GROQ) {
+        // Usar chat normal con Groq
+        responseText = await sendChatGroq({
+          messages,
+          systemInstruction: enhancedSystemPrompt,
+          maxTokens: 4096,
+          temperature: 0.7,
+        });
+      } else {
+        // Usar Google
+        const googleChat = (await import('../services/google-ai.service.js')).sendChat;
+        responseText = await googleChat({
+          messages,
+          systemInstruction: enhancedSystemPrompt,
+          maxTokens: 4096,
+          temperature: 0.7,
+        });
+      }
+    } catch (primaryError: any) {
+      // Si Groq falla Y Google está disponible, intentar fallback
+      const isRateLimit = primaryError?.status === 429 || primaryError?.message?.includes('Rate limit');
+      const shouldFallback = USE_GROQ && USE_GOOGLE && isRateLimit;
+
+      if (shouldFallback) {
+        console.log(`[AI Chat NoStream:${requestId}] Groq failed (${primaryError.message}), trying GOOGLE as fallback...`);
+        try {
+          const googleChat = (await import('../services/google-ai.service.js')).sendChat;
+          responseText = await googleChat({
+            messages,
+            systemInstruction: enhancedSystemPrompt,
+            maxTokens: 4096,
+            temperature: 0.7,
+          });
+          console.log(`[AI Chat NoStream:${requestId}] Fallback to GOOGLE successful`);
+        } catch (fallbackError: any) {
+          console.error(`[AI Chat NoStream:${requestId}] Fallback also failed:`, fallbackError.message);
+          throw fallbackError;
+        }
+      } else {
+        throw primaryError;
+      }
     }
 
     console.log(`[AI Chat NoStream:${requestId}] Response length: ${responseText.length} chars, toolUse: ${toolUseDetected}, toolCount: ${toolCount}`);
@@ -483,5 +536,105 @@ export const clearAICache = async (req: AuthRequest, res: Response) => {
       success: false,
       message: error.message,
     });
+  }
+};
+
+// ============================================
+// ENDPOINT PARA ANALIZAR ARCHIVOS (Vision)
+// ============================================
+export const analyzeFileUpload = async (req: AuthRequest, res: Response) => {
+  const requestId = `req-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  console.log(`[AI AnalyzeFile:${requestId}] Request received from user: ${req.user?.userId || 'unknown'}`);
+
+  try {
+    // Verificar que hay archivo en la request
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se recibió ningún archivo',
+      });
+    }
+
+    const file = req.file;
+    console.log(`[AI AnalyzeFile:${requestId}] File: ${file.originalname}, ${file.mimetype}, ${file.size} bytes`);
+
+    // Verificar tamaño máximo (5MB)
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      return res.status(400).json({
+        success: false,
+        message: 'El archivo es demasiado grande. Máximo 5MB.',
+      });
+    }
+
+    // Verificar tipo de archivo permitido
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tipo de archivo no permitido. Solo imágenes (JPG, PNG, GIF, WebP) y PDF.',
+      });
+    }
+
+    // Analizar el archivo
+    const prompt = req.body.prompt || 'Describe esta imagen o documento detalladamente. ¿Qué información contiene?';
+    const result = await analyzeFile(file.buffer, file.mimetype, prompt);
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: result.error,
+      });
+    }
+
+    console.log(`[AI AnalyzeFile:${requestId}] Analysis completed, length: ${result.analysis?.length || 0} chars`);
+
+    res.json({
+      success: true,
+      analysis: result.analysis,
+      file: {
+        name: file.originalname,
+        type: file.mimetype,
+        size: file.size,
+      },
+    });
+
+  } catch (error: any) {
+    console.error(`[AI AnalyzeFile:${requestId}] Error:`, error.message);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error al analizar el archivo',
+    });
+  }
+};
+
+// ============================================
+// Chat Config - Persistencia en DB
+// ============================================
+
+export const getChatConfig = async (req: AuthRequest, res: Response) => {
+  try {
+    const config = await chatConfigService.getChatConfigWithDefaults(req.user!.userId);
+    res.json({ success: true, data: config });
+  } catch (error: any) {
+    console.error('[getChatConfig] Error:', error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const saveChatConfig = async (req: AuthRequest, res: Response) => {
+  try {
+    const { persona, quickActions, showNotifications } = req.body;
+    
+    const config = await chatConfigService.saveChatConfig(req.user!.userId, {
+      persona,
+      quickActions,
+      showNotifications,
+    });
+    
+    res.json({ success: true, data: config });
+  } catch (error: any) {
+    console.error('[saveChatConfig] Error:', error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
 };

@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { ChatWindowProps, MessageAction } from '../types';
 import { ChatHeader } from './ChatHeader';
 import { MessageList } from './MessageList';
 import { AISuggestions } from './AISuggestions';
 import { ChatInput } from './ChatInput';
+import { ChatSettings } from './ChatSettings';
+import { QuickActions } from './QuickActions';
 import { useAIChat } from '../hooks/useAIChat';
+import { useChatConfig } from '../hooks/useChatConfig';
 import { ChatHistorySidebar } from './ChatHistorySidebar';
 import { UnifiedDialog } from '../../../components/ui/dialog/UnifiedDialog';
 
@@ -14,6 +17,7 @@ import { UnifiedDialog } from '../../../components/ui/dialog/UnifiedDialog';
 export const ChatWindow: React.FC<ChatWindowProps> = () => {
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
     const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     const {
         messages,
@@ -28,11 +32,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = () => {
         suggestions
     } = useAIChat();
 
-    const handleSend = (message: string) => {
-        // Validación: No permitir mensajes vacíos o solo espacios
+    const { config, getPersonaPrompt } = useChatConfig();
+
+    const handleSend = useCallback((message: string) => {
         if (!message || !message.trim()) return;
+        // Agregar prompt de persona si es relevante
+        const personaPrompt = getPersonaPrompt();
         sendMessage(message);
-    };
+    }, [sendMessage, getPersonaPrompt]);
 
     const handleActionClick = (action: MessageAction) => {
         console.log('Action clicked:', action);
@@ -53,10 +60,19 @@ export const ChatWindow: React.FC<ChatWindowProps> = () => {
         }
     };
 
-
+    // Manejar acciones rápidas
+    const handleQuickAction = (action: string) => {
+        if (!isLoading && !isStreaming) {
+            sendMessage(action);
+        }
+    };
 
     const toggleHistory = () => {
         setIsHistoryOpen(!isHistoryOpen);
+    };
+
+    const toggleSettings = () => {
+        setIsSettingsOpen(!isSettingsOpen);
     };
 
     return (
@@ -66,6 +82,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = () => {
                 <ChatHeader
                     onClearChat={handleClearChat}
                     onHistoryToggle={toggleHistory}
+                    onSettingsClick={toggleSettings}
+                    messages={messages}
+                    title={currentSession?.title || 'Nueva conversación'}
                 />
 
                 {error && (
@@ -84,16 +103,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = () => {
                         onActionClick={handleActionClick}
                     />
 
-                    <AISuggestions
-                        suggestions={suggestions}
-                        onSelect={handleSuggestionSelect}
-                        maxVisible={4}
+                    {/* Solo mostrar Quick Actions - simplificado */}
+                    <QuickActions
+                        actions={config.quickActions}
+                        onAction={handleQuickAction}
+                        disabled={isLoading || isStreaming}
                     />
 
                     <ChatInput
                         onSend={handleSend}
                         isLoading={isLoading || isStreaming}
-                        placeholder="Escribe tu mensaje institucional..."
+                        placeholder={config.persona === 'casual' ? 'Escribe tu mensaje...' : 'Escribe tu mensaje institucional...'}
                         maxLength={2000}
                     />
                 </div>
@@ -107,6 +127,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = () => {
                 onSelectSession={loadSession}
                 onDeleteSession={deleteSession}
                 onNewChat={clearHistory}
+            />
+
+            {/* Settings Dialog */}
+            <ChatSettings
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
             />
 
             {/* Confirmation Dialog */}

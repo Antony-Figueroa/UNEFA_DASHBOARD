@@ -263,7 +263,7 @@ export default function StudentTable({
         const idSearch = debouncedIdFilter.trim().toLowerCase();
         const nameSearch = debouncedNameFilter.trim().toLowerCase();
         const filtered = data.filter((s) => {
-            const matchesId = !idSearch || s.identificationNumber.toLowerCase().includes(idSearch);
+            const matchesId = !idSearch || (s.identificationNumber || "").toLowerCase().includes(idSearch);
             const matchesName = !nameSearch || (s.fullNames || "").toLowerCase().includes(nameSearch);
             // Filtros de fecha
             let matchesDateFrom = true;

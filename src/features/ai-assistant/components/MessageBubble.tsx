@@ -4,6 +4,7 @@ import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MessageBubbleProps } from '../types';
 import { cn } from '../../../utils/cn';
+import { StructuredOutputRenderer, isStructuredOutput } from './StructuredOutputRenderer';
 
 // Custom icon components matching the project's icon system
 const BotIcon = () => (
@@ -150,12 +151,19 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                         !isAI && "text-white"
                     )}>
                         {isAI ? (
-                            <ReactMarkdown 
-                                remarkPlugins={[remarkGfm]}
-                                components={MarkdownComponents}
-                            >
-                                {message.content}
-                            </ReactMarkdown>
+                            <>
+                                {/* Render structured output si es JSON estructurado */}
+                                {isStructuredOutput(message.content) && (
+                                    <StructuredOutputRenderer content={message.content} />
+                                )}
+                                {/* Render markdown para el resto */}
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={MarkdownComponents}
+                                >
+                                    {message.content}
+                                </ReactMarkdown>
+                            </>
                         ) : (
                             <div className="whitespace-pre-wrap">{message.content}</div>
                         )}

@@ -173,7 +173,7 @@ export const createDataBasedTooltip = (
     // Get value from series - handle both array and object formats
     let value = 0;
     const seriesData = w.globals.series[seriesIndex];
-    if (Array.isSeries(seriesData)) {
+    if (Array.isArray(seriesData)) {
       value = seriesData[dataPointIndex] ?? 0;
     } else if (typeof seriesData === 'object' && seriesData !== null) {
       // Handle y-based data

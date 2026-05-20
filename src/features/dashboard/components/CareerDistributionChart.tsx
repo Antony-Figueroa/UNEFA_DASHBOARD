@@ -11,6 +11,7 @@ import ReactApexChart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
 import { DashboardStats } from '../types';
 import { Skeleton } from '../../../components/ui/skeleton';
+import { generateTooltipHTML, extractValueFromSeries } from '../utils/tooltipUtils';
 import { 
   FiPieChart, 
   FiBarChart2, 
@@ -174,20 +175,42 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
     },
     dataLabels: { enabled: false },
     tooltip: {
-      theme: 'dark',
-      style: {
-        fontSize: '13px',
-        fontFamily: 'Inter, system-ui, sans-serif',
-      },
-      y: {
-        formatter: (val) => `${val} estudiantes`,
-        title: {
-          formatter: () => ''
+      theme: 'light',
+      custom: ({ seriesIndex, dataPointIndex, w }: any) => {
+        if (dataPointIndex === undefined || dataPointIndex < 0) return '';
+        
+        // For donut/pie charts, w.globals.series is a simple array [10, 20, 30]
+        // Not an array of arrays
+        let label = '';
+        if (w.globals.labels && w.globals.labels[dataPointIndex]) {
+          label = w.globals.labels[dataPointIndex];
+        } else if (w.globals.categories && w.globals.categories[dataPointIndex]) {
+          label = w.globals.categories[dataPointIndex];
         }
+        
+        // For donut, w.globals.series is a simple array - get value directly
+        let value = 0;
+        const seriesData = w.globals.series;
+        if (Array.isArray(seriesData)) {
+          // Donut/pie charts: simple array [10, 20, 30]
+          value = seriesData[dataPointIndex] ?? 0;
+        } else if (seriesData && typeof seriesData === 'object') {
+          // Bar/line charts: might be array of arrays
+          const seriesItem = seriesData[seriesIndex];
+          if (Array.isArray(seriesItem)) {
+            value = seriesItem[dataPointIndex] ?? 0;
+          }
+        }
+        
+        return generateTooltipHTML({
+          label: label || 'Sin carrera',
+          count: value,
+          unit: 'estudiantes',
+          icon: '🎓',
+        });
       },
-      marker: {
-        show: true
-      }
+      style: { fontSize: '11px', fontFamily: 'Outfit, sans-serif' },
+      marker: { show: true }
     },
     stroke: {
       show: true,
@@ -257,9 +280,30 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
     },
     tooltip: {
       theme: 'light',
-      y: {
-        title: { formatter: () => 'Estudiantes:' }
-      }
+      custom: ({ seriesIndex, dataPointIndex, w }: any) => {
+        if (dataPointIndex === undefined || dataPointIndex < 0) return '';
+        
+        // Try multiple sources for the label
+        let label = '';
+        if (w.globals.categories && w.globals.categories[dataPointIndex]) {
+          label = w.globals.categories[dataPointIndex];
+        } else if (w.globals.labels && w.globals.labels[dataPointIndex]) {
+          label = w.globals.labels[dataPointIndex];
+        }
+        
+        // Get value safely using helper
+        const seriesData = w.globals.series[seriesIndex];
+        const value = extractValueFromSeries(seriesData, dataPointIndex);
+        
+        return generateTooltipHTML({
+          label: label || 'Sin carrera',
+          count: value,
+          unit: 'estudiantes',
+          icon: '🎓',
+        });
+      },
+      style: { fontSize: '11px', fontFamily: 'Outfit, sans-serif' },
+      marker: { show: true },
     },
   };
 

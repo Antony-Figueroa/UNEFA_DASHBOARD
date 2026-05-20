@@ -12,6 +12,7 @@ import { ApexOptions } from 'apexcharts';
 import { DashboardStats } from '../types';
 import { Skeleton } from '../../../components/ui/skeleton';
 import { FiTrendingUp, FiCalendar, FiActivity, FiLayers, FiArrowUp, FiArrowDown, FiMinus } from 'react-icons/fi';
+import { generateTooltipHTML, formatDateForTooltip } from '../utils/tooltipUtils';
 
 /**
  * Props for the RegistrationStatsChart component.
@@ -182,56 +183,26 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
         const dateStr = point.date;
         const students = point.students || [];
         
-        // Parse date
-        let formattedDate = '';
-        try {
-          if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-            const parts = dateStr.split('-');
-            const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-            if (!isNaN(d.getTime())) {
-              formattedDate = d.toLocaleDateString('es-VE', { 
-                weekday: 'long', 
-                day: 'numeric', 
-                month: 'long', 
-                year: 'numeric' 
-              });
-            } else {
-              formattedDate = dateStr;
-            }
-          } else {
-            formattedDate = dateStr;
-          }
-        } catch (e) {
-          formattedDate = dateStr;
-        }
+        // Format date using helper
+        const formattedDate = formatDateForTooltip(dateStr);
         
-        formattedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+        // Build student list for tooltip items
+        const items = students.map((s) => ({
+          name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || 'Sin nombre',
+          subtitle: s.idNumber || undefined,
+        }));
         
-        // Build student list HTML
-        let studentListHTML = '';
-        if (students.length > 0) {
-          studentListHTML = students.map((s, i) => {
-            const name = `${s.firstName || ''} ${s.lastName || ''}`.trim() || 'Sin nombre';
-            const idNumber = s.idNumber ? ` — ${s.idNumber}` : '';
-            return `<div style="padding: 3px 8px; font-size: 11px; color: #475569; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 6px;">
-              <span style="color: #94a3b8; font-weight: 600; min-width: 16px;">${i + 1}.</span>
-              <span style="font-weight: 500;">${name}</span>
-              ${idNumber ? `<span style="color: #94a3b8; font-size: 10px;">${idNumber}</span>` : ''}
-            </div>`;
-          }).join('');
-        } else {
-          studentListHTML = `<div style="padding: 6px 8px; font-size: 11px; color: #94a3b8; text-align: center;">Sin detalles disponibles</div>`;
-        }
+        // Use helper to generate base structure with custom items
+        const baseTooltip = generateTooltipHTML({
+          label: formattedDate,
+          count,
+          unit: 'registro',
+          icon: '📅',
+          items,
+          maxItems: 15,
+        });
         
-        return `
-          <div style="font-family: Outfit, sans-serif; font-size: 11px; font-weight: 600; color: #1f2937; padding: 6px 8px; border-bottom: 1px solid #f1f5f9; background: #f8fafc;">
-            📅 ${formattedDate}
-          </div>
-          <div style="font-family: Outfit, sans-serif; font-size: 11px; font-weight: 600; color: #054F94; padding: 4px 8px; background: #eff6ff; border-bottom: 1px solid #f1f5f9;">
-            ${count} registro${count !== 1 ? 's' : ''}
-          </div>
-          ${studentListHTML}
-        `;
+        return baseTooltip;
       },
       y: {
         title: { formatter: () => '' },

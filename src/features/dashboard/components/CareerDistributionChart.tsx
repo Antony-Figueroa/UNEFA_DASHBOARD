@@ -179,8 +179,7 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
       custom: ({ seriesIndex, dataPointIndex, w }: any) => {
         if (dataPointIndex === undefined || dataPointIndex < 0) return '';
         
-        // For donut/pie charts, w.globals.series is a simple array [10, 20, 30]
-        // Not an array of arrays
+        // Get label - try multiple sources
         let label = '';
         if (w.globals.labels && w.globals.labels[dataPointIndex]) {
           label = w.globals.labels[dataPointIndex];
@@ -188,18 +187,32 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
           label = w.globals.categories[dataPointIndex];
         }
         
-        // For donut, w.globals.series is a simple array - get value directly
+        // Get value - handle different series structures
         let value = 0;
-        const seriesData = w.globals.series;
-        if (Array.isArray(seriesData)) {
-          // Donut/pie charts: simple array [10, 20, 30]
-          value = seriesData[dataPointIndex] ?? 0;
-        } else if (seriesData && typeof seriesData === 'object') {
-          // Bar/line charts: might be array of arrays
-          const seriesItem = seriesData[seriesIndex];
-          if (Array.isArray(seriesItem)) {
-            value = seriesItem[dataPointIndex] ?? 0;
+        
+        // For donut charts: w.globals.series is a simple array [10, 20, 30]
+        if (w.globals.series && Array.isArray(w.globals.series)) {
+          // Check if it's array of arrays (bar/line) or simple array (donut/pie)
+          if (Array.isArray(w.globals.series[0])) {
+            // Multi-series: [[10, 20], [30, 40]]
+            const seriesItem = w.globals.series[seriesIndex];
+            if (Array.isArray(seriesItem)) {
+              value = seriesItem[dataPointIndex] ?? 0;
+            }
+          } else {
+            // Single series: [10, 20, 30] - typical for donut/pie
+            value = w.globals.series[dataPointIndex] ?? 0;
           }
+        }
+        
+        // Handle 0 or undefined values - show appropriate message
+        if (value === 0 || value === undefined) {
+          return generateTooltipHTML({
+            label: label || 'Sin carrera',
+            count: 0,
+            unit: 'estudiantes',
+            icon: '🎓',
+          });
         }
         
         return generateTooltipHTML({
@@ -283,7 +296,7 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
       custom: ({ seriesIndex, dataPointIndex, w }: any) => {
         if (dataPointIndex === undefined || dataPointIndex < 0) return '';
         
-        // Try multiple sources for the label
+        // Get label from multiple sources
         let label = '';
         if (w.globals.categories && w.globals.categories[dataPointIndex]) {
           label = w.globals.categories[dataPointIndex];
@@ -291,9 +304,18 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
           label = w.globals.labels[dataPointIndex];
         }
         
-        // Get value safely using helper
-        const seriesData = w.globals.series[seriesIndex];
-        const value = extractValueFromSeries(seriesData, dataPointIndex);
+        // Get value - same logic as donut for consistency
+        let value = 0;
+        if (w.globals.series && Array.isArray(w.globals.series)) {
+          if (Array.isArray(w.globals.series[0])) {
+            const seriesItem = w.globals.series[seriesIndex];
+            if (Array.isArray(seriesItem)) {
+              value = seriesItem[dataPointIndex] ?? 0;
+            }
+          } else {
+            value = w.globals.series[dataPointIndex] ?? 0;
+          }
+        }
         
         return generateTooltipHTML({
           label: label || 'Sin carrera',

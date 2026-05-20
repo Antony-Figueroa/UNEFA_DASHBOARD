@@ -59,7 +59,7 @@ class RagCache {
   /**
    * Genera clave de caché basada en el intent
    */
-  private getCacheKey(intent: DetectedIntent): string {
+  public getCacheKey(intent: DetectedIntent): string {
     const filters = intent.filters ? JSON.stringify(intent.filters) : '';
     return `rag:${intent.entity}:${intent.action}:${intent.limit || 10}:${filters}`;
   }

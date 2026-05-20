@@ -58,7 +58,7 @@ const getCareerIcon = (index: number) => {
 };
 
 const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data, loading }) => {
-  const [viewType, setViewType] = useState<'cards' | 'donut' | 'bar'>('cards');
+  const [viewType, setViewType] = useState<'donut' | 'bar'>('donut');
 
   const totalStudents = useMemo(() => 
     data.reduce((acc, curr) => acc + curr.studentCount, 0),
@@ -359,16 +359,6 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
         {/* View Toggle - Compact */}
         <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-gray-100 dark:bg-gray-800">
           <button
-            onClick={() => setViewType('cards')}
-            className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-all ${
-              viewType === 'cards'
-                ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-700 dark:text-brand-400'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
-            }`}
-          >
-            <FiGrid className="size-3" />
-          </button>
-          <button
             onClick={() => setViewType('donut')}
             className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium transition-all ${
               viewType === 'donut'
@@ -392,132 +382,7 @@ const CareerDistributionChart: React.FC<CareerDistributionChartProps> = ({ data,
       </div>
 
       {/* Content */}
-      <AnimatePresence mode="wait">
-        {viewType === 'cards' && (
-          <motion.div
-            key="cards"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            {/* Top 3 Highlight - Enhanced with more visual impact */}
-            {topCareers.length > 0 && (
-              <div className="mb-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <FiStar className="size-3.5 text-yellow-500" />
-                  <span className="text-[11px] font-semibold text-text-secondary dark:text-text-tertiary uppercase tracking-wider">
-                    Top Carreras
-                  </span>
-                  <span className="ml-auto text-[10px] font-medium text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10 px-2 py-0.5 rounded-full">
-                    {totalStudents} estudiantes
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {topCareers.map((career, i) => (
-                    <motion.div
-                      key={career.careerName}
-                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      transition={{ delay: i * 0.08, duration: 0.4 }}
-                      className="relative overflow-hidden rounded-xl bg-gradient-to-br from-brand-600 to-brand-500 p-4 text-white shadow-lg shadow-brand-500/25"
-                    >
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/3 translate-x-1/3" />
-                      <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/5 rounded-full translate-y-1/3 -translate-x-1/3" />
-                      <div className="relative">
-                        <div className="flex items-center justify-between mb-3">
-                          <motion.div 
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: i * 0.1 + 0.2 }}
-                            className="flex items-center justify-center size-9 rounded-lg bg-white/20 backdrop-blur-sm"
-                          >
-                            <span className="text-lg">{getCareerIcon(i)}</span>
-                          </motion.div>
-                          <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full">
-                            #{i + 1}
-                          </span>
-                        </div>
-                        <p className="text-xs font-medium text-white/90 line-clamp-2 mb-2">
-                          {career.careerName}
-                        </p>
-                        <div className="flex items-end justify-between">
-                          <div className="flex items-baseline gap-2">
-                            <motion.span 
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: i * 0.1 + 0.3 }}
-                              className="text-2xl font-bold"
-                            >
-                              {career.studentCount}
-                            </motion.span>
-                            <span className="text-[10px] text-white/70">est.</span>
-                          </div>
-                          <span className="text-sm font-semibold text-white/90">
-                            {career.percentage}%
-                          </span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* All Careers Grid - Compact cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
-              {sortedData.map((career, i) => {
-                const color = careerColors[i % careerColors.length];
-                const progressWidth = (career.studentCount / maxStudents) * 100;
-                
-                return (
-                  <motion.div
-                    key={career.careerName}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.02 }}
-                    className="group relative overflow-hidden rounded-md border border-gray-100 bg-white p-2.5 transition-all duration-150 hover:shadow-sm hover:border-brand-200 dark:border-gray-700 dark:bg-gray-800"
-                  >
-                    {/* Color accent bar */}
-                    <div 
-                      className="absolute top-0 left-0 w-0.5 h-full transition-all duration-200 group-hover:w-1"
-                      style={{ backgroundColor: color }}
-                    />
-                    
-                    <div className="pl-1.5">
-                      <div className="flex items-start justify-between mb-1">
-                        <span className="text-sm">{getCareerIcon(i)}</span>
-                        <span className="text-[9px] font-medium text-text-tertiary">
-                          {career.percentage}%
-                        </span>
-                      </div>
-                      
-                      <h4 className="text-[11px] font-medium text-gray-900 dark:text-white mb-1.5 line-clamp-2 leading-tight">
-                        {career.careerName}
-                      </h4>
-                      
-                      <span className="text-base font-bold text-gray-900 dark:text-white">
-                        {career.studentCount}
-                      </span>
-                      
-                      {/* Progress bar */}
-                      <div className="relative h-0.5 bg-gray-100 rounded-full overflow-hidden mt-1.5 dark:bg-gray-700">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${progressWidth}%` }}
-                          transition={{ duration: 0.4, delay: i * 0.02 + 0.1 }}
-                          className="absolute h-full rounded-full"
-                          style={{ backgroundColor: color }}
-                        />
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-
+<AnimatePresence mode="wait">
         {viewType === 'donut' && (
           <motion.div
             key="donut"

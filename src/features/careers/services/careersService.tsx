@@ -64,6 +64,7 @@ const mapFromApi = (dto: CareerApiDTO): Career => {
     minimumGrade: isNaN(minimumGrade as number) ? 0 : (minimumGrade as number),
     careerAbbreviation: String(dto.careerAbbreviation ?? dto.career_abbreviation ?? ""),
     careerType: (dto.careerType ?? "LARGA") as "CORTA" | "LARGA",
+    semester: String(dto.semester ?? dto.SEMESTER ?? ""),
     internshipTypeIds: Array.isArray(dto.internshipTypeIds) ? dto.internshipTypeIds.map(String) : [],
     creationDate: parseDate(dto.creationDate ?? dto.createdAt),
     status: dto.status === undefined ? true : (typeof dto.status === "number" ? dto.status === 1 : !!dto.status),
@@ -83,6 +84,7 @@ const mapToApi = (payload: any): any => {
     MINIMUM_GRADE: payload.minimumGrade,
     CAREER_ABBREVIATION: payload.careerAbbreviation,
     CAREER_TYPE: payload.careerType,
+    SEMESTER: payload.semester,
     INTERNSHIP_TYPE_IDS: payload.internshipTypeIds,
     STATUS: payload.status === true ? 1 : (payload.status === false ? 0 : payload.status),
   };

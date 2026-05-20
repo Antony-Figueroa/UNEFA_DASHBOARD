@@ -23,6 +23,7 @@ import { NAME_PATTERN, SAFE_TEXT_PATTERN, isSafeInput } from "../../../utils/inp
 
 import { InternshipTypeOption } from "../../internship-types/types";
 import { getCareerByCode } from "../services/careersService";
+import { getListByName } from "../../lists/services/listsService";
 
 /**
  * Propiedades del componente CareerModal.
@@ -94,6 +95,7 @@ const createCareerSchema = (existingCareers: Career[], editingCareerId?: string 
     careerType: z.enum(['CORTA', 'LARGA'], {
       message: "Debe seleccionar un tipo de carrera"
     }),
+    semester: z.string().min(1, "Debe seleccionar un semestre"),
     internshipTypeIds: z.array(z.string()).min(1, "Debe seleccionar al menos un tipo de práctica"),
   });
 
@@ -145,6 +147,26 @@ export default function CareerModal({
   const [viewOnlyMode, setViewOnlyMode] = useState(false);
   // Estado para evitar que el efecto自动 establezca默认值 después de limpiar
   const [justCleared, setJustCleared] = useState(false);
+
+  // Estado para opciones de semestre (cargadas dinámicamente desde t_list)
+  const [semesterOptions, setSemesterOptions] = useState<{ value: string; label: string }[]>([]);
+
+  // Cargar opciones de semestre desde la base de datos
+  useEffect(() => {
+    const loadSemesterOptions = async () => {
+      try {
+        const semesterList = await getListByName('SEMESTRE');
+        const options = (semesterList.values || []).map((v: any) => ({
+          value: v.name,
+          label: v.name
+        }));
+        setSemesterOptions(options);
+      } catch (error) {
+        console.error('[CareerModal] Error loading semester options:', error);
+      }
+    };
+    loadSemesterOptions();
+  }, []);
 
   // Manejar cambio en el código de carrera
   const handleCareerCodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -226,6 +248,7 @@ export default function CareerModal({
       minimumGrade: "",
       careerAbbreviation: "",
       careerType: undefined,
+      semester: "",
       internshipTypeIds: [],
     },
   });
@@ -269,6 +292,7 @@ export default function CareerModal({
           minimumGrade: String(Math.floor(editingCareer.minimumGrade)),
           careerAbbreviation: editingCareer.careerAbbreviation,
           careerType: editingCareer.careerType as 'CORTA' | 'LARGA',
+          semester: editingCareer.semester || "",
           internshipTypeIds: (editingCareer.internshipTypeIds ?? []).map(String),
         });
       } else {
@@ -278,6 +302,7 @@ export default function CareerModal({
           minimumGrade: "",
           careerAbbreviation: "",
           careerType: undefined,
+          semester: "",
           internshipTypeIds: [],
         });
       }
@@ -314,6 +339,7 @@ export default function CareerModal({
         careerCode: pendingData.careerCode.toUpperCase(),
         careerAbbreviation: pendingData.careerAbbreviation.toUpperCase(),
         careerType: pendingData.careerType,
+        semester: pendingData.semester,
         internshipTypeIds: pendingData.internshipTypeIds || [],
         minimumGrade: Number(pendingData.minimumGrade),
         status: editingCareer?.status ?? 1,
@@ -459,6 +485,28 @@ export default function CareerModal({
               )}
               {errors.careerType && (
                 <p className="mt-1 text-xs text-error-500 font-medium">{errors.careerType.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Semestre *</label>
+              <Controller
+                name="semester"
+                control={control}
+                render={({ field }) => (
+                  <CustomSelect
+                    options={semesterOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    placeholder="Seleccione semestre"
+                    disabled={viewOnlyMode}
+                    error={!!errors.semester}
+                  />
+                )}
+              />
+              {errors.semester && (
+                <p className="mt-1 text-xs text-error-500 font-medium">{errors.semester.message}</p>
               )}
             </div>
 

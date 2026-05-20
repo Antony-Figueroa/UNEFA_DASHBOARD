@@ -5,6 +5,7 @@ export interface CareerDBRecord {
   MINIMUM_GRADE?: number;
   CAREER_ABBREVIATION?: string;
   CAREER_TYPE?: string;
+  SEMESTER?: string;
   STATUS?: number;
   CREATION_DATE?: string;
   MODIF_USER_ID?: number;
@@ -23,6 +24,7 @@ export interface Career {
   minimumGrade?: number;
   careerAbbreviation?: string;
   careerType?: string;
+  semester?: string;
   status?: boolean;
   internshipTypeIds?: string[];
   internshipPriorities?: number[];

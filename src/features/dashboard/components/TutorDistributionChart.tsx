@@ -9,6 +9,7 @@ import ReactApexChart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
 import { FiUsers, FiUserCheck, FiUser } from 'react-icons/fi';
 import { Skeleton } from '../../../components/ui/skeleton';
+import { generateTooltipHTML, extractValueFromSeries } from '../utils/tooltipUtils';
 
 interface TutorData {
   tutorName: string;
@@ -78,9 +79,30 @@ const TutorDistributionChart: React.FC<TutorDistributionChartProps> = ({ data, l
     },
     tooltip: {
       theme: 'light',
-      y: {
-        formatter: (val) => `${val} estudiante${val !== 1 ? 's' : ''}`
-      }
+      custom: ({ seriesIndex, dataPointIndex, w }: any) => {
+        if (dataPointIndex === undefined || dataPointIndex < 0) return '';
+        
+        // Try multiple sources for the label
+        let label = '';
+        if (w.globals.labels && w.globals.labels[dataPointIndex]) {
+          label = w.globals.labels[dataPointIndex];
+        } else if (w.globals.categories && w.globals.categories[dataPointIndex]) {
+          label = w.globals.categories[dataPointIndex];
+        }
+        
+        // Get value safely using helper
+        const seriesData = w.globals.series[seriesIndex];
+        const value = extractValueFromSeries(seriesData, dataPointIndex);
+        
+        return generateTooltipHTML({
+          label: label || 'Sin tutor',
+          count: value,
+          unit: 'estudiante',
+          icon: '👨‍🏫',
+        });
+      },
+      style: { fontSize: '11px', fontFamily: 'Outfit, sans-serif' },
+      marker: { show: true },
     },
     stroke: { show: false }
   };

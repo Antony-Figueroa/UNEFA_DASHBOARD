@@ -576,6 +576,7 @@ export default function CareerTable({
                   <SortIndicator column="minimumGrade" />
                 </div>
               </TableCell>
+              <TableCell isHeader className="table-header-cell">Semestre</TableCell>
               <TableCell isHeader className="table-header-cell">Tipos de Prácticas</TableCell>
               <TableCell isHeader className="table-header-cell text-right">&nbsp;</TableCell>
             </TableRow>
@@ -609,6 +610,11 @@ export default function CareerTable({
                     </Badge>
                   </TableCell>
                   <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">{formatDecimal(Number(c.minimumGrade))}</TableCell>
+                  <TableCell className="table-cell">
+                    <Badge color="primary" variant="light" size="sm">
+                      {c.semester || "-"}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="table-cell">
                     <div className="flex flex-wrap gap-1">
                       {c.internshipTypeIds && c.internshipTypeIds.length > 0 ? (
@@ -719,10 +725,14 @@ export default function CareerTable({
                 {isExpanded && (
                   <div className="mt-4 pt-4 border-t border-border-light dark:border-border-dark animate-fadeIn">
                     <div className="space-y-6">
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-3 gap-4">
                         <div className="bg-bg-secondary dark:bg-white/5 p-3 rounded-xl text-center">
                           <p className="text-[9px] text-text-tertiary uppercase font-bold mb-1">Nota Mínima</p>
                           <p className="text-xs font-bold dark:text-text-tertiary">{formatDecimal(Number(c.minimumGrade))}</p>
+                        </div>
+                        <div className="bg-bg-secondary dark:bg-white/5 p-3 rounded-xl text-center">
+                          <p className="text-[9px] text-text-tertiary uppercase font-bold mb-1">Semestre</p>
+                          <p className="text-xs font-bold dark:text-text-tertiary">{c.semester || "-"}</p>
                         </div>
                         <div className="bg-bg-secondary dark:bg-white/5 p-3 rounded-xl text-center">
                           <p className="text-[9px] text-text-tertiary uppercase font-bold mb-1">Estado</p>

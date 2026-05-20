@@ -22,6 +22,8 @@ export interface Career {
   careerAbbreviation: string;
   /** Tipo de carrera según duración (Técnica o Ingeniería/Licenciatura) */
   careerType: 'CORTA' | 'LARGA';
+  /** Semestre por defecto de la carrera */
+  semester: string;
   /** Lista de identificadores de tipos de pasantía permitidos */
   internshipTypeIds?: string[];
   /** Lista de prioridades de tipos de pasantía (0 = Única, 1 = Hospitalaria, 2 = Comunitaria) */

@@ -470,17 +470,33 @@ if (student) {
     generateCode();
   }, [watchedCareerId, watchedSemester, watchedSection, watchedRegime, setValue]);
 
-  // Auto-poblar careerName cuando cambia careerId
+  // Auto-poblar careerName y semester cuando cambia careerId
   useEffect(() => {
     if (!watchedCareerId) {
       setValue("careerName", "", { shouldValidate: true });
+      setValue("semester", "", { shouldValidate: true });
       return;
     }
     const career = careerOptions.find(c => String(c.value) === String(watchedCareerId));
     if (career) {
       setValue("careerName", career.label, { shouldValidate: true });
     }
-  }, [watchedCareerId, careerOptions, setValue]);
+    // Auto-cargar semestre desde la carrera
+    const loadCareerSemester = async () => {
+      try {
+        const careersRes = await getCareers();
+        const selectedCareer = (careersRes as any[]).find(c => String(c.careerId) === String(watchedCareerId));
+        if (selectedCareer?.semester) {
+          setValue("semester", selectedCareer.semester, { shouldValidate: true });
+        }
+      } catch {
+        // Silently fail
+      }
+    };
+    if (!editingEntry) {
+      loadCareerSemester();
+    }
+  }, [watchedCareerId, careerOptions, setValue, editingEntry]);
 
   // Auto-select practice type based on career
   useEffect(() => {
@@ -860,7 +876,10 @@ if (student) {
 
                     {/* Semestre */}
                     <div className="space-y-3">
-                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider block">Semestre *</label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Semestre *</label>
+                        <Badge color="info" variant="light" size="sm" className="font-bold text-[9px] px-1.5 backdrop-blur-sm">AUTO</Badge>
+                      </div>
                       <Controller
                         name="semester"
                         control={control}
@@ -870,9 +889,10 @@ if (student) {
                             options={SEMESTER_OPTIONS}
                             onChange={field.onChange}
                             value={field.value}
-                            placeholder="Seleccione el semestre..."
+                            placeholder="Seleccione la carrera primero..."
                             error={!!errors.semester}
-                            className="rounded-xl h-[48px]"
+                            disabled={true}
+                            className="rounded-xl h-[48px] bg-slate-50/50"
                           />
                         )}
                       />

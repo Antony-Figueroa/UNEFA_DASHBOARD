@@ -6,7 +6,7 @@ const TABLE_NAME = 't_career';
 const RELATION_TABLE = 't_career_internship_type';
 const CACHE_PREFIX = 'careers:';
 const CACHE_TTL = 3600000;
-const CAREER_COLUMNS = 'CAREER_ID, CAREER_NAME, CAREER_CODE, MINIMUM_GRADE, STATUS, CAREER_ABBREVIATION, CAREER_TYPE';
+const CAREER_COLUMNS = 'CAREER_ID, CAREER_NAME, CAREER_CODE, MINIMUM_GRADE, STATUS, CAREER_ABBREVIATION, CAREER_TYPE, SEMESTER';
 
 const mapRecord = (career: Record<string, unknown>): Career => {
   const relationData = career[RELATION_TABLE] as unknown as { INTERNSHIP_TYPE_ID: number; PRIORITY: number }[] | undefined;
@@ -24,6 +24,7 @@ const mapRecord = (career: Record<string, unknown>): Career => {
       minimumGrade: (c.MINIMUM_GRADE as unknown as number) ?? undefined,
       careerAbbreviation: (c.CAREER_ABBREVIATION as string) ?? undefined,
       careerType: (c.CAREER_TYPE as string) ?? undefined,
+      semester: (c.SEMESTER as string) ?? undefined,
       status: typeof c.STATUS === 'number' ? c.STATUS === 1 : undefined,
       internshipTypeIds: internshipTypeIds || [],
       internshipPriorities: internshipPriorities || [],
@@ -34,6 +35,7 @@ const mapRecord = (career: Record<string, unknown>): Career => {
       MINIMUM_GRADE: c.MINIMUM_GRADE,
       CAREER_ABBREVIATION: c.CAREER_ABBREVIATION,
       CAREER_TYPE: c.CAREER_TYPE,
+      SEMESTER: c.SEMESTER,
       STATUS: c.STATUS,
       // Mantener metadatos / auditoría
       CREATION_DATE: c.CREATION_DATE,
@@ -247,6 +249,7 @@ export const createCareer = async (payload: Record<string, unknown>, userId: num
           MINIMUM_GRADE: careerData.MINIMUM_GRADE,
           CAREER_ABBREVIATION: careerAbbreviation,
           CAREER_TYPE: careerType,
+          SEMESTER: careerData.SEMESTER,
           STATUS: careerData.STATUS ?? 1,
           CREATION_DATE: now,
           MODIF_USER_ID: userId,

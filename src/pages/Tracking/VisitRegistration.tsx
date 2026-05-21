@@ -308,6 +308,15 @@ export default function VisitRegistration() {
         periodEndDate={practiceInfo?.periodEndDate ? new Date(practiceInfo.periodEndDate) : undefined}
         studentName={practiceInfo?.studentName}
         assignedTutors={practiceInfo?.assignedTutors || []}
+        tutorVisitCounts={visits.reduce<{ tutorId: number; visitCount: number }[]>((acc, v) => {
+          const existing = acc.find(c => c.tutorId === v.tutorId);
+          if (existing) {
+            existing.visitCount++;
+          } else {
+            acc.push({ tutorId: v.tutorId, visitCount: 1 });
+          }
+          return acc;
+        }, [])}
         hoursAccumulated={visits.reduce((sum, v) => sum + (v.hoursWorked || 0), 0)}
       />
 

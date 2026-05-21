@@ -32,7 +32,6 @@ import { getTrackingStats, TrackingStats } from "../../features/tracking/service
  * @component
  */
 export default function TrackingPage() {
-    const [pageLoading, setPageLoading] = useState(true);
     const { fetchMultipleLists } = useLists();
     const { addToast } = useToast();
     const navigate = useNavigate();
@@ -118,13 +117,6 @@ export default function TrackingPage() {
         };
         loadOptions();
     }, [fetchMultipleLists]);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setPageLoading(false);
-        }, 500);
-        return () => clearTimeout(timer);
-    }, []);
 
     const handleOpenCreateModal = () => {
         setEditingTracking(null);
@@ -252,19 +244,19 @@ export default function TrackingPage() {
                     title="Seguimiento de Estudiantes"
                     description="Administración de seguimientos y visitas"
                 />
-                <SkeletonLoader isLoading={pageLoading} skeleton={<BreadcrumbSkeleton />}>
+                <SkeletonLoader isLoading={status === "loading"} skeleton={<BreadcrumbSkeleton />}>
                     <PageBreadcrumb pageTitle="Seguimiento" />
                 </SkeletonLoader>
 
                 <div className="stagger-delay">
                     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <SkeletonLoader isLoading={pageLoading} skeleton={<TitleSkeleton />}>
+                            <SkeletonLoader isLoading={status === "loading"} skeleton={<TitleSkeleton />}>
                                 <h2 className="text-2xl font-bold text-text-primary dark:text-white/90">Gestión de Seguimiento</h2>
                                 <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">Administra el seguimiento académico y los informes de traslado.</p>
                             </SkeletonLoader>
                         </div>
-                        {!pageLoading && (
+                        {status !== "loading" && (
                             <Button onClick={handleOpenCreateModal} className="sm:w-auto">
                                 <PlusCircleIcon className="w-5 h-5" />
                                 <span className="ml-2">Nuevo Seguimiento</span>
@@ -276,7 +268,7 @@ export default function TrackingPage() {
                         <TrackingStatsChart stats={stats} loading={statsLoading} />
                         <ComponentCard title="Seguimientos">
                             <div className="animate-fadeIn">
-                                <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />}>
+                                <SkeletonLoader isLoading={status === "loading"} skeleton={<TablePageSkeleton rows={5} />}>
                                     <TrackingTable
                                         data={tableData}
                                         status={status}

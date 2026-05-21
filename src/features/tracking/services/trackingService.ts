@@ -165,8 +165,8 @@ export const restoreTracking = async (id: string): Promise<void> => {
  * Estructura para las estadísticas de seguimiento.
  */
 export interface TrackingStats {
-    /** Tendencia histórica por periodos o meses */
-    historicalTrend: { label: string; count: number }[];
+    /** Tendencia histórica diaria (últimos 6 meses) */
+    historicalTrend: { date: string; count: number }[];
     /** Comparación entre periodos específicos */
     periodComparison: { label: string; count: number }[];
 }

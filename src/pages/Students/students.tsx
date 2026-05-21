@@ -37,6 +37,7 @@ import { useLists } from "../../features/lists/hooks/useLists";
 import { ListValue } from "../../features/lists/types";
 import { formatDateTime } from "../../utils/date";
 import { exportToExcel, ExportColumn } from "../../utils/excel";
+import { matchSearch } from "../../utils/searchNormalizer";
 
 /**
  * Transforma un objeto de tipo Student (dominio) a StudentRowData (vista).
@@ -176,14 +177,12 @@ export default function StudentsPage() {
      * Datos filtrados específicamente para el reporte PDF de Estudiantes.
      */
     const pdfFilteredData = useMemo(() => {
-        const search = pdfSearchTerm.trim().toLowerCase();
-
         return (Array.isArray(students) ? students : [])
             .filter((s) => {
-                const fullName = `${s.firstName} ${s.middleName || ""} ${s.lastName} ${s.secondLastName || ""}`.toLowerCase();
-                const matchesSearch = !search ||
-                    (s.identificationNumber || "").toLowerCase().includes(search) ||
-                    fullName.includes(search);
+                const fullName = `${s.firstName} ${s.middleName || ""} ${s.lastName} ${s.secondLastName || ""}`;
+                const matchesSearch = !pdfSearchTerm.trim() ||
+                    matchSearch(s.identificationNumber ?? '', pdfSearchTerm) ||
+                    matchSearch(fullName, pdfSearchTerm);
 
                 const matchesStatus = !!s.status;
 

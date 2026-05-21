@@ -42,6 +42,7 @@ import {
   UpdateInstitutionalResponsiblePayload
 } from "../../features/institutions/types";
 import { formatDateTime } from "../../utils/date";
+import { matchSearch } from "../../utils/searchNormalizer";
 
 import { useLists } from "../../features/lists/hooks/useLists";
 
@@ -195,27 +196,25 @@ export default function InstitutionsPage() {
   }, [responsibles]);
 
   const instPdfFilteredData = useMemo(() => {
-    const search = instPdfSearchTerm.trim().toLowerCase();
     return (Array.isArray(institutions) ? institutions : [])
       .filter(i => i.status === true)
-      .filter(i => !search ||
-        i.rif.toLowerCase().includes(search) ||
-        i.name.toLowerCase().includes(search) ||
-        i.institutionType.toLowerCase().includes(search)
+      .filter(i => !instPdfSearchTerm.trim() ||
+        matchSearch(i.rif, instPdfSearchTerm) ||
+        matchSearch(i.name, instPdfSearchTerm) ||
+        matchSearch(i.institutionType, instPdfSearchTerm)
       );
   }, [institutions, instPdfSearchTerm]);
 
   const respPdfFilteredData = useMemo(() => {
-    const search = respPdfSearchTerm.trim().toLowerCase();
     return (Array.isArray(responsibles) ? responsibles : [])
       .filter(r => r.status === true)
       .filter(r => {
-        const fullName = `${r.firstName} ${r.lastName}`.toLowerCase();
-        const instNames = r.institutions?.map(i => i.institutionName).join(" ").toLowerCase() || "";
-        return !search ||
-          r.identificationNumber.toLowerCase().includes(search) ||
-          fullName.includes(search) ||
-          instNames.includes(search);
+        const fullName = `${r.firstName} ${r.lastName}`;
+        const instNames = r.institutions?.map(i => i.institutionName).join(" ") || "";
+        return !respPdfSearchTerm.trim() ||
+          matchSearch(r.identificationNumber, respPdfSearchTerm) ||
+          matchSearch(fullName, respPdfSearchTerm) ||
+          matchSearch(instNames, respPdfSearchTerm);
       });
   }, [responsibles, respPdfSearchTerm]);
 

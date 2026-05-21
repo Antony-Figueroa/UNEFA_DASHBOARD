@@ -18,6 +18,7 @@ import AsyncButton from '../../../components/ui/button/AsyncButton';
 import InputField from '../../../components/form/input/InputField';
 import TextArea from '../../../components/form/input/TextArea';
 import CustomSelect from '../../../components/form/CustomSelect';
+import Badge from '../../../components/ui/badge/Badge';
 import { useStudents } from '../../students/hooks/useStudents';
 import { useLists } from '../../lists/hooks/useLists';
 import { useNavigate } from 'react-router';
@@ -25,6 +26,8 @@ import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
 import { useToast } from '../../../context/toast';
 import { isSafeInput } from '../../../utils/inputValidation';
+import { visitsService } from '../../visits/services/visitsService';
+import { Visit } from '../../visits/types';
 
 /**
  * Propiedades del componente TrackingModal.
@@ -90,6 +93,8 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
     const [pendingData, setPendingData] = useState<TrackingFormData | null>(null);
     const [studentCareer, setStudentCareer] = useState<string>("");
     const [detailData, setDetailData] = useState<TrackingDetailDTO | null>(null);
+    const [visits, setVisits] = useState<Visit[]>([]);
+    const [visitsLoading, setVisitsLoading] = useState(false);
 
     // Cargar detalles completos (institución, tutores, etc.) cuando se edita
     useEffect(() => {
@@ -105,6 +110,27 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
             loadDetail();
         } else {
             setDetailData(null);
+        }
+    }, [isOpen, tracking?.trackingId]);
+
+    // Cargar visitas cuando se edita un seguimiento
+    useEffect(() => {
+        if (isOpen && tracking?.trackingId) {
+            const loadVisits = async () => {
+                setVisitsLoading(true);
+                try {
+                    const response = await visitsService.getVisitsByPractice(Number(tracking.trackingId));
+                    setVisits(response.data || []);
+                } catch (error) {
+                    console.error("[TrackingModal] Error al cargar visitas:", error);
+                    setVisits([]);
+                } finally {
+                    setVisitsLoading(false);
+                }
+            };
+            loadVisits();
+        } else {
+            setVisits([]);
         }
     }, [isOpen, tracking?.trackingId]);
 
@@ -240,6 +266,35 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
         if (tracking?.trackingId) {
             navigate(`/visit-registration/${tracking.trackingId}`);
         }
+    };
+
+    /**
+     * Formatea una fecha ISO a DD/MM/AAAA HH:mm.
+     */
+    const formatDateTime = (iso: string): string => {
+        try {
+            const date = new Date(iso);
+            return date.toLocaleDateString("es-VE", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+        } catch {
+            return iso;
+        }
+    };
+
+    /**
+     * Obtiene el color del badge según el tipo de visita.
+     */
+    const getVisitTypeColor = (type: string): "primary" | "success" | "warning" | "info" => {
+        const upper = type.toUpperCase();
+        if (upper.includes("PRESENCIAL")) return "primary";
+        if (upper.includes("VIRTUAL")) return "info";
+        if (upper.includes("TELEFONICA")) return "warning";
+        return "primary";
     };
 
     return (
@@ -381,21 +436,6 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                                             placeholder="Ej: Ruta 1"
                                         />
                                     </div>
-                                    {tracking && (
-                                        <div className="sm:col-span-2 flex flex-col gap-2">
-                                            <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                                                Registro de Visitas
-                                            </label>
-                                            <Button 
-                                                type="button" 
-                                                variant="outline" 
-                                                onClick={handleVisitRegister}
-                                                className="w-full sm:w-auto"
-                                            >
-                                                Abrir Registro de Visitas
-                                            </Button>
-                                        </div>
-                                    )}
                                     <div className="sm:col-span-2 flex flex-col gap-1">
                                         <label className="text-sm font-medium text-text-primary dark:text-white/90">
                                             Observaciones
@@ -410,6 +450,92 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                                     </div>
                                 </div>
                             </div>
+
+                            {/* ── Sección: Visitas Realizadas ── */}
+                            {tracking && (
+                                <div className="space-y-4">
+                                    <ModalSectionHeader color="purple-500">
+                                        Visitas Realizadas
+                                    </ModalSectionHeader>
+                                    {visitsLoading ? (
+                                        <div className="flex items-center justify-center py-6">
+                                            <div className="w-6 h-6 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
+                                            <span className="ml-3 text-sm text-text-secondary">
+                                                Cargando visitas...
+                                            </span>
+                                        </div>
+                                    ) : visits.length === 0 ? (
+                                        <div className="text-center py-6">
+                                            <p className="text-sm font-medium text-text-secondary">
+                                                No se registraron visitas para este seguimiento
+                                            </p>
+                                            <p className="text-xs text-text-tertiary mt-1">
+                                                Las visitas aparecerán aquí una vez registradas
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-sm">
+                                                <thead>
+                                                    <tr className="border-b border-border-light dark:border-white/5">
+                                                        <th className="text-left py-2 px-3 text-[10px] font-bold text-text-tertiary uppercase tracking-widest">
+                                                            Fecha
+                                                        </th>
+                                                        <th className="text-left py-2 px-3 text-[10px] font-bold text-text-tertiary uppercase tracking-widest">
+                                                            Tipo
+                                                        </th>
+                                                        <th className="text-left py-2 px-3 text-[10px] font-bold text-text-tertiary uppercase tracking-widest">
+                                                            Tutor
+                                                        </th>
+                                                        <th className="text-center py-2 px-3 text-[10px] font-bold text-text-tertiary uppercase tracking-widest">
+                                                            Horas
+                                                        </th>
+                                                        <th className="text-left py-2 px-3 text-[10px] font-bold text-text-tertiary uppercase tracking-widest">
+                                                            Actividades
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-border-light dark:divide-white/5">
+                                                    {visits.map((visit) => (
+                                                        <tr
+                                                            key={visit.visitId}
+                                                            className="hover:bg-bg-secondary/50 transition-colors"
+                                                        >
+                                                            <td className="py-2.5 px-3 text-xs font-medium text-text-primary">
+                                                                {formatDateTime(visit.visitDate)}
+                                                            </td>
+                                                            <td className="py-2.5 px-3">
+                                                                <Badge color={getVisitTypeColor(visit.visitType)}>
+                                                                    {visit.visitType}
+                                                                </Badge>
+                                                            </td>
+                                                            <td className="py-2.5 px-3 text-xs text-text-primary">
+                                                                {visit.tutorName}
+                                                            </td>
+                                                            <td className="py-2.5 px-3 text-xs text-center font-semibold text-text-primary">
+                                                                {visit.hoursWorked}h
+                                                            </td>
+                                                            <td className="py-2.5 px-3 text-xs text-text-secondary max-w-[200px] truncate">
+                                                                {visit.activitiesPerformed}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-end pt-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={handleVisitRegister}
+                                            className="w-full sm:w-auto"
+                                        >
+                                            + Agregar Visita
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </ModalBody>
                     <ModalFooter className="shrink-0 px-6 sm:px-12 py-4 border-t border-border-light dark:border-border-dark">

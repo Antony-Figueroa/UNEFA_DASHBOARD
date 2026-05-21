@@ -177,7 +177,7 @@ export interface TrackingStats {
 export interface AssignedTutor {
     tutorId: number;
     tutorName: string;
-    tutorType: 'ACADEMICO' | 'METODOLOGICO';
+    tutorType: string;
 }
 
 /**

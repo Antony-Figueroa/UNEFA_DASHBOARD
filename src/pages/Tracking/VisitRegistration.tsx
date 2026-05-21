@@ -307,6 +307,7 @@ export default function VisitRegistration() {
         periodStartDate={practiceInfo?.periodStartDate ? new Date(practiceInfo.periodStartDate) : undefined}
         periodEndDate={practiceInfo?.periodEndDate ? new Date(practiceInfo.periodEndDate) : undefined}
         studentName={practiceInfo?.studentName}
+        assignedTutors={practiceInfo?.assignedTutors || []}
         hoursAccumulated={visits.reduce((sum, v) => sum + (v.hoursWorked || 0), 0)}
       />
 

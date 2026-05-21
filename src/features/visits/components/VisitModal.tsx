@@ -94,6 +94,8 @@ interface VisitModalProps {
   studentName?: string;
   /** Horas acumuladas de prácticas para mostrar como referencia (opcional) */
   hoursAccumulated?: number;
+  /** Tutores asignados a la práctica profesional del estudiante (solo estos se muestran en el selector) */
+  assignedTutors?: Array<{ tutorId: number; tutorName: string; tutorType: string }>;
 }
 
 export default function VisitModal({
@@ -109,7 +111,8 @@ export default function VisitModal({
   periodEndDate,
   modalId,
   studentName,
-  hoursAccumulated
+  hoursAccumulated,
+  assignedTutors
 }: VisitModalProps) {
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [pendingData, setPendingData] = useState<VisitFormData | null>(null);
@@ -260,18 +263,35 @@ export default function VisitModal({
     }
   }, [isOpen, fetchMultipleLists]);
 
-  // Construir opciones de tutores para el selector con conteo de visitas
+  // Construir opciones de tutores para el selector
+  // SOLO muestra los tutores asignados a la práctica (assignedTutors)
+  // Muestra el tipo (ACADÉMICO/METODOLÓGICO) + conteo de visitas
   useEffect(() => {
-    const options = tutors.map(t => {
-      const visitCount = tutorVisitCounts.find(tc => String(tc.tutorId) === String(t.tutorId))?.visitCount || 0;
-      const countLabel = visitCount > 0 ? ` (${visitCount} visita${visitCount !== 1 ? 's' : ''})` : '';
-      return {
-        value: String(t.tutorId),
-        label: `${t.firstName} ${t.lastName} (${t.identificationPrefix}-${t.identificationNumber})${countLabel}`
-      };
-    });
+    // Si hay tutores asignados, filtrar SOLO esos; si no, mostrar todos (fallback)
+    const tutorIds = assignedTutors && assignedTutors.length > 0
+      ? new Set(assignedTutors.map(a => String(a.tutorId)))
+      : null;
+
+    // Mapa rápido de tutorId -> tutorType
+    const tutorTypeMap = new Map<string, string>();
+    if (assignedTutors) {
+      assignedTutors.forEach(a => tutorTypeMap.set(String(a.tutorId), a.tutorType));
+    }
+
+    const options = tutors
+      .filter(t => !tutorIds || tutorIds.has(String(t.tutorId)))
+      .map(t => {
+        const visitCount = tutorVisitCounts.find(tc => String(tc.tutorId) === String(t.tutorId))?.visitCount || 0;
+        const countLabel = visitCount > 0 ? ` (${visitCount} visita${visitCount !== 1 ? 's' : ''})` : '';
+        const tutorType = tutorTypeMap.get(String(t.tutorId));
+        const typeLabel = tutorType === 'METODOLOGICO' ? 'METODOLÓGICO' : 'ACADÉMICO';
+        return {
+          value: String(t.tutorId),
+          label: `${t.firstName} ${t.lastName} [${typeLabel}]${countLabel}`
+        };
+      });
     setTutorOptions(options);
-  }, [tutors, tutorVisitCounts]);
+  }, [tutors, tutorVisitCounts, assignedTutors]);
 
   // Callback cuando se guarda un nuevo tutor desde TutorModal
   const handleTutorCreated = async (tutorData: any) => {

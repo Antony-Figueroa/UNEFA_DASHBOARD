@@ -349,24 +349,26 @@ export const getTrackingById = async (req: Request, res: Response) => {
     const institution = practice.t_institution || {};
     const period = practice.t_internships_period || {};
     
-    // Buscar tutor académico (TUTOR_TYPE = 'ACADEMICO' o el primero disponible)
-    let tutorName = "";
-    let tutorMethodologicalName = "";
+    // Construir arreglo completo de tutores asignados (con ID, nombre y tipo)
+    const assignedTutors: { tutorId: number; tutorName: string; tutorType: string }[] = [];
+    
     if (practice.t_professional_practices_tutor && practice.t_professional_practices_tutor.length > 0) {
-      const academicTutor = practice.t_professional_practices_tutor.find(
-        (t: any) => t.TUTOR_TYPE === 'ACADEMICO' || t.TUTOR_TYPE === 'ACADÉMICO'
-      ) || practice.t_professional_practices_tutor[0];
-      if (academicTutor?.t_tutors) {
-        tutorName = `${academicTutor.t_tutors.NAME || ""} ${academicTutor.t_tutors.SURNAME || ""}`.trim();
-      }
-      
-      const methodologicalTutor = practice.t_professional_practices_tutor.find(
-        (t: any) => t.TUTOR_TYPE === 'METODOLOGICO' || t.TUTOR_TYPE === 'METODOLÓGICO'
-      );
-      if (methodologicalTutor?.t_tutors) {
-        tutorMethodologicalName = `${methodologicalTutor.t_tutors.NAME || ""} ${methodologicalTutor.t_tutors.SURNAME || ""}`.trim();
-      }
+      practice.t_professional_practices_tutor.forEach((t: any) => {
+        if (t.TUTOR_ID) {
+          assignedTutors.push({
+            tutorId: t.TUTOR_ID,
+            tutorName: `${t.t_tutors?.NAME || ""} ${t.t_tutors?.SURNAME || ""}`.trim(),
+            tutorType: t.TUTOR_TYPE === 'METODOLOGICO' || t.TUTOR_TYPE === 'METODOLÓGICO' ? 'METODOLOGICO' : 'ACADEMICO'
+          });
+        }
+      });
     }
+
+    // Buscar tutor académico (backwards compatibility)
+    const academicTutorData = assignedTutors.find(t => t.tutorType === 'ACADEMICO') || assignedTutors[0] || null;
+    const methodologicalTutorData = assignedTutors.find(t => t.tutorType === 'METODOLOGICO') || null;
+    const tutorName = academicTutorData?.tutorName || "";
+    const tutorMethodologicalName = methodologicalTutorData?.tutorName || "";
 
     res.json({
       success: true,
@@ -378,6 +380,7 @@ export const getTrackingById = async (req: Request, res: Response) => {
         institutionName: institution.INSTITUTION_NAME || "",
         tutorName: tutorName,
         tutorMethodologicalName: tutorMethodologicalName,
+        assignedTutors: assignedTutors,
         periodStartDate: period.START_DATE || null,
         periodEndDate: period.END_DATE || null,
         reportTitle: practice.REPORT_TITLE || "",

@@ -11,6 +11,7 @@ import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { Career } from "../../careers/types";
 import { CrudStatus } from "../../../hooks/useCrud";
 import { formatPhoneDisplay } from "../../../utils/inputFormat";
+import { matchSearch } from "../../../utils/searchNormalizer";
 
 /**
  * Genera un color basado en el nombre de la profesión para visualización consistente.
@@ -173,8 +174,7 @@ export default function TutorTable({
     conditionOptions = [],
     // loading = false,
 }: TutorTableProps) {
-    const [idFilter, setIdFilter] = useState("");
-    const [nameFilter, setNameFilter] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
     const [practiceTypeFilter, setPracticeTypeFilter] = useState("");
     const [careerFilter, setCareerFilter] = useState("");
     const [conditionFilter, setConditionFilter] = useState("");
@@ -189,25 +189,25 @@ export default function TutorTable({
         order: "asc",
     });
 
-    const debouncedIdFilter = useDebounce(idFilter, 300);
-    const debouncedNameFilter = useDebounce(nameFilter, 300);
+    const debouncedSearch = useDebounce(searchTerm, 300);
 
     useEffect(() => {
         setSelectedIds([]);
     }, [activeTab]);
 
     const filteredData = useMemo(() => {
-        const idSearch = debouncedIdFilter.trim().toLowerCase();
-        const nameSearch = debouncedNameFilter.trim().toLowerCase();
+        const search = debouncedSearch.trim().toLowerCase();
         const practiceTypeSearch = practiceTypeFilter.trim().toLowerCase();
         const careerSearch = careerFilter.trim();
         const conditionSearch = conditionFilter.trim().toLowerCase();
 
         const filtered = data.filter((t) => {
-            const matchesId = !idSearch || (t.identificationNumber || "").toLowerCase().includes(idSearch);
-            
-            const fullName = `${t.firstName} ${t.middleName || ""} ${t.lastName} ${t.secondLastName || ""}`.toLowerCase();
-            const matchesName = !nameSearch || fullName.includes(nameSearch);
+            const matchesSearch = !search || (
+                matchSearch(t.identificationNumber || "", search) ||
+                matchSearch(`${t.firstName} ${t.middleName || ""} ${t.lastName} ${t.secondLastName || ""}`, search) ||
+                matchSearch(t.phone || "", search) ||
+                matchSearch(t.email || "", search)
+            );
 
             const matchesPracticeType = !practiceTypeSearch || (t.practiceTypes || []).some(pt => pt.toLowerCase().includes(practiceTypeSearch));
             const matchesCareer = !careerSearch || (t.carreras || []).some(c => c === careerSearch);
@@ -215,17 +215,17 @@ export default function TutorTable({
 
             const matchesTab = activeTab === "Activas" ? !!t.status : !t.status;
 
-            return matchesId && matchesName && matchesPracticeType && matchesCareer && matchesCondition && matchesTab;
+            return matchesSearch && matchesPracticeType && matchesCareer && matchesCondition && matchesTab;
         });
 
         filtered.sort((a, b) => {
-            if (idSearch) {
+            if (search) {
                 const idA = a.identificationNumber.toLowerCase();
                 const idB = b.identificationNumber.toLowerCase();
 
                 const getRelevance = (id: string) => {
-                    if (id === idSearch) return 2;
-                    if (id.startsWith(idSearch)) return 1;
+                    if (id === search) return 2;
+                    if (id.startsWith(search)) return 1;
                     return 0;
                 };
 
@@ -246,11 +246,11 @@ export default function TutorTable({
         });
 
         return filtered;
-    }, [data, debouncedIdFilter, debouncedNameFilter, practiceTypeFilter, careerFilter, conditionFilter, activeTab, sortConfig]);
+    }, [data, debouncedSearch, practiceTypeFilter, careerFilter, conditionFilter, activeTab, sortConfig]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedIdFilter, debouncedNameFilter, practiceTypeFilter, careerFilter, conditionFilter]);
+    }, [debouncedSearch, practiceTypeFilter, careerFilter, conditionFilter]);
 
     if (status === "error") {
         return (
@@ -329,8 +329,7 @@ export default function TutorTable({
     };
 
     const clearFilters = () => {
-        setIdFilter("");
-        setNameFilter("");
+        setSearchTerm("");
         setPracticeTypeFilter("");
         setCareerFilter("");
         setConditionFilter("");
@@ -364,31 +363,20 @@ export default function TutorTable({
         <div className="table-container">
             <div className="p-4 border-b border-border-light dark:border-border-dark space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Filtro por Cédula */}
+                    {/* Búsqueda unificada */}
                     <div className="relative">
                         <input
                             type="text"
-                            placeholder="Buscar por cédula"
-                            value={idFilter}
-                            onChange={(e) => setIdFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-10 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary"
+                            placeholder="Buscar por cédula, nombre, teléfono o correo"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent px-4 py-2.5 pl-10 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:border-brand-300 focus:ring-4 focus:ring-brand-500/10 dark:border-border-dark dark:text-text-emphasis"
                         />
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
-                        </span>
-                    </div>
-
-                    {/* Filtro por Nombres y Apellidos */}
-                    <div className="relative">
-                        <input
-                            type="text"
-                            placeholder="Buscar por nombres y apellidos"
-                            value={nameFilter}
-                            onChange={(e) => setNameFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary"
-                        />
+                        </div>
                     </div>
 
                     {/* Filtro por Tipo de Practica */}
@@ -460,7 +448,7 @@ export default function TutorTable({
                         <div className="text-xs text-text-secondary dark:text-text-tertiary">
                             Mostrando <span className="font-bold text-text-primary dark:text-text-emphasis">{filteredData.length}</span> resultados
                         </div>
-                        {(idFilter || nameFilter || practiceTypeFilter || careerFilter || conditionFilter) && (
+                        {(searchTerm || practiceTypeFilter || careerFilter || conditionFilter) && (
                             <button
                                 onClick={clearFilters}
                                 className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
@@ -640,7 +628,7 @@ export default function TutorTable({
                                         </div>
                                         <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron tutores</h3>
                                         <p className="mt-1 text-xs text-text-tertiary dark:text-text-tertiary">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                                        {(idFilter || nameFilter || practiceTypeFilter) && (
+                                        {(searchTerm || practiceTypeFilter || careerFilter || conditionFilter) && (
                                             <button
                                                 onClick={clearFilters}
                                                 className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
@@ -750,7 +738,7 @@ export default function TutorTable({
                         </div>
                         <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron tutores</h3>
                         <p className="mt-1 text-xs text-text-secondary dark:text-text-tertiary max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                        {(idFilter || nameFilter || practiceTypeFilter) && (
+                        {(searchTerm || practiceTypeFilter || careerFilter || conditionFilter) && (
                             <button
                                 onClick={clearFilters}
                                 className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"

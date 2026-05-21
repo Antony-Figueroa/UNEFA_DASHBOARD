@@ -140,3 +140,5 @@ export interface VisitStatsResponse {
  * Usar listas dinámicas desde t_list cuando estén disponibles.
  */
 export const VISIT_TYPES = LEGACY_VISIT_TYPES;
+
+

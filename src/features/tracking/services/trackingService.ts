@@ -172,6 +172,15 @@ export interface TrackingStats {
 }
 
 /**
+ * Tutor asignado a una práctica profesional.
+ */
+export interface AssignedTutor {
+    tutorId: number;
+    tutorName: string;
+    tutorType: 'ACADEMICO' | 'METODOLOGICO';
+}
+
+/**
  * Datos completos de un seguimiento individual.
  */
 export interface TrackingDetailDTO {
@@ -182,6 +191,7 @@ export interface TrackingDetailDTO {
     institutionName: string;
     tutorName: string;
     tutorMethodologicalName: string;
+    assignedTutors: AssignedTutor[];
     periodStartDate: string | null;
     periodEndDate: string | null;
     reportTitle: string;

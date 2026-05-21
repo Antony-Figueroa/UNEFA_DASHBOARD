@@ -13,6 +13,7 @@ import { useActivityLogs } from '../../features/activity-logs/hooks/useActivityL
 import ActivityLogModal from '../../features/activity-logs/components/ActivityLogModal';
 import ActivityLogTable from '../../features/activity-logs/components/ActivityLogTable';
 import { ActivityLog, CreateActivityLogPayload, UpdateActivityLogPayload } from '../../features/activity-logs/types';
+import { matchSearch } from '../../utils/searchNormalizer';
 
 interface PracticeInfo {
   practiceId: number;
@@ -122,7 +123,7 @@ export default function ActivityLogPage() {
   };
 
   const filteredLogs = logs.filter(log => {
-    if (searchTerm && !log.activityDescription.toLowerCase().includes(searchTerm.toLowerCase())) {
+    if (searchTerm && !matchSearch(log.activityDescription, searchTerm)) {
       return false;
     }
     if (typeFilter && log.activityType !== typeFilter) {

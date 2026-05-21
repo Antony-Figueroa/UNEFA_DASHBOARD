@@ -7,6 +7,7 @@ import tutorService, { TutorStudent } from "../../features/tutor/services/tutorS
 import Badge from "../../components/ui/badge/Badge";
 import Button from "../../components/ui/button/Button";
 import { Search, Eye, Calendar, FileText } from "lucide-react";
+import { matchSearch } from "../../utils/searchNormalizer";
 import { Modal, ModalHeader, ModalBody } from "../../components/ui/modal";
 
 const statusColors: Record<string, "success" | "warning" | "info" | "error" | "light"> = {
@@ -59,11 +60,10 @@ export default function TutorTracking() {
     let filtered = [...students];
 
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
       filtered = filtered.filter(s =>
-        s.studentName.toLowerCase().includes(term) ||
-        s.studentCi.toLowerCase().includes(term) ||
-        s.institutionName.toLowerCase().includes(term)
+        matchSearch(s.studentName, searchTerm) ||
+        matchSearch(s.studentCi, searchTerm) ||
+        matchSearch(s.institutionName, searchTerm)
       );
     }
 

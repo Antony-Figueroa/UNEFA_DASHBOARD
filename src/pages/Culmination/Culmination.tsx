@@ -21,6 +21,7 @@ import { DownloadIcon, CheckCircleIcon } from "../../icons";
 import { culminationService, CulminationRecord, CulminationMeta } from "../../features/culmination/services/culminationService";
 import { generateCertificatePDF } from "../../components/ui/pdf/templates/CertificatePDF";
 import toast from "react-hot-toast";
+import { matchSearch } from "../../utils/searchNormalizer";
 
 const STATUS_CONFIG = {
   pending: { label: "Pendiente", color: "warning" as const },
@@ -73,9 +74,9 @@ export default function CulminationPage() {
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     return data.filter((item) =>
-      item.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.studentCi.includes(searchTerm) ||
-      item.institutionName.toLowerCase().includes(searchTerm.toLowerCase())
+      matchSearch(item.studentName, searchTerm) ||
+      matchSearch(item.studentCi, searchTerm) ||
+      matchSearch(item.institutionName, searchTerm)
     );
   }, [data, searchTerm]);
 

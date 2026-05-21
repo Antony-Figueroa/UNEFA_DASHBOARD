@@ -192,6 +192,7 @@ export interface TrackingDetailDTO {
     tutorName: string;
     tutorMethodologicalName: string;
     assignedTutors: AssignedTutor[];
+    periodDescription: string | null;
     periodStartDate: string | null;
     periodEndDate: string | null;
     reportTitle: string;

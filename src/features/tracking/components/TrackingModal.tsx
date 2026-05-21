@@ -124,7 +124,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
         }
     }, [isOpen, fetchMultipleLists]);
     
-    const { register, handleSubmit, formState: { errors, isDirty, isValid }, reset, control } = useForm<TrackingFormData>({
+    const { register, handleSubmit, formState: { errors, isDirty, isValid }, reset, control, trigger } = useForm<TrackingFormData>({
         resolver: zodResolver(trackingSchema),
         mode: "onChange",
         defaultValues: {
@@ -153,11 +153,14 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                 reportTitle: tracking.reportTitle,
                 transfer: String(tracking.transfer),
                 route: tracking.route,
-                observations: tracking.observations,
+                observations: tracking.observations || '',
             });
             setStudentCareer(tracking.careerName || "");
+            
+            // Forzar validación para que isValid se actualice
+            trigger();
         }
-    }, [tracking, isOpen, reset]);
+    }, [tracking, isOpen, reset, trigger]);
 
     /**
      * Maneja el envío del formulario.
@@ -315,7 +318,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                             <Button type="button" variant="outline" onClick={handleCloseAttempt}>
                                 Cancelar
                             </Button>
-                            <AsyncButton type="submit" loading={isLoading} disabled={!isValid}>
+                            <AsyncButton type="submit" loading={isLoading} disabled={!isValid || !isDirty}>
                                 Actualizar Seguimiento
                             </AsyncButton>
                         </div>

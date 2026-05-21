@@ -27,6 +27,7 @@ import { Tutor, TutorRowData, CreateTutorPayload, UpdateTutorPayload } from "../
 import { formatDateTime } from "../../utils/date";
 import { useLists } from "../../features/lists/hooks/useLists";
 import { useCareers } from "../../features/careers/hooks/useCareers";
+import { matchSearch } from "../../utils/searchNormalizer";
 
 /**
  * Transforma un objeto de tipo Tutor (dominio) a TutorRowData (vista).
@@ -168,17 +169,16 @@ export default function TutorsPage() {
      * Datos filtrados específicamente para el reporte PDF de Tutores.
      */
     const pdfFilteredData = useMemo(() => {
-        const search = pdfSearchTerm.trim().toLowerCase();
         const practiceTypeSearch = pdfPracticeTypeFilter.trim().toLowerCase();
         const careerSearch = pdfCareerFilter.trim();
         const conditionSearch = pdfConditionFilter.trim().toLowerCase();
 
         return (Array.isArray(tutors) ? tutors : [])
             .filter((t) => {
-                const fullName = `${t.firstName} ${t.middleName || ""} ${t.lastName} ${t.secondLastName || ""}`.toLowerCase();
-                const matchesSearch = !search || 
-                    (t.identificationNumber || "").toLowerCase().includes(search) || 
-                    fullName.includes(search);
+                const fullName = `${t.firstName} ${t.middleName || ""} ${t.lastName} ${t.secondLastName || ""}`;
+                const matchesSearch = !pdfSearchTerm.trim() || 
+                    matchSearch(t.identificationNumber ?? '', pdfSearchTerm) || 
+                    matchSearch(fullName, pdfSearchTerm);
                 
                 const matchesPracticeType = !practiceTypeSearch || (t.practiceTypes || []).some(pt => pt.toLowerCase().includes(practiceTypeSearch));
                 const matchesCareer = !careerSearch || (t.carreras || []).some(c => c === careerSearch);

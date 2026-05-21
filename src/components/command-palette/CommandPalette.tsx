@@ -12,6 +12,7 @@ import { useAuth } from "../../context/auth";
 import { notificationService } from "../../features/notifications/services/notificationService";
 import { globalSearch, type GlobalSearchResponse } from "../../api/searchService";
 import toast from "react-hot-toast";
+import { matchSearch } from "../../utils/searchNormalizer";
 import { SearchIcon, PlusIcon, UserIcon, FileIcon, UsersIcon, GridIcon, TableIcon, PageIcon, PieChartIcon, DocsIcon, SparklesIcon, LockIcon, BoxCubeIcon } from "../../icons";
 
 // Iconos inline para instituciones y carreras
@@ -244,29 +245,19 @@ export default function CommandPalette() {
     };
   }, [searchTerm, navigate, close]);
 
-  // Normalizar texto para búsqueda (elimina tildes y convierte a minúsculas)
-  const normalizeText = (text: string): string => {
-    return text
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
-  };
-
   // Construir resultados de navegación
   const navigationResults = useMemo(() => {
     if (!searchTerm) return navigationItems;
-    const term = normalizeText(searchTerm);
     return navigationItems.filter(
-      item => normalizeText(item.name).includes(term) || normalizeText(item.description).includes(term)
+      item => matchSearch(item.name, searchTerm) || matchSearch(item.description, searchTerm)
     );
   }, [searchTerm]);
 
   // Construir resultados de acciones
   const actionResults = useMemo(() => {
     if (!searchTerm) return actionItems;
-    const term = normalizeText(searchTerm);
     return actionItems.filter(
-      item => normalizeText(item.name).includes(term) || normalizeText(item.description).includes(term)
+      item => matchSearch(item.name, searchTerm) || matchSearch(item.description, searchTerm)
     );
   }, [searchTerm]);
 
@@ -301,17 +292,15 @@ export default function CommandPalette() {
   // Filtrar resultados basados en búsqueda
   const filteredNavigation = useMemo(() => {
     if (!searchTerm) return navigationResults;
-    const term = normalizeText(searchTerm);
     return navigationResults.filter(
-      item => normalizeText(item.name).includes(term) || normalizeText(item.description).includes(term)
+      item => matchSearch(item.name, searchTerm) || matchSearch(item.description, searchTerm)
     );
   }, [searchTerm, navigationResults]);
 
   const filteredActions = useMemo(() => {
     if (!searchTerm) return actionResults;
-    const term = normalizeText(searchTerm);
     return actionResults.filter(
-      item => normalizeText(item.name).includes(term) || normalizeText(item.description).includes(term)
+      item => matchSearch(item.name, searchTerm) || matchSearch(item.description, searchTerm)
     );
   }, [searchTerm, actionResults]);
 

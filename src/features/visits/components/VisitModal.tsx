@@ -188,6 +188,8 @@ export default function VisitModal({
   const { fetchMultipleLists, loading: loadingLists } = useLists();
   const [visitTypeOptions, setVisitTypeOptions] = useState<ListOption[]>([]);
   const [visitCaseOptions, setVisitCaseOptions] = useState<ListOption[]>([]);
+  // Mapa para resolver etiquetas de tipo de tutor desde t_list (abbreviation → name)
+  const [tutorTypeLabelMap, setTutorTypeLabelMap] = useState<Record<string, string>>({});
 
   // Estados para modal de agregar nuevo valor a lista
   const [isAddValueModalOpen, setIsAddValueModalOpen] = useState(false);
@@ -220,7 +222,7 @@ export default function VisitModal({
   // Cargar listas dinámicas (combos configurables) desde t_list
   const loadLists = async () => {
     try {
-      const lists = await fetchMultipleLists(['VISIT_TYPE', 'VISIT_CASE']);
+      const lists = await fetchMultipleLists(['VISIT_TYPE', 'VISIT_CASE', 'TUTOR_TYPE']);
 
       // Procesar tipos de visita
       const visitTypes = lists.VISIT_TYPE || [];
@@ -249,6 +251,20 @@ export default function VisitModal({
         // Fallback a legacy si no hay listas configuradas
         setVisitCaseOptions(LEGACY_VISIT_CASES);
       }
+
+      // Construir mapa de tipos de tutor desde t_list (100% data-driven)
+      // La clave es el abbreviation (ej: 'ACADEMICO') que matchea con TUTOR_TYPE en la BD
+      // El valor es el name (ej: 'Académico') para mostrar al usuario
+      const tutorTypes = lists.TUTOR_TYPE || [];
+      const labelMap: Record<string, string> = {};
+      tutorTypes
+        .filter(v => v.status)
+        .forEach(v => {
+          if (v.abbreviation) {
+            labelMap[v.abbreviation] = v.name;
+          }
+        });
+      setTutorTypeLabelMap(labelMap);
     } catch (err) {
       console.error('[VisitModal] Error loading dynamic lists:', err);
       // En caso de error, usar opciones legacy
@@ -284,14 +300,14 @@ export default function VisitModal({
         const visitCount = tutorVisitCounts.find(tc => String(tc.tutorId) === String(t.tutorId))?.visitCount || 0;
         const countLabel = visitCount > 0 ? ` (${visitCount} visita${visitCount !== 1 ? 's' : ''})` : '';
         const tutorType = tutorTypeMap.get(String(t.tutorId));
-        const typeLabel = tutorType === 'METODOLOGICO' ? 'METODOLÓGICO' : 'ACADÉMICO';
+        const typeLabel = tutorType ? (tutorTypeLabelMap[tutorType] || tutorType) : '';
         return {
           value: String(t.tutorId),
           label: `${t.firstName} ${t.lastName} [${typeLabel}]${countLabel}`
         };
       });
     setTutorOptions(options);
-  }, [tutors, tutorVisitCounts, assignedTutors]);
+  }, [tutors, tutorVisitCounts, assignedTutors, tutorTypeLabelMap]);
 
   // Callback cuando se guarda un nuevo tutor desde TutorModal
   const handleTutorCreated = async (tutorData: any) => {

@@ -12,6 +12,7 @@ import { Institution } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { formatPhoneDisplay } from "../../../utils/inputFormat";
+import { matchSearch } from "../../../utils/searchNormalizer";
 
 interface InstitutionTableProps {
   data: Institution[];
@@ -100,8 +101,7 @@ export default function InstitutionTable({
   activeTab = "Activas",
   institutionTypeOptions = [],
 }: InstitutionTableProps) {
-  const [rifFilter, setRifFilter] = useState("");
-  const [nameFilter, setNameFilter] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [institutionTypeFilter, setInstitutionTypeFilter] = useState("");
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -113,26 +113,23 @@ export default function InstitutionTable({
     order: "asc",
   });
 
-  const debouncedRifFilter = useDebounce(rifFilter, 300);
-  const debouncedNameFilter = useDebounce(nameFilter, 300);
+  const debouncedSearch = useDebounce(searchTerm, 300);
 
   useEffect(() => {
     setSelectedIds([]);
   }, [activeTab]);
 
   const filteredData = useMemo(() => {
-    const rifSearch = debouncedRifFilter.trim().toLowerCase();
-    const nameSearch = debouncedNameFilter.trim().toLowerCase();
+    const search = debouncedSearch.trim().toLowerCase();
     const institutionTypeSearch = institutionTypeFilter;
 
     const filtered = data.filter((i) => {
-      const matchesRif = !rifSearch || i.rif.toLowerCase().includes(rifSearch);
-      const matchesName = !nameSearch || i.name.toLowerCase().includes(nameSearch);
+      const matchesSearch = !search || matchSearch(i.rif, search) || matchSearch(i.name, search) || matchSearch(i.phone || "", search);
       const matchesInstitutionType = !institutionTypeSearch || i.institutionType === institutionTypeSearch;
       
       const matchesTab = activeTab === "Activas" ? i.status === true : i.status === false;
       
-      return matchesRif && matchesName && matchesInstitutionType && matchesTab;
+      return matchesSearch && matchesInstitutionType && matchesTab;
     });
 
     filtered.sort((a, b) => {
@@ -147,8 +144,7 @@ export default function InstitutionTable({
     return filtered;
   }, [
     data, 
-    debouncedRifFilter, 
-    debouncedNameFilter, 
+    debouncedSearch, 
     institutionTypeFilter,
     activeTab, 
     sortConfig
@@ -157,8 +153,7 @@ export default function InstitutionTable({
   useEffect(() => {
     setCurrentPage(1);
   }, [
-    debouncedRifFilter, 
-    debouncedNameFilter, 
+    debouncedSearch, 
     institutionTypeFilter,
     activeTab
   ]);
@@ -255,30 +250,20 @@ export default function InstitutionTable({
     <div className="table-container">
       <div className="p-4 border-b border-border-light dark:border-white/5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {/* RIF Filter */}
-            <div className="relative flex-1">
+            {/* Unified Search */}
+            <div className="relative">
                 <input
                     type="text"
-                    placeholder="Buscar por RIF"
-                    value={rifFilter}
-                    onChange={(e) => setRifFilter(e.target.value)}
-                    className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-10 pr-4 text-sm text-text-primary placeholder-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 dark:placeholder-text-tertiary"
+                    placeholder="Buscar por RIF, nombre o teléfono"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full h-11 rounded-lg border border-border-medium bg-transparent px-4 py-2.5 pl-10 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:border-brand-300 focus:ring-4 focus:ring-brand-500/10 dark:border-border-dark dark:text-text-emphasis"
                 />
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                </span>
-            </div>
-
-            <div className="relative flex-1">
-                <input
-                    type="text"
-                    placeholder="Buscar por nombre"
-                    value={nameFilter}
-                    onChange={(e) => setNameFilter(e.target.value)}
-                    className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-4 text-sm text-text-primary placeholder-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 dark:placeholder-text-tertiary"
-                />
+                </div>
             </div>
 
             {/* Filtro por Carrera */}
@@ -421,7 +406,7 @@ export default function InstitutionTable({
                     <TableCell colSpan={6} className="p-0">
                         <EmptyState
                             title="No se encontraron instituciones"
-                            description={rifFilter || nameFilter
+                            description={searchTerm
                                 ? "Intenta ajustar los filtros para encontrar lo que buscas."
                                 : "Aún no hay instituciones registradas en esta categoría."}
                         />
@@ -487,7 +472,7 @@ export default function InstitutionTable({
         ) : (
             <EmptyState
                 title="No se encontraron instituciones"
-                description={rifFilter || nameFilter
+                description={searchTerm
                     ? "Intenta ajustar los filtros para encontrar lo que buscas."
                     : "Aún no hay instituciones registradas en esta categoría."}
             />

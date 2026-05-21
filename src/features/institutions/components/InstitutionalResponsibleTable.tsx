@@ -28,6 +28,7 @@ import { useDebounce } from "../../../hooks/useDebounce";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { InstitutionalResponsible } from "../types";
 import { cleanCedula, cleanPhone, formatPhoneDisplay, formatPhoneLocalDisplay, formatCedulaDisplay } from "../../../utils/inputFormat";
+import { matchSearch } from "../../../utils/searchNormalizer";
 
 /**
  * Props for the InstitutionalResponsibleTable component.
@@ -182,9 +183,9 @@ export default function InstitutionalResponsibleTable({
       const matchesTab = activeTab === "Activas" ? item.status : !item.status;
       const matchesSearch =
         debouncedSearch === "" ||
-        `${item.identificationPrefix}${item.identificationNumber}`.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        `${item.firstName} ${item.lastName}`.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        item.email.toLowerCase().includes(debouncedSearch.toLowerCase());
+        matchSearch(`${item.identificationPrefix}${item.identificationNumber}`, debouncedSearch) ||
+        matchSearch(`${item.firstName} ${item.lastName}`, debouncedSearch) ||
+        matchSearch(item.email, debouncedSearch);
       const matchesInstitution = filters.institution === "all" || (item.institutions?.some(inst => inst.institutionId === filters.institution));
 
       return matchesTab && matchesSearch && matchesInstitution;

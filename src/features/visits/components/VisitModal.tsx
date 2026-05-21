@@ -560,12 +560,12 @@ export default function VisitModal({
         size="3xl"
         modalId={modalId}
       >
-        <ModalHeader>
+        <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">
           <div className="w-full">
-            <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+            <span className="text-xl font-bold text-text-primary dark:text-white/90">
               {isEditing ? 'Editar Visita de Seguimiento' : 'Registrar Nueva Visita'}
             </span>
-            <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
+            <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary font-normal">
               {studentName 
                 ? `Estudiante: ${studentName}`
                 : (isEditing 
@@ -581,7 +581,7 @@ export default function VisitModal({
             {/* Fila 0: Selector de Tutor (primero) */}
             <div className="grid grid-cols-1 gap-x-6 gap-y-5">
               <div>
-                <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">
+                <label className="text-sm font-medium text-text-primary dark:text-white/90">
                   Tutor que realizó la Visita *
                 </label>
                 <div className="flex gap-3">
@@ -620,7 +620,7 @@ export default function VisitModal({
             {/* Fila 1: Fecha, Tipo y Caso */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
               <div>
-                <label htmlFor="visitDate" className="mb-2.5 block text-black dark:text-white font-medium text-sm">
+                <label htmlFor="visitDate" className="text-sm font-medium text-text-primary dark:text-white/90">
                   Fecha y Hora de la Visita *
                 </label>
                 <input
@@ -649,7 +649,7 @@ export default function VisitModal({
               </div>
 
               <div>
-                <label htmlFor="visitType" className="mb-2.5 block text-black dark:text-white font-medium text-sm">
+                <label htmlFor="visitType" className="text-sm font-medium text-text-primary dark:text-white/90">
                   Tipo de Visita *
                 </label>
                 <Controller
@@ -680,7 +680,7 @@ export default function VisitModal({
               </div>
 
               <div>
-                <label htmlFor="visitCase" className="mb-2.5 block text-black dark:text-white font-medium text-sm">
+                <label htmlFor="visitCase" className="text-sm font-medium text-text-primary dark:text-white/90">
                   Caso de Seguimiento *
                 </label>
                 <Controller
@@ -713,7 +713,7 @@ export default function VisitModal({
 
             {/* Horas trabajadas */}
             <div className="max-w-xs">
-              <label htmlFor="hoursWorked" className="mb-2.5 block text-black dark:text-white font-medium text-sm">
+              <label htmlFor="hoursWorked" className="text-sm font-medium text-text-primary dark:text-white/90">
                 Horas Trabajadas *
               </label>
               <div className="relative">
@@ -775,7 +775,7 @@ export default function VisitModal({
 
             {/* Actividades realizadas */}
             <div>
-              <label htmlFor="activitiesPerformed" className="mb-2.5 block text-black dark:text-white font-medium text-sm">
+              <label htmlFor="activitiesPerformed" className="text-sm font-medium text-text-primary dark:text-white/90">
                 Actividades Realizadas *
               </label>
               <TextArea
@@ -797,7 +797,7 @@ export default function VisitModal({
             {/* Observaciones y Recomendaciones en fila */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
               <div>
-                <label htmlFor="observations" className="mb-2.5 block text-black dark:text-white font-medium text-sm">
+                <label htmlFor="observations" className="text-sm font-medium text-text-primary dark:text-white/90">
                   Observaciones
                 </label>
                 <TextArea
@@ -810,7 +810,7 @@ export default function VisitModal({
               </div>
 
               <div>
-                <label htmlFor="recommendations" className="mb-2.5 block text-black dark:text-white font-medium text-sm">
+                <label htmlFor="recommendations" className="text-sm font-medium text-text-primary dark:text-white/90">
                   Recomendaciones
                 </label>
                 <TextArea

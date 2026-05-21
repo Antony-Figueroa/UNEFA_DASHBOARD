@@ -110,6 +110,5 @@ export const connectToNotificationStream = (
 
   return () => {
     eventSource.close();
-    console.log('[SSE] Disconnected from notification stream');
   };
 };

@@ -46,6 +46,9 @@ const PageBreadcrumb: React.FC<BreadcrumbProps> = ({ pageTitle: propTitle, paren
     if (path.startsWith('/student/')) {
       return { label: 'Panel de Estudiante', path: '/student' };
     }
+    if (path.startsWith('/visit-registration/') || path.startsWith('/activity-logs/')) {
+      return { label: 'Seguimiento', path: '/tracking' };
+    }
     
     return null;
   };

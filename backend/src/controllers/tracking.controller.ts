@@ -201,7 +201,7 @@ export const getTrackingStats = async (req: Request, res: Response) => {
     const db = DatabaseManager.getInstance();
     const supabase = db.getConnection();
 
-    // 1. Historical trend (last 6 months)
+    // 1. Historical trend (last 6 months — grouped by day)
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
@@ -213,16 +213,16 @@ export const getTrackingStats = async (req: Request, res: Response) => {
 
     if (trendError) throw trendError;
 
-    // Group by month
-    const monthsMap = new Map<string, number>();
+    // Group by day (YYYY-MM-DD)
+    const dayMap = new Map<string, number>();
     trendData?.forEach(item => {
       const date = new Date(item.CREATION_DATE);
-      const monthYear = date.toLocaleString('default', { month: 'short' });
-      monthsMap.set(monthYear, (monthsMap.get(monthYear) || 0) + 1);
+      const dayKey = date.toISOString().split('T')[0];
+      dayMap.set(dayKey, (dayMap.get(dayKey) || 0) + 1);
     });
 
-    const historicalTrend = Array.from(monthsMap.entries()).map(([label, count]) => ({
-      label,
+    const historicalTrend = Array.from(dayMap.entries()).map(([date, count]) => ({
+      date,
       count
     }));
 

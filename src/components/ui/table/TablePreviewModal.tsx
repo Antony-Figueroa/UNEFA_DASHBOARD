@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Modal } from "../modal";
 import { DownloadIcon, FileIcon, EyeIcon, ListIcon } from "../../../icons";
 import { XIcon } from "../../../icons/actions";
+import { matchSearch } from "../../utils/searchNormalizer";
 
 interface Column<T> {
   header: string;
@@ -52,13 +53,12 @@ export function TablePreviewModal<T>({
 
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
-    const term = searchTerm.toLowerCase();
     return data.filter((item) =>
       columns.some((col) => {
         const value = typeof col.accessor === "function" 
           ? col.accessor(item) 
           : item[col.accessor as keyof T];
-        return String(value ?? "").toLowerCase().includes(term);
+        return matchSearch(String(value ?? ""), searchTerm);
       })
     );
   }, [data, searchTerm, columns]);

@@ -4,6 +4,7 @@ import Checkbox from "../../../components/form/input/Checkbox";
 import { ActionButton } from "../../../components/common/ActionButton";
 import type { CrudColumn, CrudFilterConfig, CrudFilterState, CrudActionConfig, CrudRowAction } from "../types";
 import { TrashIcon, RefreshIcon, EditIcon, EyeIcon } from "../../../icons/actions";
+import { matchSearch } from "../../../utils/searchNormalizer";
 
 export interface CrudTableProps<TItem extends { id: string }> {
   items: TItem[];
@@ -115,10 +116,9 @@ export function CrudTable<TItem extends { id: string }>({
         }
 
         if (filter.type === "search") {
-          const query = String(value).toLowerCase();
           return columns.some((col) => {
             const cell = col.accessor(item);
-            return String(cell ?? "").toLowerCase().includes(query);
+            return matchSearch(String(cell ?? ""), String(value));
           });
         }
 

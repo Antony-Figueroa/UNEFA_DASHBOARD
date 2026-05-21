@@ -15,15 +15,19 @@ export interface ValueListDB {
   [key: string]: unknown;
 }
 
+export interface ListValueResponse {
+  id: string;
+  name: string;
+  abbreviation: string;
+  listId: string;
+  status: boolean;
+  inUse?: boolean;
+}
+
 export interface AppList {
   id: string;
   name: string;
   status: boolean;
-  values: {
-    id: string;
-    name: string;
-    abbreviation: string;
-    listId: string;
-    status: boolean;
-  }[];
+  hasInUseValues?: boolean;
+  values: ListValueResponse[];
 }

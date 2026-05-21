@@ -23,6 +23,9 @@ const handleDbError = (res: Response, error: unknown) => {
   } else if (dbError.code === '400') {
     userMessage = dbError.message || 'Solicitud incorrecta';
     return res.status(400).json({ message: userMessage });
+  } else if (dbError.code === '409') {
+    userMessage = dbError.message || 'Conflicto: el recurso está en uso';
+    return res.status(409).json({ message: userMessage });
   }
 
   res.status(500).json({ 

@@ -427,7 +427,7 @@ export default function CareerModal({
                </div>
              )}
              <div className="md:col-span-2">
-               <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Código *</label>
+               <label className="text-sm font-medium text-text-primary dark:text-white/90">Código *</label>
                <Input
                  {...register("careerCode")}
                  type="text"
@@ -448,7 +448,7 @@ export default function CareerModal({
              </div>
 
             <div className="md:col-span-2">
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nombre de la Carrera *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Nombre de la Carrera *</label>
               <Input
                 {...register("careerName")}
                 placeholder="Ej: INGENIERÍA DE SISTEMAS"
@@ -464,7 +464,7 @@ export default function CareerModal({
             </div>
 
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Tipo de Carrera *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Tipo de Carrera *</label>
               <Controller
                 name="careerType"
                 control={control}
@@ -489,7 +489,7 @@ export default function CareerModal({
             </div>
 
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Semestre *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Semestre *</label>
               <Controller
                 name="semester"
                 control={control}
@@ -511,7 +511,7 @@ export default function CareerModal({
             </div>
 
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nota mínima *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Nota mínima *</label>
               <Controller
                 name="minimumGrade"
                 control={control}
@@ -537,7 +537,7 @@ export default function CareerModal({
               )}
             </div>
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Abreviatura *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Abreviatura *</label>
               <Input
                 {...register("careerAbbreviation")}
                 type="text"

@@ -661,7 +661,7 @@ export default function TutorModal({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
             {/* Cédula */}
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Cédula *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Cédula *</label>
               <div className="flex gap-2">
                 <div className="w-24">
                   <Controller
@@ -746,7 +746,7 @@ export default function TutorModal({
 
             {/* Primer Nombre */}
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Primer Nombre *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Primer Nombre *</label>
               <Input
                 {...register("firstName")}
                 placeholder="INGRESE PRIMER NOMBRE"
@@ -764,7 +764,7 @@ export default function TutorModal({
 
             {/* Segundo Nombre */}
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Segundo Nombre</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Segundo Nombre</label>
               <Input
                 {...register("middleName")}
                 placeholder="INGRESE SEGUNDO NOMBRE"
@@ -782,7 +782,7 @@ export default function TutorModal({
 
             {/* Primer Apellido */}
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Primer Apellido *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Primer Apellido *</label>
               <Input
                 {...register("lastName")}
                 placeholder="INGRESE PRIMER APELLIDO"
@@ -800,7 +800,7 @@ export default function TutorModal({
 
             {/* Segundo Apellido */}
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Segundo Apellido</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Segundo Apellido</label>
               <Input
                 {...register("secondLastName")}
                 placeholder="INGRESE SEGUNDO APELLIDO"
@@ -818,7 +818,7 @@ export default function TutorModal({
 
             {/* Sexo */}
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Sexo *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Sexo *</label>
               <Controller
                 name="sex"
                 control={control}
@@ -842,7 +842,7 @@ export default function TutorModal({
 
             {/* Teléfono */}
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Teléfono *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Teléfono *</label>
               <div className="flex gap-2">
                 <div className="w-28">
                   <Controller
@@ -885,7 +885,7 @@ export default function TutorModal({
 
             {/* Correo */}
             <div className="lg:col-span-2">
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Correo Electrónico *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Correo Electrónico *</label>
               <Input
                 {...register("email")}
                 placeholder="INGRESE CORREO ELECTRÓNICO"
@@ -900,7 +900,7 @@ export default function TutorModal({
 
             {/* Condición */}
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Condición *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Condición *</label>
               <Controller
                 name="condition"
                 control={control}
@@ -926,7 +926,7 @@ export default function TutorModal({
 
             {/* Dedicación */}
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Dedicación *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Dedicación *</label>
               <Controller
                 name="dedication"
                 control={control}
@@ -952,7 +952,7 @@ export default function TutorModal({
 
             {/* Categoría */}
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Categoría *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Categoría *</label>
               <Controller
                 name="category"
                 control={control}
@@ -978,7 +978,7 @@ export default function TutorModal({
 
             {/* Título */}
             <div className="lg:col-span-1">
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Título *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Título *</label>
               <Controller
                 name="profession"
                 control={control}
@@ -1004,7 +1004,7 @@ export default function TutorModal({
 
             {/* Grado de instrucción */}
             <div className="lg:col-span-1">
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Grado de instrucción *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Grado de instrucción *</label>
               <Controller
                 name="titulo"
                 control={control}

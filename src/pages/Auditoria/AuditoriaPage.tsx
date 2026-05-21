@@ -13,6 +13,7 @@ import type { BadgeColor } from '../../components/ui/badge/Badge';
 import Input from '../../components/form/input/InputField';
 import CustomSelect from '../../components/form/CustomSelect';
 import { Pagination } from '../../components/ui/table';
+import { matchSearch as fuzzyMatch } from '../../utils/searchNormalizer';
 import apiClient from '../../api/apiClient';
 
 // Icons
@@ -454,10 +455,10 @@ export default function AuditoriaPage() {
   const filteredAuthLogs = useMemo(() => {
     return authLogs.filter(log => {
       const matchAction = !authFilters.action || log.ACTION === authFilters.action;
-      const matchSearch = !authFilters.searchTerm ||
-        log.USER_CI?.toLowerCase().includes(authFilters.searchTerm.toLowerCase()) ||
-        log.DETAILS?.toLowerCase().includes(authFilters.searchTerm.toLowerCase()) ||
-        log.user?.NAME?.toLowerCase().includes(authFilters.searchTerm.toLowerCase());
+      const matchesSearchText = !authFilters.searchTerm ||
+        fuzzyMatch(log.USER_CI ?? '', authFilters.searchTerm) ||
+        fuzzyMatch(log.DETAILS ?? '', authFilters.searchTerm) ||
+        fuzzyMatch(log.user?.NAME ?? '', authFilters.searchTerm);
       
       // Date range filter
       const matchDate = (() => {
@@ -478,16 +479,16 @@ export default function AuditoriaPage() {
         return true;
       })();
       
-      return matchAction && matchSearch && matchDate;
+      return matchAction && matchesSearchText && matchDate;
     });
   }, [authLogs, authFilters, dateFrom, dateTo]);
 
   const filteredChangeLogs = useMemo(() => {
     return changeLogs.filter(log => {
-      const matchSearch = !changeFilters.searchTerm ||
-        log.tableLabel?.toLowerCase().includes(changeFilters.searchTerm.toLowerCase()) ||
-        log.columnName?.toLowerCase().includes(changeFilters.searchTerm.toLowerCase()) ||
-        log.userName?.toLowerCase().includes(changeFilters.searchTerm.toLowerCase());
+      const matchesSearchText = !changeFilters.searchTerm ||
+        fuzzyMatch(log.tableLabel ?? '', changeFilters.searchTerm) ||
+        fuzzyMatch(log.columnName ?? '', changeFilters.searchTerm) ||
+        fuzzyMatch(log.userName ?? '', changeFilters.searchTerm);
       
       // Date range filter
       const matchDate = (() => {
@@ -508,7 +509,7 @@ export default function AuditoriaPage() {
         return true;
       })();
       
-      return matchSearch && matchDate;
+      return matchesSearchText && matchDate;
     });
   }, [changeLogs, changeFilters, dateFrom, dateTo]);
 
@@ -518,9 +519,9 @@ export default function AuditoriaPage() {
       const matchStatus = activityFilters.status === '' || 
         (activityFilters.status === 'approved' && log.supervisorApproved) ||
         (activityFilters.status === 'pending' && !log.supervisorApproved);
-      const matchSearch = !activityFilters.searchTerm ||
-        log.activityDescription?.toLowerCase().includes(activityFilters.searchTerm.toLowerCase()) ||
-        log.studentName?.toLowerCase().includes(activityFilters.searchTerm.toLowerCase());
+      const matchesSearchText = !activityFilters.searchTerm ||
+        fuzzyMatch(log.activityDescription ?? '', activityFilters.searchTerm) ||
+        fuzzyMatch(log.studentName ?? '', activityFilters.searchTerm);
       
       // Date range filter
       const matchDate = (() => {
@@ -541,7 +542,7 @@ export default function AuditoriaPage() {
         return true;
       })();
       
-      return matchType && matchStatus && matchSearch && matchDate;
+      return matchType && matchStatus && matchesSearchText && matchDate;
     });
   }, [activityLogs, activityFilters, dateFrom, dateTo]);
 

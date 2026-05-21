@@ -12,6 +12,7 @@ import { TableSkeleton } from "../../../components/ui/skeleton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { generateMatricula } from "../../../utils/matricula";
 import { maskIdentification } from "../../../utils/maskData";
+import { matchSearch } from "../../../utils/searchNormalizer";
 
 /**
  * Interface for filter options used in select inputs.
@@ -210,9 +211,9 @@ export default function EnrollmentTable({
 
         const filtered = data.filter((s) => {
             const matchesSearch = !search || 
-                s.identificationNumber.toLowerCase().includes(search) || 
-                s.studentName.toLowerCase().includes(search) ||
-                (s.careerName && s.careerName.toLowerCase().includes(search));
+                matchSearch(s.identificationNumber, search) || 
+                matchSearch(s.studentName, search) ||
+                (s.careerName && matchSearch(s.careerName, search));
             const matchesPeriod = !periodSearch || s.period.toLowerCase() === periodSearch;
             const matchesPracticeType = !practiceTypeSearch || s.practiceType.toLowerCase() === practiceTypeSearch;
             const matchesCareer = !careerSearch || (s.careerName || "").toLowerCase().includes(careerSearch);

@@ -17,6 +17,7 @@ import Button from "../../../components/ui/button/Button";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { maskIdentification } from "../../../utils/maskData";
+import { matchSearch } from "../../../utils/searchNormalizer";
 
 /**
  * Representa una opción de filtrado en la tabla.
@@ -210,8 +211,8 @@ export default function PreEnrollmentTable({
 
         const filtered = data.filter((s) => {
             const matchesSearch = !search || 
-                s.identificationNumber.toLowerCase().includes(search) || 
-                s.studentName.toLowerCase().includes(search);
+                matchSearch(s.identificationNumber, search) || 
+                matchSearch(s.studentName, search);
             const matchesPeriod = !periodSearch || s.period.toLowerCase() === periodSearch;
             const matchesPracticeType = !practiceTypeSearch || s.practiceType.toLowerCase() === practiceTypeSearch;
             const matchesCareer = !careerSearch || (s.careerName || "").toLowerCase().includes(careerSearch);

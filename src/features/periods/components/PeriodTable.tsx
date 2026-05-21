@@ -10,6 +10,7 @@ import {
 import Badge from "../../../components/ui/badge/Badge";
 import Button from "../../../components/ui/button/Button";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
+import { matchSearch } from "../../../utils/searchNormalizer";
 import { TableSkeleton } from "../../../components/ui/skeleton";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import CustomSelect from "../../../components/form/CustomSelect";
@@ -423,7 +424,7 @@ const PeriodTable = ({
     // ============================================
     const filteredData = data.filter((item) => {
         const matchesSearch =
-            item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            matchSearch(item.description, searchTerm) ||
             item.startDate.includes(searchTerm) ||
             item.endDate.includes(searchTerm);
         

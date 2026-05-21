@@ -15,7 +15,6 @@ import {
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { TableSkeleton } from "../../../components/ui/skeleton";
-import InputField from "../../../components/form/input/InputField";
 import CustomSelect from "../../../components/form/CustomSelect";
 import {
     EditIcon,
@@ -25,6 +24,7 @@ import {
     CalendarIcon,
 } from "../../../icons/actions";
 import { TrackingRowData } from "../types";
+import { matchSearch } from "../../../utils/searchNormalizer";
 
 /**
  * Propiedades del componente TrackingTable.
@@ -161,8 +161,7 @@ export default function TrackingTable({
 }: TrackingTableProps) {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
-    const [idFilter, setIdFilter] = useState("");
-    const [nameFilter, setNameFilter] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
     const [transferFilter, setTransferFilter] = useState("");
 
     const handleRequestConfirm = (type: 'edit' | 'delete' | 'restore', item: TrackingRowData) => {
@@ -179,13 +178,12 @@ export default function TrackingTable({
     // Filtrado de datos
     const filteredData = useMemo(() => {
         return data.filter(item => {
-            const matchesId = item.studentIdNumber.toLowerCase().includes(idFilter.toLowerCase());
-            const matchesName = item.studentName.toLowerCase().includes(nameFilter.toLowerCase());
+            const matchesSearch = !searchTerm.trim() || matchSearch(item.studentIdNumber, searchTerm) || matchSearch(item.studentName, searchTerm);
             const matchesTransfer = transferFilter === "" || String(item.transfer) === transferFilter;
 
-            return matchesId && matchesName && matchesTransfer;
+            return matchesSearch && matchesTransfer;
         });
-    }, [data, idFilter, nameFilter, transferFilter]);
+    }, [data, searchTerm, transferFilter]);
 
     // Lógica de paginación
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -197,7 +195,7 @@ export default function TrackingTable({
     // Resetear a la primera página cuando cambian los filtros
     useEffect(() => {
         setCurrentPage(1);
-    }, [idFilter, nameFilter, transferFilter]);
+    }, [searchTerm, transferFilter]);
 
     if (status === "loading") {
         return <TableSkeleton rows={5} />;
@@ -219,28 +217,23 @@ export default function TrackingTable({
     return (
         <div className="space-y-4">
             {/* Filtros */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">
-                <div className="flex flex-col gap-1">
-                    <label className="text-xs font-medium text-text-secondary dark:text-text-tertiary px-1">
-                        Cédula
-                    </label>
-                    <InputField
-                        placeholder="Filtrar por cédula..."
-                        value={idFilter}
-                        onChange={(e) => setIdFilter(e.target.value)}
-                        className="bg-white dark:bg-white/5"
-                    />
-                </div>
-                <div className="flex flex-col gap-1">
-                    <label className="text-xs font-medium text-text-secondary dark:text-text-tertiary px-1">
-                        Nombre
-                    </label>
-                    <InputField
-                        placeholder="Filtrar por nombre..."
-                        value={nameFilter}
-                        onChange={(e) => setNameFilter(e.target.value)}
-                        className="bg-white dark:bg-white/5"
-                    />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-4">
+                <div>
+                    <label className="mb-1.5 block text-xs font-medium text-text-secondary">Búsqueda</label>
+                    <div className="relative">
+                        <input
+                            type="text"
+                            placeholder="Buscar por cédula o nombre"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent px-4 py-2.5 pl-10 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:border-brand-300 focus:ring-4 focus:ring-brand-500/10 dark:border-border-dark dark:text-text-emphasis"
+                        />
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                    </div>
                 </div>
                 <div className="flex flex-col gap-1">
                     <label className="text-xs font-medium text-text-secondary dark:text-text-tertiary px-1">

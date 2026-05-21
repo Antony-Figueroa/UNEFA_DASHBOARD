@@ -209,7 +209,6 @@ export const getTrackingStats = async (req: Request, res: Response) => {
       .from('t_professional_practices')
       .select(`
         CREATION_DATE,
-        STUDENT_CI,
         t_students:STUDENTS_ID (
           STUDENTS_CI,
           NAME,
@@ -228,8 +227,8 @@ export const getTrackingStats = async (req: Request, res: Response) => {
       const dayKey = date.toISOString().split('T')[0];
       
       const student = item.t_students;
-      const studentName = student ? `${(student.NAME || '').trim()} ${(student.SURNAME || '').trim()}`.trim() : item.STUDENT_CI || 'Desconocido';
-      const studentCi = item.STUDENT_CI || '';
+      const studentCi = student?.STUDENTS_CI || 'Desconocido';
+      const studentName = student ? `${(student.NAME || '').trim()} ${(student.SURNAME || '').trim()}`.trim() : studentCi;
       
       if (!dayMap.has(dayKey)) {
         dayMap.set(dayKey, { count: 0, students: [] });

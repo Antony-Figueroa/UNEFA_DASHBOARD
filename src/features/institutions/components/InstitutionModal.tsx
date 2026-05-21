@@ -891,7 +891,7 @@ export default function InstitutionModal({
             </div>
           )}
           <div>
-            <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">RIF *</label>
+            <label className="text-sm font-medium text-text-primary dark:text-white/90">RIF *</label>
             <div className="flex gap-2">
               <div className="w-32">
                 <Controller
@@ -975,7 +975,7 @@ export default function InstitutionModal({
                </div>
           </div>
           <div>
-            <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nombre *</label>
+            <label className="text-sm font-medium text-text-primary dark:text-white/90">Nombre *</label>
             <Input 
               placeholder="Nombre de la institución" 
               className="uppercase"
@@ -1091,7 +1091,7 @@ export default function InstitutionModal({
           </div>
           
           <div>
-            <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Teléfono *</label>
+            <label className="text-sm font-medium text-text-primary dark:text-white/90">Teléfono *</label>
             <div className="flex gap-2">
               <div className="w-32">
                 <Controller
@@ -1133,7 +1133,7 @@ export default function InstitutionModal({
           </div>
 
           <div>
-            <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Región *</label>
+            <label className="text-sm font-medium text-text-primary dark:text-white/90">Región *</label>
             <Controller
               name="region"
               control={control}
@@ -1157,7 +1157,7 @@ export default function InstitutionModal({
           </div>
 
           <div>
-            <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Núcleo *</label>
+            <label className="text-sm font-medium text-text-primary dark:text-white/90">Núcleo *</label>
             <Controller
               name="nucleus"
               control={control}
@@ -1181,7 +1181,7 @@ export default function InstitutionModal({
           </div>
 
           <div>
-            <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Extensión *</label>
+            <label className="text-sm font-medium text-text-primary dark:text-white/90">Extensión *</label>
             <Controller
               name="extension"
               control={control}
@@ -1205,7 +1205,7 @@ export default function InstitutionModal({
           </div>
 
           <div>
-            <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Tipo Institución *</label>
+            <label className="text-sm font-medium text-text-primary dark:text-white/90">Tipo Institución *</label>
             <Controller
               name="institutionType"
               control={control}
@@ -1230,7 +1230,7 @@ export default function InstitutionModal({
 
           {/* Tipo de Práctica que acepta la institución */}
           <div>
-            <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Tipo de Práctica *</label>
+            <label className="text-sm font-medium text-text-primary dark:text-white/90">Tipo de Práctica *</label>
             <Controller
               name="internshipTypeId"
               control={control}

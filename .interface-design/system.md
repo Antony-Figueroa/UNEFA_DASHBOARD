@@ -69,3 +69,63 @@ approval: bg-emerald-100/30, text-emerald-700/400, label: Aprobación
 ### Dividers
 - divide-y divide-border-light dark:divide-border-dark en listas
 - border-t en secciones separadas
+
+## Modal Patterns
+
+### Modal Base
+- **Container**: `rounded-2xl max-h-[95vh] bg-white dark:bg-bg-dark shadow-2xl`
+- **Backdrop**: `bg-black/60 backdrop-blur-[2px]`
+- **Animation**: `animate-in fade-in zoom-in-95 duration-300`
+- **Close button**: `absolute top-4 right-4 p-2 rounded-full text-text-secondary hover:bg-bg-secondary`
+
+### View Modal (read-only details)
+Usado en: StudentViewModal, TutorViewModal, EnrollmentViewModal, TrackingDetailModal
+
+- **Header title**: `shrink-0 pt-8 px-6 sm:px-12` con `text-xl font-bold`
+- **Body**: `overflow-y-auto custom-scrollbar grow px-6 sm:px-12 py-8`
+- **Wrapper interno**: `space-y-10 max-w-5xl mx-auto py-2`
+- **Section header**: Usar `<ModalSectionHeader>` con color bullet
+- **Content grid**: `grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4`
+- **Labels**: `text-[10px] font-bold text-text-tertiary uppercase tracking-widest`
+- **Values**: `text-sm font-semibold text-text-primary dark:text-white/90`
+- **Valor destacado (cédula)**: `text-sm font-bold text-blue-600 dark:text-blue-400`
+- **Status box**: `rounded-xl bg-bg-secondary dark:bg-white/3 p-4 grid grid-cols-1 sm:grid-cols-2 gap-4`
+- **Footer buttons**: `flex-1 sm:flex-none` (outline + async)
+
+#### Sección de Visitas (tabla interna)
+- **Header celdas**: `text-[10px] font-bold text-text-tertiary uppercase tracking-widest`
+- **Filas**: `divide-y divide-border-light dark:divide-white/5`
+- **Hover fila**: `hover:bg-bg-secondary/50 transition-colors`
+- **Datos**: `text-xs font-medium text-text-primary`
+
+### Create/Edit Modal (formularios)
+Usado en: TrackingModal, VisitModal, PeriodModal, CareerModal, etc.
+
+- **Header**: Mismo padding que View Modal: `shrink-0 pt-8 px-6 sm:px-12`
+- **Título**: "Nuevo [Feature]" o "Editar [Feature]" (nunca "Detalles de...")
+- **Form field labels**: `text-sm font-medium text-text-primary dark:text-white/90`
+- **Input wrapper**: `flex flex-col gap-1`
+- **Error text**: `text-xs text-error-500`
+- **Section header (cuando aplica)**: Usar `<ModalSectionHeader>`
+- **Footer**: `justify-end gap-3 w-full` con outline Cancelar + AsyncButton acción
+
+### Modal Footer standard
+- **Layout**: `flex justify-end gap-3 w-full` (simple) o `flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-4xl mx-auto` (centered desktop)
+- **Botones**: 
+  - Cancelar: `variant="outline"`
+  - Acción: AsyncButton `type="submit"`
+  - Responsive: `flex-1 sm:flex-none` o `w-full sm:w-auto min-h-12`
+
+### Section Header (ModalSectionHeader)
+Componente: `src/components/ui/modal/ModalSectionHeader.tsx`
+
+```tsx
+<ModalSectionHeader color="blue-500">Título Sección</ModalSectionHeader>
+```
+
+Estructura:
+- Bullet colored: `h-2 w-2 rounded-full bg-{color}-500`
+- Border bottom: `border-b border-border-light pb-2 dark:border-white/5`
+- Title: `font-bold text-text-primary dark:text-white/90 uppercase text-xs tracking-wider`
+
+Colores disponibles: blue-500, brand-500, purple-500, emerald-500, amber-500, rose-500, indigo-500, teal-500

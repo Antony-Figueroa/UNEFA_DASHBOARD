@@ -579,7 +579,7 @@ useEffect(() => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
             {/* Fila 1 */}
             <div>
-              <label htmlFor="identificationPrefix" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Cédula *</label>
+              <label htmlFor="identificationPrefix" className="text-sm font-medium text-text-primary dark:text-white/90">Cédula *</label>
               <div className="flex gap-2">
                 <div className="w-24">
                   <Controller
@@ -673,7 +673,7 @@ useEffect(() => {
               </div>
             </div>
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Primer Nombre *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Primer Nombre *</label>
               <Input
                 {...register("firstName")}
                 placeholder="Primer nombre"
@@ -687,7 +687,7 @@ useEffect(() => {
               />
             </div>
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Segundo Nombre</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Segundo Nombre</label>
               <Input
                 {...register("middleName")}
                 placeholder="Segundo nombre"
@@ -703,7 +703,7 @@ useEffect(() => {
 
             {/* Fila 2 */}
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Primer Apellido *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Primer Apellido *</label>
               <Input
                 {...register("lastName")}
                 placeholder="Primer apellido"
@@ -717,7 +717,7 @@ useEffect(() => {
               />
             </div>
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Segundo Apellido</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Segundo Apellido</label>
               <Input
                 {...register("secondLastName")}
                 placeholder="Segundo apellido"
@@ -731,7 +731,7 @@ useEffect(() => {
               />
             </div>
             <div>
-              <label htmlFor="sex" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Sexo *</label>
+              <label htmlFor="sex" className="text-sm font-medium text-text-primary dark:text-white/90">Sexo *</label>
               <Controller
                 name="sex"
                 control={control}
@@ -758,7 +758,7 @@ useEffect(() => {
 
             {/* Fila 3 */}
             <div>
-<label className="mb-2.5 block text-black dark:text-white font-medium text-sm">
+<label className="text-sm font-medium text-text-primary dark:text-white/90">
                 Fecha de Nacimiento * {age !== null && <span className="text-brand-500 ml-1">({age} años)</span>}
               </label>
                 <Controller
@@ -789,7 +789,7 @@ useEffect(() => {
               )}
             </div>
             <div>
-              <label htmlFor="civilStatus" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Estado Civil *</label>
+              <label htmlFor="civilStatus" className="text-sm font-medium text-text-primary dark:text-white/90">Estado Civil *</label>
               <Controller
                 name="civilStatus"
                 control={control}
@@ -816,7 +816,7 @@ useEffect(() => {
               )}
             </div>
             <div>
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Teléfono *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Teléfono *</label>
               <div className="flex gap-2">
                 <div className="w-32">
                   <Controller
@@ -859,7 +859,7 @@ useEffect(() => {
 
             {/* Fila 4 */}
             <div className="md:col-span-2">
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Correo Electrónico *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Correo Electrónico *</label>
               <Input
                 {...register("email")}
                 type="email"
@@ -900,7 +900,7 @@ useEffect(() => {
             </div>
 
             <div>
-              <label htmlFor="studentType" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Tipo Estudiante *</label>
+              <label htmlFor="studentType" className="text-sm font-medium text-text-primary dark:text-white/90">Tipo Estudiante *</label>
               <Controller
                 name="studentType"
                 control={control}
@@ -926,7 +926,7 @@ useEffect(() => {
             </div>
             {studentType === "MILITAR" && (
               <div>
-                <label htmlFor="militaryRank" className="mb-2.5 block text-black dark:text-white font-medium text-sm">Rango Militar *</label>
+                <label htmlFor="militaryRank" className="text-sm font-medium text-text-primary dark:text-white/90">Rango Militar *</label>
                 <Controller
                   name="militaryRank"
                   control={control}
@@ -958,7 +958,7 @@ useEffect(() => {
             )}
             
             <div className="md:col-span-2 lg:col-span-1">
-              <label htmlFor="works" className="mb-2.5 block text-black dark:text-white font-medium text-sm">¿Trabaja? *</label>
+              <label htmlFor="works" className="text-sm font-medium text-text-primary dark:text-white/90">¿Trabaja? *</label>
               <Controller
                 name="works"
                 control={control}
@@ -984,7 +984,7 @@ useEffect(() => {
             </div>
 
             <div className="md:col-span-2 lg:col-span-3">
-              <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Dirección de Residencia *</label>
+              <label className="text-sm font-medium text-text-primary dark:text-white/90">Dirección de Residencia *</label>
               <TextArea
                 {...register("address")}
                 placeholder="Ingrese dirección de residencia completa"
@@ -1105,7 +1105,7 @@ useEffect(() => {
       </ModalHeader>
       <ModalBody>
         <div className="space-y-4">
-          <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Nuevo valor</label>
+          <label className="text-sm font-medium text-text-primary dark:text-white/90">Nuevo valor</label>
           <Input
             value={newValueInput}
             onChange={(e) => {

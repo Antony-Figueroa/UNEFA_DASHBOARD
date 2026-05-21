@@ -1,6 +1,8 @@
 /**
  * @file TrackingModal.tsx
  * @description Modal para el registro y edición de seguimientos de estudiantes.
+ * Ahora es exclusivamente un modal de creación/edición. La visualización de
+ * detalles se maneja desde TrackingDetailModal.
  */
 
 import { useEffect, useState } from 'react';
@@ -9,6 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Tracking, CreateTrackingPayload, UpdateTrackingPayload } from '../types';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
+import { ModalSectionHeader } from '../../../components/ui/modal/ModalSectionHeader';
 import Button from '../../../components/ui/button/Button';
 import AsyncButton from '../../../components/ui/button/AsyncButton';
 import InputField from '../../../components/form/input/InputField';
@@ -71,16 +74,20 @@ const TRANSFER_OPTIONS = [
  * 
  * Proporciona un formulario para crear o editar registros de seguimiento.
  * Incluye autocompletado de nombre de estudiante basado en la cédula.
+ * 
+ * @remarks
+ * Este modal NO maneja visualización de detalles — eso es responsabilidad
+ * de TrackingDetailModal. Siempre está en modo de creación o edición.
  */
 export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoading = false }: TrackingModalProps) {
     const navigate = useNavigate();
     const { students } = useStudents();
     const { fetchMultipleLists } = useLists();
     const { addToast } = useToast();
-    const [isEditing, setIsEditing] = useState(false);
     const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [pendingData, setPendingData] = useState<TrackingFormData | null>(null);
+    const [studentCareer, setStudentCareer] = useState<string>("");
 
     // Cargar opciones dinámicas desde el servicio de listas
     useEffect(() => {
@@ -90,8 +97,8 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                 if (data['Traslado']) {
                     setOptions({
                         'Traslado': data['Traslado'].map(v => ({
-                            value: v.name.toLowerCase(), // 'true'/'false'
-                            label: v.name.charAt(0).toUpperCase() + v.name.slice(1).toLowerCase() // 'Sí'/'No'
+                            value: v.name.toLowerCase(),
+                            label: v.name.charAt(0).toUpperCase() + v.name.slice(1).toLowerCase()
                         }))
                     });
                 }
@@ -134,6 +141,9 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
             const student = students.find(s => s.identificationNumber === studentIdNumber);
             if (student) {
                 setValue('studentName', `${student.firstName} ${student.lastName}`);
+                setStudentCareer(student.career || "");
+            } else {
+                setStudentCareer("");
             }
         }
     }, [studentIdNumber, students, setValue]);
@@ -150,7 +160,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                     route: tracking.route,
                     observations: tracking.observations,
                 });
-                setIsEditing(false);
+                setStudentCareer(tracking.careerName || "");
             } else {
                 reset({
                     studentIdNumber: '',
@@ -160,15 +170,13 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                     route: '',
                     observations: '',
                 });
-                setIsEditing(true);
+                setStudentCareer("");
             }
         }
     }, [tracking, isOpen, reset]);
 
     /**
      * Maneja el envío del formulario.
-     * 
-     * @param data - Datos del formulario validados.
      */
     const onSubmit: SubmitHandler<TrackingFormData> = (data) => {
         setPendingData(data);
@@ -194,7 +202,6 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
             }
             
             await onSave(payload);
-            setIsEditing(false);
             setShowConfirmDialog(false);
             setPendingData(null);
         } catch (error) {
@@ -216,134 +223,165 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
         }
     };
 
-    const isDisabled = !isEditing && !!tracking;
-
     return (
         <>
-            <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton>
-                <ModalHeader>
-                {isNew ? 'Nuevo Seguimiento' : isEditing ? 'Editar Seguimiento' : 'Detalles de Seguimiento'}
-            </ModalHeader>
-            <form onSubmit={handleSubmit(onSubmit)}>
-                <ModalBody>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div className="flex flex-col gap-1">
-                            <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                                Cédula Estudiante
-                            </label>
-                            <InputField
-                                {...register('studentIdNumber')}
-                                error={!!errors.studentIdNumber}
-                                hint={errors.studentIdNumber?.message}
-                                disabled={isDisabled}
-                                placeholder="Ej: 12345678"
-                            />
+            <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="3xl">
+                <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">
+                    {isNew ? 'Nuevo Seguimiento' : 'Editar Seguimiento'}
+                </ModalHeader>
+                <form onSubmit={handleSubmit(onSubmit)}>
+                    <ModalBody>
+                        <div className="space-y-6">
+                            {/* Sección: Datos del Estudiante (read-only) */}
+                            <div className="space-y-3">
+                                <ModalSectionHeader color="blue-500">
+                                    Datos del Estudiante
+                                </ModalSectionHeader>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 p-4 rounded-xl bg-bg-secondary/50 dark:bg-white/3">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
+                                            Cédula / ID
+                                        </label>
+                                        <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                                            {tracking?.studentIdNumber || (watch('studentIdNumber') || "—")}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
+                                            Nombre Completo
+                                        </label>
+                                        <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                                            {tracking?.studentName || (watch('studentName') || "—")}
+                                        </p>
+                                    </div>
+                                    {studentCareer && (
+                                        <div>
+                                            <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
+                                                Carrera
+                                            </label>
+                                            <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                                                {studentCareer}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Sección: Datos del Seguimiento */}
+                            <div className="space-y-4">
+                                <ModalSectionHeader color="brand-500">
+                                    Datos del Seguimiento
+                                </ModalSectionHeader>
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-sm font-medium text-text-primary dark:text-white/90">
+                                            Cédula Estudiante *
+                                        </label>
+                                        <InputField
+                                            {...register('studentIdNumber')}
+                                            error={!!errors.studentIdNumber}
+                                            hint={errors.studentIdNumber?.message}
+                                            disabled={!isNew}
+                                            placeholder="Ej: 12345678"
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-sm font-medium text-text-primary dark:text-white/90">
+                                            Nombre Estudiante *
+                                        </label>
+                                        <InputField
+                                            {...register('studentName')}
+                                            error={!!errors.studentName}
+                                            hint={errors.studentName?.message}
+                                            disabled={!isNew}
+                                            placeholder="Nombre autocompletado"
+                                        />
+                                    </div>
+                                    <div className="sm:col-span-2 flex flex-col gap-1">
+                                        <label className="text-sm font-medium text-text-primary dark:text-white/90">
+                                            Título Informe *
+                                        </label>
+                                        <TextArea
+                                            {...register('reportTitle')}
+                                            error={!!errors.reportTitle}
+                                            hint={errors.reportTitle?.message}
+                                            placeholder="Ingrese el título del informe..."
+                                            rows={3}
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-sm font-medium text-text-primary dark:text-white/90">
+                                            Traslado *
+                                        </label>
+                                        <Controller
+                                            name="transfer"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <CustomSelect
+                                                    id="transfer"
+                                                    options={(options['Traslado'] || TRANSFER_OPTIONS).map(opt => ({ value: String(opt.value), label: opt.label }))}
+                                                    onChange={field.onChange}
+                                                    value={String(field.value)}
+                                                />
+                                            )}
+                                        />
+                                        {errors.transfer && (
+                                            <p className="text-xs text-error-500">{errors.transfer.message}</p>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <label className="text-sm font-medium text-text-primary dark:text-white/90">
+                                            Recorrido *
+                                        </label>
+                                        <InputField
+                                            {...register('route')}
+                                            error={!!errors.route}
+                                            hint={errors.route?.message}
+                                            placeholder="Ej: Ruta 1"
+                                        />
+                                    </div>
+                                    {tracking && (
+                                        <div className="sm:col-span-2 flex flex-col gap-2">
+                                            <label className="text-sm font-medium text-text-primary dark:text-white/90">
+                                                Registro Visitas
+                                            </label>
+                                            <Button 
+                                                type="button" 
+                                                variant="outline" 
+                                                onClick={handleVisitRegister}
+                                                className="w-full sm:w-auto"
+                                            >
+                                                Abrir Registro de Visitas
+                                            </Button>
+                                        </div>
+                                    )}
+                                    <div className="sm:col-span-2 flex flex-col gap-1">
+                                        <label className="text-sm font-medium text-text-primary dark:text-white/90">
+                                            Observaciones
+                                        </label>
+                                        <TextArea
+                                            {...register('observations')}
+                                            error={!!errors.observations}
+                                            hint={errors.observations?.message}
+                                            placeholder="Observaciones adicionales..."
+                                            rows={4}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex flex-col gap-1">
-                            <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                                Nombre Estudiante
-                            </label>
-                            <InputField
-                                {...register('studentName')}
-                                error={!!errors.studentName}
-                                hint={errors.studentName?.message}
-                                disabled={isDisabled}
-                                placeholder="Nombre autocompletado"
-                            />
-                        </div>
-                        <div className="sm:col-span-2 flex flex-col gap-1">
-                            <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                                Título Informe
-                            </label>
-                            <TextArea
-                                {...register('reportTitle')}
-                                error={!!errors.reportTitle}
-                                hint={errors.reportTitle?.message}
-                                disabled={isDisabled}
-                                placeholder="Ingrese el título del informe..."
-                                rows={3}
-                            />
-                        </div>
-                        <div className="flex flex-col gap-1">
-                            <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                                Traslado
-                            </label>
-                            <Controller
-                                name="transfer"
-                                control={control}
-                                render={({ field }) => (
-                                    <CustomSelect
-                                        id="transfer"
-                                        disabled={isDisabled}
-                                        options={(options['Traslado'] || TRANSFER_OPTIONS).map(opt => ({ value: String(opt.value), label: opt.label }))}
-                                        onChange={field.onChange}
-                                        value={String(field.value)}
-                                    />
-                                )}
-                            />
-                            {errors.transfer && (
-                                <p className="text-xs text-error-500">{errors.transfer.message}</p>
-                            )}
-                        </div>
-                        <div className="flex flex-col gap-1">
-                            <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                                Recorrido
-                            </label>
-                            <InputField
-                                {...register('route')}
-                                error={!!errors.route}
-                                hint={errors.route?.message}
-                                disabled={isDisabled}
-                                placeholder="Ej: Ruta 1"
-                            />
-                        </div>
-                        <div className="sm:col-span-2 flex flex-col gap-2">
-                            <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                                Registro Visitas
-                            </label>
-                            <Button 
-                                type="button" 
-                                variant="outline" 
-                                onClick={handleVisitRegister}
-                                className="w-full sm:w-auto"
-                            >
-                                Abrir Registro de Visitas
+                    </ModalBody>
+                    <ModalFooter className="shrink-0 px-6 sm:px-12 py-4 border-t border-border-light dark:border-border-dark">
+                        <div className="flex justify-end gap-3 w-full">
+                            <Button type="button" variant="outline" onClick={handleCloseAttempt}>
+                                Cancelar
                             </Button>
+                            <AsyncButton type="submit" loading={isLoading} disabled={!isValid}>
+                                {isNew ? 'Guardar Seguimiento' : 'Actualizar Seguimiento'}
+                            </AsyncButton>
                         </div>
-                        <div className="sm:col-span-2 flex flex-col gap-1">
-                            <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                                Observaciones
-                            </label>
-                            <TextArea
-                                {...register('observations')}
-                                error={!!errors.observations}
-                                hint={errors.observations?.message}
-                                disabled={isDisabled}
-                                placeholder="Observaciones adicionales..."
-                                rows={4}
-                            />
-                        </div>
-                    </div>
-                </ModalBody>
-                <ModalFooter>
-                    <div className="flex justify-end gap-3 w-full">
-                        {!isEditing && tracking ? (
-                            <Button type="button" onClick={() => setIsEditing(true)}>
-                                Editar
-                            </Button>
-                        ) : (
-                            <>
-                                <Button type="button" variant="outline" onClick={handleCloseAttempt}>
-                                    Cancelar
-                                </Button>
-                                <AsyncButton type="submit" loading={isLoading} disabled={tracking ? !isDirty || !isValid : !isValid}>
-                                    Guardar
-                                </AsyncButton>
-                            </>
-                        )}
-                    </div>
-                </ModalFooter>
-            </form>
+                    </ModalFooter>
+                </form>
             </Modal>
 
             <UnifiedDialog

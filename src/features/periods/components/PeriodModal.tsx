@@ -429,12 +429,12 @@ export default function PeriodModal({
     return (
         <>
             <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton>
-                <ModalHeader>
+                <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">
                 <div className="max-w-3xl mx-auto w-full">
-                    <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+                    <span className="text-xl font-bold text-text-primary dark:text-white/90">
                         {periodo ? 'Editar Período' : 'Registrar Período'}
                     </span>
-                    <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
+                    <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary font-normal">
                         {periodo ? 'Modifica los detalles del período académico.' : 'Ingresa los detalles del nuevo período académico.'}
                     </p>
                 </div>
@@ -495,7 +495,7 @@ export default function PeriodModal({
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Fecha de Inicio *</label>
+                                <label className="text-sm font-medium text-text-primary dark:text-white/90">Fecha de Inicio *</label>
                                 <div className="relative">
                                     <Controller
                                         control={control}
@@ -546,7 +546,7 @@ export default function PeriodModal({
                             </div>
 
                             <div>
-                                <label className="mb-2.5 block text-black dark:text-white font-medium text-sm">Fecha de Fin *</label>
+                                <label className="text-sm font-medium text-text-primary dark:text-white/90">Fecha de Fin *</label>
                                 <div className="relative">
                                     <Controller
                                         control={control}

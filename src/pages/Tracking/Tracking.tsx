@@ -11,6 +11,7 @@ import PageMeta from "../../components/common/PageMeta";
 import TrackingTable from "../../features/tracking/components/TrackingTable";
 import { PlusCircleIcon } from "../../icons/actions";
 import TrackingModal from "../../features/tracking/components/TrackingModal";
+import TrackingDetailModal from "../../features/tracking/components/TrackingDetailModal";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
@@ -51,7 +52,9 @@ export default function TrackingPage() {
     } = useTracking();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [editingTracking, setEditingTracking] = useState<Tracking | null>(null);
+    const [viewingTracking, setViewingTracking] = useState<Tracking | null>(null);
     const [confirmation, setConfirmation] = useState<{
         isOpen: boolean;
         title: string;
@@ -138,7 +141,12 @@ export default function TrackingPage() {
     const handleOpenViewModal = (trackingRow: TrackingRowData) => {
         const original = trackings.find(t => t.trackingId === trackingRow.trackingId);
         if (!original) return;
-        setEditingTracking(original);
+        setViewingTracking(original);
+        setIsDetailModalOpen(true);
+    };
+
+    const handleDetailEdit = (tracking: Tracking) => {
+        setEditingTracking(tracking);
         setIsModalOpen(true);
     };
 
@@ -286,6 +294,13 @@ export default function TrackingPage() {
                         </ComponentCard>
                     </div>
                 </div>
+
+                <TrackingDetailModal
+                    isOpen={isDetailModalOpen}
+                    onClose={() => setIsDetailModalOpen(false)}
+                    onEdit={handleDetailEdit}
+                    tracking={viewingTracking}
+                />
 
                 <TrackingModal
                     isOpen={isModalOpen}

@@ -22,6 +22,7 @@ import { Career } from "../../careers/types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import Badge from "../../../components/ui/badge/Badge";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
+import { matchSearch } from "../../../utils/searchNormalizer";
 
 /**
  * Propiedades del componente InternshipTypeTable.
@@ -117,10 +118,8 @@ export default function InternshipTypeTable({
    * Procesa los datos aplicando filtros de búsqueda, estado y ordenamiento.
    */
   const filteredData = useMemo(() => {
-    const search = searchTerm.trim().toLowerCase();
     const filtered = data.filter((item) => {
-      const name = String(item.name ?? "").toLowerCase();
-      const matchesSearch = name.includes(search);
+      const matchesSearch = matchSearch(String(item.name ?? ""), searchTerm);
       const matchesTab = activeTab === "Activas" ? item.status : !item.status;
       return matchesSearch && matchesTab;
     });

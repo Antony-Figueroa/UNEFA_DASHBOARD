@@ -207,23 +207,42 @@ export const getTrackingStats = async (req: Request, res: Response) => {
 
     const { data: trendData, error: trendError } = await supabase
       .from('t_professional_practices')
-      .select('CREATION_DATE')
+      .select(`
+        CREATION_DATE,
+        STUDENT_CI,
+        t_students:STUDENTS_ID (
+          STUDENTS_CI,
+          NAME,
+          SURNAME
+        )
+      `)
       .gte('CREATION_DATE', sixMonthsAgo.toISOString())
       .order('CREATION_DATE', { ascending: true });
 
     if (trendError) throw trendError;
 
-    // Group by day (YYYY-MM-DD)
-    const dayMap = new Map<string, number>();
-    trendData?.forEach(item => {
+    // Group by day (YYYY-MM-DD) with student details
+    const dayMap = new Map<string, { count: number; students: { name: string; ci: string }[] }>();
+    trendData?.forEach((item: any) => {
       const date = new Date(item.CREATION_DATE);
       const dayKey = date.toISOString().split('T')[0];
-      dayMap.set(dayKey, (dayMap.get(dayKey) || 0) + 1);
+      
+      const student = item.t_students;
+      const studentName = student ? `${(student.NAME || '').trim()} ${(student.SURNAME || '').trim()}`.trim() : item.STUDENT_CI || 'Desconocido';
+      const studentCi = item.STUDENT_CI || '';
+      
+      if (!dayMap.has(dayKey)) {
+        dayMap.set(dayKey, { count: 0, students: [] });
+      }
+      const entry = dayMap.get(dayKey)!;
+      entry.count += 1;
+      entry.students.push({ name: studentName, ci: studentCi });
     });
 
-    const historicalTrend = Array.from(dayMap.entries()).map(([date, count]) => ({
+    const historicalTrend = Array.from(dayMap.entries()).map(([date, data]) => ({
       date,
-      count
+      count: data.count,
+      students: data.students
     }));
 
     // 2. Comparison between periods

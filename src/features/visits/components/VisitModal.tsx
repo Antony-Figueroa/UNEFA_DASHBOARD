@@ -21,7 +21,7 @@ import { SAFE_LONG_TEXT_PATTERN, isSafeInput } from '../../../utils/inputValidat
 import { useTutors } from '../../tutors/hooks/useTutors';
 import TutorModal from '../../tutors/components/TutorModal';
 import { createTutor } from '../../tutors/services/tutorsService';
-import { visitsService, TutorVisitCount } from '../services/visitsService';
+
 import { useLists } from '../../lists/hooks/useLists';
 import * as listsService from '../../lists/services/listsService';
 
@@ -96,6 +96,8 @@ interface VisitModalProps {
   hoursAccumulated?: number;
   /** Tutores asignados a la práctica profesional del estudiante (solo estos se muestran en el selector) */
   assignedTutors?: Array<{ tutorId: number; tutorName: string; tutorType: string }>;
+  /** Conteo de visitas por tutor filtrado SOLO para esta práctica (no global) */
+  tutorVisitCounts?: Array<{ tutorId: number; visitCount: number }>;
 }
 
 export default function VisitModal({
@@ -112,7 +114,8 @@ export default function VisitModal({
   modalId,
   studentName,
   hoursAccumulated,
-  assignedTutors
+  assignedTutors,
+  tutorVisitCounts: practiceTutorVisitCounts
 }: VisitModalProps) {
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [pendingData, setPendingData] = useState<VisitFormData | null>(null);
@@ -182,7 +185,6 @@ export default function VisitModal({
   const { tutors, refreshTutors } = useTutors();
   const [tutorOptions, setTutorOptions] = useState<{ value: string; label: string }[]>([]);
   const [isTutorModalOpen, setIsTutorModalOpen] = useState(false);
-  const [tutorVisitCounts, setTutorVisitCounts] = useState<TutorVisitCount[]>([]);
 
   // Estados para listas dinámicas (combos configurables)
   const { fetchMultipleLists, loading: loadingLists } = useLists();
@@ -207,15 +209,6 @@ export default function VisitModal({
       setIsAddValueModalOpen(false);
       setNewValueName('');
       setNewValueAbbreviation('');
-    }
-  }, [isOpen]);
-
-  // Cargar conteo de visitas por tutor cuando se abre el modal
-  useEffect(() => {
-    if (isOpen) {
-      visitsService.getVisitsCountByTutor()
-        .then(counts => setTutorVisitCounts(counts))
-        .catch(err => console.error('[VisitModal] Error loading visit counts:', err));
     }
   }, [isOpen]);
 
@@ -297,7 +290,7 @@ export default function VisitModal({
     const options = tutors
       .filter(t => !tutorIds || tutorIds.has(String(t.tutorId)))
       .map(t => {
-        const visitCount = tutorVisitCounts.find(tc => String(tc.tutorId) === String(t.tutorId))?.visitCount || 0;
+        const visitCount = practiceTutorVisitCounts?.find(tc => String(tc.tutorId) === String(t.tutorId))?.visitCount || 0;
         const countLabel = visitCount > 0 ? ` (${visitCount} visita${visitCount !== 1 ? 's' : ''})` : '';
         const tutorType = tutorTypeMap.get(String(t.tutorId));
         const typeLabel = tutorType ? (tutorTypeLabelMap[tutorType] || tutorType) : '';
@@ -307,7 +300,7 @@ export default function VisitModal({
         };
       });
     setTutorOptions(options);
-  }, [tutors, tutorVisitCounts, assignedTutors, tutorTypeLabelMap]);
+  }, [tutors, practiceTutorVisitCounts, assignedTutors, tutorTypeLabelMap]);
 
   // Callback cuando se guarda un nuevo tutor desde TutorModal
   const handleTutorCreated = async (tutorData: any) => {

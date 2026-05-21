@@ -12,6 +12,7 @@ import { InstitutionalResponsible } from "../types";
 import { Search, UserPlus, Building2, Lock } from "lucide-react";
 import { useToast } from "../../../context/toast";
 import { cn } from "../../../utils/cn";
+import { matchSearch } from "../../../utils/searchNormalizer";
 
 interface Props {
   isOpen: boolean;
@@ -52,10 +53,10 @@ export default function InstitutionalResponsibleSelectModal({ isOpen, onClose, o
   };
 
   const filtered = allResponsibles.filter(r => {
-    const term = search.toLowerCase();
-    const fullName = `${r.firstName} ${r.lastName}`.toLowerCase();
-    const ci = `${r.identificationPrefix}-${r.identificationNumber}`.toLowerCase();
-    return fullName.includes(term) || ci.includes(term) || (r.email || "").toLowerCase().includes(term);
+    const term = search;
+    const fullName = `${r.firstName} ${r.lastName}`;
+    const ci = `${r.identificationPrefix}-${r.identificationNumber}`;
+    return matchSearch(fullName, term) || matchSearch(ci, term) || matchSearch(r.email || "", term);
   });
 
   const handleSelect = async (resp: InstitutionalResponsible) => {

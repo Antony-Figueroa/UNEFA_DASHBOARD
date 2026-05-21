@@ -14,6 +14,7 @@ import Badge from "../../../components/ui/badge/Badge";
 import { Tracking } from "../types";
 import { Visit } from "../../visits/types";
 import { visitsService } from "../../visits/services/visitsService";
+import { getTrackingById, TrackingDetailDTO } from "../services/trackingService";
 
 interface TrackingDetailModalProps {
   /** Indica si el modal está visible */
@@ -87,34 +88,43 @@ export default function TrackingDetailModal({
 }: TrackingDetailModalProps) {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [visitsLoading, setVisitsLoading] = useState(false);
+  const [detail, setDetail] = useState<TrackingDetailDTO | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
-  // Cargar visitas cuando se abre el modal
+  // Cargar detalles completos y visitas cuando se abre el modal
   useEffect(() => {
-    if (isOpen && tracking?.trackingId) {
-      const loadVisits = async () => {
-        setVisitsLoading(true);
-        try {
-          const response = await visitsService.getVisitsByPractice(
-            Number(tracking.trackingId)
-          );
-          setVisits(response.data || []);
-        } catch (error) {
-          console.error(
-            "[TrackingDetailModal] Error al cargar visitas:",
-            error
-          );
-          setVisits([]);
-        } finally {
-          setVisitsLoading(false);
-        }
-      };
-      loadVisits();
-    } else {
+    if (!isOpen || !tracking?.trackingId) {
       setVisits([]);
+      setDetail(null);
+      return;
     }
+
+    const loadData = async () => {
+      setDetailLoading(true);
+      setVisitsLoading(true);
+
+      try {
+        const [detailData, visitsResponse] = await Promise.all([
+          getTrackingById(tracking.trackingId),
+          visitsService.getVisitsByPractice(Number(tracking.trackingId)),
+        ]);
+        setDetail(detailData);
+        setVisits(visitsResponse.data || []);
+      } catch (error) {
+        console.error("[TrackingDetailModal] Error al cargar datos:", error);
+        setVisits([]);
+      } finally {
+        setDetailLoading(false);
+        setVisitsLoading(false);
+      }
+    };
+
+    loadData();
   }, [isOpen, tracking?.trackingId]);
 
   if (!tracking) return null;
+
+  const display = detail || tracking;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="5xl" showCloseButton>
@@ -161,40 +171,94 @@ export default function TrackingDetailModal({
             <ModalSectionHeader color="brand-500">
               Datos del Seguimiento
             </ModalSectionHeader>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
-              <div>
-                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
-                  Título del Informe
-                </label>
-                <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                  {tracking.reportTitle}
-                </p>
+            {detailLoading ? (
+              <div className="flex items-center justify-center py-6">
+                <div className="w-5 h-5 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
+                <span className="ml-3 text-sm text-text-secondary">
+                  Cargando detalles...
+                </span>
               </div>
-              <div>
-                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
-                  Traslado
-                </label>
-                <p className="text-sm font-bold text-text-primary dark:text-white/90">
-                  {tracking.transfer ? "Sí" : "No"}
-                </p>
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
-                  Recorrido
-                </label>
-                <p className="text-sm font-bold text-text-primary dark:text-white/90">
-                  {tracking.route || "—"}
-                </p>
-              </div>
-              <div className="sm:col-span-2 md:col-span-3">
-                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
-                  Observaciones
-                </label>
-                <p className="text-sm text-text-primary dark:text-white/90">
-                  {tracking.observations || "Sin observaciones"}
-                </p>
-              </div>
-            </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
+                  <div className="sm:col-span-2 md:col-span-3">
+                    <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
+                      Título del Informe
+                    </label>
+                    <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                      {tracking.reportTitle}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
+                      Institución
+                    </label>
+                    <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                      {'institutionName' in display ? (display as TrackingDetailDTO).institutionName || "—" : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
+                      Periodo
+                    </label>
+                    <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                      {'periodStartDate' in display && (display as TrackingDetailDTO).periodStartDate
+                        ? `${formatDate((display as TrackingDetailDTO).periodStartDate!)} - ${formatDate((display as TrackingDetailDTO).periodEndDate || (display as TrackingDetailDTO).periodStartDate!)}`
+                        : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
+                      Traslado
+                    </label>
+                    <p className="text-sm font-bold text-text-primary dark:text-white/90">
+                      {tracking.transfer ? "Sí" : "No"}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
+                      Recorrido
+                    </label>
+                    <p className="text-sm font-bold text-text-primary dark:text-white/90">
+                      {tracking.route || "—"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Tutores Asignados */}
+                {'assignedTutors' in display && (display as TrackingDetailDTO).assignedTutors.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 pt-2">
+                    {(display as TrackingDetailDTO).assignedTutors.map((tutor) => (
+                      <div
+                        key={tutor.tutorId}
+                        className="flex items-center gap-3 rounded-lg bg-bg-secondary/50 dark:bg-white/3 px-4 py-3"
+                      >
+                        <Badge
+                          color={tutor.tutorType === 'METODOLOGICO' ? 'info' : 'primary'}
+                          variant="light"
+                        >
+                          {tutor.tutorType === 'METODOLOGICO' ? 'Metodológico' : 'Académico'}
+                        </Badge>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-text-primary dark:text-white/90 truncate">
+                            {tutor.tutorName}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="sm:col-span-2 md:col-span-3">
+                  <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
+                    Observaciones
+                  </label>
+                  <p className="text-sm text-text-primary dark:text-white/90">
+                    {tracking.observations || "Sin observaciones"}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Estado y Fechas */}
@@ -218,9 +282,11 @@ export default function TrackingDetailModal({
                 Fecha de Creación
               </label>
               <p className="text-[11px] text-text-secondary dark:text-text-tertiary font-medium">
-                {tracking.creationDate instanceof Date
-                  ? tracking.creationDate.toLocaleDateString("es-VE")
-                  : String(tracking.creationDate)}
+                {'creationDate' in display && typeof display.creationDate === 'string'
+                  ? formatDate(display.creationDate)
+                  : tracking.creationDate instanceof Date
+                    ? tracking.creationDate.toLocaleDateString("es-VE")
+                    : String(tracking.creationDate)}
               </p>
             </div>
           </div>
@@ -278,7 +344,7 @@ export default function TrackingDetailModal({
                           {formatDateTime(visit.visitDate)}
                         </td>
                         <td className="py-2.5 px-3">
-                          <Badge variant={getVisitTypeColor(visit.visitType)}>
+                          <Badge color={getVisitTypeColor(visit.visitType)}>
                             {visit.visitType}
                           </Badge>
                         </td>

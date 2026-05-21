@@ -10,6 +10,7 @@ import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Tracking, CreateTrackingPayload, UpdateTrackingPayload } from '../types';
+import { getTrackingById, TrackingDetailDTO } from '../services/trackingService';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
 import { ModalSectionHeader } from '../../../components/ui/modal/ModalSectionHeader';
 import Button from '../../../components/ui/button/Button';
@@ -88,6 +89,24 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [pendingData, setPendingData] = useState<TrackingFormData | null>(null);
     const [studentCareer, setStudentCareer] = useState<string>("");
+    const [detailData, setDetailData] = useState<TrackingDetailDTO | null>(null);
+
+    // Cargar detalles completos (institución, tutores, etc.) cuando se edita
+    useEffect(() => {
+        if (isOpen && tracking) {
+            const loadDetail = async () => {
+                try {
+                    const data = await getTrackingById(tracking.trackingId);
+                    setDetailData(data);
+                } catch (error) {
+                    console.error("[TrackingModal] Error al cargar detalles:", error);
+                }
+            };
+            loadDetail();
+        } else {
+            setDetailData(null);
+        }
+    }, [isOpen, tracking?.trackingId]);
 
     // Cargar opciones dinámicas desde el servicio de listas
     useEffect(() => {
@@ -231,75 +250,97 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                 </ModalHeader>
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <ModalBody>
-                        <div className="space-y-6">
-                            {/* Sección: Datos del Estudiante (read-only) */}
+                        <div className="space-y-8">
+                            {/* ── Sección: Datos del Estudiante ── */}
                             <div className="space-y-3">
                                 <ModalSectionHeader color="blue-500">
                                     Datos del Estudiante
                                 </ModalSectionHeader>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 p-4 rounded-xl bg-bg-secondary/50 dark:bg-white/3">
-                                    <div>
-                                        <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
-                                            Cédula / ID
-                                        </label>
-                                        <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                                            {tracking?.studentIdNumber || (watch('studentIdNumber') || "—")}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
-                                            Nombre Completo
-                                        </label>
-                                        <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                                            {tracking?.studentName || (watch('studentName') || "—")}
-                                        </p>
-                                    </div>
-                                    {studentCareer && (
-                                        <div>
-                                            <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
-                                                Carrera
-                                            </label>
-                                            <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                                                {studentCareer}
-                                            </p>
+                                <div className="rounded-xl bg-bg-secondary/50 dark:bg-white/3 p-5">
+                                    {isNew ? (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-sm font-medium text-text-primary dark:text-white/90">
+                                                    Cédula / ID *
+                                                </label>
+                                                <InputField
+                                                    {...register('studentIdNumber')}
+                                                    error={!!errors.studentIdNumber}
+                                                    hint={errors.studentIdNumber?.message}
+                                                    placeholder="Ej: 12345678"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-sm font-medium text-text-primary dark:text-white/90">
+                                                    Nombre Completo *
+                                                </label>
+                                                <InputField
+                                                    {...register('studentName')}
+                                                    error={!!errors.studentName}
+                                                    hint={errors.studentName?.message}
+                                                    disabled
+                                                    placeholder="Se autocompleta con la cédula"
+                                                />
+                                            </div>
+                                            {studentCareer && (
+                                                <div className="flex flex-col gap-1">
+                                                    <label className="text-sm font-medium text-text-primary dark:text-white/90">
+                                                        Carrera
+                                                    </label>
+                                                    <p className="text-sm text-text-secondary dark:text-text-tertiary py-2 px-1">
+                                                        {studentCareer}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                                            <div>
+                                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
+                                                    Cédula / ID
+                                                </label>
+                                                <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                                                    {tracking?.studentIdNumber || "—"}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
+                                                    Nombre Completo
+                                                </label>
+                                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                                                    {tracking?.studentName || "—"}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
+                                                    Carrera
+                                                </label>
+                                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                                                    {detailData?.careerName || studentCareer || "—"}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
+                                                    Institución
+                                                </label>
+                                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                                                    {detailData?.institutionName || "—"}
+                                                </p>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Sección: Datos del Seguimiento */}
+                            {/* ── Sección: Datos del Seguimiento ── */}
                             <div className="space-y-4">
                                 <ModalSectionHeader color="brand-500">
                                     Datos del Seguimiento
                                 </ModalSectionHeader>
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                    <div className="flex flex-col gap-1">
-                                        <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                                            Cédula Estudiante *
-                                        </label>
-                                        <InputField
-                                            {...register('studentIdNumber')}
-                                            error={!!errors.studentIdNumber}
-                                            hint={errors.studentIdNumber?.message}
-                                            disabled={!isNew}
-                                            placeholder="Ej: 12345678"
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-1">
-                                        <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                                            Nombre Estudiante *
-                                        </label>
-                                        <InputField
-                                            {...register('studentName')}
-                                            error={!!errors.studentName}
-                                            hint={errors.studentName?.message}
-                                            disabled={!isNew}
-                                            placeholder="Nombre autocompletado"
-                                        />
-                                    </div>
                                     <div className="sm:col-span-2 flex flex-col gap-1">
                                         <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                                            Título Informe *
+                                            Título del Informe *
                                         </label>
                                         <TextArea
                                             {...register('reportTitle')}
@@ -343,7 +384,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                                     {tracking && (
                                         <div className="sm:col-span-2 flex flex-col gap-2">
                                             <label className="text-sm font-medium text-text-primary dark:text-white/90">
-                                                Registro Visitas
+                                                Registro de Visitas
                                             </label>
                                             <Button 
                                                 type="button" 

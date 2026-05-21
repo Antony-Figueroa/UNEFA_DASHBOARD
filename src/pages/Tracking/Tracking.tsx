@@ -9,16 +9,13 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
 import TrackingTable from "../../features/tracking/components/TrackingTable";
-import { PlusCircleIcon } from "../../icons/actions";
 import TrackingModal from "../../features/tracking/components/TrackingModal";
 import TrackingDetailModal from "../../features/tracking/components/TrackingDetailModal";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
-import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { useTracking } from "../../features/tracking/hooks/useTracking";
 import { useLists } from "../../features/lists/hooks/useLists";
-import { useToast } from "../../context/toast";
-import { Tracking, TrackingRowData, CreateTrackingPayload, UpdateTrackingPayload, TRANSFER_OPTIONS } from "../../features/tracking/types";
+import { Tracking, TrackingRowData, UpdateTrackingPayload, TRANSFER_OPTIONS } from "../../features/tracking/types";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
 import TrackingStatsChart from "../../features/tracking/components/TrackingStatsChart";
 import { getTrackingStats, TrackingStats } from "../../features/tracking/services/trackingService";
@@ -26,14 +23,13 @@ import { getTrackingStats, TrackingStats } from "../../features/tracking/service
 /**
  * Página de Seguimiento (Tracking).
  * 
- * Esta página gestiona la visualización, creación, edición y eliminación de registros
+ * Esta página gestiona la visualización, edición y eliminación de registros
  * de seguimiento de estudiantes. Incluye estadísticas visuales y una tabla interactiva.
  * 
  * @component
  */
 export default function TrackingPage() {
     const { fetchMultipleLists } = useLists();
-    const { addToast } = useToast();
     const navigate = useNavigate();
     const [lists, setLists] = useState<Record<string, { value: string; label: string }[]>>({});
     const [stats, setStats] = useState<TrackingStats | null>(null);
@@ -44,7 +40,6 @@ export default function TrackingPage() {
         status,
         loadingAction,
         error,
-        addTracking,
         editTracking,
         removeTracking,
         restoreTracking
@@ -74,14 +69,6 @@ export default function TrackingPage() {
             setStats(data);
         } catch (error: unknown) {
             console.error("[TrackingPage] Error al cargar estadísticas:", error);
-            const errorMessage = error instanceof Error 
-                               ? error.message 
-                               : "Error al cargar las estadísticas de seguimiento";
-            addToast({
-                variant: "error",
-                title: "Error de Estadísticas",
-                message: errorMessage
-            });
         } finally {
             if (!silent) setStatsLoading(false);
         }
@@ -118,11 +105,6 @@ export default function TrackingPage() {
         loadOptions();
     }, [fetchMultipleLists]);
 
-    const handleOpenCreateModal = () => {
-        setEditingTracking(null);
-        setIsModalOpen(true);
-    };
-
     const handleOpenEditModal = (trackingRow: TrackingRowData) => {
         const original = trackings.find(t => t.trackingId === trackingRow.trackingId);
         if (!original) return;
@@ -143,25 +125,19 @@ export default function TrackingPage() {
     };
 
     /**
-     * Procesa el guardado de un registro (nuevo o existente).
+     * Procesa la actualización de un registro existente.
      * 
      * @param trackingData - Datos provenientes del modal de seguimiento.
      */
-    const handleSave = async (trackingData: CreateTrackingPayload | UpdateTrackingPayload) => {
+    const handleUpdate = async (trackingData: UpdateTrackingPayload) => {
         try {
-            if ('trackingId' in trackingData) {
-                await editTracking(trackingData as UpdateTrackingPayload);
-            } else {
-                await addTracking(trackingData as CreateTrackingPayload);
-            }
+            await editTracking(trackingData);
             setIsModalOpen(false);
             setEditingTracking(null);
             // Refrescar estadísticas para reflejar el cambio
             loadStats(true);
         } catch (err) {
-            console.error("[TrackingPage] Error al procesar el guardado:", err);
-            // La notificación de error ya la maneja useTracking, 
-            // pero cerramos el modal si es un error de negocio esperado (opcional)
+            console.error("[TrackingPage] Error al procesar la actualización:", err);
         }
     };
 
@@ -256,12 +232,6 @@ export default function TrackingPage() {
                                 <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">Administra el seguimiento académico y los informes de traslado.</p>
                             </SkeletonLoader>
                         </div>
-                        {status !== "loading" && (
-                            <Button onClick={handleOpenCreateModal} className="sm:w-auto">
-                                <PlusCircleIcon className="w-5 h-5" />
-                                <span className="ml-2">Nuevo Seguimiento</span>
-                            </Button>
-                        )}
                     </div>
 
                     <div className="space-y-6">
@@ -297,7 +267,7 @@ export default function TrackingPage() {
                 <TrackingModal
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
-                    onSave={handleSave}
+                    onSave={handleUpdate}
                     tracking={editingTracking}
                     isLoading={loadingAction}
                 />

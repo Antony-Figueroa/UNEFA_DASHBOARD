@@ -36,6 +36,7 @@ import { useInternshipTypes } from "../../features/internship-types/hooks/useInt
 import { Enrollment, EnrollmentRowData, CreateEnrollmentPayload, UpdateEnrollmentPayload } from "../../features/enrollment/types";
 import { PreEnrollmentRowData } from "../../features/pre-enrollment/types";
 import { formatDateTime } from "../../utils/date";
+import { matchSearch } from "../../utils/searchNormalizer";
 import CareerModal from "../../features/careers/components/CareerModal";
 
 /**
@@ -223,16 +224,15 @@ export default function EnrollmentPage() {
      * Datos filtrados específicamente para el reporte PDF de Inscripciones.
      */
     const pdfFilteredData = useMemo(() => {
-        const search = pdfSearchTerm.trim().toLowerCase();
         const periodSearch = pdfPeriodFilter.trim().toLowerCase();
         const practiceTypeSearch = pdfPracticeTypeFilter.trim().toLowerCase();
 
         return (Array.isArray(enrollments) ? enrollments : [])
             .filter((e) => {
-                const matchesSearch = !search || 
-                    e.identificationNumber.toLowerCase().includes(search) || 
-                    e.studentName.toLowerCase().includes(search) ||
-                    (e.careerName && e.careerName.toLowerCase().includes(search));
+                const matchesSearch = !pdfSearchTerm.trim() || 
+                    matchSearch(e.identificationNumber, pdfSearchTerm) || 
+                    matchSearch(e.studentName, pdfSearchTerm) ||
+                    matchSearch(e.careerName ?? '', pdfSearchTerm);
                 const matchesPeriod = !periodSearch || e.period.toLowerCase() === periodSearch;
                 const matchesPracticeType = !practiceTypeSearch || e.practiceType.toLowerCase() === practiceTypeSearch;
                 const matchesStatus = e.status === true;

@@ -33,6 +33,7 @@ import { Career, CareerRowData, CreateCareerPayload, UpdateCareerPayload } from 
 import { formatDateTime } from "../../utils/date";
 import { useInternshipTypes } from "../../features/internship-types/hooks/useInternshipTypes";
 import { InternshipType, CreateInternshipTypePayload } from "../../features/internship-types/types";
+import { matchSearch } from "../../utils/searchNormalizer";
 
 /**
  * Transforma un objeto de tipo Career (dominio) a CareerRowData (vista).
@@ -172,15 +173,14 @@ export default function CareersPage() {
    * Permite búsquedas independientes en el modal de previsualización.
    */
   const pdfFilteredData = useMemo(() => {
-    const search = pdfSearchTerm.trim().toLowerCase();
     const byStatus = careers.filter((c) => c.status === true);
     
     return byStatus
       .filter(c => {
-        if (!search) return true;
+        if (!pdfSearchTerm.trim()) return true;
         return (
-          c.careerCode.toLowerCase().includes(search) ||
-          c.careerName.toLowerCase().includes(search)
+          matchSearch(c.careerCode, pdfSearchTerm) ||
+          matchSearch(c.careerName, pdfSearchTerm)
         );
       })
       .map(formatCareerToRow);

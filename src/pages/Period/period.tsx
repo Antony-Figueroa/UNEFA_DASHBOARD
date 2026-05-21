@@ -24,6 +24,7 @@ import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
 import PeriodoPDF from "../../components/ui/pdf/templates/PeriodoPDF";
 import { Periodo, PeriodoRowData, CreatePeriodPayload, UpdatePeriodPayload } from "../../features/periods/types";
 import ErrorBoundary from "../../components/common/ErrorBoundary";
+import { matchSearch } from "../../utils/searchNormalizer";
 
 /**
  * Información para los diálogos de confirmación.
@@ -90,13 +91,12 @@ export default function Period() {
      * Filtra los datos para el reporte PDF según el término de búsqueda y estatus.
      */
     const pdfFilteredData = useMemo(() => {
-        const search = pdfSearchTerm.trim().toLowerCase();
         return (Array.isArray(periodos) ? periodos : [])
             .filter(p => p.status === true)
             .filter(p => {
-                const matchesSearch = !search || 
-                    p.code.toLowerCase().includes(search) || 
-                    p.description.toLowerCase().includes(search);
+                const matchesSearch = !pdfSearchTerm.trim() || 
+                    matchSearch(p.code, pdfSearchTerm) || 
+                    matchSearch(p.description, pdfSearchTerm);
                 
                 const matchesStatus = pdfStatusFilter === "" || 
                     p.periodStatus.toString() === pdfStatusFilter;

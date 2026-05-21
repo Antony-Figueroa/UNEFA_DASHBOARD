@@ -202,10 +202,15 @@ export default function TrackingDetailModal({
                       Periodo
                     </label>
                     <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                      {'periodStartDate' in display && (display as TrackingDetailDTO).periodStartDate
-                        ? `${formatDate((display as TrackingDetailDTO).periodStartDate!)} - ${formatDate((display as TrackingDetailDTO).periodEndDate || (display as TrackingDetailDTO).periodStartDate!)}`
+                      {'periodDescription' in display && (display as TrackingDetailDTO).periodDescription
+                        ? (display as TrackingDetailDTO).periodDescription
                         : "—"}
                     </p>
+                    {'periodStartDate' in display && (display as TrackingDetailDTO).periodStartDate && (
+                      <p className="text-[11px] text-text-secondary dark:text-text-tertiary mt-0.5">
+                        {formatDate((display as TrackingDetailDTO).periodStartDate!)} - {formatDate((display as TrackingDetailDTO).periodEndDate || (display as TrackingDetailDTO).periodStartDate!)}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">

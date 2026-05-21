@@ -11,6 +11,7 @@ import ErrorBoundary from '../../components/common/ErrorBoundary';
 import { CheckCircleIcon, TimeIcon, AlertIcon, EyeIcon } from '../../icons';
 import apiClient from '../../api/apiClient';
 import toast from 'react-hot-toast';
+import { matchSearch } from '../../utils/searchNormalizer';
 
 interface PracticeWithStudent {
   professionalPracticeId: number;
@@ -82,11 +83,10 @@ export default function EvaluationsPage() {
 
   const filteredPractices = useMemo(() => {
     if (!searchTerm) return practices;
-    const term = searchTerm.toLowerCase();
     return practices.filter(p =>
-      p.studentName.toLowerCase().includes(term) ||
-      p.studentCi.toLowerCase().includes(term) ||
-      p.institutionName.toLowerCase().includes(term)
+      matchSearch(p.studentName, searchTerm) ||
+      matchSearch(p.studentCi, searchTerm) ||
+      matchSearch(p.institutionName, searchTerm)
     );
   }, [practices, searchTerm]);
 

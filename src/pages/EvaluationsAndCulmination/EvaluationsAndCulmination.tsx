@@ -31,6 +31,7 @@ import {
   STATUS_COLORS
 } from '../../features/evaluations-culmination/types';
 import { evaluationsCulminationService } from '../../features/evaluations-culmination/services/evaluationsCulminationService';
+import { matchSearch } from '../../utils/searchNormalizer';
 import { generateCertificatePDF } from '../../components/ui/pdf/templates/CertificatePDF';
 import { EvaluationModal } from '../../features/evaluations/components/EvaluationModal';
 import EvaluationDetailModal from '../../features/evaluations/components/EvaluationDetailModal';
@@ -191,11 +192,10 @@ export default function EvaluationsAndCulminationPage() {
   const filteredPractices = useMemo(() => {
     const list = Array.isArray(practices) ? practices : [];
     if (!searchTerm) return list;
-    const term = searchTerm.toLowerCase();
     return list.filter(p =>
-      p.studentName.toLowerCase().includes(term) ||
-      p.studentCi.toLowerCase().includes(term) ||
-      p.institutionName.toLowerCase().includes(term)
+      matchSearch(p.studentName, searchTerm) ||
+      matchSearch(p.studentCi, searchTerm) ||
+      matchSearch(p.institutionName, searchTerm)
     );
   }, [practices, searchTerm]);
 

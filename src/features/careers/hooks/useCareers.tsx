@@ -10,6 +10,7 @@
 import { careerService } from "../services/careersService";
 import { useCrud } from "../../../hooks/useCrud";
 import { Career, CreateCareerPayload, UpdateCareerPayload } from "../types";
+import { matchSearch } from "../../../utils/searchNormalizer";
 
 /**
  * Hook que expone la lógica de negocio para el módulo de Carreras.
@@ -39,11 +40,10 @@ export const useCareers = () => {
     resourceName: "Carrera",
     idField: "careerId",
     filterFn: (c, term) => {
-      const lowerTerm = term.toLowerCase();
       return (
-        String(c.careerName).toLowerCase().includes(lowerTerm) ||
-        String(c.careerCode).toLowerCase().includes(lowerTerm) ||
-        String(c.careerAbbreviation).toLowerCase().includes(lowerTerm)
+        matchSearch(String(c.careerName), term) ||
+        matchSearch(String(c.careerCode), term) ||
+        matchSearch(String(c.careerAbbreviation), term)
       );
     }
   });

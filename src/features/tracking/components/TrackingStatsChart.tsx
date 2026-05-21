@@ -12,6 +12,7 @@ import { ApexOptions } from 'apexcharts';
 import { TrackingStats } from '../services/trackingService';
 import { Skeleton } from '../../../components/ui/skeleton';
 import { FiTrendingUp, FiCalendar, FiActivity, FiLayers, FiArrowUp, FiArrowDown, FiMinus } from 'react-icons/fi';
+import { generateTooltipHTML, formatDateForTooltip } from '../../dashboard/utils/tooltipUtils';
 
 /**
  * Props for the TrackingStatsChart component.
@@ -160,7 +161,32 @@ const TrackingStatsChart: React.FC<TrackingStatsChartProps> = ({ stats, loading 
     colors: [BRAND_COLOR],
     tooltip: {
       theme: 'light',
-      x: { show: false },
+      custom: ({ dataPointIndex }: { dataPointIndex: number }) => {
+        if (dataPointIndex === undefined || dataPointIndex < 0) return '';
+        
+        const point = filteredData?.[dataPointIndex];
+        if (!point) return '';
+        
+        const count = point.count ?? 0;
+        const dateStr = point.date;
+        const students = point.students || [];
+        
+        const formattedDate = formatDateForTooltip(dateStr);
+        
+        const items = students.map((s) => ({
+          name: s.name,
+          subtitle: s.ci,
+        }));
+        
+        return generateTooltipHTML({
+          label: formattedDate,
+          count,
+          unit: 'seguimiento',
+          icon: '📋',
+          items,
+          maxItems: 30,
+        });
+      },
       y: {
         title: { formatter: () => '' },
         formatter: (val) => `${val} seguimiento${val !== 1 ? 's' : ''}`,

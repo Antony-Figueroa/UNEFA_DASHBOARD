@@ -330,6 +330,7 @@ export const getTrackingById = async (req: Request, res: Response) => {
         ),
         t_internships_period:PERIOD_ID (
           PERIOD_ID,
+          DESCRIPTION,
           START_DATE,
           END_DATE
         ),
@@ -399,6 +400,7 @@ export const getTrackingById = async (req: Request, res: Response) => {
         tutorName: tutorName,
         tutorMethodologicalName: tutorMethodologicalName,
         assignedTutors: assignedTutors,
+        periodDescription: period.DESCRIPTION || null,
         periodStartDate: period.START_DATE || null,
         periodEndDate: period.END_DATE || null,
         reportTitle: practice.REPORT_TITLE || "",

@@ -73,9 +73,10 @@ const mapVisitToFrontend = (v: VisitWithDetails) => ({
 export const getVisitsByPractice = async (req: Request, res: Response) => {
   try {
     const { practiceId } = req.params;
+    const { includeInactive } = req.query;
     const supabase = dbManager.getConnection();
 
-    const { data, error } = await supabase
+    let query = supabase
       .from('t_practice_visits')
       .select(`
         *,
@@ -106,8 +107,15 @@ export const getVisitsByPractice = async (req: Request, res: Response) => {
           )
         )
       `)
-      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
-      .eq('STATUS', 1)
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId);
+
+    // Por defecto solo trae activas (STATUS=1)
+    // Si includeInactive=true, trae todas
+    if (includeInactive !== 'true') {
+      query = query.eq('STATUS', 1);
+    }
+
+    const { data, error } = await query
       .order('VISIT_DATE', { ascending: false });
 
     if (error) {
@@ -536,6 +544,31 @@ export const deleteVisit = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('[VisitsController] Error:', error);
     res.status(500).json({ message: 'Error al eliminar visita', error });
+  }
+};
+
+export const restoreVisit = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const supabase = dbManager.getConnection();
+
+    const { error } = await supabase
+      .from('t_practice_visits')
+      .update({ STATUS: 1, UPDATED_AT: new Date().toISOString() })
+      .eq('VISIT_ID', id);
+
+    if (error) {
+      console.error('[VisitsController] Error restoring visit:', error);
+      return res.status(500).json({ message: 'Error al restaurar visita', error });
+    }
+
+    res.json({
+      success: true,
+      message: 'Visita restaurada exitosamente'
+    });
+  } catch (error) {
+    console.error('[VisitsController] Error:', error);
+    res.status(500).json({ message: 'Error al restaurar visita', error });
   }
 };
 

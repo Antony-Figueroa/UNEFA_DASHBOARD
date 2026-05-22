@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -6,7 +6,7 @@ import PageMeta from "../../components/common/PageMeta";
 import { AsyncActionButton } from "../../components/common/AsyncActionButton";
 import Button from "../../components/ui/button/Button";
 import Badge from "../../components/ui/badge/Badge";
-import { ArrowLeftIcon, EditIcon, TrashIcon, EyeIcon } from "../../icons/actions";
+import { ArrowLeftIcon, EditIcon, TrashIcon, EyeIcon, RefreshIcon } from "../../icons/actions";
 import { PlusIcon } from "../../icons";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../components/ui/table";
 import { EmptyState } from "../../components/ui/table/EmptyState";
@@ -29,6 +29,7 @@ export default function VisitRegistration() {
     createVisit,
     updateVisit,
     deleteVisit,
+    restoreVisit,
     fetchStats
   } = useVisits();
 
@@ -44,7 +45,17 @@ export default function VisitRegistration() {
   });
   const [practiceInfo, setPracticeInfo] = useState<TrackingDetailDTO | null>(null);
   const [loadingPractice, setLoadingPractice] = useState(false);
+  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
   const [statsKey, setStatsKey] = useState(0);
+  const [restoreDialog, setRestoreDialog] = useState<{ isOpen: boolean; visitId: number | null }>({
+    isOpen: false,
+    visitId: null
+  });
+
+  // Filtrar visitas según la pestaña activa (mismo patrón que Periods)
+  const tableData = useMemo(() => visits
+    .filter(v => v.status === (activeTab === 'active')),
+  [visits, activeTab]);
 
   useEffect(() => {
     if (id) {
@@ -63,8 +74,8 @@ export default function VisitRegistration() {
           setLoadingPractice(false);
         });
       
-      // Fetch visits and stats
-      fetchVisitsByPractice(practiceId);
+      // Fetch ALL visits (including inactive) and stats
+      fetchVisitsByPractice(practiceId, true);
       fetchStats({ practiceId });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -106,6 +117,15 @@ export default function VisitRegistration() {
       const success = await deleteVisit(deleteDialog.visitId);
       if (success) {
         setDeleteDialog({ isOpen: false, visitId: null });
+      }
+    }
+  };
+
+  const handleRestoreConfirm = async () => {
+    if (restoreDialog.visitId) {
+      const success = await restoreVisit(restoreDialog.visitId);
+      if (success) {
+        setRestoreDialog({ isOpen: false, visitId: null });
       }
     }
   };
@@ -219,14 +239,32 @@ export default function VisitRegistration() {
         </div>
       )}
 
-      <ComponentCard title="Historial de Visitas">
+      <ComponentCard title={activeTab === 'active' ? "Historial de Visitas" : "Visitas Inactivas"}>
+        {/* Tabs estilo underline (mismo patrón que Periods) */}
+        <div className="mb-6 flex border-b border-border-light dark:border-white/5">
+          <button
+            onClick={() => setActiveTab('active')}
+            className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === 'active' ? "text-brand-500" : "text-text-secondary hover:text-text-primary"}`}
+          >
+            Activas
+            {activeTab === 'active' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
+          </button>
+          <button
+            onClick={() => setActiveTab('inactive')}
+            className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === 'inactive' ? "text-brand-500" : "text-text-secondary hover:text-text-primary"}`}
+          >
+            Inactivas
+            {activeTab === 'inactive' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
+          </button>
+        </div>
+
         {loading ? (
           <div className="space-y-3 animate-pulse">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
             ))}
           </div>
-        ) : visits.length > 0 ? (
+        ) : tableData.length > 0 ? (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -239,7 +277,7 @@ export default function VisitRegistration() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {visits.map((visit) => (
+                {tableData.map((visit) => (
                   <TableRow key={visit.visitId}>
                     <TableCell className="whitespace-nowrap">
                       <span className="font-medium text-text-primary dark:text-text-emphasis">
@@ -261,24 +299,39 @@ export default function VisitRegistration() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-3">
+                        {/* Botón siempre disponible: Ver Detalles */}
                         <AsyncActionButton
                           onClick={async () => setViewDialog({ isOpen: true, visit })}
                           icon={<EyeIcon />}
                           tooltip="Ver Detalles"
                           variant="primary"
                         />
-                        <AsyncActionButton
-                          onClick={async () => handleOpenModal(visit)}
-                          icon={<EditIcon />}
-                          tooltip="Editar"
-                          variant="primary"
-                        />
-                        <AsyncActionButton
-                          onClick={async () => setDeleteDialog({ isOpen: true, visitId: visit.visitId })}
-                          icon={<TrashIcon />}
-                          tooltip="Eliminar"
-                          variant="danger"
-                        />
+
+                        {activeTab === 'inactive' ? (
+                          /* SI está inactivo: solo botón Restaurar */
+                          <AsyncActionButton
+                            onClick={async () => setRestoreDialog({ isOpen: true, visitId: visit.visitId })}
+                            icon={<RefreshIcon />}
+                            tooltip="Restaurar"
+                            variant="success"
+                          />
+                        ) : (
+                          /* SI está activo: botonera normal */
+                          <>
+                            <AsyncActionButton
+                              onClick={async () => handleOpenModal(visit)}
+                              icon={<EditIcon />}
+                              tooltip="Editar"
+                              variant="primary"
+                            />
+                            <AsyncActionButton
+                              onClick={async () => setDeleteDialog({ isOpen: true, visitId: visit.visitId })}
+                              icon={<TrashIcon />}
+                              tooltip="Eliminar"
+                              variant="danger"
+                            />
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -288,9 +341,9 @@ export default function VisitRegistration() {
           </div>
         ) : (
           <EmptyState
-            title="No hay visitas registradas"
-            description="Comienza registrando la primera visita de seguimiento"
-            action={<Button onClick={() => handleOpenModal()}>Registrar Visita</Button>}
+            title={activeTab === 'active' ? "No hay visitas activas" : "No hay visitas inactivas"}
+            description={activeTab === 'active' ? "Comienza registrando la primera visita de seguimiento" : "Las visitas inactivas aparecerán aquí"}
+            action={activeTab === 'active' ? <Button onClick={() => handleOpenModal()}>Registrar Visita</Button> : undefined}
           />
         )}
       </ComponentCard>
@@ -443,10 +496,20 @@ export default function VisitRegistration() {
         isOpen={deleteDialog.isOpen}
         onClose={() => setDeleteDialog({ isOpen: false, visitId: null })}
         title="Eliminar Visita"
-        message="¿Está seguro de eliminar esta visita? Esta acción no se puede deshacer."
+        message="¿Está seguro de eliminar esta visita? Podrá restaurarla desde la pestaña de inactivas."
         confirmLabel="Eliminar"
         variant="error"
         onConfirm={handleDelete}
+      />
+
+      <UnifiedDialog
+        isOpen={restoreDialog.isOpen}
+        onClose={() => setRestoreDialog({ isOpen: false, visitId: null })}
+        title="Restaurar Visita"
+        message="¿Está seguro de restaurar esta visita? Volverá a aparecer en la pestaña de activos."
+        confirmLabel="Restaurar"
+        variant="success"
+        onConfirm={handleRestoreConfirm}
       />
     </>
   );

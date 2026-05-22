@@ -163,6 +163,13 @@ export default function TrackingTable({
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [searchTerm, setSearchTerm] = useState("");
     const [transferFilter, setTransferFilter] = useState("");
+    const [careerFilter, setCareerFilter] = useState("");
+
+    // Opciones únicas para filtros derivadas de los datos
+    const careerOptions = useMemo(() => {
+        const careers = new Set(data.map(item => item.careerName).filter(Boolean));
+        return Array.from(careers).sort();
+    }, [data]);
 
     const handleRequestConfirm = (type: 'edit' | 'delete' | 'restore', item: TrackingRowData) => {
         // Direct action without confirmation dialog
@@ -180,10 +187,11 @@ export default function TrackingTable({
         return data.filter(item => {
             const matchesSearch = !searchTerm.trim() || matchSearch(item.studentIdNumber, searchTerm) || matchSearch(item.studentName, searchTerm);
             const matchesTransfer = transferFilter === "" || String(item.transfer) === transferFilter;
+            const matchesCareer = careerFilter === "" || item.careerName === careerFilter;
 
-            return matchesSearch && matchesTransfer;
+            return matchesSearch && matchesTransfer && matchesCareer;
         });
-    }, [data, searchTerm, transferFilter]);
+    }, [data, searchTerm, transferFilter, careerFilter]);
 
     // Lógica de paginación
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -195,7 +203,7 @@ export default function TrackingTable({
     // Resetear a la primera página cuando cambian los filtros
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, transferFilter]);
+    }, [searchTerm, transferFilter, careerFilter]);
 
     if (status === "loading") {
         return <TableSkeleton rows={5} />;
@@ -217,7 +225,7 @@ export default function TrackingTable({
     return (
         <div className="space-y-4">
             {/* Filtros */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-4">
                 <div>
                     <label className="mb-1.5 block text-xs font-medium text-text-secondary">Búsqueda</label>
                     <div className="relative">
@@ -245,6 +253,22 @@ export default function TrackingTable({
                         value={String(transferFilter)}
                         onChange={(value) => setTransferFilter(value)}
                         placeholder="Filtrar por traslado"
+                        className="bg-white dark:bg-white/5"
+                    />
+                </div>
+                <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-text-secondary dark:text-text-tertiary px-1">
+                        Carrera
+                    </label>
+                    <CustomSelect
+                        id="careerFilter"
+                        options={[
+                            { value: "", label: "Todas" },
+                            ...careerOptions.map(c => ({ value: c, label: c }))
+                        ]}
+                        value={careerFilter}
+                        onChange={(value) => setCareerFilter(value)}
+                        placeholder="Filtrar por carrera"
                         className="bg-white dark:bg-white/5"
                     />
                 </div>

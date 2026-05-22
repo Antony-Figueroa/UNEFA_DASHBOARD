@@ -20,8 +20,9 @@ interface GetVisitsCountByTutorResponse {
 }
 
 export const visitsService = {
-  getVisitsByPractice: async (practiceId: number): Promise<VisitsResponse> => {
-    const response = await apiClient.get(`/visits/practice/${practiceId}`);
+  getVisitsByPractice: async (practiceId: number, includeInactive?: boolean): Promise<VisitsResponse> => {
+    const params = includeInactive ? '?includeInactive=true' : '';
+    const response = await apiClient.get(`/visits/practice/${practiceId}${params}`);
     return response.data;
   },
 
@@ -60,6 +61,11 @@ export const visitsService = {
 
   deleteVisit: async (id: number): Promise<{ success: boolean; message: string }> => {
     const response = await apiClient.delete(`/visits/${id}`);
+    return response.data;
+  },
+
+  restoreVisit: async (id: number): Promise<{ success: boolean; message: string }> => {
+    const response = await apiClient.patch(`/visits/${id}/restore`);
     return response.data;
   },
 

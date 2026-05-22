@@ -13,7 +13,7 @@ interface UseVisitsReturn {
   loading: boolean;
   error: string | null;
   stats: VisitStats | null;
-  fetchVisitsByPractice: (practiceId: number) => Promise<void>;
+  fetchVisitsByPractice: (practiceId: number, includeInactive?: boolean) => Promise<void>;
   fetchAllVisits: (params?: {
     page?: number;
     limit?: number;
@@ -25,6 +25,7 @@ interface UseVisitsReturn {
   createVisit: (payload: CreateVisitPayload) => Promise<Visit | null>;
   updateVisit: (id: number, payload: UpdateVisitPayload) => Promise<Visit | null>;
   deleteVisit: (id: number) => Promise<boolean>;
+  restoreVisit: (id: number) => Promise<boolean>;
   fetchStats: (params?: { tutorId?: number; practiceId?: number }) => Promise<void>;
   clearError: () => void;
 }
@@ -35,11 +36,11 @@ export const useVisits = (): UseVisitsReturn => {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<VisitStats | null>(null);
 
-  const fetchVisitsByPractice = useCallback(async (practiceId: number) => {
+  const fetchVisitsByPractice = useCallback(async (practiceId: number, includeInactive?: boolean) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await visitsService.getVisitsByPractice(practiceId);
+      const response = await visitsService.getVisitsByPractice(practiceId, includeInactive);
       if (response.success) {
         setVisits(response.data);
       }
@@ -157,6 +158,27 @@ export const useVisits = (): UseVisitsReturn => {
     }
   }, []);
 
+  const restoreVisit = useCallback(async (id: number): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await visitsService.restoreVisit(id);
+      if (response.success) {
+        toast.success('Visita restaurada exitosamente');
+        setVisits(prev => prev.map(v => v.visitId === id ? { ...v, status: true } : v));
+        return true;
+      }
+      return false;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Error al restaurar visita';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const fetchStats = useCallback(async (params?: { tutorId?: number; practiceId?: number }) => {
     try {
       const response = await visitsService.getVisitStats(params);
@@ -183,6 +205,7 @@ export const useVisits = (): UseVisitsReturn => {
     createVisit,
     updateVisit,
     deleteVisit,
+    restoreVisit,
     fetchStats,
     clearError
   };

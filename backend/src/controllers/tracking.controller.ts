@@ -25,6 +25,12 @@ interface DBTrackingResponse extends DBProfessionalPractice {
     CAREER_ID: number;
     CAREER_NAME: string;
   };
+  t_internships_period?: {
+    PERIOD_ID: number;
+    DESCRIPTION: string;
+    START_DATE: string;
+    END_DATE: string;
+  };
 }
 
 const mapDBToFrontend = (p: DBTrackingResponse) => ({
@@ -37,7 +43,9 @@ const mapDBToFrontend = (p: DBTrackingResponse) => ({
   observations: p.OBSERVATION,
   status: p.STATUS === 1,
   creationDate: new Date(p.CREATION_DATE),
-  careerName: p.t_career?.CAREER_NAME || null
+  careerName: p.t_career?.CAREER_NAME || null,
+  periodDescription: p.t_internships_period?.DESCRIPTION || null,
+  periodId: p.t_internships_period?.PERIOD_ID || null
 });
 
 export const getTrackings = async (_req: Request, res: Response) => {
@@ -55,6 +63,12 @@ export const getTrackings = async (_req: Request, res: Response) => {
         t_career:CAREER_ID (
           CAREER_ID,
           CAREER_NAME
+        ),
+        t_internships_period:PERIOD_ID (
+          PERIOD_ID,
+          DESCRIPTION,
+          START_DATE,
+          END_DATE
         )
       `)
       .eq('PRACTICES_STATUS', 2)
@@ -67,7 +81,9 @@ export const getTrackings = async (_req: Request, res: Response) => {
       STUDENT_CI: p.t_students?.STUDENTS_CI || "",
       STUDENT_NAME: p.t_students?.NAME || "",
       STUDENT_SURNAME: p.t_students?.SURNAME || "",
-      CAREER_NAME: p.t_career?.CAREER_NAME || null
+      CAREER_NAME: p.t_career?.CAREER_NAME || null,
+      PERIOD_DESCRIPTION: p.t_internships_period?.DESCRIPTION || null,
+      PERIOD_ID: p.t_internships_period?.PERIOD_ID || null
     })).map(mapDBToFrontend);
 
     res.json(formattedData);
@@ -81,7 +97,16 @@ export const getTrackings = async (_req: Request, res: Response) => {
 export const createTracking = async (req: Request, res: Response) => {
   try {
     const db = DatabaseManager.getInstance();
-    const { studentIdNumber, reportTitle, transfer, route, observations } = req.body;
+    const {
+      studentIdNumber,
+      reportTitle,
+      transfer,
+      route,
+      observations,
+      periodId,
+      institutionId,
+      internshipTypeId
+    } = req.body;
 
     // First find student ID by CI
     const { data: student, error: studentError } = await db.getConnection()
@@ -94,6 +119,9 @@ export const createTracking = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Estudiante no encontrado" });
     }
 
+    // Get the authenticated user ID from token
+    const userId = (req as any).user?.userId;
+
     const newPractice = {
       STUDENTS_ID: student.STUDENTS_ID,
       REPORT_TITLE: reportTitle,
@@ -102,17 +130,17 @@ export const createTracking = async (req: Request, res: Response) => {
       OBSERVATION: observations || "",
       STATUS: 1,
       CREATION_DATE: new Date().toISOString(),
-      START_DATE: new Date().toISOString().split('T')[0], // Default dates
+      START_DATE: new Date().toISOString().split('T')[0],
       END_DATE: new Date().toISOString().split('T')[0],
       REGISTRATION_DATE: new Date().toISOString(),
       GRADE: 0,
-      PRACTICES_STATUS: 'ACTIVA',
-      PERIOD_ID: 1, // Default or need to be handled
-      INSTITUTION_ID: 1,
-      MANAGER_ID: 1,
+      PRACTICES_STATUS: 2,
+      PERIOD_ID: periodId,
+      INSTITUTION_ID: institutionId,
+      MANAGER_ID: userId || 1,
       ENROLLMENT: 'N/A',
       INTERNSHIP_STATUS: 1,
-      INTERNSHIP_TYPE_ID: 1
+      INTERNSHIP_TYPE_ID: internshipTypeId || 1
     };
 
     const { data, error } = await db.getConnection()
@@ -300,6 +328,26 @@ export const deleteTracking = async (req: Request, res: Response) => {
     const err = error as Error;
     console.error("[TrackingController] Error in deleteTracking:", err);
     res.status(500).json({ error: err.message || "Error al eliminar seguimiento" });
+  }
+};
+
+export const restoreTracking = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const db = DatabaseManager.getInstance();
+
+    const { error } = await db.getConnection()
+      .from('t_professional_practices')
+      .update({ STATUS: 1 })
+      .eq('PROFESSIONAL_PRACTICE_ID', id);
+
+    if (error) throw error;
+
+    res.json({ message: "Seguimiento restaurado exitosamente" });
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error("[TrackingController] Error in restoreTracking:", err);
+    res.status(500).json({ error: err.message || "Error al restaurar seguimiento" });
   }
 };
 

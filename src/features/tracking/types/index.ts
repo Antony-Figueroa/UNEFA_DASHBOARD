@@ -35,6 +35,10 @@ export interface Tracking {
     creationDate: Date;
     /** Nombre de la carrera del estudiante */
     careerName?: string;
+    /** Descripción del período académico */
+    periodDescription?: string | null;
+    /** ID del período académico */
+    periodId?: number | null;
 }
 
 /**

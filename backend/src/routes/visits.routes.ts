@@ -7,6 +7,7 @@ import {
   createVisit,
   updateVisit,
   deleteVisit,
+  restoreVisit,
   getVisitStats,
   getVisitsCountByTutor
 } from '../controllers/visits.controller.js';
@@ -23,5 +24,6 @@ router.get('/:id', getVisitById);
 router.post('/', createVisit);
 router.put('/:id', updateVisit);
 router.delete('/:id', deleteVisit);
+router.patch('/:id/restore', restoreVisit);
 
 export default router;

@@ -916,18 +916,13 @@ export const getUserSecurityQuestions = async (userCi: string) => {
     }
 
     const { data: questions, error: qError } = await supabase
-      .from('t_user_questions')
+      .from('t_security_questions')
       .select(`
-        USER_QUESTION_ID,
-        QUESTION_TYPE,
         PRESET_QUESTION_ID,
         CUSTOM_QUESTION,
-        ORDER_NUM,
         t_preset_questions(DESCRIPTION)
       `)
-      .eq('USER_ID', user.USER_ID)
-      .eq('STATUS', 1)
-      .order('ORDER_NUM');
+      .eq('USER_ID', user.USER_ID);
 
     if (qError || !questions || questions.length < 3) {
       return { 
@@ -936,20 +931,18 @@ export const getUserSecurityQuestions = async (userCi: string) => {
       };
     }
 
-    interface QuestionData {
-      USER_QUESTION_ID: number;
-      QUESTION_TYPE: string;
+    interface SecurityQuestionResult {
       PRESET_QUESTION_ID: number | null;
       CUSTOM_QUESTION: string | null;
-      ORDER_NUM: number;
       t_preset_questions: { DESCRIPTION: string } | { DESCRIPTION: string }[] | null;
     }
 
-    const formattedQuestions = (questions as unknown as QuestionData[]).map(q => ({
-      id: q.USER_QUESTION_ID,
-      questionText: q.QUESTION_TYPE === 'PRESET' 
+    const formattedQuestions = (questions as unknown as SecurityQuestionResult[]).map(q => ({
+      id: q.PRESET_QUESTION_ID || 0,
+      questionText: q.PRESET_QUESTION_ID 
         ? (Array.isArray(q.t_preset_questions) ? q.t_preset_questions[0]?.DESCRIPTION : q.t_preset_questions?.DESCRIPTION) || ''
-        : q.CUSTOM_QUESTION || ''
+        : q.CUSTOM_QUESTION || '',
+      isCustom: !q.PRESET_QUESTION_ID
     }));
 
     return { 

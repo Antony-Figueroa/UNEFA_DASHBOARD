@@ -8,7 +8,8 @@ import { AngleLeftIcon } from "../../../icons";
 import toast from "react-hot-toast";
 import apiClient from "../../../api/apiClient";
 import { useEvaluations } from "../../../features/evaluations/hooks/useEvaluations";
-import { EvaluatorType, EVALUATOR_TYPE_LABELS, SCORE_RANGE } from "../../../features/evaluations/types";
+import { useSystemEvaluationConfig } from "../../../features/evaluations/hooks/useSystemEvaluationConfig";
+import { EvaluatorType, EVALUATOR_TYPE_LABELS } from "../../../features/evaluations/types";
 
 interface StudentInfo {
   studentName: string;
@@ -33,6 +34,9 @@ export default function TutorEvaluation() {
   const { enrollmentId } = useParams<{ enrollmentId: string }>();
   const navigate = useNavigate();
   const { criteria, fetchCriteria, createEvaluation, updateEvaluation, loading: evalLoading } = useEvaluations();
+  const { config } = useSystemEvaluationConfig();
+  const scoreRange = { min: config.score.min, max: config.score.max };
+  const midpoint = scoreRange.min + Math.floor((scoreRange.max - scoreRange.min) / 2);
 
   const [pageLoading, setPageLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -56,7 +60,7 @@ export default function TutorEvaluation() {
     if (criteria.length > 0 && Object.keys(itemScores).length === 0) {
       const initialScores: Record<number, number> = {};
       criteria.forEach(c => {
-        initialScores[c.criteriaId] = 10;
+        initialScores[c.criteriaId] = midpoint;
       });
       setItemScores(initialScores);
     }
@@ -105,7 +109,7 @@ export default function TutorEvaluation() {
   };
 
   const handleScoreChange = (criteriaId: number, score: number) => {
-    if (score >= SCORE_RANGE.MIN && score <= SCORE_RANGE.MAX) {
+    if (score >= scoreRange.min && score <= scoreRange.max) {
       setItemScores(prev => ({
         ...prev,
         [criteriaId]: score
@@ -115,9 +119,11 @@ export default function TutorEvaluation() {
 
   const calculateAverage = () => {
     if (criteria.length === 0) return "0.00";
-    const scores = criteria.map(c => itemScores[c.criteriaId] ?? 10);
+    const scores = criteria.map(c => itemScores[c.criteriaId] ?? midpoint);
     const sum = scores.reduce((a, b) => a + b, 0);
-    return (sum / scores.length).toFixed(2);
+    const rawAvg = sum / scores.length;
+    const scaled = (rawAvg / scoreRange.max) * config.score.displayScale;
+    return scaled.toFixed(2);
   };
 
   const handleSubmit = async () => {
@@ -130,7 +136,7 @@ export default function TutorEvaluation() {
     const items = criteria.map(c => ({
       criteriaId: c.criteriaId,
       itemNumber: c.itemNumber,
-      score: itemScores[c.criteriaId] ?? 10
+      score: itemScores[c.criteriaId] ?? midpoint
     }));
 
     try {
@@ -164,9 +170,13 @@ export default function TutorEvaluation() {
   };
 
   const getScoreInputClass = (criteriaId: number) => {
-    const score = itemScores[criteriaId] ?? 10;
-    if (score < 10) return "border-red-400 focus:border-red-500 dark:border-red-500";
-    if (score >= 16) return "border-green-400 focus:border-green-500 dark:border-green-500";
+    const score = itemScores[criteriaId] ?? midpoint;
+    const { min, max } = scoreRange;
+    const range = max - min;
+    const lowThreshold = min + Math.floor(range * 0.4);
+    const highThreshold = min + Math.ceil(range * 0.8);
+    if (score <= lowThreshold) return "border-red-400 focus:border-red-500 dark:border-red-500";
+    if (score >= highThreshold) return "border-green-400 focus:border-green-500 dark:border-green-500";
     return "border-yellow-400 focus:border-yellow-500 dark:border-yellow-500";
   };
 
@@ -259,15 +269,16 @@ export default function TutorEvaluation() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-text-secondary dark:text-text-tertiary">Promedio:</span>
             <span className="text-2xl font-bold text-brand-500">{calculateAverage()}</span>
-            <span className="text-sm text-text-secondary dark:text-text-tertiary">/ {SCORE_RANGE.MAX}</span>
+            <span className="text-sm text-text-secondary dark:text-text-tertiary">/ {config.score.displayScale}</span>
           </div>
         }
       >
         <p className="text-sm text-text-secondary dark:text-text-tertiary mb-4">
-          Califique cada criterio del {SCORE_RANGE.MIN} al {SCORE_RANGE.MAX}.
-          <span className="ml-2 text-red-500">Rojo (&lt;10)</span>,
-          <span className="ml-1 text-yellow-500">Amarillo (10-15)</span>,
-          <span className="ml-1 text-green-500">Verde (≥16)</span>
+          Califique cada criterio del {scoreRange.min} al {scoreRange.max}.
+          <span className="ml-2 text-red-500">Rojo (bajo)</span>,
+          <span className="ml-1 text-yellow-500">Amarillo (medio)</span>,
+          <span className="ml-1 text-green-500">Verde (alto)</span>.
+          Nota final escalada a 0–{config.score.displayScale}.
         </p>
 
         {criteria.length === 0 ? (
@@ -293,18 +304,18 @@ export default function TutorEvaluation() {
                   <div className="flex items-center gap-2">
                     <input
                       type="range"
-                      min={SCORE_RANGE.MIN}
-                      max={SCORE_RANGE.MAX}
+                      min={scoreRange.min}
+                      max={scoreRange.max}
                       step="1"
-                      value={itemScores[criterion.criteriaId] ?? 10}
+                      value={itemScores[criterion.criteriaId] ?? midpoint}
                       onChange={(e) => handleScoreChange(criterion.criteriaId, parseInt(e.target.value))}
                       className="flex-1 sm:w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
                     />
                     <input
                       type="number"
-                      min={SCORE_RANGE.MIN}
-                      max={SCORE_RANGE.MAX}
-                      value={itemScores[criterion.criteriaId] ?? 10}
+                      min={scoreRange.min}
+                      max={scoreRange.max}
+                      value={itemScores[criterion.criteriaId] ?? midpoint}
                       onChange={(e) => handleScoreChange(criterion.criteriaId, parseInt(e.target.value) || 0)}
                       className={`w-16 px-2 py-1 text-center border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white ${getScoreInputClass(criterion.criteriaId)}`}
                     />

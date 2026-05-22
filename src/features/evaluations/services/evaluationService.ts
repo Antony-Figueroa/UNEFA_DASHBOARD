@@ -122,6 +122,19 @@ export const evaluationService = {
     }
   },
 
+  getPracticeTutorInfo: async (practiceId: number, type: string): Promise<{ name: string; ci: string } | null> => {
+    try {
+      const response = await apiClient.get<{ success: boolean; data: { name: string; ci: string } | null }>(
+        `${API_URL}/practice/${practiceId}/tutor-info`,
+        { params: { type } }
+      );
+      return response.data.data;
+    } catch (error) {
+      console.error('[evaluationService] Error getting practice tutor info:', error);
+      return null;
+    }
+  },
+
   getPracticeEvaluationStatus: async (practiceId: number): Promise<EvaluationStatus> => {
     try {
       const response = await apiClient.get<{ success: boolean; data: EvaluationStatus }>(

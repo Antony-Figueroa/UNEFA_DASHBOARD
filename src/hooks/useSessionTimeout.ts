@@ -9,9 +9,9 @@ import { useToast } from '../context/toast';
 const INACTIVITY_TIMEOUT = 15 * 60 * 1000;
 
 /**
- * Tiempo de advertencia antes del cierre (1 minuto = 60,000 ms)
+ * Tiempo de advertencia antes del cierre (5 minutos = 300,000 ms)
  */
-const WARNING_TIME = 1 * 60 * 1000;
+const WARNING_TIME = 5 * 60 * 1000;
 
 /**
  * Intervalo de verificación del temporizador (1 segundo)
@@ -123,7 +123,7 @@ export const useSessionTimeout = () => {
           const id = addToast({
             variant: 'warning',
             title: 'Sesión por expirar',
-            message: 'Su sesión se cerrará automáticamente en 1 minuto debido a la inactividad.',
+            message: 'Su sesión se cerrará automáticamente en 5 minutos debido a la inactividad.',
             persistent: true
           });
           warningToastIdRef.current = id;

@@ -8,7 +8,7 @@ import Button from "../../components/ui/button/Button";
 import Badge from "../../components/ui/badge/Badge";
 import { ArrowLeftIcon, EditIcon, TrashIcon, EyeIcon, RefreshIcon } from "../../icons/actions";
 import { PlusIcon } from "../../icons";
-import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../components/ui/table";
+import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../components/ui/table";
 import { EmptyState } from "../../components/ui/table/EmptyState";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/modal";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
@@ -51,11 +51,25 @@ export default function VisitRegistration() {
     isOpen: false,
     visitId: null
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Filtrar visitas según la pestaña activa (mismo patrón que Periods)
   const tableData = useMemo(() => visits
     .filter(v => v.status === (activeTab === 'active')),
   [visits, activeTab]);
+
+  // Paginación cliente-side
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(tableData.length / itemsPerPage)), [tableData.length, itemsPerPage]);
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return tableData.slice(start, start + itemsPerPage);
+  }, [tableData, currentPage, itemsPerPage]);
+
+  // Resetear a página 1 cuando cambia el tab
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
 
   useEffect(() => {
     if (id) {
@@ -277,7 +291,7 @@ export default function VisitRegistration() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tableData.map((visit) => (
+                {paginatedData.map((visit) => (
                   <TableRow key={visit.visitId}>
                     <TableCell className="whitespace-nowrap">
                       <span className="font-medium text-text-primary dark:text-text-emphasis">
@@ -338,6 +352,14 @@ export default function VisitRegistration() {
                 ))}
               </TableBody>
             </Table>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={tableData.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={(v) => { setItemsPerPage(v); setCurrentPage(1); }}
+            />
           </div>
         ) : (
           <EmptyState

@@ -140,6 +140,35 @@ export const saveUserQuestions = async (req: AuthRequest, res: Response) => {
 
     if (insertError) throw insertError;
 
+    // 2. Sincronizar con t_security_questions para que la recuperación funcione
+    // Solo guardamos preguntas preset (t_security_questions.PRESET_QUESTION_ID es NOT NULL)
+    const { error: deleteOldSecQ } = await supabase
+      .from('t_security_questions')
+      .delete()
+      .eq('USER_ID', userId);
+
+    if (deleteOldSecQ) throw deleteOldSecQ;
+
+    const presetQuestionsToInsert = questions
+      .filter((q: any) => q.questionType === 'PRESET' && q.presetQuestionId)
+      .map((q: any) => ({
+        USER_ID: userId,
+        PRESET_QUESTION_ID: q.presetQuestionId,
+        ANSWER: q.answer.toLowerCase().trim(),
+        CUSTOM_QUESTION: null
+      }));
+
+    if (presetQuestionsToInsert.length > 0) {
+      const { error: insertSecQ } = await supabase
+        .from('t_security_questions')
+        .insert(presetQuestionsToInsert);
+
+      if (insertSecQ) {
+        console.error('Error syncing to t_security_questions:', insertSecQ);
+        // No bloqueamos la respuesta — el save en t_user_questions fue exitoso
+      }
+    }
+
     res.json({ success: true, message: 'Preguntas de seguridad guardadas correctamente' });
   } catch (error) {
     console.error('Error saving user questions:', error);

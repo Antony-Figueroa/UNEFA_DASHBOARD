@@ -15,9 +15,13 @@ const handleAuthError = (res: Response, error: unknown) => {
   });
 };
 
-const getSessionMaxAge = async (): Promise<number> => {
+const getSessionMinutes = async (): Promise<number> => {
   const config = await getConfig();
-  const minutes = config?.KEY_LEGTH || 60;
+  return config?.KEY_LEGTH || 60;
+};
+
+const getSessionMaxAge = async (): Promise<number> => {
+  const minutes = await getSessionMinutes();
   return minutes * 60 * 1000;
 };
 
@@ -33,7 +37,8 @@ export const login = async (req: Request, res: Response) => {
   }
 
   try {
-    const result = await authService.login(userCi, password, ip, userAgent);
+    const sessionMinutes = await getSessionMinutes();
+    const result = await authService.login(userCi, password, ip, userAgent, `${sessionMinutes}m`);
 
     if (!result.success) {
       console.warn(`[Auth] Login fallido para CI ${userCi}: ${result.message}`);
@@ -53,7 +58,7 @@ export const login = async (req: Request, res: Response) => {
     if (result.token) {
       console.log(`[Auth] Generando cookie de sesión para CI: ${userCi}`);
       
-      const maxAge = await getSessionMaxAge();
+      const maxAge = sessionMinutes * 60 * 1000;
       
       res.cookie('auth_token', result.token, {
         httpOnly: true,
@@ -327,8 +332,9 @@ export const refreshSession = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ success: false, message: 'Sesión no válida' });
     }
 
-    const newToken = authService.generateRefreshToken({ userId, userCi, role });
-    const maxAge = await getSessionMaxAge();
+    const sessionMinutes = await getSessionMinutes();
+    const newToken = authService.generateRefreshToken({ userId, userCi, role }, `${sessionMinutes}m`);
+    const maxAge = sessionMinutes * 60 * 1000;
 
     res.cookie('auth_token', newToken, {
       httpOnly: true,

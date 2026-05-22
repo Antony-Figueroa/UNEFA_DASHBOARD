@@ -84,7 +84,7 @@ interface UserKeyRow {
   IS_TEMPORARY?: boolean;
 }
 
-export const login = async (userCi: string, password: string, ip: string, userAgent: string) => {
+export const login = async (userCi: string, password: string, ip: string, userAgent: string, jwtExpiresIn?: string) => {
    return await dbManager.withRetry(async (supabase) => {
      // 1. Buscar usuario por CI
      const { data: userData, error: userError } = await supabase
@@ -228,7 +228,7 @@ export const login = async (userCi: string, password: string, ip: string, userAg
       userId: user.USER_ID, 
       userCi: user.USER_CI,
       role: user.t_user_roles?.[0]?.ID_ROLES 
-    });
+    }, jwtExpiresIn);
 
     await logAuthAction(user.USER_ID, userCi, 'LOGIN_SUCCESS', ip, userAgent, 'Inicio de sesión exitoso');
 
@@ -794,12 +794,12 @@ export const getPresetQuestions = async () => {
 /**
  * Genera un nuevo token JWT para renovar la sesión
  */
-export const generateRefreshToken = (payload: { userId: number; userCi: string; role: number }): string => {
+export const generateRefreshToken = (payload: { userId: number; userCi: string; role: number }, expiresIn?: string): string => {
   return generateToken({ 
     userId: payload.userId, 
     userCi: payload.userCi, 
     role: payload.role 
-  }, '1h');
+  }, expiresIn || '1h');
 };
 
 export const getLoginHistory = async (userId: number, limit: number = 10) => {

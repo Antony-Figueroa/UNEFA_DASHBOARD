@@ -3,6 +3,7 @@ import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { auditCreate, auditUpdate, auditDelete } from '../utils/audit-helpers.js';
 import { notifyEvaluationCreated } from '../services/notification.service.js';
+import { evaluationConfig } from '../config/evaluation.config.js';
 
 interface EvaluationCriteria {
   criteriaId: number;
@@ -27,10 +28,16 @@ interface CreateEvaluationData {
   items: EvaluationDetail[];
 }
 
-const WEIGHTS: Record<string, number> = {
-  'INSTITUCIONAL': 0.40,
-  'ACADEMICO': 0.30,
-  'COMITE': 0.30
+/**
+ * GET /api/evaluations/system-config
+ * Devuelve la configuración global del sistema de evaluación.
+ * Pública — no requiere autenticación.
+ */
+export const getSystemConfig = async (_req: Request, res: Response) => {
+  res.json({
+    success: true,
+    data: evaluationConfig
+  });
 };
 
 export const getCriteria = async (req: AuthRequest, res: Response) => {
@@ -112,7 +119,7 @@ export const getEvaluations = async (req: AuthRequest, res: Response) => {
       observations: e.OBSERVATIONS,
       evaluationDate: e.EVALUATION_DATE,
       registeredBy: e.REGISTERED_BY,
-      weight: WEIGHTS[e.EVALUATOR_TYPE] || 0
+      weight: evaluationConfig.weights[e.EVALUATOR_TYPE as keyof typeof evaluationConfig.weights] || 0
     }));
 
     res.json({ success: true, data: evaluations });
@@ -225,7 +232,10 @@ export const createEvaluation = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const totalScore = data.items.reduce((sum, item) => sum + item.score, 0) / data.items.length;
+    // Cada criterio se puntúa según system config, se escala el promedio al displayScale
+    const { score: scoreCfg } = evaluationConfig;
+    const rawAverage = data.items.reduce((sum, item) => sum + item.score, 0) / data.items.length;
+    const totalScore = parseFloat(((rawAverage / scoreCfg.max) * scoreCfg.displayScale).toFixed(2));
 
     const { data: evaluation, error: evalError } = await supabase
       .from('t_evaluation')
@@ -323,9 +333,11 @@ export const updateEvaluation = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const { score: scoreCfg } = evaluationConfig;
     let totalScore = 0;
     if (items && items.length > 0) {
-      totalScore = items.reduce((sum: number, item: any) => sum + item.score, 0) / items.length;
+      const rawAverage = items.reduce((sum: number, item: any) => sum + item.score, 0) / items.length;
+      totalScore = parseFloat(((rawAverage / scoreCfg.max) * scoreCfg.displayScale).toFixed(2));
     }
 
     const { error: updateError } = await supabase
@@ -466,11 +478,11 @@ export const getPracticeEvaluationStatus = async (req: AuthRequest, res: Respons
 
     if (evalError) throw evalError;
 
-    const statusMap: Record<string, { completed: boolean; score: number; evaluatorName: string; evaluationId?: number }> = {
-      'INSTITUCIONAL': { completed: false, score: 0, evaluatorName: '' },
-      'ACADEMICO': { completed: false, score: 0, evaluatorName: '' },
-      'COMITE': { completed: false, score: 0, evaluatorName: '' }
-    };
+    const evaluatorTypes = Object.keys(evaluationConfig.weights);
+    const statusMap: Record<string, { completed: boolean; score: number; evaluatorName: string; evaluationId?: number }> = {};
+    evaluatorTypes.forEach(type => {
+      statusMap[type] = { completed: false, score: 0, evaluatorName: '' };
+    });
 
     (evaluations || []).forEach((e: any) => {
       if (statusMap[e.EVALUATOR_TYPE]) {
@@ -483,20 +495,19 @@ export const getPracticeEvaluationStatus = async (req: AuthRequest, res: Respons
       }
     });
 
+    const totalEvaluatorTypes = Object.keys(evaluationConfig.weights).length;
     const completedCount = Object.values(statusMap).filter(s => s.completed).length;
     let evaluationStatus = 'pending';
-    if (completedCount === 3) {
+    if (completedCount === totalEvaluatorTypes) {
       evaluationStatus = 'completed';
     } else if (completedCount > 0) {
       evaluationStatus = 'partial';
     }
-
     let finalGrade = 0;
-    if (completedCount === 3) {
-      finalGrade = 
-        statusMap['INSTITUCIONAL'].score * WEIGHTS['INSTITUCIONAL'] +
-        statusMap['ACADEMICO'].score * WEIGHTS['ACADEMICO'] +
-        statusMap['COMITE'].score * WEIGHTS['COMITE'];
+    if (completedCount === totalEvaluatorTypes) {
+      finalGrade = Object.entries(evaluationConfig.weights).reduce((sum, [type, weight]) => {
+        return sum + (statusMap[type]?.score || 0) * weight;
+      }, 0);
     }
 
     res.json({
@@ -516,6 +527,106 @@ export const getPracticeEvaluationStatus = async (req: AuthRequest, res: Respons
     res.status(500).json({
       success: false,
       message: 'Error al obtener estado de evaluación'
+    });
+  }
+};
+
+/**
+ * GET /api/evaluations/practice/:practiceId/tutor-info
+ * Retorna el nombre y CI de la persona encargada de evaluar según el tipo:
+ * - INSTITUCIONAL → responsable de la institución (t_institution_manager via MANAGER_ID)
+ * - ACADEMICO    → tutor académico asignado (t_professional_practices_tutor con TUTOR_TYPE = 'ACADEMICO')
+ * - COMITE       → siempre null (sin datos precargados)
+ */
+export const getPracticeTutorInfo = async (req: AuthRequest, res: Response) => {
+  try {
+    const { practiceId } = req.params;
+    const { type } = req.query;
+
+    if (!type || typeof type !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'El parámetro "type" es requerido (INSTITUCIONAL, ACADEMICO)'
+      });
+    }
+
+    const allowedTypes = ['INSTITUCIONAL', 'ACADEMICO'];
+    if (!allowedTypes.includes(type)) {
+      return res.json({ success: true, data: null });
+    }
+
+    const supabase = dbManager.getConnection();
+
+    if (type === 'INSTITUCIONAL') {
+      // INSTITUCIONAL → obtener el responsable de la institución (MANAGER_ID)
+      const { data: practice } = await supabase
+        .from('t_professional_practices')
+        .select('MANAGER_ID')
+        .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+        .maybeSingle();
+
+      if (!practice || !(practice as any).MANAGER_ID) {
+        return res.json({ success: true, data: null });
+      }
+
+      const { data: manager } = await supabase
+        .from('t_institution_manager')
+        .select('MANAGER_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME')
+        .eq('MANAGER_ID', (practice as any).MANAGER_ID)
+        .maybeSingle();
+
+      if (!manager) {
+        return res.json({ success: true, data: null });
+      }
+
+      const fullName = [(manager as any).NAME, (manager as any).SECOND_NAME, (manager as any).SURNAME, (manager as any).SECOND_SURNAME]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+
+      return res.json({
+        success: true,
+        data: {
+          name: fullName,
+          ci: (manager as any).MANAGER_CI
+        }
+      });
+    }
+
+    // ACADEMICO → obtener el tutor académico asignado
+    const { data: tutorAssignment } = await supabase
+      .from('t_professional_practices_tutor')
+      .select(`
+        TUTOR_ID,
+        t_tutors!inner(TUTOR_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME)
+      `)
+      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
+      .eq('TUTOR_TYPE', 'ACADEMICO')
+      .maybeSingle();
+
+    if (!tutorAssignment) {
+      return res.json({ success: true, data: null });
+    }
+
+    const tutor = (tutorAssignment as any).t_tutors;
+    const fullName = [tutor.NAME, tutor.SECOND_NAME, tutor.SURNAME, tutor.SECOND_SURNAME]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    res.json({
+      success: true,
+      data: {
+        name: fullName,
+        ci: tutor.TUTOR_CI
+      }
+    });
+
+  } catch (error) {
+    console.error('[Evaluation] Error getting tutor info:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener datos del evaluador'
     });
   }
 };
@@ -542,15 +653,13 @@ async function updatePracticeGrade(practiceId: number): Promise<void> {
     typeScores[e.EVALUATOR_TYPE] = e.TOTAL_SCORE;
   });
 
-  const hasInstitucional = typeScores['INSTITUCIONAL'] !== undefined;
-  const hasAcademico = typeScores['ACADEMICO'] !== undefined;
-  const hasComite = typeScores['COMITE'] !== undefined;
+  const evaluatorTypes = Object.keys(evaluationConfig.weights);
+  const allCompleted = evaluatorTypes.every(type => typeScores[type] !== undefined);
 
-  if (hasInstitucional && hasAcademico && hasComite) {
-    const finalGrade = 
-      typeScores['INSTITUCIONAL'] * WEIGHTS['INSTITUCIONAL'] +
-      typeScores['ACADEMICO'] * WEIGHTS['ACADEMICO'] +
-      typeScores['COMITE'] * WEIGHTS['COMITE'];
+  if (allCompleted) {
+    const finalGrade = evaluatorTypes.reduce((sum, type) => {
+      return sum + (typeScores[type] || 0) * evaluationConfig.weights[type as keyof typeof evaluationConfig.weights];
+    }, 0);
 
     await supabase
       .from('t_professional_practices')

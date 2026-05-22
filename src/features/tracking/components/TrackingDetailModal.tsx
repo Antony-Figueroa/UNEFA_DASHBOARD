@@ -5,7 +5,7 @@
  * Sigue el patrón visual de EnrollmentViewModal.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { ModalSectionHeader } from "../../../components/ui/modal/ModalSectionHeader";
 import Button from "../../../components/ui/button/Button";
@@ -90,6 +90,7 @@ export default function TrackingDetailModal({
   const [visitsLoading, setVisitsLoading] = useState(false);
   const [detail, setDetail] = useState<TrackingDetailDTO | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [visitsTab, setVisitsTab] = useState<'active' | 'inactive'>('active');
 
   // Cargar detalles completos y visitas cuando se abre el modal
   useEffect(() => {
@@ -106,7 +107,7 @@ export default function TrackingDetailModal({
       try {
         const [detailData, visitsResponse] = await Promise.all([
           getTrackingById(tracking.trackingId),
-          visitsService.getVisitsByPractice(Number(tracking.trackingId)),
+          visitsService.getVisitsByPractice(Number(tracking.trackingId), true),
         ]);
         setDetail(detailData);
         setVisits(visitsResponse.data || []);
@@ -121,6 +122,21 @@ export default function TrackingDetailModal({
 
     loadData();
   }, [isOpen, tracking?.trackingId]);
+
+  // Filtrar visitas según la pestaña activa
+  const filteredVisits = useMemo(() => {
+    return visits.filter(v => visitsTab === 'active' ? v.status : !v.status);
+  }, [visits, visitsTab]);
+
+  // Restaurar una visita eliminada
+  const handleRestoreVisit = async (visitId: number) => {
+    try {
+      await visitsService.restoreVisit(visitId);
+      setVisits(prev => prev.map(v => v.visitId === visitId ? { ...v, status: true } : v));
+    } catch (error) {
+      console.error("[TrackingDetailModal] Error al restaurar visita:", error);
+    }
+  };
 
   if (!tracking) return null;
 
@@ -301,6 +317,33 @@ export default function TrackingDetailModal({
             <ModalSectionHeader color="purple-500">
               Visitas Realizadas
             </ModalSectionHeader>
+
+            {/* Tabs Activas / Eliminadas */}
+            {!visitsLoading && visits.length > 0 && (
+              <div className="flex gap-1 rounded-lg bg-bg-secondary dark:bg-white/5 p-0.5 w-fit">
+                <button
+                  onClick={() => setVisitsTab('active')}
+                  className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                    visitsTab === 'active'
+                      ? 'bg-white dark:bg-white/10 text-text-primary shadow-sm'
+                      : 'text-text-tertiary hover:text-text-primary'
+                  }`}
+                >
+                  Activas ({visits.filter(v => v.status).length})
+                </button>
+                <button
+                  onClick={() => setVisitsTab('inactive')}
+                  className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                    visitsTab === 'inactive'
+                      ? 'bg-white dark:bg-white/10 text-text-primary shadow-sm'
+                      : 'text-text-tertiary hover:text-text-primary'
+                  }`}
+                >
+                  Inactivas ({visits.filter(v => !v.status).length})
+                </button>
+              </div>
+            )}
+
             {visitsLoading ? (
               <div className="flex items-center justify-center py-6">
                 <div className="w-6 h-6 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
@@ -308,13 +351,12 @@ export default function TrackingDetailModal({
                   Cargando visitas...
                 </span>
               </div>
-            ) : visits.length === 0 ? (
+            ) : filteredVisits.length === 0 ? (
               <div className="text-center py-6">
                 <p className="text-sm font-medium text-text-secondary">
-                  No se registraron visitas para este seguimiento
-                </p>
-                <p className="text-xs text-text-tertiary mt-1">
-                  Las visitas aparecerán aquí una vez registradas
+                  {visitsTab === 'active'
+                    ? 'No hay visitas activas para este seguimiento'
+                    : 'No hay visitas inactivas para este seguimiento'}
                 </p>
               </div>
             ) : (
@@ -337,13 +379,22 @@ export default function TrackingDetailModal({
                       <th className="text-left py-2 px-3 text-[10px] font-bold text-text-tertiary uppercase tracking-widest">
                         Actividades
                       </th>
+                      {visitsTab === 'inactive' && (
+                        <th className="text-center py-2 px-3 text-[10px] font-bold text-text-tertiary uppercase tracking-widest">
+                          Acción
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border-light dark:divide-white/5">
-                    {visits.map((visit) => (
+                    {filteredVisits.map((visit) => (
                       <tr
                         key={visit.visitId}
-                        className="hover:bg-bg-secondary/50 transition-colors"
+                        className={`transition-colors ${
+                          visitsTab === 'inactive'
+                            ? 'bg-red-50/30 dark:bg-red-900/5 hover:bg-red-50/60 dark:hover:bg-red-900/10'
+                            : 'hover:bg-bg-secondary/50'
+                        }`}
                       >
                         <td className="py-2.5 px-3 text-xs font-medium text-text-primary">
                           {formatDateTime(visit.visitDate)}
@@ -362,6 +413,16 @@ export default function TrackingDetailModal({
                         <td className="py-2.5 px-3 text-xs text-text-secondary max-w-[200px] truncate">
                           {visit.activitiesPerformed}
                         </td>
+                        {visitsTab === 'inactive' && (
+                          <td className="py-2.5 px-3 text-center">
+                            <button
+                              onClick={() => handleRestoreVisit(visit.visitId)}
+                              className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-md transition-colors"
+                            >
+                              Restaurar
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>

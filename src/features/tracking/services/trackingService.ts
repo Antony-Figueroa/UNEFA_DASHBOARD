@@ -34,6 +34,10 @@ interface TrackingApiDTO {
     creationDate?: string | number;
     /** Nombre de la carrera del estudiante */
     careerName?: string;
+    /** Descripción del período académico */
+    periodDescription?: string | null;
+    /** ID del período académico */
+    periodId?: number | null;
 }
 
 /**
@@ -53,6 +57,8 @@ const fromApi = (dto: TrackingApiDTO): Tracking => ({
     status: dto.status,
     creationDate: dto.creationDate ? new Date(dto.creationDate) : new Date(),
     careerName: dto.careerName,
+    periodDescription: dto.periodDescription,
+    periodId: dto.periodId,
 });
 
 /**

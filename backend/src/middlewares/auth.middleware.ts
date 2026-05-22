@@ -46,7 +46,7 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
         authService.logAuthAction(decoded.userId, decoded.userCi, 'SESSION_EXPIRED', ip, userAgent, 'Sesión expirada por inactividad');
       }
     }
-    return res.status(403).json({ message: 'Sesión expirada', code: 'SESSION_EXPIRED' });
+    return res.status(401).json({ message: 'Sesión expirada', code: 'SESSION_EXPIRED' });
   }
 
   req.user = payload as unknown as UserPayload;

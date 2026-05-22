@@ -81,9 +81,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } finally {
       setUser(null);
-      // Limpieza exhaustiva de datos locales
+      // Limpieza selectiva de datos locales — conservar preferencias del usuario (tema, color, sidebar, etc.)
       const savedReason = reason || sessionStorage.getItem('auth_redirect_reason');
-      localStorage.clear();
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('auth_logout');
       sessionStorage.clear();
 
       if (savedReason) {

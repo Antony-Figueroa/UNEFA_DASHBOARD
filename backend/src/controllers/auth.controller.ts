@@ -344,9 +344,6 @@ export const refreshSession = async (req: AuthRequest, res: Response) => {
       path: '/'
     });
 
-    const config = await getConfig();
-    const sessionMinutes = config?.KEY_LEGTH || 60;
-
     console.log(`[Auth] Sesión renovada para CI: ${userCi}`);
     res.json({ 
       success: true, 

@@ -44,6 +44,7 @@ import permissionRoutes from './routes/permission.routes.js';
 import securityQuestionsRoutes from './routes/securityQuestions.routes.js';
 import landingConfigRoutes from './routes/landing-config.routes.js';
 import globalSearchRoutes from './routes/global-search.routes.js';
+import personsRoutes from './routes/persons.routes.js';
 import { subscribeToNotifications } from './services/sse.service.js';
 import { dbManager } from './lib/db-manager.js';
 import { performanceMiddleware } from './lib/performance-middleware.js';
@@ -208,6 +209,7 @@ app.use('/api/landing-config', landingConfigRoutes);
 app.use('/api/search', globalSearchRoutes);
 app.use('/api/institutions', institutionsRoutes);
 app.use('/api/institutional-responsibles', institutionalResponsiblesRoutes);
+app.use('/api/persons', personsRoutes);
 
 // Apply protection to all subsequent /api routes
 app.use('/api', authenticateToken, restrictAsistente);

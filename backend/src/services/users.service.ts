@@ -1,5 +1,6 @@
 import { dbManager } from '../lib/db-manager.js';
 import { hashPassword } from '../utils/auth.utils.js';
+import { personService } from './person.service.js';
 
 interface UserData {
   userCi: string;
@@ -18,6 +19,7 @@ interface SupabaseUser {
   EMAIL: string;
   STATUS: number;
   CREATION_DATE: string;
+  PERSON_ID: number | null;
   t_user_roles: { ID_ROLES: number }[];
 }
 
@@ -36,7 +38,7 @@ export const getUsers = async (filters: { role?: number, status?: number, search
 
     let query = supabase
       .from('t_user')
-      .select('USER_ID, USER_CI, NAME, SURNAME, EMAIL, STATUS, CREATION_DATE, t_user_roles(ID_ROLES)', { count: 'exact' });
+      .select('USER_ID, USER_CI, NAME, SURNAME, EMAIL, STATUS, CREATION_DATE, PERSON_ID, t_user_roles(ID_ROLES)', { count: 'exact' });
 
     // Aplicar filtro por IDs de usuarios con el rol especificado
     if (userIdsWithRole !== undefined) {
@@ -106,7 +108,8 @@ export const getUsers = async (filters: { role?: number, status?: number, search
         role: u.t_user_roles?.[0]?.ID_ROLES,
         status: u.STATUS,
         creationDate: u.CREATION_DATE,
-        isInUse: usersWithActivity.has(u.USER_ID)
+        isInUse: usersWithActivity.has(u.USER_ID),
+        personId: u.PERSON_ID ?? undefined,
       })),
       totalCount: count || 0,
       totalPages: Math.ceil((count || 0) / limit),
@@ -142,11 +145,39 @@ export const createUser = async (userData: UserData, tempPass: string) => {
       throw error;
     }
 
-    // 1. Crear usuario
+    // 1. Crear persona en t_persons
+    let personId: number;
+    try {
+      const person = await personService.createPerson({
+        ci: userData.userCi,
+        firstName: userData.name,
+        lastName: userData.surname,
+        email: userData.email,
+      });
+      personId = person.personId;
+    } catch (personError: unknown) {
+      const pErr = personError as { code?: string; status?: number };
+      if (pErr.code === 'PERSON_ALREADY_EXISTS') {
+        // La persona ya existe por CI — usar la existente
+        const existingPerson = await personService.getPersonByCi(userData.userCi);
+        personId = existingPerson!.personId;
+        // Actualizar datos de la persona existente
+        await personService.updatePerson(personId, {
+          firstName: userData.name,
+          lastName: userData.surname,
+          email: userData.email,
+        });
+      } else {
+        throw personError;
+      }
+    }
+
+    // 2. Crear usuario
     const { data: newUser, error: userError } = await supabase
       .from('t_user')
       .insert({
-        USER: userData.userCi, // Usar CI como nombre de usuario por defecto
+        PERSON_ID: personId,
+        USER: userData.userCi,
         USER_CI: userData.userCi,
         NAME: userData.name,
         SURNAME: userData.surname,
@@ -156,7 +187,7 @@ export const createUser = async (userData: UserData, tempPass: string) => {
         LOGIN: 0,
         CREATION_DATE: new Date().toISOString(),
         TERMS_CONDITIONS: '0',
-        STATUS_SESSION: 2 // Inactivo por defecto hasta primer login
+        STATUS_SESSION: 2
       })
       .select()
       .single();
@@ -166,7 +197,7 @@ export const createUser = async (userData: UserData, tempPass: string) => {
       throw userError;
     }
 
-    // 2. Crear clave temporal
+    // 3. Crear clave temporal
     const hashedPassword = await hashPassword(tempPass);
 
     const { error: keyError } = await supabase
@@ -191,7 +222,7 @@ export const createUser = async (userData: UserData, tempPass: string) => {
       throw keyError;
     }
 
-    // 3. Asignar rol
+    // 4. Asignar rol
     const { error: roleError } = await supabase
       .from('t_user_roles')
       .insert({
@@ -213,13 +244,39 @@ export const createUser = async (userData: UserData, tempPass: string) => {
       email: newUser.EMAIL,
       role: userData.role || 2,
       status: newUser.STATUS,
-      creationDate: newUser.CREATION_DATE
+      creationDate: newUser.CREATION_DATE,
+      personId: newUser.PERSON_ID ?? undefined,
     };
   });
 };
 
 export const updateUser = async (userId: number, userData: UserData) => {
   return await dbManager.withRetry(async (supabase) => {
+    // 1. Obtener el usuario actual para conocer su PERSON_ID
+    const { data: currentUser, error: fetchError } = await supabase
+      .from('t_user')
+      .select('PERSON_ID')
+      .eq('USER_ID', userId)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+    if (!currentUser) {
+      const error = new Error('Usuario no encontrado') as ServiceError;
+      error.code = 'USER_NOT_FOUND';
+      error.status = 404;
+      throw error;
+    }
+
+    // 2. Actualizar persona en t_persons
+    if (currentUser.PERSON_ID) {
+      await personService.updatePerson(currentUser.PERSON_ID, {
+        firstName: userData.name,
+        lastName: userData.surname,
+        email: userData.email,
+      });
+    }
+
+    // 3. Actualizar usuario
     const { data: updatedUser, error: userError } = await supabase
       .from('t_user')
       .update({

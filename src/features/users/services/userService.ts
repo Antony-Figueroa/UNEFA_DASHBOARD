@@ -19,6 +19,7 @@ interface UserDTO {
   status: number;
   creationDate: string;
   isInUse?: boolean;
+  personId?: number;
 }
 
 /**
@@ -33,7 +34,8 @@ const mapFromApi = (dto: UserDTO): User => ({
   role: dto.role,
   status: dto.status,
   creationDate: dto.creationDate,
-  isInUse: dto.isInUse
+  isInUse: dto.isInUse,
+  personId: dto.personId
 });
 
 /**

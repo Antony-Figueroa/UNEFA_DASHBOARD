@@ -25,6 +25,8 @@ export interface User {
     creationDate: string;
     /** Indica si el usuario tiene registros asociados que impiden su eliminación */
     isInUse?: boolean;
+    /** Referencia a la persona unificada en t_persons */
+    personId?: number;
 }
 
 /**

@@ -101,6 +101,8 @@ export interface InstitutionalResponsible {
   status: boolean;
   /** Registration date */
   registrationDate: Date;
+  /** Referencia a la persona unificada en t_persons */
+  personId?: string;
 }
 
 /**

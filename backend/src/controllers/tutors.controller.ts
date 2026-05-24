@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { auditCreate, auditUpdate, auditDelete, auditStatusChange } from '../utils/audit-helpers.js';
+import { personService } from '../services/person.service.js';
 
 const TABLE_NAME = 't_tutors';
 
@@ -19,7 +20,7 @@ interface AppError extends Error {
 const handleDbError = (res: Response, error: unknown) => {
   console.error('Database Error:', error);
   const dbError = error as AppError;
-  
+
   let userMessage = 'Error en la base de datos';
   if (dbError.code === '23502') {
     userMessage = `Error: El campo ${dbError.details?.match(/"([^"]+)"/)?.[1] || 'requerido'} no puede estar vacío`;
@@ -28,15 +29,14 @@ const handleDbError = (res: Response, error: unknown) => {
   } else if (dbError.code === 'PGRST205') {
     userMessage = 'Error: La tabla no existe en la base de datos';
   } else if (dbError.code === '22001') {
-    // Valor demasiado largo para el tipo de columna
     userMessage = 'Error: La cédula ingresada excede el límite permitido (máximo 8 dígitos). Verifique e intente nuevamente.';
   } else if (dbError.code === '404') {
     userMessage = dbError.message || 'Registro no encontrado';
     return res.status(404).json({ message: userMessage });
   }
 
-  res.status(500).json({ 
-    message: userMessage, 
+  res.status(500).json({
+    message: userMessage,
     error: dbError.message || 'Unknown database error',
     details: dbError.details,
     code: dbError.code
@@ -60,6 +60,7 @@ interface DBTutor {
   TITULO: string | null;
   CREATION_DATE: string;
   STATUS: number;
+  person_id: number;
 }
 
 interface DBVisit {
@@ -81,102 +82,18 @@ interface DBTutorCareer {
   };
 }
 
-export const getTutors = async (_req: Request, res: Response) => {
-  try {
-    const data = await dbManager.withRetry(async (supabase) => {
-      const { data, error } = await supabase
-        .from(TABLE_NAME)
-        .select(`
-          *, 
-          t_visit(VISIT_ID), 
-          t_professional_practices_tutor(PROFESSIONAL_PRACTICES_TUTOR_ID), 
-          t_tutor_career(
-            CAREER_ID, 
-            t_career(
-              t_career_internship_type(
-                t_internship_type(NAME)
-              )
-            )
-          )
-        `)
-        .order('NAME', { ascending: true });
-
-      if (error) throw error;
-      return data as (DBTutor & { 
-        t_visit: DBVisit[], 
-        t_professional_practices_tutor: DBProfessionalPracticesTutor[],
-        t_tutor_career: DBTutorCareer[]
-      })[];
-    });
-
-    // Mapear de DB a Frontend
-    const mappedData = data.map((t) => {
-      const ciParts = (t.TUTOR_CI || '').split('-');
-      const prefix = ciParts.length > 1 ? ciParts[0] : 'V';
-      const number = ciParts.length > 1 ? ciParts[1] : ciParts[0];
-
-      const isInUse = (Array.isArray(t.t_visit) && t.t_visit.length > 0) || 
-                     (Array.isArray(t.t_professional_practices_tutor) && t.t_professional_practices_tutor.length > 0);
-
-      const careers = Array.isArray(t.t_tutor_career) 
-        ? t.t_tutor_career.map(tc => String(tc.CAREER_ID)) 
-        : [];
-
-      // Extraer tipos de práctica de las carreras asignadas
-      const practiceTypesSet = new Set<string>();
-      if (Array.isArray(t.t_tutor_career)) {
-        t.t_tutor_career.forEach(tc => {
-          if (tc.t_career?.t_career_internship_type) {
-            tc.t_career.t_career_internship_type.forEach(cit => {
-              if (cit.t_internship_type?.NAME) {
-                practiceTypesSet.add(cit.t_internship_type.NAME);
-              }
-            });
-          }
-        });
-      }
-      const practiceTypes = Array.from(practiceTypesSet);
-
-      return {
-        tutorId: String(t.TUTOR_ID),
-        identificationPrefix: prefix,
-        identificationNumber: number,
-        firstName: t.NAME,
-        middleName: t.SECOND_NAME || undefined,
-        lastName: t.SURNAME,
-        secondLastName: t.SECOND_SURNAME || undefined,
-        sex: t.GENDER,
-        phone: t.CONTACT_PHONE,
-        email: t.EMAIL,
-        profession: t.PROFESSION,
-        condition: t.CONDITION,
-        dedication: t.DEDICATION,
-        category: t.CATEGORY,
-        titulo: t.TITULO || undefined,
-        registrationDate: t.CREATION_DATE,
-        status: t.STATUS === 1,
-        carreras: careers,
-        practiceTypes, // Nuevo campo con datos reales de la DB
-        isInUse
-      };
-    });
-
-    res.json(mappedData);
-  } catch (error: unknown) {
-    handleDbError(res, error);
-  }
-};
-
-const mapDBToFrontend = (t: DBTutor & { t_tutor_career?: DBTutorCareer[] }) => {
+const mapDBToFrontend = (t: DBTutor & { t_tutor_career?: DBTutorCareer[]; t_visit?: DBVisit[]; t_professional_practices_tutor?: DBProfessionalPracticesTutor[] }) => {
   const ciParts = (t.TUTOR_CI || '').split('-');
   const prefix = ciParts.length > 1 ? ciParts[0] : 'V';
   const number = ciParts.length > 1 ? ciParts[1] : ciParts[0];
 
-  const careers = Array.isArray(t.t_tutor_career) 
-    ? t.t_tutor_career.map(tc => String(tc.CAREER_ID)) 
+  const isInUse = (Array.isArray(t.t_visit) && t.t_visit.length > 0) ||
+                 (Array.isArray(t.t_professional_practices_tutor) && t.t_professional_practices_tutor.length > 0);
+
+  const careers = Array.isArray(t.t_tutor_career)
+    ? t.t_tutor_career.map(tc => String(tc.CAREER_ID))
     : [];
 
-  // Extraer tipos de práctica de las carreras asignadas
   const practiceTypesSet = new Set<string>();
   if (Array.isArray(t.t_tutor_career)) {
     t.t_tutor_career.forEach(tc => {
@@ -210,15 +127,73 @@ const mapDBToFrontend = (t: DBTutor & { t_tutor_career?: DBTutorCareer[] }) => {
     registrationDate: t.CREATION_DATE,
     status: t.STATUS === 1,
     carreras: careers,
-    practiceTypes
+    practiceTypes,
+    isInUse,
+    personId: t.person_id,
   };
+};
+
+export const getTutors = async (_req: Request, res: Response) => {
+  try {
+    const data = await dbManager.withRetry(async (supabase) => {
+      const { data, error } = await supabase
+        .from(TABLE_NAME)
+        .select(`
+          *,
+          t_visit(VISIT_ID),
+          t_professional_practices_tutor(PROFESSIONAL_PRACTICES_TUTOR_ID),
+          t_tutor_career(
+            CAREER_ID,
+            t_career(
+              t_career_internship_type(
+                t_internship_type(NAME)
+              )
+            )
+          )
+        `)
+        .order('NAME', { ascending: true });
+
+      if (error) throw error;
+      return data as (DBTutor & {
+        t_visit: DBVisit[],
+        t_professional_practices_tutor: DBProfessionalPracticesTutor[],
+        t_tutor_career: DBTutorCareer[]
+      })[];
+    });
+
+    const mappedData = data.map((t) => mapDBToFrontend(t));
+    res.json(mappedData);
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
 };
 
 export const createTutor = async (req: AuthRequest, res: Response) => {
   try {
     const t = req.body;
+    const ci = `${t.identificationPrefix}-${t.identificationNumber}`;
+
+    // Create or reuse person record
+    let personId: number;
+    const existingPerson = await personService.getPersonByCi(ci);
+    if (existingPerson) {
+      personId = existingPerson.personId;
+    } else {
+      const person = await personService.createPerson({
+        ci,
+        firstName: t.firstName,
+        middleName: t.middleName,
+        lastName: t.lastName,
+        secondLastName: t.secondLastName,
+        email: t.email,
+        phone: t.phone,
+        gender: t.sex,
+      });
+      personId = person.personId;
+    }
+
     const dbData = {
-      TUTOR_CI: `${t.identificationPrefix}-${t.identificationNumber}`,
+      TUTOR_CI: ci,
       NAME: t.firstName,
       SECOND_NAME: t.middleName || null,
       SURNAME: t.lastName,
@@ -231,12 +206,12 @@ export const createTutor = async (req: AuthRequest, res: Response) => {
       DEDICATION: t.dedication,
       CATEGORY: t.category,
       TITULO: t.titulo || null,
-      STATUS: t.status !== undefined ? (t.status ? 1 : 0) : 1, // Default: activo (1) si no se envía status
-      CREATION_DATE: new Date().toISOString()
+      STATUS: t.status !== undefined ? (t.status ? 1 : 0) : 1,
+      CREATION_DATE: new Date().toISOString(),
+      person_id: personId,
     };
 
     const data = await dbManager.withRetry(async (supabase) => {
-      // 1. Insertar tutor
       const { data: tutorData, error: tutorError } = await supabase
         .from(TABLE_NAME)
         .insert([dbData])
@@ -246,7 +221,6 @@ export const createTutor = async (req: AuthRequest, res: Response) => {
       if (tutorError) throw tutorError;
       const newTutor = tutorData as DBTutor;
 
-      // 2. Insertar carreras si existen
       if (Array.isArray(t.carreras) && t.carreras.length > 0) {
         const careerData = t.carreras.map((careerId: string | number) => ({
           TUTOR_ID: newTutor.TUTOR_ID,
@@ -258,14 +232,13 @@ export const createTutor = async (req: AuthRequest, res: Response) => {
           .insert(careerData);
 
         if (careerError) throw careerError;
-        
-        // Volver a obtener el tutor con las carreras para el retorno
+
         const { data: finalData, error: finalError } = await supabase
           .from(TABLE_NAME)
           .select(`
-            *, 
+            *,
             t_tutor_career(
-              CAREER_ID, 
+              CAREER_ID,
               t_career(
                 t_career_internship_type(
                   t_internship_type(NAME)
@@ -275,7 +248,7 @@ export const createTutor = async (req: AuthRequest, res: Response) => {
           `)
           .eq('TUTOR_ID', newTutor.TUTOR_ID)
           .single();
-          
+
         if (finalError) throw finalError;
         return finalData as (DBTutor & { t_tutor_career: DBTutorCareer[] });
       }
@@ -283,11 +256,12 @@ export const createTutor = async (req: AuthRequest, res: Response) => {
       return newTutor;
     });
 
-    // Registrar auditoría
     await auditCreate(req, 't_tutors', dbData, TUTOR_COLUMNS_TO_AUDIT);
-
     res.status(201).json(mapDBToFrontend(data));
   } catch (error: unknown) {
+    if ((error as any)?.code === 'PERSON_ALREADY_EXISTS') {
+      return res.status(409).json({ message: (error as any).message });
+    }
     handleDbError(res, error);
   }
 };
@@ -296,8 +270,33 @@ export const updateTutor = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const t = req.body;
+    const ci = `${t.identificationPrefix}-${t.identificationNumber}`;
+
+    // Update person record
+    const currentTutor = await dbManager.withRetry(async (supabase) => {
+      const { data, error } = await supabase
+        .from(TABLE_NAME)
+        .select('person_id')
+        .eq('TUTOR_ID', id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    }, 'getTutorForUpdate');
+
+    if (currentTutor?.person_id) {
+      await personService.updatePerson(currentTutor.person_id, {
+        firstName: t.firstName,
+        middleName: t.middleName,
+        lastName: t.lastName,
+        secondLastName: t.secondLastName,
+        email: t.email,
+        phone: t.phone,
+        gender: t.sex,
+      });
+    }
+
     const dbData = {
-      TUTOR_CI: `${t.identificationPrefix}-${t.identificationNumber}`,
+      TUTOR_CI: ci,
       NAME: t.firstName,
       SECOND_NAME: t.middleName || null,
       SURNAME: t.lastName,
@@ -314,14 +313,12 @@ export const updateTutor = async (req: AuthRequest, res: Response) => {
     };
 
     const data = await dbManager.withRetry(async (supabase) => {
-      // 0. Obtener datos antiguos para auditoría
       const { data: oldData } = await supabase
         .from(TABLE_NAME)
         .select('*')
         .eq('TUTOR_ID', id)
         .single();
 
-      // 1. Actualizar tutor
       const { error: tutorError } = await supabase
         .from(TABLE_NAME)
         .update(dbData)
@@ -329,8 +326,6 @@ export const updateTutor = async (req: AuthRequest, res: Response) => {
 
       if (tutorError) throw tutorError;
 
-      // 2. Actualizar carreras (Borrar y reinsertar)
-      // Primero borramos todas las asociaciones actuales
       const { error: deleteError } = await supabase
         .from('t_tutor_career')
         .delete()
@@ -338,7 +333,6 @@ export const updateTutor = async (req: AuthRequest, res: Response) => {
 
       if (deleteError) throw deleteError;
 
-      // Luego insertamos las nuevas si existen
       if (Array.isArray(t.carreras) && t.carreras.length > 0) {
         const careerData = t.carreras.map((careerId: string | number) => ({
           TUTOR_ID: id,
@@ -352,13 +346,12 @@ export const updateTutor = async (req: AuthRequest, res: Response) => {
         if (careerError) throw careerError;
       }
 
-      // Volver a obtener el tutor con las carreras para el retorno
       const { data: finalData, error: finalError } = await supabase
         .from(TABLE_NAME)
         .select(`
-          *, 
+          *,
           t_tutor_career(
-            CAREER_ID, 
+            CAREER_ID,
             t_career(
               t_career_internship_type(
                 t_internship_type(NAME)
@@ -368,10 +361,9 @@ export const updateTutor = async (req: AuthRequest, res: Response) => {
         `)
         .eq('TUTOR_ID', id)
         .single();
-        
+
       if (finalError) throw finalError;
 
-      // Registrar auditoría
       if (oldData) {
         await auditUpdate(req, 't_tutors', oldData as Record<string, any>, dbData, TUTOR_COLUMNS_TO_AUDIT);
       }
@@ -389,7 +381,6 @@ export const deleteTutor = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     await dbManager.withRetry(async (supabase) => {
-      // Obtener datos antes de eliminar para auditoría
       const { data: deletedData } = await supabase
         .from(TABLE_NAME)
         .select('*')
@@ -403,7 +394,6 @@ export const deleteTutor = async (req: AuthRequest, res: Response) => {
 
       if (error) throw error;
 
-      // Registrar auditoría
       if (deletedData) {
         await auditDelete(req, 't_tutors', deletedData as Record<string, any>, TUTOR_COLUMNS_TO_AUDIT);
       }
@@ -420,10 +410,9 @@ export const toggleTutorStatus = async (req: AuthRequest, res: Response) => {
     const { status } = req.body;
 
     const data = await dbManager.withRetry(async (supabase) => {
-      // Obtener estado anterior
       const { data: oldData } = await supabase
         .from(TABLE_NAME)
-        .select('STATUS')
+        .select('STATUS, person_id')
         .eq('TUTOR_ID', id)
         .single();
 
@@ -434,18 +423,20 @@ export const toggleTutorStatus = async (req: AuthRequest, res: Response) => {
 
       if (error) throw error;
 
-      // Registrar auditoría
+      if (oldData?.person_id) {
+        await personService.updatePerson(oldData.person_id, { status: status ? 1 : 0 });
+      }
+
       if (oldData && oldData.STATUS !== (status ? 1 : 0)) {
         await auditStatusChange(req, 't_tutors', id, oldData.STATUS, status ? 1 : 0);
       }
 
-      // Obtener datos completos para el retorno
       const { data: finalData, error: finalError } = await supabase
         .from(TABLE_NAME)
         .select(`
-          *, 
+          *,
           t_tutor_career(
-            CAREER_ID, 
+            CAREER_ID,
             t_career(
               t_career_internship_type(
                 t_internship_type(NAME)
@@ -469,14 +460,14 @@ export const toggleTutorStatus = async (req: AuthRequest, res: Response) => {
 export const getTutorByCi = async (req: Request, res: Response) => {
   try {
     const { ci } = req.params;
-    
+
     const data = await dbManager.withRetry(async (supabase) => {
       const { data: tutor, error } = await supabase
         .from(TABLE_NAME)
         .select(`
-          *, 
+          *,
           t_tutor_career(
-            CAREER_ID, 
+            CAREER_ID,
             t_career(
               t_career_internship_type(
                 t_internship_type(NAME)
@@ -488,9 +479,7 @@ export const getTutorByCi = async (req: Request, res: Response) => {
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          return null;
-        }
+        if (error.code === 'PGRST116') return null;
         throw error;
       }
 
@@ -498,8 +487,6 @@ export const getTutorByCi = async (req: Request, res: Response) => {
     });
 
     if (!data) {
-      // Retornamos 200 con data: null para que el frontend maneje la ausencia
-      // sin disparar errores globales de interceptores.
       return res.status(200).json({ data: null, message: 'Tutor no encontrado' });
     }
 

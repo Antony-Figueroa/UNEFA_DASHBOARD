@@ -56,6 +56,8 @@ export interface Student {
   status: boolean;
   /** Indica si el estudiante tiene registros relacionados en otros módulos */
   isInUse?: boolean;
+  /** Referencia a la persona unificada en t_persons */
+  personId?: string;
 }
 
 /**

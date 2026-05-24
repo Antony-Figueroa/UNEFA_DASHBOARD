@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
+import { personService } from '../services/person.service.js';
 
 const TABLE_NAME = 't_institution_manager';
 const PIVOT_TABLE = 't_institution_manager_institution';
@@ -113,7 +114,8 @@ const mapDBToFrontend = (r: DBInstitutionalResponsible) => ({
   cargo: r.institutions?.[0]?.cargo || r.cargo || undefined,
   institutions: r.institutions || [],
   status: r.STATUS === 1,
-  registrationDate: r.CREATION_DATE
+  registrationDate: r.CREATION_DATE,
+  personId: (r as any).PERSON_ID !== undefined ? String((r as any).PERSON_ID) : undefined,
 });
 
 export const getInstitutionalResponsibles = async (_req: Request, res: Response) => {
@@ -309,7 +311,42 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
         throw err;
       }
 
-      let dbData = buildDbData();
+      // Crear persona en t_persons
+      const managerCi = `${r.identificationPrefix}-${r.identificationNumber}`;
+      let personId: number;
+      try {
+        const person = await personService.createPerson({
+          ci: managerCi,
+          firstName: String(r.firstName).toUpperCase(),
+          middleName: r.middleName ? String(r.middleName).toUpperCase() : undefined,
+          lastName: String(r.lastName).toUpperCase(),
+          secondLastName: r.secondLastName ? String(r.secondLastName).toUpperCase() : undefined,
+          phone: r.phone,
+          email: String(r.email).toUpperCase(),
+        });
+        personId = person.personId;
+      } catch (personErr: unknown) {
+        const pErr = personErr as { code?: string };
+        if (pErr.code === 'PERSON_ALREADY_EXISTS') {
+          const existingPerson = await personService.getPersonByCi(managerCi);
+          personId = existingPerson!.personId;
+          await personService.updatePerson(personId, {
+            firstName: String(r.firstName).toUpperCase(),
+            middleName: r.middleName ? String(r.middleName).toUpperCase() : undefined,
+            lastName: String(r.lastName).toUpperCase(),
+            secondLastName: r.secondLastName ? String(r.secondLastName).toUpperCase() : undefined,
+            phone: r.phone,
+            email: String(r.email).toUpperCase(),
+          });
+        } else {
+          throw pErr;
+        }
+      }
+
+      let dbData = {
+        ...buildDbData(),
+        PERSON_ID: personId,
+      };
       let { data: newManager, error } = await supabase
         .from(TABLE_NAME)
         .insert([dbData])
@@ -392,6 +429,32 @@ export const updateInstitutionalResponsible = async (req: Request, res: Response
     if (r.status !== undefined) dbData.STATUS = r.status ? 1 : 0;
 
     const data = await dbManager.withRetry(async (supabase) => {
+      // 0. Obtener el responsable actual para conocer su PERSON_ID
+      const { data: currentManager, error: fetchError } = await supabase
+        .from(TABLE_NAME)
+        .select('PERSON_ID')
+        .eq('MANAGER_ID', id)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+      if (!currentManager) {
+        const err = new Error('Responsable no encontrado') as AppError;
+        err.code = '404';
+        throw err;
+      }
+
+      // Actualizar persona en t_persons
+      if (currentManager.PERSON_ID) {
+        await personService.updatePerson(currentManager.PERSON_ID, {
+          firstName: r.firstName !== undefined ? String(r.firstName).toUpperCase() : undefined,
+          middleName: r.middleName !== undefined ? (r.middleName ? String(r.middleName).toUpperCase() : null) : undefined,
+          lastName: r.lastName !== undefined ? String(r.lastName).toUpperCase() : undefined,
+          secondLastName: r.secondLastName !== undefined ? (r.secondLastName ? String(r.secondLastName).toUpperCase() : null) : undefined,
+          phone: r.phone,
+          email: r.email !== undefined ? String(r.email).toUpperCase() : undefined,
+        });
+      }
+
       // 1. Actualizar el registro base
       const { error: updateError } = await supabase
         .from(TABLE_NAME)
@@ -487,6 +550,11 @@ export const toggleInstitutionalResponsibleStatus = async (req: Request, res: Re
         .single();
 
       if (error) throw error;
+
+      // Actualizar persona en t_persons
+      if (updatedData.PERSON_ID) {
+        await personService.updatePerson(updatedData.PERSON_ID, { status: status ? 1 : 0 });
+      }
 
       // Obtener instituciones (ahora devuelve array de objetos)
       const institutions = await getInstitutionsForManager(supabase, parseInt(id));

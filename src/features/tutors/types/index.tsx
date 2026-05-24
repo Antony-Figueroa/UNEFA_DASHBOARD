@@ -53,6 +53,8 @@ export interface Tutor {
   practiceTypes?: string[];
   /** Indica si el tutor está en uso en alguna práctica (opcional) */
   isInUse?: boolean;
+  /** Referencia a la persona unificada en t_persons */
+  personId?: string;
 }
 
 /**

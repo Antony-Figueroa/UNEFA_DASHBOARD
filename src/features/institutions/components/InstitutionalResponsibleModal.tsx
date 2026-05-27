@@ -205,134 +205,161 @@ export default function InstitutionalResponsibleModal({
       }
     };
 
-   // Fill form fields with existing responsible data
-   const fillFormWithExistingData = (responsible: any) => {
-     // Format CI for display
-     const { identificationPrefix, identificationNumber } = responsible;
-     const fullCi = `${identificationPrefix}-${identificationNumber}`;
-     setDisplayIdentificationNumber(formatCedulaDisplay(fullCi.replace('-', ''), false));
-     
-     // Extract phone prefix and number
-     let phonePrefix = '0412';
-     let phoneNumber = '';
-     if (responsible.phone) {
-       const cleanPhone = responsible.phone.replace(/\D/g, '');
-       if (cleanPhone.length >= 4) {
-         phonePrefix = cleanPhone.substring(0, 4);
-         phoneNumber = cleanPhone.substring(4);
-       } else {
-         phoneNumber = cleanPhone;
-       }
-     }
-     setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
-     
-     // Set form values
-     setValue("identificationPrefix", identificationPrefix, { shouldValidate: true, shouldDirty: true });
-     setValue("identificationNumber", identificationNumber, { shouldValidate: true, shouldDirty: true });
-     setValue("firstName", responsible.firstName || '', { shouldValidate: true, shouldDirty: true });
-     setValue("middleName", responsible.middleName || '', { shouldValidate: true, shouldDirty: true });
-     setValue("lastName", responsible.lastName || '', { shouldValidate: true, shouldDirty: true });
-     setValue("secondLastName", responsible.secondLastName || '', { shouldValidate: true, shouldDirty: true });
-     setValue("phonePrefix", phonePrefix, { shouldValidate: true, shouldDirty: true });
-     setValue("phoneNumber", phoneNumber, { shouldValidate: true, shouldDirty: true });
-     setValue("email", responsible.email || '', { shouldValidate: true, shouldDirty: true });
-     
-// Handle institutions - map to form structure
-      if (responsible.institutions && Array.isArray(responsible.institutions)) {
-        const formInstitutions = responsible.institutions.map((inst: any) => ({
-          institutionId: String(inst.institutionId),
-          institutionName: inst.institutionName || '',
-          cargo: inst.cargo || ''
-        }));
-        setValue("institutions", formInstitutions, { shouldValidate: true, shouldDirty: true });
-      } else {
-        setValue("institutions", [], { shouldValidate: true, shouldDirty: true });
-      }
-    };
-
-   // Pre-fill form fields from existing person data (not yet a responsible)
-   const preFillFromPersonData = (person: any) => {
-     const { identificationPrefix, identificationNumber } = person;
-     const fullCi = `${identificationPrefix}-${identificationNumber}`;
-     setDisplayIdentificationNumber(formatCedulaDisplay(fullCi.replace('-', ''), false));
-
-     // Extract phone prefix and number
-     let phonePrefix = '0412';
-     let phoneNumber = '';
-     if (person.phone) {
-       const cleanPhone = person.phone.replace(/\D/g, '');
-       if (cleanPhone.length >= 4) {
-         phonePrefix = cleanPhone.substring(0, 4);
-         phoneNumber = cleanPhone.substring(4);
-       } else {
-         phoneNumber = cleanPhone;
-       }
-     }
-     setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
-
-     // Set form values (person-level only, no institutions)
-     setValue("identificationPrefix", identificationPrefix, { shouldValidate: true, shouldDirty: true });
-     setValue("identificationNumber", identificationNumber, { shouldValidate: true, shouldDirty: true });
-     setValue("firstName", person.firstName || '', { shouldValidate: true, shouldDirty: true });
-     setValue("middleName", person.middleName || '', { shouldValidate: true, shouldDirty: true });
-     setValue("lastName", person.lastName || '', { shouldValidate: true, shouldDirty: true });
-     setValue("secondLastName", person.secondLastName || '', { shouldValidate: true, shouldDirty: true });
-     setValue("phonePrefix", phonePrefix, { shouldValidate: true, shouldDirty: true });
-     setValue("phoneNumber", phoneNumber, { shouldValidate: true, shouldDirty: true });
-     setValue("email", person.email || '', { shouldValidate: true, shouldDirty: true });
-     setValue("institutions", [], { shouldValidate: true, shouldDirty: true });
-
-     addToast({
-       variant: "info",
-       title: "Persona existente",
-       message: "Esta persona ya está registrada en el sistema. Se han precargado sus datos.",
-     });
-   };
-
   // State for new institution modal
   const [isNewInstitutionModalOpen, setIsNewInstitutionModalOpen] = useState(false);
   const { addInstitution } = useInstitutions();
 
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    watch,
+    setValue,
+    setError,
+    clearErrors,
+    formState: { errors, isSubmitted, isDirty, isValid },
+   } = useForm<RespFormData>({
+    resolver: zodResolver(respSchema),
+    mode: "onChange",
+    defaultValues: {
+      identificationPrefix: "V",
+      identificationNumber: "",
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      secondLastName: "",
+      phonePrefix: "",
+      phoneNumber: "",
+      email: "",
+      institutions: [],
+    },
+  });
+
+  // Fill form fields with existing responsible data
+  const fillFormWithExistingData = (responsible: any) => {
+    // Format CI for display
+    const { identificationPrefix, identificationNumber } = responsible;
+    const fullCi = `${identificationPrefix}-${identificationNumber}`;
+    setDisplayIdentificationNumber(formatCedulaDisplay(fullCi.replace('-', ''), false));
+    
+    // Extract phone prefix and number
+    let phonePrefix = '0412';
+    let phoneNumber = '';
+    if (responsible.phone) {
+      const cleanPhone = responsible.phone.replace(/\D/g, '');
+      if (cleanPhone.length >= 4) {
+        phonePrefix = cleanPhone.substring(0, 4);
+        phoneNumber = cleanPhone.substring(4);
+      } else {
+        phoneNumber = cleanPhone;
+      }
+    }
+    setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+    
+    // Set form values
+    setValue("identificationPrefix", identificationPrefix, { shouldValidate: true, shouldDirty: true });
+    setValue("identificationNumber", identificationNumber, { shouldValidate: true, shouldDirty: true });
+    setValue("firstName", responsible.firstName || '', { shouldValidate: true, shouldDirty: true });
+    setValue("middleName", responsible.middleName || '', { shouldValidate: true, shouldDirty: true });
+    setValue("lastName", responsible.lastName || '', { shouldValidate: true, shouldDirty: true });
+    setValue("secondLastName", responsible.secondLastName || '', { shouldValidate: true, shouldDirty: true });
+    setValue("phonePrefix", phonePrefix, { shouldValidate: true, shouldDirty: true });
+    setValue("phoneNumber", phoneNumber, { shouldValidate: true, shouldDirty: true });
+    setValue("email", responsible.email || '', { shouldValidate: true, shouldDirty: true });
+    
+// Handle institutions - map to form structure
+     if (responsible.institutions && Array.isArray(responsible.institutions)) {
+       const formInstitutions = responsible.institutions.map((inst: any) => ({
+         institutionId: String(inst.institutionId),
+         institutionName: inst.institutionName || '',
+         cargo: inst.cargo || ''
+       }));
+       setValue("institutions", formInstitutions, { shouldValidate: true, shouldDirty: true });
+     } else {
+       setValue("institutions", [], { shouldValidate: true, shouldDirty: true });
+     }
+   };
+
+  // Pre-fill form fields from existing person data (not yet a responsible)
+  const preFillFromPersonData = (person: any) => {
+    const { identificationPrefix, identificationNumber } = person;
+    const fullCi = `${identificationPrefix}-${identificationNumber}`;
+    setDisplayIdentificationNumber(formatCedulaDisplay(fullCi.replace('-', ''), false));
+
+    // Extract phone prefix and number
+    let phonePrefix = '0412';
+    let phoneNumber = '';
+    if (person.phone) {
+      const cleanPhone = person.phone.replace(/\D/g, '');
+      if (cleanPhone.length >= 4) {
+        phonePrefix = cleanPhone.substring(0, 4);
+        phoneNumber = cleanPhone.substring(4);
+      } else {
+        phoneNumber = cleanPhone;
+      }
+    }
+    setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+
+    // Set form values (person-level only, no institutions)
+    setValue("identificationPrefix", identificationPrefix, { shouldValidate: true, shouldDirty: true });
+    setValue("identificationNumber", identificationNumber, { shouldValidate: true, shouldDirty: true });
+    setValue("firstName", person.firstName || '', { shouldValidate: true, shouldDirty: true });
+    setValue("middleName", person.middleName || '', { shouldValidate: true, shouldDirty: true });
+    setValue("lastName", person.lastName || '', { shouldValidate: true, shouldDirty: true });
+    setValue("secondLastName", person.secondLastName || '', { shouldValidate: true, shouldDirty: true });
+    setValue("phonePrefix", phonePrefix, { shouldValidate: true, shouldDirty: true });
+    setValue("phoneNumber", phoneNumber, { shouldValidate: true, shouldDirty: true });
+    setValue("email", person.email || '', { shouldValidate: true, shouldDirty: true });
+    setValue("institutions", [], { shouldValidate: true, shouldDirty: true });
+
+    addToast({
+      variant: "info",
+      title: "Persona existente",
+      message: "Esta persona ya está registrada en el sistema. Se han precargado sus datos.",
+    });
+   };
+
 // Handle identification number input change with formatting
-    const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const input = e.target.value;
-      // Solo permitir números
-      const digitsOnly = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
-      const formatted = formatCedulaDisplay(digitsOnly, false);
-      setDisplayIdentificationNumber(formatted);
-      setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
-      clearErrors("identificationNumber");
-      
-      // Si se cambia la cédula y hay un existingResponsible, limpiar el formulario
-      if (existingResponsible) {
-        const currentStoredDigits = existingResponsible.identificationNumber?.replace(/\D/g, '') || '';
-        // Si el usuario borró al menos 1 carácter o cambió algo
-        if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits) {
-          setExistingResponsible(null);
-          setViewOnlyMode(false);
-          clearErrors("identificationNumber");
-          // Resetear los campos del formulario
-          reset({
-            identificationPrefix: "",
-            identificationNumber: "",
-            firstName: "",
-            middleName: "",
-            lastName: "",
-            secondLastName: "",
-            phonePrefix: "",
-            phoneNumber: "",
-            email: "",
-            institutions: []
-          });
-          setDisplayPhoneNumber("");
-        }
-      }
-      
+   const handleIdentificationNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+     const input = e.target.value;
+     // Solo permitir números
+     const digitsOnly = input.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
+     const formatted = formatCedulaDisplay(digitsOnly, false);
+     setDisplayIdentificationNumber(formatted);
+     setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
+     clearErrors("identificationNumber");
+     
+     // Si se cambia la cédula y hay un existingResponsible, limpiar el formulario
+     if (existingResponsible) {
+       const currentStoredDigits = existingResponsible.identificationNumber?.replace(/\D/g, '') || '';
+       // Si el usuario borró al menos 1 carácter o cambió algo
+       if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits) {
+         setExistingResponsible(null);
+         setViewOnlyMode(false);
+         clearErrors("identificationNumber");
+         // Resetear los campos del formulario
+         reset({
+           identificationPrefix: "",
+           identificationNumber: "",
+           firstName: "",
+           middleName: "",
+           lastName: "",
+           secondLastName: "",
+           phonePrefix: "",
+           phoneNumber: "",
+           email: "",
+           institutions: []
+         });
+         setDisplayPhoneNumber("");
+       }
+     }
+     
 // Trigger CI check ONLY when we have exactly 7 or 8 digits (not before)
-      if (!existingResponsible && !editingResp && (digitsOnly.length === 7 || digitsOnly.length === 8)) {
-        checkInstitutionalResponsibleByCi(digitsOnly);
-      }
-    };
+     if (!existingResponsible && !editingResp && (digitsOnly.length === 7 || digitsOnly.length === 8)) {
+       checkInstitutionalResponsibleByCi(digitsOnly);
+     }
+   };
 
   // CI blur handler: check availability when user leaves the CI field
   const handleCiBlur = useCallback(
@@ -411,33 +438,6 @@ export default function InstitutionalResponsibleModal({
     },
     [editingResp, setError, clearErrors],
   );
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    watch,
-    setValue,
-    setError,
-    clearErrors,
-    formState: { errors, isSubmitted, isDirty, isValid },
-   } = useForm<RespFormData>({
-    resolver: zodResolver(respSchema),
-    mode: "onChange",
-    defaultValues: {
-      identificationPrefix: "V",
-      identificationNumber: "",
-      firstName: "",
-      middleName: "",
-      lastName: "",
-      secondLastName: "",
-      phonePrefix: "",
-      phoneNumber: "",
-      email: "",
-      institutions: [],
-    },
-  });
 
   const {
     showConfirmation,

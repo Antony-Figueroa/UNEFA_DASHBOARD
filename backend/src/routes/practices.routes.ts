@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requirePermission } from '../middlewares/auth.middleware.js';
 import { 
   getPracticesWithEvaluations,
   getEvaluationStats,
@@ -12,10 +13,10 @@ const router = Router();
 console.log('[PRACTICES ROUTES] Registered routes:', router.stack.map(r => r.route?.path));
 
 // Rutas estáticas PRIMERO (orden correcto en Express)
-router.get('/evaluations', getPracticesWithEvaluations);
-router.get('/evaluations/stats', getEvaluationStats);
-router.get('/culmination/stats', getCulminationStats);
+router.get('/evaluations', requirePermission('practices:view'), getPracticesWithEvaluations);
+router.get('/evaluations/stats', requirePermission('practices:view'), getEvaluationStats);
+router.get('/culmination/stats', requirePermission('practices:view'), getCulminationStats);
 // Ruta con parámetro DESPUÉS de las estáticas
-router.get('/detail/:id', getStudentDetail);
+router.get('/detail/:id', requirePermission('practices:view'), getStudentDetail);
 
 export default router;

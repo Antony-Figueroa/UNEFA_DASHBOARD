@@ -75,6 +75,37 @@ export const getStudentByCi = async (ci: string): Promise<Student | null> => {
   }
 };
 
+/**
+ * Resultado de la consulta a la API externa de cédula.
+ */
+export interface CedulaLookupResult {
+  nacionalidad: string;
+  cedula: string;
+  rif: string;
+  primerNombre: string;
+  segundoNombre: string;
+  primerApellido: string;
+  segundoApellido: string;
+}
+
+/**
+ * Consulta la API externa de cédula.com.ve para obtener datos personales
+ * a partir del número de cédula. Permite autocompletar nombres y apellidos
+ * durante el registro de estudiantes.
+ *
+ * @param ci - Cédula completa con prefijo (formato: V-12345678)
+ * @returns Datos de la persona o null si no se encuentra
+ */
+export const lookupCi = async (ci: string): Promise<CedulaLookupResult | null> => {
+  try {
+    const response = await apiClient.get(`${API_URL}/lookup-ci/${encodeURIComponent(ci)}`, { silent: true } as any);
+    return response.data?.data || null;
+  } catch (error) {
+    console.error('[studentsService] Error al consultar API de cédula:', error);
+    return null;
+  }
+};
+
 export interface ChangeRegistrationPayload {
   changeType: 'institution' | 'tutor';
   newValue: string;

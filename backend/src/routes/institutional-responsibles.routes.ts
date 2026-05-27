@@ -8,15 +8,18 @@ import {
   deleteInstitutionalResponsible, 
   toggleInstitutionalResponsibleStatus 
 } from '../controllers/institutional-responsibles.controller.js';
+import { authenticateToken, requirePermission } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-router.get('/', getInstitutionalResponsibles);
-router.get('/by-ci/:ci', getInstitutionalResponsibleByCi);
-router.get('/check-availability', checkIdAvailability);
-router.post('/', createInstitutionalResponsible);
-router.put('/:id', updateInstitutionalResponsible);
-router.delete('/:id', deleteInstitutionalResponsible);
-router.patch('/:id/status', toggleInstitutionalResponsibleStatus);
+router.use(authenticateToken);
+
+router.get('/', requirePermission('institutions:view'), getInstitutionalResponsibles);
+router.get('/by-ci/:ci', requirePermission('institutions:view'), getInstitutionalResponsibleByCi);
+router.get('/check-availability', requirePermission('institutions:view'), checkIdAvailability);
+router.post('/', requirePermission('institutions:create'), createInstitutionalResponsible);
+router.put('/:id', requirePermission('institutions:edit'), updateInstitutionalResponsible);
+router.delete('/:id', requirePermission('institutions:delete'), deleteInstitutionalResponsible);
+router.patch('/:id/status', requirePermission('institutions:edit'), toggleInstitutionalResponsibleStatus);
 
 export default router;

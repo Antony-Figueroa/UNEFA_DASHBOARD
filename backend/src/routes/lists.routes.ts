@@ -1,21 +1,23 @@
 import { Router } from 'express';
+import { requirePermission } from '../middlewares/auth.middleware.js';
 import * as listsController from '../controllers/lists.controller.js';
 
 const router = Router();
 
-router.get('/', listsController.getAllLists);
-router.get('/:name', listsController.getListByName);
-router.post('/multiple', listsController.getMultipleListsByNames);
+// Read routes - require lists:view
+router.get('/', requirePermission('lists:view'), listsController.getAllLists);
+router.get('/:name', requirePermission('lists:view'), listsController.getListByName);
+router.post('/multiple', requirePermission('lists:view'), listsController.getMultipleListsByNames);
 
-// Management routes
-router.post('/', listsController.createList);
-router.put('/:id', listsController.updateList);
-router.delete('/:id', listsController.deleteList);
-router.patch('/:id/status', listsController.toggleListStatus);
+// Management routes - require lists:edit
+router.post('/', requirePermission('lists:edit'), listsController.createList);
+router.put('/:id', requirePermission('lists:edit'), listsController.updateList);
+router.delete('/:id', requirePermission('lists:edit'), listsController.deleteList);
+router.patch('/:id/status', requirePermission('lists:edit'), listsController.toggleListStatus);
 
-router.post('/values', listsController.createValue);
-router.put('/values/:id', listsController.updateValue);
-router.delete('/values/:id', listsController.deleteValue);
-router.patch('/values/:id/status', listsController.toggleValueStatus);
+router.post('/values', requirePermission('lists:edit'), listsController.createValue);
+router.put('/values/:id', requirePermission('lists:edit'), listsController.updateValue);
+router.delete('/values/:id', requirePermission('lists:edit'), listsController.deleteValue);
+router.patch('/values/:id/status', requirePermission('lists:edit'), listsController.toggleValueStatus);
 
 export default router;

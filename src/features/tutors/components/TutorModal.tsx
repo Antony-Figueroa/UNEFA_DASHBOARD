@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, lazy } from "react";
+import { useEffect, useState, useMemo, useCallback, lazy } from "react";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -9,7 +9,7 @@ import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import CustomSelect from "../../../components/form/CustomSelect";
 import MultiSelect from "../../../components/form/MultiSelect";
-import Badge from "../../../components/ui/badge/Badge";
+
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { getCareers } from "../../careers/services/careersService";
@@ -24,7 +24,8 @@ import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { useToast } from "../../../context/toast";
-import { formatCedulaDisplay, formatPhoneLocalDisplay, formatPhoneDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS, PHONE_LOCAL_MAX_LENGTH } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS, PHONE_LOCAL_MAX_LENGTH } from "../../../utils/inputFormat";
+import PersonFormFields from "../../persons/components/PersonFormFields";
 import { getTutorByCi } from "../services/tutorsService";
 import { NAME_PATTERN, SAFE_EMAIL_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
@@ -91,7 +92,167 @@ export default function TutorModal({
    // State for internship type modal (triggered from CareerModal)
    const [isInternshipTypeModalOpen, setIsInternshipTypeModalOpen] = useState(false);
    const [editingInternshipType, setEditingInternshipType] = useState<InternshipType | null>(null);
-   const [existingInternshipTypes, setExistingInternshipTypes] = useState<InternshipType[]>([]);
+    const [existingInternshipTypes, setExistingInternshipTypes] = useState<InternshipType[]>([]);
+
+  const tutorSchema = useMemo(() => z.object({
+    identificationPrefix: z.string().min(1, "Seleccione el tipo"),
+    identificationNumber: z.string()
+      .min(6, "La cédula debe tener al menos 6 dígitos")
+      .max(CEDULA_MAX_DIGITS, `La cédula no puede exceder los ${CEDULA_MAX_DIGITS} dígitos`)
+      .regex(/^\d+$/, "Solo se admiten números"),
+    firstName: z.string()
+      .min(1, "El primer nombre es obligatorio")
+      .max(100, "El nombre es demasiado largo")
+      .regex(NAME_PATTERN, "Solo letras y espacios")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val.toUpperCase()),
+    middleName: z.string()
+      .max(100, "El nombre es demasiado largo")
+      .refine(val => !val || NAME_PATTERN.test(val), { message: "Solo letras y espacios" })
+      .refine(val => !val || isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val ? val.toUpperCase() : "")
+      .optional()
+      .or(z.literal("")),
+    lastName: z.string()
+      .min(1, "El primer apellido es obligatorio")
+      .max(100, "El apellido es demasiado largo")
+      .regex(NAME_PATTERN, "Solo letras y espacios")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val.toUpperCase()),
+    secondLastName: z.string()
+      .max(100, "El apellido es demasiado largo")
+      .refine(val => !val || NAME_PATTERN.test(val), { message: "Solo letras y espacios" })
+      .refine(val => !val || isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val ? val.toUpperCase() : "")
+      .optional()
+      .or(z.literal("")),
+    sex: z.string().min(1, "Seleccione el sexo"),
+    birthDate: z.string()
+      .min(1, "La fecha de nacimiento es obligatoria")
+      .refine((date) => {
+        if (!date) return false;
+        const birth = new Date(date.includes('T') ? date : `${date}T12:00:00`);
+        if (isNaN(birth.getTime())) return false;
+        const today = new Date();
+        let age = today.getFullYear() - birth.getFullYear();
+        const m = today.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+          age--;
+        }
+        return age >= 16;
+      }, "El tutor debe tener al menos 16 años"),
+    civilStatus: z.string().min(1, "Seleccione el estado civil"),
+    phoneAreaCode: z.string().min(1, "El código de área es obligatorio"),
+    phoneNumber: z.string()
+      .min(1, "El número de teléfono es obligatorio")
+      .length(7, "El número de teléfono debe tener exactamente 7 dígitos")
+      .regex(/^\d+$/, "Solo se admiten números"),
+    email: z.string()
+      .min(1, "El correo es obligatorio")
+      .email("Formato de correo electrónico inválido")
+      .max(255, "El email es demasiado largo")
+      .regex(SAFE_EMAIL_PATTERN, "Email con caracteres no permitidos")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val.toUpperCase()),
+    condition: z.string()
+      .min(1, "La condición es obligatoria")
+      .max(100, "El texto es demasiado largo")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val.toUpperCase()),
+    dedication: z.string()
+      .min(1, "La dedicación es obligatoria")
+      .max(100, "El texto es demasiado largo")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val.toUpperCase()),
+    category: z.string()
+      .min(1, "La categoría es obligatoria")
+      .max(100, "El texto es demasiado largo")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val.toUpperCase()),
+    profession: z.string()
+      .min(1, "El título es obligatorio")
+      .max(200, "El texto es demasiado largo")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val.toUpperCase()),
+    titulo: z.string()
+      .min(1, "El grado de instrucción es obligatorio")
+      .max(200, "El texto es demasiado largo")
+      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+      .transform(val => val.toUpperCase()),
+    carreras: z.array(z.string()).min(1, "Debe seleccionar al menos una carrera"),
+  }).superRefine((data, ctx) => {
+    // Validar duplicidad de cédula
+    const isIdDuplicate = tutors.some(
+      t => t.tutorId !== editingTutor?.tutorId && 
+           t.identificationNumber === data.identificationNumber && 
+           t.identificationPrefix === data.identificationPrefix
+    );
+
+    if (isIdDuplicate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Esta cédula ya se encuentra registrada",
+        path: ["identificationNumber"],
+      });
+    }
+
+    // Validar duplicidad de correo
+    const isEmailDuplicate = tutors.some(
+      t => t.tutorId !== editingTutor?.tutorId && 
+           t.email.toLowerCase() === data.email.toLowerCase()
+    );
+
+    if (isEmailDuplicate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Este correo electrónico ya está en uso",
+        path: ["email"],
+      });
+    }
+  }), [tutors, editingTutor]);
+
+  type TutorFormData = z.infer<typeof tutorSchema>;
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    watch,
+    setValue,
+    setError,
+    formState: { errors, isDirty, isValid },
+  } = useForm<TutorFormData>({
+    resolver: zodResolver(tutorSchema),
+    mode: "onChange",
+    defaultValues: {
+      identificationPrefix: "V",
+      identificationNumber: "",
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      secondLastName: "",
+      sex: "",
+      birthDate: "",
+      civilStatus: "",
+      phoneAreaCode: "",
+      phoneNumber: "",
+      email: "",
+      condition: "",
+      dedication: "",
+      category: "",
+      profession: "",
+      titulo: "",
+      carreras: [],
+    },
+  });
+
+  const {
+    showConfirmation,
+    handleCloseAttempt,
+    confirmClose,
+    cancelClose,
+  } = useUnsavedChanges(isDirty, onClose);
 
   // Handle identification number input change with formatting
   const handleIdentificationNumberChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,6 +278,8 @@ export default function TutorModal({
           lastName: "",
           secondLastName: "",
           sex: "",
+          birthDate: "",
+          civilStatus: "",
           phoneAreaCode: "",
           phoneNumber: "",
           email: "",
@@ -153,6 +316,8 @@ export default function TutorModal({
           setValue("lastName", existingData.lastName || "");
           setValue("secondLastName", existingData.secondLastName || "");
           setValue("sex", existingData.sex || "");
+          setValue("birthDate", existingData.birthDate || "");
+          setValue("civilStatus", existingData.civilStatus || "");
           setValue("phoneAreaCode", areaCode);
           setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
           setValue("phoneNumber", phoneNumber);
@@ -181,6 +346,92 @@ export default function TutorModal({
     setValue("phoneNumber", cleaned, { shouldValidate: true, shouldDirty: true });
   };
 
+  // Handler onBlur para verificar CI existente al salir del campo
+  const handleCiBlur = useCallback(
+    async (e: React.FocusEvent<HTMLInputElement>) => {
+      if (!existingTutor && !editingTutor) {
+        const val = e.target.value;
+        const digitsOnly = val.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
+        if (digitsOnly.length >= 6) {
+          setIsCheckingCi(true);
+          const prefix = watch("identificationPrefix") || 'V';
+          const fullCi = `${prefix}-${digitsOnly}`;
+          try {
+            const existingData = await getTutorByCi(fullCi);
+            if (existingData) {
+              setExistingTutor(existingData);
+              setViewOnlyMode(true);
+
+              const areaCode = existingData.phone ? existingData.phone.substring(0, 4) : "";
+              const phoneNumber = existingData.phone ? existingData.phone.substring(4) : "";
+
+              setValue("identificationPrefix", existingData.identificationPrefix || 'V');
+              setDisplayIdentificationNumber(formatCedulaDisplay(existingData.identificationNumber || ''));
+              setValue("identificationNumber", existingData.identificationNumber || '');
+              setValue("firstName", existingData.firstName || "");
+              setValue("middleName", existingData.middleName || "");
+              setValue("lastName", existingData.lastName || "");
+              setValue("secondLastName", existingData.secondLastName || "");
+              setValue("sex", existingData.sex || "");
+              setValue("birthDate", existingData.birthDate || "");
+              setValue("civilStatus", existingData.civilStatus || "");
+              setValue("phoneAreaCode", areaCode);
+              setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+              setValue("phoneNumber", phoneNumber);
+              setValue("email", existingData.email || "");
+              setValue("condition", existingData.condition || "");
+              setValue("dedication", existingData.dedication || "");
+              setValue("category", existingData.category || "");
+              setValue("profession", existingData.profession || "");
+              setValue("titulo", existingData.titulo || "");
+              setValue("carreras", existingData.carreras || []);
+
+              // Toast removido por solicitud del usuario
+              // Las pistas visuales son suficientes
+            }
+          } catch (err) {
+            console.error("Error checking CI:", err);
+          } finally {
+            setIsCheckingCi(false);
+          }
+        }
+      }
+    },
+    [existingTutor, editingTutor, watch, setValue]
+  );
+
+  // Factory de handler para campos de nombre (uppercase)
+  const handleNameChange = useCallback(
+    (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = e.target.value.toUpperCase();
+      setValue(field as any, val, { shouldValidate: true, shouldDirty: true });
+    },
+    [setValue]
+  );
+
+  const birthDate = watch("birthDate");
+
+  // Calcular edad basada en birthDate
+  const age = useMemo(() => {
+    if (!birthDate || birthDate.trim() === "") return null;
+    const birth = new Date(birthDate.includes('T') ? birthDate : `${birthDate}T12:00:00`);
+    if (isNaN(birth.getTime())) return null;
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  }, [birthDate]);
+
+  // Restricción de fecha: 16 años atrás desde hoy
+  const maxDate = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 16);
+    return d;
+  }, []);
+
   // Estado para agregar nuevos valores a las listas
   const [isValueModalOpen, setIsValueModalOpen] = useState(false);
   const [valueModalTitle, setValueModalTitle] = useState<string>("");
@@ -190,18 +441,6 @@ export default function TutorModal({
   const [savingNewValue, setSavingNewValue] = useState(false);
 
   // Fallbacks for when t_list data is not available
-  const NATIONALITY_OPTIONS = options["Nacionalidad"] || [
-    { value: "V", label: "V" },
-    { value: "E", label: "E" },
-  ];
-
-  const SEX_OPTIONS = options["Sexo"] || [
-    { value: "FEMENINO", label: "FEMENINO" },
-    { value: "MASCULINO", label: "MASCULINO" },
-  ];
-
-  const PHONE_AREA_OPTIONS = options["PREFIJO"] || [];
-
   const CONDITION_OPTIONS = options["Condición"] || [
     { value: "ORDINARIO", label: "ORDINARIO" },
     { value: "CONTRATADO", label: "CONTRATADO" },
@@ -233,6 +472,7 @@ export default function TutorModal({
           "Nacionalidad",
           "Sexo",
           "PREFIJO",
+          "Registro Civil",
           "Condición",
           "Dedicación",
           "Categoría",
@@ -345,149 +585,6 @@ export default function TutorModal({
     }
   };
 
-  const tutorSchema = useMemo(() => z.object({
-    identificationPrefix: z.string().min(1, "Seleccione el tipo"),
-    identificationNumber: z.string()
-      .min(6, "La cédula debe tener al menos 6 dígitos")
-      .max(CEDULA_MAX_DIGITS, `La cédula no puede exceder los ${CEDULA_MAX_DIGITS} dígitos`)
-      .regex(/^\d+$/, "Solo se admiten números"),
-    firstName: z.string()
-      .min(1, "El primer nombre es obligatorio")
-      .max(100, "El nombre es demasiado largo")
-      .regex(NAME_PATTERN, "Solo letras y espacios")
-      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
-      .transform(val => val.toUpperCase()),
-    middleName: z.string()
-      .max(100, "El nombre es demasiado largo")
-      .refine(val => !val || NAME_PATTERN.test(val), { message: "Solo letras y espacios" })
-      .refine(val => !val || isSafeInput(val), { message: "Caracteres no permitidos" })
-      .transform(val => val ? val.toUpperCase() : "")
-      .optional()
-      .or(z.literal("")),
-    lastName: z.string()
-      .min(1, "El primer apellido es obligatorio")
-      .max(100, "El apellido es demasiado largo")
-      .regex(NAME_PATTERN, "Solo letras y espacios")
-      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
-      .transform(val => val.toUpperCase()),
-    secondLastName: z.string()
-      .max(100, "El apellido es demasiado largo")
-      .refine(val => !val || NAME_PATTERN.test(val), { message: "Solo letras y espacios" })
-      .refine(val => !val || isSafeInput(val), { message: "Caracteres no permitidos" })
-      .transform(val => val ? val.toUpperCase() : "")
-      .optional()
-      .or(z.literal("")),
-    sex: z.string().min(1, "Seleccione el sexo"),
-    phoneAreaCode: z.string().min(1, "El código de área es obligatorio"),
-    phoneNumber: z.string()
-      .min(1, "El número de teléfono es obligatorio")
-      .length(7, "El número de teléfono debe tener exactamente 7 dígitos")
-      .regex(/^\d+$/, "Solo se admiten números"),
-    email: z.string()
-      .min(1, "El correo es obligatorio")
-      .email("Formato de correo electrónico inválido")
-      .max(255, "El email es demasiado largo")
-      .regex(SAFE_EMAIL_PATTERN, "Email con caracteres no permitidos")
-      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
-      .transform(val => val.toUpperCase()),
-    condition: z.string()
-      .min(1, "La condición es obligatoria")
-      .max(100, "El texto es demasiado largo")
-      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
-      .transform(val => val.toUpperCase()),
-    dedication: z.string()
-      .min(1, "La dedicación es obligatoria")
-      .max(100, "El texto es demasiado largo")
-      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
-      .transform(val => val.toUpperCase()),
-    category: z.string()
-      .min(1, "La categoría es obligatoria")
-      .max(100, "El texto es demasiado largo")
-      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
-      .transform(val => val.toUpperCase()),
-    profession: z.string()
-      .min(1, "El título es obligatorio")
-      .max(200, "El texto es demasiado largo")
-      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
-      .transform(val => val.toUpperCase()),
-    titulo: z.string()
-      .min(1, "El grado de instrucción es obligatorio")
-      .max(200, "El texto es demasiado largo")
-      .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
-      .transform(val => val.toUpperCase()),
-    carreras: z.array(z.string()).min(1, "Debe seleccionar al menos una carrera"),
-  }).superRefine((data, ctx) => {
-    // Validar duplicidad de cédula
-    const isIdDuplicate = tutors.some(
-      t => t.tutorId !== editingTutor?.tutorId && 
-           t.identificationNumber === data.identificationNumber && 
-           t.identificationPrefix === data.identificationPrefix
-    );
-
-    if (isIdDuplicate) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Esta cédula ya se encuentra registrada",
-        path: ["identificationNumber"],
-      });
-    }
-
-    // Validar duplicidad de correo
-    const isEmailDuplicate = tutors.some(
-      t => t.tutorId !== editingTutor?.tutorId && 
-           t.email.toLowerCase() === data.email.toLowerCase()
-    );
-
-    if (isEmailDuplicate) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Este correo electrónico ya está en uso",
-        path: ["email"],
-      });
-    }
-  }), [tutors, editingTutor]);
-
-  type TutorFormData = z.infer<typeof tutorSchema>;
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    watch,
-    setValue,
-    setError,
-    formState: { errors, isDirty, isValid },
-  } = useForm<TutorFormData>({
-    resolver: zodResolver(tutorSchema),
-    mode: "onChange",
-    defaultValues: {
-      identificationPrefix: "V",
-      identificationNumber: "",
-      firstName: "",
-      middleName: "",
-      lastName: "",
-      secondLastName: "",
-      sex: "",
-      phoneAreaCode: "",
-      phoneNumber: "",
-      email: "",
-      condition: "",
-      dedication: "",
-      category: "",
-      profession: "",
-      titulo: "",
-      carreras: [],
-    },
-  });
-
-  const {
-    showConfirmation,
-    handleCloseAttempt,
-    confirmClose,
-    cancelClose,
-  } = useUnsavedChanges(isDirty, onClose);
-
   useEffect(() => {
     const fetchCareers = async () => {
       setCareersLoading(true);
@@ -539,6 +636,8 @@ export default function TutorModal({
           lastName: editingTutor.lastName,
           secondLastName: editingTutor.secondLastName || "",
           sex: editingTutor.sex,
+          birthDate: editingTutor.birthDate || "",
+          civilStatus: editingTutor.civilStatus || "",
           phoneAreaCode: areaCode,
           phoneNumber: number,
           email: editingTutor.email,
@@ -564,6 +663,8 @@ export default function TutorModal({
           lastName: "",
           secondLastName: "",
           sex: "",
+          birthDate: "",
+          civilStatus: "",
           phoneAreaCode: "",
           phoneNumber: "",
           email: "",
@@ -599,6 +700,8 @@ export default function TutorModal({
         lastName: (data.lastName || "").toUpperCase(),
         secondLastName: (data.secondLastName || "").toUpperCase(),
         sex: data.sex as "FEMENINO" | "MASCULINO",
+        birthDate: data.birthDate || undefined,
+        civilStatus: data.civilStatus || undefined,
         phone: `${data.phoneAreaCode}${data.phoneNumber}`,
         email: (data.email || "").toUpperCase(),
         condition: (data.condition || "").toUpperCase(),
@@ -658,397 +761,184 @@ export default function TutorModal({
               </span>
             </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
-            {/* Cédula */}
-            <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Cédula *</label>
-              <div className="flex gap-2">
-                <div className="w-24">
-                  <Controller
-                    name="identificationPrefix"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomSelect
-                        id="identificationPrefix"
-                        options={NATIONALITY_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                        placeholder="Tipo"
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        value={String(field.value)}
-                    disabled={isInUse || !!editingTutor}
-                        error={!!errors.identificationPrefix}
-                      />
-                    )}
-                  />
-                </div>
-                <div className="flex-1">
-                  <Input
-                    value={displayIdentificationNumber}
-                    onChange={handleIdentificationNumberChange}
-                    placeholder="V00.000.000"
-                    error={!!errors.identificationNumber}
-                    hint={errors.identificationNumber?.message || (isCheckingCi ? <span className="text-blue-600 animate-pulse">Verificando...</span> : undefined)}
-                    disabled={isInUse || !!editingTutor}
-                    maxLength={CEDULA_MAX_LENGTH}
-                    className="tracking-widest"
-                    onBlur={async (e) => {
-                      if (!existingTutor && !editingTutor) {
-                        const val = e.target.value;
-                        const digitsOnly = val.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
-                        if (digitsOnly.length >= 6) {
-                          setIsCheckingCi(true);
-                          const prefix = watch("identificationPrefix") || 'V';
-                          const fullCi = `${prefix}-${digitsOnly}`;
-                          try {
-                            const existingData = await getTutorByCi(fullCi);
-                            if (existingData) {
-                              setExistingTutor(existingData);
-                              setViewOnlyMode(true);
-
-                              const areaCode = existingData.phone ? existingData.phone.substring(0, 4) : "";
-                              const phoneNumber = existingData.phone ? existingData.phone.substring(4) : "";
-
-                              setValue("identificationPrefix", existingData.identificationPrefix || 'V');
-                              setDisplayIdentificationNumber(formatCedulaDisplay(existingData.identificationNumber || ''));
-                              setValue("identificationNumber", existingData.identificationNumber || '');
-                              setValue("firstName", existingData.firstName || "");
-                              setValue("middleName", existingData.middleName || "");
-                              setValue("lastName", existingData.lastName || "");
-                              setValue("secondLastName", existingData.secondLastName || "");
-                              setValue("sex", existingData.sex || "");
-                              setValue("phoneAreaCode", areaCode);
-                              setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
-                              setValue("phoneNumber", phoneNumber);
-                              setValue("email", existingData.email || "");
-                              setValue("condition", existingData.condition || "");
-                              setValue("dedication", existingData.dedication || "");
-                              setValue("category", existingData.category || "");
-                              setValue("profession", existingData.profession || "");
-                              setValue("titulo", existingData.titulo || "");
-                              setValue("carreras", existingData.carreras || []);
-
-                              // Toast removido por solicitud del usuario
-                              // Las pistas visuales son suficientes
-                            }
-                          } catch (err) {
-                            console.error("Error checking CI:", err);
-                          } finally {
-                            setIsCheckingCi(false);
-                          }
-                        }
-                      }
-                      register("identificationNumber").onBlur(e);
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Primer Nombre */}
-            <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Primer Nombre *</label>
-              <Input
-                {...register("firstName")}
-                placeholder="INGRESE PRIMER NOMBRE"
-                error={!!errors.firstName}
-                disabled={viewOnlyMode}
-                onChange={(e) => {
-                  e.target.value = e.target.value.toUpperCase();
-                  register("firstName").onChange(e);
-                }}
-              />
-              {errors.firstName && (
-                <p className="mt-1 text-xs text-red-500">{errors.firstName.message}</p>
-              )}
-            </div>
-
-            {/* Segundo Nombre */}
-            <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Segundo Nombre</label>
-              <Input
-                {...register("middleName")}
-                placeholder="INGRESE SEGUNDO NOMBRE"
-                error={!!errors.middleName}
-                disabled={viewOnlyMode}
-                onChange={(e) => {
-                  e.target.value = e.target.value.toUpperCase();
-                  register("middleName").onChange(e);
-                }}
-              />
-              {errors.middleName && (
-                <p className="mt-1 text-xs text-red-500">{errors.middleName.message}</p>
-              )}
-            </div>
-
-            {/* Primer Apellido */}
-            <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Primer Apellido *</label>
-              <Input
-                {...register("lastName")}
-                placeholder="INGRESE PRIMER APELLIDO"
-                error={!!errors.lastName}
-                disabled={viewOnlyMode}
-                onChange={(e) => {
-                  e.target.value = e.target.value.toUpperCase();
-                  register("lastName").onChange(e);
-                }}
-              />
-              {errors.lastName && (
-                <p className="mt-1 text-xs text-red-500">{errors.lastName.message}</p>
-              )}
-            </div>
-
-            {/* Segundo Apellido */}
-            <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Segundo Apellido</label>
-              <Input
-                {...register("secondLastName")}
-                placeholder="INGRESE SEGUNDO APELLIDO"
-                error={!!errors.secondLastName}
-                disabled={viewOnlyMode}
-                onChange={(e) => {
-                  e.target.value = e.target.value.toUpperCase();
-                  register("secondLastName").onChange(e);
-                }}
-              />
-              {errors.secondLastName && (
-                <p className="mt-1 text-xs text-red-500">{errors.secondLastName.message}</p>
-              )}
-            </div>
-
-            {/* Sexo */}
-            <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Sexo *</label>
-              <Controller
-                name="sex"
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Columna Izquierda: PersonFormFields + Campos Tutor */}
+            <div className="lg:col-span-3 space-y-6">
+              <PersonFormFields
                 control={control}
-                render={({ field }) => (
-                  <CustomSelect
-                    id="sex"
-                    options={SEX_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                    placeholder="Seleccione Sexo"
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={String(field.value)}
-                    disabled={viewOnlyMode}
-                    error={!!errors.sex}
-                  />
-                )}
+                register={register}
+                errors={errors}
+                setValue={setValue}
+                watch={watch}
+                options={options}
+                displayIdentificationNumber={displayIdentificationNumber}
+                onIdentificationNumberChange={handleIdentificationNumberChange}
+                onBlurCi={handleCiBlur}
+                isCheckingCi={isCheckingCi}
+                displayPhoneNumber={displayPhoneNumber}
+                onPhoneNumberChange={handlePhoneNumberChange}
+                createNameHandler={handleNameChange}
+                onAddValue={(listName, field, title) => openAddValueModal(listName, field as any, title)}
+                viewOnlyMode={viewOnlyMode}
+                editingId={editingTutor?.tutorId ?? null}
+                phonePrefixFieldName="phoneAreaCode"
+                age={age}
+                maxDate={maxDate ? maxDate.toISOString().split("T")[0] : undefined}
               />
-              {errors.sex && (
-                <p className="mt-1 text-xs text-red-500">{errors.sex.message}</p>
-              )}
-            </div>
 
-            {/* Teléfono */}
-            <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Teléfono *</label>
-              <div className="flex gap-2">
-                <div className="w-28">
+              {/* Sub-grid: Campos específicos del tutor */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Condición */}
+                <div>
+                  <label className="text-sm font-medium text-text-primary dark:text-white/90">Condición *</label>
                   <Controller
-                    name="phoneAreaCode"
+                    name="condition"
                     control={control}
                     render={({ field }) => (
                       <CustomSelect
-                        id="phoneAreaCode"
-                        options={PHONE_AREA_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                        placeholder="Prefijo"
+                        id="condition"
+                        options={CONDITION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                        placeholder="Seleccione Condición"
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         value={String(field.value)}
                         disabled={viewOnlyMode}
-                        error={!!errors.phoneAreaCode}
-                        onAddNew={() => openAddValueModal("PREFIJO", "phoneAreaCode", "Agregar Código de Área")}
+                        error={!!errors.condition}
+                        onAddNew={() => openAddValueModal("Condición", "condition", "Agregar Condición")}
                         addNewLabel="Nueva opción"
                       />
                     )}
                   />
+                  {errors.condition && (
+                    <p className="mt-1 text-xs text-red-500">{errors.condition.message}</p>
+                  )}
                 </div>
-                <div className="flex-1">
-                  <Input
-                    value={displayPhoneNumber}
-                    onChange={handlePhoneNumberChange}
-                    placeholder="000-0000"
-                    error={!!errors.phoneNumber || !!errors.phoneAreaCode}
-                    disabled={viewOnlyMode}
-                    maxLength={PHONE_LOCAL_MAX_LENGTH}
+
+                {/* Dedicación */}
+                <div>
+                  <label className="text-sm font-medium text-text-primary dark:text-white/90">Dedicación *</label>
+                  <Controller
+                    name="dedication"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomSelect
+                        id="dedication"
+                        options={DEDICATION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                        placeholder="Seleccione Dedicación"
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        value={String(field.value)}
+                        disabled={viewOnlyMode}
+                        error={!!errors.dedication}
+                        onAddNew={() => openAddValueModal("Dedicación", "dedication", "Agregar Dedicación")}
+                        addNewLabel="Nueva opción"
+                      />
+                    )}
                   />
+                  {errors.dedication && (
+                    <p className="mt-1 text-xs text-red-500">{errors.dedication.message}</p>
+                  )}
+                </div>
+
+                {/* Categoría */}
+                <div>
+                  <label className="text-sm font-medium text-text-primary dark:text-white/90">Categoría *</label>
+                  <Controller
+                    name="category"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomSelect
+                        id="category"
+                        options={CATEGORY_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                        placeholder="Seleccione Categoría"
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        value={String(field.value)}
+                        disabled={viewOnlyMode}
+                        error={!!errors.category}
+                        onAddNew={() => openAddValueModal("Categoría", "category", "Agregar Categoría")}
+                        addNewLabel="Nueva opción"
+                      />
+                    )}
+                  />
+                  {errors.category && (
+                    <p className="mt-1 text-xs text-red-500">{errors.category.message}</p>
+                  )}
+                </div>
+
+                {/* Título */}
+                <div>
+                  <label className="text-sm font-medium text-text-primary dark:text-white/90">Título *</label>
+                  <Controller
+                    name="profession"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomSelect
+                        id="profession"
+                        options={TITULO_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                        placeholder="Seleccione Título"
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        value={String(field.value)}
+                        disabled={viewOnlyMode}
+                        error={!!errors.profession}
+                        onAddNew={() => openAddValueModal("Título", "profession", "Agregar Título")}
+                        addNewLabel="Nueva opción"
+                      />
+                    )}
+                  />
+                  {errors.profession && (
+                    <p className="mt-1 text-xs text-red-500">{errors.profession.message}</p>
+                  )}
+                </div>
+
+                {/* Grado de instrucción */}
+                <div>
+                  <label className="text-sm font-medium text-text-primary dark:text-white/90">Grado de instrucción *</label>
+                  <Controller
+                    name="titulo"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomSelect
+                        id="titulo"
+                        options={GRADO_INSTRUCCION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
+                        placeholder="Seleccione Grado de Instrcción"
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        value={String(field.value)}
+                        disabled={viewOnlyMode}
+                        error={!!errors.titulo}
+                        onAddNew={() => openAddValueModal("GRADO DE INSTRUCCIÓN", "titulo", "Agregar Grado de Instrcción")}
+                        addNewLabel="Nueva opción"
+                      />
+                    )}
+                  />
+                  {errors.titulo && (
+                    <p className="mt-1 text-xs text-red-500">{errors.titulo.message}</p>
+                  )}
                 </div>
               </div>
-              {errors.phoneNumber && (
-                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
-                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
-                  {errors.phoneNumber.message}
-                </p>
-              )}
-            </div>
 
-            {/* Correo */}
-            <div className="lg:col-span-2">
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Correo Electrónico *</label>
-              <Input
-                {...register("email")}
-                placeholder="INGRESE CORREO ELECTRÓNICO"
-                type="email"
-                error={!!errors.email}
-                disabled={viewOnlyMode}
-              />
-              {errors.email && (
-                <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
-              )}
-            </div>
-
-            {/* Condición */}
-            <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Condición *</label>
+              {/* Carreras que Atiende - full width abajo */}
               <Controller
-                name="condition"
+                name="carreras"
                 control={control}
                 render={({ field }) => (
-                  <CustomSelect
-                    id="condition"
-                    options={CONDITION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                    placeholder="Seleccione Condición"
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={String(field.value)}
-                    disabled={viewOnlyMode}
-                    error={!!errors.condition}
-                    onAddNew={() => openAddValueModal("Condición", "condition", "Agregar Condición")}
-                    addNewLabel="Nueva opción"
+                  <MultiSelect
+                    {...field}
+                    label="Carreras que Atiende *"
+                    placeholder={careersLoading ? "Cargando carreras..." : (isInUse ? "Carreras asignadas (no editable)" : "Seleccione las carreras...")}
+                    options={careerOptions}
+                    disabled={careersLoading || isInUse || viewOnlyMode}
+                    onAddNew={() => {
+                      setIsCareerModalOpen(true);
+                    }}
+                    addNewLabel="Crear nueva carrera"
                   />
                 )}
               />
-              {errors.condition && (
-                <p className="mt-1 text-xs text-red-500">{errors.condition.message}</p>
-              )}
-            </div>
-
-            {/* Dedicación */}
-            <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Dedicación *</label>
-              <Controller
-                name="dedication"
-                control={control}
-                render={({ field }) => (
-                  <CustomSelect
-                    id="dedication"
-                    options={DEDICATION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                    placeholder="Seleccione Dedicación"
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={String(field.value)}
-                    disabled={viewOnlyMode}
-                    error={!!errors.dedication}
-                    onAddNew={() => openAddValueModal("Dedicación", "dedication", "Agregar Dedicación")}
-                    addNewLabel="Nueva opción"
-                  />
-                )}
-              />
-              {errors.dedication && (
-                <p className="mt-1 text-xs text-red-500">{errors.dedication.message}</p>
-              )}
-            </div>
-
-            {/* Categoría */}
-            <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Categoría *</label>
-              <Controller
-                name="category"
-                control={control}
-                render={({ field }) => (
-                  <CustomSelect
-                    id="category"
-                    options={CATEGORY_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                    placeholder="Seleccione Categoría"
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={String(field.value)}
-                    disabled={viewOnlyMode}
-                    error={!!errors.category}
-                    onAddNew={() => openAddValueModal("Categoría", "category", "Agregar Categoría")}
-                    addNewLabel="Nueva opción"
-                  />
-                )}
-              />
-              {errors.category && (
-                <p className="mt-1 text-xs text-red-500">{errors.category.message}</p>
-              )}
-            </div>
-
-            {/* Título */}
-            <div className="lg:col-span-1">
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Título *</label>
-              <Controller
-                name="profession"
-                control={control}
-                render={({ field }) => (
-                  <CustomSelect
-                    id="profession"
-                    options={TITULO_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                    placeholder="Seleccione Título"
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={String(field.value)}
-                    disabled={viewOnlyMode}
-                    error={!!errors.profession}
-                    onAddNew={() => openAddValueModal("Título", "profession", "Agregar Título")}
-                    addNewLabel="Nueva opción"
-                  />
-                )}
-              />
-              {errors.profession && (
-                <p className="mt-1 text-xs text-red-500">{errors.profession.message}</p>
-              )}
-            </div>
-
-            {/* Grado de instrucción */}
-            <div className="lg:col-span-1">
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Grado de instrucción *</label>
-              <Controller
-                name="titulo"
-                control={control}
-                render={({ field }) => (
-                  <CustomSelect
-                    id="titulo"
-                    options={GRADO_INSTRUCCION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                    placeholder="Seleccione Grado de Instrcción"
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={String(field.value)}
-                    disabled={viewOnlyMode}
-                    error={!!errors.titulo}
-                    onAddNew={() => openAddValueModal("GRADO DE INSTRUCCIÓN", "titulo", "Agregar Grado de Instrcción")}
-                    addNewLabel="Nueva opción"
-                  />
-                )}
-              />
-              {errors.titulo && (
-                <p className="mt-1 text-xs text-red-500">{errors.titulo.message}</p>
-              )}
-            </div>
-
-            {/* Carreras */}
-                 <div className="lg:col-span-3">
-                   <Controller
-                     name="carreras"
-                     control={control}
-                     render={({ field }) => (
-                       <MultiSelect
-                         {...field}
-                         label="Carreras que Atiende *"
-                         placeholder={careersLoading ? "Cargando carreras..." : (isInUse ? "Carreras asignadas (no editable)" : "Seleccione las carreras...")}
-                         options={careerOptions}
-                         disabled={careersLoading || isInUse || viewOnlyMode}
-                         onAddNew={() => {
-                           setIsCareerModalOpen(true);
-                         }}
-                         addNewLabel="Crear nueva carrera"
-                       />
-                     )}
-                   />
-                 </div>
-          </div>
+            </div> {/* Cierra Columna Izquierda */}
+           </div>
         </form>
       </ModalBody>
 

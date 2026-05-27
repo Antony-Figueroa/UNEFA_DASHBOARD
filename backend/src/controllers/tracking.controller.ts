@@ -16,10 +16,10 @@ interface DBProfessionalPractice {
 }
 
 interface DBTrackingResponse extends DBProfessionalPractice {
-  t_students?: {
-    STUDENTS_CI: string;
-    NAME: string;
-    SURNAME: string;
+  t_persons?: {
+    ci: string;
+    first_name: string;
+    last_name: string;
   };
   t_career?: {
     CAREER_ID: number;
@@ -55,10 +55,10 @@ export const getTrackings = async (_req: Request, res: Response) => {
       .from('t_professional_practices')
       .select(`
         *,
-        t_students:STUDENTS_ID (
-          STUDENTS_CI,
-          NAME,
-          SURNAME
+        t_persons!inner(
+          ci,
+          first_name,
+          last_name
         ),
         t_career:CAREER_ID (
           CAREER_ID,
@@ -78,9 +78,9 @@ export const getTrackings = async (_req: Request, res: Response) => {
 
     const formattedData = (data as unknown as DBTrackingResponse[]).map(p => ({
       ...p,
-      STUDENT_CI: p.t_students?.STUDENTS_CI || "",
-      STUDENT_NAME: p.t_students?.NAME || "",
-      STUDENT_SURNAME: p.t_students?.SURNAME || "",
+      STUDENT_CI: p.t_persons?.ci || "",
+      STUDENT_NAME: p.t_persons?.first_name || "",
+      STUDENT_SURNAME: p.t_persons?.last_name || "",
       CAREER_NAME: p.t_career?.CAREER_NAME || null,
       PERIOD_DESCRIPTION: p.t_internships_period?.DESCRIPTION || null,
       PERIOD_ID: p.t_internships_period?.PERIOD_ID || null
@@ -108,11 +108,11 @@ export const createTracking = async (req: Request, res: Response) => {
       internshipTypeId
     } = req.body;
 
-    // First find student ID by CI
+    // First find student ID by CI via t_persons
     const { data: student, error: studentError } = await db.getConnection()
       .from('t_students')
-      .select('STUDENTS_ID')
-      .eq('STUDENTS_CI', studentIdNumber)
+      .select('STUDENTS_ID, person_id, t_persons!inner(ci)')
+      .eq('t_persons.ci', studentIdNumber)
       .single();
 
     if (studentError || !student) {
@@ -124,6 +124,7 @@ export const createTracking = async (req: Request, res: Response) => {
 
     const newPractice = {
       STUDENTS_ID: student.STUDENTS_ID,
+      student_person_id: student.person_id,
       REPORT_TITLE: reportTitle,
       TRANSFER: transfer ? 1 : 0,
       TOUR: route,
@@ -148,10 +149,10 @@ export const createTracking = async (req: Request, res: Response) => {
       .insert([newPractice])
       .select(`
         *,
-        t_students:STUDENTS_ID (
-          STUDENTS_CI,
-          NAME,
-          SURNAME
+        t_persons!inner(
+          ci,
+          first_name,
+          last_name
         )
       `)
       .single();
@@ -161,9 +162,9 @@ export const createTracking = async (req: Request, res: Response) => {
     const p = data as unknown as DBTrackingResponse;
     const formatted = mapDBToFrontend({
       ...p,
-      STUDENT_CI: p.t_students?.STUDENTS_CI || "",
-      STUDENT_NAME: p.t_students?.NAME || "",
-      STUDENT_SURNAME: p.t_students?.SURNAME || ""
+      STUDENT_CI: p.t_persons?.ci || "",
+      STUDENT_NAME: p.t_persons?.first_name || "",
+      STUDENT_SURNAME: p.t_persons?.last_name || ""
     });
 
     res.status(201).json(formatted);
@@ -194,10 +195,10 @@ export const updateTracking = async (req: Request, res: Response) => {
       .eq('PROFESSIONAL_PRACTICE_ID', id)
       .select(`
         *,
-        t_students:STUDENTS_ID (
-          STUDENTS_CI,
-          NAME,
-          SURNAME
+        t_persons!inner(
+          ci,
+          first_name,
+          last_name
         ),
         t_career:CAREER_ID (
           CAREER_ID,
@@ -211,9 +212,9 @@ export const updateTracking = async (req: Request, res: Response) => {
     const p = data as unknown as DBTrackingResponse;
     const formatted = mapDBToFrontend({
       ...p,
-      STUDENT_CI: p.t_students?.STUDENTS_CI || "",
-      STUDENT_NAME: p.t_students?.NAME || "",
-      STUDENT_SURNAME: p.t_students?.SURNAME || ""
+      STUDENT_CI: p.t_persons?.ci || "",
+      STUDENT_NAME: p.t_persons?.first_name || "",
+      STUDENT_SURNAME: p.t_persons?.last_name || ""
     });
 
     res.json(formatted);
@@ -237,10 +238,10 @@ export const getTrackingStats = async (req: Request, res: Response) => {
       .from('t_professional_practices')
       .select(`
         CREATION_DATE,
-        t_students:STUDENTS_ID (
-          STUDENTS_CI,
-          NAME,
-          SURNAME
+        t_persons!inner(
+          ci,
+          first_name,
+          last_name
         )
       `)
       .gte('CREATION_DATE', sixMonthsAgo.toISOString())
@@ -254,9 +255,9 @@ export const getTrackingStats = async (req: Request, res: Response) => {
       const date = new Date(item.CREATION_DATE);
       const dayKey = date.toISOString().split('T')[0];
       
-      const student = item.t_students;
-      const studentCi = student?.STUDENTS_CI || 'Desconocido';
-      const studentName = student ? `${(student.NAME || '').trim()} ${(student.SURNAME || '').trim()}`.trim() : studentCi;
+      const student = item.t_persons;
+      const studentCi = student?.ci || 'Desconocido';
+      const studentName = student ? `${(student.first_name || '').trim()} ${(student.last_name || '').trim()}`.trim() : studentCi;
       
       if (!dayMap.has(dayKey)) {
         dayMap.set(dayKey, { count: 0, students: [] });
@@ -363,10 +364,10 @@ export const getTrackingById = async (req: Request, res: Response) => {
       .from('t_professional_practices')
       .select(`
         *,
-        t_students:STUDENTS_ID (
-          STUDENTS_CI,
-          NAME,
-          SURNAME
+        t_persons!inner(
+          ci,
+          first_name,
+          last_name
         ),
         t_career:CAREER_ID (
           CAREER_ID,
@@ -385,9 +386,9 @@ export const getTrackingById = async (req: Request, res: Response) => {
         t_professional_practices_tutor (
           TUTOR_ID,
           TUTOR_TYPE,
-          t_tutors (
-            NAME,
-            SURNAME
+          t_persons!inner(
+            first_name,
+            last_name
           )
         )
       `)
@@ -411,7 +412,7 @@ export const getTrackingById = async (req: Request, res: Response) => {
     }
 
     const practice = data as any;
-    const student = practice.t_students || {};
+    const student = practice.t_persons || {};
     const career = practice.t_career || {};
     const institution = practice.t_institution || {};
     const period = practice.t_internships_period || {};
@@ -424,7 +425,7 @@ export const getTrackingById = async (req: Request, res: Response) => {
         if (t.TUTOR_ID) {
           assignedTutors.push({
             tutorId: t.TUTOR_ID,
-            tutorName: `${t.t_tutors?.NAME || ""} ${t.t_tutors?.SURNAME || ""}`.trim(),
+            tutorName: `${t.t_persons?.first_name || ""} ${t.t_persons?.last_name || ""}`.trim(),
             tutorType: t.TUTOR_TYPE === 'METODOLOGICO' || t.TUTOR_TYPE === 'METODOLÓGICO' ? 'METODOLOGICO' : 'ACADEMICO'
           });
         }
@@ -441,8 +442,8 @@ export const getTrackingById = async (req: Request, res: Response) => {
       success: true,
       data: {
         trackingId: String(practice.PROFESSIONAL_PRACTICE_ID),
-        studentIdNumber: student.STUDENTS_CI || "",
-        studentName: `${student.NAME || ""} ${student.SURNAME || ""}`.trim(),
+        studentIdNumber: student.ci || "",
+        studentName: `${student.first_name || ""} ${student.last_name || ""}`.trim(),
         careerName: career.CAREER_NAME || null,
         institutionName: institution.INSTITUTION_NAME || "",
         tutorName: tutorName,

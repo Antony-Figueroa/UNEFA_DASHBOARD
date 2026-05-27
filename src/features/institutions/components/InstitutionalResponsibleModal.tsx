@@ -13,18 +13,19 @@ import { checkAvailability, getResponsibleByCi } from "../services/institutional
 import { CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload, InstitutionalResponsible, CreateInstitutionPayload } from "../types";
 import { useLists } from "../../lists/hooks/useLists";
 import { useToast } from "../../../context/toast";
-import { formatCedulaDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_DIGITS, CEDULA_MAX_LENGTH, PHONE_LOCAL_MAX_LENGTH, PHONE_INPUT_CLASS } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_DIGITS } from "../../../utils/inputFormat";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import Input from "../../../components/form/input/InputField";
 import CustomSelect from "../../../components/form/CustomSelect";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
-import Badge from "../../../components/ui/badge/Badge";
+
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { NAME_PATTERN, SAFE_EMAIL_PATTERN, SAFE_TEXT_PATTERN, isSafeInput } from "../../../utils/inputValidation";
+import PersonFormFields from "../../persons/components/PersonFormFields";
 
 // Lazy load para evitar dependencia circular con InstitutionModal
 const InstitutionModal = lazy(() => import("./InstitutionModal"));
@@ -299,13 +300,6 @@ export default function InstitutionalResponsibleModal({
     setDisplayPhoneNumber(formatted);
     setValue("phoneNumber", cleaned, { shouldValidate: true, shouldDirty: true });
   };
-
-  const NATIONALITY_OPTIONS = options["Nacionalidad"] || [
-    { value: "V", label: "V" },
-    { value: "E", label: "E" },
-  ];
-
-  const PHONE_PREFIX_OPTIONS = options["PREFIJO"] || [];
 
   const {
     register,
@@ -596,143 +590,27 @@ export default function InstitutionalResponsibleModal({
              )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Columna Izquierda: Datos Personales */}
-              <div className="lg:col-span-2 space-y-5">
-                {/* Cédula */}
-                <div>
-                  <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Cédula *</label>
-                  <div className="flex gap-2">
-                    <div className="w-24 shrink-0">
-                      <Controller
-                        name="identificationPrefix"
-                        control={control}
-                        render={({ field }) => (
-                          <CustomSelect
-                            id="identificationPrefix"
-                            options={NATIONALITY_OPTIONS}
-                            onChange={field.onChange}
-                            onBlur={field.onBlur}
-                            value={field.value}
-                            placeholder="Tipo"
-disabled={!!editingResp}
-                            error={!!errors.identificationPrefix}
-                          />
-                        )}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <Input 
-                        value={displayIdentificationNumber}
-                        onChange={handleIdentificationNumberChange}
-                        placeholder="V00.000.000" 
-                        error={!!errors.identificationNumber}
-                        hint={isCheckingCi ? "Verificando..." : (errors.identificationNumber?.message || " ")}
-                        className="tracking-widest"
-                        maxLength={CEDULA_MAX_LENGTH}
-                        disabled={!!editingResp}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Nombres */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Primer Nombre *</label>
-                    <Input 
-                      placeholder="Ingrese el primer nombre" 
-                      {...register("firstName")} 
-                      error={!!errors.firstName} 
-                      hint={errors.firstName?.message || " "}
-                      disabled={!!existingResponsible}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Segundo Nombre</label>
-                    <Input 
-                      placeholder="Ingrese el segundo nombre" 
-                      {...register("middleName")} 
-                      error={!!errors.middleName} 
-                      hint={errors.middleName?.message || " "}
-                      disabled={!!existingResponsible}
-                    />
-                  </div>
-                </div>
-
-                {/* Apellidos */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Primer Apellido *</label>
-                    <Input 
-                      placeholder="Ingrese el primer apellido" 
-                      {...register("lastName")} 
-                      error={!!errors.lastName} 
-                      hint={errors.lastName?.message || " "}
-                      disabled={!!existingResponsible}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Segundo Apellido</label>
-                    <Input 
-                      placeholder="Ingrese el segundo apellido" 
-                      {...register("secondLastName")} 
-                      error={!!errors.secondLastName} 
-                      hint={errors.secondLastName?.message || " "}
-                      disabled={!!existingResponsible}
-                    />
-                  </div>
-                </div>
-
-                {/* Teléfono y Correo */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Teléfono *</label>
-                    <div className="flex gap-2">
-                      <div className="w-28 shrink-0">
-                        <Controller
-                          name="phonePrefix"
-                          control={control}
-                          render={({ field }) => (
-                            <CustomSelect
-                              id="phonePrefix"
-                              options={PHONE_PREFIX_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                              onChange={field.onChange}
-                              value={String(field.value ?? "")}
-                              placeholder="Prefijo"
-                              error={!!errors.phonePrefix}
-                              disabled={!!existingResponsible}
-                              onAddNew={() => openAddValueModal("PREFIJO", "phonePrefix", "Agregar Código de Área")}
-                              addNewLabel="Nueva opción"
-                            />
-                          )}
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <Input 
-                          value={displayPhoneNumber}
-                          onChange={handlePhoneNumberChange}
-                          placeholder="000-0000" 
-                          className={PHONE_INPUT_CLASS}
-                          error={!!errors.phoneNumber || !!errors.phonePrefix} 
-                          maxLength={PHONE_LOCAL_MAX_LENGTH}
-                          hint={errors.phoneNumber?.message || errors.phonePrefix?.message || " "}
-                          disabled={!!existingResponsible}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Correo Electrónico *</label>
-                    <Input 
-                      placeholder="Ingrese el correo electrónico" 
-                      {...register("email")} 
-                      error={!!errors.email} 
-                      hint={errors.email?.message || " "}
-                      disabled={!!existingResponsible}
-                      
-                    />
-                  </div>
-                </div>
+              {/* Columna Izquierda: Datos Personales (via PersonFormFields compartido) */}
+              <div className="lg:col-span-2">
+                <PersonFormFields
+                  control={control}
+                  register={register}
+                  errors={errors}
+                  setValue={setValue}
+                  watch={watch}
+                  options={options}
+                  displayIdentificationNumber={displayIdentificationNumber}
+                  onIdentificationNumberChange={handleIdentificationNumberChange}
+                  isCheckingCi={isCheckingCi}
+                  displayPhoneNumber={displayPhoneNumber}
+                  onPhoneNumberChange={handlePhoneNumberChange}
+                  onAddValue={(listName, field, title) =>
+                    openAddValueModal(listName, field as any, title)
+                  }
+                  viewOnlyMode={!!existingResponsible}
+                  editingId={editingResp?.responsibleId ?? null}
+                  hiddenFields={["sex", "birthDate", "civilStatus", "address"]}
+                />
               </div>
 
               {/* Columna Derecha: Instituciones */}

@@ -275,23 +275,22 @@ export const createTutor = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Validar duplicados en t_persons
-    const ciCheck = await personService.validateUniqueCi(tutorCi);
-    if (!ciCheck.available) {
-      return res.status(400).json({ message: `La cédula ${tutorCi} ya está registrada` });
-    }
-
-    const emailCheck = await personService.validateUniqueEmail(t.email);
-    if (!emailCheck.available) {
-      return res.status(400).json({ message: `El correo ${t.email} ya está registrado` });
+    // Validar duplicado de email (entre distintas personas)
+    if (t.email) {
+      const existingPerson = await personService.getPersonByCi(tutorCi);
+      const excludePersonId = existingPerson?.personId;
+      const emailCheck = await personService.validateUniqueEmail(t.email, excludePersonId);
+      if (!emailCheck.available) {
+        return res.status(400).json({ message: `El correo ${t.email} ya está registrado por otra persona` });
+      }
     }
 
     const personData = extractPersonData(t);
     const tutorData = extractTutorData(t);
 
     const data = await dbManager.withRetry(async (supabase) => {
-      // 1. Crear persona en t_persons
-      const newPerson = await personService.createPerson(personData, supabase);
+      // 1. Buscar persona existente por CI o crear nueva
+      const newPerson = await personService.findOrCreatePerson(personData, supabase);
       const personId = newPerson.personId;
 
       // 2. Insertar tutor
@@ -643,7 +642,20 @@ export const getTutorByCi = async (req: Request, res: Response) => {
     });
 
     if (!data) {
-      return res.status(200).json({ data: null, message: 'Tutor no encontrado' });
+      // Persona existe pero no como tutor → devolver datos de persona
+      return res.json({
+        data: null,
+        person: {
+          identificationPrefix: person.prefixCi,
+          identificationNumber: person.identificationNumber,
+          firstName: person.firstName,
+          middleName: person.middleName || '',
+          lastName: person.lastName,
+          secondLastName: person.secondLastName || '',
+          email: person.email,
+          phone: person.phone || '',
+        }
+      });
     }
 
     res.json({ data: mapDBToFrontend(data) });

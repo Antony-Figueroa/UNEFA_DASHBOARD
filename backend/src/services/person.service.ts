@@ -421,6 +421,23 @@ export interface ValidationResult {
 }
 
 /**
+ * Busca una persona por CI o la crea si no existe.
+ * Permite que una misma persona sea referenciada por múltiples entidades
+ * (estudiante, tutor, usuario, etc.) sin duplicar datos.
+ */
+export const findOrCreatePerson = async (personData: CreatePersonDTO, supabaseClient?: SupabaseClient): Promise<PersonDTO> => {
+  // 1. Buscar si ya existe una persona con esa CI
+  const existing = await getPersonByCi(personData.ci);
+  if (existing) {
+    // Ya existe → devolverla sin modificar (los datos compartidos se crean una vez)
+    return existing;
+  }
+
+  // 2. No existe → crear nueva persona
+  return createPerson(personData, supabaseClient);
+};
+
+/**
  * Verifica si una cédula ya está registrada en t_persons.
  * Opcionalmente excluye un person_id (para updates).
  */

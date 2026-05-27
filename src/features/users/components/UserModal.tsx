@@ -58,6 +58,8 @@ const UserModal: React.FC<UserModalProps> = ({
     reset,
     setValue,
     watch,
+    setError,
+    clearErrors,
     formState: { errors, isDirty, isValid }
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
@@ -97,6 +99,7 @@ const UserModal: React.FC<UserModalProps> = ({
     const formatted = formatCedulaDisplay(cleaned);
     setDisplayCi(formatted);
     setValue("userCi", cleaned, { shouldValidate: true, shouldDirty: true });
+    clearErrors("userCi");
   };
 
   // CI blur handler: verificar si la persona ya existe al salir del campo
@@ -116,10 +119,9 @@ const UserModal: React.FC<UserModalProps> = ({
         try {
           const result = await checkUserCi(ciForCheck);
           if (result.exists && result.asUser) {
-            addToast({
-              variant: "error",
-              title: "Cédula ya registrada",
-              message: "Ya existe un usuario del sistema con esta cédula.",
+            setError("userCi", {
+              type: "manual",
+              message: "Ya existe un usuario del sistema con esta cédula",
             });
           } else if (result.exists && !result.asUser && result.person) {
             // Persona existe (estudiante/tutor) — auto-completar datos (solo lectura)
@@ -146,7 +148,7 @@ const UserModal: React.FC<UserModalProps> = ({
         }
       }
     },
-    [user, setValue, addToast],
+    [user, setValue, setError, clearErrors, addToast],
   );
 
 // Efecto para cargar los datos del usuario cuando se abre el modal para editar
@@ -201,6 +203,16 @@ const UserModal: React.FC<UserModalProps> = ({
    * Maneja el envío del formulario.
    */
   const onSubmit = (data: any) => {
+    // Prevenir envío si hay conflicto de CI detectado
+    if (errors.userCi?.type === "manual") {
+      addToast({
+        variant: "error",
+        title: "Cédula no disponible",
+        message: errors.userCi.message as string,
+      });
+      return;
+    }
+
     const validatedData = data as UserFormOutput;
     
     // Validación: No puede modificar su propio rol

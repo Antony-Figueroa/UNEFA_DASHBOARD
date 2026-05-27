@@ -129,6 +129,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
     const formatted = formatCedulaDisplay(digitsOnly, false);
     setDisplayIdentificationNumber(formatted);
     setValue("identificationNumber", digitsOnly, { shouldValidate: true });
+    clearErrors("identificationNumber");
     
     // Si se cambia la cédula y hay un existingStudent, limpiar el formulario
     if (existingStudent) {
@@ -137,6 +138,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
       if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits) {
         setExistingStudent(null);
         setViewOnlyMode(false);
+        clearErrors("identificationNumber");
         // Resetear los campos del formulario
         reset({
           identificationPrefix: "",
@@ -203,6 +205,12 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
             setValue("studentType", existingStudentData.studentType || "");
             setValue("militaryRank", existingStudentData.militaryRank || "");
             setValue("works", existingStudentData.works || "");
+          } else {
+            // CI existe en t_persons pero no tiene registro de estudiante
+            setError("identificationNumber", {
+              type: "manual",
+              message: "Esta cédula ya está registrada en el sistema",
+            });
           }
         } else {
           // CI no existe en BD → intentar autocompletar desde API externa
@@ -309,6 +317,11 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                 setValue("studentType", existingStudentData.studentType || "");
                 setValue("militaryRank", existingStudentData.militaryRank || "");
                 setValue("works", existingStudentData.works || "");
+              } else {
+                setError("identificationNumber", {
+                  type: "manual",
+                  message: "Esta cédula ya está registrada en el sistema",
+                });
               }
             } else {
               // CI no existe en BD → intentar autocompletar desde API externa
@@ -343,7 +356,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         }
       }
     },
-    [existingStudent, editingStudent, watch, setValue, addToast],
+    [existingStudent, editingStudent, watch, setValue, setError, clearErrors, addToast],
   );
 
   // Email blur handler: check email availability
@@ -648,6 +661,15 @@ useEffect(() => {
   }, [isOpen]);
 
   const onSubmit = async (data: StudentFormInput) => {
+    // Prevenir envío si hay conflicto de CI detectado
+    if (errors.identificationNumber?.type === "manual") {
+      addToast({
+        variant: "error",
+        title: "Cédula no disponible",
+        message: errors.identificationNumber.message as string,
+      });
+      return;
+    }
     try {
       const validatedData = data as StudentFormOutput;
       const studentData: CreateStudentPayload = {

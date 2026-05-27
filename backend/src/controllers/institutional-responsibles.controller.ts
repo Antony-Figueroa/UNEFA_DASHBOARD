@@ -525,22 +525,23 @@ export const toggleInstitutionalResponsibleStatus = async (req: Request, res: Re
 
 export const checkIdAvailability = async (req: Request, res: Response) => {
   try {
-    const { ci, excludeId } = req.query;
+    const { type, value, excludeId } = req.query;
 
-    if (!ci) {
-      return res.status(400).json({ message: 'Faltan parámetros: ci es requerido' });
+    if (!type || !value) {
+      return res.status(400).json({ message: 'Faltan parámetros: type y value son requeridos' });
     }
 
-    const result = await personService.validateUniqueCi(
-      ci as string,
-      excludeId ? parseInt(excludeId as string) : undefined
-    );
+    if (type === 'ci') {
+      const result = await personService.validateUniqueCi(value as string, excludeId ? parseInt(excludeId as string) : undefined);
+      return res.json({ ...result, responsibleId: result.personId });
+    }
 
-    res.json({
-      available: result.available,
-      status: result.status,
-      responsibleId: result.personId
-    });
+    if (type === 'email') {
+      const result = await personService.validateUniqueEmail(value as string, excludeId ? parseInt(excludeId as string) : undefined);
+      return res.json({ ...result, responsibleId: result.personId });
+    }
+
+    return res.status(400).json({ message: 'Tipo de validación no válido. Use "ci" o "email"' });
   } catch (error: unknown) {
     handleDbError(res, error);
   }

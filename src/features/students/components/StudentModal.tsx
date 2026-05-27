@@ -554,11 +554,11 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   const [isValueModalOpen, setIsValueModalOpen] = useState(false);
   const [valueModalTitle, setValueModalTitle] = useState<string>("");
   const [targetListName, setTargetListName] = useState<string>("");
-  const [targetField, setTargetField] = useState<"civilStatus" | "phonePrefix" | "militaryRank">("civilStatus");
+  const [targetField, setTargetField] = useState<string>("civilStatus");
   const [newValueInput, setNewValueInput] = useState<string>("");
   const [savingNewValue, setSavingNewValue] = useState(false);
 
-  const openAddValueModal = (listName: string, field: "civilStatus" | "phonePrefix" | "militaryRank", title: string, preset: string = "") => {
+  const openAddValueModal = (listName: string, field: string, title: string, preset: string = "") => {
     // Verificar si la lista está protegida
     if (isProtectedList(listName)) {
       addToast({
@@ -610,7 +610,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         const selectValue = (targetListName === "Nacionalidad" && existing.abbreviation) 
           ? String(existing.abbreviation).toUpperCase() 
           : String(existing.name).toUpperCase();
-        setValue(targetField, selectValue, { shouldValidate: true, shouldDirty: true });
+        setValue(targetField as any, selectValue, { shouldValidate: true, shouldDirty: true });
         setIsValueModalOpen(false);
         return;
       }
@@ -624,7 +624,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         next[targetListName] = [...arr, mapped];
         return next;
       });
-      setValue(targetField, mapped.value, { shouldValidate: true, shouldDirty: true });
+      setValue(targetField as any, mapped.value, { shouldValidate: true, shouldDirty: true });
       setIsValueModalOpen(false);
     } catch (e) {
       console.error("[StudentModal] Error creando valor en lista:", e);

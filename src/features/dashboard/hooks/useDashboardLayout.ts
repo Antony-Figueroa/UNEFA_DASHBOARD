@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { dashboardLayoutService, type DashboardWidget, type DashboardLayout } from '../services/dashboardLayoutService';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '../../../context/auth';
 
 export interface UseDashboardLayoutReturn {
   widgets: DashboardWidget[];

@@ -27,6 +27,7 @@ import { useToast } from "../../../context/toast";
 import { formatCedulaDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS, PHONE_LOCAL_MAX_LENGTH } from "../../../utils/inputFormat";
 import PersonFormFields from "../../persons/components/PersonFormFields";
 import { getTutorByCi } from "../services/tutorsService";
+import { checkAvailability as checkPersonAvailability } from "../../persons/services/personService";
 import { NAME_PATTERN, SAFE_EMAIL_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
 /**
@@ -81,6 +82,7 @@ export default function TutorModal({
  
    // State for duplicate detection
    const [isCheckingCi, setIsCheckingCi] = useState(false);
+   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
    const [existingTutor, setExistingTutor] = useState<any | null>(null);
    const [viewOnlyMode, setViewOnlyMode] = useState(false);
    
@@ -446,6 +448,40 @@ export default function TutorModal({
       }
     },
     [existingTutor, editingTutor, watch, setValue, setError, clearErrors]
+  );
+
+  // Email blur handler: check email availability (cross-entity)
+  const handleEmailBlur = useCallback(
+    async (e: React.FocusEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (value && emailRegex.test(value)) {
+        setIsCheckingEmail(true);
+        try {
+          const res = await checkPersonAvailability(
+            "email",
+            value,
+            editingTutor?.personId ? Number(editingTutor.personId) : undefined,
+          );
+          if (!res.available) {
+            setError("email", {
+              type: "manual",
+              message:
+                res.status === 0
+                  ? "Email registrado (INACTIVO). Contacte a administración para reactivar."
+                  : "Este correo electrónico ya está registrado.",
+            });
+          } else {
+            clearErrors("email");
+          }
+        } catch (err) {
+          console.error("Error checking email availability:", err);
+        } finally {
+          setIsCheckingEmail(false);
+        }
+      }
+    },
+    [editingTutor, setError, clearErrors],
   );
 
   // Factory de handler para campos de nombre (uppercase)
@@ -823,6 +859,8 @@ export default function TutorModal({
                 onIdentificationNumberChange={handleIdentificationNumberChange}
                 onBlurCi={handleCiBlur}
                 isCheckingCi={isCheckingCi}
+                onBlurEmail={handleEmailBlur}
+                isCheckingEmail={isCheckingEmail}
                 displayPhoneNumber={displayPhoneNumber}
                 onPhoneNumberChange={handlePhoneNumberChange}
                 createNameHandler={handleNameChange}

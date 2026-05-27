@@ -486,18 +486,6 @@ export const mapToDbRecord = (
   row: StudentImportRow,
   config: TemplateConfig
 ): Record<string, unknown> => {
-  const fullCedula = normalizeCedula(row.cedulaPrefix, row.cedulaNumber);
-  
-  // Normalizar sexo
-  const sexMap: Record<string, string> = {};
-  config.sexes.forEach(s => {
-    sexMap[s.name.toUpperCase()] = s.abbreviation || s.name;
-    sexMap[s.abbreviation?.toUpperCase() || ''] = s.abbreviation || s.name;
-  });
-  
-  // Normalizar estado civil
-  const civilResult = normalizeValue(row.civilStatus || 'SOLTERO', config.civilStatuses);
-  
   // Normalizar régimen
   const regimeResult = normalizeValue(row.regime, config.regimes);
   
@@ -515,25 +503,7 @@ export const mapToDbRecord = (
     ? normalizeValue(row.militaryRank, config.militaryRanks)
     : { matched: false, value: '' };
   
-  // Teléfono
-  const phone = row.phonePrefix && row.phoneNumber 
-    ? `${row.phonePrefix}-${row.phoneNumber}` 
-    : null;
-  
-  const sexValue = row.sex?.toUpperCase() || 'O';
-  
   return {
-    STUDENTS_CI: fullCedula,
-    NAME: row.firstName,
-    SURNAME: row.lastName,
-    SECOND_NAME: row.middleName || null,
-    SECOND_SURNAME: row.secondLastName || null,
-    GENDER: sexMap[sexValue] || 'O',
-    BIRTHDATE: row.birthDate,
-    MARITAL_STATUS: civilResult.value || 'S',
-    CONTACT_PHONE: phone,
-    EMAIL: row.email,
-    ADDRESS: row.address || null,
     CAREER_ID: career.id ? parseInt(career.id) : null,
     REGIME: regimeResult.value || 'D1',
     STUDENT_TYPE: typeResult.value || 'NUEVO',

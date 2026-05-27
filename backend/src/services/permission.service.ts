@@ -3,6 +3,7 @@ import { dbManager } from '../lib/db-manager.js';
 export interface Permission {
   PERMISSIONS_ID: number;
   NAME: string;
+  MODULE: string | null;
   DESCRIPTION: string | null;
 }
 
@@ -86,7 +87,7 @@ class PermissionService {
     const grouped: Record<string, Permission[]> = {};
     
     for (const perm of permissions) {
-      const module = perm.NAME.split(':')[0];
+      const module = perm.MODULE || perm.NAME.split(':')[0] || 'General';
       if (!grouped[module]) {
         grouped[module] = [];
       }

@@ -35,12 +35,12 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
         GRADE,
         PRACTICES_STATUS,
         EVALUATION_STATUS,
-        t_students (
-          STUDENTS_CI,
-          NAME,
-          SECOND_NAME,
-          SURNAME,
-          SECOND_SURNAME
+        t_persons!inner (
+          ci,
+          first_name,
+          middle_name,
+          last_name,
+          second_last_name
         ),
         t_career (
           CAREER_ID,
@@ -137,7 +137,7 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
 
     // Procesar prácticas
     let processedPractices = (practices as any[]).map(p => {
-      const student = p.t_students;
+      const student = p.t_persons;
       const career = p.t_career;
       const practiceType = p.t_internship_type;
       const period = p.t_internships_period;
@@ -203,12 +203,12 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
 
       // Devolver también la nota mínima para uso en el frontend
       const studentName = student 
-        ? `${student.NAME || ''} ${student.SECOND_NAME || ''} ${student.SURNAME || ''} ${student.SECOND_SURNAME || ''}`.trim().replace(/\s+/g, ' ')
+        ? `${student.first_name || ''} ${student.middle_name || ''} ${student.last_name || ''} ${student.second_last_name || ''}`.trim().replace(/\s+/g, ' ')
         : '';
 
       return {
         practiceId: p.PROFESSIONAL_PRACTICE_ID,
-        studentCi: student?.STUDENTS_CI || '',
+        studentCi: student?.ci || '',
         studentName,
         careerId: career?.CAREER_ID || 0,
         careerName: career?.CAREER_NAME || '',
@@ -409,12 +409,12 @@ export const getStudentDetail = async (req: AuthRequest, res: Response) => {
         PRACTICES_STATUS,
         EVALUATION_STATUS,
         ENROLLMENT,
-        t_students (
-          STUDENTS_CI,
-          NAME,
-          SECOND_NAME,
-          SURNAME,
-          SECOND_SURNAME
+        t_persons!inner (
+          ci,
+          first_name,
+          middle_name,
+          last_name,
+          second_last_name
         ),
         t_career (
           CAREER_ID,
@@ -444,7 +444,7 @@ export const getStudentDetail = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const student = (practice as any).t_students;
+    const student = (practice as any).t_persons;
     const career = (practice as any).t_career;
     const period = (practice as any).t_internships_period;
     const practiceType = (practice as any).t_internship_type;
@@ -549,14 +549,14 @@ export const getStudentDetail = async (req: AuthRequest, res: Response) => {
     }
 
     const studentName = student 
-      ? `${student.NAME || ''} ${student.SECOND_NAME || ''} ${student.SURNAME || ''} ${student.SECOND_SURNAME || ''}`.trim().replace(/\s+/g, ' ')
+      ? `${student.first_name || ''} ${student.middle_name || ''} ${student.last_name || ''} ${student.second_last_name || ''}`.trim().replace(/\s+/g, ' ')
       : '';
 
     res.json({
       success: true,
       data: {
         student: {
-          studentCi: student?.STUDENTS_CI || '',
+          studentCi: student?.ci || '',
           studentName,
           careerId: career?.CAREER_ID || 0,
           careerName: career?.CAREER_NAME || ''

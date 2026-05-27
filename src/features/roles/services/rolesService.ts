@@ -1,12 +1,5 @@
 import apiClient from '../../../api/apiClient';
 
-export interface Permission {
-  id: string;
-  module: string;
-  action: string;
-  description: string;
-}
-
 export interface Role {
   id: number;
   name: string;
@@ -22,19 +15,10 @@ export interface RolesResponse {
   data: Role[];
 }
 
-export interface PermissionsResponse {
-  success: boolean;
-  data: Permission[];
-  modules: string[];
-}
-
-export interface RoleStatsResponse {
-  success: boolean;
-  data: {
-    rolesCount: number;
-    permissionsCount: number;
-    usersWithRoles: number;
-  };
+export interface CreateRolePayload {
+  name: string;
+  description?: string;
+  permissionIds?: number[];
 }
 
 export const rolesService = {
@@ -50,23 +34,16 @@ export const rolesService = {
 
   getPermissions: async () => {
     const response = await apiClient.get('/roles/permissions');
-    return response.data as PermissionsResponse;
+    return response.data as { success: boolean; data: Role[]; modules: string[] };
   },
 
-  getStats: async () => {
-    const response = await apiClient.get('/roles/stats');
-    return response.data as RoleStatsResponse;
-  },
-
-  create: async (data: { name: string; description?: string; permissionIds?: string[] }) => {
+  create: async (data: CreateRolePayload) => {
     const response = await apiClient.post('/roles', data);
     return response.data as { success: boolean; data: Role; message: string };
   },
 
-  update: async (id: number, updates: { name?: string; description?: string; permissions?: string[] }) => {
+  update: async (id: number, updates: { name?: string; description?: string }) => {
     const response = await apiClient.put(`/roles/${id}`, updates);
     return response.data;
   }
 };
-
-export default rolesService;

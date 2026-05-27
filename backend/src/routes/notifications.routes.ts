@@ -6,20 +6,21 @@ import {
   deleteNotification,
   getUnreadCount,
 } from "../controllers/notifications.controller.js";
+import { requirePermission } from "../middlewares/auth.middleware.js";
 import { supabase } from "../lib/supabase.js";
 
 const router = Router();
 
 // NOTE: Authentication is applied globally in app.ts for all /api routes
 
-router.get("/", getNotifications);
-router.get("/unread-count", getUnreadCount);
-router.patch("/:id/read", markAsRead);
-router.patch("/read-all", markAllAsRead);
-router.delete("/:id", deleteNotification);
+router.get("/", requirePermission('notifications:view'), getNotifications);
+router.get("/unread-count", requirePermission('notifications:view'), getUnreadCount);
+router.patch("/:id/read", requirePermission('notifications:view'), markAsRead);
+router.patch("/read-all", requirePermission('notifications:view'), markAllAsRead);
+router.delete("/:id", requirePermission('notifications:view'), deleteNotification);
 
 // Endpoint para crear notificaciones de prueba
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", requirePermission('notifications:send'), async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.userId;
     

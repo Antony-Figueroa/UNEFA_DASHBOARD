@@ -17,6 +17,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/
 import InputField from "../../components/form/input/InputField";
 import { rolesService, Role } from "../../features/roles/services/rolesService";
 import { permissionService, Permission, GroupedPermissions } from "../../features/permissions/services/permissionService";
+import { usePermissions } from "../../features/permissions/hooks/usePermissions";
 import toast from "react-hot-toast";
 
 interface RoleWithPermissions extends Role {
@@ -24,6 +25,7 @@ interface RoleWithPermissions extends Role {
 }
 
 export default function RolesPermissionsPage() {
+  const { refresh: refreshPermissions } = usePermissions();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [roles, setRoles] = useState<RoleWithPermissions[]>([]);
@@ -127,13 +129,14 @@ export default function RolesPermissionsPage() {
       const response = await rolesService.create({
         name: createForm.name,
         description: createForm.description,
-        permissionIds: createForm.permissionIds.map(String),
+        permissionIds: createForm.permissionIds,
       });
 
       if (response.success) {
         toast.success("Rol creado exitosamente");
         setIsCreateModalOpen(false);
         fetchData();
+        refreshPermissions();
       } else {
         toast.error(response.message || "Error al crear rol");
       }
@@ -208,6 +211,7 @@ export default function RolesPermissionsPage() {
           toast.success('Rol actualizado correctamente');
           setIsEditModalOpen(false);
           fetchData();
+          refreshPermissions();
         } catch (error) {
           console.error('Error updating role:', error);
           toast.error('Error al actualizar el rol');

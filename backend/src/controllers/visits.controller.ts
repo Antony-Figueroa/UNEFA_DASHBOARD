@@ -19,11 +19,10 @@ export interface VisitRecord {
 }
 
 interface VisitWithDetails extends VisitRecord {
-  t_tutors?: {
-    TUTOR_ID: number;
-    NAME: string;
-    SURNAME: string;
-    TUTOR_CI: string;
+  t_persons?: {
+    ci: string;
+    first_name: string;
+    last_name: string;
   };
   t_professional_practices?: {
     PROFESSIONAL_PRACTICE_ID: number;
@@ -34,11 +33,10 @@ interface VisitWithDetails extends VisitRecord {
       START_DATE: string;
       END_DATE: string;
     };
-    t_students?: {
-      STUDENTS_ID: number;
-      STUDENTS_CI: string;
-      NAME: string;
-      SURNAME: string;
+    t_persons?: {
+      ci: string;
+      first_name: string;
+      last_name: string;
     };
     t_institution?: {
       INSTITUTION_ID: number;
@@ -51,12 +49,12 @@ const mapVisitToFrontend = (v: VisitWithDetails) => ({
   visitId: v.VISIT_ID,
   practiceId: v.PROFESSIONAL_PRACTICE_ID,
   tutorId: v.TUTOR_ID,
-  tutorName: v.t_tutors ? `${v.t_tutors.NAME} ${v.t_tutors.SURNAME}` : '',
-  tutorCi: v.t_tutors?.TUTOR_CI || '',
-  studentName: v.t_professional_practices?.t_students 
-    ? `${v.t_professional_practices.t_students.NAME} ${v.t_professional_practices.t_students.SURNAME}` 
+  tutorName: v.t_persons ? `${v.t_persons.first_name} ${v.t_persons.last_name}` : '',
+  tutorCi: v.t_persons?.ci || '',
+  studentName: v.t_professional_practices?.t_persons
+    ? `${v.t_professional_practices.t_persons.first_name} ${v.t_professional_practices.t_persons.last_name}`
     : '',
-  studentCi: v.t_professional_practices?.t_students?.STUDENTS_CI || '',
+  studentCi: v.t_professional_practices?.t_persons?.ci || '',
   institutionName: v.t_professional_practices?.t_institution?.INSTITUTION_NAME || '',
   visitDate: v.VISIT_DATE,
   visitType: v.VISIT_TYPE,
@@ -80,11 +78,10 @@ export const getVisitsByPractice = async (req: Request, res: Response) => {
       .from('t_practice_visits')
       .select(`
         *,
-        t_tutors (
-          TUTOR_ID,
-          NAME,
-          SURNAME,
-          TUTOR_CI
+        t_persons!inner (
+          ci,
+          first_name,
+          last_name
         ),
         t_professional_practices (
           PROFESSIONAL_PRACTICE_ID,
@@ -95,11 +92,10 @@ export const getVisitsByPractice = async (req: Request, res: Response) => {
             START_DATE,
             END_DATE
           ),
-          t_students (
-            STUDENTS_ID,
-            STUDENTS_CI,
-            NAME,
-            SURNAME
+          t_persons!inner (
+            ci,
+            first_name,
+            last_name
           ),
           t_institution (
             INSTITUTION_ID,
@@ -156,19 +152,17 @@ export const getAllVisits = async (req: Request, res: Response) => {
       .from('t_practice_visits')
       .select(`
         *,
-        t_tutors (
-          TUTOR_ID,
-          NAME,
-          SURNAME,
-          TUTOR_CI
+        t_persons!inner (
+          ci,
+          first_name,
+          last_name
         ),
         t_professional_practices (
           PROFESSIONAL_PRACTICE_ID,
-          t_students (
-            STUDENTS_ID,
-            STUDENTS_CI,
-            NAME,
-            SURNAME
+          t_persons!inner (
+            ci,
+            first_name,
+            last_name
           ),
           t_institution (
             INSTITUTION_ID,
@@ -227,19 +221,17 @@ export const getVisitById = async (req: Request, res: Response) => {
       .from('t_practice_visits')
       .select(`
         *,
-        t_tutors (
-          TUTOR_ID,
-          NAME,
-          SURNAME,
-          TUTOR_CI
+        t_persons!inner (
+          ci,
+          first_name,
+          last_name
         ),
         t_professional_practices (
           PROFESSIONAL_PRACTICE_ID,
-          t_students (
-            STUDENTS_ID,
-            STUDENTS_CI,
-            NAME,
-            SURNAME
+          t_persons!inner (
+            ci,
+            first_name,
+            last_name
           ),
           t_institution (
             INSTITUTION_ID,
@@ -381,19 +373,17 @@ export const createVisit = async (req: Request, res: Response) => {
       }])
       .select(`
         *,
-        t_tutors (
-          TUTOR_ID,
-          NAME,
-          SURNAME,
-          TUTOR_CI
+        t_persons!inner (
+          ci,
+          first_name,
+          last_name
         ),
         t_professional_practices (
           PROFESSIONAL_PRACTICE_ID,
-          t_students (
-            STUDENTS_ID,
-            STUDENTS_CI,
-            NAME,
-            SURNAME
+          t_persons!inner (
+            ci,
+            first_name,
+            last_name
           ),
           t_institution (
             INSTITUTION_ID,
@@ -484,19 +474,17 @@ export const updateVisit = async (req: Request, res: Response) => {
       .eq('VISIT_ID', id)
       .select(`
         *,
-        t_tutors (
-          TUTOR_ID,
-          NAME,
-          SURNAME,
-          TUTOR_CI
+        t_persons!inner (
+          ci,
+          first_name,
+          last_name
         ),
         t_professional_practices (
           PROFESSIONAL_PRACTICE_ID,
-          t_students (
-            STUDENTS_ID,
-            STUDENTS_CI,
-            NAME,
-            SURNAME
+          t_persons!inner (
+            ci,
+            first_name,
+            last_name
           ),
           t_institution (
             INSTITUTION_ID,
@@ -638,7 +626,7 @@ export const getVisitsCountByTutor = async (req: Request, res: Response) => {
     // Primero obtener todos los tutores activos
     const { data: tutors, error: tutorsError } = await supabase
       .from('t_tutors')
-      .select('TUTOR_ID, NAME, SURNAME')
+      .select('TUTOR_ID, t_persons!inner(first_name, last_name)')
       .eq('STATUS', 1);
 
     if (tutorsError) {
@@ -666,7 +654,7 @@ export const getVisitsCountByTutor = async (req: Request, res: Response) => {
     // Combinar tutores con sus conteos
     const result = (tutors || []).map(tutor => ({
       tutorId: tutor.TUTOR_ID,
-      tutorName: `${tutor.NAME || ''} ${tutor.SURNAME || ''}`.trim(),
+      tutorName: `${(tutor as any).t_persons?.first_name || ''} ${(tutor as any).t_persons?.last_name || ''}`.trim(),
       visitCount: countsMap[tutor.TUTOR_ID] || 0
     }));
 

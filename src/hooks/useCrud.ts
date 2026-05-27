@@ -74,11 +74,15 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       const err = e instanceof Error ? e : new Error(`Error al cargar ${resourceName}s`);
       setError(err);
       setStatus("error");
-      addToast({
-        variant: "error",
-        title: `Error de Carga`,
-        message: `No se pudieron cargar los datos de ${resourceName}s. ${err.message}`
-      });
+      // Silenciar 403 — son errores de permisos, no de carga
+      const axiosError = e as { response?: { status?: number } };
+      if (axiosError.response?.status !== 403) {
+        addToast({
+          variant: "error",
+          title: `Error de Carga`,
+          message: `No se pudieron cargar los datos de ${resourceName}s. ${err.message}`
+        });
+      }
     }
   }, [service, resourceName, addToast]);
 

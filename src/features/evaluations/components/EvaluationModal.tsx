@@ -60,10 +60,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   const [dataLoaded, setDataLoaded] = useState(false);
   const [existingData, setExistingData] = useState<EvaluationWithDetails | null>(null);
   const [initialLoading, setInitialLoading] = useState(false);
-  const [tutorInfoLoading, setTutorInfoLoading] = useState(false);
-  const [originalTutorName, setOriginalTutorName] = useState('');
-  const [originalTutorCi, setOriginalTutorCi] = useState('');
   const isEditing = !!evaluationId;
+  const isTutorEvaluator = evaluatorType !== 'COMITE';
 
   const {
     register,
@@ -82,41 +80,31 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     }
   });
 
-  // Cargar datos del tutor correspondiente cuando se abre el modal
+  // Cargar datos del tutor asignado cuando se abre el modal (solo lectura)
   useEffect(() => {
     if (!isOpen || isEditing) return;
 
-    if (evaluatorType === 'COMITE') {
+    if (!isTutorEvaluator) {
       setValue('evaluatorName', '');
       setValue('evaluatorCi', '');
       return;
     }
 
     let cancelled = false;
-    setTutorInfoLoading(true);
 
     evaluationService.getPracticeTutorInfo(practiceId, evaluatorType)
       .then((tutorData) => {
         if (cancelled) return;
         if (tutorData) {
-          setOriginalTutorName(tutorData.name);
-          setOriginalTutorCi(tutorData.ci);
           setValue('evaluatorName', tutorData.name);
           setValue('evaluatorCi', tutorData.ci);
         }
       })
-      .catch(() => {
-        if (!cancelled) {
-          setValue('evaluatorName', '');
-          setValue('evaluatorCi', '');
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setTutorInfoLoading(false);
-      });
+      .catch(() => {/* silent fail */})
+      .finally(() => { /* no-op */ });
 
     return () => { cancelled = true; };
-  }, [isOpen, evaluatorType, practiceId]);
+  }, [isOpen, evaluatorType, practiceId, isTutorEvaluator]);
 
   // Cargar criterios y datos existentes cuando se abre el modal
   useEffect(() => {
@@ -223,22 +211,12 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     }
   };
 
-  const handleResetName = () => {
-    if (originalTutorName) setValue('evaluatorName', originalTutorName);
-  };
-
-  const handleResetCi = () => {
-    if (originalTutorCi) setValue('evaluatorCi', originalTutorCi);
-  };
-
   const handleClose = () => {
     reset();
     setExistingData(null);
     setDataLoaded(false);
     setItemScores({});
     setCriteriaLoaded([]);
-    setOriginalTutorName('');
-    setOriginalTutorCi('');
     onClose();
   };
 
@@ -286,29 +264,15 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
           <ModalBody className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Nombre del Evaluador *
-                  </label>
-                  {originalTutorName && (
-                    <button
-                      type="button"
-                      onClick={handleResetName}
-                      title="Restablecer datos del tutor"
-                      className="text-xs text-brand-500 hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300 flex items-center gap-1"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      Restablecer
-                    </button>
-                  )}
-                </div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Nombre del Evaluador *
+                </label>
                 <input
                   type="text"
                   {...register('evaluatorName')}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white"
-                  placeholder="Nombre completo"
+                  readOnly={isTutorEvaluator}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white ${isTutorEvaluator ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : 'border-gray-300 dark:border-gray-600'}`}
+                  placeholder={isTutorEvaluator ? 'Cargando tutor asignado...' : 'Nombre completo'}
                 />
                 {errors.evaluatorName && (
                   <p className="mt-1 text-sm text-red-500">{errors.evaluatorName.message}</p>
@@ -316,29 +280,15 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Cédula del Evaluador
-                  </label>
-                  {originalTutorCi && (
-                    <button
-                      type="button"
-                      onClick={handleResetCi}
-                      title="Restablecer CI del tutor"
-                      className="text-xs text-brand-500 hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300 flex items-center gap-1"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      Restablecer
-                    </button>
-                  )}
-                </div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Cédula del Evaluador
+                </label>
                 <input
                   type="text"
                   {...register('evaluatorCi')}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white"
-                  placeholder="V00.000.000"
+                  readOnly={isTutorEvaluator}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white ${isTutorEvaluator ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : 'border-gray-300 dark:border-gray-600'}`}
+                  placeholder={isTutorEvaluator ? 'Cargando...' : 'V00.000.000'}
                   maxLength={12}
                 />
               </div>

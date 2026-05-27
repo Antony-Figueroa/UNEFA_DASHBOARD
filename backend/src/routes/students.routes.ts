@@ -10,6 +10,7 @@ import {
   checkIdAvailability,
   getStudentStats,
   getStudentByCi,
+  lookupStudentCi,
   changeStudentRegistration,
   importStudents,
   exportStudents
@@ -43,6 +44,7 @@ router.get('/', authenticateToken, requirePermission('students:view'), getStuden
 router.get('/stats', authenticateToken, requirePermission('students:view'), getStudentStats);
 router.get('/check-availability', authenticateToken, checkIdAvailability);
 router.get('/by-ci/:ci', authenticateToken, getStudentByCi);
+router.get('/lookup-ci/:ci', authenticateToken, lookupStudentCi);
 router.get('/export', authenticateToken, requirePermission('students:view'), exportStudents);
 router.get('/import/template', authenticateToken, requirePermission('students:create'), getTemplate);
 router.get('/:id', authenticateToken, requirePermission('students:view'), getStudentById);

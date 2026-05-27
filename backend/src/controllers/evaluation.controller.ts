@@ -276,13 +276,13 @@ export const createEvaluation = async (req: AuthRequest, res: Response) => {
       // Obtener datos del estudiante para auditoría
       const { data: practice } = await supabase
         .from('t_professional_practices')
-        .select('t_students(NAME, SURNAME)')
+        .select('t_persons!inner(first_name, last_name)')
         .eq('PROFESSIONAL_PRACTICE_ID', data.professionalPracticeId)
         .single();
 
-      const studentsData = practice?.t_students as unknown as Array<{ NAME?: string; SURNAME?: string }> | undefined;
-      const studentName = studentsData && studentsData.length > 0 
-        ? `${studentsData[0].NAME || ''} ${studentsData[0].SURNAME || ''}`.trim() 
+      const student = (practice as any)?.t_persons;
+      const studentName = student 
+        ? `${student.first_name || ''} ${student.last_name || ''}`.trim() 
         : 'Estudiante';
 
       await auditCreate(req, 't_evaluation', {
@@ -571,7 +571,7 @@ export const getPracticeTutorInfo = async (req: AuthRequest, res: Response) => {
 
       const { data: manager } = await supabase
         .from('t_institution_manager')
-        .select('MANAGER_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME')
+        .select('t_persons!inner(ci, first_name, middle_name, last_name, second_last_name)')
         .eq('MANAGER_ID', (practice as any).MANAGER_ID)
         .maybeSingle();
 
@@ -579,7 +579,7 @@ export const getPracticeTutorInfo = async (req: AuthRequest, res: Response) => {
         return res.json({ success: true, data: null });
       }
 
-      const fullName = [(manager as any).NAME, (manager as any).SECOND_NAME, (manager as any).SURNAME, (manager as any).SECOND_SURNAME]
+      const fullName = [(manager as any).t_persons?.first_name, (manager as any).t_persons?.middle_name, (manager as any).t_persons?.last_name, (manager as any).t_persons?.second_last_name]
         .filter(Boolean)
         .join(' ')
         .trim();
@@ -588,7 +588,7 @@ export const getPracticeTutorInfo = async (req: AuthRequest, res: Response) => {
         success: true,
         data: {
           name: fullName,
-          ci: (manager as any).MANAGER_CI
+          ci: (manager as any).t_persons?.ci
         }
       });
     }
@@ -598,7 +598,7 @@ export const getPracticeTutorInfo = async (req: AuthRequest, res: Response) => {
       .from('t_professional_practices_tutor')
       .select(`
         TUTOR_ID,
-        t_tutors!inner(TUTOR_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME)
+        t_persons!inner (ci, first_name, middle_name, last_name, second_last_name)
       `)
       .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
       .eq('TUTOR_TYPE', 'ACADEMICO')
@@ -608,8 +608,8 @@ export const getPracticeTutorInfo = async (req: AuthRequest, res: Response) => {
       return res.json({ success: true, data: null });
     }
 
-    const tutor = (tutorAssignment as any).t_tutors;
-    const fullName = [tutor.NAME, tutor.SECOND_NAME, tutor.SURNAME, tutor.SECOND_SURNAME]
+    const tutor = (tutorAssignment as any).t_persons;
+    const fullName = [tutor?.first_name, tutor?.middle_name, tutor?.last_name, tutor?.second_last_name]
       .filter(Boolean)
       .join(' ')
       .trim();
@@ -618,7 +618,7 @@ export const getPracticeTutorInfo = async (req: AuthRequest, res: Response) => {
       success: true,
       data: {
         name: fullName,
-        ci: tutor.TUTOR_CI
+        ci: tutor?.ci
       }
     });
 

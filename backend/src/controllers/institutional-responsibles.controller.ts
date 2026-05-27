@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
+import * as personService from '../services/person.service.js';
 
 const TABLE_NAME = 't_institution_manager';
 const PIVOT_TABLE = 't_institution_manager_institution';
@@ -12,7 +13,7 @@ interface AppError extends Error {
 const handleDbError = (res: Response, error: unknown) => {
   console.error('[DB Error Controller]:', error);
   const dbError = error as { message?: string; details?: string; code?: string; status?: number };
-  
+
   let userMessage = 'Error en la base de datos';
   let statusCode = dbError.status || 500;
 
@@ -37,8 +38,8 @@ const handleDbError = (res: Response, error: unknown) => {
     return res.status(404).json({ message: userMessage });
   }
 
-  res.status(statusCode).json({ 
-    message: userMessage, 
+  res.status(statusCode).json({
+    message: userMessage,
     error: dbError.message || 'Unknown database error',
     details: dbError.details,
     code: dbError.code,
@@ -46,18 +47,28 @@ const handleDbError = (res: Response, error: unknown) => {
   });
 };
 
+// ============================================================
+// Types
+// ============================================================
+
+interface DBPersonJoin {
+  person_id: number;
+  ci: string;
+  first_name: string;
+  middle_name: string | null;
+  last_name: string;
+  second_last_name: string | null;
+  email: string;
+  phone: string | null;
+  gender: string | null;
+}
+
 interface DBInstitutionalResponsible {
   MANAGER_ID: number;
-  MANAGER_CI: string;
-  NAME: string;
-  SECOND_NAME: string | null;
-  SURNAME: string;
-  SECOND_SURNAME: string | null;
-  CONTACT_PHONE: string;
-  EMAIL: string;
-  cargo: string | null;
+  person_id: number;
   CREATION_DATE: string;
   STATUS: number;
+  t_persons: DBPersonJoin;
   institutions?: Array<{
     institutionId: string;
     institutionName: string;
@@ -65,21 +76,22 @@ interface DBInstitutionalResponsible {
   }>;
 }
 
-/**
- * Obtiene las instituciones asociadas a un responsable desde la tabla pivote
- * Devuelve array de objetos con id, nombre y cargo por cada relación
- */
+// ============================================================
+// Helpers
+// ============================================================
+
+const MANAGER_COLUMNS = `MANAGER_ID, person_id, CREATION_DATE, STATUS`;
+const PERSON_JOIN = `t_persons!inner(person_id, ci, first_name, middle_name, last_name, second_last_name, email, phone, gender)`;
+
 const getInstitutionsForManager = async (supabase: any, managerId: number) => {
   const { data: pivotData, error: pivotError } = await supabase
     .from(PIVOT_TABLE)
     .select('INSTITUTION_ID, cargo')
     .eq('MANAGER_ID', managerId);
 
-  if (pivotError || !pivotData || pivotData.length === 0) {
-    return [];
-  }
+  if (pivotError || !pivotData || pivotData.length === 0) return [];
 
-  const institutionIds = pivotData.map((d: any) => d.INSTITUTION_ID !== undefined ? d.INSTITUTION_ID : d.institution_id);
+  const institutionIds = pivotData.map((d: any) => d.INSTITUTION_ID ?? d.institution_id);
 
   const { data: instData } = await supabase
     .from('t_institution')
@@ -88,9 +100,8 @@ const getInstitutionsForManager = async (supabase: any, managerId: number) => {
 
   const instMap = new Map((instData || []).map((i: any) => [i.INSTITUTION_ID, i.INSTITUTION_NAME]));
 
-  // Devolver array de objetos - cada relación es independiente
   return pivotData.map((p: any) => {
-    const iId = p.INSTITUTION_ID !== undefined ? p.INSTITUTION_ID : p.institution_id;
+    const iId = p.INSTITUTION_ID ?? p.institution_id;
     return {
       institutionId: String(iId),
       institutionName: instMap.get(iId) || 'N/A',
@@ -99,78 +110,79 @@ const getInstitutionsForManager = async (supabase: any, managerId: number) => {
   });
 };
 
-const mapDBToFrontend = (r: DBInstitutionalResponsible) => ({
-  responsibleId: String(r.MANAGER_ID),
-  identificationPrefix: r.MANAGER_CI.includes('-') ? r.MANAGER_CI.split('-')[0] : 'V',
-  identificationNumber: r.MANAGER_CI.includes('-') ? r.MANAGER_CI.split('-')[1] : r.MANAGER_CI,
-  firstName: r.NAME,
-  middleName: r.SECOND_NAME || undefined,
-  lastName: r.SURNAME,
-  secondLastName: r.SECOND_SURNAME || undefined,
-  phone: r.CONTACT_PHONE,
-  email: r.EMAIL,
-  // El cargo ahora viene por cada institución, no global
-  cargo: r.institutions?.[0]?.cargo || r.cargo || undefined,
-  institutions: r.institutions || [],
-  status: r.STATUS === 1,
-  registrationDate: r.CREATION_DATE
-});
+const mapDBToFrontend = (r: DBInstitutionalResponsible) => {
+  const p = r.t_persons;
+  return {
+    responsibleId: String(r.MANAGER_ID),
+    identificationPrefix: p.ci.includes('-') ? p.ci.split('-')[0] : 'V',
+    identificationNumber: p.ci.includes('-') ? p.ci.split('-')[1] : p.ci,
+    firstName: p.first_name,
+    middleName: p.middle_name || undefined,
+    lastName: p.last_name,
+    secondLastName: p.second_last_name || undefined,
+    phone: p.phone,
+    email: p.email,
+    cargo: r.institutions?.[0]?.cargo || undefined,
+    institutions: r.institutions || [],
+    status: r.STATUS === 1,
+    registrationDate: r.CREATION_DATE
+  };
+};
+
+function extractPersonData(body: any) {
+  return {
+    ci: `${body.identificationPrefix || 'V'}-${body.identificationNumber}`,
+    firstName: String(body.firstName || '').toUpperCase(),
+    middleName: body.middleName ? String(body.middleName).toUpperCase() : null,
+    lastName: String(body.lastName || '').toUpperCase(),
+    secondLastName: body.secondLastName ? String(body.secondLastName).toUpperCase() : null,
+    email: String(body.email || '').toUpperCase(),
+    phone: body.phone || null,
+  };
+}
+
+// ============================================================
+// LIST
+// ============================================================
 
 export const getInstitutionalResponsibles = async (_req: Request, res: Response) => {
   try {
     const data = await dbManager.withRetry(async (supabase) => {
       const { data: responsibles, error } = await supabase
         .from(TABLE_NAME)
-        .select('*')
-        .order('NAME', { ascending: true });
+        .select(`${MANAGER_COLUMNS}, ${PERSON_JOIN}`)
+        .order('first_name', { ascending: true, referencedTable: 't_persons' });
 
       if (error) throw error;
 
-      // Obtener mapa de instituciones
+      // Obtener instituciones desde tabla pivote
       const { data: instData } = await supabase.from('t_institution').select('INSTITUTION_ID, INSTITUTION_NAME');
       const instMap = new Map((instData || []).map((i: any) => [i.INSTITUTION_ID, i.INSTITUTION_NAME]));
 
-      // Obtener relaciones de la tabla pivote CON cargo
       const { data: pivotData } = await supabase
         .from(PIVOT_TABLE)
         .select('MANAGER_ID, INSTITUTION_ID, cargo');
 
-      // Agrupar instituciones por manager CON su cargo
+      // Agrupar instituciones por manager
       const managerInstitutions = new Map<number, Array<{ institutionId: string; institutionName: string; cargo: string }>>();
       (pivotData || []).forEach((p: any) => {
-        const mKey = p.MANAGER_ID !== undefined ? 'MANAGER_ID' : 'manager_id';
-        const iKey = p.INSTITUTION_ID !== undefined ? 'INSTITUTION_ID' : 'institution_id';
-        const mId = p[mKey];
-        const iId = p[iKey];
-        
-        if (mId !== undefined && iId !== undefined) {
-          const existing = managerInstitutions.get(mId) || [];
+        const mKey = p.MANAGER_ID ?? p.manager_id;
+        const iKey = p.INSTITUTION_ID ?? p.institution_id;
+        if (mKey !== undefined && iKey !== undefined) {
+          const existing = managerInstitutions.get(mKey) || [];
           existing.push({
-            institutionId: String(iId),
-            institutionName: instMap.get(iId) || 'N/A',
+            institutionId: String(iKey),
+            institutionName: instMap.get(iKey) || 'N/A',
             cargo: p.cargo || p.CARGO || ''
           });
-          managerInstitutions.set(mId, existing);
+          managerInstitutions.set(mKey, existing);
         }
       });
 
-      return (responsibles || []).map((r: any) => {
-        let institutions = managerInstitutions.get(r.MANAGER_ID) || [];
-        
-        // BACKWARD COMPATIBILITY: Si no hay instituciones en pivote, usar datos de tabla principal
-        if (institutions.length === 0 && r.INSTITUTION_ID) {
-          institutions = [{
-            institutionId: String(r.INSTITUTION_ID),
-            institutionName: instMap.get(r.INSTITUTION_ID) || 'N/A',
-            cargo: r.cargo || ''
-          }];
-        }
-        
-        return {
-          ...r,
-          institutions
-        };
-      }) as unknown as DBInstitutionalResponsible[];
+      return (responsibles || []).map((r: any) => ({
+        ...r,
+        institutions: managerInstitutions.get(r.MANAGER_ID) || [],
+      })) as unknown as DBInstitutionalResponsible[];
     }, 'getInstitutionalResponsibles');
 
     res.json(data.map(mapDBToFrontend));
@@ -179,42 +191,31 @@ export const getInstitutionalResponsibles = async (_req: Request, res: Response)
   }
 };
 
+// ============================================================
+// GET BY CI
+// ============================================================
+
 export const getInstitutionalResponsibleByCi = async (req: Request, res: Response) => {
   try {
     const { ci } = req.params;
-    
+
+    const person = await personService.getPersonByCi(ci);
+    if (!person) {
+      return res.status(200).json({ message: 'Responsable no encontrado', data: null });
+    }
+
     const data = await dbManager.withRetry(async (supabase) => {
       const { data: responsible, error } = await supabase
         .from(TABLE_NAME)
-        .select('*')
-        .eq('MANAGER_CI', ci)
+        .select(`${MANAGER_COLUMNS}, ${PERSON_JOIN}`)
+        .eq('person_id', person.personId)
         .maybeSingle();
 
       if (error) throw error;
       if (!responsible) return null;
 
-      // Obtener instituciones desde la tabla pivote
-      let institutions = await getInstitutionsForManager(supabase, responsible.MANAGER_ID);
-
-      // BACKWARD COMPATIBILITY: Si no hay instituciones en pivote, usar datos de tabla principal
-      if (institutions.length === 0 && responsible.INSTITUTION_ID) {
-        const { data: instData } = await supabase
-          .from('t_institution')
-          .select('INSTITUTION_ID, INSTITUTION_NAME')
-          .eq('INSTITUTION_ID', responsible.INSTITUTION_ID)
-          .maybeSingle();
-
-        institutions = [{
-          institutionId: String(responsible.INSTITUTION_ID),
-          institutionName: instData?.INSTITUTION_NAME || 'N/A',
-          cargo: responsible.cargo || ''
-        }];
-      }
-
-      return {
-        ...responsible,
-        institutions
-      } as DBInstitutionalResponsible;
+      const institutions = await getInstitutionsForManager(supabase, responsible.MANAGER_ID);
+      return { ...responsible, institutions } as unknown as DBInstitutionalResponsible;
     }, 'getInstitutionalResponsibleByCi');
 
     if (!data) {
@@ -227,93 +228,69 @@ export const getInstitutionalResponsibleByCi = async (req: Request, res: Respons
   }
 };
 
+// ============================================================
+// CREATE
+// ============================================================
+
 export const createInstitutionalResponsible = async (req: Request, res: Response) => {
   try {
     const r = req.body;
     console.log('[createInstitutionalResponsible] Request body:', JSON.stringify(r));
-    
-    // Nueva estructura: institutions array con objetos { institutionId, cargo }
-    // También acepta backward compatibility con institutionIds array simple
+
+    // Parsear instituciones
     let institutions: Array<{ institutionId: string; cargo: string }> = [];
-    
+
     if (r.institutions && Array.isArray(r.institutions)) {
-      // Nueva estructura: [{ institutionId: "1", cargo: "Gerente" }, ...]
       institutions = r.institutions.map((inst: any) => ({
         institutionId: String(inst.institutionId),
         cargo: inst.cargo || ''
       }));
     } else if (r.institutionIds && Array.isArray(r.institutionIds)) {
-      // Backward: [1, 2, 3] - usar cargo global si existe
       institutions = r.institutionIds.map((id: string) => ({
         institutionId: String(id),
         cargo: r.cargo || ''
       }));
     } else if (r.institutionId) {
-      // Backward: single institutionId
-      institutions = [{
-        institutionId: String(r.institutionId),
-        cargo: r.cargo || ''
-      }];
+      institutions = [{ institutionId: String(r.institutionId), cargo: r.cargo || '' }];
     }
-    
-    // La institución ya no es obligatoria - se puede agregar después desde la institución
-    // if (institutions.length === 0) {
-    //   return res.status(400).json({ message: 'Debe seleccionar al menos una institución' });
-    // }
-    
-    // Validar que todos los IDs sean válidos (solo si hay instituciones)
+
     const validInstitutions = institutions.filter(inst => {
       const num = parseInt(inst.institutionId);
       return !isNaN(num) && num > 0;
     });
-    
-    // Solo validar si hay instituciones - si está vacío, permitirlo
+
     if (institutions.length > 0 && validInstitutions.length === 0) {
       return res.status(400).json({ message: 'Los IDs de institución deben ser números válidos' });
     }
-    
-    const creationDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-    const buildDbData = () => {
-      const data: any = {
-        MANAGER_CI: `${r.identificationPrefix}-${r.identificationNumber}`,
-        NAME: String(r.firstName).toUpperCase(),
-        SECOND_NAME: r.middleName ? String(r.middleName).toUpperCase() : null,
-        SURNAME: String(r.lastName).toUpperCase(),
-        SECOND_SURNAME: r.secondLastName ? String(r.secondLastName).toUpperCase() : null,
-        CONTACT_PHONE: r.phone,
-        EMAIL: String(r.email).toUpperCase(),
-        // Mantener el campo antiguo por compatibilidad, pero será null
-        INSTITUTION_ID: null,
-        STATUS: r.status === false ? 0 : 1,
-        CREATION_DATE: creationDate,
-        // El cargo global se mantiene por compatibilidad pero no se usa
-        cargo: null
-      };
-      
-      return data;
-    };
+    const personData = extractPersonData(r);
+    const managerCi = personData.ci;
 
     const data = await dbManager.withRetry(async (supabase) => {
-      // Verificar duplicado
-      const managerCi = `${r.identificationPrefix}-${r.identificationNumber}`;
-      const { data: existing } = await supabase
-        .from(TABLE_NAME)
-        .select('MANAGER_ID')
-        .eq('MANAGER_CI', managerCi)
-        .maybeSingle();
-
-      if (existing) {
-        const err = new Error('Ya existe un responsable con esa cédula');
+      // Verificar duplicado en t_persons
+      const ciCheck = await personService.validateUniqueCi(managerCi);
+      if (!ciCheck.available) {
+        const err = new Error('Ya existe un responsable con esa cédula') as AppError;
         (err as any).status = 400;
         throw err;
       }
 
-      let dbData = buildDbData();
-      let { data: newManager, error } = await supabase
+      // 1. Crear persona en t_persons
+      const newPerson = await personService.createPerson(personData, supabase);
+
+      // 2. Insertar manager
+      const dbData = {
+        person_id: newPerson.personId,
+        STATUS: r.status === false ? 0 : 1,
+        CREATION_DATE: new Date().toISOString(),
+        INSTITUTION_ID: null,
+        cargo: null,
+      };
+
+      const { data: newManager, error } = await supabase
         .from(TABLE_NAME)
         .insert([dbData])
-        .select('*')
+        .select(`${MANAGER_COLUMNS}, ${PERSON_JOIN}`)
         .single();
 
       if (error) {
@@ -321,25 +298,26 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
         throw error;
       }
 
-      // Insertar relaciones en la tabla pivote CON cargo
-      const pivotInserts = validInstitutions.map((inst: any) => ({
-        "MANAGER_ID": newManager.MANAGER_ID,
-        "INSTITUTION_ID": parseInt(inst.institutionId),
-        cargo: inst.cargo ? String(inst.cargo).toUpperCase() : null
-      }));
+      // 3. Insertar relaciones en tabla pivote
+      if (validInstitutions.length > 0) {
+        const pivotInserts = validInstitutions.map((inst: any) => ({
+          MANAGER_ID: newManager.MANAGER_ID,
+          INSTITUTION_ID: parseInt(inst.institutionId),
+          cargo: inst.cargo ? String(inst.cargo).toUpperCase() : null
+        }));
 
-      const { error: pivotError } = await supabase
-        .from(PIVOT_TABLE)
-        .insert(pivotInserts);
+        const { error: pivotError } = await supabase
+          .from(PIVOT_TABLE)
+          .insert(pivotInserts);
 
-      if (pivotError) {
-        console.error('[createInstitutionalResponsible] Pivot Insert Error:', pivotError);
-        // Si falla la tabla pivote, eliminamos el manager creado
-        await supabase.from(TABLE_NAME).delete().eq('MANAGER_ID', newManager.MANAGER_ID);
-        throw pivotError;
+        if (pivotError) {
+          console.error('[createInstitutionalResponsible] Pivot Insert Error:', pivotError);
+          await supabase.from(TABLE_NAME).delete().eq('MANAGER_ID', newManager.MANAGER_ID);
+          throw pivotError;
+        }
       }
 
-      // Obtener instituciones para devolver al frontend
+      // 4. Obtener instituciones para devolver
       const instIds = validInstitutions.map((i: any) => parseInt(i.institutionId));
       const { data: instData } = await supabase
         .from('t_institution')
@@ -348,16 +326,14 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
 
       const instMap = new Map((instData || []).map((i: any) => [i.INSTITUTION_ID, i.INSTITUTION_NAME]));
 
-      const resultInstitutions = validInstitutions.map((inst: any) => ({
-        institutionId: inst.institutionId,
-        institutionName: instMap.get(parseInt(inst.institutionId)) || 'N/A',
-        cargo: inst.cargo
-      }));
-
       return {
         ...newManager,
-        institutions: resultInstitutions
-      } as DBInstitutionalResponsible;
+        institutions: validInstitutions.map((inst: any) => ({
+          institutionId: inst.institutionId,
+          institutionName: instMap.get(parseInt(inst.institutionId)) || 'N/A',
+          cargo: inst.cargo
+        }))
+      } as unknown as DBInstitutionalResponsible;
     }, 'createInstitutionalResponsible');
 
     res.status(201).json(mapDBToFrontend(data));
@@ -366,88 +342,99 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
   }
 };
 
+// ============================================================
+// UPDATE
+// ============================================================
+
 export const updateInstitutionalResponsible = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const r = req.body;
     console.log(`[updateInstitutionalResponsible] Updating ID: ${id}, Body:`, JSON.stringify(r));
-    
-    const dbData: any = {};
-    
-    if (r.identificationPrefix !== undefined && r.identificationNumber !== undefined) {
-      dbData.MANAGER_CI = `${r.identificationPrefix}-${r.identificationNumber}`;
-    }
-    if (r.firstName !== undefined) dbData.NAME = String(r.firstName).toUpperCase();
-    if (r.middleName !== undefined) dbData.SECOND_NAME = r.middleName ? String(r.middleName).toUpperCase() : null;
-    if (r.lastName !== undefined) dbData.SURNAME = String(r.lastName).toUpperCase();
-    if (r.secondLastName !== undefined) dbData.SECOND_SURNAME = r.secondLastName ? String(r.secondLastName).toUpperCase() : null;
-    if (r.phone !== undefined) dbData.CONTACT_PHONE = r.phone;
-    if (r.email !== undefined) dbData.EMAIL = String(r.email).toUpperCase();
-    // El cargo ya no se guarda en la tabla principal, está en la pivote
-    // dbData.cargo = r.cargo ? String(r.cargo).toUpperCase() : null;
-    
-    // Mantener INSTITUTION_ID como null (las relaciones están en la tabla pivote)
-    dbData.INSTITUTION_ID = null;
-    
-    if (r.status !== undefined) dbData.STATUS = r.status ? 1 : 0;
 
     const data = await dbManager.withRetry(async (supabase) => {
-      // 1. Actualizar el registro base
+      // 0. Obtener registro actual
+      const { data: existing } = await supabase
+        .from(TABLE_NAME)
+        .select(`MANAGER_ID, person_id, STATUS, t_persons!inner(ci, email)`)
+        .eq('MANAGER_ID', id)
+        .single();
+
+      if (!existing) {
+        const err = new Error('Responsable no encontrado') as AppError;
+        (err as any).status = 404;
+        throw err;
+      }
+
+      const existingRow = existing as any;
+      const personId = existingRow.person_id;
+
+      const personData = extractPersonData(r);
+
+      // Validar duplicados en t_persons si cambió CI
+      if (r.identificationPrefix !== undefined || r.identificationNumber !== undefined) {
+        const managerCi = personData.ci;
+        if (managerCi !== existingRow.t_persons.ci) {
+          const ciCheck = await personService.validateUniqueCi(managerCi, personId);
+          if (!ciCheck.available) {
+            const err = new Error('Ya existe un responsable con esa cédula') as AppError;
+            (err as any).status = 400;
+            throw err;
+          }
+        }
+      }
+
+      // 1. Actualizar t_persons
+      await personService.updatePerson(personId, personData, supabase);
+
+      // 2. Actualizar t_institution_manager
+      const dbData: Record<string, unknown> = {};
+      dbData.INSTITUTION_ID = null;
+
+      if (r.status !== undefined) dbData.STATUS = r.status ? 1 : 0;
+
       const { error: updateError } = await supabase
         .from(TABLE_NAME)
         .update(dbData)
         .eq('MANAGER_ID', id);
-      
+
       if (updateError) throw updateError;
 
-      // 2. Si se enviaron institutions, actualizar la tabla pivote
+      // 3. Actualizar tabla pivote si se enviaron instituciones
       if (r.institutions !== undefined) {
-        // Nueva estructura: [{ institutionId: "1", cargo: "Gerente" }, ...]
         const newInstitutions = (r.institutions as Array<{ institutionId: string; cargo: string }>)
           .map(inst => ({
             institutionId: parseInt(inst.institutionId),
             cargo: inst.cargo ? String(inst.cargo).toUpperCase() : ''
           }))
           .filter(inst => !isNaN(inst.institutionId) && inst.institutionId > 0);
-        
-        // Eliminar relaciones existentes
-        await supabase
-          .from(PIVOT_TABLE)
-          .delete()
-          .eq('MANAGER_ID', id);
 
-        // Insertar nuevas relaciones CON cargo
+        await supabase.from(PIVOT_TABLE).delete().eq('MANAGER_ID', id);
+
         if (newInstitutions.length > 0) {
-          const pivotInserts = newInstitutions.map((inst: any) => ({
-            "MANAGER_ID": parseInt(id),
-            "INSTITUTION_ID": inst.institutionId,
+          const pivotInserts = newInstitutions.map(inst => ({
+            MANAGER_ID: parseInt(id),
+            INSTITUTION_ID: inst.institutionId,
             cargo: inst.cargo || null
           }));
 
-          const { error: pivotError } = await supabase
-            .from(PIVOT_TABLE)
-            .insert(pivotInserts);
-
+          const { error: pivotError } = await supabase.from(PIVOT_TABLE).insert(pivotInserts);
           if (pivotError) throw pivotError;
         }
       }
 
-      // 3. Recuperar el registro actualizado con sus instituciones
+      // 4. Obtener datos actualizados
       const { data: updatedData, error: selectError } = await supabase
         .from(TABLE_NAME)
-        .select('*')
+        .select(`${MANAGER_COLUMNS}, ${PERSON_JOIN}`)
         .eq('MANAGER_ID', id)
         .single();
 
       if (selectError) throw selectError;
 
-      // 4. Obtener instituciones desde la tabla pivote (ahora devuelve array de objetos)
       const institutions = await getInstitutionsForManager(supabase, parseInt(id));
 
-      return {
-        ...updatedData,
-        institutions
-      } as DBInstitutionalResponsible;
+      return { ...updatedData, institutions } as unknown as DBInstitutionalResponsible;
     });
 
     res.json(mapDBToFrontend(data));
@@ -455,6 +442,10 @@ export const updateInstitutionalResponsible = async (req: Request, res: Response
     handleDbError(res, error);
   }
 };
+
+// ============================================================
+// DELETE (soft delete)
+// ============================================================
 
 export const deleteInstitutionalResponsible = async (req: Request, res: Response) => {
   try {
@@ -464,7 +455,6 @@ export const deleteInstitutionalResponsible = async (req: Request, res: Response
         .from(TABLE_NAME)
         .update({ STATUS: 0 })
         .eq('MANAGER_ID', id);
-
       if (error) throw error;
     });
     res.status(204).send();
@@ -473,28 +463,38 @@ export const deleteInstitutionalResponsible = async (req: Request, res: Response
   }
 };
 
+// ============================================================
+// TOGGLE STATUS
+// ============================================================
+
 export const toggleInstitutionalResponsibleStatus = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    
+
     const data = await dbManager.withRetry(async (supabase) => {
+      const { data: oldData } = await supabase
+        .from(TABLE_NAME)
+        .select('STATUS, person_id')
+        .eq('MANAGER_ID', id)
+        .single();
+
       const { data: updatedData, error } = await supabase
         .from(TABLE_NAME)
         .update({ STATUS: status ? 1 : 0 })
         .eq('MANAGER_ID', id)
-        .select('*')
+        .select(`${MANAGER_COLUMNS}, ${PERSON_JOIN}`)
         .single();
 
       if (error) throw error;
 
-      // Obtener instituciones (ahora devuelve array de objetos)
-      const institutions = await getInstitutionsForManager(supabase, parseInt(id));
+      // Sincronizar t_persons
+      if (oldData?.person_id) {
+        await personService.togglePersonStatus(oldData.person_id, status ? 1 : 0);
+      }
 
-      return {
-        ...updatedData,
-        institutions
-      } as DBInstitutionalResponsible;
+      const institutions = await getInstitutionsForManager(supabase, parseInt(id));
+      return { ...updatedData, institutions } as unknown as DBInstitutionalResponsible;
     });
 
     res.json(mapDBToFrontend(data));
@@ -503,38 +503,27 @@ export const toggleInstitutionalResponsibleStatus = async (req: Request, res: Re
   }
 };
 
-/**
- * Verifica si una cédula está disponible para registro.
- */
+// ============================================================
+// CHECK AVAILABILITY
+// ============================================================
+
 export const checkIdAvailability = async (req: Request, res: Response) => {
   try {
     const { ci, excludeId } = req.query;
-    
+
     if (!ci) {
       return res.status(400).json({ message: 'Faltan parámetros: ci es requerido' });
     }
 
-    const result = await dbManager.withRetry(async (supabase) => {
-      let query = supabase
-        .from(TABLE_NAME)
-        .select('MANAGER_ID, STATUS');
-
-      query = query.eq('MANAGER_CI', ci as string);
-
-      if (excludeId) {
-        query = query.neq('MANAGER_ID', parseInt(excludeId as string));
-      }
-
-      const { data, error } = await query.maybeSingle();
-      if (error) throw error;
-      
-      return data;
-    }, 'checkAvailability');
+    const result = await personService.validateUniqueCi(
+      ci as string,
+      excludeId ? parseInt(excludeId as string) : undefined
+    );
 
     res.json({
-      available: !result,
-      status: result?.STATUS,
-      responsibleId: result?.MANAGER_ID
+      available: result.available,
+      status: result.status,
+      responsibleId: result.personId
     });
   } catch (error: unknown) {
     handleDbError(res, error);

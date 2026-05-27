@@ -1,11 +1,24 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/auth";
 import { motion } from "framer-motion";
-import { FiHome, FiCalendar, FiUser } from "react-icons/fi";
+import { FiHome, FiCalendar, FiUser, FiShield } from "react-icons/fi";
+
+/**
+ * Map of role IDs to display names for the UI.
+ * 1=ADMIN, 2=ASISTENTE, 3=TUTOR, 4=ESTUDIANTE
+ */
+const ROLE_NAMES: Record<number, string> = {
+  1: "Administrador",
+  2: "Asistente",
+  3: "Tutor",
+  4: "Estudiante",
+};
+
+const getRoleName = (role: number): string => ROLE_NAMES[role] || "Usuario";
 
 /**
  * WelcomeBanner Component
- * Displays a compact greeting with user name, current time, and date.
+ * Displays a compact greeting with user name, role, current time, and date.
  * Uses the system's primary color: #054F94 (brand-600)
  */
 const WelcomeBanner: React.FC = () => {
@@ -65,9 +78,17 @@ const WelcomeBanner: React.FC = () => {
               <p className="text-xs uppercase tracking-wider text-white/60 font-medium">
                 {getGreeting()}
               </p>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
-                {user?.name || "Usuario"}
-              </h1>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
+                  {user?.name || "Usuario"}
+                </h1>
+                {user?.role && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-white/15 backdrop-blur border border-white/20 text-white/90">
+                    <FiShield className="size-3.5" />
+                    {getRoleName(user.role)}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

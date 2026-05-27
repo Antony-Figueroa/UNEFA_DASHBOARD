@@ -167,7 +167,7 @@ export default function TrackingTable({
 
     // Opciones únicas para filtros derivadas de los datos
     const careerOptions = useMemo(() => {
-        const careers = new Set(data.map(item => item.careerName).filter(Boolean));
+        const careers = new Set(data.map(item => item.careerName).filter((c): c is string => !!c));
         return Array.from(careers).sort();
     }, [data]);
 

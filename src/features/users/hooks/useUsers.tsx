@@ -21,6 +21,7 @@ const USER_LABELS: Record<string, string> = {
     surname: "Apellido",
     email: "Correo",
     role: "Rol",
+    roleName: "Rol",
     status: "Estado"
 };
 
@@ -99,11 +100,11 @@ export const useUsers = (filters: any = {}, activeTab: "Activos" | "Inactivos" =
                     message: (
                         <>
                             <p>El usuario <strong>{newUser.name} {newUser.surname}</strong> ha sido registrado exitosamente.</p>
-                            <RecordDetails 
-                                data={newUser as any} 
-                                labels={USER_LABELS} 
-                                fields={['userCi', 'email', 'role']} 
-                            />
+                                <RecordDetails 
+                                    data={newUser as any} 
+                                    labels={USER_LABELS} 
+                                    fields={['userCi', 'email', 'roleName']} 
+                                />
                             <p className="mt-2 text-xs">Se ha enviado una notificación por correo con sus credenciales de acceso.</p>
                         </>
                     )
@@ -138,9 +139,10 @@ export const useUsers = (filters: any = {}, activeTab: "Activos" | "Inactivos" =
                             <p>Los datos de <strong>{updatedUser.name} {updatedUser.surname}</strong> han sido actualizados exitosamente.</p>
                             {oldUser && (
                                 <ChangeComparison 
-                                    oldData={oldUser as any} 
-                                    newData={updatedUser as any} 
+                                    oldData={{ ...oldUser, roleName: oldUser.roleName ?? '' }}
+                                    newData={{ ...updatedUser, roleName: updatedUser.roleName ?? '' }}
                                     labels={USER_LABELS} 
+                                    excludeFields={['role', 'isInUse', 'isImported']}
                                 />
                             )}
                         </>

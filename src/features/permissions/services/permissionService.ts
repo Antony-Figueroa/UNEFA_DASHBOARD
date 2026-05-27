@@ -3,6 +3,7 @@ import apiClient from '../../../api/apiClient';
 export interface Permission {
   PERMISSIONS_ID: number;
   NAME: string;
+  MODULE: string | null;
   DESCRIPTION: string | null;
 }
 

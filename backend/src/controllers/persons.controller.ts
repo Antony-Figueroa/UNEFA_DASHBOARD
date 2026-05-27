@@ -1,164 +1,268 @@
 import { Request, Response } from 'express';
-import { personService } from '../services/person.service.js';
+import { AuthRequest } from '../middlewares/auth.middleware.js';
+import * as personService from '../services/person.service.js';
+import { auditCreate, auditUpdate } from '../utils/audit-helpers.js';
 
+const TABLE_NAME = 't_persons';
+
+const PERSON_COLUMNS_TO_AUDIT = [
+  'ci', 'first_name', 'middle_name', 'last_name', 'second_last_name',
+  'email', 'phone', 'gender', 'birthdate', 'address', 'marital_status', 'status'
+];
+
+// ============================================================
+// LIST / SEARCH
+// ============================================================
+
+/**
+ * GET /api/persons
+ * Listado paginado de personas con búsqueda opcional.
+ */
 export const getPersons = async (req: Request, res: Response) => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
-    const status = req.query.status !== undefined ? parseInt(req.query.status as string) : undefined;
-    const search = req.query.search as string;
+    const {
+      page = '1',
+      limit = '50',
+      search,
+      status
+    } = req.query;
 
-    const result = await personService.getAllPersons(page, limit, { status, search });
+    const result = await personService.getPersons({
+      page: parseInt(page as string),
+      limit: parseInt(limit as string),
+      search: search as string | undefined,
+      status: status !== undefined ? parseInt(status as string) : undefined,
+    });
+
     res.json(result);
-  } catch (error) {
-    personService.handlePersonError(error, 'getPersons');
+  } catch (error: unknown) {
+    personService.handlePersonError(res, error, 'Error al listar personas');
   }
 };
 
+/**
+ * GET /api/persons/search?q=
+ * Búsqueda global de personas.
+ */
+export const searchPersons = async (req: Request, res: Response) => {
+  try {
+    const { q } = req.query;
+    if (!q) {
+      return res.status(400).json({ message: 'El parámetro "q" es requerido para la búsqueda' });
+    }
+
+    const results = await personService.searchPersons(q as string);
+    res.json({ data: results });
+  } catch (error: unknown) {
+    personService.handlePersonError(res, error, 'Error al buscar personas');
+  }
+};
+
+// ============================================================
+// GET BY ID
+// ============================================================
+
+/**
+ * GET /api/persons/:id
+ */
 export const getPersonById = async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
-    const person = await personService.getPersonById(id);
+    const { id } = req.params;
+    const person = await personService.getPersonById(parseInt(id));
 
     if (!person) {
-      res.status(404).json({ message: 'Persona no encontrada' });
-      return;
+      return res.status(404).json({ message: 'Persona no encontrada' });
     }
 
     res.json(person);
-  } catch (error) {
-    personService.handlePersonError(error, 'getPersonById');
+  } catch (error: unknown) {
+    personService.handlePersonError(res, error, 'Error al obtener persona');
   }
 };
 
-export const searchPersons = async (req: Request, res: Response) => {
-  try {
-    const query = (req.query.q as string) || '';
-    if (!query.trim()) {
-      res.json([]);
-      return;
-    }
-
-    const persons = await personService.searchPersons(query);
-    res.json(persons);
-  } catch (error) {
-    personService.handlePersonError(error, 'searchPersons');
-  }
-};
-
+/**
+ * GET /api/persons/by-ci/:ci
+ */
 export const getPersonByCi = async (req: Request, res: Response) => {
   try {
-    const ci = req.params.ci;
+    const { ci } = req.params;
     const person = await personService.getPersonByCi(ci);
 
     if (!person) {
-      res.status(200).json({ data: null });
-      return;
+      return res.status(404).json({ message: 'Persona no encontrada' });
     }
 
     res.json(person);
-  } catch (error) {
-    personService.handlePersonError(error, 'getPersonByCi');
+  } catch (error: unknown) {
+    personService.handlePersonError(res, error, 'Error al obtener persona por cédula');
   }
 };
 
-export const createPerson = async (req: Request, res: Response) => {
+// ============================================================
+// CREATE
+// ============================================================
+
+/**
+ * POST /api/persons
+ */
+export const createPerson = async (req: AuthRequest, res: Response) => {
   try {
-    const { ci, firstName, middleName, lastName, secondLastName, email, phone, gender, birthDate, address, maritalStatus } = req.body;
-
-    if (!ci || !firstName || !lastName || !email) {
-      res.status(400).json({ message: 'Faltan campos obligatorios: ci, firstName, lastName, email' });
-      return;
-    }
-
-    const ciAvailable = await personService.validateUniqueCi(ci);
-    if (!ciAvailable) {
-      res.status(409).json({ message: 'Ya existe una persona con esta cédula' });
-      return;
-    }
-
-    const emailAvailable = await personService.validateUniqueEmail(email);
-    if (!emailAvailable) {
-      res.status(409).json({ message: 'Ya existe una persona con este correo electrónico' });
-      return;
-    }
-
-    const person = await personService.createPerson({
-      ci, firstName, middleName, lastName, secondLastName, email, phone, gender, birthDate, address, maritalStatus,
-    });
-
-    res.status(201).json(person);
-  } catch (error) {
-    personService.handlePersonError(error, 'createPerson');
-  }
-};
-
-export const updatePerson = async (req: Request, res: Response) => {
-  try {
-    const id = parseInt(req.params.id);
     const personData = req.body;
 
+    // Validación básica
+    if (!personData.ci || !personData.firstName || !personData.lastName || !personData.email) {
+      return res.status(400).json({
+        message: 'Error: Faltan campos requeridos (Cédula, Nombres, Apellidos y Email son obligatorios)'
+      });
+    }
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(personData.email)) {
+      return res.status(400).json({ message: 'Error: El formato del correo electrónico no es válido' });
+    }
+
+    // Validar CI único
+    const ciCheck = await personService.validateUniqueCi(personData.ci);
+    if (!ciCheck.available) {
+      return res.status(409).json({
+        message: `La cédula ${personData.ci} ya está registrada`,
+        personId: ciCheck.personId
+      });
+    }
+
+    // Validar email único
+    const emailCheck = await personService.validateUniqueEmail(personData.email);
+    if (!emailCheck.available) {
+      return res.status(409).json({
+        message: `El correo ${personData.email} ya está registrado`,
+        personId: emailCheck.personId
+      });
+    }
+
+    const newPerson = await personService.createPerson(personData);
+
+    // Auditoría
+    await auditCreate(req, TABLE_NAME, personData, PERSON_COLUMNS_TO_AUDIT);
+
+    res.status(201).json(newPerson);
+  } catch (error: unknown) {
+    personService.handlePersonError(res, error, 'Error al crear persona');
+  }
+};
+
+// ============================================================
+// UPDATE
+// ============================================================
+
+/**
+ * PUT /api/persons/:id
+ */
+export const updatePerson = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const personData = req.body;
+    const personId = parseInt(id);
+
+    // Verificar que la persona existe
+    const existingPerson = await personService.getPersonById(personId);
+    if (!existingPerson) {
+      return res.status(404).json({ message: 'Persona no encontrada' });
+    }
+
+    // Validar formato de email si se envía
     if (personData.email) {
-      const emailAvailable = await personService.validateUniqueEmail(personData.email, id);
-      if (!emailAvailable) {
-        res.status(409).json({ message: 'Ya existe otra persona con este correo electrónico' });
-        return;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(personData.email)) {
+        return res.status(400).json({ message: 'Error: El formato del correo electrónico no es válido' });
       }
     }
 
-    const person = await personService.updatePerson(id, personData);
-
-    if (!person) {
-      res.status(404).json({ message: 'Persona no encontrada' });
-      return;
+    // Validar CI único si cambió
+    if (personData.ci && personData.ci !== existingPerson.ci) {
+      const ciCheck = await personService.validateUniqueCi(personData.ci, personId);
+      if (!ciCheck.available) {
+        return res.status(409).json({ message: `La cédula ${personData.ci} ya está registrada` });
+      }
     }
 
-    res.json(person);
-  } catch (error) {
-    personService.handlePersonError(error, 'updatePerson');
+    // Validar email único si cambió
+    if (personData.email && personData.email.toLowerCase() !== existingPerson.email.toLowerCase()) {
+      const emailCheck = await personService.validateUniqueEmail(personData.email, personId);
+      if (!emailCheck.available) {
+        return res.status(409).json({ message: `El correo ${personData.email} ya está registrado` });
+      }
+    }
+
+    const updatedPerson = await personService.updatePerson(personId, personData);
+
+    if (!updatedPerson) {
+      return res.status(404).json({ message: 'Persona no encontrada' });
+    }
+
+    // Auditoría
+    await auditUpdate(req, TABLE_NAME, existingPerson, personData, PERSON_COLUMNS_TO_AUDIT);
+
+    res.json(updatedPerson);
+  } catch (error: unknown) {
+    personService.handlePersonError(res, error, 'Error al actualizar persona');
   }
 };
 
-export const togglePersonStatus = async (req: Request, res: Response) => {
+// ============================================================
+// TOGGLE STATUS
+// ============================================================
+
+/**
+ * PATCH /api/persons/:id/status
+ */
+export const togglePersonStatus = async (req: AuthRequest, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
-    const person = await personService.togglePersonStatus(id);
-    res.json(person);
-  } catch (error) {
-    personService.handlePersonError(error, 'togglePersonStatus');
+    const { id } = req.params;
+    const { status } = req.body;
+    const personId = parseInt(id);
+
+    const updatedPerson = await personService.togglePersonStatus(personId, status);
+
+    if (!updatedPerson) {
+      return res.status(404).json({ message: 'Persona no encontrada' });
+    }
+
+    res.json(updatedPerson);
+  } catch (error: unknown) {
+    personService.handlePersonError(res, error, 'Error al cambiar estado de persona');
   }
 };
 
-export const checkCiAvailability = async (req: Request, res: Response) => {
+// ============================================================
+// VALIDATION ENDPOINTS
+// ============================================================
+
+/**
+ * GET /api/persons/check/:type/:value
+ * Verifica disponibilidad de CI o email.
+ */
+export const checkAvailability = async (req: Request, res: Response) => {
   try {
-    const ci = req.query.ci as string;
+    const { type, value } = req.params;
     const excludeId = req.query.excludeId ? parseInt(req.query.excludeId as string) : undefined;
 
-    if (!ci) {
-      res.status(400).json({ message: 'CI es requerido' });
-      return;
+    if (!type || !value) {
+      return res.status(400).json({ message: 'Faltan parámetros: type y value son requeridos' });
     }
 
-    const available = await personService.validateUniqueCi(ci, excludeId);
-    res.json({ available, message: available ? 'CI disponible' : 'Ya existe una persona con esta cédula' });
-  } catch (error) {
-    personService.handlePersonError(error, 'checkCiAvailability');
-  }
-};
+    let result: personService.ValidationResult;
 
-export const checkEmailAvailability = async (req: Request, res: Response) => {
-  try {
-    const email = req.query.email as string;
-    const excludeId = req.query.excludeId ? parseInt(req.query.excludeId as string) : undefined;
-
-    if (!email) {
-      res.status(400).json({ message: 'Email es requerido' });
-      return;
+    if (type === 'ci') {
+      result = await personService.validateUniqueCi(value, excludeId);
+    } else if (type === 'email') {
+      result = await personService.validateUniqueEmail(value, excludeId);
+    } else {
+      return res.status(400).json({ message: 'Tipo de validación no válido. Use "ci" o "email"' });
     }
 
-    const available = await personService.validateUniqueEmail(email, excludeId);
-    res.json({ available, message: available ? 'Email disponible' : 'Ya existe una persona con este email' });
-  } catch (error) {
-    personService.handlePersonError(error, 'checkEmailAvailability');
+    res.json(result);
+  } catch (error: unknown) {
+    personService.handlePersonError(res, error, 'Error al verificar disponibilidad');
   }
 };

@@ -42,11 +42,10 @@ const PROTECTED_LISTS_UPPER = [
  */
 const LIST_REFERENCE_MAP: Record<string, Array<{ table: string; column: string }>> = {
   'SEXO': [
-    { table: 't_students', column: 'GENDER' },
-    { table: 't_tutors', column: 'GENDER' },
+    { table: 't_persons', column: 'gender' },
   ],
   'REGISTRO CIVIL': [
-    { table: 't_students', column: 'MARITAL_STATUS' },
+    { table: 't_persons', column: 'marital_status' },
   ],
   'TIPO DE ESTUDIANTE': [
     { table: 't_students', column: 'STUDENT_TYPE' },

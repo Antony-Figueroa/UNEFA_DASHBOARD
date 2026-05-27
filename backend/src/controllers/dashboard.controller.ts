@@ -72,14 +72,14 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     // 3. Registration Stats - All students with dates and names
     const { data: registrationData } = await supabase
       .from('t_students')
-      .select('REGISTRATION_DATE, NAME, SURNAME, STUDENTS_CI')
+      .select('REGISTRATION_DATE, person_id, t_persons!inner(ci, first_name, last_name)')
       .eq('STATUS', 1)
       .not('REGISTRATION_DATE', 'is', null)
       .order('REGISTRATION_DATE', { ascending: true });
 
     const regMap = new Map<string, { count: number; students: { firstName: string; lastName: string; idNumber: string }[] }>();
     
-    (registrationData || [])?.forEach((s) => {
+    (registrationData || [])?.forEach((s: any) => {
       if (s.REGISTRATION_DATE) {
         const date = new Date(s.REGISTRATION_DATE).toISOString().split('T')[0];
         if (!regMap.has(date)) {
@@ -88,9 +88,9 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         const entry = regMap.get(date)!;
         entry.count += 1;
         entry.students.push({
-          firstName: s.NAME || '',
-          lastName: s.SURNAME || '',
-          idNumber: s.STUDENTS_CI || ''
+          firstName: s.t_persons?.first_name || '',
+          lastName: s.t_persons?.last_name || '',
+          idNumber: s.t_persons?.ci || ''
         });
       }
     });
@@ -146,13 +146,13 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     // Distribución por Tutor (desde prácticas asignadas)
     const { data: tutorStats } = await supabase
       .from('t_professional_practices_tutor')
-      .select('TUTOR_ID, t_tutors(NAME, SURNAME)')
+      .select('TUTOR_ID, t_tutors(TUTOR_ID, person_id, t_persons!inner(first_name, last_name))')
       .eq('TUTOR_TYPE', 'ACADEMICO');
 
     const tutorMap = new Map<string, number>();
-    (tutorStats || []).forEach((t) => {
+    (tutorStats || []).forEach((t: any) => {
       const tutorInfo = Array.isArray(t.t_tutors) ? t.t_tutors[0] : t.t_tutors;
-      const name = tutorInfo ? `${tutorInfo.NAME} ${tutorInfo.SURNAME}` : 'Sin asignar';
+      const name = tutorInfo?.t_persons ? `${tutorInfo.t_persons.first_name} ${tutorInfo.t_persons.last_name}` : 'Sin asignar';
       tutorMap.set(name, (tutorMap.get(name) || 0) + 1);
     });
 

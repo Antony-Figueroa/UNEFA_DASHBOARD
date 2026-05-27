@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requirePermission } from '../middlewares/auth.middleware.js';
 import {
   getCulminationRecords,
   approveCulmination,
@@ -7,8 +8,8 @@ import {
 
 const router = Router();
 
-router.get('/', getCulminationRecords);
-router.post('/:enrollmentId/approve', approveCulmination);
-router.post('/:enrollmentId/certificate', generateCertificate);
+router.get('/', requirePermission('practices:view'), getCulminationRecords);
+router.post('/:enrollmentId/approve', requirePermission('culmination:approve'), approveCulmination);
+router.post('/:enrollmentId/certificate', requirePermission('practices:view'), generateCertificate);
 
 export default router;

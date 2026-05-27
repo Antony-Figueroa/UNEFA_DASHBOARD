@@ -94,15 +94,12 @@ export const globalSearch = async (req: Request, res: Response): Promise<void> =
         .from('t_students')
         .select(`
           STUDENTS_ID,
-          STUDENTS_CI,
-          NAME,
-          SURNAME,
-          EMAIL,
           t_career(CAREER_NAME),
-          SEMESTER
+          SEMESTER,
+          t_persons!inner(ci, first_name, last_name, email)
         `)
         .eq('STATUS', true)
-        .or(buildSearchCondition(searchTerm, ['NAME', 'SURNAME', 'STUDENTS_CI', 'EMAIL']))
+        .or(buildSearchCondition(searchTerm, ['t_persons.first_name', 't_persons.last_name', 't_persons.ci', 't_persons.email']))
         .limit(limitNum);
 
       if (studentsError) {
@@ -110,9 +107,9 @@ export const globalSearch = async (req: Request, res: Response): Promise<void> =
       } else if (students) {
         results.students = students.map((s: any) => ({
           id: String(s.STUDENTS_ID),
-          name: `${s.NAME || ''} ${s.SURNAME || ''}`.trim(),
-          ci: s.STUDENTS_CI || '',
-          email: s.EMAIL || '',
+          name: `${s.t_persons?.first_name || ''} ${s.t_persons?.last_name || ''}`.trim(),
+          ci: s.t_persons?.ci || '',
+          email: s.t_persons?.email || '',
           careerName: s.t_career?.CAREER_NAME,
           semester: s.SEMESTER
         }));
@@ -125,14 +122,11 @@ export const globalSearch = async (req: Request, res: Response): Promise<void> =
         .from('t_tutors')
         .select(`
           TUTOR_ID,
-          TUTOR_CI,
-          NAME,
-          SURNAME,
-          EMAIL,
-          DEPARTMENT
+          DEPARTMENT,
+          t_persons!inner(ci, first_name, last_name, email)
         `)
         .eq('STATUS', true)
-        .or(buildSearchCondition(searchTerm, ['NAME', 'SURNAME', 'TUTOR_CI', 'EMAIL']))
+        .or(buildSearchCondition(searchTerm, ['t_persons.first_name', 't_persons.last_name', 't_persons.ci', 't_persons.email']))
         .limit(limitNum);
 
       if (tutorsError) {
@@ -140,9 +134,9 @@ export const globalSearch = async (req: Request, res: Response): Promise<void> =
       } else if (tutors) {
         results.tutors = tutors.map((t: any) => ({
           id: String(t.TUTOR_ID),
-          name: `${t.NAME || ''} ${t.SURNAME || ''}`.trim(),
-          ci: t.TUTOR_CI || '',
-          email: t.EMAIL || '',
+          name: `${t.t_persons?.first_name || ''} ${t.t_persons?.last_name || ''}`.trim(),
+          ci: t.t_persons?.ci || '',
+          email: t.t_persons?.email || '',
           department: t.DEPARTMENT
         }));
       }

@@ -132,14 +132,7 @@ export const getTutorStudents = async (req: AuthRequest, res: Response) => {
           INSTITUTION_ID,
           PERIOD_ID,
           INTERNSHIP_TYPE_ID,
-          t_students (
-            STUDENTS_ID,
-            STUDENTS_CI,
-            NAME,
-            SURNAME,
-            EMAIL,
-            CONTACT_PHONE
-          ),
+          t_persons!inner (ci, first_name, last_name, email, phone),
           t_career (CAREER_NAME),
           t_institution (
             INSTITUTION_NAME
@@ -179,7 +172,7 @@ export const getTutorStudents = async (req: AuthRequest, res: Response) => {
       const practice = p.t_professional_practices;
       if (!practice || practice.STATUS !== 1) return;
 
-      const student = practice.t_students;
+      const person = (practice as any).t_persons;
       const institution = practice.t_institution;
       const period = practice.t_internships_period;
       const practiceType = practice.t_internship_type;
@@ -193,11 +186,11 @@ export const getTutorStudents = async (req: AuthRequest, res: Response) => {
 
       students.push({
         enrollmentId: String(practice.PROFESSIONAL_PRACTICE_ID),
-        studentId: String(student?.STUDENTS_ID || ''),
-        studentCi: student?.STUDENTS_CI || '',
-        studentName: `${student?.NAME || ''} ${student?.SURNAME || ''}`.trim(),
-        studentEmail: student?.EMAIL || '',
-        studentPhone: student?.CONTACT_PHONE || '',
+        studentId: String(practice.STUDENTS_ID || ''),
+        studentCi: person?.ci || '',
+        studentName: `${person?.first_name || ''} ${person?.last_name || ''}`.trim(),
+        studentEmail: person?.email || '',
+        studentPhone: person?.phone || '',
         careerName: practice?.t_career?.CAREER_NAME || '',
         institutionName: institution?.INSTITUTION_NAME || '',
         period: period?.DESCRIPTION || '',
@@ -274,11 +267,7 @@ export const getTutorTracking = async (req: AuthRequest, res: Response) => {
           OBSERVATION,
           STATUS,
           STUDENTS_ID,
-          t_students (
-            STUDENTS_CI,
-            NAME,
-            SURNAME
-          )
+          t_persons!inner (ci, first_name, last_name)
         )
       `)
       .eq('TUTOR_ID', tutorId);
@@ -293,13 +282,13 @@ export const getTutorTracking = async (req: AuthRequest, res: Response) => {
 
     let tracking: any[] = validPractices.map((p: any) => {
       const practice = p.t_professional_practices;
-      const student = practice.t_students;
+      const person = (practice as any).t_persons;
 
       return {
         trackingId: String(practice.PROFESSIONAL_PRACTICE_ID),
         enrollmentId: String(practice.PROFESSIONAL_PRACTICE_ID),
-        studentCi: student?.STUDENTS_CI || '',
-        studentName: `${student?.NAME || ''} ${student?.SURNAME || ''}`.trim(),
+        studentCi: person?.ci || '',
+        studentName: `${person?.first_name || ''} ${person?.last_name || ''}`.trim(),
         reportTitle: practice.REPORT_TITLE || '',
         transfer: practice.TRANSFER === 1,
         route: practice.TOUR || '',
@@ -415,7 +404,7 @@ export const getTutorReports = async (req: AuthRequest, res: Response) => {
 
     const { data: tutorData, error: tutorError } = await supabase
       .from('t_tutors')
-      .select('TUTOR_ID, NAME, SURNAME')
+      .select('TUTOR_ID, person_id, t_persons!inner(first_name, last_name)')
       .eq('USER_ID', userId)
       .single();
 
@@ -427,7 +416,8 @@ export const getTutorReports = async (req: AuthRequest, res: Response) => {
     }
 
     const tutorId = tutorData.TUTOR_ID;
-    const tutorName = `${tutorData.NAME} ${tutorData.SURNAME}`;
+    const tutorPerson = (tutorData as any).t_persons || {};
+    const tutorName = `${tutorPerson.first_name || ''} ${tutorPerson.last_name || ''}`.trim();
 
     const { data: practices, error: practicesError } = await supabase
       .from('t_professional_practices_tutor')
@@ -442,11 +432,7 @@ export const getTutorReports = async (req: AuthRequest, res: Response) => {
           GRADE,
           PRACTICES_STATUS,
           STATUS,
-          t_students (
-            STUDENTS_CI,
-            NAME,
-            SURNAME
-          ),
+          t_persons!inner (ci, first_name, last_name),
           t_career (CAREER_NAME),
           t_institution (
             INSTITUTION_NAME
@@ -471,13 +457,13 @@ export const getTutorReports = async (req: AuthRequest, res: Response) => {
       .filter((p: any) => p.t_professional_practices?.STATUS === 1)
       .map((p: any) => {
         const practice = p.t_professional_practices;
-        const student = practice.t_students;
+        const person = (practice as any).t_persons;
         const institution = practice.t_institution;
         const period = practice.t_internships_period;
 
         return {
-          studentCi: student?.STUDENTS_CI || '',
-          studentName: `${student?.NAME || ''} ${student?.SURNAME || ''}`.trim(),
+          studentCi: person?.ci || '',
+          studentName: `${person?.first_name || ''} ${person?.last_name || ''}`.trim(),
           careerName: practice?.t_career?.CAREER_NAME || '',
           institutionName: institution?.INSTITUTION_NAME || '',
           period: period?.DESCRIPTION || '',
@@ -545,14 +531,16 @@ export const getTutorProfile = async (req: AuthRequest, res: Response) => {
       .from('t_tutors')
       .select(`
         TUTOR_ID,
-        TUTOR_CI,
-        NAME,
-        SECOND_NAME,
-        SURNAME,
-        SECOND_SURNAME,
-        CONTACT_PHONE,
-        GENDER,
-        EMAIL,
+        t_persons!inner (
+          ci,
+          first_name,
+          middle_name,
+          last_name,
+          second_last_name,
+          phone,
+          email,
+          gender
+        ),
         PROFESSION,
         TITULO,
         CONDITION,
@@ -570,19 +558,25 @@ export const getTutorProfile = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const p = (tutorData as any).t_persons;
+    const firstName = p?.first_name || '';
+    const middleName = p?.middle_name || '';
+    const lastName = p?.last_name || '';
+    const secondLastName = p?.second_last_name || '';
+
     res.json({
       success: true,
       data: {
         tutorId: tutorData.TUTOR_ID,
-        ci: tutorData.TUTOR_CI,
-        name: tutorData.NAME,
-        secondName: tutorData.SECOND_NAME,
-        surname: tutorData.SURNAME,
-        secondSurname: tutorData.SECOND_SURNAME,
-        fullName: `${tutorData.NAME || ''} ${tutorData.SECOND_NAME || ''} ${tutorData.SURNAME || ''} ${tutorData.SECOND_SURNAME || ''}`.replace(/\s+/g, ' ').trim(),
-        phone: tutorData.CONTACT_PHONE,
-        gender: tutorData.GENDER,
-        email: tutorData.EMAIL,
+        ci: p?.ci,
+        name: firstName,
+        secondName: middleName,
+        surname: lastName,
+        secondSurname: secondLastName,
+        fullName: `${firstName} ${middleName} ${lastName} ${secondLastName}`.replace(/\s+/g, ' ').trim(),
+        phone: p?.phone,
+        gender: p?.gender,
+        email: p?.email,
         profession: tutorData.PROFESSION,
         titulo: tutorData.TITULO,
         condition: tutorData.CONDITION,
@@ -647,13 +641,7 @@ export const getTutorPractice = async (req: AuthRequest, res: Response) => {
         GRADE,
         PRACTICES_STATUS,
         STATUS,
-        t_students (
-          STUDENTS_CI,
-          NAME,
-          SURNAME,
-          EMAIL,
-          CONTACT_PHONE
-        ),
+        t_persons!inner (ci, first_name, last_name, email, phone),
         t_career (CAREER_NAME),
         t_institution (
           INSTITUTION_NAME
@@ -676,7 +664,7 @@ export const getTutorPractice = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const student = practice.t_students as any;
+    const person = (practice as any).t_persons;
     const institution = practice.t_institution as any;
     const period = practice.t_internships_period as any;
     const practiceType = practice.t_internship_type as any;
@@ -685,10 +673,10 @@ export const getTutorPractice = async (req: AuthRequest, res: Response) => {
       success: true,
       data: {
         practiceId: practice.PROFESSIONAL_PRACTICE_ID,
-        studentCi: student?.STUDENTS_CI || '',
-        studentName: `${student?.NAME || ''} ${student?.SURNAME || ''}`.trim(),
-        studentEmail: student?.EMAIL || '',
-        studentPhone: student?.CONTACT_PHONE || '',
+        studentCi: person?.ci || '',
+        studentName: `${person?.first_name || ''} ${person?.last_name || ''}`.trim(),
+        studentEmail: person?.email || '',
+        studentPhone: person?.phone || '',
         careerName: (practice as any)?.t_career?.CAREER_NAME || '',
         institutionName: institution?.INSTITUTION_NAME || '',
         period: period?.DESCRIPTION || '',

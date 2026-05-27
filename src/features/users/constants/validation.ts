@@ -6,9 +6,7 @@ import { NAME_PATTERN, SAFE_EMAIL_PATTERN, isSafeInput } from "../../../utils/in
  */
 export const userSchema = z.object({
   userCi: z.string()
-    .min(6, "La cédula debe tener al menos 6 caracteres")
-    .max(8, "La cédula no puede exceder los 8 caracteres")
-    .regex(/^[A-Z0-9-]+$/, "La cédula solo puede contener letras mayúsculas, números y guiones"),
+    .regex(/^[VE]?\d{6,8}$/, "Cédula inválida. Debe tener entre 6 y 8 dígitos (opcional V/E)"),
   name: z.string()
     .min(2, "El nombre debe tener al menos 2 caracteres")
     .max(100, "El nombre no puede exceder los 100 caracteres")
@@ -22,9 +20,12 @@ export const userSchema = z.object({
     .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
     .transform(val => val.toUpperCase()),
   email: z.string()
+    .min(1, "El correo es obligatorio")
     .email("Correo electrónico inválido")
     .max(150, "El correo no puede exceder los 150 caracteres")
-    .regex(SAFE_EMAIL_PATTERN, "Email con caracteres no permitidos"),
+    .regex(SAFE_EMAIL_PATTERN, "Email con caracteres no permitidos")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+    .transform(val => val.toUpperCase()),
   role: z.number({
     message: "El rol debe ser un número",
   }).min(0, "El rol es obligatorio"),

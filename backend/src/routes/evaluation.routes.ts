@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requirePermission } from '../middlewares/auth.middleware.js';
+import { validateCreateEvaluationPeriod, validateUpdateEvaluationPeriod } from '../middlewares/period-validator.middleware.js';
 import {
   getCriteria,
   getEvaluations,
@@ -18,8 +19,8 @@ router.get('/practice/:practiceId/status', requirePermission('evaluations:view')
 router.get('/practice/:practiceId/tutor-info', requirePermission('evaluations:view'), getPracticeTutorInfo);
 router.get('/', requirePermission('evaluations:view'), getEvaluations);
 router.get('/:id', requirePermission('evaluations:view'), getEvaluationById);
-router.post('/', requirePermission('evaluations:create'), createEvaluation);
-router.put('/:id', requirePermission('evaluations:edit'), updateEvaluation);
+router.post('/', requirePermission('evaluations:create'), validateCreateEvaluationPeriod, createEvaluation);
+router.put('/:id', requirePermission('evaluations:edit'), validateUpdateEvaluationPeriod, updateEvaluation);
 router.delete('/:id', requirePermission('evaluations:delete'), deleteEvaluation);
 
 export default router;

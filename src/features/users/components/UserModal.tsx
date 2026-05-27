@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
@@ -14,7 +14,7 @@ import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { AuthUser } from "../../../context/auth";
 import { useToast } from "../../../context/toast";
 import { formatCedulaDisplay, cleanCedula, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
-import { NAME_PATTERN, SAFE_EMAIL_PATTERN, isSafeInput } from "../../../utils/inputValidation";
+import { checkUserCi } from "../services/userService";
 
 /**
  * Propiedades para el componente UserModal.
@@ -76,15 +76,78 @@ const UserModal: React.FC<UserModalProps> = ({
 
   // State for display values with formatting
   const [displayCi, setDisplayCi] = useState("");
+  const [isCheckingCi, setIsCheckingCi] = useState(false);
+  const [autoFilledPerson, setAutoFilledPerson] = useState(false);
+  const autoFilledCiRef = useRef<string>("");
 
   // Handle cedula input change with formatting
   const handleCiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
     const cleaned = cleanCedula(input);
+
+    // Si se cambiaron los dígitos después de auto-completar, resetear datos
+    if (autoFilledPerson && cleaned !== autoFilledCiRef.current) {
+      setAutoFilledPerson(false);
+      autoFilledCiRef.current = "";
+      setValue("name", "", { shouldValidate: true });
+      setValue("surname", "", { shouldValidate: true });
+      setValue("email", "", { shouldValidate: true });
+    }
+
     const formatted = formatCedulaDisplay(cleaned);
     setDisplayCi(formatted);
     setValue("userCi", cleaned, { shouldValidate: true, shouldDirty: true });
   };
+
+  // CI blur handler: verificar si la persona ya existe al salir del campo
+  const handleCiBlur = useCallback(
+    async (e: React.FocusEvent<HTMLInputElement>) => {
+      if (user) return; // No checkear en edición
+      const val = e.target.value;
+      // Extraer prefijo (V/E) y dígitos del valor formateado
+      const prefixMatch = val.match(/^([VE])-/);
+      const prefix = prefixMatch ? prefixMatch[1] : '';
+      const digitsOnly = val.replace(/\D/g, "");
+      const ciForCheck = prefix ? `${prefix}${digitsOnly}` : digitsOnly;
+      if (digitsOnly.length >= 6) {
+        setIsCheckingCi(true);
+        setAutoFilledPerson(false);
+        autoFilledCiRef.current = "";
+        try {
+          const result = await checkUserCi(ciForCheck);
+          if (result.exists && result.asUser) {
+            addToast({
+              variant: "error",
+              title: "Cédula ya registrada",
+              message: "Ya existe un usuario del sistema con esta cédula.",
+            });
+          } else if (result.exists && !result.asUser && result.person) {
+            // Persona existe (estudiante/tutor) — auto-completar datos (solo lectura)
+            const fullName = [
+              result.person.firstName,
+              result.person.middleName,
+            ].filter(Boolean).join(" ");
+            const fullSurname = [
+              result.person.lastName,
+              result.person.secondLastName,
+            ].filter(Boolean).join(" ");
+
+            setValue("name", fullName, { shouldValidate: true, shouldDirty: true });
+            setValue("surname", fullSurname, { shouldValidate: true, shouldDirty: true });
+            setValue("email", result.person.email, { shouldValidate: true, shouldDirty: true });
+            setAutoFilledPerson(true);
+            autoFilledCiRef.current = ciForCheck;
+          }
+          // !exists → no hacer nada, flujo normal de creación
+        } catch (err) {
+          console.error("[UserModal] Error checking CI:", err);
+        } finally {
+          setIsCheckingCi(false);
+        }
+      }
+    },
+    [user, setValue, addToast],
+  );
 
 // Efecto para cargar los datos del usuario cuando se abre el modal para editar
   useEffect(() => {
@@ -99,6 +162,8 @@ const UserModal: React.FC<UserModalProps> = ({
         hasConsent: true // Ya tiene consentimiento si existe
       });
       setDisplayCi(formatCedulaDisplay(user.userCi));
+      setAutoFilledPerson(false);
+      autoFilledCiRef.current = "";
     } else {
       reset({
         userCi: "",
@@ -110,6 +175,8 @@ const UserModal: React.FC<UserModalProps> = ({
         hasConsent: false
       });
       setDisplayCi("");
+      setAutoFilledPerson(false);
+      autoFilledCiRef.current = "";
     }
   }, [user, reset, isOpen]);
 
@@ -164,23 +231,21 @@ const UserModal: React.FC<UserModalProps> = ({
     
     try {
       if (user) {
-        // Para actualización, enviamos el ID y los campos modificados
         const payload: UpdateUserPayload = {
           id: user.id,
-          name: pendingData.name.toUpperCase(),
-          surname: pendingData.surname.toUpperCase(),
-          email: pendingData.email.toUpperCase(),
+          name: pendingData.name,
+          surname: pendingData.surname,
+          email: pendingData.email,
           role: pendingData.role,
           status: pendingData.status
         };
         await onSave(payload);
       } else {
-        // Para creación, enviamos todos los campos requeridos
         const payload: CreateUserPayload = {
-          userCi: pendingData.userCi.toUpperCase(),
-          name: pendingData.name.toUpperCase(),
-          surname: pendingData.surname.toUpperCase(),
-          email: pendingData.email.toUpperCase(),
+          userCi: pendingData.userCi,
+          name: pendingData.name,
+          surname: pendingData.surname,
+          email: pendingData.email,
           role: pendingData.role
         };
         await onSave(payload);
@@ -211,7 +276,9 @@ const UserModal: React.FC<UserModalProps> = ({
           </span>
           <p className="text-sm text-text-secondary dark:text-text-tertiary font-normal">
             {user 
-              ? "Modifica los detalles del usuario del sistema." 
+              ? user.isImported
+                ? "Este usuario fue creado a partir de un registro existente. Solo puedes modificar el rol."
+                : "Puedes actualizar los datos personales del usuario."
               : "Ingresa los detalles del nuevo usuario para el panel de control."}
           </p>
         </div>
@@ -233,11 +300,12 @@ const UserModal: React.FC<UserModalProps> = ({
                 <Input
                   value={displayCi}
                   onChange={handleCiChange}
+                  onBlur={handleCiBlur}
                   disabled={!!user}
                   placeholder="V00.000.000"
                   className="h-11 rounded-lg border-gray-200 dark:border-gray-700 uppercase tracking-widest"
                   error={!!errors.userCi}
-                  hint={errors.userCi?.message}
+                  hint={isCheckingCi ? "Verificando cédula..." : errors.userCi?.message}
                   maxLength={CEDULA_MAX_LENGTH}
                 />
               </div>
@@ -245,6 +313,7 @@ const UserModal: React.FC<UserModalProps> = ({
                 <label className="text-sm font-medium text-text-primary dark:text-white/90">Nombres *</label>
                 <Input
                   {...register("name")}
+                  disabled={autoFilledPerson || (!!user && user.isImported)}
                   placeholder="Nombres del usuario"
                   className="h-11 rounded-lg border-gray-200 dark:border-gray-700 uppercase"
                   error={!!errors.name}
@@ -255,6 +324,7 @@ const UserModal: React.FC<UserModalProps> = ({
                 <label className="text-sm font-medium text-text-primary dark:text-white/90">Apellidos *</label>
                 <Input
                   {...register("surname")}
+                  disabled={autoFilledPerson || (!!user && user.isImported)}
                   placeholder="Apellidos del usuario"
                   className="h-11 rounded-lg border-gray-200 dark:border-gray-700 uppercase"
                   error={!!errors.surname}
@@ -278,8 +348,9 @@ const UserModal: React.FC<UserModalProps> = ({
                 <Input
                   type="email"
                   {...register("email")}
+                  disabled={autoFilledPerson || (!!user && user.isImported)}
                   placeholder="usuario@unefa.edu.ve"
-                  className="h-11 rounded-lg border-gray-200 dark:border-gray-700"
+                  className="h-11 rounded-lg border-gray-200 dark:border-gray-700 uppercase"
                   error={!!errors.email}
                   hint={errors.email?.message}
                 />

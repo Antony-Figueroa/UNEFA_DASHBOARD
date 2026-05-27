@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requirePermission } from '../middlewares/auth.middleware.js';
 import {
   getManuals,
   getManualById,
@@ -10,11 +11,11 @@ import {
 
 const router = Router();
 
-router.get('/', getManuals);
-router.get('/categories', getCategories);
-router.get('/:id', getManualById);
-router.post('/', createManual);
-router.put('/:id', updateManual);
-router.delete('/:id', deleteManual);
+router.get('/', requirePermission('manuals:view'), getManuals);
+router.get('/categories', requirePermission('manuals:view'), getCategories);
+router.get('/:id', requirePermission('manuals:view'), getManualById);
+router.post('/', requirePermission('manuals:edit'), createManual);
+router.put('/:id', requirePermission('manuals:edit'), updateManual);
+router.delete('/:id', requirePermission('manuals:edit'), deleteManual);
 
 export default router;

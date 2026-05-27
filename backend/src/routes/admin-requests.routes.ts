@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateToken, authorizeRole, ROLES, restrictAsistente } from '../middlewares/auth.middleware.js';
+import { authenticateToken, authorizeRole, ROLES, restrictAsistente, requirePermission } from '../middlewares/auth.middleware.js';
 import {
   getAllRequests,
   getRequestById,
@@ -12,9 +12,9 @@ const router = Router();
 router.use(authenticateToken);
 router.use(authorizeRole([ROLES.ADMIN, ROLES.ASISTENTE]));
 
-router.get('/types', getRequestTypes);
-router.get('/', getAllRequests);
-router.get('/:id', getRequestById);
-router.put('/:id', restrictAsistente, updateRequestStatus);
+router.get('/types', requirePermission('requests:view'), getRequestTypes);
+router.get('/', requirePermission('requests:view'), getAllRequests);
+router.get('/:id', requirePermission('requests:view'), getRequestById);
+router.put('/:id', requirePermission('requests:approve'), restrictAsistente, updateRequestStatus);
 
 export default router;

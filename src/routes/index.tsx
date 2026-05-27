@@ -151,29 +151,29 @@ export const AppRoutes = () => {
             <Route path="/profile" element={<UserProfiles />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/blank" element={<Blank />} />
-            <Route path="/students" element={<Students />} />
-            <Route path="/tutors" element={<Tutors />} />
-            <Route path="/institutions" element={<InstitutionsPage />} />
+            <Route path="/students" element={<ProtectedRoute requiredPermissions={['students:view']}><Students /></ProtectedRoute>} />
+            <Route path="/tutors" element={<ProtectedRoute requiredPermissions={['tutors:view']}><Tutors /></ProtectedRoute>} />
+            <Route path="/institutions" element={<ProtectedRoute requiredPermissions={['institutions:view']}><InstitutionsPage /></ProtectedRoute>} />
 
             {/* AI Assistant */}
             <Route path="/ai-assistant" element={<AIAssistant />} />
 
             {/* Management */}
-            <Route path="/period" element={<Period />} />
-            <Route path="/careers" element={<CareersPage />} />
+            <Route path="/period" element={<ProtectedRoute requiredPermissions={['periods:view']}><Period /></ProtectedRoute>} />
+            <Route path="/careers" element={<ProtectedRoute requiredPermissions={['careers:view']}><CareersPage /></ProtectedRoute>} />
             <Route path="/crud-example" element={<CrudExample />} />
 
             {/* Process */}
-            <Route path="/pre-enrollment" element={<PreEnrollmentPage />} />
-            <Route path="/enrollment" element={<EnrollmentPage />} />
-            <Route path="/tracking" element={<TrackingPage />} />
-            <Route path="/visit-registration/:id" element={<VisitRegistration />} />
-            <Route path="/activity-logs/:practiceId" element={<ActivityLogPage />} />
-            <Route path="/evaluations" element={<EvaluationsAndCulmination />} />
+            <Route path="/pre-enrollment" element={<ProtectedRoute requiredPermissions={['enrollments:view']}><PreEnrollmentPage /></ProtectedRoute>} />
+            <Route path="/enrollment" element={<ProtectedRoute requiredPermissions={['enrollments:view']}><EnrollmentPage /></ProtectedRoute>} />
+            <Route path="/tracking" element={<ProtectedRoute requiredPermissions={['tracking:view']}><TrackingPage /></ProtectedRoute>} />
+            <Route path="/visit-registration/:id" element={<ProtectedRoute requiredPermissions={['tracking:view']}><VisitRegistration /></ProtectedRoute>} />
+            <Route path="/activity-logs/:practiceId" element={<ProtectedRoute requiredPermissions={['activity-logs:view']}><ActivityLogPage /></ProtectedRoute>} />
+            <Route path="/evaluations" element={<ProtectedRoute requiredPermissions={['evaluations:view']}><EvaluationsAndCulmination /></ProtectedRoute>} />
 
             {/* Reports */}
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/reports/culminated-students" element={<CulminatedStudentsReport />} />
+            <Route path="/reports" element={<ProtectedRoute requiredPermissions={['reports:view']}><Reports /></ProtectedRoute>} />
+            <Route path="/reports/culminated-students" element={<ProtectedRoute requiredPermissions={['reports:view']}><CulminatedStudentsReport /></ProtectedRoute>} />
 
 {/* Manuals */}
             <Route path="/manuals" element={<Manuals />} />
@@ -286,29 +286,29 @@ export const AppRoutes = () => {
               }
             />
 
-            {/* Admin Requests - For Admin (1) and Asistente (2) */}
+            {/* Admin Requests */}
             <Route
               path="/admin/requests"
               element={
-                <ProtectedRoute allowedRoles={[0, 1, 2]}>
+                <ProtectedRoute requiredPermissions={['requests:view']}>
                   <AdminRequests />
                 </ProtectedRoute>
               }
             />
 
-            {/* Configuration - Only for Admin (Role 1) and Master (Role 0) */}
+            {/* Configuration — based on permissions */}
             <Route
               path="/configure/users"
               element={
-                <ProtectedRoute allowedRoles={[0, 1]}>
+                <ProtectedRoute requiredPermissions={['users:view']}>
                   <UserManagementPage />
                 </ProtectedRoute>
               }
             />
-<Route
+            <Route
               path="/configure/lists"
               element={
-                <ProtectedRoute allowedRoles={[0, 1]}>
+                <ProtectedRoute requiredPermissions={['lists:view']}>
                   <ListsConfiguration />
                 </ProtectedRoute>
               }
@@ -316,7 +316,7 @@ export const AppRoutes = () => {
             <Route
               path="/configure/auditoria"
               element={
-                <ProtectedRoute allowedRoles={[0, 1]}>
+                <ProtectedRoute requiredPermissions={['activity-logs:view']}>
                   <AuditoriaPage />
                 </ProtectedRoute>
               }
@@ -324,7 +324,7 @@ export const AppRoutes = () => {
             <Route
               path="/configure/roles"
               element={
-                <ProtectedRoute allowedRoles={[0, 1]}>
+                <ProtectedRoute requiredPermissions={['roles:manage']}>
                   <RolesPermissions />
                 </ProtectedRoute>
               }
@@ -332,7 +332,7 @@ export const AppRoutes = () => {
             <Route
               path="/configure/maintenance"
               element={
-                <ProtectedRoute allowedRoles={[0, 1]}>
+                <ProtectedRoute requiredPermissions={['config:view']}>
                   <Maintenance />
                 </ProtectedRoute>
               }
@@ -340,7 +340,7 @@ export const AppRoutes = () => {
             <Route
               path="/configure/backups"
               element={
-                <ProtectedRoute allowedRoles={[0, 1]}>
+                <ProtectedRoute requiredPermissions={['backups:view']}>
                   <Backups />
                 </ProtectedRoute>
               }
@@ -348,18 +348,14 @@ export const AppRoutes = () => {
             <Route
               path="/configure/landing"
               element={
-                <ProtectedRoute allowedRoles={[0, 1]}>
+                <ProtectedRoute requiredPermissions={['config:view']}>
                   <LandingConfigPage />
                 </ProtectedRoute>
               }
             />
             <Route
               path="/notifications"
-              element={
-                <ProtectedRoute allowedRoles={[0, 1, 2, 3, 4]}>
-                  <NotificationsPage />
-                </ProtectedRoute>
-              }
+              element={<NotificationsPage />}
             />
 
             {/* Forms & Tables */}

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Modal } from "../modal";
 import { DownloadIcon, FileIcon, EyeIcon, ListIcon } from "../../../icons";
 import { XIcon } from "../../../icons/actions";
-import { matchSearch } from "../../utils/searchNormalizer";
+import { matchSearch } from "../../../utils/searchNormalizer";
 
 interface Column<T> {
   header: string;

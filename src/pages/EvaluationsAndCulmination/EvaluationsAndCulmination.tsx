@@ -1,9 +1,10 @@
 /**
- * @file Página principal del módulo de Evaluaciones y Culminación
- * @description Página unificada con pestañas para evaluar, ver resultados y gestionar culminación
+ * @file EvaluationsAndCulmination.tsx
+ * @description Página principal del módulo de Evaluaciones y Culminación.
+ * Orquestra los componentes del feature, delegando toda la lógica al hook.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import ComponentCard from '../../components/common/ComponentCard';
@@ -12,358 +13,116 @@ import Badge from '../../components/ui/badge/Badge';
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from '../../components/ui/table';
 import { EmptyState } from '../../components/ui/table/EmptyState';
 import { TableSkeleton } from '../../components/ui/skeleton';
-import InputField from '../../components/form/input/InputField';
-import CustomSelect from '../../components/form/CustomSelect';
 import UnifiedDialog from '../../components/ui/dialog/UnifiedDialog';
-import { DownloadIcon, CheckCircleIcon, TimeIcon, AlertIcon, EyeIcon } from '../../icons';
-import toast from 'react-hot-toast';
+import { DownloadIcon, CheckCircleIcon, EyeIcon } from '../../icons';
+import { StudentDetailModal } from '../../features/student-detail/components/StudentDetailModal';
+import { EvaluationModal } from '../../features/evaluations/components/EvaluationModal';
+import EvaluationDetailModal from '../../features/evaluations/components/EvaluationDetailModal';
+import { EvaluationCell } from '../../features/evaluations-culmination/components/EvaluationCell';
+import { StatsCardsGrid } from '../../features/evaluations-culmination/components/StatsCards';
+import { EvaluationFilters } from '../../features/evaluations-culmination/components/EvaluationFilters';
+import { useEvaluationsCulmination } from '../../features/evaluations-culmination/hooks/useEvaluationsCulmination';
 import {
-  PracticeWithEvaluations,
-  PracticeFilters,
-  EvaluationStats,
-  CulminationStats,
-  calculateFinalGrade,
-  getPracticeResult,
+  EVALUATION_WEIGHTS,
+} from '../../features/evaluations/types';
+import type { EvaluatorType } from '../../features/evaluations/types';
+import type { PracticeWithEvaluations } from '../../features/evaluations-culmination/types';
+import {
   getResultLabel,
   RESULT_OPTIONS,
   CULMINATION_STATUS_OPTIONS,
-  EVALUATION_STATUS_OPTIONS,
-  STATUS_COLORS
 } from '../../features/evaluations-culmination/types';
-import { evaluationsCulminationService } from '../../features/evaluations-culmination/services/evaluationsCulminationService';
-import { matchSearch } from '../../utils/searchNormalizer';
-import { generateCertificatePDF } from '../../components/ui/pdf/templates/CertificatePDF';
-import { EvaluationModal } from '../../features/evaluations/components/EvaluationModal';
-import EvaluationDetailModal from '../../features/evaluations/components/EvaluationDetailModal';
-import { EvaluatorType } from '../../features/evaluations/types';
-import { StudentDetailModal } from '../../features/student-detail/components/StudentDetailModal';
 
-// Pestañas del módulo
+// ─── Tabs ─────────────────────────────────────────────────
 type TabType = 'evaluations' | 'results' | 'culmination';
-
-// Configuración de tabs
-const TABS = [
-  { id: 'evaluations' as const, label: 'Evaluaciones' },
-  { id: 'results' as const, label: 'Resultados' },
-  { id: 'culmination' as const, label: 'Culminación' }
+const TABS: { id: TabType; label: string }[] = [
+  { id: 'evaluations', label: 'Evaluaciones' },
+  { id: 'results', label: 'Resultados' },
+  { id: 'culmination', label: 'Culminación' },
 ];
 
-// Componente para las tarjetas de estadísticas
-const StatCard = ({ 
-  title, 
-  value, 
-  color = 'default',
-  subtitle 
-}: { 
-  title: string; 
-  value: number | string; 
-  color?: 'default' | 'warning' | 'success' | 'primary';
-  subtitle?: string 
-}) => {
-  const colorClasses = {
-    default: 'bg-bg-surface dark:bg-bg-dark-surface',
-    warning: 'bg-warning-50 dark:bg-warning-500/10',
-    success: 'bg-success-50 dark:bg-success-500/10',
-    primary: 'bg-brand-50 dark:bg-brand-500/10'
-  };
-  
-  const iconColorClasses = {
-    default: 'text-text-secondary',
-    warning: 'text-warning-600',
-    success: 'text-success-600',
-    primary: 'text-brand-600'
-  };
+// ─── Helpers ──────────────────────────────────────────────
+const getStatusBadge = (status: string) => {
+  switch (status) {
+    case 'completed':
+      return (
+        <Badge color="success" variant="light">
+          <CheckCircleIcon className="w-4 h-4 mr-1" />
+          Completo
+        </Badge>
+      );
+    case 'partial':
+      return (
+        <Badge color="warning" variant="light">
+          Parcial
+        </Badge>
+      );
+    default:
+      return (
+        <Badge color="light" variant="light">
+          Pendiente
+        </Badge>
+      );
+  }
+};
 
+const getResultBadge = (result: string) => {
+  const color = result === 'approved' ? 'success' : result === 'failed' ? 'error' : 'light';
   return (
-    <div className={`rounded-xl border border-border-default dark:border-border-dark p-5 ${colorClasses[color]}`}>
-      <div className="flex items-center gap-3">
-        <div className={`flex items-center justify-center w-10 h-10 rounded-lg bg-white dark:bg-gray-800 ${color !== 'default' ? `bg-${color}-100 dark:bg-${color}-900/20` : ''}`}>
-          <span className={`text-xl font-bold ${iconColorClasses[color]}`}>{value}</span>
-        </div>
-        <div>
-          <p className="text-xs text-text-tertiary">{title}</p>
-          {subtitle && <p className="text-xs text-text-tertiary">{subtitle}</p>}
-        </div>
-      </div>
-    </div>
+    <Badge color={color} variant="light">
+      {getResultLabel(result as any)}
+    </Badge>
   );
 };
 
+const getCulminationBadge = (status: string) => {
+  const color = status === 'certified' ? 'primary' : status === 'approved' ? 'success' : 'warning';
+  const label = status === 'certified' ? 'Certificado' : status === 'approved' ? 'Aprobado' : 'Pendiente';
+  return (
+    <Badge color={color} variant="light" shape="rounded">
+      {label}
+    </Badge>
+  );
+};
+
+// ─── Page Component ───────────────────────────────────────
 export default function EvaluationsAndCulminationPage() {
-  // Estado de la página
-  const [loading, setLoading] = useState(true);
+  const hook = useEvaluationsCulmination();
   const [activeTab, setActiveTab] = useState<TabType>('evaluations');
-  
-  // Datos
-  const [practices, setPractices] = useState<PracticeWithEvaluations[]>([]);
-  const [meta, setMeta] = useState<{
-    total: number;
-    periods: { id: number; name: string }[];
-    careers: { id: number; name: string }[];
-    practiceTypes: { id: number; name: string }[];
-  }>({ total: 0, periods: [], careers: [], practiceTypes: [] });
-  
-  // Filtros
-  const [filters, setFilters] = useState<PracticeFilters>({});
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  // Paginación
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  
-  // Diálogos
-  const [confirmDialog, setConfirmDialog] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  } | null>(null);
 
-  // Modal de evaluación
-  const [evalModalOpen, setEvalModalOpen] = useState(false);
-  const [selectedPracticeForEval, setSelectedPracticeForEval] = useState<PracticeWithEvaluations | null>(null);
-  const [selectedEvaluatorType, setSelectedEvaluatorType] = useState<EvaluatorType>('INSTITUCIONAL');
+  // Opciones para filtros (derivadas del meta del hook)
+  const periodOptions = useMemo(() => [
+    { value: '', label: 'Todos los períodos' },
+    ...(Array.isArray(hook.meta.periods) ? hook.meta.periods : []).map(p => ({
+      value: String(p.id), label: p.name,
+    })),
+  ], [hook.meta.periods]);
 
-  // Modal de detalles de evaluación
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [selectedEvaluationId, setSelectedEvaluationId] = useState<number | null>(null);
+  const careerOptions = useMemo(() => [
+    { value: '', label: 'Todas las carreras' },
+    ...(Array.isArray(hook.meta.careers) ? hook.meta.careers : []).map(c => ({
+      value: String(c.id), label: c.name,
+    })),
+  ], [hook.meta.careers]);
 
-  // Modal de detalle del estudiante
-  const [studentDetailOpen, setStudentDetailOpen] = useState(false);
-  const [selectedStudentPracticeId, setSelectedStudentPracticeId] = useState<number | null>(null);
-  const [selectedStudentName, setSelectedStudentName] = useState('');
+  const practiceTypeOptions = useMemo(() => [
+    { value: '', label: 'Todos los tipos' },
+    ...(Array.isArray(hook.meta.practiceTypes) ? hook.meta.practiceTypes : []).map(t => ({
+      value: String(t.id), label: t.name,
+    })),
+  ], [hook.meta.practiceTypes]);
 
-  // Cargar datos
-  const fetchPractices = async () => {
-    setLoading(true);
-    try {
-      const response = await evaluationsCulminationService.getPractices({
-        ...filters,
-        search: searchTerm || undefined
-      });
-      
-      if (response.success) {
-        setPractices(response.data);
-        setMeta(response.meta || { total: 0, periods: [], careers: [], practiceTypes: [] });
-      }
-    } catch (error) {
-      console.error('[EvaluationsCulmination] Error fetching practices:', error);
-      toast.error('Error al cargar los datos');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Paginación computada
+  const totalPages = Math.ceil(hook.filteredPractices.length / hook.itemsPerPage);
+  const paginatedData = hook.filteredPractices.slice(
+    (hook.currentPage - 1) * hook.itemsPerPage,
+    hook.currentPage * hook.itemsPerPage
+  );
 
-  useEffect(() => {
-    fetchPractices();
-  }, [filters]);
+  // Estado de filtros activos
+  const hasActiveFilters = Object.keys(hook.filters).length > 0;
 
-  // Opciones para los filtros
-  const periodOptions = useMemo(() => {
-    const periods = Array.isArray(meta.periods) ? meta.periods : [];
-    return [
-      { value: '', label: 'Todos los períodos' },
-      ...periods.map(p => ({ value: String(p.id), label: p.name }))
-    ];
-  }, [meta.periods]);
-
-  const careerOptions = useMemo(() => {
-    const careers = Array.isArray(meta.careers) ? meta.careers : [];
-    return [
-      { value: '', label: 'Todas las carreras' },
-      ...careers.map(c => ({ value: String(c.id), label: c.name }))
-    ];
-  }, [meta.careers]);
-
-  const practiceTypeOptions = useMemo(() => {
-    const types = Array.isArray(meta.practiceTypes) ? meta.practiceTypes : [];
-    return [
-      { value: '', label: 'Todos los tipos' },
-      ...types.map(t => ({ value: String(t.id), label: t.name }))
-    ];
-  }, [meta.practiceTypes]);
-
-  // Calcular datos paginados
-  const getPaginatedData = (data: PracticeWithEvaluations[]) => {
-    const list = Array.isArray(data) ? data : [];
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return list.slice(startIndex, startIndex + itemsPerPage);
-  };
-  const filteredPractices = useMemo(() => {
-    const list = Array.isArray(practices) ? practices : [];
-    if (!searchTerm) return list;
-    return list.filter(p =>
-      matchSearch(p.studentName, searchTerm) ||
-      matchSearch(p.studentCi, searchTerm) ||
-      matchSearch(p.institutionName, searchTerm)
-    );
-  }, [practices, searchTerm]);
-
-  // Calcular estadísticas
-  const evaluationStats = useMemo((): EvaluationStats => {
-    const list = Array.isArray(practices) ? practices : [];
-    const total = list.length;
-    const completed = list.filter(p => p.evaluationStatus === 'completed').length;
-    const partial = list.filter(p => p.evaluationStatus === 'partial').length;
-    const pending = list.filter(p => p.evaluationStatus === 'pending').length;
-    const approved = list.filter(p => p.result === 'approved').length;
-    const failed = list.filter(p => p.result === 'failed').length;
-    return { total, completed, partial, pending, approved, failed };
-  }, [practices]);
-
-  const culminationStats = useMemo((): CulminationStats => {
-    const list = Array.isArray(practices) ? practices : [];
-    const total = list.length;
-    const pending = list.filter(p => p.culminationStatus === 'pending').length;
-    const approved = list.filter(p => p.culminationStatus === 'approved').length;
-    const certified = list.filter(p => p.culminationStatus === 'certified').length;
-    return { total, pending, approved, certified };
-  }, [practices]);
-
-  // Handlers de acciones
-  const handleApprove = async (practice: PracticeWithEvaluations) => {
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Aprobar Culminación',
-      message: `¿Está seguro de aprobar la culminación de prácticas de ${practice.studentName}?`,
-      onConfirm: async () => {
-        try {
-          await evaluationsCulminationService.approveCulmination(practice.practiceId);
-          toast.success('Culminación aprobada exitosamente');
-          fetchPractices();
-        } catch (error) {
-          toast.error('Error al aprobar culminación');
-        } finally {
-          setConfirmDialog(null);
-        }
-      }
-    });
-  };
-
-  const handleGenerateCertificate = async (practice: PracticeWithEvaluations) => {
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Generar Certificado',
-      message: `¿Desea generar el certificado de prácticas para ${practice.studentName}?`,
-      onConfirm: async () => {
-        try {
-          const response = await evaluationsCulminationService.generateCertificate(practice.practiceId);
-          if (response.success) {
-            toast.success(`Certificado generado: ${response.certificate.number}`);
-            fetchPractices();
-          }
-        } catch (error) {
-          toast.error('Error al generar certificado');
-        } finally {
-          setConfirmDialog(null);
-        }
-      }
-    });
-  };
-
-  const handleDownloadPdf = async (practice: PracticeWithEvaluations) => {
-    try {
-      toast.loading('Generando PDF...', { id: 'pdf-download' });
-      
-      const blob = await generateCertificatePDF(
-        {
-          id: String(practice.practiceId),
-          studentCi: practice.studentCi,
-          studentName: practice.studentName,
-          careerId: practice.careerId,
-          careerName: practice.careerName,
-          institutionId: practice.institutionId,
-          institutionName: practice.institutionName,
-          period: practice.periodName,
-          practiceType: practice.practiceTypeName,
-          startDate: practice.startDate,
-          endDate: practice.endDate,
-          totalHours: practice.totalHours,
-          status: practice.culminationStatus,
-          certificateNumber: practice.certificateNumber,
-          certifiedAt: practice.certifiedAt
-        },
-        practice.certificateNumber || 'N/A'
-      );
-      
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Certificado_${practice.studentName.replace(/\s+/g, '_')}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      toast.success('PDF descargado exitosamente', { id: 'pdf-download' });
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-      toast.error('Error al descargar el PDF', { id: 'pdf-download' });
-    }
-  };
-
-  // Limpiar filtros
-  const clearFilters = () => {
-    setFilters({});
-    setSearchTerm('');
-    setCurrentPage(1);
-  };
-
-  // Actualizar filtro
-  const updateFilter = (key: keyof PracticeFilters, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value || undefined }));
-    setCurrentPage(1); // Reset page when filter changes
-  };
-
-  // Abrir modal de evaluación
-  const handleOpenEvaluation = (practice: PracticeWithEvaluations, type: 'INSTITUCIONAL' | 'ACADEMICO' | 'COMITE') => {
-    setSelectedPracticeForEval(practice);
-    setSelectedEvaluatorType(type);
-    setEvalModalOpen(true);
-  };
-
-  // Ver detalles de evaluación
-  const handleViewEvaluationDetails = (evaluationId: number) => {
-    setSelectedEvaluationId(evaluationId);
-    setDetailModalOpen(true);
-  };
-
-  // Callback cuando se guarda una evaluación
-  const handleEvaluationSuccess = () => {
-    setEvalModalOpen(false);
-    setSelectedPracticeForEval(null);
-    fetchPractices(); // Recargar datos
-    toast.success('Evaluación guardada exitosamente');
-  };
-
-  // Renderizar contenido según pestaña activa
-  const renderTabContent = () => {
-    if (loading) {
-      return <TableSkeleton columns={activeTab === 'evaluations' ? 9 : activeTab === 'results' ? 6 : 7} rows={10} />;
-    }
-
-    if (filteredPractices.length === 0) {
-      return (
-        <EmptyState 
-          title="No hay registros" 
-          description="No se encontraron prácticas con los filtros aplicados." 
-        />
-      );
-    }
-
-    switch (activeTab) {
-      case 'evaluations':
-        return renderEvaluationsTab();
-      case 'results':
-        return renderResultsTab();
-      case 'culmination':
-        return renderCulminationTab();
-      default:
-        return null;
-    }
-  };
-
-  // Pestaña 1: Evaluaciones
+  // ─── Render: Evaluations tab ────────────────────────────
   const renderEvaluationsTab = () => (
     <>
       <div className="overflow-hidden rounded-lg border border-border-default dark:border-border-dark">
@@ -373,18 +132,16 @@ export default function EvaluationsAndCulminationPage() {
               <TableCell isHeader>Estudiante</TableCell>
               <TableCell isHeader>Período</TableCell>
               <TableCell isHeader>Carrera</TableCell>
-              <TableCell isHeader>Tipo de Práctica</TableCell>
-              <TableCell isHeader>Institucional (40%)</TableCell>
-              <TableCell isHeader>Académica (30%)</TableCell>
-              <TableCell isHeader>Comité (30%)</TableCell>
-              <TableCell isHeader>Nota Final</TableCell>
-              <TableCell isHeader>Estado</TableCell>
+              <TableCell isHeader>Tipo</TableCell>
+              <TableCell isHeader className="text-center">Institucional (40%)</TableCell>
+              <TableCell isHeader className="text-center">Académica (30%)</TableCell>
+              <TableCell isHeader className="text-center">Comité (30%)</TableCell>
+              <TableCell isHeader className="text-center">Nota Final</TableCell>
+              <TableCell isHeader className="text-center">Estado</TableCell>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredPractices
-              .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-              .map(practice => (
+            {paginatedData.map(practice => (
               <TableRow key={practice.practiceId} className="hover:bg-bg-subtle/50">
                 <TableCell>
                   <div className="font-medium text-text-primary dark:text-text-emphasis">
@@ -396,144 +153,91 @@ export default function EvaluationsAndCulminationPage() {
                 <TableCell className="text-text-secondary">{practice.careerName}</TableCell>
                 <TableCell className="text-text-secondary">{practice.practiceTypeName}</TableCell>
                 <TableCell className="text-center">
-                  {renderEvaluationCell(practice, 'INSTITUCIONAL')}
+                  <EvaluationCell
+                    evaluation={practice.evaluations.INSTITUCIONAL}
+                    evaluatorType="INSTITUCIONAL"
+                    onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
+                    onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
+                  />
                 </TableCell>
                 <TableCell className="text-center">
-                  {renderEvaluationCell(practice, 'ACADEMICO')}
+                  <EvaluationCell
+                    evaluation={practice.evaluations.ACADEMICO}
+                    evaluatorType="ACADEMICO"
+                    onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
+                    onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
+                  />
                 </TableCell>
                 <TableCell className="text-center">
-                  {renderEvaluationCell(practice, 'COMITE')}
+                  <EvaluationCell
+                    evaluation={practice.evaluations.COMITE}
+                    evaluatorType="COMITE"
+                    onEvaluate={(type, evalId) => hook.handleOpenEvaluation(practice, type, evalId)}
+                    onViewDetails={(id) => hook.handleViewEvaluationDetails(id)}
+                  />
                 </TableCell>
                 <TableCell className="text-center">
                   <span className="text-lg font-bold text-brand-500">
-                    {practice.finalGrade?.toFixed(2) || '-'}
+                    {practice.finalGrade?.toFixed(2) ?? '-'}
                   </span>
                 </TableCell>
                 <TableCell className="text-center">
-                    <Badge color="light" variant="light">
-                      Pendiente
-                    </Badge>
+                  {getStatusBadge(practice.evaluationStatus)}
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
-      {filteredPractices.length > itemsPerPage && (
+      {totalPages > 1 && (
         <Pagination
-          currentPage={currentPage}
-          totalPages={Math.ceil(filteredPractices.length / itemsPerPage)}
-          totalItems={filteredPractices.length}
-          itemsPerPage={itemsPerPage}
-          onPageChange={setCurrentPage}
-          onItemsPerPageChange={(items) => { setItemsPerPage(items); setCurrentPage(1); }}
+          currentPage={hook.currentPage}
+          totalPages={totalPages}
+          totalItems={hook.filteredPractices.length}
+          itemsPerPage={hook.itemsPerPage}
+          onPageChange={hook.setCurrentPage}
+          onItemsPerPageChange={(items) => { hook.setItemsPerPage(items); hook.setCurrentPage(1); }}
           itemsPerPageOptions={[10, 25, 50]}
         />
       )}
     </>
   );
 
-  // Celda de evaluación
-  const renderEvaluationCell = (practice: PracticeWithEvaluations, type: 'INSTITUCIONAL' | 'ACADEMICO' | 'COMITE') => {
-    const evalData = practice.evaluations[type];
-    
-    if (evalData.completed) {
-      return (
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => evalData.evaluationId && handleViewEvaluationDetails(evalData.evaluationId)}
-            className="flex items-center gap-1 px-2 py-1.5 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-200 transition-colors"
-            title="Ver detalles"
-          >
-            <EyeIcon className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => handleOpenEvaluation(practice, type)}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 transition-colors"
-            title={`Evaluador: ${evalData.evaluatorName}`}
-          >
-            <CheckCircleIcon className="w-4 h-4" />
-            <span>{evalData.score.toFixed(1)}</span>
-          </button>
-        </div>
-      );
-    }
-    
-    return (
-      <button
-        onClick={() => handleOpenEvaluation(practice, type)}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-brand-100 hover:text-brand-600 transition-colors"
-      >
-        <TimeIcon className="w-4 h-4" />
-        <span>Pendiente</span>
-      </button>
-    );
-  };
-
-  // Badge de estado de evaluación
-  const renderEvaluationStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return (
-          <Badge color="success" variant="light">
-            Completo
-          </Badge>
-        );
-      case 'partial':
-        return (
-          <Badge color="warning" variant="light">
-            Parcial
-          </Badge>
-        );
-      default:
-        return (
-          <Badge color="light" variant="light">
-            Pendiente
-          </Badge>
-        );
-    }
-  };
-
-  // Pestaña 2: Resultados
+  // ─── Render: Results tab ────────────────────────────────
   const renderResultsTab = () => {
-    const resultsFiltered = Array.isArray(filteredPractices) 
-      ? filteredPractices.filter(p => filters.result ? p.result === filters.result : true)
-      : [];
+    const resultsFiltered = hook.filteredPractices.filter(p =>
+      hook.filters.result ? p.result === hook.filters.result : true
+    );
+    const resultsPaginated = resultsFiltered.slice(
+      (hook.currentPage - 1) * hook.itemsPerPage,
+      hook.currentPage * hook.itemsPerPage
+    );
+    const resultsTotalPages = Math.ceil(resultsFiltered.length / hook.itemsPerPage);
 
     return (
       <>
-        {/* Tarjetas de estadísticas */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <StatCard 
-            title="Total" 
-            value={evaluationStats.total} 
-            subtitle="100%"
-          />
-          <StatCard 
-            title="Aprobados" 
-            value={evaluationStats.approved} 
-            color="success"
-            subtitle={`${evaluationStats.total > 0 ? ((evaluationStats.approved / evaluationStats.total) * 100).toFixed(1) : 0}%`}
-          />
-          <StatCard 
-            title="Reprobados" 
-            value={evaluationStats.failed} 
-            color="warning"
-            subtitle={`${evaluationStats.total > 0 ? ((evaluationStats.failed / evaluationStats.total) * 100).toFixed(1) : 0}%`}
-          />
-        </div>
+        <StatsCardsGrid
+          stats={[
+            { title: 'Total', value: hook.evaluationStats.total },
+            { title: 'Aprobados', value: hook.evaluationStats.approved, color: 'success',
+              subtitle: `${hook.evaluationStats.total > 0 ? ((hook.evaluationStats.approved / hook.evaluationStats.total) * 100).toFixed(1) : 0}%` },
+            { title: 'Reprobados', value: hook.evaluationStats.failed, color: 'warning',
+              subtitle: `${hook.evaluationStats.total > 0 ? ((hook.evaluationStats.failed / hook.evaluationStats.total) * 100).toFixed(1) : 0}%` },
+          ]}
+        />
 
-        {/* Filtro de resultado */}
         <div className="flex flex-wrap gap-4 mb-4">
-          <CustomSelect
-            options={RESULT_OPTIONS}
-            value={filters.result || ''}
-            onChange={(v) => updateFilter('result', v as string)}
-            className="w-40"
-          />
+          <select
+            value={hook.filters.result || ''}
+            onChange={(e) => hook.updateFilter('result', e.target.value)}
+            className="w-40 px-3 py-2 border border-border-default dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-sm"
+          >
+            {RESULT_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
         </div>
 
-        {/* Tabla */}
         <div className="overflow-hidden rounded-lg border border-border-default dark:border-border-dark">
           <Table>
             <TableHeader>
@@ -541,113 +245,105 @@ export default function EvaluationsAndCulminationPage() {
                 <TableCell isHeader>Estudiante</TableCell>
                 <TableCell isHeader>Período</TableCell>
                 <TableCell isHeader>Carrera</TableCell>
-                <TableCell isHeader>Tipo de Práctica</TableCell>
-                <TableCell isHeader>Nota Final</TableCell>
-                <TableCell isHeader>Resultado</TableCell>
+                <TableCell isHeader>Tipo</TableCell>
+                <TableCell isHeader className="text-center">Nota Final</TableCell>
+                <TableCell isHeader className="text-center">Resultado</TableCell>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {resultsFiltered
-                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                .map(practice => (
-                  <TableRow key={practice.practiceId} className="hover:bg-bg-subtle/50">
-                    <TableCell>
-                      <div className="font-medium text-text-primary dark:text-text-emphasis">
-                        {practice.studentName}
-                      </div>
-                      <div className="text-xs text-text-tertiary">{practice.studentCi}</div>
-                    </TableCell>
-                    <TableCell className="text-text-secondary">{practice.periodName}</TableCell>
-                    <TableCell className="text-text-secondary">{practice.careerName}</TableCell>
-                    <TableCell className="text-text-secondary">{practice.practiceTypeName}</TableCell>
-                    <TableCell className="text-center">
-                      <span className="text-lg font-bold text-brand-500">
-                        {practice.finalGrade?.toFixed(2) || '-'}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge 
-                        color={practice.result === 'approved' ? 'success' : practice.result === 'failed' ? 'error' : 'light'} 
-                        variant="light"
-                      >
-                        {getResultLabel(practice.result)}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
+              {resultsPaginated.map(practice => (
+                <TableRow key={practice.practiceId} className="hover:bg-bg-subtle/50">
+                  <TableCell>
+                    <div className="font-medium text-text-primary dark:text-text-emphasis">
+                      {practice.studentName}
+                    </div>
+                    <div className="text-xs text-text-tertiary">{practice.studentCi}</div>
+                  </TableCell>
+                  <TableCell className="text-text-secondary">{practice.periodName}</TableCell>
+                  <TableCell className="text-text-secondary">{practice.careerName}</TableCell>
+                  <TableCell className="text-text-secondary">{practice.practiceTypeName}</TableCell>
+                  <TableCell className="text-center">
+                    <span className="text-lg font-bold text-brand-500">
+                      {practice.finalGrade?.toFixed(2) ?? '-'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {getResultBadge(practice.result)}
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </div>
-        {resultsFiltered.length > itemsPerPage && (
+        {resultsTotalPages > 1 && (
           <Pagination
-            currentPage={currentPage}
-            totalPages={Math.ceil(resultsFiltered.length / itemsPerPage)}
+            currentPage={hook.currentPage}
+            totalPages={resultsTotalPages}
             totalItems={resultsFiltered.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={(items) => { setItemsPerPage(items); setCurrentPage(1); }}
+            itemsPerPage={hook.itemsPerPage}
+            onPageChange={hook.setCurrentPage}
+            onItemsPerPageChange={(items) => { hook.setItemsPerPage(items); hook.setCurrentPage(1); }}
             itemsPerPageOptions={[10, 25, 50]}
           />
         )}
       </>
     );
   };
+
+  // ─── Render: Culmination tab ────────────────────────────
   const renderCulminationTab = () => {
-    // Filtrar localmente por búsqueda
-    const culminFiltered = Array.isArray(filteredPractices) 
-      ? filteredPractices.filter(p => filters.culminationStatus ? p.culminationStatus === filters.culminationStatus : true)
-      : [];
+    const culminFiltered = hook.filteredPractices.filter(p =>
+      hook.filters.culminationStatus ? p.culminationStatus === hook.filters.culminationStatus : true
+    );
+    const culminPaginated = culminFiltered.slice(
+      (hook.currentPage - 1) * hook.itemsPerPage,
+      hook.currentPage * hook.itemsPerPage
+    );
+    const culminTotalPages = Math.ceil(culminFiltered.length / hook.itemsPerPage);
 
     return (
       <>
-        {/* Tarjetas de estadísticas */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-          <StatCard 
-            title="Total" 
-            value={culminationStats.total} 
-          />
-          <StatCard 
-            title="Pendientes" 
-            value={culminationStats.pending} 
-            color="warning"
-          />
-          <StatCard 
-            title="Aprobados" 
-            value={culminationStats.approved} 
-            color="success"
-          />
-          <StatCard 
-            title="Certificados" 
-            value={culminationStats.certified} 
-            color="primary"
-          />
-        </div>
+        <StatsCardsGrid
+          columns={4}
+          stats={[
+            { title: 'Total', value: hook.culminationStats.total },
+            { title: 'Pendientes', value: hook.culminationStats.pending, color: 'warning' },
+            { title: 'Aprobados', value: hook.culminationStats.approved, color: 'success' },
+            { title: 'Certificados', value: hook.culminationStats.certified, color: 'primary' },
+          ]}
+        />
 
-        {/* Filtros */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center mb-6">
           <div className="w-full sm:w-64">
-            <InputField
+            <input
               type="text"
               placeholder="Buscar estudiante, cédula, institución..."
-              value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              value={hook.searchTerm}
+              onChange={(e) => { hook.setSearchTerm(e.target.value); hook.setCurrentPage(1); }}
+              className="w-full px-4 py-2 border border-border-default dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-brand-500"
             />
           </div>
-          <CustomSelect
-            options={CULMINATION_STATUS_OPTIONS}
-            value={filters.culminationStatus || ''}
-            onChange={(v) => updateFilter('culminationStatus', v as string)}
-            className="w-full sm:w-44"
-          />
-          <CustomSelect
-            options={periodOptions}
-            value={String(filters.periodId || '')}
-            onChange={(v) => updateFilter('periodId', v as string)}
-            className="w-full sm:w-40"
-          />
+          <select
+            value={hook.filters.culminationStatus || ''}
+            onChange={(e) => hook.updateFilter('culminationStatus', e.target.value)}
+            className="w-full sm:w-44 px-3 py-2 border border-border-default dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-sm"
+          >
+            {CULMINATION_STATUS_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <select
+            value={String(hook.filters.periodId || '')}
+            onChange={(e) => hook.updateFilter('periodId', e.target.value)}
+            className="w-full sm:w-40 px-3 py-2 border border-border-default dark:border-border-dark rounded-lg bg-white dark:bg-gray-800 text-sm"
+          >
+            {periodOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
         </div>
 
-        {/* Tabla - Desktop */}
+        {/* Desktop table */}
         <div className="hidden md:block overflow-hidden rounded-lg border border-border-default dark:border-border-dark">
           <Table>
             <TableHeader>
@@ -656,68 +352,43 @@ export default function EvaluationsAndCulminationPage() {
                 <TableCell isHeader>Carrera</TableCell>
                 <TableCell isHeader>Institución</TableCell>
                 <TableCell isHeader>Período</TableCell>
-                <TableCell isHeader>Horas</TableCell>
-                <TableCell isHeader>Estado</TableCell>
-                <TableCell isHeader>Acciones</TableCell>
+                <TableCell isHeader className="text-center">Horas</TableCell>
+                <TableCell isHeader className="text-center">Estado</TableCell>
+                <TableCell isHeader className="text-center">Acciones</TableCell>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {culminFiltered.map(practice => (
-                <TableRow key={practice.practiceId} className="hover:bg-bg-subtle/50 dark:hover:bg-bg-dark-subtle/50">
+              {culminPaginated.map(practice => (
+                <TableRow key={practice.practiceId} className="hover:bg-bg-subtle/50">
                   <TableCell>
                     <div className="font-medium text-text-primary dark:text-text-emphasis">
                       {practice.studentName}
                     </div>
                     <div className="text-xs text-text-tertiary">{practice.studentCi}</div>
                   </TableCell>
-                  <TableCell className="text-text-secondary dark:text-text-tertiary text-sm">
-                    {practice.careerName}
-                  </TableCell>
-                  <TableCell className="text-text-secondary dark:text-text-tertiary text-sm">
-                    {practice.institutionName}
-                  </TableCell>
-                  <TableCell className="text-text-secondary dark:text-text-tertiary text-sm">
-                    {practice.periodName}
-                  </TableCell>
-                  <TableCell className="text-text-secondary dark:text-text-tertiary text-sm tabular-nums">
-                    {practice.totalHours}h
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      color={practice.culminationStatus === 'approved' ? 'success' : practice.culminationStatus === 'certified' ? 'primary' : 'warning'} 
-                      variant="light"
-                      shape="rounded"
-                    >
-                      {practice.culminationStatus === 'approved' ? 'Aprobado' : practice.culminationStatus === 'certified' ? 'Certificado' : 'Pendiente'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => {
-                          setSelectedStudentPracticeId(practice.practiceId);
-                          setSelectedStudentName(practice.studentName);
-                          setStudentDetailOpen(true);
-                        }}
-                      >
+                  <TableCell className="text-sm text-text-secondary">{practice.careerName}</TableCell>
+                  <TableCell className="text-sm text-text-secondary">{practice.institutionName}</TableCell>
+                  <TableCell className="text-sm text-text-secondary">{practice.periodName}</TableCell>
+                  <TableCell className="text-center text-sm tabular-nums">{practice.totalHours}h</TableCell>
+                  <TableCell className="text-center">{getCulminationBadge(practice.culminationStatus)}</TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <Button size="sm" variant="outline" onClick={() => hook.handleViewStudentDetail(practice)}>
                         <EyeIcon className="w-4 h-4" />
                       </Button>
-                      {/* Solo mostrar Aprobar si tiene resultado de evaluaciones (aprobado) */}
                       {practice.culminationStatus === 'pending' && practice.result === 'approved' && (
-                        <Button size="sm" variant="outline" onClick={() => handleApprove(practice)}>
+                        <Button size="sm" variant="outline" onClick={() => hook.handleApprove(practice)}>
                           Aprobar
                         </Button>
                       )}
                       {practice.culminationStatus === 'approved' && (
-                        <Button size="sm" onClick={() => handleGenerateCertificate(practice)}>
+                        <Button size="sm" onClick={() => hook.handleGenerateCertificate(practice)}>
                           Certificar
                         </Button>
                       )}
                       {practice.culminationStatus === 'certified' && (
-                        <Button size="sm" variant="outline" onClick={() => handleDownloadPdf(practice)} startIcon={<DownloadIcon className="w-4 h-4" />}>
-                          PDF
+                        <Button size="sm" variant="outline" onClick={() => hook.handleDownloadPdf(practice)}>
+                          <DownloadIcon className="w-4 h-4" />
                         </Button>
                       )}
                     </div>
@@ -728,24 +399,18 @@ export default function EvaluationsAndCulminationPage() {
           </Table>
         </div>
 
-        {/* Cards - Mobile */}
+        {/* Mobile cards */}
         <div className="md:hidden flex flex-col gap-4">
-          {culminFiltered.map(practice => (
-            <div key={practice.practiceId} className="bg-bg-surface dark:bg-bg-dark-surface rounded-lg border border-border-default dark:border-border-dark p-4">
+          {culminPaginated.map(practice => (
+            <div key={practice.practiceId} className="bg-white dark:bg-gray-800 rounded-lg border border-border-default dark:border-border-dark p-4">
               <div className="flex justify-between items-start mb-3">
-                <div>
-                  <p className="font-medium text-text-primary dark:text-text-emphasis">{practice.studentName}</p>
+                <div className="min-w-0">
+                  <p className="font-medium text-text-primary dark:text-text-emphasis truncate">{practice.studentName}</p>
                   <p className="text-xs text-text-tertiary">{practice.studentCi}</p>
                 </div>
-                <Badge 
-                  color={practice.culminationStatus === 'approved' ? 'success' : practice.culminationStatus === 'certified' ? 'primary' : 'warning'} 
-                  variant="light"
-                  shape="rounded"
-                >
-                  {practice.culminationStatus === 'approved' ? 'Aprobado' : practice.culminationStatus === 'certified' ? 'Certificado' : 'Pendiente'}
-                </Badge>
+                {getCulminationBadge(practice.culminationStatus)}
               </div>
-              <div className="space-y-1 text-xs text-text-secondary dark:text-text-tertiary mb-3">
+              <div className="space-y-1 text-xs text-text-secondary mb-3">
                 <p><span className="font-medium">Carrera:</span> {practice.careerName}</p>
                 <p><span className="font-medium">Institución:</span> {practice.institutionName}</p>
                 <p><span className="font-medium">Horas:</span> {practice.totalHours}h</p>
@@ -755,31 +420,31 @@ export default function EvaluationsAndCulminationPage() {
                   Certificado: {practice.certificateNumber}
                 </p>
               )}
-              <div className="pt-3 border-t border-border-default dark:border-border-dark">
-                {/* Solo mostrar Aprobar si tiene resultado de evaluaciones (aprobado) */}
+              <div className="pt-3 border-t border-border-default dark:border-border-dark flex gap-2">
                 {practice.culminationStatus === 'pending' && practice.result === 'approved' && (
-                  <Button size="sm" variant="outline" onClick={() => handleApprove(practice)}>Aprobar</Button>
+                  <Button size="sm" variant="outline" onClick={() => hook.handleApprove(practice)}>Aprobar</Button>
                 )}
                 {practice.culminationStatus === 'approved' && (
-                  <Button size="sm" onClick={() => handleGenerateCertificate(practice)}>Generar Certificado</Button>
+                  <Button size="sm" onClick={() => hook.handleGenerateCertificate(practice)}>Certificar</Button>
                 )}
                 {practice.culminationStatus === 'certified' && (
-                  <Button size="sm" variant="outline" onClick={() => handleDownloadPdf(practice)} startIcon={<DownloadIcon className="w-4 h-4" />}>Descargar PDF</Button>
+                  <Button size="sm" variant="outline" onClick={() => hook.handleDownloadPdf(practice)}>
+                    <DownloadIcon className="w-4 h-4" /> PDF
+                  </Button>
                 )}
               </div>
             </div>
           ))}
         </div>
 
-        {/* Paginación */}
-        {culminFiltered.length > itemsPerPage && (
+        {culminTotalPages > 1 && (
           <Pagination
-            currentPage={currentPage}
-            totalPages={Math.ceil(culminFiltered.length / itemsPerPage)}
+            currentPage={hook.currentPage}
+            totalPages={culminTotalPages}
             totalItems={culminFiltered.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={(items) => { setItemsPerPage(items); setCurrentPage(1); }}
+            itemsPerPage={hook.itemsPerPage}
+            onPageChange={hook.setCurrentPage}
+            onItemsPerPageChange={(items) => { hook.setItemsPerPage(items); hook.setCurrentPage(1); }}
             itemsPerPageOptions={[10, 25, 50]}
           />
         )}
@@ -787,11 +452,35 @@ export default function EvaluationsAndCulminationPage() {
     );
   };
 
+  // ─── Tab content switch ─────────────────────────────────
+  const renderTabContent = () => {
+    if (hook.loading) {
+      return <TableSkeleton columns={activeTab === 'evaluations' ? 9 : activeTab === 'results' ? 6 : 7} rows={10} />;
+    }
+
+    if (hook.filteredPractices.length === 0) {
+      return (
+        <EmptyState
+          title="No hay registros"
+          description="No se encontraron prácticas con los filtros aplicados."
+        />
+      );
+    }
+
+    switch (activeTab) {
+      case 'evaluations': return renderEvaluationsTab();
+      case 'results': return renderResultsTab();
+      case 'culmination': return renderCulminationTab();
+      default: return null;
+    }
+  };
+
+  // ─── Main Render ────────────────────────────────────────
   return (
     <>
-      <PageMeta 
-        title="Evaluaciones y Culminación" 
-        description="Gestión de evaluaciones y culminación de prácticas profesionales" 
+      <PageMeta
+        title="Evaluaciones y Culminación"
+        description="Gestión de evaluaciones y culminación de prácticas profesionales"
       />
       <PageBreadcrumb pageTitle="Evaluaciones y Culminación" />
 
@@ -803,7 +492,7 @@ export default function EvaluationsAndCulminationPage() {
               Gestiona las evaluaciones, resultados y culminación de prácticas profesionales
             </p>
           </div>
-          <Button variant="outline" onClick={fetchPractices}>
+          <Button variant="outline" onClick={hook.refresh}>
             <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
@@ -832,92 +521,59 @@ export default function EvaluationsAndCulminationPage() {
           </nav>
         </div>
 
-        {/* Filtros y Tabla */}
+        {/* Filtros y contenido */}
         <ComponentCard title="Listado de Prácticas">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center mb-6">
-            <div className="w-full sm:w-64">
-              <InputField
-                type="text"
-                placeholder="Buscar estudiante, cédula, institución..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <CustomSelect
-              options={periodOptions}
-              value={String(filters.periodId || '')}
-              onChange={(v) => updateFilter('periodId', v as string)}
-              className="w-full sm:w-44"
+          {activeTab !== 'culmination' && (
+            <EvaluationFilters
+              searchTerm={hook.searchTerm}
+              onSearchChange={(v) => { hook.setSearchTerm(v); hook.setCurrentPage(1); }}
+              filters={hook.filters}
+              onFilterChange={hook.updateFilter}
+              onClear={hook.clearFilters}
+              periodOptions={periodOptions}
+              careerOptions={careerOptions}
+              practiceTypeOptions={practiceTypeOptions}
+              hasActiveFilters={hasActiveFilters}
             />
-            <CustomSelect
-              options={careerOptions}
-              value={String(filters.careerId || '')}
-              onChange={(v) => updateFilter('careerId', v as string)}
-              className="w-full sm:w-48"
-            />
-            <CustomSelect
-              options={practiceTypeOptions}
-              value={String(filters.practiceTypeId || '')}
-              onChange={(v) => updateFilter('practiceTypeId', v as string)}
-              className="w-full sm:w-44"
-            />
-            {Object.keys(filters).length > 0 && (
-              <Button variant="ghost" onClick={clearFilters}>
-                Limpiar
-              </Button>
-            )}
-          </div>
+          )}
 
-          {/* Contenido de la pestaña */}
           {renderTabContent()}
         </ComponentCard>
       </div>
 
-      {/* Diálogo de confirmación */}
+      {/* Modales */}
       <UnifiedDialog
-        isOpen={!!confirmDialog}
-        onClose={() => setConfirmDialog(null)}
-        onConfirm={confirmDialog?.onConfirm || (() => {})}
-        title={confirmDialog?.title || ''}
-        message={confirmDialog?.message || ''}
+        isOpen={!!hook.confirmDialog}
+        onClose={hook.closeConfirmDialog}
+        onConfirm={hook.confirmDialog?.onConfirm || (() => {})}
+        title={hook.confirmDialog?.title || ''}
+        message={hook.confirmDialog?.message || ''}
         confirmLabel="Confirmar"
         variant="info"
       />
 
-      {/* Modal de Evaluación */}
-      {selectedPracticeForEval && (
+      {hook.selectedPracticeForEval && (
         <EvaluationModal
-          isOpen={evalModalOpen}
-          onClose={() => {
-            setEvalModalOpen(false);
-            setSelectedPracticeForEval(null);
-          }}
-          practiceId={selectedPracticeForEval.practiceId}
-          evaluatorType={selectedEvaluatorType}
-          onSuccess={handleEvaluationSuccess}
+          isOpen={hook.evalModalOpen}
+          onClose={hook.handleCloseEvaluationModal}
+          practiceId={hook.selectedPracticeForEval.practiceId}
+          evaluatorType={hook.selectedEvaluatorType}
+          evaluationId={hook.editingEvaluationId}
+          onSuccess={hook.handleEvaluationSuccess}
         />
       )}
 
-      {/* Modal de Detalles de Evaluación */}
       <EvaluationDetailModal
-        isOpen={detailModalOpen}
-        onClose={() => {
-          setDetailModalOpen(false);
-          setSelectedEvaluationId(null);
-        }}
-        evaluationId={selectedEvaluationId}
+        isOpen={hook.detailModalOpen}
+        onClose={hook.handleCloseDetailModal}
+        evaluationId={hook.selectedEvaluationId}
       />
 
-      {/* Modal de Detalle del Estudiante */}
       <StudentDetailModal
-        isOpen={studentDetailOpen}
-        onClose={() => {
-          setStudentDetailOpen(false);
-          setSelectedStudentPracticeId(null);
-          setSelectedStudentName('');
-        }}
-        practiceId={selectedStudentPracticeId || 0}
-        studentName={selectedStudentName}
+        isOpen={hook.studentDetailOpen}
+        onClose={hook.handleCloseStudentDetail}
+        practiceId={hook.selectedStudentPracticeId || 0}
+        studentName={hook.selectedStudentName}
       />
     </>
   );

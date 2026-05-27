@@ -8,10 +8,9 @@ import { nowStringVenezuela } from '../utils/date.utils.js';
 
 const handleAuthError = (res: Response, error: unknown) => {
   console.error('Auth Error:', error);
-  const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+  const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
   res.status(500).json({ 
-    message: 'Error en el proceso de autenticación',
-    error: errorMessage
+    message: errorMessage
   });
 };
 

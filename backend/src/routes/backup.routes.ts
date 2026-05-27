@@ -14,8 +14,8 @@ const router = Router();
 router.use(authenticateToken);
 
 router.post('/', requirePermission('backups:create'), createBackup);
-router.get('/', getBackups);
-router.get('/:id/download', downloadBackup);
+router.get('/', requirePermission('backups:view'), getBackups);
+router.get('/:id/download', requirePermission('backups:view'), downloadBackup);
 router.delete('/:id', requirePermission('backups:delete'), deleteBackup);
 
 router.post('/:id/verify-password', authorizeRole([ROLES.ADMIN]), verifyRestorePassword);

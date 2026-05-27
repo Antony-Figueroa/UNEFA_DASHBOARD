@@ -38,21 +38,13 @@ const handleDbError = (res: Response, error: unknown) => {
   });
 };
 
-interface Student {
-  STUDENTS_CI: string;
-  NAME: string;
-  SECOND_NAME?: string;
-  SURNAME: string;
-  SECOND_SURNAME?: string;
-}
-
 interface TutorAssociation {
   TUTOR_ID: number;
   TUTOR_TYPE: string;
-  t_tutors?: {
-    NAME: string;
-    SURNAME: string;
-    CONTACT_PHONE?: string;
+  t_persons?: {
+    first_name: string;
+    last_name: string;
+    phone?: string;
   };
 }
 
@@ -76,7 +68,7 @@ interface ProfessionalPractice {
   ENROLLMENT: string;
   INTERNSHIP_STATUS?: number;
   INTERNSHIP_TYPE_ID?: number;
-  t_students?: Student;
+  t_persons?: { ci: string; first_name: string; middle_name?: string; last_name: string; second_last_name?: string };
   t_career?: {
     CAREER_NAME: string;
   };
@@ -91,7 +83,10 @@ interface ProfessionalPractice {
     EXTENSION: string;
     INSTITUTION_TYPE: string;
   };
-  t_institution_manager?: { NAME: string; SURNAME: string; CONTACT_PHONE: string };
+  t_institution_manager?: {
+    person_id: number;
+    t_persons: { first_name: string; last_name: string; phone?: string };
+  };
   t_professional_practices_tutor?: TutorAssociation[];
 }
 
@@ -108,12 +103,12 @@ export const getEnrollments = async (req: Request, res: Response) => {
         .from(TABLE_NAME)
         .select(`
           ${ENROLLMENT_COLUMNS},
-          t_students (
-            STUDENTS_CI,
-            NAME,
-            SECOND_NAME,
-            SURNAME,
-            SECOND_SURNAME
+          t_persons!inner (
+            ci,
+            first_name,
+            middle_name,
+            last_name,
+            second_last_name
           ),
           t_career (CAREER_NAME),
           t_internships_period (DESCRIPTION),
@@ -127,11 +122,14 @@ export const getEnrollments = async (req: Request, res: Response) => {
             EXTENSION,
             INSTITUTION_TYPE
           ),
-          t_institution_manager (NAME, SURNAME, CONTACT_PHONE),
+          t_institution_manager (
+            person_id,
+            t_persons!inner (first_name, last_name, phone)
+          ),
           t_professional_practices_tutor (
             TUTOR_ID,
             TUTOR_TYPE,
-            t_tutors (NAME, SURNAME, CONTACT_PHONE)
+            t_persons!inner (first_name, last_name, phone)
           )
         `)
         .eq('PRACTICES_STATUS', 2)
@@ -165,7 +163,8 @@ export const getEnrollments = async (req: Request, res: Response) => {
 
     // Mapear datos al formato que espera el frontend
     const mappedData = (data || []).map((item: ProfessionalPractice) => {
-      const ciParts = item.t_students?.STUDENTS_CI?.split('-') || ['', ''];
+      const p = item.t_persons;
+      const ciParts = p?.ci?.split('-') || ['', ''];
       
       const academicTutor = item.t_professional_practices_tutor?.find((t: TutorAssociation) => t.TUTOR_TYPE === 'ACADEMICO');
       const methodologicalTutor = item.t_professional_practices_tutor?.find((t: TutorAssociation) => t.TUTOR_TYPE === 'METODOLOGICO');
@@ -180,14 +179,14 @@ export const getEnrollments = async (req: Request, res: Response) => {
         enrollmentId: item.PROFESSIONAL_PRACTICE_ID?.toString() || '',
         identificationPrefix: ciParts[0] || 'V',
         identificationNumber: ciParts[1] || '',
-        studentName: `${item.t_students?.NAME || ''} ${item.t_students?.SURNAME || ''}`.trim(),
+        studentName: `${p?.first_name || ''} ${p?.last_name || ''}`.trim(),
         careerName: item.t_career?.CAREER_NAME || '',
         academicTutorId: academicTutor?.TUTOR_ID?.toString() || '',
-        academicTutorName: academicTutor ? `${academicTutor.t_tutors?.NAME || ''} ${academicTutor.t_tutors?.SURNAME || ''}`.trim() : '',
-        academicTutorPhone: academicTutor?.t_tutors?.CONTACT_PHONE || '',
+        academicTutorName: academicTutor ? `${academicTutor.t_persons?.first_name || ''} ${academicTutor.t_persons?.last_name || ''}`.trim() : '',
+        academicTutorPhone: academicTutor?.t_persons?.phone || '',
         methodologicalTutorId: methodologicalTutor?.TUTOR_ID?.toString() || '',
-        methodologicalTutorName: methodologicalTutor ? `${methodologicalTutor.t_tutors?.NAME || ''} ${methodologicalTutor.t_tutors?.SURNAME || ''}`.trim() : '',
-        methodologicalTutorPhone: methodologicalTutor?.t_tutors?.CONTACT_PHONE || '',
+        methodologicalTutorName: methodologicalTutor ? `${methodologicalTutor.t_persons?.first_name || ''} ${methodologicalTutor.t_persons?.last_name || ''}`.trim() : '',
+        methodologicalTutorPhone: methodologicalTutor?.t_persons?.phone || '',
         institutionId: item.INSTITUTION_ID?.toString() || '',
         institutionName: item.t_institution?.INSTITUTION_NAME || '',
         institutionAddress: item.t_institution?.INSTITUTION_ADDRESS || '',
@@ -197,8 +196,8 @@ export const getEnrollments = async (req: Request, res: Response) => {
         extension: getFullName(item.t_institution?.EXTENSION),
         institutionType: getFullName(item.t_institution?.INSTITUTION_TYPE),
         institutionResponsibleId: item.MANAGER_ID?.toString() || '',
-        institutionResponsibleName: item.t_institution_manager ? `${item.t_institution_manager.NAME || ''} ${item.t_institution_manager.SURNAME || ''}`.trim() : '',
-        institutionResponsiblePhone: item.t_institution_manager?.CONTACT_PHONE || '',
+        institutionResponsibleName: item.t_institution_manager?.t_persons ? `${item.t_institution_manager.t_persons.first_name || ''} ${item.t_institution_manager.t_persons.last_name || ''}`.trim() : '',
+        institutionResponsiblePhone: item.t_institution_manager?.t_persons?.phone || '',
         practiceType: item.t_internship_type?.NAME || '',
         period: item.t_internships_period?.DESCRIPTION || '',
         enrollmentCode: item.ENROLLMENT || '',
@@ -232,8 +231,8 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
       const fullCI = `${identificationPrefix}-${identificationNumber}`;
       const { data: student, error: studentError } = await supabase
         .from('t_students')
-        .select('STUDENTS_ID')
-        .eq('STUDENTS_CI', fullCI)
+        .select('STUDENTS_ID, t_persons!inner(ci)')
+        .eq('t_persons.ci', fullCI)
         .single();
       
       if (studentError || !student) {
@@ -328,22 +327,25 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
         .from(TABLE_NAME)
         .select(`
           ${ENROLLMENT_COLUMNS},
-          t_students (
-            STUDENTS_CI,
-            NAME,
-            SECOND_NAME,
-            SURNAME,
-            SECOND_SURNAME
+          t_persons!inner (
+            ci,
+            first_name,
+            middle_name,
+            last_name,
+            second_last_name
           ),
           t_career (CAREER_NAME),
           t_internships_period (DESCRIPTION),
           t_internship_type (NAME),
           t_institution (INSTITUTION_NAME),
-          t_institution_manager (NAME, SURNAME),
+          t_institution_manager (
+            person_id,
+            t_persons!inner (first_name, last_name)
+          ),
           t_professional_practices_tutor (
             TUTOR_ID,
             TUTOR_TYPE,
-            t_tutors (NAME, SURNAME)
+            t_persons!inner (first_name, last_name)
           )
         `)
         .eq('PROFESSIONAL_PRACTICE_ID', practice.PROFESSIONAL_PRACTICE_ID)
@@ -352,7 +354,8 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
       if (fetchError) throw fetchError;
 
       const item = fullData as unknown as ProfessionalPractice;
-      const ciParts = item.t_students?.STUDENTS_CI?.split('-') || ['', ''];
+      const p = item.t_persons;
+      const ciParts = p?.ci?.split('-') || ['', ''];
       const academicTutor = item.t_professional_practices_tutor?.find((t: TutorAssociation) => t.TUTOR_TYPE === 'ACADEMICO');
       const methodologicalTutor = item.t_professional_practices_tutor?.find((t: TutorAssociation) => t.TUTOR_TYPE === 'METODOLOGICO');
 
@@ -360,16 +363,16 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
         enrollmentId: item.PROFESSIONAL_PRACTICE_ID?.toString() || '',
         identificationPrefix: ciParts[0] || 'V',
         identificationNumber: ciParts[1] || '',
-        studentName: `${item.t_students?.NAME || ''} ${item.t_students?.SURNAME || ''}`.trim(),
+        studentName: `${p?.first_name || ''} ${p?.last_name || ''}`.trim(),
         careerName: item.t_career?.CAREER_NAME || '',
         academicTutorId: academicTutor?.TUTOR_ID?.toString() || '',
-        academicTutorName: academicTutor ? `${academicTutor.t_tutors?.NAME || ''} ${academicTutor.t_tutors?.SURNAME || ''}`.trim() : '',
+        academicTutorName: academicTutor ? `${academicTutor.t_persons?.first_name || ''} ${academicTutor.t_persons?.last_name || ''}`.trim() : '',
         methodologicalTutorId: methodologicalTutor?.TUTOR_ID?.toString() || '',
-        methodologicalTutorName: methodologicalTutor ? `${methodologicalTutor.t_tutors?.NAME || ''} ${methodologicalTutor.t_tutors?.SURNAME || ''}`.trim() : '',
+        methodologicalTutorName: methodologicalTutor ? `${methodologicalTutor.t_persons?.first_name || ''} ${methodologicalTutor.t_persons?.last_name || ''}`.trim() : '',
         institutionId: item.INSTITUTION_ID?.toString() || '',
         institutionName: item.t_institution?.INSTITUTION_NAME || '',
         institutionResponsibleId: item.MANAGER_ID?.toString() || '',
-        institutionResponsibleName: item.t_institution_manager ? `${item.t_institution_manager.NAME || ''} ${item.t_institution_manager.SURNAME || ''}`.trim() : '',
+        institutionResponsibleName: item.t_institution_manager?.t_persons ? `${item.t_institution_manager.t_persons.first_name || ''} ${item.t_institution_manager.t_persons.last_name || ''}`.trim() : '',
         practiceType: item.t_internship_type?.NAME || '',
         period: item.t_internships_period?.DESCRIPTION || '',
         enrollmentCode: item.ENROLLMENT || '',
@@ -524,12 +527,12 @@ export const getPracticesForEvaluation = async (req: AuthRequest, res: Response)
         PROFESSIONAL_PRACTICE_ID,
         GRADE,
         EVALUATION_STATUS,
-        t_students (
-          STUDENTS_CI,
-          NAME,
-          SECOND_NAME,
-          SURNAME,
-          SECOND_SURNAME
+        t_persons!inner (
+          ci,
+          first_name,
+          middle_name,
+          last_name,
+          second_last_name
         ),
         t_institution (
           INSTITUTION_NAME
@@ -547,14 +550,14 @@ export const getPracticesForEvaluation = async (req: AuthRequest, res: Response)
     if (error) throw error;
 
     let practices = (allPractices || []).map((p: any) => {
-      const student = p.t_students;
+      const student = p.t_persons;
       const studentName = student 
-        ? `${student.NAME || ''} ${student.SECOND_NAME || ''} ${student.SURNAME || ''} ${student.SECOND_SURNAME || ''}`.trim().replace(/\s+/g, ' ')
+        ? `${student.first_name || ''} ${student.middle_name || ''} ${student.last_name || ''} ${student.second_last_name || ''}`.trim().replace(/\s+/g, ' ')
         : 'Sin estudiante';
       
       return {
         professionalPracticeId: p.PROFESSIONAL_PRACTICE_ID,
-        studentCi: student?.STUDENTS_CI || '',
+        studentCi: student?.ci || '',
         studentName,
         institutionName: p.t_institution?.INSTITUTION_NAME || 'Sin institución',
         evaluationStatus: p.EVALUATION_STATUS || 'pending',

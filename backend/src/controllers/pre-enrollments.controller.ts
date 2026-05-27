@@ -35,10 +35,8 @@ const handleDbError = (res: Response, error: unknown) => {
 
 interface Student {
   STUDENTS_ID: number;
-  STUDENTS_CI: string;
-  NAME: string;
-  SURNAME: string;
-  CONTACT_PHONE?: string;
+  person_id: number;
+  t_persons?: { ci: string; first_name: string; last_name: string; phone?: string };
 }
 
 interface ProfessionalPracticeTutor {
@@ -83,11 +81,11 @@ export const getPreEnrollments = async (req: Request, res: Response) => {
         .from(TABLE_NAME)
         .select(`
           *,
-          t_students (
-            STUDENTS_CI,
-            NAME,
-            SURNAME,
-            CONTACT_PHONE
+          t_persons!inner (
+            ci,
+            first_name,
+            last_name,
+            phone
           ),
           t_career (CAREER_NAME),
           t_internships_period (DESCRIPTION),
@@ -102,14 +100,14 @@ export const getPreEnrollments = async (req: Request, res: Response) => {
     });
 
     // Mapear al formato del frontend
-    const mappedData = data.map((item: ProfessionalPractice) => {
-      const ciParts = item.t_students?.STUDENTS_CI?.split('-') || ['', ''];
+    const mappedData = data.map((item: any) => {
+      const ciParts = item.t_persons?.ci?.split('-') || ['', ''];
       return {
         preEnrollmentId: item.PROFESSIONAL_PRACTICE_ID.toString(),
         identificationPrefix: ciParts[0] || 'V',
         identificationNumber: ciParts[1] || '',
-        studentName: `${item.t_students?.NAME || ''} ${item.t_students?.SURNAME || ''}`.trim(),
-        phone: item.t_students?.CONTACT_PHONE || '',
+        studentName: `${item.t_persons?.first_name || ''} ${item.t_persons?.last_name || ''}`.trim(),
+        phone: item.t_persons?.phone || '',
         careerId: item.CAREER_ID?.toString() || '',
         careerName: item.t_career?.CAREER_NAME || '',
         semester: item.SEMESTER || '',
@@ -147,18 +145,31 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     const result = await dbManager.withRetry(async (supabase) => {
-      // 1. Buscar Estudiante
+      // 1. Buscar Estudiante vía t_persons
       const fullCI = `${identificationPrefix}-${identificationNumber}`;
       console.log(`[PreEnrollmentsController] Buscando estudiante con C.I.: ${fullCI}`);
+      const { data: person, error: personError } = await supabase
+        .from('t_persons')
+        .select('person_id')
+        .eq('ci', fullCI)
+        .maybeSingle();
+      
+      if (personError) throw personError;
+      if (!person) {
+        const err = new Error(`Estudiante con C.I. ${fullCI} no encontrado.`);
+        (err as any).status = 404;
+        throw err;
+      }
+
       const { data: student, error: studentError } = await supabase
         .from('t_students')
-        .select('STUDENTS_ID')
-        .eq('STUDENTS_CI', fullCI)
-        .maybeSingle(); 
-      
+        .select('STUDENTS_ID, person_id, t_persons!inner(ci, first_name, last_name, phone)')
+        .eq('person_id', person.person_id)
+        .maybeSingle();
+
       if (studentError) throw studentError;
       if (!student) {
-        const err = new Error(`Estudiante con C.I. ${fullCI} no encontrado.`);
+        const err = new Error(`Registro de estudiante vinculado a C.I. ${fullCI} no encontrado.`);
         (err as any).status = 404;
         throw err;
       }
@@ -292,6 +303,7 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
           PERIOD_ID: periodData.PERIOD_ID,
           INSTITUTION_ID: finalInstId, 
           STUDENTS_ID: student.STUDENTS_ID,
+          student_person_id: student.person_id,
           STATUS: 1,
           MANAGER_ID: finalManagerId, 
           OBSERVATION: '',
@@ -306,10 +318,14 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
         .select(`
           *,
           t_students (
-            STUDENTS_CI,
-            NAME,
-            SURNAME,
-            CONTACT_PHONE
+            STUDENTS_ID,
+            person_id,
+            t_persons!inner (
+              ci,
+              first_name,
+              last_name,
+              phone
+            )
           ),
           t_career (CAREER_NAME),
           t_internships_period (DESCRIPTION),
@@ -320,13 +336,13 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
       if (error) throw error;
       
       // Mapear la respuesta al formato del frontend
-      const ciParts = insertedData.t_students?.STUDENTS_CI?.split('-') || ['', ''];
+      const ciParts = insertedData.t_students?.t_persons?.ci?.split('-') || ['', ''];
       const mappedResult = {
         preEnrollmentId: insertedData.PROFESSIONAL_PRACTICE_ID.toString(),
         identificationPrefix: ciParts[0] || 'V',
         identificationNumber: ciParts[1] || '',
-        studentName: `${insertedData.t_students?.NAME || ''} ${insertedData.t_students?.SURNAME || ''}`.trim(),
-        phone: insertedData.t_students?.CONTACT_PHONE || '',
+        studentName: `${insertedData.t_students?.t_persons?.first_name || ''} ${insertedData.t_students?.t_persons?.last_name || ''}`.trim(),
+        phone: insertedData.t_students?.t_persons?.phone || '',
         careerId: insertedData.CAREER_ID?.toString() || '',
         careerName: insertedData.t_career?.CAREER_NAME || '',
         semester: insertedData.SEMESTER || '',
@@ -410,10 +426,19 @@ export const getTypesByStudent = async (req: Request, res: Response) => {
     const result = await dbManager.withRetry(async (supabase) => {
       const fullCI = `${prefix}-${ci}`;
 
+      const { data: person, error: personError } = await supabase
+        .from('t_persons')
+        .select('person_id')
+        .eq('ci', fullCI)
+        .maybeSingle();
+
+      if (personError) throw personError;
+      if (!person) return [];
+
       const { data: student, error: studentError } = await supabase
         .from('t_students')
         .select('STUDENTS_ID')
-        .eq('STUDENTS_CI', fullCI)
+        .eq('person_id', person.person_id)
         .maybeSingle();
 
       if (studentError) throw studentError;

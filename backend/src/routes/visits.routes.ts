@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { authenticateToken } from '../middlewares/auth.middleware.js';
+import { authenticateToken, requirePermission } from '../middlewares/auth.middleware.js';
+import { validateCreateVisitPeriod, validateUpdateVisitPeriod } from '../middlewares/period-validator.middleware.js';
 import {
   getVisitsByPractice,
   getAllVisits,
@@ -15,14 +16,15 @@ import {
 const router = Router();
 
 router.use(authenticateToken);
+router.use(requirePermission('tracking:*'));
 
 router.get('/practice/:practiceId', getVisitsByPractice);
 router.get('/stats', getVisitStats);
 router.get('/count-by-tutor', getVisitsCountByTutor);
 router.get('/', getAllVisits);
 router.get('/:id', getVisitById);
-router.post('/', createVisit);
-router.put('/:id', updateVisit);
+router.post('/', validateCreateVisitPeriod, createVisit);
+router.put('/:id', validateUpdateVisitPeriod, updateVisit);
 router.delete('/:id', deleteVisit);
 router.patch('/:id/restore', restoreVisit);
 

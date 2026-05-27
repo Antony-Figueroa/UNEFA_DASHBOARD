@@ -36,12 +36,12 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
         STUDENTS_ID,
         INTERNSHIP_TYPE_ID,
         STATUS,
-        t_students (
-          STUDENTS_CI,
-          NAME,
-          SECOND_NAME,
-          SURNAME,
-          SECOND_SURNAME
+        t_persons!inner (
+          ci,
+          first_name,
+          middle_name,
+          last_name,
+          second_last_name
         ),
         t_career (
           CAREER_NAME
@@ -92,12 +92,12 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
     });
 
     let records: CulminationRecord[] = practices.map((p: any) => {
-      const student = p.t_students;
+      const student = p.t_persons;
       const career = p.t_career;
       const trackingData = hoursMap.get(p.PROFESSIONAL_PRACTICE_ID) || { total: 0, lastDate: '' };
       
       const studentName = student 
-        ? `${student.NAME || ''} ${student.SECOND_NAME || ''} ${student.SURNAME || ''} ${student.SECOND_SURNAME || ''}`.trim().replace(/\s+/g, ' ')
+        ? `${student.first_name || ''} ${student.middle_name || ''} ${student.last_name || ''} ${student.second_last_name || ''}`.trim().replace(/\s+/g, ' ')
         : '';
 
       let recordStatus: 'pending' | 'approved' | 'certified' = 'pending';
@@ -109,7 +109,7 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
 
       return {
         id: String(p.PROFESSIONAL_PRACTICE_ID),
-        studentCi: student?.STUDENTS_CI || '',
+        studentCi: student?.ci || '',
         studentName,
         careerName: career?.CAREER_NAME || '',
         institutionName: p.t_institution?.INSTITUTION_NAME || '',
@@ -211,12 +211,12 @@ export const generateCertificate = async (req: Request, res: Response) => {
         GRADE,
         START_DATE,
         END_DATE,
-        t_students (
-          STUDENTS_CI,
-          NAME,
-          SECOND_NAME,
-          SURNAME,
-          SECOND_SURNAME
+        t_persons!inner (
+          ci,
+          first_name,
+          middle_name,
+          last_name,
+          second_last_name
         ),
         t_career ( CAREER_NAME ),
         t_institution ( INSTITUTION_NAME ),
@@ -230,9 +230,9 @@ export const generateCertificate = async (req: Request, res: Response) => {
       return;
     }
 
-    const student = (practice as any).t_students;
+    const student = (practice as any).t_persons;
     const studentName = student 
-      ? `${student.NAME || ''} ${student.SECOND_NAME || ''} ${student.SURNAME || ''} ${student.SECOND_SURNAME || ''}`.trim().replace(/\s+/g, ' ')
+      ? `${student.first_name || ''} ${student.middle_name || ''} ${student.last_name || ''} ${student.second_last_name || ''}`.trim().replace(/\s+/g, ' ')
       : '';
 
     const year = new Date().getFullYear();
@@ -245,7 +245,7 @@ export const generateCertificate = async (req: Request, res: Response) => {
       certificate: {
         number: certificateNumber,
         studentName,
-        studentCi: student?.STUDENTS_CI || '',
+        studentCi: student?.ci || '',
         career: (practice as any).t_career?.CAREER_NAME || '',
         institution: (practice as any).t_institution?.INSTITUTION_NAME || '',
         period: (practice as any).t_internships_period?.DESCRIPTION || '',

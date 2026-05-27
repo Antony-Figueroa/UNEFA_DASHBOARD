@@ -163,6 +163,7 @@ const mapDBToFrontend = (s: DBStudent) => {
   const p = s.t_persons;
   return {
     studentId: String(s.STUDENTS_ID),
+    personId: String(s.person_id),
     identificationPrefix: p.ci.split('-')[0],
     identificationNumber: p.ci.split('-')[1],
     firstName: p.first_name,

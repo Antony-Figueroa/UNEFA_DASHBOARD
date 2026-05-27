@@ -418,7 +418,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
           const res = await checkAvailability(
             "email",
             value,
-            editingStudent?.studentId,
+            editingStudent?.personId,
           );
           if (!res.available) {
             setError("email", {

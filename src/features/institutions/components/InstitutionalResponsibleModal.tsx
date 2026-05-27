@@ -25,6 +25,7 @@ import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/syst
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { NAME_PATTERN, SAFE_EMAIL_PATTERN, SAFE_TEXT_PATTERN, isSafeInput } from "../../../utils/inputValidation";
+import { checkAvailability as checkPersonAvailability } from "../../persons/services/personService";
 import PersonFormFields from "../../persons/components/PersonFormFields";
 
 // Lazy load para evitar dependencia circular con InstitutionModal
@@ -162,6 +163,7 @@ export default function InstitutionalResponsibleModal({
 
    // State for duplicate detection
    const [isCheckingCi, setIsCheckingCi] = useState(false);
+   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
    const [existingResponsible, setExistingResponsible] = useState<any | null>(null);
    const [viewOnlyMode, setViewOnlyMode] = useState(false);
 
@@ -375,6 +377,40 @@ export default function InstitutionalResponsibleModal({
     setDisplayPhoneNumber(formatted);
     setValue("phoneNumber", cleaned, { shouldValidate: true, shouldDirty: true });
   };
+
+  // Email blur handler: check email availability (cross-entity)
+  const handleEmailBlur = useCallback(
+    async (e: React.FocusEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (value && emailRegex.test(value)) {
+        setIsCheckingEmail(true);
+        try {
+          const res = await checkPersonAvailability(
+            "email",
+            value,
+            editingResp?.personId ? Number(editingResp.personId) : undefined,
+          );
+          if (!res.available) {
+            setError("email", {
+              type: "manual",
+              message:
+                res.status === 0
+                  ? "Email registrado (INACTIVO). Contacte a administración para reactivar."
+                  : "Este correo electrónico ya está registrado.",
+            });
+          } else {
+            clearErrors("email");
+          }
+        } catch (err) {
+          console.error("Error checking email availability:", err);
+        } finally {
+          setIsCheckingEmail(false);
+        }
+      }
+    },
+    [editingResp, setError, clearErrors],
+  );
 
   const {
     register,
@@ -679,6 +715,8 @@ export default function InstitutionalResponsibleModal({
                   onIdentificationNumberChange={handleIdentificationNumberChange}
                   onBlurCi={handleCiBlur}
                   isCheckingCi={isCheckingCi}
+                  onBlurEmail={handleEmailBlur}
+                  isCheckingEmail={isCheckingEmail}
                   displayPhoneNumber={displayPhoneNumber}
                   onPhoneNumberChange={handlePhoneNumberChange}
                   onAddValue={(listName, field, title) =>

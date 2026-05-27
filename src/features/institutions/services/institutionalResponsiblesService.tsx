@@ -88,12 +88,48 @@ export const checkAvailability = async (
  * Obtiene un responsable institucional por su cédula de identidad.
  * @param ci - Cédula de identidad (formato: V-12345678)
  */
-export const getResponsibleByCi = async (ci: string): Promise<InstitutionalResponsible | null> => {
+/**
+ * Interface for person-only data returned when a person exists but not as an institutional responsible.
+ */
+interface PersonData {
+  identificationPrefix: string;
+  identificationNumber: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  secondLastName?: string;
+  email: string;
+  phone: string;
+}
+
+/**
+ * Resultado de la búsqueda por CI. Puede contener:
+ * - `responsible`: datos del responsable si existe como tal
+ * - `person`: datos de la persona si existe en t_persons pero no como responsable
+ * - Ambos `null`: la persona no existe en el sistema
+ */
+interface ResponsibleByCiResult {
+  responsible: InstitutionalResponsible | null;
+  person: PersonData | null;
+}
+
+/**
+ * Obtiene un responsable institucional por su cédula de identidad.
+ * @param ci - Cédula de identidad (formato: V-12345678)
+ */
+export const getResponsibleByCi = async (ci: string): Promise<ResponsibleByCiResult> => {
   try {
     const response = await apiClient.get(`${API_URL}/by-ci/${ci}`, { silent: true } as any);
-    return response.data?.data || null;
+    const body = response.data;
+    if (body?.data) {
+      return { responsible: mapFromApi(body.data), person: null };
+    }
+    if (body?.person) {
+      return { responsible: null, person: body.person };
+    }
+    return { responsible: null, person: null };
   } catch (error) {
     console.error("[responsibleService] Error al obtener responsable por CI:", error);
-    return null;
+    return { responsible: null, person: null };
   }
 };

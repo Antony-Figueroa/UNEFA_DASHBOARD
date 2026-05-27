@@ -164,12 +164,33 @@ const getInternshipsTool = {
       const periodId = args.period_id as string | undefined;
 
       let query = supabase
-        .from('t_internships_period')
-        .select('*, t_students(name, ci, surname), t_institution(name), t_tutors(name)')
+        .from('t_professional_practices')
+        .select(`
+          *,
+          t_students:STUDENTS_ID (
+            t_persons!inner (
+              ci,
+              first_name,
+              last_name
+            )
+          ),
+          t_institution (
+            INSTITUTION_NAME
+          ),
+          t_professional_practices_tutor (
+            t_tutors (
+              t_persons!inner (
+                first_name,
+                phone,
+                email
+              )
+            )
+          )
+        `)
         .limit(limit);
 
       if (periodId) {
-        query = query.eq('period_id', periodId);
+        query = query.eq('PERIOD_ID', periodId);
       }
 
       const { data, error } = await query;
@@ -181,12 +202,12 @@ const getInternshipsTool = {
         data: {
           count: data?.length || 0,
           internships: data?.map(i => ({
-            id: i.id,
-            student: `${i.t_students?.name} ${i.t_students?.surname}`,
-            ci: i.t_students?.ci,
-            institution: i.t_institution?.name,
-            tutor: i.t_tutors?.name,
-            status: i.status,
+            id: i.PROFESSIONAL_PRACTICE_ID,
+            student: `${i.t_students?.t_persons?.first_name || ''} ${i.t_students?.t_persons?.last_name || ''}`.trim(),
+            ci: i.t_students?.t_persons?.ci,
+            institution: i.t_institution?.INSTITUTION_NAME,
+            tutor: i.t_professional_practices_tutor?.[0]?.t_tutors?.t_persons?.first_name || '',
+            status: i.STATUS,
           })),
         },
       };

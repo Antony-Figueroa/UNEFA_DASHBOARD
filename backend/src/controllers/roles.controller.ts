@@ -1,14 +1,8 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
+import { permissionService } from '../services/permission.service.js';
 
-export interface Permission {
-  id: string;
-  module: string;
-  action: string;
-  description: string;
-}
-
-export interface Role {
+export interface RoleResponse {
   id: number;
   name: string;
   description: string;
@@ -18,33 +12,23 @@ export interface Role {
   isSystem: boolean;
 }
 
-const DEFAULT_PERMISSIONS: Permission[] = [
-  { id: 'users.view', module: 'Usuarios', action: 'Ver', description: 'Ver listado de usuarios' },
-  { id: 'users.create', module: 'Usuarios', action: 'Crear', description: 'Crear nuevos usuarios' },
-  { id: 'users.edit', module: 'Usuarios', action: 'Editar', description: 'Editar usuarios existentes' },
-  { id: 'users.delete', module: 'Usuarios', action: 'Eliminar', description: 'Eliminar usuarios' },
-  { id: 'students.view', module: 'Estudiantes', action: 'Ver', description: 'Ver listado de estudiantes' },
-  { id: 'students.create', module: 'Estudiantes', action: 'Crear', description: 'Registrar estudiantes' },
-  { id: 'students.edit', module: 'Estudiantes', action: 'Editar', description: 'Editar datos de estudiantes' },
-  { id: 'enrollments.view', module: 'Inscripciones', action: 'Ver', description: 'Ver inscripciones' },
-  { id: 'enrollments.manage', module: 'Inscripciones', action: 'Gestionar', description: 'Gestionar inscripciones' },
-  { id: 'tracking.view', module: 'Seguimiento', action: 'Ver', description: 'Ver seguimientos' },
-  { id: 'tracking.manage', module: 'Seguimiento', action: 'Gestionar', description: 'Registrar visitas' },
-  { id: 'reports.view', module: 'Reportes', action: 'Ver', description: 'Ver reportes' },
-  { id: 'reports.export', module: 'Reportes', action: 'Exportar', description: 'Exportar reportes' },
-  { id: 'config.access', module: 'Configuración', action: 'Acceder', description: 'Acceder a configuración' },
-];
+/**
+ * Obtiene los nombres de permisos de un rol desde la DB
+ */
+const getRolePermissionNames = async (roleId: number): Promise<string[]> => {
+  return await permissionService.getPermissionsByRole(roleId);
+};
 
-const ADMIN_PERMISSIONS = DEFAULT_PERMISSIONS.map(p => p.id);
-const ASISTENTE_PERMISSIONS = ['students.view', 'students.create', 'students.edit', 'enrollments.view', 'tracking.view', 'reports.view'];
-
-export const getRoles = async (req: Request, res: Response) => {
+/**
+ * Obtiene todos los roles con sus permisos reales desde la DB
+ */
+export const getRoles = async (_req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
 
     const { data: rolesData, error: rolesError } = await supabase
       .from('t_roles')
-      .select('ID_ROLS, NAME, DESCRIPTION, STATUS');
+      .select('ID_ROLS, NAME, DESCRIPTION, STATUS, IS_SYSTEM');
 
     if (rolesError) {
       console.error('Error fetching roles:', rolesError);
@@ -61,26 +45,23 @@ export const getRoles = async (req: Request, res: Response) => {
       userCountMap.set(u.ID_ROLES, (userCountMap.get(u.ID_ROLES) || 0) + 1);
     });
 
-    const roles: Role[] = (rolesData || [])
-      .filter((r: { STATUS: number }) => r.STATUS === 1)
-      .map((r: { ID_ROLS: number; NAME: string; DESCRIPTION: string | null; STATUS: number }) => {
-        let permissions: string[] = [];
-        if (r.ID_ROLS === 1) {
-          permissions = ADMIN_PERMISSIONS;
-        } else if (r.ID_ROLS === 2) {
-          permissions = ASISTENTE_PERMISSIONS;
-        }
-
-        return {
-          id: r.ID_ROLS,
-          name: r.NAME,
-          description: r.DESCRIPTION || '',
-          userCount: userCountMap.get(r.ID_ROLS) || 0,
-          permissions,
-          status: r.STATUS === 1 ? 'active' : 'inactive',
-          isSystem: r.ID_ROLS === 1 || r.ID_ROLS === 2
-        };
-      });
+    // Obtener permisos de cada rol desde DB
+    const roles: RoleResponse[] = await Promise.all(
+      (rolesData || [])
+        .filter((r: { STATUS: number }) => r.STATUS === 1)
+        .map(async (r: { ID_ROLS: number; NAME: string; DESCRIPTION: string | null; STATUS: number; IS_SYSTEM: boolean | null }) => {
+          const permissions = await getRolePermissionNames(r.ID_ROLS);
+          return {
+            id: r.ID_ROLS,
+            name: r.NAME,
+            description: r.DESCRIPTION || '',
+            userCount: userCountMap.get(r.ID_ROLS) || 0,
+            permissions,
+            status: r.STATUS === 1 ? 'active' : 'inactive',
+            isSystem: r.IS_SYSTEM === true
+          };
+        })
+    );
 
     res.json({
       success: true,
@@ -93,12 +74,19 @@ export const getRoles = async (req: Request, res: Response) => {
   }
 };
 
-export const getPermissions = async (req: Request, res: Response) => {
+/**
+ * Obtiene el catálogo de permisos desde la DB
+ */
+export const getPermissions = async (_req: Request, res: Response) => {
   try {
+    const permissions = await permissionService.getAllPermissions();
+    const grouped = await permissionService.getPermissionsGrouped();
+    const modules = Object.keys(grouped);
+
     res.json({
       success: true,
-      data: DEFAULT_PERMISSIONS,
-      modules: [...new Set(DEFAULT_PERMISSIONS.map(p => p.module))]
+      data: permissions,
+      modules
     });
 
   } catch (error) {
@@ -107,6 +95,9 @@ export const getPermissions = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Obtiene un rol por ID con sus permisos reales desde la DB
+ */
 export const getRoleById = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
@@ -114,7 +105,7 @@ export const getRoleById = async (req: Request, res: Response) => {
 
     const { data: roleData, error } = await supabase
       .from('t_roles')
-      .select('ID_ROLS, NAME, DESCRIPTION, STATUS')
+      .select('ID_ROLS, NAME, DESCRIPTION, STATUS, IS_SYSTEM')
       .eq('ID_ROLS', id)
       .single();
 
@@ -128,21 +119,16 @@ export const getRoleById = async (req: Request, res: Response) => {
       .select('ID_USER')
       .eq('ID_ROLES', id);
 
-    let permissions: string[] = [];
-    if (roleData.ID_ROLS === 1) {
-      permissions = ADMIN_PERMISSIONS;
-    } else if (roleData.ID_ROLS === 2) {
-      permissions = ASISTENTE_PERMISSIONS;
-    }
+    const permissions = await getRolePermissionNames(roleData.ID_ROLS);
 
-    const role: Role = {
+    const role: RoleResponse = {
       id: roleData.ID_ROLS,
       name: roleData.NAME,
       description: roleData.DESCRIPTION || '',
       userCount: usersData?.length || 0,
       permissions,
       status: roleData.STATUS === 1 ? 'active' : 'inactive',
-      isSystem: roleData.ID_ROLS === 1 || roleData.ID_ROLS === 2
+      isSystem: roleData.IS_SYSTEM === true
     };
 
     res.json({
@@ -197,7 +183,7 @@ export const updateRole = async (req: Request, res: Response) => {
   }
 };
 
-export const getRoleStats = async (req: Request, res: Response) => {
+export const getRoleStats = async (_req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
 
@@ -209,11 +195,13 @@ export const getRoleStats = async (req: Request, res: Response) => {
       supabase.from('t_user_roles').select('*', { count: 'exact', head: true })
     ]);
 
+    const allPermissions = await permissionService.getAllPermissions();
+
     res.json({
       success: true,
       data: {
         rolesCount: rolesCount || 0,
-        permissionsCount: DEFAULT_PERMISSIONS.length,
+        permissionsCount: allPermissions.length,
         usersWithRoles: usersCount || 0
       }
     });
@@ -227,7 +215,7 @@ export const getRoleStats = async (req: Request, res: Response) => {
 interface CreateRoleBody {
   name: string;
   description?: string;
-  permissionIds?: string[];
+  permissionIds?: (number | string)[];
 }
 
 export const createRole = async (req: Request, res: Response) => {
@@ -259,8 +247,13 @@ export const createRole = async (req: Request, res: Response) => {
         NAME: name.trim().toUpperCase(),
         DESCRIPTION: description?.trim() || null,
         STATUS: 1,
+        IS_SYSTEM: false,
         MODIF_USER_ID: 1,
-        MODIF_USER_DATE: new Date().toISOString()
+        MODIF_USER_DATE: new Date().toISOString(),
+        ELIM_USER_ID: 0,
+        ELIM_USER_DATE: new Date().toISOString(),
+        REST_USER_ID: 0,
+        REST_USER_DATE: new Date().toISOString()
       })
       .select()
       .single();
@@ -275,7 +268,7 @@ export const createRole = async (req: Request, res: Response) => {
     if (permissionIds && permissionIds.length > 0) {
       const permissionInserts = permissionIds.map(permId => ({
         ROLES_ID: newRoleId,
-        PERMISSIONS_ID: parseInt(permId)
+        PERMISSIONS_ID: Number(permId)
       }));
 
       const { error: permError } = await supabase
@@ -295,8 +288,8 @@ export const createRole = async (req: Request, res: Response) => {
         name: name.trim().toUpperCase(),
         description: description?.trim() || '',
         userCount: 0,
-        permissions: permissionIds || [],
-        status: 'active',
+        permissions: (permissionIds || []).map(String),
+        status: 'active' as const,
         isSystem: false
       }
     });

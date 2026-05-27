@@ -8,6 +8,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "test": "vitest --config tests/vitest.config.ts",
     "test:env": "tsx src/test-env-readonly.ts"
   },
   "dependencies": {
@@ -38,7 +39,10 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.10.5",
     "@types/nodemailer": "^7.0.5",
+    "@types/supertest": "^7.2.0",
+    "supertest": "^7.2.2",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.7"
   }
 }

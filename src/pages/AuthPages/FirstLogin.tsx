@@ -211,7 +211,7 @@ export default function FirstLogin() {
       const errorMessage = axiosError.response?.data?.message || (err as Error).message || "No se pudo establecer conexión con el servidor.";
       addToast({
         variant: "error",
-        title: "Error de Conexión",
+        title: "Error al cambiar contraseña",
         message: errorMessage
       });
     } finally {

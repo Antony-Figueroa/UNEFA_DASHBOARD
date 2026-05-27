@@ -42,11 +42,11 @@ export const getAllRequests = async (req: AuthRequest, res: Response) => {
         PROCESSED_AT,
         PROCESSED_BY,
         t_request_types (NAME, IS_REASSIGNMENT, CATEGORY),
-        t_students (
-          STUDENTS_CI,
-          NAME,
-          SURNAME,
-          EMAIL
+        t_persons!inner (
+          ci,
+          first_name,
+          last_name,
+          email
         )
       `)
       .order('CREATION_DATE', { ascending: false });
@@ -65,9 +65,9 @@ export const getAllRequests = async (req: AuthRequest, res: Response) => {
     let requests: AdminRequest[] = (data || []).map((r: any) => ({
       id: r.REQUEST_ID,
       studentId: r.STUDENT_ID,
-      studentCi: r.t_students?.STUDENTS_CI || '',
-      studentName: `${r.t_students?.NAME || ''} ${r.t_students?.SURNAME || ''}`.trim(),
-      studentEmail: r.t_students?.EMAIL || '',
+      studentCi: r.t_persons?.ci || '',
+      studentName: `${r.t_persons?.first_name || ''} ${r.t_persons?.last_name || ''}`.trim(),
+      studentEmail: r.t_persons?.email || '',
       typeId: r.REQUEST_TYPE_ID,
       typeName: r.t_request_types?.NAME || '',
       subject: r.SUBJECT,
@@ -88,10 +88,10 @@ export const getAllRequests = async (req: AuthRequest, res: Response) => {
     if (processedByUserIds.length > 0) {
       const { data: users } = await supabase
         .from('t_user')
-        .select('USER_ID, NAME, SURNAME')
+        .select('USER_ID, t_persons!inner(first_name, last_name)')
         .in('USER_ID', [...new Set(processedByUserIds)]);
 
-      const userMap = new Map((users || []).map((u: any) => [u.USER_ID, `${u.NAME} ${u.SURNAME}`.trim()]));
+      const userMap = new Map((users || []).map((u: any) => [u.USER_ID, `${u.t_persons?.first_name || ''} ${u.t_persons?.last_name || ''}`.trim()]));
 
       requests = requests.map(r => {
         const requestData = data?.find((d: any) => d.REQUEST_ID === r.id);
@@ -143,14 +143,14 @@ export const getRequestById = async (req: AuthRequest, res: Response) => {
         PROCESSED_AT,
         PROCESSED_BY,
         t_request_types (NAME, DESCRIPTION),
-        t_students (
-          STUDENTS_CI,
-          NAME,
-          SECOND_NAME,
-          SURNAME,
-          SECOND_SURNAME,
-          EMAIL,
-          CONTACT_PHONE
+        t_persons!inner (
+          ci,
+          first_name,
+          middle_name,
+          last_name,
+          second_last_name,
+          email,
+          phone
         )
       `)
       .eq('REQUEST_ID', id)
@@ -329,21 +329,24 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
       if (status === 'approved' && reassignmentData && reassignmentData.newTutorId) {
         const { data: tutor } = await supabase
           .from('t_tutor')
-          .select('t_user(USER_ID, NAME, SURNAME)')
+          .select('t_user(USER_ID, person_id, t_persons!inner(first_name, last_name))')
           .eq('TUTOR_ID', reassignmentData.newTutorId)
           .single();
         
         const { data: studentData } = await supabase
           .from('t_students')
-          .select('NAME, SURNAME')
+          .select('t_persons!inner(first_name, last_name)')
           .eq('STUDENTS_ID', currentRequest.STUDENT_ID)
           .single();
 
         if (tutor && studentData) {
-          const tutorUserId = (tutor.t_user as any)?.USER_ID;
+          const tutorUser = (tutor as any).t_user;
+          const tutorUserId = tutorUser?.USER_ID;
+          const tPersons = (tutorUser?.t_persons as any) || {};
+          const sPersons = (studentData as any).t_persons || {};
           await notifyTutorAssigned(
-            `${(tutor.t_user as any)?.NAME || ''} ${(tutor.t_user as any)?.SURNAME || ''}`.trim(),
-            `${studentData.NAME} ${studentData.SURNAME}`.trim(),
+            `${tPersons?.first_name || ''} ${tPersons?.last_name || ''}`.trim(),
+            `${sPersons?.first_name || ''} ${sPersons?.last_name || ''}`.trim(),
             practiceData?.PROFESSIONAL_PRACTICE_ID || 0,
             tutorUserId
           );

@@ -43,10 +43,10 @@ export const getActivityLogs = async (req: AuthRequest, res: Response) => {
       .from(TABLE_NAME)
       .select(`
         *,
-        t_students (
-          STUDENTS_CI,
-          NAME,
-          SURNAME
+        t_persons!inner (
+          ci,
+          first_name,
+          last_name
         ),
         t_professional_practices (
           START_DATE,
@@ -78,10 +78,10 @@ export const getActivityLogs = async (req: AuthRequest, res: Response) => {
 
     const logs = (data || []).map((log: any) => ({
       ...log,
-      studentName: log.t_students 
-        ? `${log.t_students.NAME} ${log.t_students.SURNAME}`
+      studentName: log.t_persons 
+        ? `${log.t_persons.first_name} ${log.t_persons.last_name}`
         : 'Sin estudiante',
-      studentCi: log.t_students?.STUDENTS_CI || '',
+      studentCi: log.t_persons?.ci || '',
       practiceStartDate: log.t_professional_practices?.START_DATE,
       practiceEndDate: log.t_professional_practices?.END_DATE
     }));
@@ -105,10 +105,10 @@ export const getActivityLogById = async (req: Request, res: Response) => {
       .from(TABLE_NAME)
       .select(`
         *,
-        t_students (
-          STUDENTS_CI,
-          NAME,
-          SURNAME
+        t_persons!inner (
+          ci,
+          first_name,
+          last_name
         )
       `)
       .eq('ACTIVITY_LOG_ID', Number(id))
@@ -127,10 +127,10 @@ export const getActivityLogById = async (req: Request, res: Response) => {
       success: true, 
       data: {
         ...data,
-        studentName: data.t_students 
-          ? `${data.t_students.NAME} ${data.t_students.SURNAME}`
+        studentName: data.t_persons 
+          ? `${data.t_persons.first_name} ${data.t_persons.last_name}`
           : 'Sin estudiante',
-        studentCi: data.t_students?.STUDENTS_CI || ''
+        studentCi: data.t_persons?.ci || ''
       }
     });
   } catch (error) {

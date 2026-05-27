@@ -43,12 +43,48 @@ export const toggleTutorStatus = tutorsService.toggleStatus!;
  * Obtiene un tutor por su cédula de identidad.
  * @param ci - Cédula de identidad (formato: V-12345678)
  */
-export const getTutorByCi = async (ci: string): Promise<Tutor | null> => {
+/**
+ * Interface for person-only data returned when a person exists but not as a tutor.
+ */
+interface PersonData {
+  identificationPrefix: string;
+  identificationNumber: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  secondLastName?: string;
+  email: string;
+  phone: string;
+}
+
+/**
+ * Resultado de la búsqueda por CI. Puede contener:
+ * - `tutor`: datos del tutor si existe como tal
+ * - `person`: datos de la persona si existe en t_persons pero no como tutor
+ * - Ambos `null`: la persona no existe en el sistema
+ */
+interface TutorByCiResult {
+  tutor: Tutor | null;
+  person: PersonData | null;
+}
+
+/**
+ * Obtiene un tutor por su cédula de identidad.
+ * @param ci - Cédula de identidad (formato: V-12345678)
+ */
+export const getTutorByCi = async (ci: string): Promise<TutorByCiResult> => {
   try {
     const response = await apiClient.get(`${API_URL}/by-ci/${ci}`, { silent: true } as any);
-    return response.data?.data || null;
+    const body = response.data;
+    if (body?.data) {
+      return { tutor: mapFromApi(body.data), person: null };
+    }
+    if (body?.person) {
+      return { tutor: null, person: body.person };
+    }
+    return { tutor: null, person: null };
   } catch (error) {
     console.error("[tutorsService] Error al obtener tutor por CI:", error);
-    return null;
+    return { tutor: null, person: null };
   }
 };

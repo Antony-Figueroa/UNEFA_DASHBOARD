@@ -4,25 +4,52 @@ import { cacheManager } from '../lib/cache-manager.js';
 import { supabase } from '../lib/supabase.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { auditCreate, auditUpdate, auditDelete, auditStatusChange } from '../utils/audit-helpers.js';
-import { personService } from '../services/person.service.js';
+import * as personService from '../services/person.service.js';
+import { lookupCedula } from '../services/cedula-api.service.js';
 
 const TABLE_NAME = 't_students';
 const CACHE_PREFIX = 'students:';
 
 const STUDENT_COLUMNS_TO_AUDIT = [
-  'STUDENTS_CI', 'NAME', 'SECOND_NAME', 'SURNAME', 'SECOND_SURNAME',
-  'GENDER', 'BIRTHDATE', 'MARITAL_STATUS', 'CONTACT_PHONE', 'EMAIL',
-  'ADDRESS',
   'STUDENT_TYPE', 'MILITARY_RANK', 'EMPLOYMENT', 'STATUS'
 ];
 
-const STUDENT_COLUMNS_BASE = `
-  STUDENTS_ID, STUDENTS_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME,
-  GENDER, BIRTHDATE, MARITAL_STATUS, CONTACT_PHONE, EMAIL, ADDRESS,
-  STUDENT_TYPE, MILITARY_RANK, EMPLOYMENT, REGISTRATION_DATE, STATUS, person_id
+// Columnas de t_students (solo específicas del estudiante, sin person data)
+const STUDENT_BASE_COLUMNS = `
+  STUDENTS_ID,
+  person_id,
+  STUDENT_TYPE,
+  MILITARY_RANK,
+  EMPLOYMENT,
+  REGISTRATION_DATE,
+  STATUS
 `;
 
-const STUDENT_COLUMNS = `${STUDENT_COLUMNS_BASE}, t_professional_practices(INTERNSHIP_STATUS, PRACTICES_STATUS)`;
+// Columnas de t_persons para JOIN
+const PERSON_JOIN_COLUMNS = `
+  t_persons!inner(
+    person_id,
+    ci,
+    first_name,
+    middle_name,
+    last_name,
+    second_last_name,
+    email,
+    phone,
+    gender,
+    birthdate,
+    address,
+    marital_status,
+    status
+  )
+`;
+
+// Columnas completas con JOIN + relaciones
+const STUDENT_FULL_COLUMNS = `
+  ${STUDENT_BASE_COLUMNS},
+  ${PERSON_JOIN_COLUMNS},
+  t_professional_practices(INTERNSHIP_STATUS, PRACTICES_STATUS)
+`;
 
 interface AppError extends Error {
   code?: string;
@@ -41,7 +68,7 @@ const handleDbError = (res: Response, error: unknown) => {
   } else if (dbError.code === 'PGRST205') {
     userMessage = 'Error: La tabla no existe en la base de datos';
   } else if (dbError.code === 'PGRST116') {
-    userMessage = 'Error: Registro no encontrado';
+    return res.status(404).json({ message: 'Registro no encontrado' });
   } else if (dbError.code === '404') {
     userMessage = dbError.message || 'Registro no encontrado';
     return res.status(404).json({ message: userMessage });
@@ -55,27 +82,111 @@ const handleDbError = (res: Response, error: unknown) => {
   });
 };
 
+// Columnas de t_persons que pueden usarse para ordenamiento
+// (requieren foreignTable: 't_persons' en Supabase)
+const PERSON_SORT_FIELDS = new Set([
+  'first_name', 'last_name', 'second_last_name', 'ci',
+  'email', 'phone', 'gender', 'birthdate', 'marital_status'
+]);
+
+// ============================================================
+// Types
+// ============================================================
+
+interface DBPerson {
+  person_id: number;
+  ci: string;
+  first_name: string;
+  middle_name: string | null;
+  last_name: string;
+  second_last_name: string | null;
+  email: string;
+  phone: string | null;
+  gender: string;
+  birthdate: string | null;
+  address: string | null;
+  marital_status: string | null;
+  status: number;
+}
+
 interface DBStudent {
   STUDENTS_ID: number;
-  STUDENTS_CI: string;
-  NAME: string;
-  SECOND_NAME: string;
-  SURNAME: string;
-  SECOND_SURNAME: string;
-  GENDER: string;
-  BIRTHDATE: string;
-  MARITAL_STATUS: string;
-  CONTACT_PHONE: string;
-  EMAIL: string;
-  ADDRESS: string;
-  t_professional_practices?: { INTERNSHIP_STATUS: number, PRACTICES_STATUS: number }[];
+  person_id: number;
   STUDENT_TYPE: string;
   MILITARY_RANK: string;
-  EMPLOYMENT: boolean;
+  EMPLOYMENT: string;
   REGISTRATION_DATE: string;
   STATUS: number;
-  person_id: number;
+  t_persons: DBPerson;
+  t_professional_practices?: { INTERNSHIP_STATUS: number; PRACTICES_STATUS: number }[];
 }
+
+// ============================================================
+// Mappers
+// ============================================================
+
+const genderToDb: Record<string, string> = { 'MASCULINO': 'M', 'FEMENINO': 'F', 'OTRO': 'O' };
+const genderFromDb: Record<string, string> = { 'M': 'MASCULINO', 'F': 'FEMENINO', 'O': 'OTRO' };
+const maritalToDb: Record<string, string> = { 'SOLTERO': 'S', 'CASADO': 'C', 'DIVORCIADO': 'D', 'VIUDO': 'V' };
+const maritalFromDb: Record<string, string> = { 'S': 'SOLTERO', 'C': 'CASADO', 'D': 'DIVORCIADO', 'V': 'VIUDO' };
+const typeToDb: Record<string, string> = { 'CIVIL': 'CIV', 'MILITAR': 'MIL' };
+const typeFromDb: Record<string, string> = { 'CIV': 'CIVIL', 'MIL': 'MILITAR' };
+
+/** Extrae campos de persona del body frontend (camelCase) */
+function extractPersonData(body: any) {
+  return {
+    ci: `${body.identificationPrefix || 'V'}-${body.identificationNumber}`,
+    firstName: body.firstName,
+    middleName: body.middleName || null,
+    lastName: body.lastName,
+    secondLastName: body.secondLastName || null,
+    gender: genderToDb[body.sex?.toUpperCase()] || 'O',
+    birthdate: body.birthDate || null,
+    maritalStatus: maritalToDb[body.civilStatus?.toUpperCase()] || 'S',
+    phone: body.phone || null,
+    email: body.email,
+    address: body.address || null,
+  };
+}
+
+/** Extrae campos específicos de estudiante del body frontend */
+function extractStudentData(body: any) {
+  return {
+    STUDENT_TYPE: typeToDb[body.studentType?.toUpperCase()] || 'CIV',
+    MILITARY_RANK: body.militaryRank || null,
+    EMPLOYMENT: body.works === "SI" ? "SI" : "NO",
+    STATUS: body.status !== false ? 1 : 0,
+  };
+}
+
+const mapDBToFrontend = (s: DBStudent) => {
+  const p = s.t_persons;
+  return {
+    studentId: String(s.STUDENTS_ID),
+    identificationPrefix: p.ci.split('-')[0],
+    identificationNumber: p.ci.split('-')[1],
+    firstName: p.first_name,
+    middleName: p.middle_name || undefined,
+    lastName: p.last_name,
+    secondLastName: p.second_last_name || undefined,
+    sex: genderFromDb[p.gender.trim()] || p.gender,
+    birthDate: p.birthdate,
+    civilStatus: maritalFromDb[p.marital_status?.trim() || ''] || p.marital_status || 'SOLTERO',
+    phone: p.phone,
+    email: p.email,
+    address: p.address,
+    studentType: typeFromDb[s.STUDENT_TYPE.trim()] || s.STUDENT_TYPE,
+    militaryRank: s.MILITARY_RANK,
+    works: s.EMPLOYMENT === "SI" ? "SI" : "NO",
+    enrollmentDate: s.REGISTRATION_DATE,
+    status: s.STATUS === 1,
+    isInUse: (Array.isArray(s.t_professional_practices) && s.t_professional_practices.length > 0)
+  };
+};
+
+// ============================================================
+// LIST / SEARCH
+// ============================================================
 
 export const getStudents = async (req: Request, res: Response) => {
   const {
@@ -83,7 +194,7 @@ export const getStudents = async (req: Request, res: Response) => {
     limit = '100',
     status,
     search,
-    sortField = 'NAME',
+    sortField = 'first_name',
     sortOrder = 'asc'
   } = req.query;
 
@@ -91,14 +202,17 @@ export const getStudents = async (req: Request, res: Response) => {
   const limitNum = parseInt(limit as string);
   const offset = (pageNum - 1) * limitNum;
 
+  // Intentar obtener de caché
   const cacheKey = `${CACHE_PREFIX}list:${JSON.stringify(req.query)}`;
   const cachedData = cacheManager.get(cacheKey);
   if (cachedData) {
+    console.log(`[Cache] Serving students list from cache: ${cacheKey}`);
     return res.json(cachedData);
   }
 
   try {
     const result = await dbManager.withRetry(async (supabase) => {
+      // 1. Obtener IDs de estudiantes que tienen prácticas culminadas y aprobadas
       const { data: excludedPractices } = await supabase
         .from('t_professional_practices')
         .select('STUDENTS_ID')
@@ -107,27 +221,49 @@ export const getStudents = async (req: Request, res: Response) => {
 
       const excludedIds = (excludedPractices || []).map(p => p.STUDENTS_ID);
 
+      // 2. Búsqueda: resolver person_ids desde t_persons
+      let searchPersonIds: number[] | null = null;
+      if (search) {
+        const searchResults = await personService.searchPersons(search as string);
+        searchPersonIds = searchResults.map(p => p.personId);
+        if (searchPersonIds.length === 0) {
+          // Sin resultados de búsqueda — retornar vacío
+          return { data: [], count: 0 };
+        }
+      }
+
       let query = supabase
         .from(TABLE_NAME)
-        .select(STUDENT_COLUMNS, { count: 'exact' });
+        .select(STUDENT_FULL_COLUMNS, { count: 'exact' });
 
+      // Excluir IDs con prácticas culminadas
       if (excludedIds.length > 0) {
         query = query.not('STUDENTS_ID', 'in', `(${excludedIds.join(',')})`);
       }
 
+      // Filtro por estado
       if (status !== undefined) {
         query = query.eq('STATUS', status === 'true' || status === '1' ? 1 : 0);
       }
 
-      if (search) {
-        query = query.or(`NAME.ilike.%${search}%,SURNAME.ilike.%${search}%,STUDENTS_CI.ilike.%${search}%`);
+      // Filtro por búsqueda (person_ids)
+      if (searchPersonIds) {
+        query = query.in('person_id', searchPersonIds);
       }
 
-      query = query.order(sortField as string, { ascending: sortOrder === 'asc' });
+      // Ordenamiento — si el campo pertenece a t_persons, usar foreignTable
+      if (PERSON_SORT_FIELDS.has(sortField as string)) {
+        query = query.order(sortField as string, { ascending: sortOrder === 'asc', foreignTable: 't_persons' });
+      } else {
+        query = query.order(sortField as string, { ascending: sortOrder === 'asc' });
+      }
+
+      // Paginación
       query = query.range(offset, offset + limitNum - 1);
 
       const { data, error, count } = await query;
       if (error) throw error;
+
       return { data: data as unknown as DBStudent[], count };
     }, 'getStudents');
 
@@ -155,7 +291,11 @@ export const getStudentStats = async (req: Request, res: Response) => {
       const activeQuery = supabase.from(TABLE_NAME).select('*', { count: 'exact', head: true }).eq('STATUS', 1);
 
       const [totalRes, activeRes] = await Promise.all([totalQuery, activeQuery]);
-      return { total: totalRes.count || 0, active: activeRes.count || 0 };
+
+      return {
+        total: totalRes.count || 0,
+        active: activeRes.count || 0
+      };
     }, 'getStudentStats');
 
     res.json(stats);
@@ -164,185 +304,106 @@ export const getStudentStats = async (req: Request, res: Response) => {
   }
 };
 
-const mapDBToFrontend = (s: DBStudent) => {
-  const genderMap: Record<string, string> = { 'M': 'MASCULINO', 'F': 'FEMENINO', 'O': 'OTRO' };
-  const maritalMap: Record<string, string> = { 'S': 'SOLTERO', 'C': 'CASADO', 'D': 'DIVORCIADO', 'V': 'VIUDO' };
-  const typeMap: Record<string, string> = { 'CIV': 'CIVIL', 'MIL': 'MILITAR' };
-
-  const ciParts = s.STUDENTS_CI ? s.STUDENTS_CI.split('-') : ['', ''];
-
-  return {
-    studentId: String(s.STUDENTS_ID),
-    identificationPrefix: ciParts[0] || 'V',
-    identificationNumber: ciParts[1] || s.STUDENTS_CI,
-    firstName: s.NAME,
-    middleName: s.SECOND_NAME || undefined,
-    lastName: s.SURNAME,
-    secondLastName: s.SECOND_SURNAME || undefined,
-    sex: genderMap[s.GENDER?.trim()] || s.GENDER,
-    birthDate: s.BIRTHDATE,
-    civilStatus: maritalMap[s.MARITAL_STATUS?.trim()] || s.MARITAL_STATUS,
-    phone: s.CONTACT_PHONE,
-    email: s.EMAIL,
-    address: s.ADDRESS,
-    studentType: typeMap[s.STUDENT_TYPE?.trim()] || s.STUDENT_TYPE,
-    militaryRank: s.MILITARY_RANK,
-    works: s.EMPLOYMENT ? (String(s.EMPLOYMENT).toUpperCase() === 'SI' || s.EMPLOYMENT === true ? "SI" : "NO") : "NO",
-    enrollmentDate: s.REGISTRATION_DATE,
-    status: s.STATUS === 1,
-    isInUse: (Array.isArray(s.t_professional_practices) && s.t_professional_practices.length > 0),
-    personId: s.person_id,
-  };
-};
+// ============================================================
+// CREATE
+// ============================================================
 
 export const createStudent = async (req: AuthRequest, res: Response) => {
   try {
     const s = req.body;
+    console.log('[Students] Attempting to create student with data:', JSON.stringify(s, null, 2));
 
+    // Validación básica
     if (!s.identificationNumber || !s.firstName || !s.lastName) {
       return res.status(400).json({
         message: 'Error: Faltan campos requeridos (Cédula, Nombres y Apellidos son obligatorios)'
       });
     }
 
-    const ci = `${s.identificationPrefix || 'V'}-${s.identificationNumber}`;
+    const studentsCi = `${s.identificationPrefix || 'V'}-${s.identificationNumber}`;
 
+    // Validar edad (Mínimo 16 años)
     if (s.birthDate) {
       const birth = new Date(s.birthDate);
       const today = new Date();
       let age = today.getFullYear() - birth.getFullYear();
       const m = today.getMonth() - birth.getMonth();
       if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-      if (age < 16) return res.status(400).json({ message: 'Error: El estudiante debe tener al menos 16 años' });
+      if (age < 16) {
+        return res.status(400).json({ message: 'Error: El estudiante debe tener al menos 16 años' });
+      }
     }
 
+    // Validar formato de email
     if (s.email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(s.email)) return res.status(400).json({ message: 'Error: El formato del correo electrónico no es válido' });
-    }
-
-    // Check for existing person by CI (reuse if exists, create if not)
-    let personId: number;
-    const existingPerson = await personService.getPersonByCi(ci);
-    if (existingPerson) {
-      personId = existingPerson.personId;
-    } else {
-      const person = await personService.createPerson({
-        ci,
-        firstName: s.firstName,
-        middleName: s.middleName,
-        lastName: s.lastName,
-        secondLastName: s.secondLastName,
-        email: s.email,
-        phone: s.phone,
-        gender: s.sex,
-        birthDate: s.birthDate,
-        address: s.address,
-        maritalStatus: s.civilStatus,
-      });
-      personId = person.personId;
-    }
-
-    // Validate CI uniqueness in students table
-    const duplicateCheck = await dbManager.withRetry(async (supabase) => {
-      const { data: existingStudentCi } = await supabase
-        .from(TABLE_NAME)
-        .select('STUDENTS_ID, STATUS, STUDENTS_CI, NAME, SURNAME')
-        .eq('STUDENTS_CI', ci)
-        .maybeSingle();
-
-      if (existingStudentCi) {
-        if (existingStudentCi.STATUS === 0) {
-          return { field: 'Cédula', message: `La cédula ${ci} ya está registrada pero el estudiante está INACTIVO. ¿Desea reactivarlo?`, reactivable: true, studentId: existingStudentCi.STUDENTS_ID };
-        }
-        return { field: 'Cédula', message: `La cédula ${ci} ya está registrada` };
+      if (!emailRegex.test(s.email)) {
+        return res.status(400).json({ message: 'Error: El formato del correo electrónico no es válido' });
       }
-
-      if (s.email) {
-        const { data: existingStudentEmail } = await supabase
-          .from(TABLE_NAME)
-          .select('STUDENTS_ID, STATUS, EMAIL')
-          .ilike('EMAIL', s.email)
-          .maybeSingle();
-
-        if (existingStudentEmail) {
-          if (existingStudentEmail.STATUS === 0) {
-            return { field: 'Email', message: `El correo ${s.email} ya está registrado pero el estudiante está INACTIVO. ¿Desea reactivarlo?`, reactivable: true, studentId: existingStudentEmail.STUDENTS_ID };
-          }
-          return { field: 'Email', message: `El correo ${s.email} ya está registrado` };
-        }
-      }
-      return null;
-    }, 'checkStudentDuplicates');
-
-    if (duplicateCheck) {
-      return res.status(400).json({
-        message: duplicateCheck.message,
-        reactivable: duplicateCheck.reactivable,
-        studentId: duplicateCheck.studentId
-      });
     }
 
-    const genderMap: Record<string, string> = { 'MASCULINO': 'M', 'FEMENINO': 'F', 'OTRO': 'O' };
-    const maritalMap: Record<string, string> = { 'SOLTERO': 'S', 'CASADO': 'C', 'DIVORCIADO': 'D', 'VIUDO': 'V' };
-    const typeMap: Record<string, string> = { 'CIVIL': 'CIV', 'MILITAR': 'MIL' };
+    // Validar duplicado de email (entre distintas personas)
+    if (s.email) {
+      // Si la CI ya existe, obtener su personId para excluirla de la verificación de email
+      const existingPerson = await personService.getPersonByCi(studentsCi);
+      const excludePersonId = existingPerson?.personId;
+      const emailCheck = await personService.validateUniqueEmail(s.email, excludePersonId);
+      if (!emailCheck.available) {
+        const msg = `El correo ${s.email} ya está registrado por otra persona`;
+        return res.status(409).json({ message: msg });
+      }
+    }
 
-    const dbData = {
-      STUDENTS_CI: ci,
-      NAME: s.firstName,
-      SECOND_NAME: s.middleName || null,
-      SURNAME: s.lastName,
-      SECOND_SURNAME: s.secondLastName || null,
-      GENDER: genderMap[s.sex?.toUpperCase()] || 'O',
-      BIRTHDATE: s.birthDate,
-      CONTACT_PHONE: s.phone,
-      EMAIL: s.email,
-      ADDRESS: s.address,
-      MARITAL_STATUS: maritalMap[s.civilStatus?.toUpperCase()] || 'S',
-      STUDENT_TYPE: typeMap[s.studentType?.toUpperCase()] || 'CIV',
-      MILITARY_RANK: s.militaryRank || null,
-      EMPLOYMENT: s.works === "SI" ? "SI" : "NO",
-      STATUS: s.status !== false ? 1 : 0,
-      REGISTRATION_DATE: new Date().toISOString().slice(0, 19).replace('T', ' '),
-      person_id: personId,
-    };
+    const personData = extractPersonData(s);
+    const studentData = extractStudentData(s);
 
     const data = await dbManager.withRetry(async (supabase) => {
+      // 1. Buscar persona existente por CI o crear nueva
+      const newPerson = await personService.findOrCreatePerson(personData, supabase);
+      const personId = newPerson.personId;
+
+      // 2. Insertar registro en t_students con person_id
+      const dbRecord = {
+        person_id: personId,
+        STUDENT_TYPE: studentData.STUDENT_TYPE,
+        MILITARY_RANK: studentData.MILITARY_RANK,
+        EMPLOYMENT: studentData.EMPLOYMENT,
+        STATUS: studentData.STATUS,
+        REGISTRATION_DATE: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      };
+
       const { data: insertedData, error: insertError } = await supabase
         .from(TABLE_NAME)
-        .insert([dbData])
-        .select('STUDENTS_ID')
+        .insert([dbRecord])
+        .select(STUDENT_FULL_COLUMNS)
         .single();
 
       if (insertError) throw insertError;
-
-      const { data, error: fetchError } = await supabase
-        .from(TABLE_NAME)
-        .select(STUDENT_COLUMNS)
-        .eq('STUDENTS_ID', insertedData.STUDENTS_ID)
-        .single();
-
-      if (fetchError) throw fetchError;
-      return data as unknown as DBStudent;
+      return insertedData as unknown as DBStudent;
     }, 'createStudent');
 
-    await auditCreate(req, 't_students', dbData, STUDENT_COLUMNS_TO_AUDIT);
+    // Auditoría
+    await auditCreate(req, 't_students', { ...personData, ...studentData }, STUDENT_COLUMNS_TO_AUDIT);
+
+    // Invalidar caché
     cacheManager.deleteByPrefix(CACHE_PREFIX);
 
     res.status(201).json(mapDBToFrontend(data));
   } catch (error: unknown) {
-    if ((error as any)?.code === 'PERSON_ALREADY_EXISTS') {
-      return res.status(409).json({ message: (error as any).message });
-    }
     console.error('[Students] Exception in createStudent:', error);
     handleDbError(res, error);
   }
 };
 
+// ============================================================
+// UPDATE
+// ============================================================
+
 export const updateStudent = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const s = req.body;
+    console.log(`[Students] Attempting to update student ${id} with data:`, JSON.stringify(s, null, 2));
 
     if (!s.identificationNumber || !s.firstName || !s.lastName) {
       return res.status(400).json({
@@ -350,148 +411,123 @@ export const updateStudent = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const ci = `${s.identificationPrefix || 'V'}-${s.identificationNumber}`;
+    const studentsCi = `${s.identificationPrefix || 'V'}-${s.identificationNumber}`;
 
+    // Validar edad
     if (s.birthDate) {
       const birth = new Date(s.birthDate);
       const today = new Date();
       let age = today.getFullYear() - birth.getFullYear();
       const m = today.getMonth() - birth.getMonth();
       if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-      if (age < 16) return res.status(400).json({ message: 'Error: El estudiante debe tener al menos 16 años' });
+      if (age < 16) {
+        return res.status(400).json({ message: 'Error: El estudiante debe tener al menos 16 años' });
+      }
     }
 
+    // Validar email
     if (s.email) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(s.email)) return res.status(400).json({ message: 'Error: El formato del correo electrónico no es válido' });
-    }
-
-    // Get current student to find person_id
-    const currentStudent = await dbManager.withRetry(async (supabase) => {
-      const { data, error } = await supabase
-        .from(TABLE_NAME)
-        .select('person_id')
-        .eq('STUDENTS_ID', parseInt(id))
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    }, 'getStudentForUpdate');
-
-    // Update person record if student exists
-    if (currentStudent?.person_id) {
-      await personService.updatePerson(currentStudent.person_id, {
-        firstName: s.firstName,
-        middleName: s.middleName,
-        lastName: s.lastName,
-        secondLastName: s.secondLastName,
-        email: s.email,
-        phone: s.phone,
-        gender: s.sex,
-        birthDate: s.birthDate,
-        address: s.address,
-        maritalStatus: s.civilStatus,
-      });
-    }
-
-    // Validate CI/Email uniqueness in students table (excluding self)
-    const duplicateCheck = await dbManager.withRetry(async (supabase) => {
-      const { data: existingStudentCi } = await supabase
-        .from(TABLE_NAME)
-        .select('STUDENTS_ID, STATUS')
-        .eq('STUDENTS_CI', ci)
-        .neq('STUDENTS_ID', parseInt(id))
-        .maybeSingle();
-
-      if (existingStudentCi) {
-        return { field: 'Cédula', message: `La cédula ${ci} ya está registrada por otro estudiante` };
+      if (!emailRegex.test(s.email)) {
+        return res.status(400).json({ message: 'Error: El formato del correo electrónico no es válido' });
       }
-
-      if (s.email) {
-        const { data: existingStudentEmail } = await supabase
-          .from(TABLE_NAME)
-          .select('STUDENTS_ID, STATUS')
-          .ilike('EMAIL', s.email)
-          .neq('STUDENTS_ID', parseInt(id))
-          .maybeSingle();
-
-        if (existingStudentEmail) {
-          return { field: 'Email', message: `El correo ${s.email} ya está registrado por otro estudiante` };
-        }
-      }
-      return null;
-    }, 'checkStudentDuplicatesUpdate');
-
-    if (duplicateCheck) return res.status(400).json({ message: duplicateCheck.message });
-
-    const genderMap: Record<string, string> = { 'MASCULINO': 'M', 'FEMENINO': 'F', 'OTRO': 'O' };
-    const maritalMap: Record<string, string> = { 'SOLTERO': 'S', 'CASADO': 'C', 'DIVORCIADO': 'D', 'VIUDO': 'V' };
-    const typeMap: Record<string, string> = { 'CIVIL': 'CIV', 'MILITAR': 'MIL' };
-
-    const dbData = {
-      STUDENTS_CI: ci,
-      NAME: s.firstName,
-      SECOND_NAME: s.middleName || null,
-      SURNAME: s.lastName,
-      SECOND_SURNAME: s.secondLastName || null,
-      GENDER: genderMap[s.sex?.toUpperCase()] || 'O',
-      BIRTHDATE: s.birthDate,
-      CONTACT_PHONE: s.phone,
-      EMAIL: s.email,
-      ADDRESS: s.address,
-      MARITAL_STATUS: maritalMap[s.civilStatus?.toUpperCase()] || 'S',
-      STUDENT_TYPE: typeMap[s.studentType?.toUpperCase()] || 'CIV',
-      MILITARY_RANK: s.militaryRank || null,
-      EMPLOYMENT: s.works === "SI" ? "SI" : "NO",
-      STATUS: s.status !== false ? 1 : 0
-    };
+    }
 
     const data = await dbManager.withRetry(async (supabase) => {
-      const { data: oldData } = await supabase
+      // 0. Obtener el registro actual con JOIN
+      const { data: existingData, error: fetchError } = await supabase
         .from(TABLE_NAME)
-        .select(STUDENT_COLUMNS_BASE)
+        .select(STUDENT_FULL_COLUMNS)
         .eq('STUDENTS_ID', parseInt(id))
         .single();
 
+      if (fetchError || !existingData) {
+        throw Object.assign(new Error('Estudiante no encontrado'), { code: '404' });
+      }
+
+      const existing = existingData as unknown as DBStudent;
+      const personId = existing.person_id;
+
+      // 1. Validar duplicados en t_persons (excluyendo a esta persona)
+      const ciCheck = await personService.validateUniqueCi(studentsCi, personId);
+      if (!ciCheck.available) {
+        throw Object.assign(new Error(`La cédula ${studentsCi} ya está registrada por otra persona`), { code: '409' });
+      }
+
+      if (s.email) {
+        const emailCheck = await personService.validateUniqueEmail(s.email, personId);
+        if (!emailCheck.available) {
+          throw Object.assign(new Error(`El correo ${s.email} ya está registrado por otra persona`), { code: '409' });
+        }
+      }
+
+      const personData = extractPersonData(s);
+      const studentData = extractStudentData(s);
+
+      // 2. Actualizar t_persons
+      await personService.updatePerson(personId, personData, supabase);
+
+      // 3. Actualizar t_students (incluyendo columnas legacy)
+      const dbRecord = {
+        STUDENT_TYPE: studentData.STUDENT_TYPE,
+        MILITARY_RANK: studentData.MILITARY_RANK,
+        EMPLOYMENT: studentData.EMPLOYMENT,
+        STATUS: studentData.STATUS,
+      };
+
       const { error: updateError } = await supabase
         .from(TABLE_NAME)
-        .update(dbData)
+        .update(dbRecord)
         .eq('STUDENTS_ID', parseInt(id));
 
       if (updateError) throw updateError;
 
-      const { data, error: fetchError } = await supabase
+      // 4. Obtener registro actualizado
+      const { data: updatedData, error: refetchError } = await supabase
         .from(TABLE_NAME)
-        .select(STUDENT_COLUMNS)
+        .select(STUDENT_FULL_COLUMNS)
         .eq('STUDENTS_ID', parseInt(id))
         .single();
 
-      if (fetchError) throw fetchError;
+      if (refetchError) throw refetchError;
 
-      if (oldData) {
-        await auditUpdate(req, 't_students', oldData as Record<string, any>, dbData, STUDENT_COLUMNS_TO_AUDIT);
-      }
+      // Auditoría
+      await auditUpdate(req, 't_students', existing as unknown as Record<string, any>, dbRecord, STUDENT_COLUMNS_TO_AUDIT);
 
-      return data as unknown as DBStudent;
+      return updatedData as unknown as DBStudent;
     }, 'updateStudent');
 
     cacheManager.deleteByPrefix(CACHE_PREFIX);
     res.json(mapDBToFrontend(data));
   } catch (error: unknown) {
+    const appErr = error as AppError;
+    if (appErr.code === '404') {
+      return res.status(404).json({ message: appErr.message });
+    }
+    if (appErr.code === '409') {
+      return res.status(409).json({ message: appErr.message });
+    }
     console.error('[Students] Exception in updateStudent:', error);
     handleDbError(res, error);
   }
 };
 
+// ============================================================
+// DELETE
+// ============================================================
+
 export const deleteStudent = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     await dbManager.withRetry(async (supabase) => {
+      // Obtener datos actuales para auditoría
       const { data: deletedData } = await supabase
         .from(TABLE_NAME)
-        .select(STUDENT_COLUMNS_BASE)
+        .select(STUDENT_FULL_COLUMNS)
         .eq('STUDENTS_ID', parseInt(id))
         .single();
 
+      // Eliminar de t_students (NO eliminar de t_persons — otras entidades pueden referenciarlo)
       const { error } = await supabase
         .from(TABLE_NAME)
         .delete()
@@ -500,7 +536,7 @@ export const deleteStudent = async (req: AuthRequest, res: Response) => {
       if (error) throw error;
 
       if (deletedData) {
-        await auditDelete(req, 't_students', deletedData as Record<string, any>, STUDENT_COLUMNS_TO_AUDIT);
+        await auditDelete(req, 't_students', deletedData as unknown as Record<string, any>, STUDENT_COLUMNS_TO_AUDIT);
       }
     }, 'deleteStudent');
 
@@ -511,44 +547,63 @@ export const deleteStudent = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// ============================================================
+// TOGGLE STATUS
+// ============================================================
+
 export const toggleStudentStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
     const data = await dbManager.withRetry(async (supabase) => {
+      // Obtener estado anterior (incluye person_id)
       const { data: oldData } = await supabase
         .from(TABLE_NAME)
-        .select('STATUS, person_id')
+        .select('STUDENTS_ID, STATUS, person_id')
         .eq('STUDENTS_ID', parseInt(id))
         .single();
 
-      const { data, error } = await supabase
+      if (!oldData) {
+        throw Object.assign(new Error('Estudiante no encontrado'), { code: '404' });
+      }
+
+      // Actualizar estado en t_students
+      const { data: updatedData, error } = await supabase
         .from(TABLE_NAME)
         .update({ STATUS: status ? 1 : 0 })
         .eq('STUDENTS_ID', parseInt(id))
-        .select()
+        .select(STUDENT_FULL_COLUMNS)
         .single();
 
       if (error) throw error;
 
-      if (oldData?.person_id) {
-        await personService.updatePerson(oldData.person_id, { status: status ? 1 : 0 });
+      // También actualizar estado en t_persons
+      if (oldData.person_id) {
+        await personService.togglePersonStatus(oldData.person_id, status ? 1 : 0);
       }
 
+      // Auditoría
       if (oldData && oldData.STATUS !== (status ? 1 : 0)) {
         await auditStatusChange(req, 't_students', id, oldData.STATUS, status ? 1 : 0);
       }
 
-      return data;
+      return updatedData;
     });
 
     cacheManager.deleteByPrefix(CACHE_PREFIX);
     res.json(data);
   } catch (error: unknown) {
+    if ((error as AppError).code === '404') {
+      return res.status(404).json({ message: 'Estudiante no encontrado' });
+    }
     handleDbError(res, error);
   }
 };
+
+// ============================================================
+// GET BY ID
+// ============================================================
 
 export const getStudentById = async (req: Request, res: Response) => {
   try {
@@ -556,7 +611,7 @@ export const getStudentById = async (req: Request, res: Response) => {
     const data = await dbManager.withRetry(async (supabase) => {
       const { data, error } = await supabase
         .from(TABLE_NAME)
-        .select(STUDENT_COLUMNS)
+        .select(STUDENT_FULL_COLUMNS)
         .eq('STUDENTS_ID', parseInt(id))
         .single();
 
@@ -570,6 +625,10 @@ export const getStudentById = async (req: Request, res: Response) => {
   }
 };
 
+// ============================================================
+// CHECK AVAILABILITY
+// ============================================================
+
 export const checkIdAvailability = async (req: Request, res: Response) => {
   try {
     const { type, value, excludeId } = req.query;
@@ -578,98 +637,149 @@ export const checkIdAvailability = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Faltan parámetros: type y value son requeridos' });
     }
 
-    // For CI/email validation, also check the persons table
     if (type === 'ci') {
-      const ciValue = value as string;
-      const personAvailable = await personService.validateUniqueCi(ciValue, excludeId ? parseInt(excludeId as string) : undefined);
-
-      // Also check students table for backward compatibility
-      const result = await dbManager.withRetry(async (supabase) => {
-        let query = supabase.from(TABLE_NAME).select('STUDENTS_ID, STATUS').eq('STUDENTS_CI', ciValue);
-        if (excludeId) query = query.neq('STUDENTS_ID', parseInt(excludeId as string));
-        const { data } = await query.maybeSingle();
-        return data;
-      }, 'checkCiAvailability');
-
-      return res.json({
-        available: personAvailable && !result,
-        status: result?.STATUS,
-        studentId: result?.STUDENTS_ID,
-      });
+      const result = await personService.validateUniqueCi(value as string, excludeId ? parseInt(excludeId as string) : undefined);
+      return res.json({ ...result, studentId: result.personId });
     }
 
     if (type === 'email') {
-      const emailValue = value as string;
-      const personAvailable = await personService.validateUniqueEmail(emailValue, excludeId ? parseInt(excludeId as string) : undefined);
-
-      const result = await dbManager.withRetry(async (supabase) => {
-        let query = supabase.from(TABLE_NAME).select('STUDENTS_ID, STATUS').ilike('EMAIL', emailValue);
-        if (excludeId) query = query.neq('STUDENTS_ID', parseInt(excludeId as string));
-        const { data } = await query.maybeSingle();
-        return data;
-      }, 'checkEmailAvailability');
-
-      return res.json({
-        available: personAvailable && !result,
-        status: result?.STATUS,
-        studentId: result?.STUDENTS_ID,
-      });
+      const result = await personService.validateUniqueEmail(value as string, excludeId ? parseInt(excludeId as string) : undefined);
+      return res.json({ ...result, studentId: result.personId });
     }
 
-    res.status(400).json({ message: 'Tipo de validación no válido' });
+    return res.status(400).json({ message: 'Tipo de validación no válido. Use "ci" o "email"' });
   } catch (error: unknown) {
     handleDbError(res, error);
   }
 };
+
+// ============================================================
+// GET BY CI
+// ============================================================
 
 export const getStudentByCi = async (req: Request, res: Response) => {
   try {
     const { ci } = req.params;
 
-    if (!ci) return res.status(400).json({ message: 'La cédula es requerida' });
+    if (!ci) {
+      return res.status(400).json({ message: 'La cédula es requerida' });
+    }
 
+    // Buscar persona por CI
+    const person = await personService.getPersonByCi(ci);
+
+    if (!person) {
+      return res.status(404).json({ message: 'Estudiante no encontrado', data: null });
+    }
+
+    // Buscar estudiante por person_id
     const student = await dbManager.withRetry(async (supabase) => {
       const { data, error } = await supabase
         .from(TABLE_NAME)
-        .select(STUDENT_COLUMNS_BASE)
-        .eq('STUDENTS_CI', ci)
+        .select(STUDENT_FULL_COLUMNS)
+        .eq('person_id', person.personId)
         .maybeSingle();
 
       if (error) throw error;
-      return data;
+      return data as unknown as DBStudent | null;
     }, 'getStudentByCi');
 
     if (!student) {
-      return res.status(200).json({ data: null });
+      // Persona existe pero no como estudiante → devolver datos de persona
+      // para que el frontend pueda pre-llenar el formulario
+      return res.json({
+        data: null,
+        person: {
+          identificationPrefix: person.prefixCi,
+          identificationNumber: person.identificationNumber,
+          firstName: person.firstName,
+          middleName: person.middleName || '',
+          lastName: person.lastName,
+          secondLastName: person.secondLastName || '',
+          email: person.email,
+          phone: person.phone || '',
+        }
+      });
     }
 
-    res.json({ data: mapDBToFrontend(student as unknown as DBStudent) });
+    res.json({ data: mapDBToFrontend(student) });
   } catch (error: unknown) {
     handleDbError(res, error);
   }
 };
 
+// ============================================================
+// LOOKUP CI (External API)
+// ============================================================
+
+export const lookupStudentCi = async (req: Request, res: Response) => {
+  try {
+    const { ci } = req.params;
+
+    if (!ci) {
+      return res.status(400).json({ message: 'La cédula es requerida' });
+    }
+
+    // Parse prefix y número: "V-12345678" → nacionalidad="V", cedula="12345678"
+    const parts = ci.split('-');
+    const nacionalidad = parts[0]?.toUpperCase() || 'V';
+    const cedula = parts[1] || ci;
+
+    // Validar que la cédula solo contenga dígitos
+    if (!/^\d+$/.test(cedula)) {
+      return res.status(400).json({ message: 'La cédula debe contener solo números' });
+    }
+
+    const result = await lookupCedula(nacionalidad, cedula);
+
+    if (!result) {
+      // No es un error — la API externa no está configurada o no encontró datos
+      return res.status(200).json({ data: null });
+    }
+
+    res.json({ data: result });
+  } catch (error) {
+    console.error('[lookupStudentCi] Error:', error);
+    res.status(500).json({ message: 'Error al consultar la cédula en fuente externa' });
+  }
+};
+
+// ============================================================
+// CHANGE REGISTRATION
+// ============================================================
+
+interface ChangeRegistrationBody {
+  changeType: 'institution' | 'tutor' | 'regime';
+  newValue: string;
+  reason?: string;
+}
+
 export const changeStudentRegistration = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { changeType, newValue, reason } = req.body;
+    const { changeType, newValue, reason } = req.body as ChangeRegistrationBody;
+    const adminId = req.user?.userId;
 
     if (!id) return res.status(400).json({ message: 'ID del estudiante requerido' });
     if (!changeType || !newValue) return res.status(400).json({ message: 'Tipo de cambio y nuevo valor son requeridos' });
-    if (!['institution', 'tutor', 'regime'].includes(changeType)) return res.status(400).json({ message: 'Tipo de cambio inválido' });
 
+    const validTypes = ['institution', 'tutor', 'regime'];
+    if (!validTypes.includes(changeType)) return res.status(400).json({ message: 'Tipo de cambio inválido' });
+
+    // Obtener estudiante con datos personales
     const student = await dbManager.withRetry(async (supabase) => {
       const { data, error } = await supabase
         .from(TABLE_NAME)
-        .select('*')
+        .select(`${STUDENT_BASE_COLUMNS}, t_persons!inner(ci, first_name, last_name, email)`)
         .eq('STUDENTS_ID', parseInt(id))
         .maybeSingle();
       if (error) throw error;
-      return data;
+      return data as any;
     }, 'getStudentForChange');
 
     if (!student) return res.status(404).json({ message: 'Estudiante no encontrado' });
 
+    // Verificar prácticas activas
     const activePractices = await dbManager.withRetry(async (supabase) => {
       const { data, error } = await supabase
         .from('t_professional_practices')
@@ -679,6 +789,8 @@ export const changeStudentRegistration = async (req: AuthRequest, res: Response)
       if (error) throw error;
       return data;
     }, 'checkActivePractices');
+
+    const hasActivePractice = activePractices && activePractices.length > 0;
 
     const pendingEvaluations = await dbManager.withRetry(async (supabase) => {
       const { data, error } = await supabase
@@ -690,15 +802,20 @@ export const changeStudentRegistration = async (req: AuthRequest, res: Response)
       return data;
     }, 'checkPendingEvaluations');
 
-    const hasActivePractice = activePractices && activePractices.length > 0;
     const hasPendingEvaluations = pendingEvaluations && pendingEvaluations.length > 0;
 
     if (changeType === 'institution' && hasActivePractice) {
-      return res.status(400).json({ message: 'No se puede cambiar la institución. El estudiante tiene una práctica activa.', code: 'ACTIVE_PRACTICE_BLOCK' });
+      return res.status(400).json({
+        message: 'No se puede cambiar la institución. El estudiante tiene una práctica activa.',
+        code: 'ACTIVE_PRACTICE_BLOCK'
+      });
     }
 
     if (changeType === 'tutor' && hasPendingEvaluations) {
-      return res.status(400).json({ message: 'No se puede cambiar el tutor. El estudiante tiene evaluaciones pendientes.', code: 'PENDING_EVALUATIONS_BLOCK' });
+      return res.status(400).json({
+        message: 'No se puede cambiar el tutor. El estudiante tiene evaluaciones pendientes.',
+        code: 'PENDING_EVALUATIONS_BLOCK'
+      });
     }
 
     let updateData: Record<string, unknown> = {};
@@ -707,7 +824,11 @@ export const changeStudentRegistration = async (req: AuthRequest, res: Response)
 
     if (changeType === 'tutor') {
       const tutor = await dbManager.withRetry(async (supabase) => {
-        const { data, error } = await supabase.from('t_tutors').select('TUTOR_ID, NAME, SURNAME').eq('TUTOR_ID', parseInt(newValue)).maybeSingle();
+        const { data, error } = await supabase
+          .from('t_tutors')
+          .select('TUTOR_ID, t_persons!inner(first_name, last_name)')
+          .eq('TUTOR_ID', parseInt(newValue))
+          .maybeSingle();
         if (error) throw error;
         return data;
       }, 'verifyTutor');
@@ -715,24 +836,37 @@ export const changeStudentRegistration = async (req: AuthRequest, res: Response)
       if (!tutor) return res.status(404).json({ message: 'Tutor no encontrado' });
 
       const currentAssignment = await dbManager.withRetry(async (supabase) => {
-        const { data, error } = await supabase.from('t_professional_practices_tutor').select('TUTOR_ID, t_tutors!inner(NAME, SURNAME)').eq('STUDENT_ID', parseInt(id)).eq('IS_ACTIVE', true).maybeSingle();
+        const { data, error } = await supabase
+          .from('t_professional_practices_tutor')
+          .select('TUTOR_ID, t_persons!inner(first_name, last_name)')
+          .eq('STUDENT_ID', parseInt(id))
+          .eq('IS_ACTIVE', true)
+          .maybeSingle();
         if (error) throw error;
         return data;
       }, 'getCurrentTutor');
 
       if (currentAssignment) {
-        const tutorData = currentAssignment.t_tutors as { NAME?: string; SURNAME?: string } | undefined;
-        oldValue = `${tutorData?.NAME || ''} ${tutorData?.SURNAME || ''}`.trim();
-        newValueFormatted = `${tutor.NAME} ${tutor.SURNAME}`.trim();
+        const currentTutorPerson = (currentAssignment as any).t_persons;
+        oldValue = currentTutorPerson ? `${currentTutorPerson.first_name || ''} ${currentTutorPerson.last_name || ''}`.trim() : '';
+        newValueFormatted = `${(tutor as any).t_persons.first_name} ${(tutor as any).t_persons.last_name}`.trim();
 
         await dbManager.withRetry(async (supabase) => {
-          const { error } = await supabase.from('t_professional_practices_tutor').update({ TUTOR_ID: parseInt(newValue), MODIFIED_AT: new Date().toISOString() }).eq('STUDENT_ID', parseInt(id)).eq('IS_ACTIVE', true);
+          const { error } = await supabase
+            .from('t_professional_practices_tutor')
+            .update({ TUTOR_ID: parseInt(newValue), MODIFIED_AT: new Date().toISOString() })
+            .eq('STUDENT_ID', parseInt(id))
+            .eq('IS_ACTIVE', true);
           if (error) throw error;
         }, 'updateTutorAssignment');
       }
     } else if (changeType === 'institution') {
       const institution = await dbManager.withRetry(async (supabase) => {
-        const { data, error } = await supabase.from('t_institution').select('INSTITUTION_ID, INSTITUTION_NAME').eq('INSTITUTION_ID', parseInt(newValue)).maybeSingle();
+        const { data, error } = await supabase
+          .from('t_institution')
+          .select('INSTITUTION_ID, INSTITUTION_NAME')
+          .eq('INSTITUTION_ID', parseInt(newValue))
+          .maybeSingle();
         if (error) throw error;
         return data;
       }, 'verifyInstitution');
@@ -746,30 +880,50 @@ export const changeStudentRegistration = async (req: AuthRequest, res: Response)
 
     if (changeType === 'regime') {
       await dbManager.withRetry(async (supabase) => {
-        const { error } = await supabase.from(TABLE_NAME).update(updateData).eq('STUDENTS_ID', parseInt(id));
+        const { error } = await supabase
+          .from(TABLE_NAME)
+          .update(updateData)
+          .eq('STUDENTS_ID', parseInt(id));
         if (error) throw error;
       }, 'updateStudentRegime');
     }
 
+    // Registrar en activity log
+    const personInfo = student.t_persons;
     await dbManager.withRetry(async (supabase) => {
       await supabase.from('t_activity_logs').insert({
-        USER_ID: req.user?.userId,
+        USER_ID: adminId,
         ACTION: `CAMBIO_REGISTRO_${changeType.toUpperCase()}`,
         ACTION_TYPE: 'UPDATE',
         ENTITY_TYPE: 'STUDENT',
         ENTITY_ID: parseInt(id),
-        DETAILS: JSON.stringify({ changeType, oldValue, newValue: newValueFormatted, reason: reason || 'Sin motivo especificado', studentCi: student.STUDENTS_CI, studentName: `${student.NAME} ${student.SURNAME}` }),
+        DETAILS: JSON.stringify({
+          changeType,
+          oldValue,
+          newValue: newValueFormatted,
+          reason: reason || 'Sin motivo especificado',
+          studentCi: personInfo.ci,
+          studentName: `${personInfo.first_name} ${personInfo.last_name}`
+        }),
         IP_ADDRESS: req.ip,
         USER_AGENT: req.headers['user-agent']
       });
     }, 'logRegistrationChange');
 
-    res.json({ success: true, message: `Cambio de ${changeType} realizado exitosamente`, data: { changeType, oldValue, newValue: newValueFormatted, reason } });
+    res.json({
+      success: true,
+      message: `Cambio de ${changeType} realizado exitosamente`,
+      data: { changeType, oldValue, newValue: newValueFormatted, reason }
+    });
   } catch (error: unknown) {
     console.error('[changeStudentRegistration] Error:', error);
     handleDbError(res, error);
   }
 };
+
+// ============================================================
+// IMPORT / EXPORT
+// ============================================================
 
 export const importStudents = async (req: Request, res: Response) => {
   try {
@@ -779,34 +933,53 @@ export const importStudents = async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: 'No se proporcionaron estudiantes para importar' });
     }
 
-    const results = { success: true, imported: 0, failed: 0, errors: [] as string[] };
+    const results = {
+      success: true,
+      imported: 0,
+      failed: 0,
+      errors: [] as string[]
+    };
 
     for (const studentData of students) {
       try {
-        const { data, error } = await supabase.from('t_students').insert({
-          IDENTIFICATION_PREFIX: studentData.identificationPrefix || 'V',
-          IDENTIFICATION_NUMBER: studentData.identificationNumber,
-          FIRST_NAME: studentData.firstName,
-          MIDDLE_NAME: studentData.middleName || null,
-          LAST_NAME: studentData.lastName,
-          SECOND_LAST_NAME: studentData.secondLastName || null,
-          SEX: studentData.sex,
-          BIRTH_DATE: studentData.birthDate,
-          CIVIL_STATUS: studentData.civilStatus || 'SOLTERO',
-          PHONE: studentData.phone,
-          EMAIL: studentData.email,
-          ADDRESS: studentData.address || '',
-          STUDENT_TYPE: studentData.studentType || 'CIVIL',
-          MILITARY_RANK: studentData.militaryRank || 'NO APLICA',
-          WORKS: studentData.works || 'NO',
-          STATUS: true
-        }).select();
+        // 1. Buscar persona existente o crear nueva en t_persons
+        const ci = `${studentData.identificationPrefix || 'V'}-${studentData.identificationNumber}`;
+        const personRecord = await personService.findOrCreatePerson({
+          ci,
+          firstName: studentData.firstName,
+          middleName: studentData.middleName || null,
+          lastName: studentData.lastName,
+          secondLastName: studentData.secondLastName || null,
+          gender: genderToDb[studentData.sex?.toUpperCase()] || 'O',
+          birthDate: studentData.birthDate || null,
+          maritalStatus: maritalToDb[studentData.civilStatus?.toUpperCase()] || 'S',
+          phone: studentData.phone || null,
+          email: studentData.email || null,
+          address: studentData.address || null,
+        });
 
-        if (error) { results.failed++; results.errors.push(`Error con ${studentData.identificationNumber}: ${error.message}`); }
-        else { results.imported++; }
+        // 2. Crear estudiante
+        const { data, error } = await supabase
+          .from('t_students')
+          .insert({
+            person_id: personRecord.personId,
+            STUDENT_TYPE: typeToDb[studentData.studentType?.toUpperCase()] || 'CIV',
+            MILITARY_RANK: studentData.militaryRank || 'NO APLICA',
+            EMPLOYMENT: studentData.works || 'NO',
+            STATUS: true,
+          })
+          .select();
+
+        if (error) {
+          results.failed++;
+          results.errors.push(`Error con ${studentData.identificationNumber}: ${error.message}`);
+        } else {
+          results.imported++;
+        }
       } catch (err: unknown) {
         results.failed++;
-        results.errors.push(`Error con ${studentData.identificationNumber}: ${(err as Error).message}`);
+        const error = err as Error;
+        results.errors.push(`Error con ${studentData.identificationNumber}: ${error.message}`);
       }
     }
 
@@ -821,37 +994,46 @@ export const exportStudents = async (req: Request, res: Response) => {
   try {
     const { status } = req.query;
 
-    let query = supabase.from('t_students').select('*').order('FIRST_NAME', { ascending: true });
-
-    if (status !== undefined) {
-      query = query.eq('STATUS', status === 'true');
-    }
-
-    const { data, error } = await query;
+    const { data, error } = await supabase
+      .from('t_students')
+      .select(`
+        STUDENTS_ID, STUDENT_TYPE, MILITARY_RANK, EMPLOYMENT, REGISTRATION_DATE, STATUS,
+        t_persons!inner(ci, first_name, middle_name, last_name, second_last_name, email, phone, gender, birthdate, address, marital_status)
+      `)
+      .order('first_name', { ascending: true, foreignTable: 't_persons' });
 
     if (error) {
+      console.error('[exportStudents] Error:', error);
       return res.status(500).json({ success: false, message: 'Error al exportar estudiantes' });
     }
 
-    const formattedData = (data || []).map(student => ({
-      identificationPrefix: student.IDENTIFICATION_PREFIX,
-      identificationNumber: student.IDENTIFICATION_NUMBER,
-      firstName: student.FIRST_NAME,
-      middleName: student.MIDDLE_NAME,
-      lastName: student.LAST_NAME,
-      secondLastName: student.SECOND_LAST_NAME,
-      sex: student.SEX,
-      birthDate: student.BIRTH_DATE,
-      civilStatus: student.CIVIL_STATUS,
-      phone: student.PHONE,
-      email: student.EMAIL,
-      address: student.ADDRESS,
-      studentType: student.STUDENT_TYPE,
-      militaryRank: student.MILITARY_RANK,
-      works: student.WORKS,
-      enrollmentDate: student.ENROLLMENT_DATE,
-      status: student.STATUS
-    }));
+    let filteredData = (data || []) as any[];
+    if (status !== undefined) {
+      filteredData = filteredData.filter((s: any) => s.STATUS === (status === 'true' ? 1 : 0));
+    }
+
+    const formattedData = filteredData.map((student: any) => {
+      const p = student.t_persons;
+      return {
+        identificationPrefix: p.ci.split('-')[0],
+        identificationNumber: p.ci.split('-')[1],
+        firstName: p.first_name,
+        middleName: p.middle_name,
+        lastName: p.last_name,
+        secondLastName: p.second_last_name,
+        sex: genderFromDb[p.gender.trim()] || p.gender,
+        birthDate: p.birthdate,
+        civilStatus: maritalFromDb[p.marital_status?.trim() || ''] || p.marital_status,
+        phone: p.phone,
+        email: p.email,
+        address: p.address,
+        studentType: typeFromDb[student.STUDENT_TYPE.trim()] || student.STUDENT_TYPE,
+        militaryRank: student.MILITARY_RANK,
+        works: student.EMPLOYMENT,
+        enrollmentDate: student.REGISTRATION_DATE,
+        status: student.STATUS
+      };
+    });
 
     res.json({ success: true, data: formattedData });
   } catch (error: unknown) {

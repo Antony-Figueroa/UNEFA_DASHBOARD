@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { checkAvailability, getStudentByCi } from "../services/studentsService";
+import { checkAvailability, getStudentByCi, lookupCi } from "../services/studentsService";
 import Input from "../../../components/form/input/InputField";
-import TextArea from "../../../components/form/input/TextArea";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { 
   CreateStudentPayload,
@@ -12,7 +11,6 @@ import {
 } from "../types";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import CustomSelect from "../../../components/form/CustomSelect";
-import Badge from "../../../components/ui/badge/Badge";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import { useToast } from "../../../context/toast";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
@@ -25,7 +23,8 @@ import {
   StudentFormInput,
   StudentFormOutput
 } from "../constants/validation";
-import { formatCedulaDisplay, formatPhoneDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, formatPhoneLocalDisplay, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS } from "../../../utils/inputFormat";
+import PersonFormFields from "../../persons/components/PersonFormFields";
 
 /**
  * Propiedades del componente StudentModal.
@@ -74,6 +73,7 @@ export default function StudentModal({
 }: StudentModalProps) {
   const [isCheckingCi, setIsCheckingCi] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [isLookingUpCi, setIsLookingUpCi] = useState(false);
   const { fetchMultipleLists } = useLists();
   const { addToast } = useToast();
 const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
@@ -88,6 +88,39 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   const [existingStudent, setExistingStudent] = useState<any | null>(null);
   const [viewOnlyMode, setViewOnlyMode] = useState(false);
 
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    watch,
+    setValue,
+    setError,
+    clearErrors,
+    formState: { errors, isDirty, isValid },
+  } = useForm<StudentFormInput>({
+    resolver: zodResolver(studentSchema),
+    mode: "all",
+    defaultValues: editingStudent ? { ...editingStudent } : {
+      identificationPrefix: "V",
+      identificationNumber: "",
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      secondLastName: "",
+      sex: "",
+      birthDate: "",
+      civilStatus: "",
+      phonePrefix: "",
+      phoneNumber: "",
+      email: "",
+      address: "",
+      studentType: "",
+      militaryRank: "",
+      works: "",
+    },
+  });
+
   // Handle identification number input change with formatting
   const handleIdentificationNumberChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
@@ -96,6 +129,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
     const formatted = formatCedulaDisplay(digitsOnly, false);
     setDisplayIdentificationNumber(formatted);
     setValue("identificationNumber", digitsOnly, { shouldValidate: true });
+    clearErrors("identificationNumber");
     
     // Si se cambia la cédula y hay un existingStudent, limpiar el formulario
     if (existingStudent) {
@@ -104,6 +138,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
       if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits) {
         setExistingStudent(null);
         setViewOnlyMode(false);
+        clearErrors("identificationNumber");
         // Resetear los campos del formulario
         reset({
           identificationPrefix: "",
@@ -133,43 +168,96 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
       const prefix = watch("identificationPrefix") || 'V';
       const fullCi = `${prefix}-${digitsOnly}`;
       try {
-        const editingId = editingStudent ? (editingStudent as any).studentId : undefined;
-        const res = await checkAvailability('ci', fullCi, editingId);
-        if (!res.available) {
-          const existingStudentData = await getStudentByCi(fullCi);
-          if (existingStudentData) {
-            setExistingStudent(existingStudentData);
-            setViewOnlyMode(true);
-            
-            // Parse phone number into prefix and local
-            let phonePrefix = "";
-            let phoneNumber = "";
-            if (existingStudentData.phone) {
-              const cleanPhone = existingStudentData.phone.replace(/[-\s]/g, '');
-              if (cleanPhone.length >= 4) {
-                phonePrefix = cleanPhone.substring(0, 4);
-                phoneNumber = cleanPhone.substring(4);
-              }
+        const result = await getStudentByCi(fullCi);
+        if (result?.student) {
+          // Estudiante ya existe → modo solo lectura con datos pre-cargados
+          const studentData = result.student;
+          setExistingStudent(studentData);
+          setViewOnlyMode(true);
+          
+          // Parse phone number into prefix and local
+          let phonePrefix = "";
+          let phoneNumber = "";
+          if (studentData.phone) {
+            const cleanPhone = studentData.phone.replace(/[-\s]/g, '');
+            if (cleanPhone.length >= 4) {
+              phonePrefix = cleanPhone.substring(0, 4);
+              phoneNumber = cleanPhone.substring(4);
             }
+          }
 
-            setValue("identificationPrefix", existingStudentData.identificationPrefix || 'V');
-            setDisplayIdentificationNumber(formatCedulaDisplay(existingStudentData.identificationNumber || ''));
-            setValue("identificationNumber", existingStudentData.identificationNumber || '');
-            setValue("firstName", existingStudentData.firstName || "");
-            setValue("middleName", existingStudentData.middleName || "");
-            setValue("lastName", existingStudentData.lastName || "");
-            setValue("secondLastName", existingStudentData.secondLastName || "");
-            setValue("sex", existingStudentData.sex || "");
-            setValue("birthDate", existingStudentData.birthDate || "");
-            setValue("civilStatus", existingStudentData.civilStatus || "");
-            setValue("phonePrefix", phonePrefix);
-                                setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
-            setValue("phoneNumber", phoneNumber);
-            setValue("email", existingStudentData.email || "");
-            setValue("address", existingStudentData.address || "");
-            setValue("studentType", existingStudentData.studentType || "");
-            setValue("militaryRank", existingStudentData.militaryRank || "");
-            setValue("works", existingStudentData.works || "");
+          setValue("identificationPrefix", studentData.identificationPrefix || 'V');
+          setDisplayIdentificationNumber(formatCedulaDisplay(studentData.identificationNumber || ''));
+          setValue("identificationNumber", studentData.identificationNumber || '');
+          setValue("firstName", studentData.firstName || "");
+          setValue("middleName", studentData.middleName || "");
+          setValue("lastName", studentData.lastName || "");
+          setValue("secondLastName", studentData.secondLastName || "");
+          setValue("sex", studentData.sex || "");
+          setValue("birthDate", studentData.birthDate || "");
+          setValue("civilStatus", studentData.civilStatus || "");
+          setValue("phonePrefix", phonePrefix);
+          setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+          setValue("phoneNumber", phoneNumber);
+          setValue("email", studentData.email || "");
+          setValue("address", studentData.address || "");
+          setValue("studentType", studentData.studentType || "");
+          setValue("militaryRank", studentData.militaryRank || "");
+          setValue("works", studentData.works || "");
+        } else if (result?.person) {
+          // Persona existe (tutor, usuario, etc.) pero no como estudiante → pre-cargar datos
+          const personData = result.person;
+          setValue("identificationPrefix", personData.identificationPrefix || 'V');
+          setDisplayIdentificationNumber(formatCedulaDisplay(personData.identificationNumber || ''));
+          setValue("identificationNumber", personData.identificationNumber || '');
+          setValue("firstName", personData.firstName || "");
+          setValue("middleName", personData.middleName || "");
+          setValue("lastName", personData.lastName || "");
+          setValue("secondLastName", personData.secondLastName || "");
+          setValue("email", personData.email || "");
+
+          let phonePrefix = "";
+          let phoneNumber = "";
+          if (personData.phone) {
+            const cleanPhone = personData.phone.replace(/[-\s]/g, '');
+            if (cleanPhone.length >= 4) {
+              phonePrefix = cleanPhone.substring(0, 4);
+              phoneNumber = cleanPhone.substring(4);
+            }
+          }
+          setValue("phonePrefix", phonePrefix);
+          setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+          setValue("phoneNumber", phoneNumber);
+
+          addToast({
+            variant: "info",
+            title: "Persona existente",
+            message: "Esta persona ya está registrada en el sistema. Se han precargado sus datos.",
+          });
+        } else {
+          // CI no existe en BD → intentar autocompletar desde API externa
+          setIsLookingUpCi(true);
+          try {
+            const externalData = await lookupCi(fullCi);
+            if (externalData) {
+              setValue("firstName", externalData.primerNombre?.toUpperCase() || "");
+              setValue("middleName", externalData.segundoNombre?.toUpperCase() || "");
+              setValue("lastName", externalData.primerApellido?.toUpperCase() || "");
+              setValue("secondLastName", externalData.segundoApellido?.toUpperCase() || "");
+              if (externalData.nacionalidad) {
+                setValue("identificationPrefix", externalData.nacionalidad.toUpperCase());
+              }
+              addToast({
+                variant: "success",
+                title: "Datos cargados",
+                message: "Nombre y apellidos cargados automáticamente desde la cédula.",
+              });
+            }
+          } catch (extErr) {
+            // Si falla la API externa, el usuario llena manualmente — sin drama
+            console.warn("[StudentModal] Error en lookup externo:", extErr);
+          } finally {
+            setIsLookingUpCi(false);
           }
         }
       } catch (err) {
@@ -188,6 +276,170 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
     setDisplayPhoneNumber(formatted);
     setValue("phoneNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
   };
+
+  // Handler factory for name fields: toUpperCase + character filtering
+  const createNameHandler = useCallback(
+    (field: string) =>
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value
+          .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, "")
+          .toUpperCase();
+        setValue(field as any, val, { shouldValidate: true, shouldDirty: true });
+      },
+    [setValue],
+  );
+
+  // CI blur handler: check availability when user leaves the CI field
+  const handleCiBlur = useCallback(
+    async (e: React.FocusEvent<HTMLInputElement>) => {
+      if (!existingStudent && !editingStudent) {
+        const val = e.target.value;
+        const digitsOnly = val.replace(/\D/g, "").substring(0, CEDULA_MAX_DIGITS);
+        if (digitsOnly.length >= 6) {
+          setIsCheckingCi(true);
+          const prefix = watch("identificationPrefix") || "V";
+          const fullCi = `${prefix}-${digitsOnly}`;
+          try {
+            const result = await getStudentByCi(fullCi);
+            if (result?.student) {
+              // Estudiante ya existe → modo solo lectura con datos pre-cargados
+              const studentData = result.student;
+              setExistingStudent(studentData);
+              setViewOnlyMode(true);
+
+              // Parse phone
+              let phonePrefix = "";
+              let phoneNumber = "";
+              if (studentData.phone) {
+                const cleanPhone = studentData.phone.replace(/[-\s]/g, "");
+                if (cleanPhone.length >= 4) {
+                  phonePrefix = cleanPhone.substring(0, 4);
+                  phoneNumber = cleanPhone.substring(4);
+                }
+              }
+
+              // Pre-fill ALL form fields (person + student-specific)
+              setValue("identificationPrefix", studentData.identificationPrefix || "V");
+              setDisplayIdentificationNumber(
+                formatCedulaDisplay(studentData.identificationNumber || ""),
+              );
+              setValue("identificationNumber", studentData.identificationNumber || "");
+              setValue("firstName", studentData.firstName || "");
+              setValue("middleName", studentData.middleName || "");
+              setValue("lastName", studentData.lastName || "");
+              setValue("secondLastName", studentData.secondLastName || "");
+              setValue("sex", studentData.sex || "");
+              setValue("birthDate", studentData.birthDate || "");
+              setValue("civilStatus", studentData.civilStatus || "");
+              setValue("phonePrefix", phonePrefix);
+              setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+              setValue("phoneNumber", phoneNumber);
+              setValue("email", studentData.email || "");
+              setValue("address", studentData.address || "");
+              setValue("studentType", studentData.studentType || "");
+              setValue("militaryRank", studentData.militaryRank || "");
+              setValue("works", studentData.works || "");
+            } else if (result?.person) {
+              // Persona existe (tutor, usuario, etc.) pero no como estudiante → pre-cargar datos
+              const personData = result.person;
+              setValue("identificationPrefix", personData.identificationPrefix || "V");
+              setDisplayIdentificationNumber(
+                formatCedulaDisplay(personData.identificationNumber || ""),
+              );
+              setValue("identificationNumber", personData.identificationNumber || "");
+              setValue("firstName", personData.firstName || "");
+              setValue("middleName", personData.middleName || "");
+              setValue("lastName", personData.lastName || "");
+              setValue("secondLastName", personData.secondLastName || "");
+              setValue("email", personData.email || "");
+
+              let phonePrefix = "";
+              let phoneNumber = "";
+              if (personData.phone) {
+                const cleanPhone = personData.phone.replace(/[-\s]/g, "");
+                if (cleanPhone.length >= 4) {
+                  phonePrefix = cleanPhone.substring(0, 4);
+                  phoneNumber = cleanPhone.substring(4);
+                }
+              }
+              setValue("phonePrefix", phonePrefix);
+              setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+              setValue("phoneNumber", phoneNumber);
+
+              addToast({
+                variant: "info",
+                title: "Persona existente",
+                message: "Esta persona ya está registrada en el sistema. Se han precargado sus datos.",
+              });
+            } else {
+              // CI no existe en BD → intentar autocompletar desde API externa
+              setIsLookingUpCi(true);
+              try {
+                const externalData = await lookupCi(fullCi);
+                if (externalData) {
+                  setValue("firstName", externalData.primerNombre?.toUpperCase() || "");
+                  setValue("middleName", externalData.segundoNombre?.toUpperCase() || "");
+                  setValue("lastName", externalData.primerApellido?.toUpperCase() || "");
+                  setValue("secondLastName", externalData.segundoApellido?.toUpperCase() || "");
+                  if (externalData.nacionalidad) {
+                    setValue("identificationPrefix", externalData.nacionalidad.toUpperCase());
+                  }
+                  addToast({
+                    variant: "success",
+                    title: "Datos cargados",
+                    message: "Nombre y apellidos cargados automáticamente desde la cédula.",
+                  });
+                }
+              } catch (extErr) {
+                console.warn("[StudentModal] Error en lookup externo:", extErr);
+              } finally {
+                setIsLookingUpCi(false);
+              }
+            }
+          } catch (err) {
+            console.error("Error checking CI availability:", err);
+          } finally {
+            setIsCheckingCi(false);
+          }
+        }
+      }
+    },
+    [existingStudent, editingStudent, watch, setValue, setError, clearErrors, addToast],
+  );
+
+  // Email blur handler: check email availability
+  const handleEmailBlur = useCallback(
+    async (e: React.FocusEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (value && emailRegex.test(value)) {
+        setIsCheckingEmail(true);
+        try {
+          const res = await checkAvailability(
+            "email",
+            value,
+            editingStudent?.studentId,
+          );
+          if (!res.available) {
+            setError("email", {
+              type: "manual",
+              message:
+                res.status === 0
+                  ? "Email registrado (INACTIVO). Contacte a administración para reactivar."
+                  : "Este correo electrónico ya está registrado.",
+            });
+          } else {
+            clearErrors("email");
+          }
+        } catch (err) {
+          console.error("Error checking email availability:", err);
+        } finally {
+          setIsCheckingEmail(false);
+        }
+      }
+    },
+    [editingStudent, setError, clearErrors],
+  );
 
   useEffect(() => {
     const loadOptions = async () => {
@@ -243,25 +495,6 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
     }
   }, [isOpen, fetchMultipleLists, dynamicLists]);
 
-  const NATIONALITY_OPTIONS = options["Nacionalidad"] || [
-    { value: "V", label: "V" },
-    { value: "E", label: "E" },
-  ];
-
-  const SEX_OPTIONS = options["Sexo"] || [
-    { value: "FEMENINO", label: "FEMENINO" },
-    { value: "MASCULINO", label: "MASCULINO" },
-  ];
-
-  const CIVIL_STATUS_OPTIONS = options["Registro Civil"] || [
-    { value: "SOLTERO/A", label: "SOLTERO/A" },
-    { value: "CASADO/A", label: "CASADO/A" },
-    { value: "DIVORCIADO/A", label: "DIVORCIADO/A" },
-    { value: "VIUDO/A", label: "VIUDO/A" },
-  ];
-
-  const VENEZUELA_PHONE_PREFIXES = options.PREFIJO || [];
-
   const STUDENT_TYPE_OPTIONS = options["Tipo de estudiante"] || [
     { value: "CIVIL", label: "CIVIL" },
     { value: "MILITAR", label: "MILITAR" },
@@ -273,39 +506,6 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
     { value: "SI", label: "SI" },
     { value: "NO", label: "NO" },
   ];
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    watch,
-    setValue,
-    setError,
-    clearErrors,
-    formState: { errors, isDirty, isValid },
-  } = useForm<StudentFormInput>({
-    resolver: zodResolver(studentSchema),
-    mode: "all",
-    defaultValues: editingStudent ? { ...editingStudent } : {
-      identificationPrefix: "V",
-      identificationNumber: "",
-      firstName: "",
-      middleName: "",
-      lastName: "",
-      secondLastName: "",
-      sex: "",
-      birthDate: "",
-      civilStatus: "",
-      phonePrefix: "",
-      phoneNumber: "",
-      email: "",
-      address: "",
-      studentType: "",
-      militaryRank: "",
-      works: "",
-    },
-  });
 
   const {
     showConfirmation,
@@ -509,6 +709,15 @@ useEffect(() => {
   }, [isOpen]);
 
   const onSubmit = async (data: StudentFormInput) => {
+    // Prevenir envío si hay conflicto de CI detectado
+    if (errors.identificationNumber?.type === "manual") {
+      addToast({
+        variant: "error",
+        title: "Cédula no disponible",
+        message: errors.identificationNumber.message as string,
+      });
+      return;
+    }
     try {
       const validatedData = data as StudentFormOutput;
       const studentData: CreateStudentPayload = {
@@ -576,331 +785,42 @@ useEffect(() => {
               </span>
             </div>
           )}
+          {/* ============================================================ */}
+          {/* Campos compartidos de Persona (usando PersonFormFields) */}
+          {/* ============================================================ */}
+          <PersonFormFields
+            control={control}
+            register={register}
+            errors={errors}
+            setValue={setValue}
+            watch={watch}
+            options={options}
+            displayIdentificationNumber={displayIdentificationNumber}
+            onIdentificationNumberChange={handleIdentificationNumberChange}
+            onBlurCi={handleCiBlur}
+            isCheckingCi={isCheckingCi}
+            isLookingUpCi={isLookingUpCi}
+            displayPhoneNumber={displayPhoneNumber}
+            onPhoneNumberChange={handlePhoneNumberChange}
+            createNameHandler={createNameHandler}
+            onAddValue={openAddValueModal}
+            age={age}
+            maxDate={maxDate ? maxDate.toISOString().split("T")[0] : undefined}
+            onBlurEmail={handleEmailBlur}
+            isCheckingEmail={isCheckingEmail}
+            viewOnlyMode={viewOnlyMode}
+            editingId={editingStudent?.studentId ?? null}
+          />
+
+          {/* ============================================================ */}
+          {/* Campos específicos de Estudiante */}
+          {/* ============================================================ */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
-            {/* Fila 1 */}
+            {/* Tipo Estudiante */}
             <div>
-              <label htmlFor="identificationPrefix" className="text-sm font-medium text-text-primary dark:text-white/90">Cédula *</label>
-              <div className="flex gap-2">
-                <div className="w-24">
-                  <Controller
-                    name="identificationPrefix"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomSelect
-                        id="identificationPrefix"
-                        options={NATIONALITY_OPTIONS}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        value={field.value}
-                        placeholder="Tipo"
-                        disabled={!!editingStudent}
-                        error={!!errors.identificationPrefix}
-                      />
-                    )}
-                  />
-                </div>
-                <div className="flex-1">
-                  <Input
-                    value={displayIdentificationNumber}
-                    onChange={handleIdentificationNumberChange}
-                    placeholder="V00.000.000"
-                    error={!!errors.identificationNumber}
-                    hint={errors.identificationNumber?.message || (isCheckingCi ? <span className="text-blue-600 animate-pulse">Verificando...</span> : undefined)}
-                    disabled={!!editingStudent}
-                    maxLength={CEDULA_MAX_LENGTH}
-                    autoComplete="off"
-                    className="tracking-widest"
-                    onBlur={async (e) => {
-                      // Only check if not in existing student mode and not already checking
-                      if (!existingStudent && !editingStudent) {
-                        const val = e.target.value;
-                        const digitsOnly = val.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
-                        if (digitsOnly.length >= 6) {
-                          setIsCheckingCi(true);
-                          const prefix = watch("identificationPrefix") || 'V';
-                          const fullCi = `${prefix}-${digitsOnly}`;
-                          try {
-                            const res = await checkAvailability('ci', fullCi, undefined);
-                            if (!res.available) {
-                              // Fetch existing student data and populate form
-                              const existingStudentData = await getStudentByCi(fullCi);
-                              if (existingStudentData) {
-                                setExistingStudent(existingStudentData);
-                                setViewOnlyMode(true);
-                                
-                                // Parse phone number into prefix and local
-                                let phonePrefix = "";
-                                let phoneNumber = "";
-                                if (existingStudentData.phone) {
-                                  const cleanPhone = existingStudentData.phone.replace(/[-\s]/g, '');
-                                  if (cleanPhone.length >= 4) {
-                                    phonePrefix = cleanPhone.substring(0, 4);
-                                    phoneNumber = cleanPhone.substring(4);
-                                  }
-                                }
-
-                                setValue("identificationPrefix", existingStudentData.identificationPrefix || 'V');
-                                setDisplayIdentificationNumber(formatCedulaDisplay(existingStudentData.identificationNumber || ''));
-                                setValue("identificationNumber", existingStudentData.identificationNumber || '');
-                                setValue("firstName", existingStudentData.firstName || "");
-                                setValue("middleName", existingStudentData.middleName || "");
-                                setValue("lastName", existingStudentData.lastName || "");
-                                setValue("secondLastName", existingStudentData.secondLastName || "");
-                                setValue("sex", existingStudentData.sex || "");
-                                setValue("birthDate", existingStudentData.birthDate || "");
-                                setValue("civilStatus", existingStudentData.civilStatus || "");
-                                setValue("phonePrefix", phonePrefix);
-            setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
-                                setValue("phoneNumber", phoneNumber);
-                                setValue("email", existingStudentData.email || "");
-                                setValue("address", existingStudentData.address || "");
-                                setValue("studentType", existingStudentData.studentType || "");
-                                setValue("militaryRank", existingStudentData.militaryRank || "");
-                                setValue("works", existingStudentData.works || "");
-                              }
-                            }
-                          } catch (err) {
-                            console.error("Error checking CI availability:", err);
-                          } finally {
-                            setIsCheckingCi(false);
-                          }
-                        }
-                      }
-                      register("identificationNumber").onBlur(e);
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Primer Nombre *</label>
-              <Input
-                {...register("firstName")}
-                placeholder="Primer nombre"
-                error={!!errors.firstName}
-                hint={errors.firstName?.message}
-                disabled={viewOnlyMode}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, '').toUpperCase();
-                  setValue("firstName", val, { shouldValidate: true, shouldDirty: true });
-                }}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Segundo Nombre</label>
-              <Input
-                {...register("middleName")}
-                placeholder="Segundo nombre"
-                error={!!errors.middleName}
-                hint={errors.middleName?.message}
-                disabled={viewOnlyMode}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, '').toUpperCase();
-                  setValue("middleName", val, { shouldValidate: true, shouldDirty: true });
-                }}
-              />
-            </div>
-
-            {/* Fila 2 */}
-            <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Primer Apellido *</label>
-              <Input
-                {...register("lastName")}
-                placeholder="Primer apellido"
-                error={!!errors.lastName}
-                hint={errors.lastName?.message}
-                disabled={viewOnlyMode}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, '').toUpperCase();
-                  setValue("lastName", val, { shouldValidate: true, shouldDirty: true });
-                }}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Segundo Apellido</label>
-              <Input
-                {...register("secondLastName")}
-                placeholder="Segundo apellido"
-                error={!!errors.secondLastName}
-                hint={errors.secondLastName?.message}
-                disabled={viewOnlyMode}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s']/g, '').toUpperCase();
-                  setValue("secondLastName", val, { shouldValidate: true, shouldDirty: true });
-                }}
-              />
-            </div>
-            <div>
-              <label htmlFor="sex" className="text-sm font-medium text-text-primary dark:text-white/90">Sexo *</label>
-              <Controller
-                name="sex"
-                control={control}
-                render={({ field }) => (
-                  <CustomSelect
-                    id="sex"
-                    options={SEX_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                    placeholder="Seleccione Sexo"
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={String(field.value)}
-                    disabled={viewOnlyMode}
-                    error={!!errors.sex}
-                  />
-                )}
-              />
-              {errors.sex && (
-                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
-                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
-                  {errors.sex.message}
-                </p>
-              )}
-            </div>
-
-            {/* Fila 3 */}
-            <div>
-<label className="text-sm font-medium text-text-primary dark:text-white/90">
-                Fecha de Nacimiento * {age !== null && <span className="text-brand-500 ml-1">({age} años)</span>}
+              <label htmlFor="studentType" className="text-sm font-medium text-text-primary dark:text-white/90">
+                Tipo Estudiante <span className="text-red-500">*</span>
               </label>
-                <Controller
-                control={control}
-                name="birthDate"
-                render={({ field }) => (
-                  <input
-                    type="date"
-                    id="birthDate"
-                    value={field.value}
-                    onChange={(e) => field.onChange(e.target.value)}
-                    onBlur={field.onBlur}
-                    className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm transition-all ${
-                      errors.birthDate 
-                        ? 'border-error-500 focus:border-error-500 text-error-500' 
-                        : 'border-border-medium focus:border-brand-300 focus:ring-brand-500/10 text-text-primary'
-                    } dark:bg-bg-dark dark:text-text-emphasis dark:border-border-dark dark:focus:border-brand-800 ${viewOnlyMode ? 'opacity-50 cursor-not-allowed bg-bg-secondary' : ''}`}
-                    max={maxDate ? maxDate.toISOString().split('T')[0] : undefined}
-                    disabled={viewOnlyMode}
-                  />
-                )}
-              />
-              {errors.birthDate && (
-                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
-                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
-                  {errors.birthDate.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <label htmlFor="civilStatus" className="text-sm font-medium text-text-primary dark:text-white/90">Estado Civil *</label>
-              <Controller
-                name="civilStatus"
-                control={control}
-                render={({ field }) => (
-                  <CustomSelect
-                    id="civilStatus"
-                    options={CIVIL_STATUS_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                    placeholder="Seleccione Estado Civil"
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    value={String(field.value)}
-                    onAddNew={() => openAddValueModal("Registro Civil", "civilStatus", "Agregar Estado Civil")}
-                    addNewLabel="Agregar Estado Civil"
-                    disabled={viewOnlyMode}
-                    error={!!errors.civilStatus}
-                  />
-                )}
-              />
-              {errors.civilStatus && (
-                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
-                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
-                  {errors.civilStatus.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Teléfono *</label>
-              <div className="flex gap-2">
-                <div className="w-32">
-                  <Controller
-                    name="phonePrefix"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomSelect
-                        id="phonePrefix"
-                        options={VENEZUELA_PHONE_PREFIXES}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        value={field.value}
-                        placeholder="Prefijo"
-                    onAddNew={() => openAddValueModal("PREFIJO", "phonePrefix", "Agregar Prefijo Telefónico")}
-                    addNewLabel="Agregar Prefijo"
-                        error={!!errors.phonePrefix}
-                        disabled={viewOnlyMode}
-                      />
-                    )}
-                  />
-                </div>
-<div className="flex-1">
-                  <Input
-                    value={displayPhoneNumber}
-                    onChange={handlePhoneNumberChange}
-                    placeholder="123-4567"
-                    error={!!errors.phoneNumber}
-                    disabled={viewOnlyMode}
-                    maxLength={8}
-                  />
-                </div>
-              </div>
-              {errors.phoneNumber && (
-                <p className="mt-1 text-xs text-error-500 flex items-center gap-1">
-                  <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
-                  {errors.phoneNumber.message}
-                </p>
-              )}
-            </div>
-
-            {/* Fila 4 */}
-            <div className="md:col-span-2">
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Correo Electrónico *</label>
-              <Input
-                {...register("email")}
-                type="email"
-                placeholder="Ingresa correo electrónico"
-                error={!!errors.email}
-                hint={isCheckingEmail ? "Verificando disponibilidad..." : (errors.email?.message || " ")}
-                disabled={viewOnlyMode}
-                autoComplete="off"
-                onChange={(e) => {
-                  setValue("email", e.target.value.toUpperCase(), { shouldValidate: true, shouldDirty: true });
-                }}
-                onBlur={async (e) => {
-                  const value = e.target.value;
-                  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                  if (value && emailRegex.test(value)) {
-                    setIsCheckingEmail(true);
-                    try {
-                      const res = await checkAvailability('email', value, editingStudent?.studentId);
-                      if (!res.available) {
-                        setError("email", { 
-                          type: "manual", 
-                          message: res.status === 0 
-                            ? "Email registrado (INACTIVO). Contacte a administración para reactivar." 
-                            : "Este correo electrónico ya está registrado." 
-                        });
-                      } else {
-                        clearErrors("email");
-                      }
-                    } catch (err) {
-                      console.error("Error checking email availability:", err);
-                    } finally {
-                      setIsCheckingEmail(false);
-                    }
-                  }
-                  register("email").onBlur(e);
-                }}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="studentType" className="text-sm font-medium text-text-primary dark:text-white/90">Tipo Estudiante *</label>
               <Controller
                 name="studentType"
                 control={control}
@@ -924,9 +844,13 @@ useEffect(() => {
                 </p>
               )}
             </div>
+
+            {/* Rango Militar (solo si es MILITAR) */}
             {studentType === "MILITAR" && (
               <div>
-                <label htmlFor="militaryRank" className="text-sm font-medium text-text-primary dark:text-white/90">Rango Militar *</label>
+                <label htmlFor="militaryRank" className="text-sm font-medium text-text-primary dark:text-white/90">
+                  Rango Militar <span className="text-red-500">*</span>
+                </label>
                 <Controller
                   name="militaryRank"
                   control={control}
@@ -956,9 +880,12 @@ useEffect(() => {
                 )}
               </div>
             )}
-            
-            <div className="md:col-span-2 lg:col-span-1">
-              <label htmlFor="works" className="text-sm font-medium text-text-primary dark:text-white/90">¿Trabaja? *</label>
+
+            {/* ¿Trabaja? */}
+            <div>
+              <label htmlFor="works" className="text-sm font-medium text-text-primary dark:text-white/90">
+                ¿Trabaja? <span className="text-red-500">*</span>
+              </label>
               <Controller
                 name="works"
                 control={control}
@@ -981,23 +908,6 @@ useEffect(() => {
                   {errors.works.message}
                 </p>
               )}
-            </div>
-
-            <div className="md:col-span-2 lg:col-span-3">
-              <label className="text-sm font-medium text-text-primary dark:text-white/90">Dirección de Residencia *</label>
-              <TextArea
-                {...register("address")}
-                placeholder="Ingrese dirección de residencia completa"
-                error={!!errors.address}
-                hint={errors.address?.message}
-                autoComplete="off"
-                disabled={viewOnlyMode}
-                rows={2}
-                className="w-full"
-                onChange={(e) => {
-                  setValue("address", e.target.value.toUpperCase(), { shouldValidate: true, shouldDirty: true });
-                }}
-              />
             </div>
           </div>
         </form>

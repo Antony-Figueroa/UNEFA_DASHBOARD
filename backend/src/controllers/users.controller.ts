@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as usersService from '../services/users.service.js';
+import * as personService from '../services/person.service.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
 
@@ -22,6 +23,57 @@ export const getUsers = async (req: Request, res: Response) => {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
     res.status(500).json({ message: 'Error obteniendo usuarios', error: errorMessage });
+  }
+};
+
+export const checkUserCi = async (req: Request, res: Response) => {
+  try {
+    const { ci } = req.params;
+    if (!ci || ci.length < 6) {
+      return res.status(400).json({ message: 'Cédula inválida' });
+    }
+
+    // Construir CI completo (V/E + guión + número)
+    const ciClean = ci.replace(/^[VE]/i, '').replace(/\D/g, '');
+    const ciMatch = ci.match(/^([VE])?/i);
+    const ciPrefix = ciMatch?.[1]?.toUpperCase() || 'V';
+    const fullCi = `${ciPrefix}-${ciClean}`;
+
+    // 1. Verificar si la CI ya está registrada como usuario en t_user
+    const { data: existingUser } = await (dbManager.withRetry(
+      async (supabase) => await supabase
+        .from('t_user')
+        .select('USER_ID')
+        .eq('USER_CI', ciClean)
+        .maybeSingle(),
+      'checkUserCi_t_user'
+    ) as any);
+
+    if (existingUser) {
+      return res.json({ exists: true, asUser: true });
+    }
+
+    // 2. Verificar si la CI ya existe como persona en t_persons
+    const existingPerson = await personService.getPersonByCi(fullCi);
+    if (existingPerson) {
+      return res.json({
+        exists: true,
+        asUser: false,
+        person: {
+          firstName: existingPerson.firstName,
+          middleName: existingPerson.middleName,
+          lastName: existingPerson.lastName,
+          secondLastName: existingPerson.secondLastName,
+          email: existingPerson.email,
+        },
+      });
+    }
+
+    // 3. No existe en ninguna tabla
+    return res.json({ exists: false });
+  } catch (error) {
+    console.error('[UserController] Error in checkCi:', error);
+    res.status(500).json({ message: 'Error verificando cédula' });
   }
 };
 
@@ -49,11 +101,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
     // TODO: Enviar email con la clave temporal cuando se implemente el sistema de emails
     // await sendUserCreationEmail(userData.email, userData.name, userData.userCi, tempPass);
 
-    res.status(201).json({ 
-      message: 'Usuario creado exitosamente', 
-      user: newUser,
-      temporaryPassword: tempPass // temporal, para mostrar en UI si se desea
-    });
+    res.status(201).json(newUser);
   } catch (error: unknown) {
     console.error('[UserController] Error in createUser:', error);
     
@@ -110,7 +158,7 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
       });
     });
 
-    res.json({ message: 'Usuario actualizado exitosamente', user: updatedUser });
+    res.json(updatedUser);
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
     res.status(500).json({ message: 'Error actualizando usuario', error: errorMessage });

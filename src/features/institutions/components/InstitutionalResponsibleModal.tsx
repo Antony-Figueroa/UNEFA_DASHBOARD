@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "../../../components/ui/modal";
 import { useInstitutions } from "../hooks/useInstitutions";
-import { checkAvailability, getResponsibleByCi } from "../services/institutionalResponsiblesService";
+import { getResponsibleByCi } from "../services/institutionalResponsiblesService";
 import { CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload, InstitutionalResponsible, CreateInstitutionPayload } from "../types";
 import { useLists } from "../../lists/hooks/useLists";
 import { useToast } from "../../../context/toast";
@@ -178,24 +178,17 @@ export default function InstitutionalResponsibleModal({
       const prefix = watch("identificationPrefix") || 'V';
       const fullCi = `${prefix}-${cleanCi}`;
       try {
-        // First check if CI is available (not in use)
-        const editingId = editingResp ? (editingResp as any).responsibleId : undefined;
-        const res = await checkAvailability(fullCi, editingId);
-        if (!res.available) {
-          // CI is already registered, get the existing data
-          const existingData = await getResponsibleByCi(fullCi);
-          if (existingData) {
-            setExistingResponsible(existingData);
-            setViewOnlyMode(true);
-            // Fill form with existing data
-            fillFormWithExistingData(existingData);
-          } else {
-            // CI existe en t_persons pero no tiene registro de responsable
-            setError("identificationNumber", {
-              type: "manual",
-              message: "Esta cédula ya está registrada en el sistema",
-            });
-          }
+        const result = await getResponsibleByCi(fullCi);
+        if (result?.responsible) {
+          // Responsable ya existe → modo solo lectura
+          setExistingResponsible(result.responsible);
+          setViewOnlyMode(true);
+          fillFormWithExistingData(result.responsible);
+        } else if (result?.person) {
+          // Persona existe (estudiante, tutor, etc.) pero no como responsable → pre-cargar datos
+          setExistingResponsible(null);
+          setViewOnlyMode(false);
+          preFillFromPersonData(result.person);
         } else {
           // CI is available, clear any existing data
           setExistingResponsible(null);
@@ -255,6 +248,45 @@ export default function InstitutionalResponsibleModal({
       }
     };
 
+   // Pre-fill form fields from existing person data (not yet a responsible)
+   const preFillFromPersonData = (person: any) => {
+     const { identificationPrefix, identificationNumber } = person;
+     const fullCi = `${identificationPrefix}-${identificationNumber}`;
+     setDisplayIdentificationNumber(formatCedulaDisplay(fullCi.replace('-', ''), false));
+
+     // Extract phone prefix and number
+     let phonePrefix = '0412';
+     let phoneNumber = '';
+     if (person.phone) {
+       const cleanPhone = person.phone.replace(/\D/g, '');
+       if (cleanPhone.length >= 4) {
+         phonePrefix = cleanPhone.substring(0, 4);
+         phoneNumber = cleanPhone.substring(4);
+       } else {
+         phoneNumber = cleanPhone;
+       }
+     }
+     setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+
+     // Set form values (person-level only, no institutions)
+     setValue("identificationPrefix", identificationPrefix, { shouldValidate: true, shouldDirty: true });
+     setValue("identificationNumber", identificationNumber, { shouldValidate: true, shouldDirty: true });
+     setValue("firstName", person.firstName || '', { shouldValidate: true, shouldDirty: true });
+     setValue("middleName", person.middleName || '', { shouldValidate: true, shouldDirty: true });
+     setValue("lastName", person.lastName || '', { shouldValidate: true, shouldDirty: true });
+     setValue("secondLastName", person.secondLastName || '', { shouldValidate: true, shouldDirty: true });
+     setValue("phonePrefix", phonePrefix, { shouldValidate: true, shouldDirty: true });
+     setValue("phoneNumber", phoneNumber, { shouldValidate: true, shouldDirty: true });
+     setValue("email", person.email || '', { shouldValidate: true, shouldDirty: true });
+     setValue("institutions", [], { shouldValidate: true, shouldDirty: true });
+
+     addToast({
+       variant: "info",
+       title: "Persona existente",
+       message: "Esta persona ya está registrada en el sistema. Se han precargado sus datos.",
+     });
+   };
+
   // State for new institution modal
   const [isNewInstitutionModalOpen, setIsNewInstitutionModalOpen] = useState(false);
   const { addInstitution } = useInstitutions();
@@ -311,20 +343,15 @@ export default function InstitutionalResponsibleModal({
           const prefix = watch("identificationPrefix") || 'V';
           const fullCi = `${prefix}-${digitsOnly}`;
           try {
-            const editingId = editingResp ? (editingResp as any).responsibleId : undefined;
-            const res = await checkAvailability(fullCi, editingId);
-            if (!res.available) {
-              const existingData = await getResponsibleByCi(fullCi);
-              if (existingData) {
-                setExistingResponsible(existingData);
-                setViewOnlyMode(true);
-                fillFormWithExistingData(existingData);
-              } else {
-                setError("identificationNumber", {
-                  type: "manual",
-                  message: "Esta cédula ya está registrada en el sistema",
-                });
-              }
+            const result = await getResponsibleByCi(fullCi);
+            if (result?.responsible) {
+              setExistingResponsible(result.responsible);
+              setViewOnlyMode(true);
+              fillFormWithExistingData(result.responsible);
+            } else if (result?.person) {
+              setExistingResponsible(null);
+              setViewOnlyMode(false);
+              preFillFromPersonData(result.person);
             } else {
               setExistingResponsible(null);
               setViewOnlyMode(false);

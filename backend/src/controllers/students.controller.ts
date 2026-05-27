@@ -342,17 +342,14 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Validar duplicados (CI y Email) — usar t_persons
-    const ciCheck = await personService.validateUniqueCi(studentsCi);
-    if (!ciCheck.available) {
-      const msg = `La cédula ${studentsCi} ya está registrada`;
-      return res.status(409).json({ message: msg });
-    }
-
+    // Validar duplicado de email (entre distintas personas)
     if (s.email) {
-      const emailCheck = await personService.validateUniqueEmail(s.email);
+      // Si la CI ya existe, obtener su personId para excluirla de la verificación de email
+      const existingPerson = await personService.getPersonByCi(studentsCi);
+      const excludePersonId = existingPerson?.personId;
+      const emailCheck = await personService.validateUniqueEmail(s.email, excludePersonId);
       if (!emailCheck.available) {
-        const msg = `El correo ${s.email} ya está registrado`;
+        const msg = `El correo ${s.email} ya está registrado por otra persona`;
         return res.status(409).json({ message: msg });
       }
     }
@@ -361,8 +358,8 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
     const studentData = extractStudentData(s);
 
     const data = await dbManager.withRetry(async (supabase) => {
-      // 1. Crear/obtener persona en t_persons
-      const newPerson = await personService.createPerson(personData, supabase);
+      // 1. Buscar persona existente por CI o crear nueva
+      const newPerson = await personService.findOrCreatePerson(personData, supabase);
       const personId = newPerson.personId;
 
       // 2. Insertar registro en t_students con person_id
@@ -688,7 +685,21 @@ export const getStudentByCi = async (req: Request, res: Response) => {
     }, 'getStudentByCi');
 
     if (!student) {
-      return res.status(404).json({ message: 'Estudiante no encontrado', data: null });
+      // Persona existe pero no como estudiante → devolver datos de persona
+      // para que el frontend pueda pre-llenar el formulario
+      return res.json({
+        data: null,
+        person: {
+          identificationPrefix: person.prefixCi,
+          identificationNumber: person.identificationNumber,
+          firstName: person.firstName,
+          middleName: person.middleName || '',
+          lastName: person.lastName,
+          secondLastName: person.secondLastName || '',
+          email: person.email,
+          phone: person.phone || '',
+        }
+      });
     }
 
     res.json({ data: mapDBToFrontend(student) });
@@ -931,9 +942,9 @@ export const importStudents = async (req: Request, res: Response) => {
 
     for (const studentData of students) {
       try {
-        // 1. Crear persona en t_persons
+        // 1. Buscar persona existente o crear nueva en t_persons
         const ci = `${studentData.identificationPrefix || 'V'}-${studentData.identificationNumber}`;
-        const personRecord = await personService.createPerson({
+        const personRecord = await personService.findOrCreatePerson({
           ci,
           firstName: studentData.firstName,
           middleName: studentData.middleName || null,

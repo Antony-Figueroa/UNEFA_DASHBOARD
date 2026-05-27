@@ -168,50 +168,72 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
       const prefix = watch("identificationPrefix") || 'V';
       const fullCi = `${prefix}-${digitsOnly}`;
       try {
-        const editingId = editingStudent ? (editingStudent as any).studentId : undefined;
-        const res = await checkAvailability('ci', fullCi, editingId);
-        if (!res.available) {
-          const existingStudentData = await getStudentByCi(fullCi);
-          if (existingStudentData) {
-            setExistingStudent(existingStudentData);
-            setViewOnlyMode(true);
-            
-            // Parse phone number into prefix and local
-            let phonePrefix = "";
-            let phoneNumber = "";
-            if (existingStudentData.phone) {
-              const cleanPhone = existingStudentData.phone.replace(/[-\s]/g, '');
-              if (cleanPhone.length >= 4) {
-                phonePrefix = cleanPhone.substring(0, 4);
-                phoneNumber = cleanPhone.substring(4);
-              }
+        const result = await getStudentByCi(fullCi);
+        if (result?.student) {
+          // Estudiante ya existe → modo solo lectura con datos pre-cargados
+          const studentData = result.student;
+          setExistingStudent(studentData);
+          setViewOnlyMode(true);
+          
+          // Parse phone number into prefix and local
+          let phonePrefix = "";
+          let phoneNumber = "";
+          if (studentData.phone) {
+            const cleanPhone = studentData.phone.replace(/[-\s]/g, '');
+            if (cleanPhone.length >= 4) {
+              phonePrefix = cleanPhone.substring(0, 4);
+              phoneNumber = cleanPhone.substring(4);
             }
-
-            setValue("identificationPrefix", existingStudentData.identificationPrefix || 'V');
-            setDisplayIdentificationNumber(formatCedulaDisplay(existingStudentData.identificationNumber || ''));
-            setValue("identificationNumber", existingStudentData.identificationNumber || '');
-            setValue("firstName", existingStudentData.firstName || "");
-            setValue("middleName", existingStudentData.middleName || "");
-            setValue("lastName", existingStudentData.lastName || "");
-            setValue("secondLastName", existingStudentData.secondLastName || "");
-            setValue("sex", existingStudentData.sex || "");
-            setValue("birthDate", existingStudentData.birthDate || "");
-            setValue("civilStatus", existingStudentData.civilStatus || "");
-            setValue("phonePrefix", phonePrefix);
-                                setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
-            setValue("phoneNumber", phoneNumber);
-            setValue("email", existingStudentData.email || "");
-            setValue("address", existingStudentData.address || "");
-            setValue("studentType", existingStudentData.studentType || "");
-            setValue("militaryRank", existingStudentData.militaryRank || "");
-            setValue("works", existingStudentData.works || "");
-          } else {
-            // CI existe en t_persons pero no tiene registro de estudiante
-            setError("identificationNumber", {
-              type: "manual",
-              message: "Esta cédula ya está registrada en el sistema",
-            });
           }
+
+          setValue("identificationPrefix", studentData.identificationPrefix || 'V');
+          setDisplayIdentificationNumber(formatCedulaDisplay(studentData.identificationNumber || ''));
+          setValue("identificationNumber", studentData.identificationNumber || '');
+          setValue("firstName", studentData.firstName || "");
+          setValue("middleName", studentData.middleName || "");
+          setValue("lastName", studentData.lastName || "");
+          setValue("secondLastName", studentData.secondLastName || "");
+          setValue("sex", studentData.sex || "");
+          setValue("birthDate", studentData.birthDate || "");
+          setValue("civilStatus", studentData.civilStatus || "");
+          setValue("phonePrefix", phonePrefix);
+          setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+          setValue("phoneNumber", phoneNumber);
+          setValue("email", studentData.email || "");
+          setValue("address", studentData.address || "");
+          setValue("studentType", studentData.studentType || "");
+          setValue("militaryRank", studentData.militaryRank || "");
+          setValue("works", studentData.works || "");
+        } else if (result?.person) {
+          // Persona existe (tutor, usuario, etc.) pero no como estudiante → pre-cargar datos
+          const personData = result.person;
+          setValue("identificationPrefix", personData.identificationPrefix || 'V');
+          setDisplayIdentificationNumber(formatCedulaDisplay(personData.identificationNumber || ''));
+          setValue("identificationNumber", personData.identificationNumber || '');
+          setValue("firstName", personData.firstName || "");
+          setValue("middleName", personData.middleName || "");
+          setValue("lastName", personData.lastName || "");
+          setValue("secondLastName", personData.secondLastName || "");
+          setValue("email", personData.email || "");
+
+          let phonePrefix = "";
+          let phoneNumber = "";
+          if (personData.phone) {
+            const cleanPhone = personData.phone.replace(/[-\s]/g, '');
+            if (cleanPhone.length >= 4) {
+              phonePrefix = cleanPhone.substring(0, 4);
+              phoneNumber = cleanPhone.substring(4);
+            }
+          }
+          setValue("phonePrefix", phonePrefix);
+          setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+          setValue("phoneNumber", phoneNumber);
+
+          addToast({
+            variant: "info",
+            title: "Persona existente",
+            message: "Esta persona ya está registrada en el sistema. Se han precargado sus datos.",
+          });
         } else {
           // CI no existe en BD → intentar autocompletar desde API externa
           setIsLookingUpCi(true);
@@ -278,51 +300,77 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
           const prefix = watch("identificationPrefix") || "V";
           const fullCi = `${prefix}-${digitsOnly}`;
           try {
-            const res = await checkAvailability("ci", fullCi, undefined);
-            if (!res.available) {
-              const existingStudentData = await getStudentByCi(fullCi);
-              if (existingStudentData) {
-                setExistingStudent(existingStudentData);
-                setViewOnlyMode(true);
+            const result = await getStudentByCi(fullCi);
+            if (result?.student) {
+              // Estudiante ya existe → modo solo lectura con datos pre-cargados
+              const studentData = result.student;
+              setExistingStudent(studentData);
+              setViewOnlyMode(true);
 
-                // Parse phone
-                let phonePrefix = "";
-                let phoneNumber = "";
-                if (existingStudentData.phone) {
-                  const cleanPhone = existingStudentData.phone.replace(/[-\s]/g, "");
-                  if (cleanPhone.length >= 4) {
-                    phonePrefix = cleanPhone.substring(0, 4);
-                    phoneNumber = cleanPhone.substring(4);
-                  }
+              // Parse phone
+              let phonePrefix = "";
+              let phoneNumber = "";
+              if (studentData.phone) {
+                const cleanPhone = studentData.phone.replace(/[-\s]/g, "");
+                if (cleanPhone.length >= 4) {
+                  phonePrefix = cleanPhone.substring(0, 4);
+                  phoneNumber = cleanPhone.substring(4);
                 }
-
-                // Pre-fill ALL form fields (person + student-specific)
-                setValue("identificationPrefix", existingStudentData.identificationPrefix || "V");
-                setDisplayIdentificationNumber(
-                  formatCedulaDisplay(existingStudentData.identificationNumber || ""),
-                );
-                setValue("identificationNumber", existingStudentData.identificationNumber || "");
-                setValue("firstName", existingStudentData.firstName || "");
-                setValue("middleName", existingStudentData.middleName || "");
-                setValue("lastName", existingStudentData.lastName || "");
-                setValue("secondLastName", existingStudentData.secondLastName || "");
-                setValue("sex", existingStudentData.sex || "");
-                setValue("birthDate", existingStudentData.birthDate || "");
-                setValue("civilStatus", existingStudentData.civilStatus || "");
-                setValue("phonePrefix", phonePrefix);
-                setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
-                setValue("phoneNumber", phoneNumber);
-                setValue("email", existingStudentData.email || "");
-                setValue("address", existingStudentData.address || "");
-                setValue("studentType", existingStudentData.studentType || "");
-                setValue("militaryRank", existingStudentData.militaryRank || "");
-                setValue("works", existingStudentData.works || "");
-              } else {
-                setError("identificationNumber", {
-                  type: "manual",
-                  message: "Esta cédula ya está registrada en el sistema",
-                });
               }
+
+              // Pre-fill ALL form fields (person + student-specific)
+              setValue("identificationPrefix", studentData.identificationPrefix || "V");
+              setDisplayIdentificationNumber(
+                formatCedulaDisplay(studentData.identificationNumber || ""),
+              );
+              setValue("identificationNumber", studentData.identificationNumber || "");
+              setValue("firstName", studentData.firstName || "");
+              setValue("middleName", studentData.middleName || "");
+              setValue("lastName", studentData.lastName || "");
+              setValue("secondLastName", studentData.secondLastName || "");
+              setValue("sex", studentData.sex || "");
+              setValue("birthDate", studentData.birthDate || "");
+              setValue("civilStatus", studentData.civilStatus || "");
+              setValue("phonePrefix", phonePrefix);
+              setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+              setValue("phoneNumber", phoneNumber);
+              setValue("email", studentData.email || "");
+              setValue("address", studentData.address || "");
+              setValue("studentType", studentData.studentType || "");
+              setValue("militaryRank", studentData.militaryRank || "");
+              setValue("works", studentData.works || "");
+            } else if (result?.person) {
+              // Persona existe (tutor, usuario, etc.) pero no como estudiante → pre-cargar datos
+              const personData = result.person;
+              setValue("identificationPrefix", personData.identificationPrefix || "V");
+              setDisplayIdentificationNumber(
+                formatCedulaDisplay(personData.identificationNumber || ""),
+              );
+              setValue("identificationNumber", personData.identificationNumber || "");
+              setValue("firstName", personData.firstName || "");
+              setValue("middleName", personData.middleName || "");
+              setValue("lastName", personData.lastName || "");
+              setValue("secondLastName", personData.secondLastName || "");
+              setValue("email", personData.email || "");
+
+              let phonePrefix = "";
+              let phoneNumber = "";
+              if (personData.phone) {
+                const cleanPhone = personData.phone.replace(/[-\s]/g, "");
+                if (cleanPhone.length >= 4) {
+                  phonePrefix = cleanPhone.substring(0, 4);
+                  phoneNumber = cleanPhone.substring(4);
+                }
+              }
+              setValue("phonePrefix", phonePrefix);
+              setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+              setValue("phoneNumber", phoneNumber);
+
+              addToast({
+                variant: "info",
+                title: "Persona existente",
+                message: "Esta persona ya está registrada en el sistema. Se han precargado sus datos.",
+              });
             } else {
               // CI no existe en BD → intentar autocompletar desde API externa
               setIsLookingUpCi(true);

@@ -274,10 +274,10 @@ const ListsConfiguration = () => {
                                 {list.name}
                               </span>
                               {isProtectedList(list.name) && (
-                                <ShieldCheckIcon className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" title="Lista protegida por el sistema" />
+                                <ShieldCheckIcon className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" aria-label="Lista protegida por el sistema" />
                               )}
                               {!isProtectedList(list.name) && list.hasInUseValues && (
-                                <ShieldCheckIcon className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" title="Tiene valores en uso" />
+                                <ShieldCheckIcon className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" aria-label="Tiene valores en uso" />
                               )}
                             </div>
                             <div className="flex items-center gap-2 mt-0.5">
@@ -350,7 +350,7 @@ const ListsConfiguration = () => {
                     }
                   </span>
                   {isSelectedListProtected && (
-                    <ShieldCheckIcon className="h-4 w-4 text-amber-500 flex-shrink-0" title="Lista protegida" />
+                    <ShieldCheckIcon className="h-4 w-4 text-amber-500 flex-shrink-0" aria-label="Lista protegida" />
                   )}
                 </span>
               }

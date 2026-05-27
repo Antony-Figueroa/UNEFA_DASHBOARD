@@ -219,7 +219,20 @@ export const getInstitutionalResponsibleByCi = async (req: Request, res: Respons
     }, 'getInstitutionalResponsibleByCi');
 
     if (!data) {
-      return res.status(200).json({ message: 'Responsable no encontrado', data: null });
+      // Persona existe pero no como responsable institucional → devolver datos de persona
+      return res.json({
+        data: null,
+        person: {
+          identificationPrefix: person.prefixCi,
+          identificationNumber: person.identificationNumber,
+          firstName: person.firstName,
+          middleName: person.middleName || '',
+          lastName: person.lastName,
+          secondLastName: person.secondLastName || '',
+          email: person.email,
+          phone: person.phone || '',
+        }
+      });
     }
 
     res.json({ data: mapDBToFrontend(data) });
@@ -266,17 +279,19 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
     const personData = extractPersonData(r);
     const managerCi = personData.ci;
 
-    const data = await dbManager.withRetry(async (supabase) => {
-      // Verificar duplicado en t_persons
-      const ciCheck = await personService.validateUniqueCi(managerCi);
-      if (!ciCheck.available) {
-        const err = new Error('Ya existe un responsable con esa cédula') as AppError;
-        (err as any).status = 400;
-        throw err;
+    // Validar duplicado de email (entre distintas personas)
+    if (r.email) {
+      const existingPerson = await personService.getPersonByCi(managerCi);
+      const excludePersonId = existingPerson?.personId;
+      const emailCheck = await personService.validateUniqueEmail(r.email, excludePersonId);
+      if (!emailCheck.available) {
+        return res.status(400).json({ message: `El correo ${r.email} ya está registrado por otra persona` });
       }
+    }
 
-      // 1. Crear persona en t_persons
-      const newPerson = await personService.createPerson(personData, supabase);
+    const data = await dbManager.withRetry(async (supabase) => {
+      // 1. Buscar persona existente por CI o crear nueva
+      const newPerson = await personService.findOrCreatePerson(personData, supabase);
 
       // 2. Insertar manager
       const dbData = {

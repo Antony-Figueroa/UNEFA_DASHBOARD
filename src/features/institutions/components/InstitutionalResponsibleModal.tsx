@@ -3,7 +3,7 @@
  * @description Modal para crear y editar responsables institucionales.
  */
 
-import { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -189,6 +189,12 @@ export default function InstitutionalResponsibleModal({
             setViewOnlyMode(true);
             // Fill form with existing data
             fillFormWithExistingData(existingData);
+          } else {
+            // CI existe en t_persons pero no tiene registro de responsable
+            setError("identificationNumber", {
+              type: "manual",
+              message: "Esta cédula ya está registrada en el sistema",
+            });
           }
         } else {
           // CI is available, clear any existing data
@@ -261,6 +267,7 @@ export default function InstitutionalResponsibleModal({
       const formatted = formatCedulaDisplay(digitsOnly, false);
       setDisplayIdentificationNumber(formatted);
       setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
+      clearErrors("identificationNumber");
       
       // Si se cambia la cédula y hay un existingResponsible, limpiar el formulario
       if (existingResponsible) {
@@ -269,6 +276,7 @@ export default function InstitutionalResponsibleModal({
         if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits) {
           setExistingResponsible(null);
           setViewOnlyMode(false);
+          clearErrors("identificationNumber");
           // Resetear los campos del formulario
           reset({
             identificationPrefix: "",
@@ -292,6 +300,46 @@ export default function InstitutionalResponsibleModal({
       }
     };
 
+  // CI blur handler: check availability when user leaves the CI field
+  const handleCiBlur = useCallback(
+    async (e: React.FocusEvent<HTMLInputElement>) => {
+      if (!existingResponsible && !editingResp) {
+        const val = e.target.value;
+        const digitsOnly = val.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
+        if (digitsOnly.length >= 6) {
+          setIsCheckingCi(true);
+          const prefix = watch("identificationPrefix") || 'V';
+          const fullCi = `${prefix}-${digitsOnly}`;
+          try {
+            const editingId = editingResp ? (editingResp as any).responsibleId : undefined;
+            const res = await checkAvailability(fullCi, editingId);
+            if (!res.available) {
+              const existingData = await getResponsibleByCi(fullCi);
+              if (existingData) {
+                setExistingResponsible(existingData);
+                setViewOnlyMode(true);
+                fillFormWithExistingData(existingData);
+              } else {
+                setError("identificationNumber", {
+                  type: "manual",
+                  message: "Esta cédula ya está registrada en el sistema",
+                });
+              }
+            } else {
+              setExistingResponsible(null);
+              setViewOnlyMode(false);
+            }
+          } catch (err) {
+            console.error("[InstitutionalResponsibleModal] Error checking CI on blur:", err);
+          } finally {
+            setIsCheckingCi(false);
+          }
+        }
+      }
+    },
+    [existingResponsible, editingResp, watch, setValue, setError, clearErrors]
+  );
+
   // Handle phone number input change with formatting
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
@@ -309,6 +357,7 @@ export default function InstitutionalResponsibleModal({
     watch,
     setValue,
     setError,
+    clearErrors,
     formState: { errors, isSubmitted, isDirty, isValid },
    } = useForm<RespFormData>({
     resolver: zodResolver(respSchema),
@@ -601,6 +650,7 @@ export default function InstitutionalResponsibleModal({
                   options={options}
                   displayIdentificationNumber={displayIdentificationNumber}
                   onIdentificationNumberChange={handleIdentificationNumberChange}
+                  onBlurCi={handleCiBlur}
                   isCheckingCi={isCheckingCi}
                   displayPhoneNumber={displayPhoneNumber}
                   onPhoneNumberChange={handlePhoneNumberChange}

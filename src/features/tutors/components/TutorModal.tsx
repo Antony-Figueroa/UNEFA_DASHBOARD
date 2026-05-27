@@ -27,6 +27,7 @@ import { useToast } from "../../../context/toast";
 import { formatCedulaDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS, PHONE_LOCAL_MAX_LENGTH } from "../../../utils/inputFormat";
 import PersonFormFields from "../../persons/components/PersonFormFields";
 import { getTutorByCi } from "../services/tutorsService";
+import { checkAvailability } from "../../students/services/studentsService";
 import { NAME_PATTERN, SAFE_EMAIL_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
 /**
@@ -221,6 +222,7 @@ export default function TutorModal({
     watch,
     setValue,
     setError,
+    clearErrors,
     formState: { errors, isDirty, isValid },
   } = useForm<TutorFormData>({
     resolver: zodResolver(tutorSchema),
@@ -261,6 +263,7 @@ export default function TutorModal({
     const formatted = formatCedulaDisplay(digitsOnly, false);
     setDisplayIdentificationNumber(formatted);
     setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
+    clearErrors("identificationNumber");
     
     // Si se cambia la cédula y hay un existingTutor, limpiar el formulario
     if (existingTutor) {
@@ -269,6 +272,7 @@ export default function TutorModal({
       if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits) {
         setExistingTutor(null);
         setViewOnlyMode(false);
+        clearErrors("identificationNumber");
         // Resetear los campos del formulario
         reset({
           identificationPrefix: "",
@@ -300,34 +304,43 @@ export default function TutorModal({
       const prefix = watch("identificationPrefix") || 'V';
       const fullCi = `${prefix}-${digitsOnly}`;
       try {
-        const existingData = await getTutorByCi(fullCi);
-        if (existingData) {
-          setExistingTutor(existingData);
-          setViewOnlyMode(true);
+        const res = await checkAvailability('ci', fullCi);
+        if (!res.available) {
+          const existingData = await getTutorByCi(fullCi);
+          if (existingData) {
+            setExistingTutor(existingData);
+            setViewOnlyMode(true);
 
-          const areaCode = existingData.phone ? existingData.phone.substring(0, 4) : "";
-          const phoneNumber = existingData.phone ? existingData.phone.substring(4) : "";
+            const areaCode = existingData.phone ? existingData.phone.substring(0, 4) : "";
+            const phoneNumber = existingData.phone ? existingData.phone.substring(4) : "";
 
-          setValue("identificationPrefix", existingData.identificationPrefix || 'V');
-          setDisplayIdentificationNumber(formatCedulaDisplay(existingData.identificationNumber || ''));
-          setValue("identificationNumber", existingData.identificationNumber || '');
-          setValue("firstName", existingData.firstName || "");
-          setValue("middleName", existingData.middleName || "");
-          setValue("lastName", existingData.lastName || "");
-          setValue("secondLastName", existingData.secondLastName || "");
-          setValue("sex", existingData.sex || "");
-          setValue("birthDate", existingData.birthDate || "");
-          setValue("civilStatus", existingData.civilStatus || "");
-          setValue("phoneAreaCode", areaCode);
-          setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
-          setValue("phoneNumber", phoneNumber);
-          setValue("email", existingData.email || "");
-          setValue("condition", existingData.condition || "");
-          setValue("dedication", existingData.dedication || "");
-          setValue("category", existingData.category || "");
-          setValue("profession", existingData.profession || "");
-          setValue("titulo", existingData.titulo || "");
-          setValue("carreras", existingData.carreras || []);
+            setValue("identificationPrefix", existingData.identificationPrefix || 'V');
+            setDisplayIdentificationNumber(formatCedulaDisplay(existingData.identificationNumber || ''));
+            setValue("identificationNumber", existingData.identificationNumber || '');
+            setValue("firstName", existingData.firstName || "");
+            setValue("middleName", existingData.middleName || "");
+            setValue("lastName", existingData.lastName || "");
+            setValue("secondLastName", existingData.secondLastName || "");
+            setValue("sex", existingData.sex || "");
+            setValue("birthDate", existingData.birthDate || "");
+            setValue("civilStatus", existingData.civilStatus || "");
+            setValue("phoneAreaCode", areaCode);
+            setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+            setValue("phoneNumber", phoneNumber);
+            setValue("email", existingData.email || "");
+            setValue("condition", existingData.condition || "");
+            setValue("dedication", existingData.dedication || "");
+            setValue("category", existingData.category || "");
+            setValue("profession", existingData.profession || "");
+            setValue("titulo", existingData.titulo || "");
+            setValue("carreras", existingData.carreras || []);
+          } else {
+            // CI existe en t_persons pero no tiene registro de tutor
+            setError("identificationNumber", {
+              type: "manual",
+              message: "Esta cédula ya está registrada en el sistema",
+            });
+          }
         }
       } catch (err) {
         console.error("Error checking CI:", err);
@@ -357,37 +370,42 @@ export default function TutorModal({
           const prefix = watch("identificationPrefix") || 'V';
           const fullCi = `${prefix}-${digitsOnly}`;
           try {
-            const existingData = await getTutorByCi(fullCi);
-            if (existingData) {
-              setExistingTutor(existingData);
-              setViewOnlyMode(true);
+            const res = await checkAvailability('ci', fullCi);
+            if (!res.available) {
+              const existingData = await getTutorByCi(fullCi);
+              if (existingData) {
+                setExistingTutor(existingData);
+                setViewOnlyMode(true);
 
-              const areaCode = existingData.phone ? existingData.phone.substring(0, 4) : "";
-              const phoneNumber = existingData.phone ? existingData.phone.substring(4) : "";
+                const areaCode = existingData.phone ? existingData.phone.substring(0, 4) : "";
+                const phoneNumber = existingData.phone ? existingData.phone.substring(4) : "";
 
-              setValue("identificationPrefix", existingData.identificationPrefix || 'V');
-              setDisplayIdentificationNumber(formatCedulaDisplay(existingData.identificationNumber || ''));
-              setValue("identificationNumber", existingData.identificationNumber || '');
-              setValue("firstName", existingData.firstName || "");
-              setValue("middleName", existingData.middleName || "");
-              setValue("lastName", existingData.lastName || "");
-              setValue("secondLastName", existingData.secondLastName || "");
-              setValue("sex", existingData.sex || "");
-              setValue("birthDate", existingData.birthDate || "");
-              setValue("civilStatus", existingData.civilStatus || "");
-              setValue("phoneAreaCode", areaCode);
-              setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
-              setValue("phoneNumber", phoneNumber);
-              setValue("email", existingData.email || "");
-              setValue("condition", existingData.condition || "");
-              setValue("dedication", existingData.dedication || "");
-              setValue("category", existingData.category || "");
-              setValue("profession", existingData.profession || "");
-              setValue("titulo", existingData.titulo || "");
-              setValue("carreras", existingData.carreras || []);
-
-              // Toast removido por solicitud del usuario
-              // Las pistas visuales son suficientes
+                setValue("identificationPrefix", existingData.identificationPrefix || 'V');
+                setDisplayIdentificationNumber(formatCedulaDisplay(existingData.identificationNumber || ''));
+                setValue("identificationNumber", existingData.identificationNumber || '');
+                setValue("firstName", existingData.firstName || "");
+                setValue("middleName", existingData.middleName || "");
+                setValue("lastName", existingData.lastName || "");
+                setValue("secondLastName", existingData.secondLastName || "");
+                setValue("sex", existingData.sex || "");
+                setValue("birthDate", existingData.birthDate || "");
+                setValue("civilStatus", existingData.civilStatus || "");
+                setValue("phoneAreaCode", areaCode);
+                setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+                setValue("phoneNumber", phoneNumber);
+                setValue("email", existingData.email || "");
+                setValue("condition", existingData.condition || "");
+                setValue("dedication", existingData.dedication || "");
+                setValue("category", existingData.category || "");
+                setValue("profession", existingData.profession || "");
+                setValue("titulo", existingData.titulo || "");
+                setValue("carreras", existingData.carreras || []);
+              } else {
+                setError("identificationNumber", {
+                  type: "manual",
+                  message: "Esta cédula ya está registrada en el sistema",
+                });
+              }
             }
           } catch (err) {
             console.error("Error checking CI:", err);
@@ -397,7 +415,7 @@ export default function TutorModal({
         }
       }
     },
-    [existingTutor, editingTutor, watch, setValue]
+    [existingTutor, editingTutor, watch, setValue, setError, clearErrors]
   );
 
   // Factory de handler para campos de nombre (uppercase)

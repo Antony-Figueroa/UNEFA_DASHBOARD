@@ -114,6 +114,7 @@ const mapDBToFrontend = (r: DBInstitutionalResponsible) => {
   const p = r.t_persons;
   return {
     responsibleId: String(r.MANAGER_ID),
+    personId: String(r.person_id),
     identificationPrefix: p.ci.includes('-') ? p.ci.split('-')[0] : 'V',
     identificationNumber: p.ci.includes('-') ? p.ci.split('-')[1] : p.ci,
     firstName: p.first_name,

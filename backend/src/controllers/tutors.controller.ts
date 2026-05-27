@@ -189,6 +189,7 @@ const mapDBToFrontend = (t: DBTutor) => {
 
   return {
     tutorId: String(t.TUTOR_ID),
+    personId: String(t.person_id),
     identificationPrefix: prefix,
     identificationNumber: number,
     firstName: p.first_name,

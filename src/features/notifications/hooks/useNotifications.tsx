@@ -49,8 +49,9 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
       setHasMore(response.data.length === limit);
     } catch (error: unknown) {
       const axiosError = error as { response?: { status?: number } };
-      // Silenciar errores 401 ya que puede haber un race condition con el login
-      if (axiosError.response?.status === 401) {
+      // Silenciar errores 401 y 403 — el backend puede rechazar por permisos
+      // sin que esto deba ser un error visible para el usuario
+      if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
         return;
       }
     } finally {

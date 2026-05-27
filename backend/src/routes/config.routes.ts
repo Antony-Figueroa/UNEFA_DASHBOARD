@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateToken } from '../middlewares/auth.middleware.js';
+import { authenticateToken, requirePermission } from '../middlewares/auth.middleware.js';
 import {
   getConfig,
   updateConfig,
@@ -12,10 +12,10 @@ const router = Router();
 
 router.use(authenticateToken);
 
-router.get('/', getConfig);
-router.put('/', updateConfig);
-router.post('/clear-logs', clearOldLogs);
-router.get('/health', getSystemHealth);
-router.post('/sync', syncData);
+router.get('/', requirePermission('config:view'), getConfig);
+router.put('/', requirePermission('config:edit'), updateConfig);
+router.post('/clear-logs', requirePermission('config:edit'), clearOldLogs);
+router.get('/health', requirePermission('config:view'), getSystemHealth);
+router.post('/sync', requirePermission('config:edit'), syncData);
 
 export default router;

@@ -79,7 +79,7 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
 
     const { data: studentData, error: studentError } = await supabase
       .from('t_students')
-      .select('STUDENTS_ID, STUDENTS_CI, NAME, SURNAME, EMAIL, CONTACT_PHONE, CAREER_ID')
+      .select('STUDENTS_ID, CAREER_ID, t_persons!inner(ci, first_name, last_name, email, phone)')
       .eq('USER_ID', userId)
       .single();
 
@@ -115,11 +115,11 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
         ),
         t_professional_practices_tutor (
           TUTOR_TYPE,
-          t_tutors (
-            NAME,
-            SURNAME,
-            CONTACT_PHONE,
-            EMAIL
+          t_persons!inner (
+            first_name,
+            last_name,
+            phone,
+            email
           )
         )
       `)
@@ -155,10 +155,10 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
 
       internship = {
         enrollmentId: String(practiceId),
-        studentCi: studentData.STUDENTS_CI,
-        studentName: `${studentData.NAME} ${studentData.SURNAME}`,
-        studentEmail: studentData.EMAIL,
-        studentPhone: studentData.CONTACT_PHONE,
+        studentCi: (studentData as any).t_persons?.ci || '',
+        studentName: `${(studentData as any).t_persons?.first_name || ''} ${(studentData as any).t_persons?.last_name || ''}`.trim(),
+        studentEmail: (studentData as any).t_persons?.email,
+        studentPhone: (studentData as any).t_persons?.phone,
         careerName: '',
         institutionName: (enrollment as any).t_institution?.INSTITUTION_NAME || '',
         institutionAddress: (enrollment as any).t_institution?.INSTITUTION_ADDRESS || '',
@@ -172,9 +172,9 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
         grade: (enrollment as any).GRADE || 0,
         totalHours: 0,
         requiredHours: requiredHours,
-        tutorName: academicTutor ? `${academicTutor.t_tutors?.NAME || ''} ${academicTutor.t_tutors?.SURNAME || ''}`.trim() : '',
-        tutorPhone: academicTutor?.t_tutors?.CONTACT_PHONE || '',
-        tutorEmail: academicTutor?.t_tutors?.EMAIL || '',
+        tutorName: academicTutor ? `${academicTutor.t_persons?.first_name || ''} ${academicTutor.t_persons?.last_name || ''}`.trim() : '',
+        tutorPhone: academicTutor?.t_persons?.phone || '',
+        tutorEmail: academicTutor?.t_persons?.email || '',
         professionalPracticeId: practiceId
       };
 
@@ -237,11 +237,11 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
       data: {
         student: {
           id: studentData.STUDENTS_ID,
-          ci: studentData.STUDENTS_CI,
-          name: studentData.NAME,
-          surname: studentData.SURNAME,
-          email: studentData.EMAIL,
-          phone: studentData.CONTACT_PHONE
+          ci: (studentData as any).t_persons?.ci || '',
+          name: (studentData as any).t_persons?.first_name || '',
+          surname: (studentData as any).t_persons?.last_name || '',
+          email: (studentData as any).t_persons?.email,
+          phone: (studentData as any).t_persons?.phone
         },
         internship,
         activityLogs,
@@ -268,17 +268,6 @@ export const getStudentProfile = async (req: AuthRequest, res: Response) => {
       .from('t_students')
       .select(`
         STUDENTS_ID,
-        STUDENTS_CI,
-        NAME,
-        SECOND_NAME,
-        SURNAME,
-        SECOND_SURNAME,
-        EMAIL,
-        CONTACT_PHONE,
-        GENDER,
-        BIRTHDATE,
-        ADDRESS,
-        MARITAL_STATUS,
         SEMESTER,
         SECTION,
         REGIME,
@@ -288,7 +277,8 @@ export const getStudentProfile = async (req: AuthRequest, res: Response) => {
         STATUS,
         REGISTRATION_DATE,
         CAREER_ID,
-        t_career (CAREER_NAME)
+        t_career (CAREER_NAME),
+        t_persons!inner(ci, first_name, middle_name, last_name, second_last_name, email, phone, gender, birth_date, address, marital_status)
       `)
       .eq('USER_ID', userId)
       .single();
@@ -304,18 +294,18 @@ export const getStudentProfile = async (req: AuthRequest, res: Response) => {
       success: true,
       data: {
         id: student.STUDENTS_ID,
-        ci: student.STUDENTS_CI,
-        name: student.NAME,
-        secondName: student.SECOND_NAME,
-        surname: student.SURNAME,
-        secondSurname: student.SECOND_SURNAME,
-        fullName: `${student.NAME || ''} ${student.SECOND_NAME || ''} ${student.SURNAME || ''} ${student.SECOND_SURNAME || ''}`.replace(/\s+/g, ' ').trim(),
-        email: student.EMAIL,
-        phone: student.CONTACT_PHONE,
-        gender: student.GENDER,
-        birthdate: student.BIRTHDATE,
-        address: student.ADDRESS,
-        maritalStatus: student.MARITAL_STATUS,
+        ci: (student as any).t_persons?.ci || '',
+        name: (student as any).t_persons?.first_name || '',
+        secondName: (student as any).t_persons?.middle_name || '',
+        surname: (student as any).t_persons?.last_name || '',
+        secondSurname: (student as any).t_persons?.second_last_name || '',
+        fullName: `${(student as any).t_persons?.first_name || ''} ${(student as any).t_persons?.middle_name || ''} ${(student as any).t_persons?.last_name || ''} ${(student as any).t_persons?.second_last_name || ''}`.replace(/\s+/g, ' ').trim(),
+        email: (student as any)?.t_persons?.email,
+        phone: (student as any)?.t_persons?.phone,
+        gender: (student as any)?.t_persons?.gender,
+        birthdate: (student as any)?.t_persons?.birth_date,
+        address: (student as any)?.t_persons?.address,
+        maritalStatus: (student as any)?.t_persons?.marital_status,
         semester: student.SEMESTER,
         section: student.SECTION,
         regime: student.REGIME,
@@ -499,11 +489,11 @@ export const createStudentRequest = async (req: AuthRequest, res: Response) => {
       // Obtener nombre del estudiante
       const { data: studentData } = await supabase
         .from('t_students')
-        .select('NAME, SURNAME')
+        .select('t_persons!inner(first_name, last_name)')
         .eq('STUDENTS_ID', student.STUDENTS_ID)
         .single();
 
-      const studentName = studentData ? `${studentData.NAME} ${studentData.SURNAME}` : 'Estudiante';
+      const studentName = studentData ? `${(studentData as any).t_persons?.first_name || ''} ${(studentData as any).t_persons?.last_name || ''}`.trim() : 'Estudiante';
       
       // Obtener nombre del tipo de solicitud
       const { data: typeData } = await supabase

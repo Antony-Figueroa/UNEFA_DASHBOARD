@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/auth";
+import { usePermissions } from "../features/permissions/hooks/usePermissions";
 import {
   BoxCubeIcon,
   ChevronDownIcon,
@@ -18,13 +19,28 @@ import { useSidebar } from "../context/sidebar";
 import PeriodStatusCard from "../components/Sidebar/PeriodStatusCard";
 import PendingTasksCard from "../components/Sidebar/PendingTasksCard";
 
+type SubNavItem = {
+  name: string;
+  path: string;
+  pro?: boolean;
+  new?: boolean;
+  /** Legacy: mostrar solo si el usuario tiene este rol */
+  roles?: number[];
+  /** Mostrar solo si el usuario tiene ALGUNO de estos permisos (reemplaza roles) */
+  permissions?: string[];
+  badge?: string | number;
+};
+
 type NavItem = {
   name: string;
   icon: React.ReactNode;
   path?: string;
+  /** Legacy: mostrar solo si el usuario tiene este rol */
   roles?: number[];
+  /** Mostrar solo si el usuario tiene ALGUNO de estos permisos (reemplaza roles) */
+  permissions?: string[];
   badge?: string | number;
-  subItems?: { name: string; path: string; pro?: boolean; new?: boolean; roles?: number[]; badge?: string | number }[];
+  subItems?: SubNavItem[];
 };
 
 type PopupMenuProps = {
@@ -166,41 +182,42 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    name: "Gestión", icon: <TableIcon />, roles: [0, 1, 2],
+    name: "Gestión", icon: <TableIcon />,
     subItems: [
-      { name: "Período", path: "/period" },
-      { name: "Carreras", path: "/careers" },
+      { name: "Período", path: "/period", permissions: ['periods:view'] },
+      { name: "Carreras", path: "/careers", permissions: ['careers:view'] },
     ],
   },
   {
-    name: "Registros", icon: <UserCircleIcon />, roles: [0, 1, 2],
+    name: "Registros", icon: <UserCircleIcon />,
     subItems: [
-      { name: "Estudiantes", path: "/students" },
-      { name: "Tutores", path: "/tutors" },
-      { name: "Instituciones", path: "/institutions" },
+      { name: "Estudiantes", path: "/students", permissions: ['students:view'] },
+      { name: "Tutores", path: "/tutors", permissions: ['tutors:view'] },
+      { name: "Instituciones", path: "/institutions", permissions: ['institutions:view'] },
     ],
   },
   {
-    name: "Prácticas Profesionales", icon: <BoxCubeIcon />, roles: [0, 1, 2],
+    name: "Prácticas Profesionales", icon: <BoxCubeIcon />,
     subItems: [
-      { name: "Pre-Inscripción", path: "/pre-enrollment" },
-      { name: "Inscripción", path: "/enrollment" },
-      { name: "Seguimiento", path: "/tracking" },
-      { name: "Evaluaciones", path: "/evaluations" },
+      { name: "Pre-Inscripción", path: "/pre-enrollment", permissions: ['enrollments:view'] },
+      { name: "Inscripción", path: "/enrollment", permissions: ['enrollments:view'] },
+      { name: "Seguimiento", path: "/tracking", permissions: ['tracking:view'] },
+      { name: "Evaluaciones", path: "/evaluations", permissions: ['evaluations:view'] },
     ],
   },
-  { name: "Solicitudes", icon: <DocsIcon />, roles: [0, 1, 2], path: "/admin/requests" },
-  { name: "Reportes", icon: <PieChartIcon />, roles: [0, 1, 2], path: "/reports" },
+  { name: "Solicitudes", icon: <DocsIcon />, path: "/admin/requests", permissions: ['requests:view'] },
+  { name: "Reportes", icon: <PieChartIcon />, path: "/reports", permissions: ['reports:view'] },
   {
-    name: "Configuración", icon: <PlugInIcon />, roles: [0, 1],
+    name: "Configuración", icon: <PlugInIcon />,
+    permissions: ['users:view', 'lists:view', 'activity-logs:view', 'roles:manage', 'config:view', 'backups:view'],
     subItems: [
-      { name: "Usuarios", path: "/configure/users" },
-      { name: "Listas", path: "/configure/lists" },
-      { name: "Auditoría", path: "/configure/auditoria" },
-      { name: "Roles y Permisos", path: "/configure/roles" },
-      { name: "Mantenimiento", path: "/configure/maintenance" },
-      { name: "Respaldos", path: "/configure/backups" },
-      { name: "Landing Page", path: "/configure/landing" },
+      { name: "Usuarios", path: "/configure/users", permissions: ['users:view'] },
+      { name: "Listas", path: "/configure/lists", permissions: ['lists:view'] },
+      { name: "Auditoría", path: "/configure/auditoria", permissions: ['activity-logs:view'] },
+      { name: "Roles y Permisos", path: "/configure/roles", permissions: ['roles:manage'] },
+      { name: "Mantenimiento", path: "/configure/maintenance", permissions: ['config:view'] },
+      { name: "Respaldos", path: "/configure/backups", permissions: ['backups:view'] },
+      { name: "Landing Page", path: "/configure/landing", permissions: ['config:view'] },
     ],
   },
   { icon: <DocsIcon />, name: "Manuales", path: "/manuals" },
@@ -212,6 +229,7 @@ const EXPANDED_WIDTH = 280;
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, setIsMobileOpen } = useSidebar();
   const { user } = useAuth();
+  const { hasAnyPermission } = usePermissions();
   const location = useLocation();
 
   const [openSubmenus, setOpenSubmenus] = useState<Set<string>>(new Set());
@@ -222,18 +240,41 @@ const AppSidebar: React.FC = () => {
 
   const userRole = user?.role;
 
+  /**
+   * Verifica si un item debe mostrarse según roles (legacy) o permisos.
+   * - Si tiene `permissions`: visible si el usuario tiene ALGUNO
+   * - Si tiene `roles`: visible si el rol del usuario coincide
+   * - Si no tiene ni permissions ni roles: visible para todos
+   */
+  const isItemVisible = useCallback((item: { roles?: number[]; permissions?: string[] }): boolean => {
+    if (item.permissions && item.permissions.length > 0) {
+      return hasAnyPermission(...item.permissions);
+    }
+    if (item.roles && item.roles.length > 0) {
+      return userRole !== undefined && item.roles.includes(userRole);
+    }
+    return true;
+  }, [hasAnyPermission, userRole]);
+
   const filteredNavItems = useMemo(() => {
     return navItems.filter(item => {
-      if (item.roles && userRole !== undefined && !item.roles.includes(userRole)) return false;
-      return true;
+      const parentVisible = isItemVisible(item);
+      
+      // Grupo con subItems: primero ver si el padre es visible (roles/permissions propios)
+      // luego ver si al menos un subItem es visible
+      if (item.subItems && item.subItems.length > 0) {
+        if (!parentVisible) return false;
+        const visibleSubItems = item.subItems.filter(sub => isItemVisible(sub));
+        return visibleSubItems.length > 0;
+      }
+      
+      // Item simple: filtro normal
+      return parentVisible;
     }).map(item => ({
       ...item,
-      subItems: item.subItems?.filter(sub => {
-        if (sub.roles && userRole !== undefined && !sub.roles.includes(userRole)) return false;
-        return true;
-      })
+      subItems: item.subItems?.filter(sub => isItemVisible(sub))
     }));
-  }, [userRole]);
+  }, [isItemVisible]);
 
   const isActive = useCallback((path: string) => location.pathname === path, [location.pathname]);
 

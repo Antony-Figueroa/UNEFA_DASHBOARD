@@ -60,17 +60,80 @@ export const checkAvailability = async (
 };
 
 /**
+ * Interface for person-only data returned when a person exists but not as a student.
+ */
+interface PersonData {
+  identificationPrefix: string;
+  identificationNumber: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  secondLastName?: string;
+  email: string;
+  phone: string;
+}
+
+/**
+ * Resultado de la búsqueda por CI. Puede contener:
+ * - `student`: datos del estudiante si existe como tal
+ * - `person`: datos de la persona si existe en t_persons pero no como estudiante
+ * - Ambos `null`: la persona no existe en el sistema
+ */
+interface StudentByCiResult {
+  student: Student | null;
+  person: PersonData | null;
+}
+
+/**
  * Obtiene un estudiante por su cédula de identidad.
  * 
  * @param ci - Cédula de identidad (formato: V-12345678).
- * @returns Promesa con los datos del estudiante o null si no existe.
+ * @returns Promesa con los datos del estudiante, datos de persona, o null si no existe.
  */
-export const getStudentByCi = async (ci: string): Promise<Student | null> => {
+export const getStudentByCi = async (ci: string): Promise<StudentByCiResult> => {
   try {
     const response = await apiClient.get(`${API_URL}/by-ci/${ci}`, { silent: true } as any);
-    return response.data?.data || null;
+    const body = response.data;
+    if (body?.data) {
+      return { student: mapFromApi(body.data), person: null };
+    }
+    if (body?.person) {
+      return { student: null, person: body.person };
+    }
+    return { student: null, person: null };
   } catch (error) {
     console.error("[studentsService] Error al obtener estudiante por CI:", error);
+    return { student: null, person: null };
+  }
+};
+
+/**
+ * Resultado de la consulta a la API externa de cédula.
+ */
+export interface CedulaLookupResult {
+  nacionalidad: string;
+  cedula: string;
+  rif: string;
+  primerNombre: string;
+  segundoNombre: string;
+  primerApellido: string;
+  segundoApellido: string;
+}
+
+/**
+ * Consulta la API externa de cédula.com.ve para obtener datos personales
+ * a partir del número de cédula. Permite autocompletar nombres y apellidos
+ * durante el registro de estudiantes.
+ *
+ * @param ci - Cédula completa con prefijo (formato: V-12345678)
+ * @returns Datos de la persona o null si no se encuentra
+ */
+export const lookupCi = async (ci: string): Promise<CedulaLookupResult | null> => {
+  try {
+    const response = await apiClient.get(`${API_URL}/lookup-ci/${encodeURIComponent(ci)}`, { silent: true } as any);
+    return response.data?.data || null;
+  } catch (error) {
+    console.error('[studentsService] Error al consultar API de cédula:', error);
     return null;
   }
 };

@@ -44,7 +44,9 @@ import permissionRoutes from './routes/permission.routes.js';
 import securityQuestionsRoutes from './routes/securityQuestions.routes.js';
 import landingConfigRoutes from './routes/landing-config.routes.js';
 import globalSearchRoutes from './routes/global-search.routes.js';
+import dashboardConfigRoutes from './routes/dashboard-config.routes.js';
 import personsRoutes from './routes/persons.routes.js';
+import { getSystemConfig } from './controllers/evaluation.controller.js';
 import { subscribeToNotifications } from './services/sse.service.js';
 import { dbManager } from './lib/db-manager.js';
 import { performanceMiddleware } from './lib/performance-middleware.js';
@@ -207,15 +209,17 @@ app.use('/api/public', publicRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/landing-config', landingConfigRoutes);
 app.use('/api/search', globalSearchRoutes);
+app.use('/api/dashboard-config', dashboardConfigRoutes);
 app.use('/api/institutions', institutionsRoutes);
 app.use('/api/institutional-responsibles', institutionalResponsiblesRoutes);
-app.use('/api/persons', personsRoutes);
+app.get('/api/evaluations/system-config', getSystemConfig);
 
 // Apply protection to all subsequent /api routes
 app.use('/api', authenticateToken, restrictAsistente);
 
 app.use('/api/careers', careersRoutes);
 app.use('/api/internship-types', internshipTypesRoutes);
+app.use('/api/persons', personsRoutes);
 app.use('/api/periodos', periodsRoutes);
 app.use('/api/enrollments', enrollmentsRoutes);
 app.use('/api/practices', practicesRoutes);

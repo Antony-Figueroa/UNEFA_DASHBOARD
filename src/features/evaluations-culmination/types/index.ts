@@ -216,9 +216,9 @@ export const calculateFinalGrade = (evaluations: EvaluationState): number | null
 };
 
 /** Helper para determinar resultado */
-export const getPracticeResult = (finalGrade: number | null): PracticeResult => {
+export const getPracticeResult = (finalGrade: number | null, minimumGrade: number = 10): PracticeResult => {
   if (finalGrade === null) return 'pending';
-  return finalGrade >= 10 ? 'approved' : 'failed';
+  return finalGrade >= minimumGrade ? 'approved' : 'failed';
 };
 
 /** Helper para obtener label de resultado */

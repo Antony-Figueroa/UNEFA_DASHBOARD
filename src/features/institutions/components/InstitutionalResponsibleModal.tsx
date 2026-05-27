@@ -3,28 +3,29 @@
  * @description Modal para crear y editar responsables institucionales.
  */
 
-import { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "../../../components/ui/modal";
 import { useInstitutions } from "../hooks/useInstitutions";
-import { checkAvailability, getResponsibleByCi } from "../services/institutionalResponsiblesService";
+import { getResponsibleByCi } from "../services/institutionalResponsiblesService";
 import { CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload, InstitutionalResponsible, CreateInstitutionPayload } from "../types";
 import { useLists } from "../../lists/hooks/useLists";
 import { useToast } from "../../../context/toast";
-import { formatCedulaDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_DIGITS, CEDULA_MAX_LENGTH, PHONE_LOCAL_MAX_LENGTH, PHONE_INPUT_CLASS } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, formatPhoneLocalDisplay, cleanPhone, CEDULA_MAX_DIGITS } from "../../../utils/inputFormat";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import Input from "../../../components/form/input/InputField";
 import CustomSelect from "../../../components/form/CustomSelect";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
-import Badge from "../../../components/ui/badge/Badge";
+
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
 import { NAME_PATTERN, SAFE_EMAIL_PATTERN, SAFE_TEXT_PATTERN, isSafeInput } from "../../../utils/inputValidation";
+import PersonFormFields from "../../persons/components/PersonFormFields";
 
 // Lazy load para evitar dependencia circular con InstitutionModal
 const InstitutionModal = lazy(() => import("./InstitutionModal"));
@@ -177,18 +178,17 @@ export default function InstitutionalResponsibleModal({
       const prefix = watch("identificationPrefix") || 'V';
       const fullCi = `${prefix}-${cleanCi}`;
       try {
-        // First check if CI is available (not in use)
-        const editingId = editingResp ? (editingResp as any).responsibleId : undefined;
-        const res = await checkAvailability(fullCi, editingId);
-        if (!res.available) {
-          // CI is already registered, get the existing data
-          const existingData = await getResponsibleByCi(fullCi);
-          if (existingData) {
-            setExistingResponsible(existingData);
-            setViewOnlyMode(true);
-            // Fill form with existing data
-            fillFormWithExistingData(existingData);
-          }
+        const result = await getResponsibleByCi(fullCi);
+        if (result?.responsible) {
+          // Responsable ya existe → modo solo lectura
+          setExistingResponsible(result.responsible);
+          setViewOnlyMode(true);
+          fillFormWithExistingData(result.responsible);
+        } else if (result?.person) {
+          // Persona existe (estudiante, tutor, etc.) pero no como responsable → pre-cargar datos
+          setExistingResponsible(null);
+          setViewOnlyMode(false);
+          preFillFromPersonData(result.person);
         } else {
           // CI is available, clear any existing data
           setExistingResponsible(null);
@@ -248,6 +248,45 @@ export default function InstitutionalResponsibleModal({
       }
     };
 
+   // Pre-fill form fields from existing person data (not yet a responsible)
+   const preFillFromPersonData = (person: any) => {
+     const { identificationPrefix, identificationNumber } = person;
+     const fullCi = `${identificationPrefix}-${identificationNumber}`;
+     setDisplayIdentificationNumber(formatCedulaDisplay(fullCi.replace('-', ''), false));
+
+     // Extract phone prefix and number
+     let phonePrefix = '0412';
+     let phoneNumber = '';
+     if (person.phone) {
+       const cleanPhone = person.phone.replace(/\D/g, '');
+       if (cleanPhone.length >= 4) {
+         phonePrefix = cleanPhone.substring(0, 4);
+         phoneNumber = cleanPhone.substring(4);
+       } else {
+         phoneNumber = cleanPhone;
+       }
+     }
+     setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
+
+     // Set form values (person-level only, no institutions)
+     setValue("identificationPrefix", identificationPrefix, { shouldValidate: true, shouldDirty: true });
+     setValue("identificationNumber", identificationNumber, { shouldValidate: true, shouldDirty: true });
+     setValue("firstName", person.firstName || '', { shouldValidate: true, shouldDirty: true });
+     setValue("middleName", person.middleName || '', { shouldValidate: true, shouldDirty: true });
+     setValue("lastName", person.lastName || '', { shouldValidate: true, shouldDirty: true });
+     setValue("secondLastName", person.secondLastName || '', { shouldValidate: true, shouldDirty: true });
+     setValue("phonePrefix", phonePrefix, { shouldValidate: true, shouldDirty: true });
+     setValue("phoneNumber", phoneNumber, { shouldValidate: true, shouldDirty: true });
+     setValue("email", person.email || '', { shouldValidate: true, shouldDirty: true });
+     setValue("institutions", [], { shouldValidate: true, shouldDirty: true });
+
+     addToast({
+       variant: "info",
+       title: "Persona existente",
+       message: "Esta persona ya está registrada en el sistema. Se han precargado sus datos.",
+     });
+   };
+
   // State for new institution modal
   const [isNewInstitutionModalOpen, setIsNewInstitutionModalOpen] = useState(false);
   const { addInstitution } = useInstitutions();
@@ -260,6 +299,7 @@ export default function InstitutionalResponsibleModal({
       const formatted = formatCedulaDisplay(digitsOnly, false);
       setDisplayIdentificationNumber(formatted);
       setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
+      clearErrors("identificationNumber");
       
       // Si se cambia la cédula y hay un existingResponsible, limpiar el formulario
       if (existingResponsible) {
@@ -268,6 +308,7 @@ export default function InstitutionalResponsibleModal({
         if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits) {
           setExistingResponsible(null);
           setViewOnlyMode(false);
+          clearErrors("identificationNumber");
           // Resetear los campos del formulario
           reset({
             identificationPrefix: "",
@@ -291,6 +332,41 @@ export default function InstitutionalResponsibleModal({
       }
     };
 
+  // CI blur handler: check availability when user leaves the CI field
+  const handleCiBlur = useCallback(
+    async (e: React.FocusEvent<HTMLInputElement>) => {
+      if (!existingResponsible && !editingResp) {
+        const val = e.target.value;
+        const digitsOnly = val.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
+        if (digitsOnly.length >= 6) {
+          setIsCheckingCi(true);
+          const prefix = watch("identificationPrefix") || 'V';
+          const fullCi = `${prefix}-${digitsOnly}`;
+          try {
+            const result = await getResponsibleByCi(fullCi);
+            if (result?.responsible) {
+              setExistingResponsible(result.responsible);
+              setViewOnlyMode(true);
+              fillFormWithExistingData(result.responsible);
+            } else if (result?.person) {
+              setExistingResponsible(null);
+              setViewOnlyMode(false);
+              preFillFromPersonData(result.person);
+            } else {
+              setExistingResponsible(null);
+              setViewOnlyMode(false);
+            }
+          } catch (err) {
+            console.error("[InstitutionalResponsibleModal] Error checking CI on blur:", err);
+          } finally {
+            setIsCheckingCi(false);
+          }
+        }
+      }
+    },
+    [existingResponsible, editingResp, watch, setValue, setError, clearErrors]
+  );
+
   // Handle phone number input change with formatting
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
@@ -300,13 +376,6 @@ export default function InstitutionalResponsibleModal({
     setValue("phoneNumber", cleaned, { shouldValidate: true, shouldDirty: true });
   };
 
-  const NATIONALITY_OPTIONS = options["Nacionalidad"] || [
-    { value: "V", label: "V" },
-    { value: "E", label: "E" },
-  ];
-
-  const PHONE_PREFIX_OPTIONS = options["PREFIJO"] || [];
-
   const {
     register,
     handleSubmit,
@@ -315,6 +384,7 @@ export default function InstitutionalResponsibleModal({
     watch,
     setValue,
     setError,
+    clearErrors,
     formState: { errors, isSubmitted, isDirty, isValid },
    } = useForm<RespFormData>({
     resolver: zodResolver(respSchema),
@@ -596,143 +666,28 @@ export default function InstitutionalResponsibleModal({
              )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Columna Izquierda: Datos Personales */}
-              <div className="lg:col-span-2 space-y-5">
-                {/* Cédula */}
-                <div>
-                  <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Cédula *</label>
-                  <div className="flex gap-2">
-                    <div className="w-24 shrink-0">
-                      <Controller
-                        name="identificationPrefix"
-                        control={control}
-                        render={({ field }) => (
-                          <CustomSelect
-                            id="identificationPrefix"
-                            options={NATIONALITY_OPTIONS}
-                            onChange={field.onChange}
-                            onBlur={field.onBlur}
-                            value={field.value}
-                            placeholder="Tipo"
-disabled={!!editingResp}
-                            error={!!errors.identificationPrefix}
-                          />
-                        )}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <Input 
-                        value={displayIdentificationNumber}
-                        onChange={handleIdentificationNumberChange}
-                        placeholder="V00.000.000" 
-                        error={!!errors.identificationNumber}
-                        hint={isCheckingCi ? "Verificando..." : (errors.identificationNumber?.message || " ")}
-                        className="tracking-widest"
-                        maxLength={CEDULA_MAX_LENGTH}
-                        disabled={!!editingResp}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Nombres */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Primer Nombre *</label>
-                    <Input 
-                      placeholder="Ingrese el primer nombre" 
-                      {...register("firstName")} 
-                      error={!!errors.firstName} 
-                      hint={errors.firstName?.message || " "}
-                      disabled={!!existingResponsible}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Segundo Nombre</label>
-                    <Input 
-                      placeholder="Ingrese el segundo nombre" 
-                      {...register("middleName")} 
-                      error={!!errors.middleName} 
-                      hint={errors.middleName?.message || " "}
-                      disabled={!!existingResponsible}
-                    />
-                  </div>
-                </div>
-
-                {/* Apellidos */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Primer Apellido *</label>
-                    <Input 
-                      placeholder="Ingrese el primer apellido" 
-                      {...register("lastName")} 
-                      error={!!errors.lastName} 
-                      hint={errors.lastName?.message || " "}
-                      disabled={!!existingResponsible}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Segundo Apellido</label>
-                    <Input 
-                      placeholder="Ingrese el segundo apellido" 
-                      {...register("secondLastName")} 
-                      error={!!errors.secondLastName} 
-                      hint={errors.secondLastName?.message || " "}
-                      disabled={!!existingResponsible}
-                    />
-                  </div>
-                </div>
-
-                {/* Teléfono y Correo */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Teléfono *</label>
-                    <div className="flex gap-2">
-                      <div className="w-28 shrink-0">
-                        <Controller
-                          name="phonePrefix"
-                          control={control}
-                          render={({ field }) => (
-                            <CustomSelect
-                              id="phonePrefix"
-                              options={PHONE_PREFIX_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                              onChange={field.onChange}
-                              value={String(field.value ?? "")}
-                              placeholder="Prefijo"
-                              error={!!errors.phonePrefix}
-                              disabled={!!existingResponsible}
-                              onAddNew={() => openAddValueModal("PREFIJO", "phonePrefix", "Agregar Código de Área")}
-                              addNewLabel="Nueva opción"
-                            />
-                          )}
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <Input 
-                          value={displayPhoneNumber}
-                          onChange={handlePhoneNumberChange}
-                          placeholder="000-0000" 
-                          className={PHONE_INPUT_CLASS}
-                          error={!!errors.phoneNumber || !!errors.phonePrefix} 
-                          maxLength={PHONE_LOCAL_MAX_LENGTH}
-                          hint={errors.phoneNumber?.message || errors.phonePrefix?.message || " "}
-                          disabled={!!existingResponsible}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Correo Electrónico *</label>
-                    <Input 
-                      placeholder="Ingrese el correo electrónico" 
-                      {...register("email")} 
-                      error={!!errors.email} 
-                      hint={errors.email?.message || " "}
-                      disabled={!!existingResponsible}
-                      
-                    />
-                  </div>
-                </div>
+              {/* Columna Izquierda: Datos Personales (via PersonFormFields compartido) */}
+              <div className="lg:col-span-2">
+                <PersonFormFields
+                  control={control}
+                  register={register}
+                  errors={errors}
+                  setValue={setValue}
+                  watch={watch}
+                  options={options}
+                  displayIdentificationNumber={displayIdentificationNumber}
+                  onIdentificationNumberChange={handleIdentificationNumberChange}
+                  onBlurCi={handleCiBlur}
+                  isCheckingCi={isCheckingCi}
+                  displayPhoneNumber={displayPhoneNumber}
+                  onPhoneNumberChange={handlePhoneNumberChange}
+                  onAddValue={(listName, field, title) =>
+                    openAddValueModal(listName, field as any, title)
+                  }
+                  viewOnlyMode={!!existingResponsible}
+                  editingId={editingResp?.responsibleId ?? null}
+                  hiddenFields={["sex", "birthDate", "civilStatus", "address"]}
+                />
               </div>
 
               {/* Columna Derecha: Instituciones */}

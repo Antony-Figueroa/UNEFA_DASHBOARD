@@ -4,6 +4,7 @@
  */
 
 import { createCrudService } from "../../../api/crudServiceFactory";
+import apiClient from "../../../api/apiClient";
 import { User, CreateUserPayload, UpdateUserPayload } from "../types";
 
 /**
@@ -16,10 +17,11 @@ interface UserDTO {
   surname: string;
   email: string;
   role: number;
+  roleName?: string;
   status: number;
   creationDate: string;
   isInUse?: boolean;
-  personId?: number;
+  isImported?: boolean;
 }
 
 /**
@@ -32,16 +34,47 @@ const mapFromApi = (dto: UserDTO): User => ({
   surname: dto.surname,
   email: dto.email,
   role: dto.role,
+  roleName: dto.roleName,
   status: dto.status,
   creationDate: dto.creationDate,
   isInUse: dto.isInUse,
-  personId: dto.personId
+  isImported: dto.isImported
 });
 
 /**
  * Servicio de usuarios que proporciona métodos estandarizados para operaciones CRUD.
+ * Sobrescribe getAll porque el backend devuelve paginado: { users, totalCount, totalPages }
  */
-export const userService = createCrudService<User, CreateUserPayload, UpdateUserPayload, UserDTO>({
+const crudBase = createCrudService<User, CreateUserPayload, UpdateUserPayload, UserDTO>({
   endpoint: "/users",
   mapFromApi
 });
+
+export const userService = {
+  ...crudBase,
+  getAll: async () => {
+    const response = await apiClient.get("/users");
+    return (response.data.users || []).map(mapFromApi);
+  },
+};
+
+/**
+ * Verifica si una cédula ya existe en el sistema (como usuario o como persona).
+ * Retorna datos de la persona si existe pero no es usuario aún.
+ */
+export const checkUserCi = async (ci: string): Promise<UserCiCheckResult> => {
+  const response = await apiClient.get(`/users/check-ci/${encodeURIComponent(ci)}`, { silent: true } as any);
+  return response.data;
+};
+
+interface UserCiCheckResult {
+  exists: boolean;
+  asUser?: boolean;
+  person?: {
+    firstName: string;
+    middleName: string | null;
+    lastName: string;
+    secondLastName: string | null;
+    email: string;
+  };
+}

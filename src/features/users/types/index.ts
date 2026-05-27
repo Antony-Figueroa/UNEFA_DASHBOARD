@@ -25,8 +25,10 @@ export interface User {
     creationDate: string;
     /** Indica si el usuario tiene registros asociados que impiden su eliminación */
     isInUse?: boolean;
-    /** Referencia a la persona unificada en t_persons */
-    personId?: number;
+    /** Indica si el usuario fue creado a partir de un registro existente (estudiante/tutor) */
+    isImported?: boolean;
+    /** Nombre del rol (desde t_roles en BD) */
+    roleName?: string;
 }
 
 /**

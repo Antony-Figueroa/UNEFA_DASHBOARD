@@ -138,7 +138,6 @@ export default function VisitModal({
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
   
-  const maxDateLocal = formatLocalDateTime(today);
   const minDateLocal = periodStartDate ? formatLocalDateTime(periodStartDate) : '2020-01-01T00:00';
   
   // La fecha máxima para Zod (fin del día de hoy)
@@ -148,7 +147,7 @@ export default function VisitModal({
   const minDate = periodStartDate || new Date('2020-01-01');
   
   // La fecha máxima es el menor valor entre el fin del período y hoy
-  // (para asegurar que NUNCA sea una fecha futura)
+  // (para asegurar que NUNCA sea una fecha futura y respete el cierre del periodo)
   let maxDate = todayEnd;
   if (periodEndDate) {
     const periodEndNormalized = new Date(periodEndDate.getFullYear(), periodEndDate.getMonth(), periodEndDate.getDate(), 23, 59, 59);
@@ -156,6 +155,9 @@ export default function VisitModal({
       maxDate = periodEndNormalized;
     }
   }
+  // El HTML input también debe usar el mismo criterio: min(hoy, periodEndDate)
+  const maxHtmlDate = periodEndDate && periodEndDate < today ? periodEndDate : today;
+  const maxDateLocal = formatLocalDateTime(maxHtmlDate);
 
   const {
     register,

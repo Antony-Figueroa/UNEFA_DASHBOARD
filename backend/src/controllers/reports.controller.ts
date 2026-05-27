@@ -133,7 +133,7 @@ export const getRecentReports = async (req: Request, res: Response) => {
   try {
     const { data: logs } = await dbManager.getConnection()
       .from('t_auth_log')
-      .select('AUTH_LOG_ID, USER_ID, ACTION, DETAILS, CREATED_AT, t_user(USER_CI, NAME, SURNAME)')
+      .select('AUTH_LOG_ID, USER_ID, ACTION, DETAILS, CREATED_AT, t_user(USER_CI, person_id, t_persons!inner(first_name, last_name))')
       .in('ACTION', ['REPORT_GENERATED', 'PDF_EXPORTED', 'CERTIFICATE_GENERATED'])
       .order('CREATED_AT', { ascending: false })
       .limit(10);
@@ -144,7 +144,7 @@ export const getRecentReports = async (req: Request, res: Response) => {
       ACTION: string;
       DETAILS: string;
       CREATED_AT: string;
-      t_user: { USER_CI: string; NAME: string; SURNAME: string } | null;
+      t_user: { USER_CI: string; person_id: number; t_persons: { first_name: string; last_name: string } } | null;
     }
 
     const result = (logs as unknown as LogWithUser[])?.map((log) => {
@@ -160,7 +160,7 @@ export const getRecentReports = async (req: Request, res: Response) => {
         date: log.CREATED_AT,
         type: typeMap[log.ACTION] || 'Otro',
         status: 'completed',
-        user: log.t_user ? `${log.t_user.NAME} ${log.t_user.SURNAME}` : 'Sistema'
+        user: log.t_user?.t_persons ? `${log.t_user.t_persons.first_name} ${log.t_user.t_persons.last_name}`.trim() : 'Sistema'
       };
     }) || [];
 
@@ -220,16 +220,19 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
         TUTOR_TYPE,
         t_tutors (
           TUTOR_ID,
-          NAME,
-          SECOND_NAME,
-          SURNAME,
-          SECOND_SURNAME,
-          TUTOR_CI,
           CONDITION,
           DEDICATION,
           CATEGORY,
-          CONTACT_PHONE,
-          EMAIL
+          EMAIL,
+          t_persons!inner (
+            ci,
+            first_name,
+            middle_name,
+            last_name,
+            second_last_name,
+            phone,
+            email
+          )
         ),
         t_professional_practices (
           PROFESSIONAL_PRACTICE_ID,
@@ -289,16 +292,16 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
       } else {
         tutorMap.set(tutorKey, {
           tutor: {
-            name: tutor.NAME,
-            secondName: tutor.SECOND_NAME || '',
-            surname: tutor.SURNAME,
-            secondSurname: tutor.SECOND_SURNAME || '',
-            ci: tutor.TUTOR_CI,
+            name: tutor.t_persons?.first_name || '',
+            secondName: tutor.t_persons?.middle_name || '',
+            surname: tutor.t_persons?.last_name || '',
+            secondSurname: tutor.t_persons?.second_last_name || '',
+            ci: tutor.t_persons?.ci,
             condition: tutor.CONDITION,
             dedication: tutor.DEDICATION,
             category: tutor.CATEGORY,
-            phone: tutor.CONTACT_PHONE,
-            email: tutor.EMAIL
+            phone: tutor.t_persons?.phone || '',
+            email: tutor.t_persons?.email
           },
           career: career?.CAREER_NAME || '',
           region: getRegionName(institution?.REGION),
@@ -508,12 +511,12 @@ export const getCulminatedStudentsReport = async (req: Request, res: Response) =
         INSTITUTION_ID,
         STUDENTS_ID,
         INTERNSHIP_TYPE_ID,
-        t_students (
-          STUDENTS_CI,
-          NAME,
-          SECOND_NAME,
-          SURNAME,
-          SECOND_SURNAME
+        t_persons!inner (
+          ci,
+          first_name,
+          middle_name,
+          last_name,
+          second_last_name
         ),
         t_career (
           CAREER_ID,
@@ -537,10 +540,12 @@ export const getCulminatedStudentsReport = async (req: Request, res: Response) =
           TUTOR_ID,
           t_tutors (
             TUTOR_ID,
-            NAME,
-            SECOND_NAME,
-            SURNAME,
-            SECOND_SURNAME
+            t_persons!inner (
+              first_name,
+              middle_name,
+              last_name,
+              second_last_name
+            )
           )
         )
       `)
@@ -583,16 +588,16 @@ export const getCulminatedStudentsReport = async (req: Request, res: Response) =
 
     const reportData: CulminatedStudentReportRow[] = filteredPractices.map((p: any) => {
       const tutor = p.t_professional_practices_tutor?.[0]?.t_tutors;
-      const student = p.t_students;
+      const student = p.t_persons;
       
       return {
         id: p.PROFESSIONAL_PRACTICE_ID,
-        studentCi: student?.STUDENTS_CI || '',
-        studentName: `${student?.NAME || ''} ${student?.SECOND_NAME || ''} ${student?.SURNAME || ''} ${student?.SECOND_SURNAME || ''}`.trim(),
+        studentCi: student?.ci || '',
+        studentName: `${student?.first_name || ''} ${student?.middle_name || ''} ${student?.last_name || ''} ${student?.second_last_name || ''}`.trim().replace(/\s+/g, ' '),
         careerName: p.t_career?.CAREER_NAME || '',
         institutionName: p.t_institution?.INSTITUTION_NAME || '',
         practiceType: p.t_internship_type?.NAME || '',
-        tutorName: tutor ? `${tutor.NAME || ''} ${tutor.SECOND_NAME || ''} ${tutor.SURNAME || ''} ${tutor.SECOND_SURNAME || ''}`.trim() : '',
+        tutorName: tutor?.t_persons ? `${tutor.t_persons.first_name || ''} ${tutor.t_persons.middle_name || ''} ${tutor.t_persons.last_name || ''} ${tutor.t_persons.second_last_name || ''}`.trim().replace(/\s+/g, ' ') : '',
         period: p.t_internships_period?.DESCRIPTION || '',
         startDate: p.START_DATE || '',
         endDate: p.END_DATE || '',

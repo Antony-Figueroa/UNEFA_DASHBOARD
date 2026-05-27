@@ -145,8 +145,8 @@ const getExistingStudents = async (cedulas: string[]): Promise<Map<string, { stu
   
   const { data, error } = await supabase
     .from(TABLE_NAME)
-    .select('STUDENTS_ID, STUDENTS_CI, NAME, SURNAME, STATUS')
-    .in('STUDENTS_CI', cedulas);
+    .select('STUDENTS_ID, STATUS, t_persons!inner(ci, first_name, last_name)')
+    .in('t_persons.ci', cedulas);
   
   if (error) {
     console.error('[StudentsImport] Error fetching existing students:', error);
@@ -155,10 +155,10 @@ const getExistingStudents = async (cedulas: string[]): Promise<Map<string, { stu
   
   const map = new Map<string, { studentId: number; status: number; name: string }>();
   (data || []).forEach(s => {
-    map.set(s.STUDENTS_CI, {
+    map.set((s as any).t_persons?.ci, {
       studentId: s.STUDENTS_ID,
       status: s.STATUS,
-      name: `${s.NAME} ${s.SURNAME}`
+      name: `${(s as any).t_persons?.first_name || ''} ${(s as any).t_persons?.last_name || ''}`.trim()
     });
   });
   
@@ -330,20 +330,35 @@ export const executeImport = async (req: AuthRequest, res: Response) => {
       if (existing) {
         // Actualizar estudiante existente
         const dbData = mapToDbRecord(row, config);
-        
+
+        // Actualizar datos de persona en t_persons
+        const { data: studentRecord } = await supabase
+          .from(TABLE_NAME)
+          .select('person_id')
+          .eq('STUDENTS_ID', existing.studentId)
+          .single();
+
+        if (studentRecord?.person_id) {
+          const phone = row.phonePrefix && row.phoneNumber
+            ? `${row.phonePrefix}-${row.phoneNumber}`
+            : null;
+
+          await supabase
+            .from('t_persons')
+            .update({
+              email: row.email,
+              phone: phone,
+              gender: row.sex,
+              birth_date: row.birthDate,
+              address: row.address || null,
+              marital_status: row.civilStatus || null
+            })
+            .eq('person_id', studentRecord.person_id);
+        }
+
         const { error: updateError } = await supabase
           .from(TABLE_NAME)
           .update({
-            NAME: dbData.NAME,
-            SURNAME: dbData.SURNAME,
-            SECOND_NAME: dbData.SECOND_NAME,
-            SECOND_SURNAME: dbData.SECOND_SURNAME,
-            GENDER: dbData.GENDER,
-            BIRTHDATE: dbData.BIRTHDATE,
-            MARITAL_STATUS: dbData.MARITAL_STATUS,
-            CONTACT_PHONE: dbData.CONTACT_PHONE,
-            EMAIL: dbData.EMAIL,
-            ADDRESS: dbData.ADDRESS,
             CAREER_ID: dbData.CAREER_ID,
             REGIME: dbData.REGIME,
             STUDENT_TYPE: dbData.STUDENT_TYPE,
@@ -376,20 +391,44 @@ export const executeImport = async (req: AuthRequest, res: Response) => {
         // Crear nuevo estudiante
         const dbData = mapToDbRecord(row, config);
         
+        // Crear registro en t_persons primero
+        const phone = row.phonePrefix && row.phoneNumber 
+          ? `${row.phonePrefix}-${row.phoneNumber}` 
+          : null;
+        
+        const { data: person, error: personError } = await supabase
+          .from('t_persons')
+          .insert([{
+            ci: fullCedula,
+            first_name: row.firstName,
+            middle_name: row.middleName || null,
+            last_name: row.lastName,
+            second_last_name: row.secondLastName || null,
+            email: row.email,
+            phone: phone,
+            gender: row.sex,
+            birth_date: row.birthDate,
+            address: row.address || null,
+            status: 1
+          }])
+          .select('person_id')
+          .single();
+        
+        if (personError) {
+          validationResults.push({
+            rowNumber: row.rowNumber,
+            status: 'error',
+            cedula: fullCedula,
+            fullName: `${row.firstName} ${row.lastName}`,
+            messages: ['Error al crear registro de persona: ' + personError.message]
+          });
+          continue;
+        }
+        
         const { data: insertData, error: insertError } = await supabase
           .from(TABLE_NAME)
           .insert([{
-            STUDENTS_CI: fullCedula,
-            NAME: dbData.NAME,
-            SURNAME: dbData.SURNAME,
-            SECOND_NAME: dbData.SECOND_NAME,
-            SECOND_SURNAME: dbData.SECOND_SURNAME,
-            GENDER: dbData.GENDER,
-            BIRTHDATE: dbData.BIRTHDATE,
-            MARITAL_STATUS: dbData.MARITAL_STATUS,
-            CONTACT_PHONE: dbData.CONTACT_PHONE,
-            EMAIL: dbData.EMAIL,
-            ADDRESS: dbData.ADDRESS,
+            person_id: person.person_id,
             CAREER_ID: dbData.CAREER_ID,
             REGIME: dbData.REGIME,
             STUDENT_TYPE: dbData.STUDENT_TYPE,

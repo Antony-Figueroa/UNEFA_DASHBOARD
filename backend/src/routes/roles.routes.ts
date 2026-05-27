@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requirePermission } from '../middlewares/auth.middleware.js';
 import {
   getRoles,
   getPermissions,
@@ -10,11 +11,11 @@ import {
 
 const router = Router();
 
-router.get('/', getRoles);
-router.get('/permissions', getPermissions);
-router.get('/stats', getRoleStats);
-router.get('/:id', getRoleById);
-router.post('/', createRole);
-router.put('/:id', updateRole);
+router.get('/', requirePermission('roles:manage'), getRoles);
+router.get('/permissions', requirePermission('roles:manage'), getPermissions);
+router.get('/stats', requirePermission('roles:manage'), getRoleStats);
+router.get('/:id', requirePermission('roles:manage'), getRoleById);
+router.post('/', requirePermission('roles:manage'), createRole);
+router.put('/:id', requirePermission('roles:manage'), updateRole);
 
 export default router;

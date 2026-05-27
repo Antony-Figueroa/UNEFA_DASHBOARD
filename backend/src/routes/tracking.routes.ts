@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateToken } from '../middlewares/auth.middleware.js';
+import { authenticateToken, requirePermission } from '../middlewares/auth.middleware.js';
 import { 
   getTrackings, 
   createTracking, 
@@ -13,6 +13,7 @@ import {
 const router = Router();
 
 router.use(authenticateToken);
+router.use(requirePermission('tracking:*'));
 
 router.get('/', getTrackings);
 router.get('/stats', getTrackingStats);

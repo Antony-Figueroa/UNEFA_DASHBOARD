@@ -6,12 +6,7 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
-
-const WEIGHTS: Record<string, number> = {
-  'INSTITUCIONAL': 0.40,
-  'ACADEMICO': 0.30,
-  'COMITE': 0.30
-};
+import { evaluationConfig } from '../config/evaluation.config.js';
 
 /**
  * Obtiene todas las prácticas con información de evaluaciones y culminación
@@ -40,12 +35,12 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
         GRADE,
         PRACTICES_STATUS,
         EVALUATION_STATUS,
-        t_students (
-          STUDENTS_CI,
-          NAME,
-          SECOND_NAME,
-          SURNAME,
-          SECOND_SURNAME
+        t_persons!inner (
+          ci,
+          first_name,
+          middle_name,
+          last_name,
+          second_last_name
         ),
         t_career (
           CAREER_ID,
@@ -142,7 +137,7 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
 
     // Procesar prácticas
     let processedPractices = (practices as any[]).map(p => {
-      const student = p.t_students;
+      const student = p.t_persons;
       const career = p.t_career;
       const practiceType = p.t_internship_type;
       const period = p.t_internships_period;
@@ -181,9 +176,9 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
       let finalGrade: number | null = null;
       if (evalStatus === 'completed') {
         finalGrade = 
-          (statusMap['INSTITUCIONAL'].score * WEIGHTS['INSTITUCIONAL']) +
-          (statusMap['ACADEMICO'].score * WEIGHTS['ACADEMICO']) +
-          (statusMap['COMITE'].score * WEIGHTS['COMITE']);
+          Object.entries(evaluationConfig.weights).reduce((sum, [type, weight]) => {
+            return sum + ((statusMap[type]?.score || 0) * weight);
+          }, 0);
         finalGrade = Math.round(finalGrade * 100) / 100;
       }
 
@@ -208,12 +203,12 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
 
       // Devolver también la nota mínima para uso en el frontend
       const studentName = student 
-        ? `${student.NAME || ''} ${student.SECOND_NAME || ''} ${student.SURNAME || ''} ${student.SECOND_SURNAME || ''}`.trim().replace(/\s+/g, ' ')
+        ? `${student.first_name || ''} ${student.middle_name || ''} ${student.last_name || ''} ${student.second_last_name || ''}`.trim().replace(/\s+/g, ' ')
         : '';
 
       return {
         practiceId: p.PROFESSIONAL_PRACTICE_ID,
-        studentCi: student?.STUDENTS_CI || '',
+        studentCi: student?.ci || '',
         studentName,
         careerId: career?.CAREER_ID || 0,
         careerName: career?.CAREER_NAME || '',
@@ -344,28 +339,30 @@ export const getEvaluationStats = async (req: AuthRequest, res: Response) => {
     // Calcular estadísticas
     let completed = 0, partial = 0, pending = 0;
 
+    const evaluatorTypes = Object.keys(evaluationConfig.weights);
+    const totalEvaluatorTypes = evaluatorTypes.length;
     (practices as any[]).forEach(p => {
       const count = evalCountByPractice.get(p.PROFESSIONAL_PRACTICE_ID) || 0;
-      if (count === 3) completed++;
+      if (count === totalEvaluatorTypes) completed++;
       else if (count > 0) partial++;
       else pending++;
     });
 
-    // Calcular aprobados y reprobados (solo prácticas con 3 evaluaciones)
+    // Calcular aprobados y reprobados (solo prácticas con todas las evaluaciones)
     let approved = 0, failed = 0;
-    const practiceEvals = new Map<string, { scores: number[] }>();
+    const practiceEvals = new Map<string, Record<string, number>>();
     (evaluations || []).forEach(e => {
-      const existing = practiceEvals.get(String(e.PROFESSIONAL_PRACTICE_ID)) || { scores: [] };
-      existing.scores.push(e.TOTAL_SCORE);
+      const existing = practiceEvals.get(String(e.PROFESSIONAL_PRACTICE_ID)) || {};
+      existing[e.EVALUATOR_TYPE] = e.TOTAL_SCORE;
       practiceEvals.set(String(e.PROFESSIONAL_PRACTICE_ID), existing);
     });
 
-    practiceEvals.forEach(({ scores }) => {
-      if (scores.length === 3) {
-        const finalGrade = 
-          scores[0] * WEIGHTS['INSTITUCIONAL'] +
-          scores[1] * WEIGHTS['ACADEMICO'] +
-          scores[2] * WEIGHTS['COMITE'];
+    practiceEvals.forEach((typeScores) => {
+      const hasAll = evaluatorTypes.every(type => typeScores[type] !== undefined);
+      if (hasAll) {
+        const finalGrade = evaluatorTypes.reduce((sum, type) => {
+          return sum + (typeScores[type] || 0) * evaluationConfig.weights[type as keyof typeof evaluationConfig.weights];
+        }, 0);
         if (finalGrade >= 10) approved++;
         else failed++;
       }
@@ -412,12 +409,12 @@ export const getStudentDetail = async (req: AuthRequest, res: Response) => {
         PRACTICES_STATUS,
         EVALUATION_STATUS,
         ENROLLMENT,
-        t_students (
-          STUDENTS_CI,
-          NAME,
-          SECOND_NAME,
-          SURNAME,
-          SECOND_SURNAME
+        t_persons!inner (
+          ci,
+          first_name,
+          middle_name,
+          last_name,
+          second_last_name
         ),
         t_career (
           CAREER_ID,
@@ -447,7 +444,7 @@ export const getStudentDetail = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const student = (practice as any).t_students;
+    const student = (practice as any).t_persons;
     const career = (practice as any).t_career;
     const period = (practice as any).t_internships_period;
     const practiceType = (practice as any).t_internship_type;
@@ -498,11 +495,11 @@ export const getStudentDetail = async (req: AuthRequest, res: Response) => {
     }
 
     // Procesar estado de evaluaciones
-    const evalStatusMap: Record<string, { completed: boolean; score: number | null }> = {
-      INSTITUCIONAL: { completed: false, score: null },
-      ACADEMICO: { completed: false, score: null },
-      COMITE: { completed: false, score: null }
-    };
+    const evaluatorTypes = Object.keys(evaluationConfig.weights);
+    const evalStatusMap: Record<string, { completed: boolean; score: number | null }> = {};
+    evaluatorTypes.forEach(type => {
+      evalStatusMap[type] = { completed: false, score: null };
+    });
 
     let finalGrade: number | null = null;
     let evalStatus: 'pending' | 'partial' | 'completed' = 'pending';
@@ -517,12 +514,12 @@ export const getStudentDetail = async (req: AuthRequest, res: Response) => {
     });
 
     const completedCount = Object.values(evalStatusMap).filter(e => e.completed).length;
-    if (completedCount === 3) {
+    if (completedCount === evaluatorTypes.length) {
       evalStatus = 'completed';
       finalGrade = 
-        (evalStatusMap.INSTITUCIONAL.score! * 0.40) +
-        (evalStatusMap.ACADEMICO.score! * 0.30) +
-        (evalStatusMap.COMITE.score! * 0.30);
+        Object.entries(evaluationConfig.weights).reduce((sum, [type, weight]) => {
+          return sum + ((evalStatusMap[type]?.score || 0) * weight);
+        }, 0);
       finalGrade = Math.round(finalGrade * 100) / 100;
     } else if (completedCount > 0) {
       evalStatus = 'partial';
@@ -552,14 +549,14 @@ export const getStudentDetail = async (req: AuthRequest, res: Response) => {
     }
 
     const studentName = student 
-      ? `${student.NAME || ''} ${student.SECOND_NAME || ''} ${student.SURNAME || ''} ${student.SECOND_SURNAME || ''}`.trim().replace(/\s+/g, ' ')
+      ? `${student.first_name || ''} ${student.middle_name || ''} ${student.last_name || ''} ${student.second_last_name || ''}`.trim().replace(/\s+/g, ' ')
       : '';
 
     res.json({
       success: true,
       data: {
         student: {
-          studentCi: student?.STUDENTS_CI || '',
+          studentCi: student?.ci || '',
           studentName,
           careerId: career?.CAREER_ID || 0,
           careerName: career?.CAREER_NAME || ''

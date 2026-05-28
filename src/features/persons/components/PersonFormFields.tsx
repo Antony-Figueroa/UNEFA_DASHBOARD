@@ -36,6 +36,7 @@
 import { Controller, Control, UseFormRegister, UseFormSetValue, UseFormWatch, FieldErrors } from "react-hook-form";
 import Input from "../../../components/form/input/InputField";
 import CustomSelect from "../../../components/form/CustomSelect";
+import { Search, Loader2 } from "lucide-react";
 import { PREFIX_OPTIONS } from "../types";
 
 /** Límites de cédula */
@@ -69,6 +70,8 @@ export interface PersonFormFieldsProps {
   onBlurCi?: (e: React.FocusEvent<HTMLInputElement>) => void;
   /** Handler para verificar disponibilidad de CI (botón) */
   onCheckCi?: () => void;
+  /** Handler para buscar datos desde API externa (SENIAT/cedula.com.ve) */
+  onCiLookup?: () => void;
   /** Indica si se está verificando la CI */
   isCheckingCi?: boolean;
   /** Indica si se está consultando la API externa para autocompletar datos */
@@ -149,6 +152,7 @@ export default function PersonFormFields({
   onIdentificationNumberChange,
   onBlurCi,
   onCheckCi,
+  onCiLookup,
   isCheckingCi = false,
   isLookingUpCi = false,
   existingPerson,
@@ -282,9 +286,12 @@ export default function PersonFormFields({
               error={!!errors.identificationNumber}
               hint={
                 errors.identificationNumber?.message as string
-                || (isCheckingCi ? "Verificando..." : undefined)
+                || (isCheckingCi ? "Verificando disponibilidad..."
+                : isLookingUpCi ? "Consultando SENIAT..."
+                : undefined)
               }
             />
+            {/* Botón Verificar disponibilidad en BD */}
             {onCheckCi && !ciDisabled && (
               <button
                 type="button"
@@ -293,6 +300,18 @@ export default function PersonFormFields({
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400"
               >
                 {isCheckingCi ? "..." : "Verificar"}
+              </button>
+            )}
+            {/* Botón Buscar en SENIAT — consulta API externa solo cuando el usuario lo pulsa */}
+            {onCiLookup && !ciDisabled && (
+              <button
+                type="button"
+                onClick={onCiLookup}
+                disabled={isCheckingCi}
+                title="Buscar datos en SENIAT / CNE"
+                className="absolute right-14 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400 transition-colors disabled:opacity-50"
+              >
+                <Search className="w-4 h-4" />
               </button>
             )}
           </div>

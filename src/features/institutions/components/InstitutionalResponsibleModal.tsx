@@ -27,6 +27,7 @@ import * as listsService from "../../lists/services/listsService";
 import { NAME_PATTERN, SAFE_EMAIL_PATTERN, SAFE_TEXT_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 import { checkAvailability as checkPersonAvailability } from "../../persons/services/personService";
 import PersonFormFields from "../../persons/components/PersonFormFields";
+import { lookupCi } from "../../students/services/studentsService";
 
 // Lazy load para evitar dependencia circular con InstitutionModal
 const InstitutionModal = lazy(() => import("./InstitutionModal"));
@@ -161,9 +162,10 @@ export default function InstitutionalResponsibleModal({
   const [displayIdentificationNumber, setDisplayIdentificationNumber] = useState("");
   const [displayPhoneNumber, setDisplayPhoneNumber] = useState("");
 
-   // State for duplicate detection
-   const [isCheckingCi, setIsCheckingCi] = useState(false);
-   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+    // State for duplicate detection
+    const [isCheckingCi, setIsCheckingCi] = useState(false);
+    const [isLookingUpCi, setIsLookingUpCi] = useState(false);
+    const [isCheckingEmail, setIsCheckingEmail] = useState(false);
    const [existingResponsible, setExistingResponsible] = useState<any | null>(null);
    const [viewOnlyMode, setViewOnlyMode] = useState(false);
 
@@ -395,6 +397,59 @@ export default function InstitutionalResponsibleModal({
     },
     [existingResponsible, editingResp, watch, setValue, setError, clearErrors]
   );
+
+  // Handle CI lookup via external API (SENIAT / CNE)
+  const handleCiLookup = useCallback(async () => {
+    if (existingResponsible || editingResp || isLookingUpCi) return;
+
+    const rawCi = watch("identificationNumber") || "";
+    const digitsOnly = rawCi.replace(/\D/g, "").substring(0, CEDULA_MAX_DIGITS);
+    if (digitsOnly.length < 7) {
+      addToast({
+        variant: "warning",
+        title: "Cédula incompleta",
+        message: "Ingrese al menos 7 dígitos de la cédula para buscar.",
+      });
+      return;
+    }
+
+    const prefix = watch("identificationPrefix") || "V";
+    const fullCi = `${prefix}-${digitsOnly}`;
+
+    setIsLookingUpCi(true);
+    try {
+      const externalData = await lookupCi(fullCi);
+      if (externalData) {
+        setValue("firstName", externalData.primerNombre?.toUpperCase() || "");
+        setValue("middleName", externalData.segundoNombre?.toUpperCase() || "");
+        setValue("lastName", externalData.primerApellido?.toUpperCase() || "");
+        setValue("secondLastName", externalData.segundoApellido?.toUpperCase() || "");
+        if (externalData.nacionalidad) {
+          setValue("identificationPrefix", externalData.nacionalidad.toUpperCase());
+        }
+        addToast({
+          variant: "success",
+          title: "Datos cargados",
+          message: "Nombre y apellidos cargados automáticamente desde la cédula.",
+        });
+      } else {
+        addToast({
+          variant: "warning",
+          title: "Sin resultados",
+          message: "No se encontraron datos para esta cédula en el SENIAT.",
+        });
+      }
+    } catch (extErr) {
+      console.warn("[InstitutionalResponsibleModal] Error en lookup externo:", extErr);
+      addToast({
+        variant: "error",
+        title: "Error de consulta",
+        message: "No se pudo consultar el SENIAT. Verifique su conexión o llene los datos manualmente.",
+      });
+    } finally {
+      setIsLookingUpCi(false);
+    }
+  }, [existingResponsible, editingResp, isLookingUpCi, watch, setValue, addToast]);
 
   // Handle phone number input change with formatting
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -715,6 +770,8 @@ export default function InstitutionalResponsibleModal({
                   onIdentificationNumberChange={handleIdentificationNumberChange}
                   onBlurCi={handleCiBlur}
                   isCheckingCi={isCheckingCi}
+                  onCiLookup={handleCiLookup}
+                  isLookingUpCi={isLookingUpCi}
                   onBlurEmail={handleEmailBlur}
                   isCheckingEmail={isCheckingEmail}
                   displayPhoneNumber={displayPhoneNumber}

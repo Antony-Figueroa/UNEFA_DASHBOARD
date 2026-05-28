@@ -162,7 +162,9 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
       }
     }
 
-    // Verificar si la cédula existe mientras escribe (7 u 8 dígitos)
+    // Verificar si la cédula existe en BD local mientras escribe (7 u 8 dígitos)
+    // NOTA: lookupCi (API externa) SOLO se llama en onBlur (handleCiBlur)
+    // para evitar múltiples consultas en cada keystroke y violaciones de reflow
     if (!existingStudent && !editingStudent && (digitsOnly.length === 7 || digitsOnly.length === 8)) {
       setIsCheckingCi(true);
       const prefix = watch("identificationPrefix") || 'V';
@@ -234,32 +236,10 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
             title: "Persona existente",
             message: "Esta persona ya está registrada en el sistema. Se han precargado sus datos.",
           });
-        } else {
-          // CI no existe en BD → intentar autocompletar desde API externa
-          setIsLookingUpCi(true);
-          try {
-            const externalData = await lookupCi(fullCi);
-            if (externalData) {
-              setValue("firstName", externalData.primerNombre?.toUpperCase() || "");
-              setValue("middleName", externalData.segundoNombre?.toUpperCase() || "");
-              setValue("lastName", externalData.primerApellido?.toUpperCase() || "");
-              setValue("secondLastName", externalData.segundoApellido?.toUpperCase() || "");
-              if (externalData.nacionalidad) {
-                setValue("identificationPrefix", externalData.nacionalidad.toUpperCase());
-              }
-              addToast({
-                variant: "success",
-                title: "Datos cargados",
-                message: "Nombre y apellidos cargados automáticamente desde la cédula.",
-              });
-            }
-          } catch (extErr) {
-            // Si falla la API externa, el usuario llena manualmente — sin drama
-            console.warn("[StudentModal] Error en lookup externo:", extErr);
-          } finally {
-            setIsLookingUpCi(false);
-          }
         }
+        // Si no existe en BD local, NO llamamos lookupCi aquí.
+        // El lookup externo se hace SOLO en onBlur (handleCiBlur) para evitar
+        // consultas duplicadas y reducir reflows en cada keystroke.
       } catch (err) {
         console.error("Error checking CI:", err);
       } finally {
@@ -289,7 +269,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
     [setValue],
   );
 
-  // CI blur handler: check availability when user leaves the CI field
+  // CI blur handler: solo verifica disponibilidad en BD local (NO llama a API externa)
   const handleCiBlur = useCallback(
     async (e: React.FocusEvent<HTMLInputElement>) => {
       if (!existingStudent && !editingStudent) {
@@ -371,41 +351,72 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
                 title: "Persona existente",
                 message: "Esta persona ya está registrada en el sistema. Se han precargado sus datos.",
               });
-            } else {
-              // CI no existe en BD → intentar autocompletar desde API externa
-              setIsLookingUpCi(true);
-              try {
-                const externalData = await lookupCi(fullCi);
-                if (externalData) {
-                  setValue("firstName", externalData.primerNombre?.toUpperCase() || "");
-                  setValue("middleName", externalData.segundoNombre?.toUpperCase() || "");
-                  setValue("lastName", externalData.primerApellido?.toUpperCase() || "");
-                  setValue("secondLastName", externalData.segundoApellido?.toUpperCase() || "");
-                  if (externalData.nacionalidad) {
-                    setValue("identificationPrefix", externalData.nacionalidad.toUpperCase());
-                  }
-                  addToast({
-                    variant: "success",
-                    title: "Datos cargados",
-                    message: "Nombre y apellidos cargados automáticamente desde la cédula.",
-                  });
-                }
-              } catch (extErr) {
-                console.warn("[StudentModal] Error en lookup externo:", extErr);
-              } finally {
-                setIsLookingUpCi(false);
-              }
             }
+            // Si no existe en BD local, NO llamamos lookupCi aquí.
+            // El usuario debe pulsar el botón 🔍 Buscar SENIAT para consultar la API externa.
           } catch (err) {
-            console.error("Error checking CI availability:", err);
+            console.error("Error al verificar CI en base de datos:", err);
           } finally {
             setIsCheckingCi(false);
           }
         }
       }
     },
-    [existingStudent, editingStudent, watch, setValue, setError, clearErrors, addToast],
+    [existingStudent, editingStudent, setValue, watch],
   );
+
+  // Handler para el botón Buscar en SENIAT — consulta API externa SOLO cuando el usuario lo pulsa
+  const handleCiLookup = useCallback(async () => {
+    if (existingStudent || editingStudent || isLookingUpCi) return;
+
+    const rawCi = watch("identificationNumber") || "";
+    const digitsOnly = rawCi.replace(/\D/g, "").substring(0, CEDULA_MAX_DIGITS);
+    if (digitsOnly.length < 7) {
+      addToast({
+        variant: "warning",
+        title: "Cédula incompleta",
+        message: "Ingrese al menos 7 dígitos de la cédula para buscar.",
+      });
+      return;
+    }
+
+    const prefix = watch("identificationPrefix") || "V";
+    const fullCi = `${prefix}-${digitsOnly}`;
+
+    setIsLookingUpCi(true);
+    try {
+      const externalData = await lookupCi(fullCi);
+      if (externalData) {
+        setValue("firstName", externalData.primerNombre?.toUpperCase() || "");
+        setValue("middleName", externalData.segundoNombre?.toUpperCase() || "");
+        setValue("lastName", externalData.primerApellido?.toUpperCase() || "");
+        setValue("secondLastName", externalData.segundoApellido?.toUpperCase() || "");
+        if (externalData.nacionalidad) {
+          setValue("identificationPrefix", externalData.nacionalidad.toUpperCase());
+        }
+        addToast({
+          variant: "success",
+          title: "Datos cargados",
+          message: "Nombre y apellidos cargados automáticamente desde la cédula.",
+        });
+      } else {
+        addToast({
+          variant: "warning",
+          title: "Sin resultados",
+          message: "No se encontraron datos para esta cédula en el SENIAT.",
+        });
+      }
+    } catch (extErr) {
+      console.warn("[StudentModal] Error en lookup externo:", extErr);
+      addToast({
+        variant: "error",
+        title: "Error de consulta",
+        message: "No se pudo consultar el SENIAT. Verifique su conexión o llene los datos manualmente.",
+      });
+    } finally {
+      setIsLookingUpCi(false);
+    }
+  }, [existingStudent, editingStudent, isLookingUpCi, watch, setValue, addToast]);
 
   // Email blur handler: check email availability
   const handleEmailBlur = useCallback(
@@ -798,6 +809,7 @@ useEffect(() => {
             displayIdentificationNumber={displayIdentificationNumber}
             onIdentificationNumberChange={handleIdentificationNumberChange}
             onBlurCi={handleCiBlur}
+            onCiLookup={handleCiLookup}
             isCheckingCi={isCheckingCi}
             isLookingUpCi={isLookingUpCi}
             displayPhoneNumber={displayPhoneNumber}

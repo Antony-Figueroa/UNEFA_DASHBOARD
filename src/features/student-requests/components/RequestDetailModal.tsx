@@ -26,19 +26,19 @@ export const RequestDetailModal = ({ request, onClose }: RequestDetailModalProps
             </span>
           </div>
 
-          <div>
+          <div className="min-w-0">
             <p className="text-sm text-text-secondary">Tipo</p>
-            <p className="font-medium">{request.typeName}</p>
+            <p className="font-medium break-words" title={request.typeName}>{request.typeName}</p>
           </div>
 
           <div>
             <p className="text-sm text-text-secondary">Asunto</p>
-            <p className="font-medium">{request.subject}</p>
+            <p className="font-medium break-words" title={request.subject}>{request.subject}</p>
           </div>
 
           <div>
             <p className="text-sm text-text-secondary">Descripción</p>
-            <p className="whitespace-pre-wrap">{request.description}</p>
+            <p className="whitespace-pre-wrap break-words">{request.description}</p>
           </div>
 
           {request.response && (
@@ -46,7 +46,7 @@ export const RequestDetailModal = ({ request, onClose }: RequestDetailModalProps
               <p className="text-sm font-medium text-text-secondary mb-1">
                 Respuesta de Coordinación
               </p>
-              <p className="whitespace-pre-wrap">{request.response}</p>
+              <p className="whitespace-pre-wrap break-words">{request.response}</p>
               {request.processedAt && (
                 <p className="text-xs text-text-secondary mt-2">
                   Respondido el {formatRequestDate(request.processedAt)}

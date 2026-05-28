@@ -1,6 +1,9 @@
 // ================================================================================
-// UNEFA Dashboard - Prisma Schema para SQLite
-// Basado en la estructura de Supabase (PostgreSQL)
+// UNEFA Dashboard - Prisma Schema
+// ================================================================================
+// ORIGEN: Supabase PostgreSQL (producción)
+// PROPÓSITO: Type generation, documentación, y base para versión offline con PGlite
+// TABLAS: 54 modelos (refleja exactamente el schema de producción)
 // ================================================================================
 
 generator client {
@@ -8,41 +11,66 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
 }
 
 // ================================================================================
-// MODELOS DE LA BASE DE DATOS (50 TABLAS)
+// TABLA: t_persons (Superentidad de datos personales)
 // ================================================================================
+model TPerson {
+  person_id       Int       @id @default(autoincrement())
+  ci              String
+  first_name      String
+  middle_name     String?
+  last_name       String
+  second_last_name String?
+  email           String
+  phone           String?
+  gender          String?
+  birthdate       DateTime?
+  address         String?
+  marital_status  String?
+  status          Int       @default(1)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @default(now())
+
+  // Relaciones
+  users               TUser[]                   @relation("PersonUser")
+  students            TStudent[]                @relation("PersonStudent")
+  tutors              TTutor[]                  @relation("PersonTutor")
+  institutionManagers TInstitutionManager[]     @relation("PersonManager")
+
+  @@map("t_persons")
+}
 
 // ================================================================================
 // TABLA: t_user (Usuarios del sistema)
 // ================================================================================
 model TUser {
-  USER_ID             Int       @id @default(autoincrement())
-  USER                String
-  USER_CI             String
-  NAME                String
-  SECOND_NAME         String?
-  SURNAME             String
+  USER_ID              Int       @id @default(autoincrement())
+  USER                 String
+  USER_CI              String
+  NAME                 String?
+  SECOND_NAME          String?
+  SURNAME              String?
   SECOND_SURNAME       String?
-  EMAIL               String
+  EMAIL                String?
   PHONE_NUMBER         String?
-  CREATION_DATE       DateTime
-  LOGIN               Int
+  CREATION_DATE        DateTime
+  LOGIN                Int
   TERMS_CONDITIONS     String
   STATUS_SESSION       Int
-  STATUS              Int       @default(1)
-  FAILED_ATTEMPTS     Int       @default(0)
-  LOCK_DATE           DateTime?
+  STATUS               Int       @default(1)
+  FAILED_ATTEMPTS      Int       @default(0)
+  LOCK_DATE            DateTime?
   FORCE_PASSWORD_CHANGE Boolean  @default(false)
+  LAST_LOGIN           DateTime?
+  person_id            Int?
 
   // Relaciones
   authLogs            TAuthLog[]
   sessions            TSession[]
   sessionAttempts     TSessionAttempt[]
-  sessionHistories    TSessionHistory[]
   notifications       TNotification[]
   recoveryTokens      TRecoveryToken[]
   passwordHistories   TPasswordHistory[]
@@ -52,12 +80,16 @@ model TUser {
   userTheme           TUserTheme?
   students            TStudent[]
   tutors              TTutor[]
-  institutionManagers TInstitutionManager[]
   backups             TBackup[]
   chatSessions        TChatSession[]
   evaluations         TEvaluation[] @relation("EvaluatorUser")
   registeredEvaluations TEvaluation[] @relation("RegisteredByUser")
+  reviewedDocuments    TStudentDocument[]
+  securityQuestions    TSecurityQuestion[]
+  changeLogs          TChangeLog[]
+  person              TPerson?  @relation("PersonUser", fields: [person_id], references: [person_id])
 
+  @@unique([USER_CI])
   @@map("t_user")
 }
 
@@ -66,36 +98,34 @@ model TUser {
 // ================================================================================
 model TStudent {
   STUDENTS_ID         Int       @id @default(autoincrement())
-  STUDENTS_CI         String
-  NAME                String
+  STUDENTS_CI         String?
+  NAME                String?
   SECOND_NAME         String?
-  SURNAME             String
-  SECOND_SURNAME       String?
-  GENDER              String
-  BIRTHDATE           DateTime
-  CONTACT_PHONE       String
-  EMAIL               String
-  ADDRESS             String
-  MARITAL_STATUS      String
-  SEMESTER            String
-  SECTION             String
-  REGIME              String
+  SURNAME             String?
+  SECOND_SURNAME      String?
+  GENDER              String?
+  BIRTHDATE           DateTime?
+  CONTACT_PHONE       String?
+  EMAIL               String?
+  ADDRESS             String?
+  MARITAL_STATUS      String?
   STUDENT_TYPE        String
   MILITARY_RANK       String?
   EMPLOYMENT          String
   STATUS              Int       @default(1)
   REGISTRATION_DATE   DateTime?
-  CAREER_ID           Int
   USER_ID             Int?
+  person_id           Int
 
   // Relaciones
-  career              TCareer    @relation(fields: [CAREER_ID], references: [CAREER_ID])
   user                TUser?    @relation(fields: [USER_ID], references: [USER_ID])
+  person              TPerson   @relation("PersonStudent", fields: [person_id], references: [person_id])
   professionalPractices TProfessionalPractice[]
-  activityLogs        TActivityLog[]
-  studentDocuments    TStudentDocument[]
-  studentRequests     TStudentRequest[]
+  activityLogs          TActivityLog[]
+  studentDocuments      TStudentDocument[]
+  studentRequests       TStudentRequest[]
 
+  @@unique([STUDENTS_CI])
   @@map("t_students")
 }
 
@@ -108,6 +138,7 @@ model TCareer {
   CAREER_CODE         String
   MINIMUM_GRADE       Float
   CAREER_ABBREVIATION String
+  SEMESTER            String?
   CREATION_DATE       DateTime
   MODIF_USER_ID       Int
   MODIF_USER_DATE     DateTime
@@ -119,41 +150,47 @@ model TCareer {
   CAREER_TYPE         String    @default("LARGA")
 
   // Relaciones
-  students            TStudent[]
   tutors              TTutorCareer[]
   institutionCareers  TInstitutionCareer[]
   careerInternshipTypes TCareerInternshipType[]
+  professionalPractices TProfessionalPractice[]
 
+  @@unique([CAREER_CODE])
   @@map("t_career")
 }
 
 // ================================================================================
-// TABLA: t_tutors (Tutores)
+// TABLA: t_tutors (Tutores académicos)
 // ================================================================================
 model TTutor {
   TUTOR_ID            Int       @id @default(autoincrement())
-  TUTOR_CI            String
-  NAME                String
+  TUTOR_CI            String?
+  NAME                String?
   SECOND_NAME         String?
-  SURNAME             String
-  SECOND_SURNAME       String?
-  CONTACT_PHONE       String
-  GENDER              String
-  EMAIL               String
+  SURNAME             String?
+  SECOND_SURNAME      String?
+  CONTACT_PHONE       String?
+  GENDER              String?
+  EMAIL               String?
   PROFESSION          String
   CONDITION           String
   DEDICATION          String
   CATEGORY            String
+  TITULO              String?
   CREATION_DATE       DateTime
   STATUS              Int       @default(1)
   USER_ID             Int?
+  person_id           Int
 
   // Relaciones
   user                TUser?    @relation(fields: [USER_ID], references: [USER_ID])
+  person              TPerson   @relation("PersonTutor", fields: [person_id], references: [person_id])
   tutorCareers        TTutorCareer[]
   practiceVisits      TPracticeVisit[]
   professionalPracticeTutors TProfessionalPracticeTutor[]
+  legacyVisits          TVisit[]
 
+  @@unique([TUTOR_CI])
   @@map("t_tutors")
 }
 
@@ -161,20 +198,20 @@ model TTutor {
 // TABLA: t_tutor_career (Relación Tutor-Carrera)
 // ================================================================================
 model TTutorCareer {
-  TUTOR_CAREER_ID     Int       @id @default(autoincrement())
+  TUTOR_CAREER_ID     BigInt    @id @default(autoincrement())
   created_at          DateTime  @default(now())
   TUTOR_ID            Int
   CAREER_ID           Int
 
   // Relaciones
   tutor               TTutor    @relation(fields: [TUTOR_ID], references: [TUTOR_ID])
-  career             TCareer   @relation(fields: [CAREER_ID], references: [CAREER_ID])
+  career              TCareer   @relation(fields: [CAREER_ID], references: [CAREER_ID])
 
   @@map("t_tutor_career")
 }
 
 // ================================================================================
-// TABLA: t_institution (Instituciones)
+// TABLA: t_institution (Instituciones/empresas)
 // ================================================================================
 model TInstitution {
   INSTITUTION_ID      Int       @id @default(autoincrement())
@@ -183,19 +220,23 @@ model TInstitution {
   INSTITUTION_CONTACT String
   PRACTICE_TYPE       String
   REGION              String
-  NUCLEUS            String
+  NUCLEUS             String
   EXTENSION           String
   CREATION_DATE       DateTime
   INSTITUTION_TYPE    String
-  STATUS             Int       @default(1)
-  RIF                String    @unique
+  STATUS              Int       @default(1)
+  RIF                 String
+  INSTITUTION_CODE    String
 
   // Relaciones
   institutionManagers TInstitutionManager[]
   institutionCareers  TInstitutionCareer[]
   institutionInternshipTypes TInstitutionInternshipType[]
   professionalPractices TProfessionalPractice[]
+  institutionManagerInstitutions TInstitutionManagerInstitution[]
 
+  @@unique([INSTITUTION_CODE])
+  @@index([RIF])
   @@map("t_institution")
 }
 
@@ -204,46 +245,67 @@ model TInstitution {
 // ================================================================================
 model TInstitutionManager {
   MANAGER_ID          Int       @id @default(autoincrement())
-  MANAGER_CI          String
-  NAME                String
+  MANAGER_CI          String?
+  NAME                String?
   SECOND_NAME         String?
-  SURNAME             String
+  SURNAME             String?
   SECOND_SURNAME      String?
-  CONTACT_PHONE       String
-  EMAIL               String
+  CONTACT_PHONE       String?
+  EMAIL               String?
   CREATION_DATE       DateTime
   STATUS              Int       @default(1)
   INSTITUTION_ID      Int?
   cargo               String?
+  person_id           Int
 
-  // Relacion opcional - puede ser null
+  // Relaciones
   institution         TInstitution? @relation(fields: [INSTITUTION_ID], references: [INSTITUTION_ID])
+  person              TPerson   @relation("PersonManager", fields: [person_id], references: [person_id])
   professionalPractices TProfessionalPractice[]
+  managerInstitutions TInstitutionManagerInstitution[]
 
+  @@unique([MANAGER_CI])
   @@map("t_institution_manager")
 }
 
 // ================================================================================
-// TABLA: t_institution_career (Relación Institución-Carrera)
+// TABLA: t_institution_manager_institution (Relación Manager-Institución N:M)
+// ================================================================================
+model TInstitutionManagerInstitution {
+  INSTITUTION_MANAGER_INSTITUTION_ID BigInt    @id @default(autoincrement())
+  created_at                    DateTime  @default(now())
+  MANAGER_ID                    Int
+  INSTITUTION_ID                Int
+  cargo                         String?
+
+  // Relaciones
+  manager                       TInstitutionManager @relation(fields: [MANAGER_ID], references: [MANAGER_ID])
+  institution                   TInstitution        @relation(fields: [INSTITUTION_ID], references: [INSTITUTION_ID])
+
+  @@map("t_institution_manager_institution")
+}
+
+// ================================================================================
+// TABLA: t_institution_career (Relación Institución-Carrera N:M)
 // ================================================================================
 model TInstitutionCareer {
-  INSTITUTION_CAREER_ID Int       @id @default(autoincrement())
+  INSTITUTION_CAREER_ID BigInt    @id @default(autoincrement())
   created_at           DateTime  @default(now())
   INSTITUTION_ID       Int
   CAREER_ID           Int
 
   // Relaciones
   institution          TInstitution @relation(fields: [INSTITUTION_ID], references: [INSTITUTION_ID])
-  career              TCareer    @relation(fields: [CAREER_ID], references: [CAREER_ID])
+  career               TCareer    @relation(fields: [CAREER_ID], references: [CAREER_ID])
 
   @@map("t_institution_career")
 }
 
 // ================================================================================
-// TABLA: t_institution_internship_type (Relación Institución-Tipo de práctica)
+// TABLA: t_institution_internship_type (Relación Institución-Tipo práctica N:M)
 // ================================================================================
 model TInstitutionInternshipType {
-  INSTITUTION_INTERNSHIP_TYPE_ID Int       @id @default(autoincrement())
+  INSTITUTION_INTERNSHIP_TYPE_ID BigInt    @id @default(autoincrement())
   created_at                    DateTime  @default(now())
   INSTITUTION_ID                Int
   INTERNSHIP_TYPE_ID           Int
@@ -256,7 +318,7 @@ model TInstitutionInternshipType {
 }
 
 // ================================================================================
-// TABLA: t_internship_type (Tipos de prácticas)
+// TABLA: t_internship_type (Tipos de prácticas profesionales)
 // ================================================================================
 model TInternshipType {
   INTERNSHIP_TYPE_ID  Int       @id @default(autoincrement())
@@ -274,7 +336,7 @@ model TInternshipType {
 }
 
 // ================================================================================
-// TABLA: t_career_internship_type (Relación Carrera-Tipo de práctica)
+// TABLA: t_career_internship_type (Relación Carrera-Tipo práctica)
 // ================================================================================
 model TCareerInternshipType {
   ID_CAREER_INTERNSHIP_TYPE_ID Int       @id @default(autoincrement())
@@ -289,7 +351,7 @@ model TCareerInternshipType {
 }
 
 // ================================================================================
-// TABLA: t_internships_period (Períodos de prácticas)
+// TABLA: t_internships_period (Períodos académicos de pasantías)
 // ================================================================================
 model TInternshipsPeriod {
   PERIOD_ID            Int       @id @default(autoincrement())
@@ -308,7 +370,7 @@ model TInternshipsPeriod {
 }
 
 // ================================================================================
-// TABLA: t_professional_practices (Prácticas profesionales)
+// TABLA: t_professional_practices (Prácticas profesionales - tabla central)
 // ================================================================================
 model TProfessionalPractice {
   PROFESSIONAL_PRACTICE_ID Int       @id @default(autoincrement())
@@ -321,30 +383,39 @@ model TProfessionalPractice {
   TRANSFER                Int       @default(0)
   TOUR                   String
   PERIOD_ID              Int
-  INSTITUTION_ID         Int
+  INSTITUTION_ID         Int?
   STUDENTS_ID            Int
   STATUS                 Int       @default(1)
-  MANAGER_ID             Int
+  MANAGER_ID             Int?
   OBSERVATION            String
   ENROLLMENT            String
   INTERNSHIP_STATUS     Int       @default(1)
   INTERNSHIP_TYPE_ID    Int
   PRACTICES_STATUS      Int       @default(1)
-  EVALUATION_STATUS     String    @default("pending")
+  EVALUATION_STATUS     String?   @default("pending")
+  SEMESTER              String?
+  SECTION               String?
+  REGIME                String?
+  CAREER_ID             Int?
 
   // Relaciones
   period               TInternshipsPeriod     @relation(fields: [PERIOD_ID], references: [PERIOD_ID])
-  institution           TInstitution          @relation(fields: [INSTITUTION_ID], references: [INSTITUTION_ID])
+  institution           TInstitution?          @relation(fields: [INSTITUTION_ID], references: [INSTITUTION_ID])
   student              TStudent             @relation(fields: [STUDENTS_ID], references: [STUDENTS_ID])
-  manager              TInstitutionManager   @relation(fields: [MANAGER_ID], references: [MANAGER_ID])
+  manager              TInstitutionManager?   @relation(fields: [MANAGER_ID], references: [MANAGER_ID])
   internshipType       TInternshipType     @relation(fields: [INTERNSHIP_TYPE_ID], references: [INTERNSHIP_TYPE_ID])
+  career               TCareer?             @relation(fields: [CAREER_ID], references: [CAREER_ID])
 
   // Relaciones adicionales
   activityLogs         TActivityLog[]
   practiceVisits       TPracticeVisit[]
   evaluations         TEvaluation[]
   professionalPracticeTutors TProfessionalPracticeTutor[]
+  legacyVisits          TVisit[]
 
+  @@index([STUDENTS_ID])
+  @@index([INSTITUTION_ID])
+  @@index([STATUS])
   @@map("t_professional_practices")
 }
 
@@ -361,11 +432,12 @@ model TProfessionalPracticeTutor {
   tutor                 TTutor              @relation(fields: [TUTOR_ID], references: [TUTOR_ID])
   professionalPractice TProfessionalPractice @relation(fields: [PROFESSIONAL_PRACTICE_ID], references: [PROFESSIONAL_PRACTICE_ID])
 
+  @@index([PROFESSIONAL_PRACTICE_ID])
   @@map("t_professional_practices_tutor")
 }
 
 // ================================================================================
-// TABLA: t_activity_logs (Bitácora de actividades)
+// TABLA: t_activity_logs (Bitácora de actividades del estudiante)
 // ================================================================================
 model TActivityLog {
   ACTIVITY_LOG_ID       Int       @id @default(autoincrement())
@@ -396,7 +468,7 @@ model TActivityLog {
 }
 
 // ================================================================================
-// TABLA: t_practice_visits (Visitas de seguimiento)
+// TABLA: t_practice_visits (Visitas de seguimiento a pasantías)
 // ================================================================================
 model TPracticeVisit {
   VISIT_ID              Int       @id @default(autoincrement())
@@ -418,11 +490,16 @@ model TPracticeVisit {
   professionalPractice TProfessionalPractice @relation(fields: [PROFESSIONAL_PRACTICE_ID], references: [PROFESSIONAL_PRACTICE_ID])
   tutor                TTutor          @relation(fields: [TUTOR_ID], references: [TUTOR_ID])
 
+  @@index([PROFESSIONAL_PRACTICE_ID])
+  @@index([TUTOR_ID])
+  @@index([VISIT_DATE])
+  @@index([STATUS])
+  @@index([VISIT_CASE])
   @@map("t_practice_visits")
 }
 
 // ================================================================================
-// TABLA: t_evaluation (Evaluaciones)
+// TABLA: t_evaluation (Evaluaciones de prácticas)
 // ================================================================================
 model TEvaluation {
   EVALUATION_ID         Int       @id @default(autoincrement())
@@ -441,9 +518,10 @@ model TEvaluation {
   professionalPractice  TProfessionalPractice @relation(fields: [PROFESSIONAL_PRACTICE_ID], references: [PROFESSIONAL_PRACTICE_ID])
   evaluator             TUser?     @relation("EvaluatorUser", fields: [EVALUATOR_ID], references: [USER_ID])
   registeredBy         TUser?     @relation("RegisteredByUser", fields: [REGISTERED_BY], references: [USER_ID])
-
   evaluationDetails     TEvaluationDetail[]
 
+  @@index([PROFESSIONAL_PRACTICE_ID])
+  @@index([EVALUATOR_TYPE])
   @@map("t_evaluation")
 }
 
@@ -459,11 +537,12 @@ model TEvaluationCriteria {
 
   evaluationDetails TEvaluationDetail[]
 
+  @@index([EVALUATOR_TYPE])
   @@map("t_evaluation_criteria")
 }
 
 // ================================================================================
-// TABLA: t_evaluation_detail (Detalles de evaluación)
+// TABLA: t_evaluation_detail (Detalle de puntajes por criterio)
 // ================================================================================
 model TEvaluationDetail {
   DETAIL_ID         Int       @id @default(autoincrement())
@@ -477,11 +556,12 @@ model TEvaluationDetail {
   evaluation        TEvaluation       @relation(fields: [EVALUATION_ID], references: [EVALUATION_ID])
   criteria          TEvaluationCriteria? @relation(fields: [CRITERIA_ID], references: [CRITERIA_ID])
 
+  @@index([EVALUATION_ID])
   @@map("t_evaluation_detail")
 }
 
 // ================================================================================
-// TABLA: t_list (Listas dinámicas)
+// TABLA: t_list (Listas dinámicas del sistema)
 // ================================================================================
 model TList {
   LIST_ID             Int       @id @default(autoincrement())
@@ -502,7 +582,7 @@ model TList {
 }
 
 // ================================================================================
-// TABLA: t_value_list (Valores de listas)
+// TABLA: t_value_list (Valores de listas dinámicas)
 // ================================================================================
 model TValueList {
   VALUE_LIST_ID      Int       @id @default(autoincrement())
@@ -525,7 +605,7 @@ model TValueList {
 }
 
 // ================================================================================
-// TABLA: t_notifications (Notificaciones)
+// TABLA: t_notifications (Notificaciones a usuarios)
 // ================================================================================
 model TNotification {
   NOTIFICATION_ID     Int       @id @default(autoincrement())
@@ -535,12 +615,15 @@ model TNotification {
   MESSAGE             String
   READ                Boolean   @default(false)
   READ_AT             DateTime?
-  DATA                Json?
+  DATA                String?   // JSON string (JSONB en PostgreSQL)
   CREATED_AT          DateTime  @default(now())
 
   // Relaciones
   user                TUser     @relation(fields: [USER_ID], references: [USER_ID])
 
+  @@index([USER_ID])
+  @@index([USER_ID, READ])
+  @@index([CREATED_AT])
   @@map("t_notifications")
 }
 
@@ -569,7 +652,11 @@ model TStudentDocument {
 
   // Relaciones
   student             TStudent  @relation(fields: [STUDENT_ID], references: [STUDENTS_ID])
+  reviewer            TUser?    @relation(fields: [REVIEWED_BY], references: [USER_ID])
 
+  @@index([STUDENT_ID])
+  @@index([DOCUMENT_TYPE])
+  @@index([STATUS])
   @@map("t_student_documents")
 }
 
@@ -594,7 +681,7 @@ model TStudentRequest {
   REST_USER_ID         Int       @default(0)
   REST_USER_DATE       DateTime  @default(now())
   STATUS_TABLE         Int       @default(1)
-  REASSIGNMENT_DATA    Json?
+  REASSIGNMENT_DATA    String?   // JSON string (JSONB en PostgreSQL)
   IS_REASSIGNMENT     Int       @default(0)
   PREVIOUS_TUTOR_ID   Int?
   PREVIOUS_INSTITUTION_ID Int?
@@ -604,6 +691,10 @@ model TStudentRequest {
   student              TStudent  @relation(fields: [STUDENT_ID], references: [STUDENTS_ID])
   requestType         TRequestType @relation(fields: [REQUEST_TYPE_ID], references: [REQUEST_TYPE_ID])
 
+  @@index([STUDENT_ID])
+  @@index([STATUS])
+  @@index([REQUEST_TYPE_ID])
+  @@index([IS_REASSIGNMENT])
   @@map("t_student_requests")
 }
 
@@ -629,6 +720,7 @@ model TRequestType {
   // Relaciones
   studentRequests   TStudentRequest[]
 
+  @@index([CATEGORY])
   @@map("t_request_types")
 }
 
@@ -652,10 +744,10 @@ model TAuthLog {
 }
 
 // ================================================================================
-// TABLA: t_session (Sesiones)
+// TABLA: t_session (Sesiones de usuario)
 // ================================================================================
 model TSession {
-  SESSION_ID        Int       @id @default(autoincrement())
+  SESSION_ID        Int
   USER_ID           Int
   LOGIN_TIME        DateTime
   MODIF_USER_ID    Int
@@ -668,15 +760,17 @@ model TSession {
 
   // Relaciones
   user              TUser     @relation(fields: [USER_ID], references: [USER_ID])
+  sessionHistories  TSessionHistory[]
 
+  @@id([SESSION_ID, USER_ID])
   @@map("t_session")
 }
 
 // ================================================================================
-// TABLA: t_session_attempts (Intentos de sesión)
+// TABLA: t_session_attempts (Intentos de inicio de sesión)
 // ================================================================================
 model TSessionAttempt {
-  ATTEMPT_ID        Int       @id @default(autoincrement())
+  ATTEMPT_ID        Int
   ATTEMPT_TIME      DateTime
   USER_ID           Int
   ACTION            Int
@@ -691,6 +785,7 @@ model TSessionAttempt {
   // Relaciones
   user              TUser     @relation(fields: [USER_ID], references: [USER_ID])
 
+  @@id([ATTEMPT_ID, USER_ID])
   @@map("t_session_attempts")
 }
 
@@ -698,7 +793,7 @@ model TSessionAttempt {
 // TABLA: t_session_history (Historial de sesiones)
 // ================================================================================
 model TSessionHistory {
-  SESSION_HISTORY_ID Int       @id @default(autoincrement())
+  SESSION_HISTORY_ID Int
   SESSION_ID         Int
   USER_ID            Int
   LOGIN_TIME         DateTime
@@ -706,13 +801,14 @@ model TSessionHistory {
   STATUS             Int       @default(1)
 
   // Relaciones
-  user              TUser     @relation(fields: [USER_ID], references: [USER_ID])
+  session           TSession  @relation(fields: [SESSION_ID, USER_ID], references: [SESSION_ID, USER_ID])
 
+  @@id([SESSION_HISTORY_ID, SESSION_ID, USER_ID])
   @@map("t_session_history")
 }
 
 // ================================================================================
-// TABLA: t_recovery_tokens (Tokens de recuperación)
+// TABLA: t_recovery_tokens (Tokens de recuperación de contraseña)
 // ================================================================================
 model TRecoveryToken {
   TOKEN_ID           Int       @id @default(autoincrement())
@@ -744,10 +840,10 @@ model TPasswordHistory {
 }
 
 // ================================================================================
-// TABLA: t_user_key (Claves de usuario)
+// TABLA: t_user_key (Claves/contraseñas de usuario)
 // ================================================================================
 model TUserKey {
-  USER_KEY_ID        Int       @id @default(autoincrement())
+  USER_KEY_ID        Int
   USER_ID            Int
   KEY                String
   START_DATE         DateTime
@@ -763,12 +859,31 @@ model TUserKey {
 
   // Relaciones
   user               TUser     @relation(fields: [USER_ID], references: [USER_ID])
+  keyHistories       TKeyHistory[]
 
+  @@id([USER_KEY_ID, USER_ID])
   @@map("t_user_key")
 }
 
 // ================================================================================
-// TABLA: t_user_questions (Preguntas de seguridad)
+// TABLA: t_key_history (Historial de claves)
+// ================================================================================
+model TKeyHistory {
+  KEY_HISTORY_ID      Int
+  USER_KEY_ID         Int
+  USER_ID            Int
+  END_DATE           String
+  STATUS              Int       @default(1)
+
+  // Relaciones
+  userKey            TUserKey  @relation(fields: [USER_KEY_ID, USER_ID], references: [USER_KEY_ID, USER_ID])
+
+  @@id([KEY_HISTORY_ID, USER_KEY_ID, USER_ID])
+  @@map("t_key_history")
+}
+
+// ================================================================================
+// TABLA: t_user_questions (Preguntas de seguridad del usuario)
 // ================================================================================
 model TUserQuestion {
   USER_QUESTION_ID   Int       @id @default(autoincrement())
@@ -784,27 +899,54 @@ model TUserQuestion {
 
   // Relaciones
   user               TUser     @relation(fields: [USER_ID], references: [USER_ID])
+  presetQuestion     TPresetQuestion? @relation(fields: [PRESET_QUESTION_ID], references: [PRESET_QUESTION_ID])
 
+  @@index([USER_ID])
+  @@index([PRESET_QUESTION_ID])
   @@map("t_user_questions")
 }
 
 // ================================================================================
-// TABLA: t_user_roles (Relación Usuario-Rol)
+// TABLA: t_preset_questions (Preguntas predefinidas de seguridad)
 // ================================================================================
-model TUserRole {
-  ID_USER            Int
-  ID_ROLES           Int
+model TPresetQuestion {
+  PRESET_QUESTION_ID Int       @id @default(autoincrement())
+  DESCRIPTION        String
+  ANSWER             String
+  MODIF_USER_ID     Int
+  MODIF_USER_DATE   DateTime
+  ELIM_USER_ID      Int
+  ELIM_USER_DATE    DateTime
+  REST_USER_ID      Int
+  REST_USER_DATE    DateTime
+  STATUS            Int       @default(1)
 
   // Relaciones
-  user               TUser     @relation(fields: [ID_USER], references: [USER_ID])
-  role               TRole     @relation(fields: [ID_ROLES], references: [ID_ROLS])
+  userQuestions      TUserQuestion[]
+  securityQuestions  TSecurityQuestion[]
 
-  @@id([ID_USER, ID_ROLES])
-  @@map("t_user_roles")
+  @@map("t_preset_questions")
 }
 
 // ================================================================================
-// TABLA: t_roles (Roles)
+// TABLA: t_security_questions (Respuestas de preguntas de seguridad)
+// ================================================================================
+model TSecurityQuestion {
+  SECURITY_QUESTIONS_ID Int    @id @default(autoincrement())
+  USER_ID               Int
+  PRESET_QUESTION_ID   Int
+  ANSWER               String?
+  CUSTOM_QUESTION      String?
+
+  // Relaciones
+  user                  TUser      @relation(fields: [USER_ID], references: [USER_ID])
+  presetQuestion       TPresetQuestion @relation(fields: [PRESET_QUESTION_ID], references: [PRESET_QUESTION_ID])
+
+  @@map("t_security_questions")
+}
+
+// ================================================================================
+// TABLA: t_roles (Roles del sistema)
 // ================================================================================
 model TRole {
   ID_ROLS            Int       @id @default(autoincrement())
@@ -817,6 +959,7 @@ model TRole {
   REST_USER_ID      Int
   REST_USER_DATE    DateTime
   STATUS            Int       @default(1)
+  IS_SYSTEM        Boolean   @default(false)
 
   // Relaciones
   userRoles          TUserRole[]
@@ -826,12 +969,13 @@ model TRole {
 }
 
 // ================================================================================
-// TABLA: t_permissions (Permisos)
+// TABLA: t_permissions (Permisos del sistema)
 // ================================================================================
 model TPermission {
   PERMISSIONS_ID     Int       @id @default(autoincrement())
   NAME               String
   DESCRIPTION       String?
+  MODULE            String    @default("General")
   MODIF_USER_ID     Int
   MODIF_USER_DATE   DateTime
   ELIM_USER_ID      Int
@@ -862,7 +1006,22 @@ model TRolePermission {
 }
 
 // ================================================================================
-// TABLA: t_user_theme (Tema de usuario)
+// TABLA: t_user_roles (Asignación Usuario-Rol)
+// ================================================================================
+model TUserRole {
+  ID_USER            Int
+  ID_ROLES           Int
+
+  // Relaciones
+  user               TUser     @relation(fields: [ID_USER], references: [USER_ID])
+  role               TRole     @relation(fields: [ID_ROLES], references: [ID_ROLS])
+
+  @@id([ID_USER, ID_ROLES])
+  @@map("t_user_roles")
+}
+
+// ================================================================================
+// TABLA: t_user_theme (Preferencias de tema del usuario)
 // ================================================================================
 model TUserTheme {
   USER_THEME_ID      Int       @id @default(autoincrement())
@@ -884,7 +1043,7 @@ model TUserTheme {
 }
 
 // ================================================================================
-// TABLA: t_backups (Respaldos)
+// TABLA: t_backups (Respaldos de base de datos)
 // ================================================================================
 model TBackup {
   id                 String    @id @default(uuid())
@@ -892,26 +1051,27 @@ model TBackup {
   description        String?
   file_name          String
   size               BigInt?
-  tables             String[] // Array en SQLite
+  tables             String?   // JSON array string (TEXT[] en PostgreSQL)
   created_by         Int?
-  data               Json?
+  data               String?   // JSON string (JSONB en PostgreSQL)
   created_at         DateTime  @default(now())
   updated_at         DateTime  @default(now())
 
   // Relaciones
   creator            TUser?    @relation(fields: [created_by], references: [USER_ID])
 
+  @@index([created_at])
   @@map("t_backups")
 }
 
 // ================================================================================
-// TABLA: t_chat_sessions (Sesiones de chat/IA)
+// TABLA: t_chat_sessions (Sesiones del chat IA)
 // ================================================================================
 model TChatSession {
   SESSION_ID         String    @id @default(uuid())
   USER_ID            Int
   TITLE              String    @default("Nueva conversación")
-  MESSAGES           Json      @default("[]")
+  MESSAGES           String    @default("[]") // JSON string (JSONB en PostgreSQL)
   CREATED_AT         DateTime  @default(now())
   UPDATED_AT         DateTime  @default(now())
   STATUS             Int       @default(1)
@@ -919,62 +1079,46 @@ model TChatSession {
   // Relaciones
   user               TUser     @relation(fields: [USER_ID], references: [USER_ID])
 
+  @@index([USER_ID, STATUS])
+  @@index([UPDATED_AT])
   @@map("t_chat_sessions")
 }
 
 // ================================================================================
-// TABLA: t_landing_config (Configuración del landing page)
+// TABLA: t_chat_config (Configuración del chat IA por usuario)
+// ================================================================================
+model TChatConfig {
+  config_id          String    @id @default(uuid())
+  user_id            Int
+  persona            String?   @default("formal")
+  quick_actions      String?   @default("[]") // JSON string (JSONB en PostgreSQL)
+  show_notifications Boolean?  @default(true)
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @default(now())
+
+  @@map("t_chat_config")
+}
+
+// ================================================================================
+// TABLA: t_landing_config (Configuración de la landing page)
 // ================================================================================
 model TLandingConfig {
   config_id          Int       @id @default(autoincrement())
   config_key        String
-  config_value      Json?
+  config_value      String?   // JSON string (JSONB en PostgreSQL)
   updated_at        DateTime  @default(now())
   updated_by        String    @default("system")
 
+  @@unique([config_key])
+  @@index([config_key])
   @@map("t_landing_config")
 }
 
 // ================================================================================
-// TABLAS ADICIONALES (menos críticas)
-// ================================================================================
-
-// ================================================================================
-// TABLA: t_preset_questions (Preguntas predefinidas)
-// ================================================================================
-model TPresetQuestion {
-  PRESET_QUESTION_ID Int       @id @default(autoincrement())
-  DESCRIPTION        String
-  ANSWER             String
-  MODIF_USER_ID     Int
-  MODIF_USER_DATE   DateTime
-  ELIM_USER_ID      Int
-  ELIM_USER_DATE    DateTime
-  REST_USER_ID      Int
-  REST_USER_DATE    DateTime
-  STATUS            Int       @default(1)
-
-  @@map("t_preset_questions")
-}
-
-// ================================================================================
-// TABLA: t_security_questions (Preguntas de seguridad)
-// ================================================================================
-model TSecurityQuestion {
-  SECURITY_QUESTIONS_ID Int    @id @default(autoincrement())
-  USER_ID               Int
-  PRESET_QUESTION_ID   Int
-  ANSWER               String?
-  CUSTOM_QUESTION      String?
-
-  @@map("t_security_questions")
-}
-
-// ================================================================================
-// TABLA: t_change_log (Log de cambios)
+// TABLA: t_change_log (Log de cambios en datos)
 // ================================================================================
 model TChangeLog {
-  CHANGE_LOG_ID      Int       @id @default(autoincrement())
+  CHANGE_LOG_ID      Int
   DATE_TIME         DateTime
   TABLE_ID          Int
   COLUMN_ID         Int
@@ -987,11 +1131,18 @@ model TChangeLog {
   PRINT_EMAIL       String
   STATUS            Int       @default(1)
 
+  // Relaciones
+  table              TTable          @relation(fields: [TABLE_ID], references: [TABLE_ID])
+  column             TColumn         @relation(fields: [COLUMN_ID], references: [COLUMN_ID])
+  operation          TOperation      @relation(fields: [OPERATION_ID], references: [OPERATION_ID])
+  user               TUser           @relation(fields: [USER_ID], references: [USER_ID])
+
+  @@id([CHANGE_LOG_ID, TABLE_ID, COLUMN_ID, OPERATION_ID, USER_ID])
   @@map("t_change_log")
 }
 
 // ================================================================================
-// TABLA: t_operation (Operaciones)
+// TABLA: t_operation (Catálogo de operaciones para auditoría)
 // ================================================================================
 model TOperation {
   OPERATION_ID       Int       @id @default(autoincrement())
@@ -999,11 +1150,14 @@ model TOperation {
   DESCRIPTION        String?
   STATUS             Int       @default(1)
 
+  // Relaciones
+  changeLogs         TChangeLog[]
+
   @@map("t_operation")
 }
 
 // ================================================================================
-// TABLA: t_columns (Columnas)
+// TABLA: t_columns (Catálogo de columnas para auditoría)
 // ================================================================================
 model TColumn {
   COLUMN_ID           Int       @id @default(autoincrement())
@@ -1011,11 +1165,15 @@ model TColumn {
   COLUMN_NAME        String
   STATUS             Int       @default(1)
 
+  // Relaciones
+  table              TTable    @relation(fields: [TABLE_ID], references: [TABLE_ID])
+  changeLogs         TChangeLog[]
+
   @@map("t_columns")
 }
 
 // ================================================================================
-// TABLA: t_tables (Tablas)
+// TABLA: t_tables (Catálogo de tablas para auditoría)
 // ================================================================================
 model TTable {
   TABLE_ID           Int       @id @default(autoincrement())
@@ -1024,6 +1182,10 @@ model TTable {
   PHYSICAL_NAME     String
   LOG                Int       @default(1)
   STATUS             Int       @default(1)
+
+  // Relaciones
+  columns            TColumn[]
+  changeLogs         TChangeLog[]
 
   @@map("t_tables")
 }
@@ -1067,7 +1229,7 @@ model TConfig {
 }
 
 // ================================================================================
-// TABLA: t_visit (Visitas antiguas - legacy)
+// TABLA: t_visit (Visitas legacy - reemplazada por t_practice_visits)
 // ================================================================================
 model TVisit {
   VISIT_ID             Int       @id @default(autoincrement())
@@ -1079,18 +1241,45 @@ model TVisit {
   TUTOR_ID             Int
   PROFESSIONAL_PRACTICE_ID Int
 
+  // Relaciones
+  tutor               TTutor    @relation(fields: [TUTOR_ID], references: [TUTOR_ID])
+  professionalPractice TProfessionalPractice @relation(fields: [PROFESSIONAL_PRACTICE_ID], references: [PROFESSIONAL_PRACTICE_ID])
+
   @@map("t_visit")
 }
 
 // ================================================================================
-// TABLA: t_key_history (Historial de claves)
+// TABLA: t_person_merge_log (Log de merges de datos personales)
 // ================================================================================
-model TKeyHistory {
-  KEY_HISTORY_ID      Int       @id @default(autoincrement())
-  USER_KEY_ID         Int
-  USER_ID            Int
-  END_DATE           String
-  STATUS              Int       @default(1)
+model TPersonMergeLog {
+  log_id             Int       @id @default(autoincrement())
+  ci                 String
+  source_table       String
+  source_id          Int
+  field_name         String
+  value_used         String?
+  value_over         String?
+  overridden_from    String?
+  severity           String?   @default("INFO")
+  created_at         DateTime  @default(now())
 
-  @@map("t_key_history")
+  @@map("t_person_merge_log")
 }
+
+// ================================================================================
+// TABLA: t_institution_career (relación N:M - repetida como alias)
+// NOTA: Ya definida arriba como TInstitutionCareer
+// ================================================================================
+// (definida en línea 176)
+
+// ================================================================================
+// NOTAS SOBRE EL SCHEMA
+// ================================================================================
+// - JSONB → String: En SQLite/PGlite, los campos JSON se almacenan como texto
+// - ARRAY(TEXT) → String: Los arrays se serializan como JSON
+// - SmallInt → Int: SQLite no distingue smallint
+// - BigInt → BigInt: Se mantiene como BigInt en Prisma
+// - BOOLEAN → Boolean: SQLite almacena como 0/1
+// - TIMESTAMPTZ → DateTime: Se pierde info de zona horaria
+// - Composite PKs: Se usan @@id para claves primarias compuestas
+// - FKs compuestas: Se usan @relation con campos múltiples

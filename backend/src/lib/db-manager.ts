@@ -1,7 +1,11 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import { DatabaseAdapter, DbConnection } from './db-adapter.js';
+import { SupabaseAdapter } from './supabase-adapter.js';
 
 dotenv.config();
+
+export type DbMode = 'cloud' | 'offline';
 
 export interface DbConfig {
   url: string;
@@ -10,16 +14,28 @@ export interface DbConfig {
   retryDelay: number;
 }
 
+/**
+ * DatabaseManager — Singleton que gestiona la conexión a la base de datos.
+ *
+ * Soporta dos modos:
+ * - 'cloud': usa Supabase SDK (comportamiento actual, por defecto)
+ * - 'offline': usa PGliteAdapter (para la app desktop Electron)
+ *
+ * Los controllers NO cambian: siempre llaman a dbManager.getConnection()
+ * y reciben un objeto con .from() y .rpc().
+ */
 export class DatabaseManager {
   private static instance: DatabaseManager;
   private client: SupabaseClient | null = null;
   private config: DbConfig;
   private connectionStatus: 'connected' | 'disconnected' | 'connecting' = 'disconnected';
-
   private connectionPromise: Promise<SupabaseClient> | null = null;
 
+  // ─── Modo offline ───
+  private mode: DbMode = 'cloud';
+  private offlineAdapter: DatabaseAdapter | null = null;
+
   private constructor() {
-    // Forzar recarga de dotenv para asegurar que lee los valores más recientes
     dotenv.config({ override: true });
 
     this.config = {
@@ -41,14 +57,53 @@ export class DatabaseManager {
     return DatabaseManager.instance;
   }
 
+  // ─── Gestión de modo ───
+
+  /** Cambiar entre modo cloud y offline */
+  public setMode(mode: DbMode): void {
+    if (mode === this.mode) return;
+    console.log(`[DB] Cambiando a modo: ${mode}`);
+    this.mode = mode;
+  }
+
+  /** Obtener el modo actual */
+  public getMode(): DbMode {
+    return this.mode;
+  }
+
+  /** Inyectar el adaptador offline (PGlite) desde Electron */
+  public setOfflineAdapter(adapter: DatabaseAdapter): void {
+    this.offlineAdapter = adapter;
+    console.log('[DB] ✅ Adaptador offline configurado');
+  }
+
+  // ─── Conexión ───
+
   /**
-   * Alias for getClient for backward compatibility
+   * Obtiene la conexión activa según el modo actual.
+   * En modo 'cloud': devuelve el SupabaseClient (envuelto en SupabaseAdapter)
+   * En modo 'offline': devuelve el PGliteAdapter
    */
-  public getConnection(): SupabaseClient {
-    return this.getClient();
+  public getConnection(): DbConnection {
+    if (this.mode === 'offline') {
+      if (!this.offlineAdapter) {
+        throw new Error('[DB] Modo offline activado pero no hay adaptador configurado. Llama a setOfflineAdapter() primero.');
+      }
+      return this.offlineAdapter;
+    }
+
+    // Modo cloud: devolver SupabaseClient directamente (backward compat)
+    if (!this.client) {
+      throw new Error('[DB] Database not connected. Call connect() first.');
+    }
+    return this.client as unknown as DbConnection;
   }
 
   public async connect(): Promise<SupabaseClient> {
+    if (this.mode === 'offline') {
+      throw new Error('[DB] No se puede conectar a Supabase Cloud en modo offline');
+    }
+
     if (this.client && this.connectionStatus === 'connected') {
       return this.client;
     }
@@ -97,14 +152,28 @@ export class DatabaseManager {
     return this.connectionPromise;
   }
 
+  /**
+   * Devuelve el SupabaseClient directamente (solo modo cloud).
+   * Lanza error si está en modo offline.
+   */
   public getClient(): SupabaseClient {
+    if (this.mode === 'offline') {
+      throw new Error('[DB] getClient() no está disponible en modo offline. Usa getConnection() en su lugar.');
+    }
     if (!this.client) {
-      throw new Error('Database not connected. Call connect() first.');
+      throw new Error('[DB] Database not connected. Call connect() first.');
     }
     return this.client;
   }
 
   public async checkHealth(): Promise<{ status: string; details?: Record<string, unknown> }> {
+    if (this.mode === 'offline') {
+      if (!this.offlineAdapter) {
+        return { status: 'unhealthy', details: { error: 'Adaptador offline no configurado' } };
+      }
+      return { status: 'healthy', details: { mode: 'offline', engine: 'PGlite (PostgreSQL WASM)' } };
+    }
+
     if (!this.client) {
       if (!this.config.url || !this.config.key || this.config.url.includes('your-project') || this.config.key.includes('your-')) {
         return { 
@@ -137,7 +206,7 @@ export class DatabaseManager {
         status: 'healthy', 
         details: { 
           latency: `${duration}ms`,
-          url: this.config.url.replace(/\/\/[^@]+@/, '//***:***@') // Ocultar credenciales si las hubiera en el URL
+          url: this.config.url.replace(/\/\/[^@]+@/, '//***:***@')
         } 
       };
     } catch (error: unknown) {
@@ -153,9 +222,23 @@ export class DatabaseManager {
   }
 
   /**
-   * Ejecuta una operación con reintentos automáticos y monitoreo de rendimiento
+   * Ejecuta una operación con reintentos automáticos.
+   * En modo offline, ejecuta sin reintentos (no hay red).
    */
-  public async withRetry<T>(operation: (client: SupabaseClient) => Promise<T>, operationName: string = 'Anonymous Operation'): Promise<T> {
+  public async withRetry<T>(operation: (client: any) => Promise<T>, operationName: string = 'Anonymous Operation'): Promise<T> {
+    // En modo offline, ejecutar directo sin reintentos
+    if (this.mode === 'offline') {
+      try {
+        const client = this.getConnection();
+        return await operation(client);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : JSON.stringify(error);
+        console.error(`[DB] Error en operación offline ${operationName}:`, message);
+        throw error;
+      }
+    }
+
+    // Modo cloud: con reintentos
     let lastError: unknown;
     const startTime = Date.now();
     
@@ -173,7 +256,6 @@ export class DatabaseManager {
       } catch (error: unknown) {
         lastError = error;
         
-        // No reintentar si es un error de aplicación ya controlado (tiene status)
         const appError = error as { status?: number };
         if (appError.status && appError.status < 500) {
           throw error;
@@ -182,7 +264,6 @@ export class DatabaseManager {
         const duration = Date.now() - startTime;
         console.debug(`[DB] Intento ${attempt} falló después de ${duration}ms. Reintentando...`);
         
-        // Si el error es de conexión, forzar reconexión en el próximo intento
         this.connectionStatus = 'disconnected';
         
         if (attempt < this.config.maxRetries) {

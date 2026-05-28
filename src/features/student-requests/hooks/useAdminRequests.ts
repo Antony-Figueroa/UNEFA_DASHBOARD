@@ -14,10 +14,22 @@ export const useAdminRequests = () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await adminRequestsService.getAll(filters);
-      setRequests(result.data);
-      setStats(result.stats);
-      return result;
+      if (filters) {
+        // Con filtro: stats completos (sin filtro) + datos filtrados en paralelo
+        const [allResult, filteredResult] = await Promise.all([
+          adminRequestsService.getAll(),
+          adminRequestsService.getAll(filters),
+        ]);
+        setStats(allResult.stats);
+        setRequests(filteredResult.data);
+        return filteredResult;
+      } else {
+        // Sin filtro: una sola llamada
+        const result = await adminRequestsService.getAll();
+        setStats(result.stats);
+        setRequests(result.data);
+        return result;
+      }
     } catch (err) {
       console.error('[useAdminRequests] Error fetching requests:', err);
       setError('Error al cargar las solicitudes');

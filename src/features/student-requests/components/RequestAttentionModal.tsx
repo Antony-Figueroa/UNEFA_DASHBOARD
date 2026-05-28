@@ -89,35 +89,43 @@ export const RequestAttentionModal = ({
         <div className="space-y-4">
           {/* Datos del Estudiante */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
+            <div className="min-w-0">
               <p className="text-sm text-text-secondary">Estudiante</p>
-              <p className="font-medium">{request.studentName}</p>
+              <p className="font-medium break-words" title={request.studentName}>
+                {request.studentName}
+              </p>
             </div>
             <div>
               <p className="text-sm text-text-secondary">Cédula</p>
               <p className="font-medium">{request.studentCi}</p>
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-sm text-text-secondary">Email</p>
-              <p className="font-medium">{request.studentEmail}</p>
+              <p className="font-medium break-words" title={request.studentEmail}>
+                {request.studentEmail}
+              </p>
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-sm text-text-secondary">Tipo</p>
-              <p className="font-medium">{request.typeName}</p>
+              <p className="font-medium break-words" title={request.typeName}>
+                {request.typeName}
+              </p>
             </div>
           </div>
 
           {/* Asunto */}
           <div className="border-t border-border-light dark:border-border-dark pt-4">
             <p className="text-sm text-text-secondary mb-1">Asunto</p>
-            <p className="font-medium">{request.subject}</p>
+            <p className="font-medium break-words" title={request.subject}>
+              {request.subject}
+            </p>
           </div>
 
           {/* Descripción */}
           <div>
             <p className="text-sm text-text-secondary mb-1">Descripción</p>
-            <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <p className="whitespace-pre-wrap">{request.description}</p>
+            <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg max-h-40 overflow-y-auto">
+              <p className="whitespace-pre-wrap break-words">{request.description}</p>
             </div>
           </div>
 
@@ -130,9 +138,9 @@ export const RequestAttentionModal = ({
               </p>
 
               {reassignmentData.reason && (
-                <div className="mb-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                <div className="mb-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg max-h-32 overflow-y-auto">
                   <p className="text-sm text-text-secondary">Motivo del estudiante:</p>
-                  <p className="text-sm">{reassignmentData.reason}</p>
+                  <p className="text-sm break-words whitespace-pre-wrap">{reassignmentData.reason}</p>
                 </div>
               )}
 

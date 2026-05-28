@@ -73,36 +73,6 @@ export interface StudentProfile {
   registrationDate: string;
 }
 
-export interface RequestType {
-  id: number;
-  name: string;
-  description: string;
-  isReassignment?: boolean;
-  category?: string;
-}
-
-export interface ReassignmentData {
-  newTutorId?: number;
-  newInstitutionId?: number;
-  newCareerId?: number;
-  reason: string;
-  currentTutorName?: string;
-  currentInstitutionName?: string;
-  currentCareerName?: string;
-}
-
-export interface StudentRequest {
-  id: number;
-  typeId: number;
-  typeName: string;
-  subject: string;
-  description: string;
-  status: 'pending' | 'in_review' | 'approved' | 'rejected';
-  response: string | null;
-  createdAt: string;
-  processedAt: string | null;
-}
-
 export interface DashboardData {
   student: {
     id: number;
@@ -115,13 +85,6 @@ export interface DashboardData {
   internship: StudentInternship | null;
   activityLogs: ActivityLogSummary;
   stats: DashboardStats;
-}
-
-export interface CreateRequestPayload {
-  typeId: number;
-  subject: string;
-  description: string;
-  reassignmentData?: ReassignmentData;
 }
 
 export interface ActivityLogStats {

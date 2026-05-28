@@ -1,29 +1,25 @@
 import apiClient from '../../../api/apiClient';
-import type { RequestType } from '../types';
+import type { RequestType, UpdateStatusPayload, RequestFilters, RequestStats, AdminRequest } from '../types';
 
 const ADMIN_API = '/requests';
 
+interface GetAllResponse {
+  data: AdminRequest[];
+  stats: RequestStats;
+}
+
 export const adminRequestsService = {
-  getAll: async (params?: { status?: string; typeId?: string }): Promise<{ data: any[]; stats: any }> => {
+  getAll: async (params?: RequestFilters): Promise<GetAllResponse> => {
     const response = await apiClient.get(ADMIN_API, { params });
     return { data: response.data.data, stats: response.data.stats };
   },
 
-  getById: async (id: string): Promise<any> => {
+  getById: async (id: string): Promise<AdminRequest> => {
     const response = await apiClient.get(`${ADMIN_API}/${id}`);
     return response.data.data;
   },
 
-  updateStatus: async (id: string, data: { 
-    status: string; 
-    response?: string;
-    reassignmentData?: {
-      newTutorId?: number;
-      newInstitutionId?: number;
-      newCareerId?: number;
-      reason?: string;
-    };
-  }): Promise<void> => {
+  updateStatus: async (id: string, data: UpdateStatusPayload): Promise<void> => {
     await apiClient.put(`${ADMIN_API}/${id}`, data);
   },
 

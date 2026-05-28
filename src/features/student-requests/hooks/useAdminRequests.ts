@@ -48,9 +48,15 @@ export const useAdminRequests = () => {
       toast.success('Solicitud actualizada exitosamente');
       return true;
     } catch (err) {
-      console.error('[useAdminRequests] Error updating request:', err);
-      setError('Error al actualizar la solicitud');
-      toast.error('Error al actualizar la solicitud');
+      const serverMsg = (err as any)?.response?.data?.message || (err as any)?.message || 'Error al actualizar la solicitud';
+      console.error('[useAdminRequests] Error updating request:', {
+        id,
+        data,
+        serverResponse: (err as any)?.response?.data,
+        status: (err as any)?.response?.status
+      });
+      setError(serverMsg);
+      toast.error(serverMsg);
       return false;
     } finally {
       setSaving(false);

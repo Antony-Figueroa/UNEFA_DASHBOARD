@@ -146,7 +146,7 @@ export const reportsService = {
   },
 
   getDocumentData: async (documentType: string, id: number) => {
-    const response = await apiClient.get(`/documents/${documentType}/${id}`);
+    const response = await apiClient.get(`/institutional-documents/${documentType}/${id}`);
     return response.data;
   },
 

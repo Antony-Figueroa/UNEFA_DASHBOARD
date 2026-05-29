@@ -36,6 +36,8 @@ export interface DashboardStats {
   pendingEvaluations: number;
   /** Number of completed evaluations */
   completedEvaluations: number;
+  /** Number of upcoming visits in the next 7 days */
+  upcomingVisits: number;
   /** Distribution of students by tutor */
   tutorDistribution: { tutorName: string; count: number }[];
   /** Distribution of students by institution */

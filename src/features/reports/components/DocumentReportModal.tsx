@@ -4,6 +4,7 @@ import Button from '../../../components/ui/button/Button';
 import InputField from '../../../components/form/input/InputField';
 import toast from 'react-hot-toast';
 import reportsService from '../services/reportsService';
+import { getAllDocumentTexts } from '../services/reportTextsService';
 import { SingleReportModal } from '../../../components/ui/pdf/SingleReportModal';
 import {
   AceptacionTutorPDF,
@@ -23,7 +24,7 @@ const DOCUMENT_CONFIG: Record<string, {
   idLabel: string;
   idPlaceholder: string;
   getData: (id: number) => Promise<any>;
-  pdfTemplate: React.FC<{ data: any; textos?: Record<string, string> }>;
+  pdfTemplate: React.FC<{ data: any; textos: Record<string, string> }>;
 }> = {
   'aceptacion-tutor': {
     title: 'Carta de Aceptación del Tutor Académico',
@@ -108,6 +109,7 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
   const [recordId, setRecordId] = useState('');
   const [loading, setLoading] = useState(false);
   const [pdfData, setPdfData] = useState<any>(null);
+  const [textos, setTextos] = useState<Record<string, string>>({});
   const [showPdf, setShowPdf] = useState(false);
 
   if (!config) return null;
@@ -120,11 +122,16 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
     }
     setLoading(true);
     try {
-      const response = await config.getData(id);
+      const [response, allTextos] = await Promise.all([
+        config.getData(id),
+        getAllDocumentTexts(),
+      ]);
       if (!response?.success || !response?.data) {
         toast.error(response?.message || 'No se encontraron datos');
         return;
       }
+      const dbKey = documentType.replace(/-/g, '_');
+      setTextos(allTextos[dbKey] || {});
       setPdfData(response.data);
       setShowPdf(true);
     } catch (error: any) {
@@ -177,7 +184,7 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
           title={config.title}
           subtitle={`ID: ${recordId}`}
           data={pdfData}
-          template={(data: any) => <Template data={data} />}
+          template={(data: any) => <Template data={data} textos={textos} />}
           fileName={`${documentType}_${recordId}`}
           recordInfo={{ label: config.idLabel, value: recordId }}
         />

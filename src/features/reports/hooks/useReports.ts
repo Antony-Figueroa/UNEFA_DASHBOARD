@@ -23,7 +23,6 @@ export interface ReportConfig {
 
 export function useReports() {
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<any>(null);
 
   const exportExcel = useCallback(async (
     type: string,
@@ -74,28 +73,22 @@ export function useReports() {
       switch (type) {
         case 'tutores-academicos':
           result = await reportsService.getTutorsAcademicReport(periodId, careerId);
-          setData(result);
           return result as TutorAcademicReportResponse;
         case 'resumen-pasantias':
           result = await reportsService.getResumenPasantiasReport(periodId, careerId);
-          setData(result);
           return result;
         case 'relacion-empresas':
           result = await reportsService.getRelacionEmpresas(periodId, careerId);
-          setData(result);
           return result;
         case 'distribucion-tutores':
           result = await reportsService.getDistribucionTutores(periodId, careerId);
-          setData(result);
           return result;
         case 'distribucion-tutores-v2':
           result = await reportsService.getDistribucionTutoresV2(periodId, careerId);
-          setData(result);
           return result;
         case 'relacion-individual-docente': {
           if (!periodId) throw new Error('Se requiere tutorId');
           result = await reportsService.getRelacionIndividualDocente(periodId);
-          setData(result);
           return result;
         }
         default:
@@ -109,5 +102,5 @@ export function useReports() {
     }
   }, []);
 
-  return { loading, data, fetchData, exportExcel };
+  return { loading, fetchData, exportExcel };
 }

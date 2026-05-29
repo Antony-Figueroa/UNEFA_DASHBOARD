@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/auth";
 import { motion } from "framer-motion";
-import { FiHome, FiCalendar, FiUser, FiShield } from "react-icons/fi";
+import { FiHome, FiCalendar, FiUser, FiShield, FiBell } from "react-icons/fi";
 
 /**
  * Map of role IDs to display names for the UI.
@@ -21,7 +21,14 @@ const getRoleName = (role: number): string => ROLE_NAMES[role] || "Usuario";
  * Displays a compact greeting with user name, role, current time, and date.
  * Uses the system's primary color: #054F94 (brand-600)
  */
-const WelcomeBanner: React.FC = () => {
+interface WelcomeBannerProps {
+  /** Número total de tareas pendientes (0 = ocultar badge) */
+  pendingCount?: number;
+  /** Callback al hacer clic en el botón de tareas pendientes */
+  onTasksClick?: () => void;
+}
+
+const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ pendingCount, onTasksClick }) => {
   const { user } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -92,15 +99,42 @@ const WelcomeBanner: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: Date & Time */}
-          <div className="flex items-center gap-4 px-5 py-3.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/20">
-            <div className="flex items-center justify-center size-11 rounded-xl bg-gradient-to-br from-white/20 to-white/5 shrink-0">
-              <FiCalendar className="size-5 text-white" />
+          {/* Right: Date & Time + Tasks button */}
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-4 px-5 py-3.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/20">
+              <div className="flex items-center justify-center size-11 rounded-xl bg-gradient-to-br from-white/20 to-white/5 shrink-0">
+                <FiCalendar className="size-5 text-white" />
+              </div>
+              <div className="text-right">
+                <p className="text-xl sm:text-2xl font-bold text-white">{formatTime()}</p>
+                <p className="text-xs font-medium uppercase text-white/60 tracking-wider">{formatDate()}</p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-xl sm:text-2xl font-bold text-white">{formatTime()}</p>
-              <p className="text-xs font-medium uppercase text-white/60 tracking-wider">{formatDate()}</p>
-            </div>
+
+            {/* Pending Tasks Button */}
+            {onTasksClick && (
+              <motion.button
+                onClick={onTasksClick}
+                className="relative flex items-center justify-center size-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                aria-label="Tareas pendientes"
+                title="Tareas pendientes"
+              >
+                <FiBell className="size-5 text-white" />
+
+                {/* Badge con cantidad */}
+                {(pendingCount ?? 0) > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[20px] h-[20px] px-1 rounded-full text-[10px] font-bold text-white bg-red-500 shadow-lg"
+                  >
+                    {pendingCount}
+                  </motion.span>
+                )}
+              </motion.button>
+            )}
           </div>
         </div>
 

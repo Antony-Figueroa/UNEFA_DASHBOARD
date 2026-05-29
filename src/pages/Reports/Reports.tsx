@@ -28,7 +28,7 @@ interface ReportMetric {
   trend?: "up" | "down" | "stable";
 }
 
-type ReportType = "students" | "enrollments" | "tracking" | "certificates" | "institutions" | "tutores-academicos" | "culminated-students" | "resumen-pasantias" | "";
+type ReportType = "students" | "enrollments" | "tracking" | "certificates" | "institutions" | "tutores-academicos" | "culminated-students" | "resumen-pasantias" | "relacion-empresas" | "distribucion-tutores" | "distribucion-tutores-v2" | "relacion-individual-docente" | "";
 
 const DOCUMENT_SECTIONS = [
   {
@@ -237,6 +237,92 @@ export default function ReportsPage() {
         { header: "Horas", accessor: "totalHours" as any },
         { header: "Nota", accessor: "grade" as any },
       ]
+    },
+    "relacion-empresas": {
+      title: "Relación de Empresas",
+      subtitle: "Instituciones que demandan asignación de pasantes",
+      loadTable: async () => {
+        const response = await reportsService.getRelacionEmpresas();
+        return response.data;
+      },
+      pdfTemplate: (data) => <StudentPDF data={data as any[]} />,
+      columns: [
+        { header: "Región", accessor: "region" },
+        { header: "Núcleo", accessor: "nucleo" },
+        { header: "Extensión", accessor: "extension" },
+        { header: "Empresa", accessor: "empresa" },
+        { header: "RIF", accessor: "rif" },
+        { header: "Tipo", accessor: "tipo" },
+        { header: "Carrera", accessor: "carrera" },
+        { header: "Estudiantes", accessor: "cantidadEstudiantes", className: "text-center font-bold" },
+      ]
+    },
+    "distribucion-tutores": {
+      title: "Distribución de Tutores",
+      subtitle: "Asignación de tutores por estudiante",
+      loadTable: async () => {
+        const response = await reportsService.getDistribucionTutores();
+        return response.data;
+      },
+      pdfTemplate: (data) => <StudentPDF data={data as any[]} />,
+      columns: [
+        { header: "N°", accessor: "nro", className: "w-12 text-center" },
+        { header: "Carrera", accessor: "carrera" },
+        { header: "Estudiante", accessor: "estudiante" },
+        { header: "Título TA", accessor: (r: any) => r.tutorAcademico?.titulo || '' },
+        { header: "Nombre TA", accessor: (r: any) => r.tutorAcademico?.nombre || '' },
+        { header: "Contacto TA", accessor: (r: any) => r.tutorAcademico?.contacto || '' },
+        { header: "Nombre TM", accessor: (r: any) => r.tutorMetodologico?.nombre || '' },
+        { header: "Contacto TM", accessor: (r: any) => r.tutorMetodologico?.contacto || '' },
+        { header: "Horario TM", accessor: (r: any) => r.tutorMetodologico?.horario || '' },
+        { header: "Nombre Eval", accessor: (r: any) => r.evaluador?.nombre || '' },
+        { header: "Contacto Eval", accessor: (r: any) => r.evaluador?.contacto || '' },
+      ]
+    },
+    "distribucion-tutores-v2": {
+      title: "Dist. Tutores (Detallada)",
+      subtitle: "Distribución de tutores con horario detallado",
+      loadTable: async () => {
+        const response = await reportsService.getDistribucionTutoresV2();
+        return response.data;
+      },
+      pdfTemplate: (data) => <StudentPDF data={data as any[]} />,
+      columns: [
+        { header: "N°", accessor: "nro", className: "w-12 text-center" },
+        { header: "Carrera", accessor: "carrera" },
+        { header: "Estudiante", accessor: "estudiante" },
+        { header: "Título TA", accessor: (r: any) => r.tutorAcademico?.titulo || '' },
+        { header: "Nombre TA", accessor: (r: any) => r.tutorAcademico?.nombre || '' },
+        { header: "Contacto TA", accessor: (r: any) => r.tutorAcademico?.contacto || '' },
+        { header: "Nombre TM", accessor: (r: any) => r.tutorMetodologico?.nombre || '' },
+        { header: "Contacto TM", accessor: (r: any) => r.tutorMetodologico?.contacto || '' },
+        { header: "Horario TM", accessor: (r: any) => r.tutorMetodologico?.horario || '' },
+        { header: "Horario Det.", accessor: (r: any) => r.tutorMetodologico?.horarioDetallado || '' },
+        { header: "Nombre Eval", accessor: (r: any) => r.evaluador?.nombre || '' },
+        { header: "Contacto Eval", accessor: (r: any) => r.evaluador?.contacto || '' },
+      ]
+    },
+    "relacion-individual-docente": {
+      title: "Relación Individual del Docente",
+      subtitle: "Reporte individual por docente tutor",
+      loadTable: async () => [],
+      pdfTemplate: (data) => <StudentPDF data={data as any[]} />,
+      columns: [
+        { header: "N°", accessor: "nro", className: "w-12 text-center" },
+        { header: "Región", accessor: "region" },
+        { header: "Núcleo", accessor: "nucleo" },
+        { header: "Extensión", accessor: "extension" },
+        { header: "Carrera", accessor: "carrera" },
+        { header: "Est. Nombre", accessor: (r: any) => r.estudiante?.nombre || '' },
+        { header: "Est. Apellido", accessor: (r: any) => r.estudiante?.apellido || '' },
+        { header: "Cédula", accessor: (r: any) => r.estudiante?.ci || '' },
+        { header: "Sexo", accessor: (r: any) => r.estudiante?.sexo || '' },
+        { header: "Tipo", accessor: (r: any) => r.estudiante?.tipo || '' },
+        { header: "Teléfono", accessor: (r: any) => r.estudiante?.telefono || '' },
+        { header: "Institución", accessor: (r: any) => r.institucion?.nombre || '' },
+        { header: "Tutor Inst.", accessor: (r: any) => `${r.tutorInstitucional?.nombre || ''} ${r.tutorInstitucional?.apellido || ''}`.trim() },
+        { header: "Dirección", accessor: "direccion" },
+      ]
     }
   };
 
@@ -252,9 +338,12 @@ export default function ReportsPage() {
         const result = await fetchReportData(type, periodNum);
         if (result?.data) {
           setTableData(result.data);
-          setReportType("tutores-academicos");
+          setReportType(type as ReportType);
           setIsTableModalOpen(true);
         }
+      } catch (error) {
+        console.error(`[Reports] Error viewing ${type}:`, error);
+        toast.error('Error al cargar el reporte');
       } finally {
         setLoadingReport(false);
       }
@@ -283,6 +372,10 @@ export default function ReportsPage() {
   }, [periodFilter, fetchReportData]);
 
   const handleExportExcel = useCallback(async (type: string) => {
+    if (type === "relacion-individual-docente") {
+      toast("Seleccione un tutor desde la sección de tutores", { icon: "ℹ️" });
+      return;
+    }
     setLoadingExcelId(type);
     try {
       const periodNum = periodFilter ? parseInt(periodFilter.split('-')[0]) : undefined;
@@ -291,6 +384,9 @@ export default function ReportsPage() {
         const periodLabel = periodFilter || "Todos";
         await exportExcel(type, result.data, periodLabel);
       }
+    } catch (error) {
+      console.error(`[Reports] Error exporting ${type}:`, error);
+      toast.error('Error al exportar el reporte');
     } finally {
       setLoadingExcelId(null);
     }

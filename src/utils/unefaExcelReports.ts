@@ -419,7 +419,7 @@ export async function generateDistribucionTutoresExcel(data: any[], period: stri
   worksheet.mergeCells('C9:C10');
   worksheet.mergeCells('D9:G9');
   worksheet.mergeCells('H9:J9');
-  worksheet.mergeCells('K9:M9');
+  worksheet.mergeCells('K9:L9');
 
   const cols = [
     { col: 'A', text: 'N°' }, { col: 'B', text: 'CARRERA' }, { col: 'C', text: 'ESTUDIANTE' },
@@ -602,12 +602,12 @@ export async function generateDistribucionTutoresV2Excel(data: any[], period: st
   applyInstitutionalHeader(worksheet, totalCols);
 
   applyTitleRow(worksheet, 7, `DISTRIBUCIÓN DE TUTORES (V2) - ${period}`, totalCols);
-
   const row9 = worksheet.getRow(9);
   const row10 = worksheet.getRow(10);
   row9.height = 20;
-  row10.height = 45;
+  row10.height = 40;
 
+  //
   worksheet.mergeCells('A9:A10');
   worksheet.mergeCells('B9:B10');
   worksheet.mergeCells('C9:C10');

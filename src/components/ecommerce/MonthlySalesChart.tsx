@@ -12,11 +12,16 @@ interface MonthlySalesChartProps {
 }
 
 export default function MonthlySalesChart({ stats }: MonthlySalesChartProps) {
-  const categories = stats?.monthlyEnrollments.map((m) => m.month) || [
+  const enrollments = stats?.monthlyEnrollments ?? [];
+
+  const categories = enrollments.map((m) => m.month);
+  const chartData = enrollments.map((m) => m.count);
+
+  // Fallback si no hay datos reales
+  const displayCategories = categories.length > 0 ? categories : [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
   ];
-
-  const data = stats?.monthlyEnrollments.map((m) => m.count) || [
+  const displayData = chartData.length > 0 ? chartData : [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   ];
 
@@ -47,7 +52,7 @@ export default function MonthlySalesChart({ stats }: MonthlySalesChartProps) {
       colors: ["transparent"],
     },
     xaxis: {
-      categories,
+      categories: displayCategories,
       axisBorder: {
         show: false,
       },
@@ -90,7 +95,7 @@ export default function MonthlySalesChart({ stats }: MonthlySalesChartProps) {
   const series = [
     {
       name: "Inscripciones",
-      data,
+      data: displayData,
     },
   ];
   const [isOpen, setIsOpen] = useState(false);

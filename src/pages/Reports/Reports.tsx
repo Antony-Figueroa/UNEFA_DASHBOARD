@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactElement } from "react";
+import { useState, useEffect, useCallback, ReactElement } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -12,12 +12,14 @@ import { TutorPDF } from "../../components/ui/pdf/templates/TutorPDF";
 import { InstitutionPDF } from "../../components/ui/pdf/templates/InstitutionPDF";
 import { EnrollmentPDF } from "../../components/ui/pdf/templates/EnrollmentPDF";
 import { CulminatedStudentsPDF } from "../../components/ui/pdf/templates/CulminatedStudentsPDF";
+import { ReportList } from "../../features/reports/components/ReportList";
+import { DocumentReportModal } from "../../features/reports/components/DocumentReportModal";
+import { useReports } from "../../features/reports/hooks/useReports";
 import { getStudents } from "../../features/students/services/studentsService";
 import { getInstitutions } from "../../features/institutions/services/institutionsService";
 import { getEnrollments } from "../../features/enrollment/services/enrollmentService";
 import toast from "react-hot-toast";
 import { DocumentProps } from "@react-pdf/renderer";
-import { generateAnexo4Excel, generateResumenPasantiasExcel } from "../../utils/unefaExcelReports";
 
 interface ReportMetric {
   label: string;
@@ -28,26 +30,62 @@ interface ReportMetric {
 
 type ReportType = "students" | "enrollments" | "tracking" | "certificates" | "institutions" | "tutores-academicos" | "culminated-students" | "resumen-pasantias" | "";
 
+const DOCUMENT_SECTIONS = [
+  {
+    title: "Documentos Oficiales",
+    description: "Documentos PDF institucionales para estudiantes y tutores",
+    reports: [
+      { id: "aceptacion-tutor", title: "Carta de Aceptación", subtitle: "Aceptación del Tutor Académico", icon: "fileText", type: "pdf" as const },
+      { id: "solicitud-institucion", title: "Solicitud de Institución", subtitle: "Asignación de institución para PP", icon: "fileText", type: "pdf" as const },
+      { id: "carta-postulacion", title: "Carta de Postulación", subtitle: "Postulación del estudiante", icon: "fileText", type: "pdf" as const },
+      { id: "acta-validacion", title: "Acta de Validación", subtitle: "Validación de prácticas profesionales", icon: "fileText", type: "pdf" as const },
+      { id: "evaluacion-final", title: "Evaluación Final", subtitle: "Evaluación final de prácticas", icon: "fileText", type: "pdf" as const },
+      { id: "evaluacion-tutor-institucional", title: "Eval. Tutor Institucional", subtitle: "Evaluación del tutor de la institución", icon: "fileText", type: "pdf" as const },
+      { id: "evaluacion-tutor-academico", title: "Eval. Tutor Académico", subtitle: "Evaluación del tutor académico", icon: "fileText", type: "pdf" as const },
+      { id: "evaluacion-comite", title: "Eval. Comité Evaluador", subtitle: "Evaluación del comité evaluador", icon: "fileText", type: "pdf" as const },
+      { id: "constancia-tutor-academico", title: "Const. Tutor Académico", subtitle: "Constancia de tutor académico", icon: "fileText", type: "pdf" as const },
+      { id: "constancia-tutor-institucional", title: "Const. Tutor Institucional", subtitle: "Constancia de tutor institucional", icon: "fileText", type: "pdf" as const },
+    ],
+  },
+  {
+    title: "Reportes Generales",
+    description: "Reportes exportables a Excel con datos agregados",
+    reports: [
+      { id: "tutores-academicos", title: "Relación de Tutores Acad.", subtitle: "ANEXO 4 - Tutores y estudiantes atendidos", icon: "table", type: "excel" as const },
+      { id: "resumen-pasantias", title: "Resumen de Pasantías", subtitle: "Resumen general de prácticas profesionales", icon: "table", type: "excel" as const },
+      { id: "relacion-empresas", title: "Relación de Empresas", subtitle: "Instituciones que demandan pasantes", icon: "spreadsheet", type: "excel" as const },
+      { id: "distribucion-tutores", title: "Distribución de Tutores", subtitle: "Asignación de tutores por estudiante", icon: "spreadsheet", type: "excel" as const },
+      { id: "distribucion-tutores-v2", title: "Dist. Tutores (Detallada)", subtitle: "Distribución con horario detallado", icon: "spreadsheet", type: "excel" as const },
+      { id: "relacion-individual-docente", title: "Relación Individual Doc.", subtitle: "Reporte individual por docente", icon: "spreadsheet", type: "excel" as const },
+    ],
+  },
+];
+
 export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<ReportMetric[]>([]);
   const [careerData, setCareerData] = useState<CareerData[]>([]);
   const [periodData, setPeriodData] = useState<PeriodData[]>([]);
   const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
-  
+
   const [periodFilter, setPeriodFilter] = useState("");
   const [reportType, setReportType] = useState<ReportType>("");
-  
+
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
   const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
+  const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
+  const [selectedDocumentType, setSelectedDocumentType] = useState("");
   const [tableData, setTableData] = useState<TutorAcademicReportRow[]>([]);
   const [pdfData, setPdfData] = useState<unknown[]>([]);
   const [pdfTemplate, setPdfTemplate] = useState<((data: unknown[]) => ReactElement<DocumentProps>) | null>(null);
   const [tableSearchTerm, setTableSearchTerm] = useState("");
   const [pdfSearchTerm, setPdfSearchTerm] = useState("");
   const [loadingReport, setLoadingReport] = useState(false);
+  const [loadingExcelId, setLoadingExcelId] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const { fetchData: fetchReportData, exportExcel } = useReports();
+
+  const fetchDashboardData = async () => {
     setLoading(true);
     try {
       const [statsRes, careerRes, periodRes, recentRes] = await Promise.all([
@@ -56,7 +94,6 @@ export default function ReportsPage() {
         reportsService.getEnrollmentsByPeriod(),
         reportsService.getRecentReports()
       ]);
-
       setMetrics(statsRes.metrics || []);
       setCareerData(careerRes);
       setPeriodData(periodRes);
@@ -70,7 +107,7 @@ export default function ReportsPage() {
   };
 
   useEffect(() => {
-    fetchData();
+    fetchDashboardData();
   }, [periodFilter]);
 
   const reportConfig: Record<Exclude<ReportType, "">, {
@@ -203,22 +240,74 @@ export default function ReportsPage() {
     }
   };
 
+  const handleViewReport = useCallback(async (type: string) => {
+    if (type === "tutores-academicos" || type === "resumen-pasantias" || type === "relacion-empresas" || type === "distribucion-tutores" || type === "distribucion-tutores-v2" || type === "relacion-individual-docente") {
+      if (type === "relacion-individual-docente") {
+        toast("Seleccione un tutor desde la sección de tutores", { icon: "ℹ️" });
+        return;
+      }
+      setLoadingReport(true);
+      try {
+        const periodNum = periodFilter ? parseInt(periodFilter.split('-')[0]) : undefined;
+        const result = await fetchReportData(type, periodNum);
+        if (result?.data) {
+          setTableData(result.data);
+          setReportType("tutores-academicos");
+          setIsTableModalOpen(true);
+        }
+      } finally {
+        setLoadingReport(false);
+      }
+    } else if (type.startsWith("aceptacion-tutor") || type.startsWith("solicitud-institucion") || type.startsWith("carta-postulacion") ||
+               type.startsWith("acta-validacion") || type.startsWith("evaluacion-") || type.startsWith("constancia-")) {
+      setSelectedDocumentType(type);
+      setIsDocumentModalOpen(true);
+    } else {
+      const config = reportConfig[type as Exclude<ReportType, "">];
+      if (!config?.loadPDF) {
+        toast.error('Reporte no disponible');
+        return;
+      }
+      setLoadingReport(true);
+      try {
+        const data = await config.loadPDF();
+        setPdfData(data);
+        setPdfTemplate(() => config.pdfTemplate);
+        setIsPDFModalOpen(true);
+      } catch (error) {
+        toast.error('Error al cargar el reporte');
+      } finally {
+        setLoadingReport(false);
+      }
+    }
+  }, [periodFilter, fetchReportData]);
+
+  const handleExportExcel = useCallback(async (type: string) => {
+    setLoadingExcelId(type);
+    try {
+      const periodNum = periodFilter ? parseInt(periodFilter.split('-')[0]) : undefined;
+      const result = await fetchReportData(type, periodNum);
+      if (result?.data) {
+        const periodLabel = periodFilter || "Todos";
+        await exportExcel(type, result.data, periodLabel);
+      }
+    } finally {
+      setLoadingExcelId(null);
+    }
+  }, [periodFilter, fetchReportData, exportExcel]);
+
   const handleOpenReport = async () => {
     if (!reportType) {
       toast.error('Selecciona un tipo de reporte');
       return;
     }
-
     const config = reportConfig[reportType];
     if (!config) {
       toast.error('Tipo de reporte no válido');
       return;
     }
-
     setLoadingReport(true);
     try {
-      await reportsService.generateReport(reportType, periodFilter, config.loadTable ? 'EXCEL' : 'PDF');
-      
       if (config.loadTable) {
         const data = await config.loadTable();
         setTableData(data);
@@ -229,7 +318,6 @@ export default function ReportsPage() {
         setPdfTemplate(() => config.pdfTemplate);
         setIsPDFModalOpen(true);
       }
-      fetchData();
     } catch (error) {
       console.error('Error loading report:', error);
       toast.error('Error al cargar el reporte');
@@ -238,25 +326,14 @@ export default function ReportsPage() {
     }
   };
 
-  const exportTableToExcel = (data: any[], fileName: string) => {
-    const currentReportType = reportType;
-    
-    // Si es el reporte de tutores (Anexo 4), usar el generador especializado
-    if (currentReportType === "tutores-academicos") {
-      generateAnexo4Excel(data, fileName);
-      toast.success('Reporte Anexo 4 generado exitosamente');
+  const exportTableToExcel = async (data: any[], fileName: string) => {
+    if (reportType === "tutores-academicos" || reportType === "resumen-pasantias") {
+      const periodLabel = periodFilter || "Todos";
+      await exportExcel(reportType, data, periodLabel);
       return;
     }
-    
-    if (currentReportType === "resumen-pasantias") {
-      generateResumenPasantiasExcel(data, periodFilter || "Todos", fileName);
-      toast.success('Reporte Resumen Pasantías generado exitosamente');
-      return;
-    }
-
-    const config = currentReportType ? reportConfig[currentReportType] : null;
+    const config = reportType ? reportConfig[reportType] : null;
     if (!config) return;
-
     const headers = config.columns.map(col => col.header);
     const rows = data.map((row) => {
       return config.columns.map(col => {
@@ -264,12 +341,7 @@ export default function ReportsPage() {
         return value ?? "";
       });
     });
-
-    const csvContent = [
-      headers.join('\t'),
-      ...rows.map(row => row.join('\t'))
-    ].join('\n');
-
+    const csvContent = [headers.join('\t'), ...rows.map(row => row.join('\t'))].join('\n');
     const BOM = '\uFEFF';
     const blob = new Blob([BOM + csvContent], { type: 'text/vnd.ms-excel;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -280,12 +352,10 @@ export default function ReportsPage() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-
     toast.success('Reporte exportado exitosamente');
   };
 
   const maxValue = periodData.length > 0 ? Math.max(...periodData.map((d) => d.value)) : 1;
-
   const currentConfig = reportType ? reportConfig[reportType] : null;
 
   return (
@@ -316,15 +386,11 @@ export default function ReportsPage() {
               onChange={(e) => setPeriodFilter(e as unknown as string)}
               className="w-40"
             />
-            <Button
-              variant="outline"
-              onClick={fetchData}
-              startIcon={
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              }
-            >
+            <Button variant="outline" onClick={fetchDashboardData} startIcon={
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            }>
               Actualizar
             </Button>
           </div>
@@ -366,9 +432,7 @@ export default function ReportsPage() {
               </div>
             ))
           ) : (
-            <div className="col-span-4 text-center py-8 text-text-tertiary">
-              No hay datos disponibles
-            </div>
+            <div className="col-span-4 text-center py-8 text-text-tertiary">No hay datos disponibles</div>
           )}
         </div>
 
@@ -389,21 +453,11 @@ export default function ReportsPage() {
                 {careerData.map((item, index) => (
                   <div key={index}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-text-primary dark:text-text-emphasis" title={item.fullName}>
-                        {item.label}
-                      </span>
-                      <span className="text-sm font-medium text-text-secondary dark:text-text-tertiary">
-                        {item.value} ({item.percentage}%)
-                      </span>
+                      <span className="text-sm text-text-primary dark:text-text-emphasis" title={item.fullName}>{item.label}</span>
+                      <span className="text-sm font-medium text-text-secondary dark:text-text-tertiary">{item.value} ({item.percentage}%)</span>
                     </div>
                     <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${item.percentage}%`,
-                          backgroundColor: item.color || "var(--color-brand-500)",
-                        }}
-                      />
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${item.percentage}%`, backgroundColor: item.color || "var(--color-brand-500)" }} />
                     </div>
                   </div>
                 ))}
@@ -412,7 +466,6 @@ export default function ReportsPage() {
               <div className="text-center py-8 text-text-tertiary">No hay datos de carreras</div>
             )}
           </ComponentCard>
-
           <ComponentCard title="Inscripciones por Período">
             {loading ? (
               <div className="h-48 flex items-center justify-center">
@@ -425,13 +478,8 @@ export default function ReportsPage() {
                   return (
                     <div key={index} className="flex-1 flex flex-col items-center gap-2">
                       <div className="w-full flex flex-col items-center">
-                        <span className="text-xs font-medium text-text-secondary dark:text-text-tertiary mb-1">
-                          {item.value}
-                        </span>
-                        <div
-                          className="w-full max-w-[48px] bg-brand-500 rounded-t-lg transition-all duration-500 hover:bg-brand-600"
-                          style={{ height: `${Math.max(heightPercent * 1.5, 8)}px` }}
-                        />
+                        <span className="text-xs font-medium text-text-secondary dark:text-text-tertiary mb-1">{item.value}</span>
+                        <div className="w-full max-w-[48px] bg-brand-500 rounded-t-lg transition-all duration-500 hover:bg-brand-600" style={{ height: `${Math.max(heightPercent * 1.5, 8)}px` }} />
                       </div>
                       <span className="text-xs text-text-tertiary">{item.label}</span>
                     </div>
@@ -444,13 +492,20 @@ export default function ReportsPage() {
           </ComponentCard>
         </div>
 
+        <ComponentCard title="Reportes Disponibles" desc="Seleccione un reporte para visualizarlo o exportarlo">
+          <ReportList
+            sections={DOCUMENT_SECTIONS}
+            loadingId={loadingExcelId}
+            onView={handleViewReport}
+            onExportExcel={handleExportExcel}
+          />
+        </ComponentCard>
+
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <ComponentCard title="Generar Reporte" className="lg:col-span-1">
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">
-                  Tipo de Reporte
-                </label>
+                <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">Tipo de Reporte</label>
                 <CustomSelect
                   options={[
                     { value: "", label: "Seleccionar tipo" },
@@ -468,9 +523,7 @@ export default function ReportsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">
-                  Período
-                </label>
+                <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">Período</label>
                 <CustomSelect
                   options={[
                     { value: "", label: "Todos los períodos" },
@@ -484,16 +537,11 @@ export default function ReportsPage() {
                   className="w-full"
                 />
               </div>
-              <Button 
-                className="w-full" 
-                disabled={!reportType || loadingReport}
-                onClick={handleOpenReport}
-              >
+              <Button className="w-full" disabled={!reportType || loadingReport} onClick={handleOpenReport}>
                 {loadingReport ? 'Cargando...' : `Ver Reporte de ${currentConfig?.title.split(' - ')[0] || '...'}`}
               </Button>
             </div>
           </ComponentCard>
-
           <ComponentCard title="Reportes Recientes" className="lg:col-span-2">
             {loading ? (
               <div className="space-y-3 animate-pulse">
@@ -510,30 +558,21 @@ export default function ReportsPage() {
             ) : recentReports.length > 0 ? (
               <div className="space-y-3">
                 {recentReports.map((report) => (
-                  <div
-                    key={report.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors group"
-                  >
+                  <div key={report.id} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors group">
                     <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-brand-50 dark:bg-brand-500/10">
                       <svg className="w-5 h-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-text-primary dark:text-text-emphasis truncate">
-                        {report.name}
-                      </p>
-                      <p className="text-xs text-text-tertiary">
-                        {report.type} • {report.user || 'Sistema'} • {new Date(report.date).toLocaleDateString("es-VE")}
-                      </p>
+                      <p className="text-sm font-medium text-text-primary dark:text-text-emphasis truncate">{report.name}</p>
+                      <p className="text-xs text-text-tertiary">{report.type} • {report.user || 'Sistema'} • {new Date(report.date).toLocaleDateString("es-VE")}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-text-tertiary">
-                No hay reportes recientes
-              </div>
+              <div className="text-center py-8 text-text-tertiary">No hay reportes recientes</div>
             )}
           </ComponentCard>
         </div>
@@ -565,6 +604,12 @@ export default function ReportsPage() {
             onSearchChange={setPdfSearchTerm}
           />
         )}
+
+        <DocumentReportModal
+          isOpen={isDocumentModalOpen}
+          onClose={() => { setIsDocumentModalOpen(false); setSelectedDocumentType(""); }}
+          documentType={selectedDocumentType}
+        />
       </div>
     </>
   );

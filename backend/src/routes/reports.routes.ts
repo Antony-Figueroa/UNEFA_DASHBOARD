@@ -7,7 +7,11 @@ import {
   generateReport,
   getTutorsAcademicReport,
   getCulminatedStudentsReport,
-  getResumenPasantiasReport
+  getResumenPasantiasReport,
+  getRelacionEmpresasDemandan,
+  getDistribucionTutores,
+  getDistribucionTutoresV2,
+  getRelacionIndividualDocente,
 } from '../controllers/reports.controller.js';
 import { requirePermission } from '../middlewares/auth.middleware.js';
 
@@ -20,6 +24,10 @@ router.get('/recent', requirePermission('reports:view'), getRecentReports);
 router.get('/tutores-academicos', requirePermission('reports:view'), getTutorsAcademicReport);
 router.get('/resumen-pasantias', requirePermission('reports:view'), getResumenPasantiasReport);
 router.get('/culminated-students', requirePermission('reports:view'), getCulminatedStudentsReport);
+router.get('/relacion-empresas-demandan', requirePermission('reports:view'), getRelacionEmpresasDemandan);
+router.get('/distribucion-tutores', requirePermission('reports:view'), getDistribucionTutores);
+router.get('/distribucion-tutores-v2', requirePermission('reports:view'), getDistribucionTutoresV2);
+router.get('/relacion-individual-docente/:tutorId', requirePermission('reports:view'), getRelacionIndividualDocente);
 router.post('/generate', requirePermission('reports:export'), generateReport);
 
 export default router;

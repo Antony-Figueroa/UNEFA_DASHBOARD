@@ -143,6 +143,50 @@ export const reportsService = {
     
     const response = await apiClient.get(`/reports/culminated-students?${queryParams.toString()}`);
     return response.data;
+  },
+
+  getDocumentData: async (documentType: string, id: number) => {
+    const response = await apiClient.get(`/documents/${documentType}/${id}`);
+    return response.data;
+  },
+
+  getRelacionEmpresas: async (periodId?: number, careerId?: number) => {
+    const params = new URLSearchParams();
+    if (periodId) params.append('periodId', periodId.toString());
+    if (careerId) params.append('careerId', careerId.toString());
+    const response = await apiClient.get(`/reports/relacion-empresas-demandan?${params.toString()}`);
+    return response.data;
+  },
+
+  getDistribucionTutores: async (periodId?: number, careerId?: number) => {
+    const params = new URLSearchParams();
+    if (periodId) params.append('periodId', periodId.toString());
+    if (careerId) params.append('careerId', careerId.toString());
+    const response = await apiClient.get(`/reports/distribucion-tutores?${params.toString()}`);
+    return response.data;
+  },
+
+  getDistribucionTutoresV2: async (periodId?: number, careerId?: number) => {
+    const params = new URLSearchParams();
+    if (periodId) params.append('periodId', periodId.toString());
+    if (careerId) params.append('careerId', careerId.toString());
+    const response = await apiClient.get(`/reports/distribucion-tutores-v2?${params.toString()}`);
+    return response.data;
+  },
+
+  getRelacionIndividualDocente: async (tutorId: number) => {
+    const response = await apiClient.get(`/reports/relacion-individual-docente/${tutorId}`);
+    return response.data;
+  },
+
+  exportReportExcel: async (type: string, periodId?: number, careerId?: number) => {
+    const params = new URLSearchParams();
+    if (periodId) params.append('periodId', periodId.toString());
+    if (careerId) params.append('careerId', careerId.toString());
+    const response = await apiClient.get(`/reports/export/${type}?${params.toString()}`, {
+      responseType: 'blob'
+    });
+    return response.data;
   }
 };
 

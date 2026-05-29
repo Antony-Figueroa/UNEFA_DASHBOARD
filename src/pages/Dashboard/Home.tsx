@@ -1,34 +1,28 @@
 import PageMeta from "../../components/common/PageMeta";
 import WelcomeBanner from "../../components/common/WelcomeBanner";
-import HomeQuickStats from "../../components/common/HomeQuickStats";
 import { useDashboardStats } from "../../features/dashboard/hooks/useDashboardStats";
+import { useDashboardLayout } from "../../features/dashboard/hooks/useDashboardLayout";
+import { DynamicDashboard } from "../../features/dashboard/components/DynamicDashboard";
 import { useToast } from "../../context/toast";
-import { lazy, Suspense, useEffect } from "react";
-import { Skeleton } from "../../components/ui/skeleton";
-
-// Lazy load charts for better initial performance
-const RegistrationStatsChart = lazy(() => import("../../features/dashboard/components/RegistrationStatsChart"));
-const CareerDistributionChart = lazy(() => import("../../features/dashboard/components/CareerDistributionChart"));
-const GrowthMetrics = lazy(() => import("../../features/dashboard/components/GrowthMetrics"));
-const EvaluationStatsChart = lazy(() => import("../../features/dashboard/components/EvaluationStatsChart"));
-const TutorDistributionChart = lazy(() => import("../../features/dashboard/components/TutorDistributionChart"));
-const InstitutionDistributionChart = lazy(() => import("../../features/dashboard/components/InstitutionDistributionChart"));
-
-// Skeleton for charts while loading
-const ChartSkeleton = () => (
-  <div className="rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
-    <Skeleton height={24} width="50%" className="mb-4" />
-    <Skeleton height={250} className="rounded-xl" />
-  </div>
-);
+import { useEffect, useState } from "react";
+import Slideover from "../../components/ui/slideover/Slideover";
+import PendingTasksPanel from "../../features/dashboard/components/PendingTasksPanel";
 
 /**
- * Componente Home (Dashboard)
- * @description Vista principal del sistema con datos reales de la base de datos.
+ * Home (Admin Dashboard)
+ *
+ * Vista principal del sistema. Ahora usa DynamicDashboard que renderiza
+ * los widgets según la configuración guardada en DB para el rol Admin.
  */
 export default function Home() {
   const { stats, loading, error, isStale, refresh } = useDashboardStats();
+  const { widgets, loading: layoutLoading } = useDashboardLayout();
   const { addToast } = useToast();
+  const [isSlideoverOpen, setIsSlideoverOpen] = useState(false);
+
+  const pendingCount = (stats?.pendingRequests ?? 0)
+    + (stats?.pendingEvaluations ?? 0)
+    + (stats?.upcomingVisits ?? 0);
 
   useEffect(() => {
     if (error) {
@@ -58,72 +52,32 @@ export default function Home() {
           </div>
         )}
 
-        {/* 1. Banner de Bienvenida y Estadísticas Rápidas */}
-        <div className="space-y-6">
-          <WelcomeBanner />
-          <HomeQuickStats stats={stats} loading={loading} />
-        </div>
+        {/* 1. Banner de Bienvenida (siempre visible, no es widget configurable) */}
+        <WelcomeBanner
+          pendingCount={pendingCount}
+          onTasksClick={() => setIsSlideoverOpen(true)}
+        />
 
-        {/* 2. Gráficos y Métricas de Crecimiento */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          <div className="lg:col-span-8">
-            <Suspense fallback={<ChartSkeleton />}>
-              <RegistrationStatsChart 
-                data={stats?.registrationStats || []} 
-                loading={loading} 
-              />
-            </Suspense>
-          </div>
-          <div className="lg:col-span-4">
-            <Suspense fallback={<ChartSkeleton />}>
-              <GrowthMetrics 
-                growth={stats?.monthlyGrowth || {
-                  totalLastMonth: 0,
-                  totalPrevMonth: 0,
-                  percentageChange: 0,
-                  trend: 'neutral',
-                  weeklyBreakdown: [],
-                  dailyBreakdown: []
-                }} 
-                loading={loading} 
-              />
-            </Suspense>
-          </div>
-        </div>
-
-        {/* 3. Distribución por Carrera */}
-        <div className="grid grid-cols-1 gap-6">
-          <Suspense fallback={<ChartSkeleton />}>
-            <CareerDistributionChart 
-              data={stats?.careerDistribution || []} 
-              loading={loading} 
-            />
-          </Suspense>
-        </div>
-
-        {/* 4. Evaluaciones, Tutores e Instituciones */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <Suspense fallback={<ChartSkeleton />}>
-            <EvaluationStatsChart 
-              pending={stats?.pendingEvaluations || 0}
-              completed={stats?.completedEvaluations || 0}
-              loading={loading}
-            />
-          </Suspense>
-          <Suspense fallback={<ChartSkeleton />}>
-            <TutorDistributionChart 
-              data={stats?.tutorDistribution || []}
-              loading={loading}
-            />
-          </Suspense>
-          <Suspense fallback={<ChartSkeleton />}>
-            <InstitutionDistributionChart 
-              data={stats?.institutionDistribution || []}
-              loading={loading}
-            />
-          </Suspense>
-        </div>
+        {/* 2. Dashboard dinámico con widgets configurables */}
+        <DynamicDashboard
+          widgets={widgets}
+          data={{ stats, loading }}
+          loading={layoutLoading || loading}
+        />
       </div>
+
+      {/* Panel lateral de tareas pendientes */}
+      <Slideover
+        isOpen={isSlideoverOpen}
+        onClose={() => setIsSlideoverOpen(false)}
+        title="Tareas Pendientes"
+        badge={pendingCount}
+      >
+        <PendingTasksPanel
+          stats={stats}
+          onTaskNavigate={() => setIsSlideoverOpen(false)}
+        />
+      </Slideover>
     </>
   );
 }

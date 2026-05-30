@@ -28,6 +28,7 @@ export interface FilterQueryBuilder {
   ilike(column: string, pattern: string): this;
   order(column: string, options?: { ascending?: boolean; nullsFirst?: boolean; foreignTable?: string }): this;
   limit(count: number, options?: { foreignTable?: string }): this;
+  range(from: number, to: number, options?: { foreignTable?: string }): this;
   single(): this;
   maybeSingle(): this;
   or(filters: string, options?: { foreignTable?: string }): this;

@@ -223,11 +223,14 @@ export const login = async (userCi: string, password: string, ip: string, userAg
       };
     }
 
+    // Extraer role — soporta tanto Supabase (anidado) como PGlite (plano)
+    const roleId = user.t_user_roles?.[0]?.ID_ROLES ?? user.t_user_roles_ID_ROLES ?? null;
+
     // 7. Generar Token
     const token = generateToken({ 
       userId: user.USER_ID, 
       userCi: user.USER_CI,
-      role: user.t_user_roles?.[0]?.ID_ROLES 
+      role: roleId 
     }, jwtExpiresIn);
 
     await logAuthAction(user.USER_ID, userCi, 'LOGIN_SUCCESS', ip, userAgent, 'Inicio de sesión exitoso');
@@ -243,7 +246,7 @@ export const login = async (userCi: string, password: string, ip: string, userAg
         name: user.NAME,
         surname: user.SURNAME,
         email: user.EMAIL,
-        role: user.t_user_roles?.[0]?.ID_ROLES
+        role: roleId
       }
     };
   });
@@ -263,7 +266,7 @@ export const verifyMaster = async (userId: number, password: string, ip: string,
     const user = userData as unknown as UserRow;
 
     // 2. Verificar rol (Debe ser ADMIN = 1)
-    const userRole = user.t_user_roles?.[0]?.ID_ROLES;
+    const userRole = user.t_user_roles?.[0]?.ID_ROLES ?? user.t_user_roles_ID_ROLES;
     if (userRole !== 1) {
       return { success: false, message: 'Acceso denegado: Se requieren permisos administrativos' };
     }
@@ -713,7 +716,7 @@ export const getUserById = async (userId: number) => {
         failedAttempts: user.FAILED_ATTEMPTS,
         lockDate: user.LOCK_DATE,
         forcePasswordChange: user.FORCE_PASSWORD_CHANGE,
-        role: user.t_user_roles && user.t_user_roles.length > 0 ? user.t_user_roles[0].ID_ROLES : 0
+        role: user.t_user_roles?.[0]?.ID_ROLES ?? user.t_user_roles_ID_ROLES ?? 0
       }
     };
   });

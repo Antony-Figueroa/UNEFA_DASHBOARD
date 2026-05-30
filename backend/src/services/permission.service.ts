@@ -33,7 +33,11 @@ class PermissionService {
       }
 
       return (data || [])
-        .map((item: any) => item.t_permissions?.NAME)
+        .map((item: any) => {
+          // Supabase: { t_permissions: { NAME: 'students:view' } }
+          // PGlite:   { t_permissions_NAME: 'students:view' }
+          return item.t_permissions?.NAME ?? item.t_permissions_NAME ?? null;
+        })
         .filter(Boolean) as string[];
     });
   }

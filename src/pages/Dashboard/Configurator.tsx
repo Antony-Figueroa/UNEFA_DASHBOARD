@@ -228,13 +228,7 @@ export default function DashboardConfigurator() {
       />
 
       <div className="space-y-6">
-        <PageBreadcrumb
-          pageTitle="Dashboard"
-          items={[
-            { label: 'Configuración', path: '/configure' },
-            { label: 'Dashboard Config' },
-          ]}
-        />
+        <PageBreadcrumb pageTitle="Dashboard Config" />
 
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

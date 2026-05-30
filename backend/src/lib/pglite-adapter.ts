@@ -903,30 +903,31 @@ class PGliteFilterBuilder implements FilterQueryBuilder, InsertQueryBuilder, Upd
   }
 
   /**
-   * Normaliza columnas planas de joins (t_persons_ci) a objetos anidados ({ t_persons: { ci } }).
+   * Normaliza columnas planas de joins (t_persons_ci) a objetos anidados.
    * 
-   * En Supabase, joins con !inner devuelven objetos (relación 1:1 directa por FK).
-   * Joins sin !inner devuelven arrays (relación 1:N inversa).
+   * En Supabase/PostgREST:
+   *   - !inner (FK directa, many-to-one) → objeto anidado { ci, ... }
+   *   - sin !inner (FK inversa, one-to-many) → array [{ ID_ROLES }, ...]
    * 
-   * PGlite siempre produce columnas planas (t_persons_ci). Esta función las
-   * reagrupa en objetos anidados para compatibilidad con los controllers.
+   * PGlite produce columnas planas (t_persons_ci). Esta función las reagrupa
+   * según el tipo de join. NO elimina las claves planas para que los fallbacks
+   * (?? t_user_roles_ID_ROLES) sigan funcionando.
    * 
-   * NO elimina las claves planas — controllers que tienen fallbacks
-   * (?? t_user_roles_ID_ROLES) siguen funcionando.
+   * Ej !inner:  { t_persons_ci: 'V-1234', ... }
+   *   → { t_persons_ci: 'V-1234', t_persons: { ci: 'V-1234', ... } }
    * 
-   * Ej: { t_persons_ci: 'V-1234', t_persons_first_name: 'John' }
-   *   → { t_persons_ci: 'V-1234', t_persons_first_name: 'John',
-   *       t_persons: { ci: 'V-1234', first_name: 'John' } }
+   * Ej sin !inner: { t_user_roles_ID_ROLES: 1, ... }
+   *   → { t_user_roles_ID_ROLES: 1, t_user_roles: [{ ID_ROLES: 1 }] }
    */
   private normalizeJoinRows(rows: any[], joins: JoinNode[]): any[] {
     if (joins.length === 0) return rows;
 
-    // Recolectar recursivamente todos los joins (alias + columnas esperadas)
-    function collectJoins(nodes: JoinNode[]): { alias: string; columns: string[] }[] {
-      const result: { alias: string; columns: string[] }[] = [];
+    // Recolectar recursivamente todos los joins
+    function collectJoins(nodes: JoinNode[]): { alias: string; columns: string[]; isInner: boolean }[] {
+      const result: { alias: string; columns: string[]; isInner: boolean }[] = [];
       for (const node of nodes) {
         const alias = node.alias || node.table;
-        result.push({ alias, columns: node.columns });
+        result.push({ alias, columns: node.columns, isInner: node.isInner });
         result.push(...collectJoins(node.children));
       }
       return result;
@@ -939,7 +940,7 @@ class PGliteFilterBuilder implements FilterQueryBuilder, InsertQueryBuilder, Upd
       if (!row || typeof row !== 'object') return row;
       const result = { ...row };
 
-      for (const { alias, columns } of joinMap) {
+      for (const { alias, columns, isInner } of joinMap) {
         const nested: Record<string, any> = {};
         let hasAny = false;
 
@@ -951,10 +952,15 @@ class PGliteFilterBuilder implements FilterQueryBuilder, InsertQueryBuilder, Upd
           }
         }
 
-        // Agregar objeto anidado SIN eliminar las claves planas
-        // (los controllers pueden tener fallbacks que usan las claves planas)
         if (hasAny) {
-          result[alias] = nested;
+          // !inner → objeto (FK directa, 1:1)
+          // sin !inner → array (FK inversa, 1:N)
+          if (isInner) {
+            result[alias] = nested;
+          } else {
+            const hasNonNull = Object.values(nested).some(v => v !== null && v !== undefined);
+            result[alias] = hasNonNull ? [nested] : [];
+          }
         }
       }
 

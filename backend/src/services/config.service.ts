@@ -39,8 +39,11 @@ export const getConfig = async (): Promise<SystemConfig | null> => {
     .from('t_config')
     .select('*')
     .eq('CONFIG_ID', 1)
-    .single();
+    .maybeSingle();
 
+  // Usamos maybeSingle porque t_config puede tener múltiples filas
+  // con CONFIG_ID=1 (duplicadas en Supabase). .single() lanzaría error
+  // y getSessionMinutes() fallaría a default 60.
   if (error) {
     console.error('[ConfigService] Error getting config:', error);
     return null;
@@ -57,7 +60,7 @@ export const updateConfig = async (updates: Partial<SystemConfig>): Promise<Syst
     .update(updates)
     .eq('CONFIG_ID', 1)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('[ConfigService] Error updating config:', error);

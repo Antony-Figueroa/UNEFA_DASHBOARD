@@ -21,6 +21,7 @@ const RolesPermissions = lazy(() => import("../pages/Config/RolesPermissions"));
 const Maintenance = lazy(() => import("../pages/Config/Maintenance"));
 const Backups = lazy(() => import("../pages/Config/Backups"));
 const LandingConfigPage = lazy(() => import("../pages/Config/LandingConfigPage"));
+const DashboardConfigurator = lazy(() => import("../pages/Dashboard/Configurator"));
 const NotificationsPage = lazy(() => import("../pages/Notifications/NotificationsPage"));
 const Reports = lazy(() => import("../pages/Reports/Reports"));
 const CulminatedStudentsReport = lazy(() => import("../pages/Reports/CulminatedStudentsReport"));
@@ -146,6 +147,14 @@ export const AppRoutes = () => {
             }
           >
             <Route path="/dashboard" element={<Home />} />
+            <Route
+              path="/dashboard/configure"
+              element={
+                <ProtectedRoute requiredPermissions={['config:view']}>
+                  <DashboardConfigurator />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Core Features */}
             <Route path="/profile" element={<UserProfiles />} />

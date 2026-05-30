@@ -119,3 +119,28 @@ export const saveLayout = async (roleId: number, widgets: DashboardWidget[], use
 export const getAvailableRoleIds = (): number[] => {
   return Object.keys(DEFAULT_LAYOUTS).map(Number);
 };
+
+export const resetLayout = async (roleId: number): Promise<DashboardLayout> => {
+  const cacheKey = `${CACHE_PREFIX}${roleId}`;
+
+  try {
+    await dbManager.withRetry(async (supabase) => {
+      const { error } = await supabase
+        .from(TABLE_NAME)
+        .delete()
+        .eq('config_key', configKey(roleId));
+
+      if (error) throw error;
+    }, 'resetLayout');
+  } catch (error) {
+    // Si la tabla no existe o el row no existe, no es crítico
+    console.warn(`[DashboardConfig] Could not delete layout for role ${roleId}:`, error);
+  }
+
+  cacheManager.delete(cacheKey);
+
+  return {
+    roleId,
+    widgets: DEFAULT_LAYOUTS[roleId] ?? [],
+  };
+};

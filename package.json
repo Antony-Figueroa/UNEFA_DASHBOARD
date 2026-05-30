@@ -1,8 +1,9 @@
 {
-  "name": "unefa-frontend",
+  "name": "unefa-dashboard",
   "private": true,
-  "version": "2.0.2",
+  "version": "2.2.0",
   "type": "module",
+  "main": "electron/main.mjs",
   "scripts": {
     "dev": "vite --host",
     "start": "vite preview --host",
@@ -14,7 +15,10 @@
     "test:e2e:ui": "playwright test --ui",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "docker:start": "node -e \"const { platform } = require('os'); const { spawn } = require('child_process'); const cmd = platform() === 'win32' ? 'setup-docker.bat' : './setup-docker.sh'; spawn(cmd, { stdio: 'inherit', shell: true });\""
+    "docker:start": "node -e \"const { platform } = require('os'); const { spawn } = require('child_process'); const cmd = platform() === 'win32' ? 'setup-docker.bat' : './setup-docker.sh'; spawn(cmd, { stdio: 'inherit', shell: true });\"",
+    "electron:dev": "concurrently -k \"vite --host --port 5173\" \"tsx electron/main.mjs\"",
+    "electron:dev:backend": "concurrently -k \"vite --host --port 5173\" \"cd backend && npx tsx src/server-offline.ts\" \"tsx electron/main.mjs\"",
+    "electron:build": "npm run build && electron-builder"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.15",
@@ -89,6 +93,8 @@
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^10.0.0",
+    "electron": "^42.3.0",
     "eslint": "^9.19.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.18",

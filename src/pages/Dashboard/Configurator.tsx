@@ -1,0 +1,472 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import PageMeta from '../../components/common/PageMeta';
+import PageBreadcrumb from '../../components/common/PageBreadCrumb';
+import Button from '../../components/ui/button/Button';
+import toast from 'react-hot-toast';
+import {
+  WIDGET_REGISTRY,
+  getWidgetsByRole,
+  WIDGET_SIZE_CLASSES,
+  type WidgetSize,
+} from '../../features/dashboard/constants/widgetRegistry';
+import {
+  dashboardLayoutService,
+  type DashboardWidget,
+} from '../../features/dashboard/services/dashboardLayoutService';
+
+// ─── Roles disponibles en el sistema ────────────────────────────────────────
+
+const ROLES = [
+  { id: 1, name: 'Administrador' },
+  { id: 2, name: 'Asistente' },
+  { id: 3, name: 'Tutor' },
+  { id: 4, name: 'Estudiante' },
+];
+
+// ─── Iconos inline ──────────────────────────────────────────────────────────
+
+const DragHandle = () => (
+  <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zM8 11h2v2H8v-2zm6 0h2v2h-2v-2zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
+  </svg>
+);
+
+const EyeIcon = ({ visible }: { visible: boolean }) => (
+  <svg className={`h-4 w-4 ${visible ? 'text-blue-600' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    {visible ? (
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    ) : null}
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    {!visible && (
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3l18 18" />
+    )}
+  </svg>
+);
+
+const XIcon = () => (
+  <svg className="h-4 w-4 text-red-400 hover:text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
+const PlusIcon = () => (
+  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+  </svg>
+);
+
+// ─── Mapeo de icono a SVG para los widgets ──────────────────────────────────
+
+const WidgetIcon = ({ icon }: { icon: string }) => {
+  const size = 'h-5 w-5';
+  switch (icon) {
+    case 'activity':
+      return <svg className={`${size} text-blue-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>;
+    case 'trending-up':
+      return <svg className={`${size} text-green-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>;
+    case 'pie-chart':
+      return <svg className={`${size} text-purple-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>;
+    case 'check-circle':
+      return <svg className={`${size} text-emerald-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+    case 'users':
+      return <svg className={`${size} text-indigo-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>;
+    case 'building':
+      return <svg className={`${size} text-amber-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>;
+    case 'calendar':
+      return <svg className={`${size} text-rose-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
+    case 'inbox':
+      return <svg className={`${size} text-orange-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>;
+    case 'clock':
+      return <svg className={`${size} text-cyan-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+    case 'briefcase':
+      return <svg className={`${size} text-violet-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>;
+    case 'list':
+      return <svg className={`${size} text-sky-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>;
+    case 'zap':
+      return <svg className={`${size} text-yellow-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>;
+    case 'file-text':
+      return <svg className={`${size} text-gray-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
+    case 'bar-chart-3':
+    default:
+      return <svg className={`${size} text-blue-500`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>;
+  }
+};
+
+const SizeBadge = ({ size }: { size: WidgetSize }) => {
+  const labels: Record<WidgetSize, string> = { sm: '1/3', md: '1/2', lg: '2/3', xl: 'Completo' };
+  return (
+    <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">
+      {labels[size] ?? size}
+    </span>
+  );
+};
+
+// ─── Componente Principal ───────────────────────────────────────────────────
+
+export default function DashboardConfigurator() {
+  const [selectedRoleId, setSelectedRoleId] = useState<number>(1);
+  const [widgets, setWidgets] = useState<DashboardWidget[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const dragOverIndex = useRef<number | null>(null);
+
+  // Cargar layout del rol seleccionado
+  const loadLayout = useCallback(async (roleId: number) => {
+    setLoading(true);
+    try {
+      const layout = await dashboardLayoutService.getByRole(roleId);
+      setWidgets(layout.widgets ?? []);
+    } catch {
+      setWidgets([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadLayout(selectedRoleId);
+  }, [selectedRoleId, loadLayout]);
+
+  // Widgets disponibles para este rol (no agregados aún)
+  const availableWidgets = getWidgetsByRole(selectedRoleId)
+    .filter(def => !widgets.some(w => w.key === def.key));
+
+  // Widgets activos (ordenados)
+  const activeWidgets = [...widgets].sort((a, b) => a.order - b.order);
+
+  // ─── CRUD de widgets en el layout local ───────────────────────────────────
+
+  const addWidget = (key: string) => {
+    setWidgets(prev => {
+      if (prev.some(w => w.key === key)) return prev;
+      const maxOrder = prev.reduce((max, w) => Math.max(max, w.order), -1);
+      return [...prev, { key, order: maxOrder + 1, visible: true }];
+    });
+  };
+
+  const removeWidget = (key: string) => {
+    setWidgets(prev => prev.filter(w => w.key !== key));
+  };
+
+  const toggleVisibility = (key: string) => {
+    setWidgets(prev =>
+      prev.map(w => w.key === key ? { ...w, visible: !w.visible } : w)
+    );
+  };
+
+  // ─── Drag & Drop ──────────────────────────────────────────────────────────
+
+  const handleDragStart = (index: number) => {
+    setDragIndex(index);
+    dragOverIndex.current = null;
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    dragOverIndex.current = index;
+  };
+
+  const handleDrop = () => {
+    if (dragIndex === null || dragOverIndex.current === null) return;
+    if (dragIndex === dragOverIndex.current) {
+      setDragIndex(null);
+      dragOverIndex.current = null;
+      return;
+    }
+
+    setWidgets(prev => {
+      const sorted = [...prev].sort((a, b) => a.order - b.order);
+      const [moved] = sorted.splice(dragIndex, 1);
+      sorted.splice(dragOverIndex.current!, 0, moved);
+      return sorted.map((w, i) => ({ ...w, order: i }));
+    });
+
+    setDragIndex(null);
+    dragOverIndex.current = null;
+  };
+
+  const handleDragEnd = () => {
+    setDragIndex(null);
+    dragOverIndex.current = null;
+  };
+
+  // ─── Persistir ────────────────────────────────────────────────────────────
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await dashboardLayoutService.save(selectedRoleId, widgets);
+      toast.success('Layout del dashboard guardado exitosamente');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Error al guardar el layout');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleReset = async () => {
+    try {
+      toast.loading('Restableciendo...');
+      const layout = await dashboardLayoutService.reset(selectedRoleId);
+      setWidgets(layout.widgets ?? []);
+      toast.dismiss();
+      toast.success('Layout restablecido a valores por defecto');
+    } catch {
+      toast.dismiss();
+      toast.error('Error al restablecer el layout');
+    }
+  };
+
+  // ─── Render ───────────────────────────────────────────────────────────────
+
+  return (
+    <>
+      <PageMeta
+        title="Configurar Dashboards | SIGP - UNEFA"
+        description="Personaliza los dashboards para cada rol del sistema"
+      />
+
+      <div className="space-y-6">
+        <PageBreadcrumb
+          pageTitle="Dashboard"
+          items={[
+            { label: 'Configuración', path: '/configure' },
+            { label: 'Dashboard Config' },
+          ]}
+        />
+
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Configurador de Dashboards
+            </h1>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Personalizá qué widgets ve cada rol, en qué orden y si están visibles
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={handleReset}
+              disabled={loading || saving}
+              size="sm"
+            >
+              Restablecer
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSave}
+              disabled={loading || saving}
+              size="sm"
+            >
+              {saving ? 'Guardando...' : 'Guardar Layout'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Selector de Rol */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 mr-2">
+            Rol:
+          </span>
+          {ROLES.map(role => (
+            <button
+              key={role.id}
+              onClick={() => setSelectedRoleId(role.id)}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                selectedRoleId === role.id
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-800'
+              }`}
+            >
+              {role.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Contenido */}
+        {loading ? (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="animate-pulse space-y-4">
+              <div className="h-6 w-40 bg-gray-200 dark:bg-gray-700 rounded" />
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+              ))}
+            </div>
+            <div className="animate-pulse space-y-4">
+              <div className="h-6 w-40 bg-gray-200 dark:bg-gray-700 rounded" />
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* COLUMNA: Widgets Disponibles */}
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
+                Widgets Disponibles
+                <span className="ml-2 text-sm font-normal text-gray-500">
+                  ({availableWidgets.length})
+                </span>
+              </h2>
+
+              <div className="space-y-2">
+                {availableWidgets.length === 0 ? (
+                  <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-8 bg-white dark:bg-gray-900 rounded-2xl border border-border-light dark:border-border-dark">
+                    Todos los widgets disponibles están en uso
+                  </p>
+                ) : (
+                  availableWidgets.map(def => (
+                    <div
+                      key={def.key}
+                      className="flex items-center justify-between rounded-xl border border-border-light bg-white px-4 py-3 
+                                 shadow-sm dark:border-border-dark dark:bg-gray-900"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <WidgetIcon icon={def.icon} />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-800 dark:text-white/90 truncate">
+                            {def.displayName}
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <SizeBadge size={def.size} />
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                              {def.module}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => addWidget(def.key)}
+                        className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium 
+                                   text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-500/10 
+                                   transition-colors"
+                      >
+                        <PlusIcon />
+                        Agregar
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* COLUMNA: Widgets Activos */}
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
+                Widgets Activos
+                <span className="ml-2 text-sm font-normal text-gray-500">
+                  ({activeWidgets.length})
+                </span>
+              </h2>
+
+              <div className="space-y-2">
+                {activeWidgets.length === 0 ? (
+                  <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-8 bg-white dark:bg-gray-900 rounded-2xl border border-border-light dark:border-border-dark">
+                    No hay widgets activos. Agregalos desde la columna izquierda.
+                  </p>
+                ) : (
+                  activeWidgets.map((widget, index) => {
+                    const def = WIDGET_REGISTRY[widget.key];
+                    if (!def) return null;
+                    return (
+                      <div
+                        key={widget.key}
+                        draggable
+                        onDragStart={() => handleDragStart(index)}
+                        onDragOver={(e) => handleDragOver(e, index)}
+                        onDrop={handleDrop}
+                        onDragEnd={handleDragEnd}
+                        className={`flex items-center justify-between rounded-xl border bg-white px-4 py-3 shadow-sm
+                                   dark:bg-gray-900 cursor-grab active:cursor-grabbing
+                                   ${widget.visible
+                                     ? 'border-border-light dark:border-border-dark'
+                                     : 'border-dashed border-gray-300 dark:border-gray-600 opacity-60'
+                                   }
+                                   ${dragIndex === index ? 'opacity-50 ring-2 ring-blue-400' : ''}
+                                   transition-all duration-150`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <DragHandle />
+                          <WidgetIcon icon={def.icon} />
+                          <div className="min-w-0">
+                            <p className={`text-sm font-medium truncate
+                              ${widget.visible
+                                ? 'text-gray-800 dark:text-white/90'
+                                : 'text-gray-400 dark:text-gray-500'
+                              }`}
+                            >
+                              {def.displayName}
+                            </p>
+                            <SizeBadge size={def.size} />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => toggleVisibility(widget.key)}
+                            className="rounded-lg p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            title={widget.visible ? 'Ocultar' : 'Mostrar'}
+                          >
+                            <EyeIcon visible={widget.visible} />
+                          </button>
+                          <button
+                            onClick={() => removeWidget(widget.key)}
+                            className="rounded-lg p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                            title="Quitar"
+                          >
+                            <XIcon />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <p className="mt-3 text-xs text-gray-400 dark:text-gray-500 text-center">
+                Arrastrá los widgets para reordenarlos
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Vista previa del layout */}
+        {activeWidgets.length > 0 && (
+          <div className="rounded-2xl border border-border-light bg-white p-5 shadow-sm dark:border-border-dark dark:bg-gray-900">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-4">
+              Vista Previa
+            </h3>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+              {activeWidgets
+                .filter(w => w.visible)
+                .map(widget => {
+                  const def = WIDGET_REGISTRY[widget.key];
+                  if (!def) return null;
+                  const sizeClass = WIDGET_SIZE_CLASSES[def.size] || WIDGET_SIZE_CLASSES.sm;
+                  return (
+                    <div
+                      key={widget.key}
+                      className={`${sizeClass} rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 p-4 text-center`}
+                    >
+                      <WidgetIcon icon={def.icon} />
+                      <p className="mt-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {def.displayName}
+                      </p>
+                      <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                        {def.size}
+                      </p>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}

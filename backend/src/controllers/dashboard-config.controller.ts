@@ -76,7 +76,7 @@ export const resetLayout = async (req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    const layout = await dashboardConfigService.getLayoutByRole(roleId);
+    const layout = await dashboardConfigService.resetLayout(roleId);
 
     res.json({
       success: true,

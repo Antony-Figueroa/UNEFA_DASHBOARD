@@ -31,3 +31,12 @@ dist-ssr
 
 # Playwright MCP artifacts
 .playwright-mcp/
+
+# PGlite local database cache
+backend/data/
+
+# Release builds
+release-v2/
+
+# Backend build output
+backend/dist/

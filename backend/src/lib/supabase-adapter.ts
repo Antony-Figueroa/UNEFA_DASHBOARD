@@ -85,6 +85,11 @@ class SupabaseFilterWrapper implements FilterQueryBuilder, InsertQueryBuilder, U
     return this;
   }
 
+  range(from: number, to: number, _options?: { foreignTable?: string }) {
+    this.builder = (this.builder as any).range(from, to);
+    return this;
+  }
+
   single() {
     this.builder = (this.builder as any).single();
     return this;

@@ -222,6 +222,7 @@ CREATE TABLE IF NOT EXISTS "t_institution_internship_type" (
 -- t_institution_manager (institution managers/contacts)
 CREATE TABLE IF NOT EXISTS "t_institution_manager" (
   "MANAGER_ID" SERIAL NOT NULL,
+  "person_id" INTEGER,
   "MANAGER_CI" VARCHAR(20) NOT NULL,
   "NAME" VARCHAR(255) NOT NULL,
   "SECOND_NAME" VARCHAR(255) DEFAULT NULL,
@@ -330,6 +331,7 @@ CREATE TABLE IF NOT EXISTS "t_password_history" (
 CREATE TABLE IF NOT EXISTS "t_permissions" (
   "PERMISSIONS_ID" SERIAL NOT NULL,
   "NAME" VARCHAR(30) NOT NULL,
+  "MODULE" VARCHAR(30) NOT NULL,
   "DESCRIPTION" TEXT,
   "MODIF_USER_ID" INTEGER NOT NULL,
   "MODIF_USER_DATE" TIMESTAMP NOT NULL,
@@ -339,6 +341,32 @@ CREATE TABLE IF NOT EXISTS "t_permissions" (
   "REST_USER_DATE" TIMESTAMP NOT NULL,
   "STATUS" SMALLINT NOT NULL
 );
+
+ALTER TABLE "t_permissions" ADD CONSTRAINT "uq_permissions_name" UNIQUE ("NAME");
+
+-- t_persons (centralized personal data — migration 001)
+CREATE TABLE IF NOT EXISTS "t_persons" (
+    "person_id"        SERIAL PRIMARY KEY,
+    "ci"               VARCHAR(10) NOT NULL UNIQUE,
+    "first_name"       VARCHAR(255) NOT NULL,
+    "middle_name"      VARCHAR(255),
+    "last_name"        VARCHAR(255) NOT NULL,
+    "second_last_name" VARCHAR(255),
+    "email"            VARCHAR(255) NOT NULL,
+    "phone"            VARCHAR(15),
+    "gender"           VARCHAR(10),
+    "birthdate"        DATE,
+    "address"          VARCHAR(255),
+    "marital_status"   VARCHAR(45),
+    "status"           SMALLINT DEFAULT 1,
+    "created_at"       TIMESTAMP DEFAULT NOW(),
+    "updated_at"       TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS "idx_persons_ci" ON "t_persons"("ci");
+CREATE INDEX IF NOT EXISTS "idx_persons_names" ON "t_persons"("first_name", "last_name");
+CREATE INDEX IF NOT EXISTS "idx_persons_email" ON "t_persons"("email");
+CREATE INDEX IF NOT EXISTS "idx_persons_status" ON "t_persons"("status");
 
 -- t_practice_visits (supervision visits to internship sites)
 CREATE TABLE IF NOT EXISTS "t_practice_visits" (
@@ -555,6 +583,7 @@ CREATE TABLE IF NOT EXISTS "t_student_requests" (
 -- t_students (student records)
 CREATE TABLE IF NOT EXISTS "t_students" (
   "STUDENTS_ID" SERIAL NOT NULL,
+  "person_id" INTEGER,
   "STUDENTS_CI" VARCHAR(10) NOT NULL,
   "NAME" VARCHAR(255) NOT NULL,
   "SECOND_NAME" VARCHAR(255) DEFAULT NULL,
@@ -595,6 +624,7 @@ CREATE TABLE IF NOT EXISTS "t_tutor_career" (
 -- t_tutors (academic tutors)
 CREATE TABLE IF NOT EXISTS "t_tutors" (
   "TUTOR_ID" SERIAL NOT NULL,
+  "person_id" INTEGER,
   "TUTOR_CI" VARCHAR(10) NOT NULL,
   "NAME" VARCHAR(255) NOT NULL,
   "SECOND_NAME" VARCHAR(255) DEFAULT NULL,
@@ -616,6 +646,7 @@ CREATE TABLE IF NOT EXISTS "t_tutors" (
 -- t_user (system users)
 CREATE TABLE IF NOT EXISTS "t_user" (
   "USER_ID" SERIAL NOT NULL,
+  "person_id" INTEGER,
   "USER" VARCHAR(255) NOT NULL,
   "USER_CI" VARCHAR(10) NOT NULL,
   "NAME" VARCHAR(255) NOT NULL,

@@ -84,8 +84,8 @@ const mapUserToFrontend = (u: DBUserRow) => ({
   name: u.t_persons.first_name,
   surname: u.t_persons.last_name,
   email: u.t_persons.email,
-  role: u.t_user_roles?.[0]?.ID_ROLES,
-  roleName: u.t_user_roles?.[0]?.t_roles?.NAME,
+  role: u.t_user_roles?.[0]?.ID_ROLES ?? u.t_user_roles_ID_ROLES,
+  roleName: u.t_user_roles?.[0]?.t_roles?.NAME ?? u.t_user_roles_t_roles_NAME,
   status: u.STATUS,
   creationDate: u.CREATION_DATE,
   isImported: !!(

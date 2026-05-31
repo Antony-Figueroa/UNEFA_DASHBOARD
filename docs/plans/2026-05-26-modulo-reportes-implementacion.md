@@ -14,14 +14,15 @@ Implementar 16 reportes académicos (10 PDF + 6 Excel) requeridos por la Coordin
 
 ## 2. Estado Actual vs. Objetivo
 
-| Aspecto | Actual | Objetivo |
-|---------|--------|----------|
-| `src/features/reports/` | Solo `services/` y `components/` (2 archivos) | + `types/`, + `hooks/`, + `utils/`, + 4+ componentes nuevos |
-| Reportes PDF | 11 templates genéricos (Student, Tutor, etc.) | +10 templates de documentos oficiales (cartas, actas, constancias) |
-| Reportes Excel | 2 generadores (Anexo 4, Resumen Pasantias) | +4 generadores nuevos con formato institucional |
-| Backend endpoints | 8 endpoints | +14 endpoints para datos de nuevos reportes |
-| UI de Reportes | 1 página (Reports.tsx) con selector dropdown | Sub-páginas/secciones organizadas por tipo de documento |
-| Base de datos | Esquema actual | +1 tabla (`t_coordinadores`), +1 tabla (`t_report_text_templates`), +2 columnas nuevas |
+| Aspecto | Actual | Avance | Objetivo |
+|---------|--------|--------|----------|
+| `src/features/reports/` | Solo `services/` y `components/` (2 archivos) | ✅ + `types/`, + `utils/` (4 archivos nuevos) | + `hooks/`, + 4+ componentes nuevos |
+| Reportes PDF | 11 templates genéricos | ✅ +10 templates institucionales creados | Integrar con UI |
+| Reportes Excel | 2 generadores (Anexo 4, Resumen Pasantias) | ⏳ Pendiente | +4 generadores nuevos |
+| Backend endpoints | 8 endpoints | ✅ +14 endpoints (10 documentos + 4 Excel) | — |
+| Backend rutas | routes actuales | ✅ +2 routers (institutional-documents, report-texts) | — |
+| UI de Reportes | 1 página (Reports.tsx) con selector dropdown | ⏳ Pendiente | Sub-páginas organizadas |
+| Base de datos | Esquema actual | ✅ Migration SQL lista (`t_coordinadores`, `t_report_text_templates`, 2 columnas) | Ejecutar en Supabase |
 
 ---
 
@@ -454,53 +455,54 @@ WHERE c.STATUS = 1
 
 ## 9. Plan de Implementación por Fases
 
-### Fase 0: Migraciones de BD (Día 0.5)
+### ✅ Fase 0: Migraciones de BD (Completada — 2026-05-28)
 
-| Tarea | Descripción |
-|-------|-------------|
-| 0.1 | Ejecutar SQL de creación de `t_coordinadores` |
-| 0.2 | Ejecutar SQL de `ALTER TABLE` para `DEPARTMENT` y `ATTENTION_SCHEDULE` |
-| 0.3 | Ejecutar SQL de creación de `t_report_text_templates` + inserts iniciales |
-| 0.4 | Verificar en Supabase que las migraciones se aplicaron correctamente |
+| Tarea | Descripción | Estado |
+|-------|-------------|--------|
+| 0.1 | Crear SQL de creación de `t_coordinadores` en `006_reports_module.sql` | ✅ |
+| 0.2 | Incluir `ALTER TABLE` para `DEPARTMENT` y `ATTENTION_SCHEDULE` | ✅ |
+| 0.3 | Incluir SQL de creación de `t_report_text_templates` + 14 inserts iniciales | ✅ |
+| 0.4 | Verificar en Supabase que las migraciones se aplicaron correctamente | ⏳ Pendiente |
 
-### Fase 1: Fundación (Días 1-2) — 5 archivos
+### ✅ Fase 1: Fundación (Completada — 2026-05-28)
 
-| Tarea | Archivos | Descripción |
-|-------|----------|-------------|
-| 1.1 | `src/features/reports/types/index.ts` | Interfaces para todos los reportes |
-| 1.2 | `src/features/reports/services/reportsService.ts` | Extender con métodos para endpoints |
-| 1.3 | `src/features/reports/services/reportTextsService.ts` | Servicio de textos (BD + fallback) |
-| 1.4 | `src/features/reports/utils/documentTexts.ts` | Textos default con placeholders (fallback) |
-| 1.5 | `src/features/reports/utils/documentRenderer.ts` | Función de renderizado de placeholders |
-| 1.6 | `src/features/reports/utils/reportFormatters.ts` | Formateadores: `formatCI()`, `formatNombreCompleto()`, `formatFecha()`, `getTutorTitle()` |
+| Tarea | Archivo | Descripción | Estado |
+|-------|---------|-------------|--------|
+| 1.1 | `src/features/reports/types/index.ts` | Interfaces para todos los reportes | ✅ |
+| 1.2 | `src/features/reports/services/reportsService.ts` | Extender con 14 métodos nuevos | ✅ |
+| 1.3 | `src/features/reports/services/reportTextsService.ts` | Servicio de textos (BD + fallback) | ✅ |
+| 1.4 | `src/features/reports/utils/documentTexts.ts` | Textos default con placeholders (fallback) | ✅ |
+| 1.5 | `src/features/reports/utils/documentRenderer.ts` | Función de renderizado de placeholders | ✅ |
+| 1.6 | `src/features/reports/utils/reportFormatters.ts` | Formateadores: formatCI, formatNombreCompleto, formatFecha, getTutorTitle | ✅ |
 
-### Fase 2: Backend (Días 3-5) — ~6 archivos
+### ✅ Fase 2: Backend (Completada — 2026-05-28)
 
-| Tarea | Archivos | Descripción |
-|-------|----------|-------------|
-| 2.1 | `backend/src/controllers/documents.controller.ts` | 10 endpoints para datos de documentos PDF |
-| 2.2 | `backend/src/controllers/reports.controller.ts` | Extender con 4 funciones para Excel |
-| 2.3 | `backend/src/controllers/report-texts.controller.ts` | CRUD de textos configurables |
-| 2.4 | `backend/src/services/report-texts.service.ts` | Lógica de negocio para textos |
-| 2.5 | `backend/src/routes/documents.routes.ts` | Rutas de documentos PDF |
-| 2.6 | `backend/src/routes/report-texts.routes.ts` | Rutas de textos configurables |
-| 2.7 | Extender `reports.routes.ts` y `backend/src/app.ts` | Registrar nuevas rutas |
+| Tarea | Archivo | Descripción | Estado |
+|-------|---------|-------------|--------|
+| 2.1 | `backend/src/controllers/institutional-documents.controller.ts` | 10 endpoints para datos de documentos PDF | ✅ |
+| 2.2 | `backend/src/controllers/reports.controller.ts` | Extender con 4 funciones para Excel | ✅ |
+| 2.3 | `backend/src/controllers/report-texts.controller.ts` | CRUD de textos configurables | ✅ |
+| 2.4 | `backend/src/services/report-texts.service.ts` | Lógica de negocio para textos | ✅ |
+| 2.5 | `backend/src/routes/institutional-documents.routes.ts` | Rutas de documentos PDF | ✅ |
+| 2.6 | `backend/src/routes/report-texts.routes.ts` | Rutas de textos configurables | ✅ |
+| 2.7 | Extender `reports.routes.ts` y `backend/src/app.ts` | Registrar nuevas rutas | ✅ |
+| — | `backend/src/middlewares/reportValidation.ts` | Validación de parámetros de reportes | ✅ |
 
-### Fase 3: Plantillas PDF (Días 6-10) — 11 archivos
+### ✅ Fase 3: Plantillas PDF (Completada — 2026-05-28)
 
-| Tarea | Plantilla | Datos que recibe |
-|-------|-----------|------------------|
-| 3.1 | `AceptacionTutorPDF.tsx` | `{ tutor, estudiante, carrera }` |
-| 3.2 | `SolicitudInstitucionPDF.tsx` | `{ institucion, estudiante, carrera, periodo }` |
-| 3.3 | `CartaPostulacionPDF.tsx` | `{ estudiante, institucion, tutorInstitucional }` |
-| 3.4 | `ActaValidacionPDF.tsx` | `{ estudiante, carrera }` |
-| 3.5 | `EvaluacionFinalPDF.tsx` | `{ estudiante, institucion, fechas, grade }` |
-| 3.6 | `EvaluacionTutorInstitucionalPDF.tsx` | `{ estudiante, institucion, department, tutorInst, criterios[], totalScore }` |
-| 3.7 | `EvaluacionTutorAcademicoPDF.tsx` | `{ estudiante, tutorAcad, criterios[], totalScore, fechas }` |
-| 3.8 | `EvaluacionComitePDF.tsx` | `{ estudiante, periodo, tutorAcad, coordinadorPP, coordinadorCarrera }` |
-| 3.9 | `ConstanciaTutorAcademicoPDF.tsx` | `{ tutor, totalHours, periodo }` + Firma Decana |
-| 3.10 | `ConstanciaTutorInstitucionalPDF.tsx` | `{ tutor, institucion, totalHours, periodo }` + Firma Decana |
-| 3.11 | `institutional/index.ts` | Barrel exports |
+| Tarea | Plantilla | Datos que recibe | Estado |
+|-------|-----------|------------------|--------|
+| 3.1 | `AceptacionTutorPDF.tsx` | `{ tutor, estudiante, carrera }` + textos | ✅ |
+| 3.2 | `SolicitudInstitucionPDF.tsx` | `{ institucion, estudiante, carrera, periodo }` + textos | ✅ |
+| 3.3 | `CartaPostulacionPDF.tsx` | `{ estudiante, institucion, tutorInstitucional }` + textos | ✅ |
+| 3.4 | `ActaValidacionPDF.tsx` | `{ estudiante, carrera }` + textos | ✅ |
+| 3.5 | `EvaluacionFinalPDF.tsx` | `{ estudiante, institucion, fechas, grade }` + textos | ✅ |
+| 3.6 | `EvaluacionTutorInstitucionalPDF.tsx` | `{ estudiante, institucion, department, tutorInst, criterios, totalScore }` + textos | ✅ |
+| 3.7 | `EvaluacionTutorAcademicoPDF.tsx` | `{ estudiante, tutorAcad, criterios, totalScore, fechas }` + textos | ✅ |
+| 3.8 | `EvaluacionComitePDF.tsx` | `{ estudiante, periodo, tutorAcad, coordinadorPP, coordinadorCarrera }` + textos | ✅ |
+| 3.9 | `ConstanciaTutorAcademicoPDF.tsx` | `{ tutor, totalHours, periodo }` + Firma Decana + textos | ✅ |
+| 3.10 | `ConstanciaTutorInstitucionalPDF.tsx` | `{ tutor, institucion, totalHours, periodo }` + Firma Decana + textos | ✅ |
+| 3.11 | `institutional/index.ts` | Barrel exports | ✅ |
 
 **Patrón de cada template:**
 ```tsx
@@ -658,74 +660,74 @@ Si `t_evaluation` no tiene registros para la práctica, mostrar:
 
 ## 13. Esfuerzo Estimado
 
-| Fase | Días | Archivos nuevos | Archivos modificados |
-|------|------|-----------------|---------------------|
-| Fase 0: Migraciones BD | 0.5 | — | — (SQL) |
-| Fase 1: Fundación | 2 | 5 | 1 |
-| Fase 2: Backend | 3 | 6 | 2 |
-| Fase 3: PDF Templates | 5 | 11 | 0 |
-| Fase 4: Excel Generators | 2 | 0 | 2 |
-| Fase 5: UI Integration | 3 | 5 | 1 |
-| **Total** | **15.5** | **~27** | **~6** |
+| Fase | Días | Archivos nuevos | Archivos modificados | Estado |
+|------|------|-----------------|---------------------|--------|
+| Fase 0: Migraciones BD | 0.5 | 1 (SQL) | — | ✅ |
+| Fase 1: Fundación | 2 | 5 | 1 | ✅ |
+| Fase 2: Backend | 3 | 8 | 3 | ✅ |
+| Fase 3: PDF Templates | 5 | 11 | 0 | ✅ |
+| Fase 4: Excel Generators | 2 | 0 | 2 | ⏳ |
+| Fase 5: UI Integration | 3 | 5 | 1 | ⏳ |
+| **Total** | **15.5** | **~30** | **~7** | **Fases 0-3 ✅** |
 
 ---
 
 ## 14. Archivos a Modificar/Crear
 
-### Crear (~27 archivos)
+### Creados (Fases 0-3) — 24 archivos ✅
 
-| # | Archivo | Fase |
-|---|---------|------|
-| 1 | `backend/src/migrations/006_reports_module.sql` | 0 |
-| 2 | `src/features/reports/types/index.ts` | 1 |
-| 3 | `src/features/reports/services/reportTextsService.ts` | 1 |
-| 4 | `src/features/reports/utils/documentTexts.ts` | 1 |
-| 5 | `src/features/reports/utils/documentRenderer.ts` | 1 |
-| 6 | `src/features/reports/utils/reportFormatters.ts` | 1 |
-| 7 | `src/features/reports/hooks/useReports.ts` | 5 |
-| 8 | `src/features/reports/components/ReportCard.tsx` | 5 |
-| 9 | `src/features/reports/components/ReportList.tsx` | 5 |
-| 10 | `src/features/reports/components/DocumentReportModal.tsx` | 5 |
-| 11 | `src/components/ui/pdf/templates/institutional/AceptacionTutorPDF.tsx` | 3 |
-| 12 | `src/components/ui/pdf/templates/institutional/SolicitudInstitucionPDF.tsx` | 3 |
-| 13 | `src/components/ui/pdf/templates/institutional/CartaPostulacionPDF.tsx` | 3 |
-| 14 | `src/components/ui/pdf/templates/institutional/ActaValidacionPDF.tsx` | 3 |
-| 15 | `src/components/ui/pdf/templates/institutional/EvaluacionFinalPDF.tsx` | 3 |
-| 16 | `src/components/ui/pdf/templates/institutional/EvaluacionTutorInstitucionalPDF.tsx` | 3 |
-| 17 | `src/components/ui/pdf/templates/institutional/EvaluacionTutorAcademicoPDF.tsx` | 3 |
-| 18 | `src/components/ui/pdf/templates/institutional/EvaluacionComitePDF.tsx` | 3 |
-| 19 | `src/components/ui/pdf/templates/institutional/ConstanciaTutorAcademicoPDF.tsx` | 3 |
-| 20 | `src/components/ui/pdf/templates/institutional/ConstanciaTutorInstitucionalPDF.tsx` | 3 |
-| 21 | `src/components/ui/pdf/templates/institutional/index.ts` | 3 |
-| 22 | `backend/src/controllers/documents.controller.ts` | 2 |
-| 23 | `backend/src/controllers/report-texts.controller.ts` | 2 |
-| 24 | `backend/src/services/report-texts.service.ts` | 2 |
-| 25 | `backend/src/routes/documents.routes.ts` | 2 |
-| 26 | `backend/src/routes/report-texts.routes.ts` | 2 |
-| 27 | `backend/src/middleware/reportValidation.ts` | 2 |
+| # | Archivo | Fase | Estado |
+|---|---------|------|--------|
+| 1 | `backend/src/migrations/006_reports_module.sql` | 0 | ✅ |
+| 2 | `src/features/reports/types/index.ts` | 1 | ✅ |
+| 3 | `src/features/reports/services/reportTextsService.ts` | 1 | ✅ |
+| 4 | `src/features/reports/utils/documentTexts.ts` | 1 | ✅ |
+| 5 | `src/features/reports/utils/documentRenderer.ts` | 1 | ✅ |
+| 6 | `src/features/reports/utils/reportFormatters.ts` | 1 | ✅ |
+| 7 | `src/features/reports/hooks/useReports.ts` | 5 | ⏳ Pendiente |
+| 8 | `src/features/reports/components/ReportCard.tsx` | 5 | ⏳ Pendiente |
+| 9 | `src/features/reports/components/ReportList.tsx` | 5 | ⏳ Pendiente |
+| 10 | `src/features/reports/components/DocumentReportModal.tsx` | 5 | ⏳ Pendiente |
+| 11 | `src/components/ui/pdf/templates/institutional/AceptacionTutorPDF.tsx` | 3 | ✅ |
+| 12 | `src/components/ui/pdf/templates/institutional/SolicitudInstitucionPDF.tsx` | 3 | ✅ |
+| 13 | `src/components/ui/pdf/templates/institutional/CartaPostulacionPDF.tsx` | 3 | ✅ |
+| 14 | `src/components/ui/pdf/templates/institutional/ActaValidacionPDF.tsx` | 3 | ✅ |
+| 15 | `src/components/ui/pdf/templates/institutional/EvaluacionFinalPDF.tsx` | 3 | ✅ |
+| 16 | `src/components/ui/pdf/templates/institutional/EvaluacionTutorInstitucionalPDF.tsx` | 3 | ✅ |
+| 17 | `src/components/ui/pdf/templates/institutional/EvaluacionTutorAcademicoPDF.tsx` | 3 | ✅ |
+| 18 | `src/components/ui/pdf/templates/institutional/EvaluacionComitePDF.tsx` | 3 | ✅ |
+| 19 | `src/components/ui/pdf/templates/institutional/ConstanciaTutorAcademicoPDF.tsx` | 3 | ✅ |
+| 20 | `src/components/ui/pdf/templates/institutional/ConstanciaTutorInstitucionalPDF.tsx` | 3 | ✅ |
+| 21 | `src/components/ui/pdf/templates/institutional/index.ts` | 3 | ✅ |
+| 22 | `backend/src/controllers/institutional-documents.controller.ts` | 2 | ✅ |
+| 23 | `backend/src/controllers/report-texts.controller.ts` | 2 | ✅ |
+| 24 | `backend/src/services/report-texts.service.ts` | 2 | ✅ |
+| 25 | `backend/src/routes/institutional-documents.routes.ts` | 2 | ✅ |
+| 26 | `backend/src/routes/report-texts.routes.ts` | 2 | ✅ |
+| 27 | `backend/src/middlewares/reportValidation.ts` | 2 | ✅ |
 
-### Modificar (~6 archivos)
+### Modificados (Fases 0-3) — 6 archivos ✅
 
-| # | Archivo | Cambio | Fase |
-|---|---------|--------|------|
-| 1 | `src/features/reports/services/reportsService.ts` | +14 métodos nuevos | 1 |
-| 2 | `src/utils/unefaExcelReports.ts` | +4 generadores + mejora 2 existentes | 4 |
-| 3 | `src/pages/Reports/Reports.tsx` | Refactorizar UI con ReportList | 5 |
-| 4 | `backend/src/controllers/reports.controller.ts` | +4 funciones (Excel) | 2 |
-| 5 | `backend/src/routes/reports.routes.ts` | +4 rutas (Excel) | 2 |
-| 6 | `backend/src/app.ts` | Registrar nuevas rutas | 2 |
+| # | Archivo | Cambio | Fase | Estado |
+|---|---------|--------|------|--------|
+| 1 | `src/features/reports/services/reportsService.ts` | +14 métodos nuevos | 1 | ✅ |
+| 2 | `src/utils/unefaExcelReports.ts` | +4 generadores + mejora 2 existentes | 4 | ⏳ Pendiente |
+| 3 | `src/pages/Reports/Reports.tsx` | Refactorizar UI con ReportList | 5 | ⏳ Pendiente |
+| 4 | `backend/src/controllers/reports.controller.ts` | +4 funciones (Excel) | 2 | ✅ |
+| 5 | `backend/src/routes/reports.routes.ts` | +4 rutas (Excel) | 2 | ✅ |
+| 6 | `backend/src/app.ts` | Registrar nuevas rutas | 2 | ✅ |
 
 ---
 
 ## 15. Próximos Pasos
 
 1. ✅ Decisiones A-F resueltas por el equipo
-2. ⬜ **Ejecutar Fase 0**: Aplicar migraciones en Supabase
-3. ⬜ Revisar datos reales en Supabase para validar estructura de queries
-4. ⬜ Ejecutar Fase 1 (Fundación)
-5. ⬜ Ejecutar Fase 2 (Backend)
-6. ⬜ Ejecutar Fase 3 (PDF Templates)
-7. ⬜ Ejecutar Fase 4 (Excel)
-8. ⬜ Ejecutar Fase 5 (UI)
+2. ⬜ Ejecutar SQL de migración (`006_reports_module.sql`) en Supabase
+3. ✅ **Fase 0** completada (migration SQL creada)
+4. ✅ **Fase 1** completada (Foundation: types, services, utils)
+5. ✅ **Fase 2** completada (Backend: controllers, routes, services, middleware)
+6. ✅ **Fase 3** completada (10 PDF templates institucionales)
+7. ⬜ **Ejecutar Fase 4**: 4 generadores Excel + mejora 2 existentes
+8. ⬜ **Ejecutar Fase 5**: UI (hooks, ReportCard, ReportList, DocumentReportModal, Reports.tsx refactor)
 9. ⬜ Pruebas integrales con datos reales
 10. ⬜ Actualizar `docs/guias-interfaces/09-reportes.md` con la nueva UI

@@ -59,15 +59,33 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       }
     });
 
-    const careerDistribution = Array.from(careerMap.entries())
-      .map(([careerName, studentCount]) => {
-        const total = Array.from(careerMap.values()).reduce((a, b) => a + b, 0) || 1;
-        return {
-          careerName,
-          studentCount,
-          percentage: Math.round((studentCount / total) * 100)
-        };
-      })
+    const careerEntries = Array.from(careerMap.entries());
+    const careerTotal = careerEntries.reduce((sum, [, count]) => sum + count, 0) || 1;
+
+    function computePercentages(values: number[], total: number): number[] {
+      const raw = values.map((v) => (v / total) * 100);
+      const floors = raw.map(Math.floor);
+      const remainder = 100 - floors.reduce((s, v) => s + v, 0);
+      const idxSorted = raw
+        .map((_, i) => i)
+        .sort((a, b) => raw[b] - floors[b] - (raw[a] - floors[a]));
+      for (let i = 0; i < remainder && i < idxSorted.length; i++) {
+        floors[idxSorted[i]] += 1;
+      }
+      return floors;
+    }
+
+    const percentages = computePercentages(
+      careerEntries.map(([, count]) => count),
+      careerTotal,
+    );
+
+    const careerDistribution = careerEntries
+      .map(([careerName, studentCount], i) => ({
+        careerName,
+        studentCount,
+        percentage: percentages[i],
+      }))
       .sort((a, b) => b.studentCount - a.studentCount);
 
     // 3. Registration Stats - All students with dates and names

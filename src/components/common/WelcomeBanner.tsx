@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/auth";
 import { motion } from "framer-motion";
-import { FiHome, FiCalendar, FiUser, FiShield, FiEdit3 } from "react-icons/fi";
+import { FiHome, FiCalendar, FiUser, FiShield } from "react-icons/fi";
+import { NotebookPen } from "lucide-react";
 
 /**
  * Map of role IDs to display names for the UI.
@@ -121,7 +122,7 @@ const WelcomeBanner: React.FC<WelcomeBannerProps> = ({ pendingCount, onTasksClic
                 aria-label="Tareas pendientes"
                 title="Tareas pendientes"
               >
-                <FiEdit3 className="size-5 text-white" />
+                <NotebookPen className="size-5 text-white" />
 
                 {/* Badge con cantidad */}
                 {(pendingCount ?? 0) > 0 && (

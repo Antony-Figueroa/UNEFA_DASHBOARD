@@ -82,12 +82,17 @@ export const DynamicDashboard = ({ widgets, data, loading }: DynamicDashboardPro
 
         const WidgetComponent = def.component;
         const widgetProps = def.getProps(data);
-        const sizeClass = WIDGET_SIZE_CLASSES[def.size] || WIDGET_SIZE_CLASSES.sm;
+        const effectiveSize = widget.size ?? def.size;
+        const sizeClass = WIDGET_SIZE_CLASSES[effectiveSize] || WIDGET_SIZE_CLASSES.sm;
 
         return (
-          <div key={widget.key} className={sizeClass}>
-            <Suspense fallback={<WidgetSkeleton size={def.size} />}>
-              <WidgetComponent {...widgetProps} />
+          <div
+            key={widget.key}
+            className={sizeClass}
+            style={widget.color ? { '--widget-accent': widget.color } as React.CSSProperties : undefined}
+          >
+            <Suspense fallback={<WidgetSkeleton size={effectiveSize} />}>
+              <WidgetComponent {...widgetProps} data-widget-accent={widget.color} />
             </Suspense>
           </div>
         );

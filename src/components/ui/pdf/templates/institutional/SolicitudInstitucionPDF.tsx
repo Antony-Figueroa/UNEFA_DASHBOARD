@@ -1,6 +1,6 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
-import { formatNombreCompleto, formatCI, formatFechaLapso } from '../../../../features/reports/utils/reportFormatters';
-import { renderDocumentText } from '../../../../features/reports/utils/documentRenderer';
+import { formatNombreCompleto, formatCI, formatFechaLapso } from '@/features/reports/utils/reportFormatters';
+import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
 
 const styles = StyleSheet.create({
   page: { padding: 50, fontFamily: 'Helvetica', fontSize: 12, lineHeight: 1.5 },

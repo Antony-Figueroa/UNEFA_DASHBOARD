@@ -93,7 +93,7 @@ function applyHeaderMerged(worksheet: ExcelJS.Worksheet, rowNum: number, merges:
 
 function applyDataCell(worksheet: ExcelJS.Worksheet, rowNum: number, colNum: number, value: unknown) {
   const cell = worksheet.getCell(rowNum, colNum);
-  cell.value = value ?? '';
+  cell.value = (value ?? '') as ExcelJS.CellValue;
   cell.style = DATA_STYLE;
 }
 

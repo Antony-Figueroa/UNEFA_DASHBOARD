@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { DatabaseManager } from "../lib/db-manager.js";
+import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 
 interface DBProfessionalPractice {
   PROFESSIONAL_PRACTICE_ID: number;
@@ -71,7 +72,7 @@ export const getTrackings = async (_req: Request, res: Response) => {
           END_DATE
         )
       `)
-      .eq('PRACTICES_STATUS', 2)
+      .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO)
       .eq('STATUS', 1);
 
     if (error) throw error;
@@ -135,7 +136,7 @@ export const createTracking = async (req: Request, res: Response) => {
       END_DATE: new Date().toISOString().split('T')[0],
       REGISTRATION_DATE: new Date().toISOString(),
       GRADE: 0,
-      PRACTICES_STATUS: 2,
+      PRACTICES_STATUS: PRACTICES_STATUS.INSCRITO,
       PERIOD_ID: periodId,
       INSTITUTION_ID: institutionId,
       MANAGER_ID: userId || 1,

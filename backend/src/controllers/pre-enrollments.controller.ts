@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
+import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 
 const TABLE_NAME = 't_professional_practices';
 
@@ -92,7 +93,7 @@ export const getPreEnrollments = async (req: Request, res: Response) => {
           t_internship_type (NAME),
           t_professional_practices_tutor (TUTOR_ID)
         `)
-        .eq('PRACTICES_STATUS', 1) // 1 para PRE-INSCRITO
+        .eq('PRACTICES_STATUS', PRACTICES_STATUS.PRE_INSCRITO)
         .order('REGISTRATION_DATE', { ascending: false });
 
       if (error) throw error;
@@ -179,7 +180,7 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
         .from(TABLE_NAME)
         .select('PROFESSIONAL_PRACTICE_ID')
         .eq('STUDENTS_ID', student.STUDENTS_ID)
-        .eq('PRACTICES_STATUS', '1') // '1' para PRE-INSCRITO
+        .eq('PRACTICES_STATUS', PRACTICES_STATUS.PRE_INSCRITO)
         .eq('STATUS', 1)
         .maybeSingle();
 
@@ -195,7 +196,7 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
         .from(TABLE_NAME)
         .select('PROFESSIONAL_PRACTICE_ID')
         .eq('STUDENTS_ID', student.STUDENTS_ID)
-        .eq('PRACTICES_STATUS', '2') // '2' para INSCRITO/ACTIVO
+        .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO)
         .eq('STATUS', 1) 
         .maybeSingle();
 
@@ -297,7 +298,7 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
           REGISTRATION_DATE: now,
           CREATION_DATE: now,
           GRADE: 0,
-          PRACTICES_STATUS: '1', 
+          PRACTICES_STATUS: PRACTICES_STATUS.PRE_INSCRITO, 
           TRANSFER: 0,
           TOUR: '',
           PERIOD_ID: periodData.PERIOD_ID,

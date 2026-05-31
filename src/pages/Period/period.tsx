@@ -64,6 +64,8 @@ export default function Period() {
         addPeriod,
         editPeriod,
         removePeriod,
+        bulkRemovePeriods,
+        bulkRestorePeriods,
     } = usePeriods();
 
 
@@ -305,14 +307,11 @@ export default function Period() {
             message: `¿Estás seguro de que deseas enviar ${periodosRow.length} período${periodosRow.length > 1 ? 's' : ''} a Inactivos?`,
             onConfirm: async () => {
                 try {
-                    const ids = periodosRow.map(p => {
-                        const original = periodos.find(o => o.periodId === p.periodId);
-                        return original?.periodId;
-                    }).filter(Boolean) as string[];
-                    
-                    for (const id of ids) {
-                        await removePeriod(id);
-                    }
+                    const ids = periodosRow
+                        .map(p => periodos.find(o => o.periodId === p.periodId)?.periodId)
+                        .filter((id): id is string => Boolean(id));
+
+                    await bulkRemovePeriods(ids);
                 } catch (e) {
                     console.error("[PeriodPage] Error al eliminar periodos:", e);
                 } finally {
@@ -329,12 +328,11 @@ export default function Period() {
      */
     const handleBulkRestore = async (periodosRow: PeriodoRowData[]) => {
         try {
-            for (const periodoRow of periodosRow) {
-                const original = periodos.find(p => p.periodId === periodoRow.periodId);
-                if (original) {
-                    await editPeriod({ ...original, status: true });
-                }
-            }
+            const ids = periodosRow
+                .map(p => periodos.find(o => o.periodId === p.periodId)?.periodId)
+                .filter((id): id is string => Boolean(id));
+
+            await bulkRestorePeriods(ids);
         } catch (e) {
             console.error("[PeriodPage] Error al restaurar periodos:", e);
         }

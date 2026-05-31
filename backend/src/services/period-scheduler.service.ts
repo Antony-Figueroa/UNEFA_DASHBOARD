@@ -1,6 +1,7 @@
 import { dbManager } from '../lib/db-manager.js';
 import { periodNotificationService } from './period-notification.service.js';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { PERIOD_STATUS } from '../constants/practice-status.constants.js';
 
 interface Period {
   PERIOD_ID: number;
@@ -36,7 +37,7 @@ export const runPeriodNotificationScheduler = async () => {
         .from('t_internships_period')
         .select('*')
         .eq('STATUS', 1)
-        .neq('PERIOD_STATUS', '3')
+        .neq('PERIOD_STATUS', PERIOD_STATUS.CULMINADO)
         .order('END_DATE', { ascending: true });
 
       if (error) throw error;

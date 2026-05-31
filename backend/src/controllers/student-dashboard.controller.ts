@@ -3,6 +3,7 @@ import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { auditCreate } from '../utils/audit-helpers.js';
 import { notifyRequestCreated } from '../services/notification.service.js';
+import { PRACTICES_STATUS, PRACTICES_STATUS_LABELS } from '../constants/practice-status.constants.js';
 
 interface StudentInternship {
   enrollmentId: string;
@@ -130,9 +131,9 @@ export const getStudentDashboard = async (req: AuthRequest, res: Response) => {
       .maybeSingle();
 
     const statusMap: Record<number, string> = {
-      1: 'pre-enrolled',
-      2: 'active',
-      3: 'completed',
+      [PRACTICES_STATUS.PRE_INSCRITO]: 'pre-enrolled',
+      [PRACTICES_STATUS.INSCRITO]: 'active',
+      [PRACTICES_STATUS.CULMINADO]: 'completed',
       4: 'suspended'
     };
 

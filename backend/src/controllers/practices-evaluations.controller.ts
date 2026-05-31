@@ -7,6 +7,7 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
 import { evaluationConfig } from '../config/evaluation.config.js';
+import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 
 /**
  * Obtiene todas las prácticas con información de evaluaciones y culminación
@@ -61,7 +62,7 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
         )
       `)
       .eq('STATUS', 1)
-      .eq('PRACTICES_STATUS', 2); // Solo inscritos (no pre-inscritos)
+      .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO); // Solo inscritos (no pre-inscritos)
 
     if (error) throw error;
 
@@ -308,7 +309,7 @@ export const getEvaluationStats = async (req: AuthRequest, res: Response) => {
         )
       `)
       .eq('STATUS', 1)
-      .eq('PRACTICES_STATUS', 2); // Solo inscritos
+      .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO); // Solo inscritos
 
     const { data: practices, error } = await query;
 
@@ -631,7 +632,7 @@ export const getCulminationStats = async (req: AuthRequest, res: Response) => {
       .from('t_professional_practices')
       .select('PROFESSIONAL_PRACTICE_ID')
       .eq('STATUS', 1)
-      .eq('PRACTICES_STATUS', 2); // Solo inscritos
+      .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO); // Solo inscritos
 
     if (error) throw error;
 

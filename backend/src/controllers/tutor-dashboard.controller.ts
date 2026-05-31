@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 
 interface TutorStudent {
   enrollmentId: string;
@@ -67,15 +68,15 @@ export const getTutorDashboard = async (req: AuthRequest, res: Response) => {
     const stats: DashboardStats = {
       totalStudents: practices?.length || 0,
       activeInternships: practices?.filter((p: any) => 
-        p.t_professional_practices?.PRACTICES_STATUS === 2 && 
+        p.t_professional_practices?.PRACTICES_STATUS === PRACTICES_STATUS.INSCRITO && 
         p.t_professional_practices?.STATUS === 1
       ).length || 0,
       pendingGrades: practices?.filter((p: any) => 
-        p.t_professional_practices?.PRACTICES_STATUS === 2 && 
+        p.t_professional_practices?.PRACTICES_STATUS === PRACTICES_STATUS.INSCRITO && 
         (!p.t_professional_practices?.GRADE || p.t_professional_practices?.GRADE === 0)
       ).length || 0,
       completedInternships: practices?.filter((p: any) => 
-        p.t_professional_practices?.PRACTICES_STATUS === 3
+        p.t_professional_practices?.PRACTICES_STATUS === PRACTICES_STATUS.CULMINADO
       ).length || 0
     };
 

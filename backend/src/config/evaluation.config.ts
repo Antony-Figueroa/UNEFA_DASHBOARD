@@ -28,6 +28,16 @@ export const evaluationConfig = {
     ACADEMICO: 0.30,
     COMITE: 0.30,
   } as const,
+
+  /**
+   * Ventana de evaluación: días adicionales después del cierre del periodo
+   * durante los cuales aún se permite evaluar.
+   * 
+   * - 0 (default): evaluación estricta, solo durante periodo "En Curso"
+   * - N > 0: se permite evaluar hasta N días después del END_DATE
+   * - -1: sin restricción (modo excepción)
+   */
+  evaluationWindowDays: 0,
 } as const;
 
 /** Tipo inferido de la configuración para usar en tipados */

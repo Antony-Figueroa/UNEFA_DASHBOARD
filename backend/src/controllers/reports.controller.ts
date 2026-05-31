@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
+import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 
 export const getReportsStats = async (req: Request, res: Response) => {
   try {
@@ -550,7 +551,7 @@ export const getCulminatedStudentsReport = async (req: Request, res: Response) =
         )
       `)
       .eq('STATUS', 1)
-      .eq('PRACTICES_STATUS', 3);
+      .eq('PRACTICES_STATUS', PRACTICES_STATUS.CULMINADO);
 
     if (practicesError) {
       console.error('[CulminatedReport] Error fetching practices:', practicesError);

@@ -6,6 +6,7 @@ import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { auditCreate, auditUpdate, auditDelete, auditStatusChange } from '../utils/audit-helpers.js';
 import * as personService from '../services/person.service.js';
 import { lookupCedula } from '../services/cedula-api.service.js';
+import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 
 const TABLE_NAME = 't_students';
 const CACHE_PREFIX = 'students:';
@@ -218,7 +219,7 @@ export const getStudents = async (req: Request, res: Response) => {
         .from('t_professional_practices')
         .select('STUDENTS_ID')
         .eq('INTERNSHIP_STATUS', 2)
-        .eq('PRACTICES_STATUS', 3);
+        .eq('PRACTICES_STATUS', PRACTICES_STATUS.CULMINADO);
 
       const excludedIds = (excludedPractices || []).map(p => p.STUDENTS_ID);
 
@@ -786,7 +787,7 @@ export const changeStudentRegistration = async (req: AuthRequest, res: Response)
         .from('t_professional_practices')
         .select('PROFESSIONAL_PRACTICE_ID, PRACTICES_STATUS')
         .eq('STUDENTS_ID', parseInt(id))
-        .in('PRACTICES_STATUS', [1, 2]);
+        .in('PRACTICES_STATUS', [PRACTICES_STATUS.PRE_INSCRITO, PRACTICES_STATUS.INSCRITO]);
       if (error) throw error;
       return data;
     }, 'checkActivePractices');

@@ -86,11 +86,13 @@ export interface SystemEvaluationConfig {
  * Valores por defecto del sistema de evaluación.
  * Se usan como fallback si no se puede obtener la configuración del backend.
  */
+/** @deprecated Los valores reales vienen del backend via GET /api/evaluations/system-config */
 export const DEFAULT_EVALUATION_CONFIG: SystemEvaluationConfig = {
-  score: { min: 1, max: 5, displayScale: 20 },
+  score: { min: 1, max: 10, displayScale: 20 },
   weights: { INSTITUCIONAL: 0.40, ACADEMICO: 0.30, COMITE: 0.30 }
 };
 
+/** @deprecated Usar SystemEvaluationConfig.weights del backend via useSystemEvaluationConfig hook */
 export const EVALUATION_WEIGHTS: Record<EvaluatorType, number> = {
   'INSTITUCIONAL': 0.40,
   'ACADEMICO': 0.30,
@@ -104,27 +106,26 @@ export const EVALUATOR_TYPE_LABELS: Record<EvaluatorType, string> = {
 };
 
 /**
- * Rango de puntuación por criterio en DB: CHECK "SCORE" >= 1 AND "SCORE" <= 5
- * La escala visible para el usuario es 1-5 por criterio.
- * TOTAL_SCORE se escala a 0-20 (promedio * 4) para la nota final ponderada.
+ * @deprecated Usar SystemEvaluationConfig del backend via useSystemEvaluationConfig hook.
+ * Los valores reales vienen de GET /api/evaluations/system-config.
  */
 export const SCORE_RANGE = {
   MIN: 1,
-  MAX: 5
+  MAX: 10
 } as const;
 
-/** Escala visible (0-20) a la que se mapea el promedio */
+/** @deprecated Usar config.score.displayScale del backend */
 export const DISPLAY_SCALE = 20 as const;
 
-/** Factor de conversión de score promedio a escala 0-20 */
-export const SCORE_TO_DISPLAY_FACTOR = 4 as const; // (MAX/MIN_RANGE) * MAX_SCORE? No: (avg / 5) * 20 = avg * 4
+/** @deprecated La conversión la hace el backend con evaluationConfig.score */
+export const SCORE_TO_DISPLAY_FACTOR = 2 as const;
 
-/** Escala el promedio de scores (1-5) a la escala visible (0-20) */
+/** @deprecated Usar el backend /api/evaluations/system-config */
 export const scaleToDisplay = (average: number): number => {
   return parseFloat(((average / SCORE_RANGE.MAX) * DISPLAY_SCALE).toFixed(2));
 };
 
-/** Convierte score individual (1-5) a su valor en escala 0-20 */
+/** @deprecated Usar el backend /api/evaluations/system-config */
 export const scoreToDisplay = (score: number): number => {
   return parseFloat(((score / SCORE_RANGE.MAX) * DISPLAY_SCALE).toFixed(2));
 };

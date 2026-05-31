@@ -4,6 +4,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import Button from "../../components/ui/button/Button";
 import CustomSelect from "../../components/form/CustomSelect";
+import { getPeriods } from "../../features/periods/services/periodService";
 import { reportsService, CareerData, PeriodData, RecentReport, TutorAcademicReportRow } from "../../features/reports/services/reportsService";
 import { TablePreviewModal } from "../../components/ui/table/TablePreviewModal";
 import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
@@ -15,6 +16,7 @@ import { CulminatedStudentsPDF } from "../../components/ui/pdf/templates/Culmina
 import { ReportList } from "../../features/reports/components/ReportList";
 import { DocumentReportModal } from "../../features/reports/components/DocumentReportModal";
 import { useReports } from "../../features/reports/hooks/useReports";
+import { generateSimpleExcel } from "../../utils/unefaExcelReports";
 import { getStudents } from "../../features/students/services/studentsService";
 import { getInstitutions } from "../../features/institutions/services/institutionsService";
 import { getEnrollments } from "../../features/enrollment/services/enrollmentService";
@@ -28,7 +30,7 @@ interface ReportMetric {
   trend?: "up" | "down" | "stable";
 }
 
-type ReportType = "students" | "enrollments" | "tracking" | "certificates" | "institutions" | "tutores-academicos" | "culminated-students" | "resumen-pasantias" | "relacion-empresas" | "distribucion-tutores" | "distribucion-tutores-v2" | "relacion-individual-docente" | "";
+type ReportType = "students" | "enrollments" | "institutions" | "tutores-academicos" | "culminated-students" | "resumen-pasantias" | "relacion-empresas" | "distribucion-tutores" | "distribucion-tutores-v2" | "relacion-individual-docente" | "";
 
 const DOCUMENT_SECTIONS = [
   {
@@ -69,6 +71,7 @@ export default function ReportsPage() {
   const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
 
   const [periodFilter, setPeriodFilter] = useState("");
+  const [availablePeriods, setAvailablePeriods] = useState<{ value: string; label: string }[]>([]);
   const [reportType, setReportType] = useState<ReportType>("");
 
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
@@ -88,12 +91,19 @@ export default function ReportsPage() {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [statsRes, careerRes, periodRes, recentRes] = await Promise.all([
+      const [statsRes, careerRes, periodRes, recentRes, apiPeriods] = await Promise.all([
         reportsService.getStats(periodFilter),
         reportsService.getStudentsByCareer(),
         reportsService.getEnrollmentsByPeriod(),
-        reportsService.getRecentReports()
+        reportsService.getRecentReports(),
+        getPeriods()
       ]);
+      setAvailablePeriods(
+        (apiPeriods || []).map((p: any) => ({
+          value: p.description,
+          label: p.description
+        }))
+      );
       setMetrics(statsRes.metrics || []);
       setCareerData(careerRes);
       setPeriodData(periodRes);
@@ -129,7 +139,7 @@ export default function ReportsPage() {
       columns: [
         { header: "Cédula", accessor: (s: any) => `${s.identificationPrefix}-${s.identificationNumber}` },
         { header: "Nombre", accessor: (s: any) => `${s.firstName} ${s.lastName}` },
-        { header: "Carrera", accessor: "careerName" as any },
+        { header: "Carrera", accessor: "careerName" },
       ]
     },
     "tutores-academicos": {
@@ -185,9 +195,9 @@ export default function ReportsPage() {
       },
       pdfTemplate: (data) => <InstitutionPDF data={data as any[]} />,
       columns: [
-        { header: "RIF", accessor: "institutionRif" as any },
-        { header: "Nombre", accessor: "institutionName" as any },
-        { header: "Región", accessor: "region" as any },
+        { header: "RIF", accessor: "institutionRif" },
+        { header: "Nombre", accessor: "institutionName" },
+        { header: "Región", accessor: "region" },
       ]
     },
     "enrollments": {
@@ -199,24 +209,10 @@ export default function ReportsPage() {
       },
       pdfTemplate: (data) => <EnrollmentPDF data={data as any[]} />,
       columns: [
-        { header: "Estudiante", accessor: "studentName" as any },
-        { header: "Carrera", accessor: "careerName" as any },
-        { header: "Período", accessor: "period" as any },
+        { header: "Estudiante", accessor: "studentName" },
+        { header: "Carrera", accessor: "careerName" },
+        { header: "Período", accessor: "period" },
       ]
-    },
-    "tracking": {
-      title: "Reporte de Seguimiento",
-      subtitle: "Seguimiento de prácticas profesionales",
-      loadPDF: async () => [],
-      pdfTemplate: (data) => <StudentPDF data={data as any[]} />,
-      columns: []
-    },
-    "certificates": {
-      title: "Reporte de Certificados",
-      subtitle: "Certificados emitidos",
-      loadPDF: async () => [],
-      pdfTemplate: (data) => <StudentPDF data={data as any[]} />,
-      columns: []
     },
     "culminated-students": {
       title: "Estudiantes Culminados",
@@ -227,15 +223,15 @@ export default function ReportsPage() {
       },
       pdfTemplate: (data) => <CulminatedStudentsPDF data={data as any[]} />,
       columns: [
-        { header: "Cédula", accessor: "studentCi" as any },
-        { header: "Estudiante", accessor: "studentName" as any },
-        { header: "Carrera", accessor: "careerName" as any },
-        { header: "Institución", accessor: "institutionName" as any },
-        { header: "Tipo", accessor: "practiceType" as any },
-        { header: "Tutor", accessor: "tutorName" as any },
-        { header: "Período", accessor: "period" as any },
-        { header: "Horas", accessor: "totalHours" as any },
-        { header: "Nota", accessor: "grade" as any },
+        { header: "Cédula", accessor: "studentCi" },
+        { header: "Estudiante", accessor: "studentName" },
+        { header: "Carrera", accessor: "careerName" },
+        { header: "Institución", accessor: "institutionName" },
+        { header: "Tipo", accessor: "practiceType" },
+        { header: "Tutor", accessor: "tutorName" },
+        { header: "Período", accessor: "period" },
+        { header: "Horas", accessor: "totalHours" },
+        { header: "Nota", accessor: "grade" },
       ]
     },
     "relacion-empresas": {
@@ -430,25 +426,13 @@ export default function ReportsPage() {
     }
     const config = reportType ? reportConfig[reportType] : null;
     if (!config) return;
-    const headers = config.columns.map(col => col.header);
-    const rows = data.map((row) => {
-      return config.columns.map(col => {
-        const value = typeof col.accessor === "function" ? col.accessor(row) : row[col.accessor as keyof TutorAcademicReportRow];
-        return value ?? "";
-      });
-    });
-    const csvContent = [headers.join('\t'), ...rows.map(row => row.join('\t'))].join('\n');
-    const BOM = '\uFEFF';
-    const blob = new Blob([BOM + csvContent], { type: 'text/vnd.ms-excel;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${fileName}.xls`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    toast.success('Reporte exportado exitosamente');
+    try {
+      await generateSimpleExcel(data, config.columns, fileName, config.title);
+      toast.success('Reporte exportado exitosamente');
+    } catch (error) {
+      console.error('[Reports] Error exporting Excel:', error);
+      toast.error('Error al exportar el reporte');
+    }
   };
 
   const maxValue = periodData.length > 0 ? Math.max(...periodData.map((d) => d.value)) : 1;
@@ -473,10 +457,7 @@ export default function ReportsPage() {
             <CustomSelect
               options={[
                 { value: "", label: "Todos los períodos" },
-                { value: "2025-II", label: "2025-II" },
-                { value: "2025-I", label: "2025-I" },
-                { value: "2024-II", label: "2024-II" },
-                { value: "2024-I", label: "2024-I" },
+                ...availablePeriods
               ]}
               value={periodFilter}
               onChange={(e) => setPeriodFilter(e as unknown as string)}
@@ -607,8 +588,6 @@ export default function ReportsPage() {
                     { value: "", label: "Seleccionar tipo" },
                     { value: "students", label: "Estudiantes" },
                     { value: "enrollments", label: "Inscripciones" },
-                    { value: "tracking", label: "Seguimiento" },
-                    { value: "certificates", label: "Certificados" },
                     { value: "institutions", label: "Instituciones" },
                     { value: "tutores-academicos", label: "ANEXO 4 - Tutores Académicos" },
                     { value: "resumen-pasantias", label: "RESUMEN PASANTIAS" },
@@ -623,10 +602,7 @@ export default function ReportsPage() {
                 <CustomSelect
                   options={[
                     { value: "", label: "Todos los períodos" },
-                    { value: "2025-II", label: "2025-II" },
-                    { value: "2025-I", label: "2025-I" },
-                    { value: "2024-II", label: "2024-II" },
-                    { value: "2024-I", label: "2024-I" },
+                    ...availablePeriods
                   ]}
                   value={periodFilter}
                   onChange={(e) => setPeriodFilter(e as unknown as string)}

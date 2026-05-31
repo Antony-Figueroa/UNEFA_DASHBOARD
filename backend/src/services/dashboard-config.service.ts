@@ -9,6 +9,10 @@ export interface DashboardWidget {
   key: string;
   order: number;
   visible: boolean;
+  /** Sobreescribe el tamaño por defecto del widget */
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  /** Color de acento personalizado (hex o nombre) */
+  color?: string;
 }
 
 export interface DashboardLayout {

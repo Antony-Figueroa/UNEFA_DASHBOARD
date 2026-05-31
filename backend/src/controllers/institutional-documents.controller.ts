@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
+import { supabase } from '../lib/supabase.js';
 
 function getFullName(row: any): string {
   const parts = [row.NAME || '', row.SECOND_NAME || '', row.SURNAME || '', row.SECOND_SURNAME || ''];
@@ -614,5 +615,52 @@ export const getDataConstanciaTutorInstitucional = async (req: Request, res: Res
   } catch (error) {
     console.error('[institutional-documents] getDataConstanciaTutorInstitucional error:', error);
     res.status(500).json({ success: false, message: 'Error al obtener datos' });
+  }
+};
+
+/**
+ * Busca prácticas profesionales por CI o nombre del estudiante.
+ * GET /api/institutional-documents/search-practices?q=termino
+ */
+export const searchPractices = async (req: Request, res: Response) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    if (!q || q.length < 2) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const term = `%${q}%`;
+    const { data, error } = await supabase
+      .from('t_professional_practices')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        STUDENTS_ID,
+        t_students!inner(STUDENTS_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME),
+        t_career!inner(CAREER_NAME)
+      `)
+      .or(`STUDENTS_CI.ilike.${term},t_students.NAME.ilike.${term},t_students.SURNAME.ilike.${term}`)
+      .limit(20);
+
+    if (error) {
+      console.error('[institutional-documents] searchPractices error:', error);
+      return res.status(500).json({ success: false, message: 'Error al buscar prácticas' });
+    }
+
+    const results = (data || []).map((p: any) => {
+      const student = p.t_students;
+      const career = p.t_career;
+      return {
+        practiceId: p.PROFESSIONAL_PRACTICE_ID,
+        studentCi: student.STUDENTS_CI,
+        studentName: [student.NAME, student.SECOND_NAME, student.SURNAME, student.SECOND_SURNAME]
+          .filter(Boolean).join(' '),
+        careerName: career?.CAREER_NAME || '',
+      };
+    });
+
+    res.json({ success: true, data: results });
+  } catch (error) {
+    console.error('[institutional-documents] searchPractices error:', error);
+    res.status(500).json({ success: false, message: 'Error al buscar prácticas' });
   }
 };

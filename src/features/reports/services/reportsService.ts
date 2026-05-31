@@ -82,6 +82,13 @@ export interface TutorAcademicReportResponse {
   };
 }
 
+export interface PracticeSearchResult {
+  practiceId: number;
+  studentCi: string;
+  studentName: string;
+  careerName: string;
+}
+
 export const reportsService = {
   getStats: async (period?: string) => {
     const params = period ? `?period=${period}` : '';
@@ -147,6 +154,11 @@ export const reportsService = {
 
   getDocumentData: async (documentType: string, id: number) => {
     const response = await apiClient.get(`/institutional-documents/${documentType}/${id}`);
+    return response.data;
+  },
+
+  searchPractices: async (q: string): Promise<{ success: boolean; data: PracticeSearchResult[] }> => {
+    const response = await apiClient.get(`/institutional-documents/search-practices?q=${encodeURIComponent(q)}`);
     return response.data;
   },
 

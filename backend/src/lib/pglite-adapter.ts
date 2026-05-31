@@ -59,7 +59,7 @@ const TABLE_PKS: Record<string, string> = {
   t_user: 'USER_ID',
   t_institution_manager: 'MANAGER_ID',
   t_enrollment: 'ENROLLMENT_ID',
-  t_professional_practices: 'PROFESSIONAL_PRACTICES_ID',
+  t_professional_practices: 'PROFESSIONAL_PRACTICE_ID',
   t_professional_practices_tutor: 'PROFESSIONAL_PRACTICES_TUTOR_ID',
   t_tutor_career: 'TUTOR_CAREER_ID',
   t_career: 'CAREER_ID',
@@ -213,6 +213,37 @@ function resolveInverseFK(parentTable: string, childTable: string): { fkColumn: 
   if (childFks) {
     for (const [col, tbl] of Object.entries(childFks)) {
       if (tbl === parentTable) return { fkColumn: col, sourceTable: childTable };
+    }
+  }
+  return null;
+}
+
+/**
+ * Resuelve una FK encadenada cuando no hay FK directa entre fromTable y toTable.
+ * Busca rutas de la forma: fromTable → intermediate → toTable
+ * Devuelve un array de pasos JOIN [{ fromCol, toTable, toCol }, ...]
+ * o null si no hay ruta.
+ */
+function resolveFKChain(fromTable: string, toTable: string): { fromCol: string; toTable: string; toCol: string }[] | null {
+  // Buscar FK directa
+  const directFromFks = KNOWN_FOREIGN_KEYS[fromTable];
+  if (directFromFks) {
+    for (const [col, tbl] of Object.entries(directFromFks)) {
+      // Check if intermediate table has FK to target
+      const intermFks = KNOWN_FOREIGN_KEYS[tbl];
+      if (intermFks) {
+        for (const [intermCol, intermTbl] of Object.entries(intermFks)) {
+          if (intermTbl === toTable) {
+            // Cadena: fromTable.col → tbl.PK, tbl.intermCol → toTable.PK
+            const fromPK = findPKForTable(tbl);
+            const toPK = findPKForTable(toTable);
+            return [
+              { fromCol: col, toTable: tbl, toCol: fromPK },
+              { fromCol: intermCol, toTable: toTable, toCol: toPK },
+            ];
+          }
+        }
+      }
     }
   }
   return null;
@@ -500,7 +531,39 @@ export class SqlBuilder {
     return `"${column}"`;
   }
 
+  /**
+   * Asigna aliases únicos a JoinNodes cuando una tabla aparece más de una vez.
+   * Recorre todo el árbol de joins recursivamente.
+   */
+  private assignUniqueAliases(joins: JoinNode[]): void {
+    const usedAliases = new Set<string>();
+
+    function walk(nodes: JoinNode[]): void {
+      for (const node of nodes) {
+        const baseAlias = node.alias || node.table;
+        let uniqueAlias = baseAlias;
+        let counter = 1;
+        while (usedAliases.has(uniqueAlias)) {
+          uniqueAlias = `${baseAlias}_${counter++}`;
+        }
+        usedAliases.add(uniqueAlias);
+        // Store the resolved alias back on the node
+        // Only set if different from default to avoid unnecessary changes
+        if (uniqueAlias !== baseAlias || node.alias) {
+          node.alias = uniqueAlias;
+        }
+        // Recurse into children
+        walk(node.children);
+      }
+    }
+
+    walk(joins);
+  }
+
   private buildSelectSQL(params: any[], paramIndex: number): { sql: string; params: any[] } {
+    // Asignar aliases únicos antes de generar columnas y JOINs
+    this.assignUniqueAliases(this.joins);
+
     let selectClause: string;
 
     if (this.headOnly && this.countOption === 'exact') {
@@ -527,11 +590,15 @@ export class SqlBuilder {
     }
 
     // ORDER BY
+    const hasJoins = this.joins.length > 0;
     if (this.orders.length > 0) {
       const orderClauses = this.orders.map(o => {
+        // Si hay joins, siempre calificar con tabla base para evitar ambigüedad
         const col = o.foreignTable
           ? `"${o.foreignTable}".${this.quoteCol(o.column)}`
-          : this.quoteCol(o.column);
+          : hasJoins
+            ? `${this.quoteCol(this.table)}.${this.quoteCol(o.column)}`
+            : this.quoteCol(o.column);
         return `${col} ${o.ascending ? 'ASC' : 'DESC'}`;
       });
       sql += ` ORDER BY ${orderClauses.join(', ')}`;
@@ -572,8 +639,10 @@ export class SqlBuilder {
    * Genera cláusulas JOIN SQL recursivamente para el árbol de JoinNode.
    * Cada nivel se une al nivel superior (parentTable).
    */
-  private generateJoinSQL(joins: JoinNode[], parentTable: string): string {
+  private generateJoinSQL(joins: JoinNode[], parentTable: string, usedAliases?: Set<string>): string {
     let sql = '';
+    if (!usedAliases) usedAliases = new Set<string>();
+
     for (const join of joins) {
       const alias = join.alias || join.table;
       const resolvedTable = this.resolveJoinTable(join);
@@ -587,18 +656,36 @@ export class SqlBuilder {
         // FK directa: parentTable.fkCol = resolvedTable.PK
         const pkCol = findPKForTable(resolvedTable);
         sql += ` ${joinType} ${this.quoteCol(resolvedTable)} AS "${alias}" ON ${parentTable}.${this.quoteCol(fkCol)} = "${alias}".${this.quoteCol(pkCol)}`;
+        usedAliases.add(alias);
       } else if (inverseFk) {
         // FK inversa: resolvedTable apunta a parentTable
         const pkCol = findPKForTable(parentTable);
         sql += ` ${joinType} ${this.quoteCol(resolvedTable)} AS "${alias}" ON "${alias}".${this.quoteCol(inverseFk.fkColumn)} = ${parentTable}.${this.quoteCol(pkCol)}`;
+        usedAliases.add(alias);
       } else {
-        console.warn(`[PGliteAdapter] FK desconocida entre ${parentTable} y ${resolvedTable}, LEFT JOIN sin ON`);
-        sql += ` ${joinType} ${this.quoteCol(resolvedTable)} AS "${alias}" ON 1=0`;
+        // Intentar FK encadenada: fromTable → intermediate → toTable
+        const chain = resolveFKChain(parentTable, resolvedTable);
+        if (chain) {
+          let prevAlias = parentTable;
+          for (let i = 0; i < chain.length; i++) {
+            const step = chain[i];
+            const isLast = i === chain.length - 1;
+            const stepAlias = isLast ? alias : `__${step.toTable}__chain`;
+            const stepJoinType = (isLast && join.isInner) ? 'INNER JOIN' : 'LEFT JOIN';
+            sql += ` ${stepJoinType} ${this.quoteCol(step.toTable)} AS "${stepAlias}" ON ${prevAlias}.${this.quoteCol(step.fromCol)} = "${stepAlias}".${this.quoteCol(step.toCol)}`;
+            usedAliases.add(stepAlias);
+            prevAlias = `"${stepAlias}"`;
+          }
+        } else {
+          console.warn(`[PGliteAdapter] FK desconocida entre ${parentTable} y ${resolvedTable}, LEFT JOIN sin ON`);
+          sql += ` ${joinType} ${this.quoteCol(resolvedTable)} AS "${alias}" ON 1=0`;
+          usedAliases.add(alias);
+        }
       }
 
       // Recurse: children join to their resolved parent table
       if (join.children.length > 0) {
-        sql += this.generateJoinSQL(join.children, resolvedTable);
+        sql += this.generateJoinSQL(join.children, resolvedTable, usedAliases);
       }
     }
     return sql;
@@ -617,9 +704,17 @@ export class SqlBuilder {
   }
 
   private parseMainColumns(selectRaw: string): string[] {
-    // Remover las referencias a foreign tables (con paréntesis)
-    let cleaned = selectRaw.replace(/\w+(?:\.\w+)?\s*:\s*\w+\s*\([^)]*\)/g, '');
-    cleaned = cleaned.replace(/\w+\s*!?\w*\s*\([^)]*\)/g, '');
+    // Remover las referencias a foreign tables (con paréntesis).
+    // El regex simple \(...\) no maneja paréntesis anidados, así que iteramos
+    // hasta que no haya más cambios: primero se eliminan los joins más internos,
+    // luego los externos.
+    let cleaned = selectRaw;
+    let prev = '';
+    while (prev !== cleaned) {
+      prev = cleaned;
+      cleaned = cleaned.replace(/\b\w+(?:\.\w+)?\s*:\s*\w+\s*\([^)]*\)/g, '');
+      cleaned = cleaned.replace(/\b\w+\s*!?\w*\s*\([^)]*\)/g, '');
+    }
     // Partir por comas y limpiar
     const parts = cleaned.split(',').map(p => p.trim()).filter(p => p && p !== '*');
     if (parts.length === 0) return ['*'];
@@ -919,51 +1014,74 @@ class PGliteFilterBuilder implements FilterQueryBuilder, InsertQueryBuilder, Upd
    * Ej sin !inner: { t_user_roles_ID_ROLES: 1, ... }
    *   → { t_user_roles_ID_ROLES: 1, t_user_roles: [{ ID_ROLES: 1 }] }
    */
+  /**
+   * Normaliza filas planas con alias_column a objetos anidados, respetando la
+   * estructura de árbol del JOIN. Cada join node usa su alias (único tras
+   * assignUniqueAliases) para las flat keys, pero el objeto se guarda con
+   * el NOMBRE DE TABLA original (node.table) para que los controllers
+   * accedan consistentemente.
+   *
+   * Ej: flat { t_persons_ci, t_persons_first_name, t_persons_1_phone,
+   *           t_institution_manager_MANAGER_ID, t_institution_manager_INSTITUTION_ID }
+   *   → row.t_persons = { ci, first_name }
+   *     row.t_institution_manager = { MANAGER_ID, t_persons: { phone } }
+   */
   private normalizeJoinRows(rows: any[], joins: JoinNode[]): any[] {
     if (joins.length === 0) return rows;
 
-    // Recolectar recursivamente todos los joins
-    function collectJoins(nodes: JoinNode[]): { alias: string; columns: string[]; isInner: boolean }[] {
-      const result: { alias: string; columns: string[]; isInner: boolean }[] = [];
+    /**
+     * Normaliza recursivamente un nivel del árbol de joins.
+     * @param row Fila plana con alias_column keys
+     * @param nodes JoinNodes del nivel actual
+     * @param target Objeto destino donde se escribirán los objetos anidados
+     */
+    function normalizeLevel(row: any, nodes: JoinNode[], target: Record<string, any>): void {
       for (const node of nodes) {
         const alias = node.alias || node.table;
-        result.push({ alias, columns: node.columns, isInner: node.isInner });
-        result.push(...collectJoins(node.children));
-      }
-      return result;
-    }
+        const tableName = node.table; // nombre de tabla original para la key
 
-    const joinMap = collectJoins(joins);
-    if (joinMap.length === 0) return rows;
-
-    return rows.map(row => {
-      if (!row || typeof row !== 'object') return row;
-      const result = { ...row };
-
-      for (const { alias, columns, isInner } of joinMap) {
+        // Recolectar columnas planas de este nodo
         const nested: Record<string, any> = {};
         let hasAny = false;
 
-        for (const col of columns) {
+        for (const col of node.columns) {
           const flatKey = `${alias}_${col}`;
-          if (flatKey in result) {
-            nested[col] = result[flatKey];
+          if (flatKey in row) {
+            nested[col] = row[flatKey];
             hasAny = true;
           }
         }
 
-        if (hasAny) {
-          // !inner → objeto (FK directa, 1:1)
-          // sin !inner → array (FK inversa, 1:N)
-          if (isInner) {
-            result[alias] = nested;
+        // Recurse into children FIRST para construir nested de hijos
+        if (node.children.length > 0) {
+          // Para !inner → objeto, los hijos se anidan dentro
+          // Para sin !inner → array, los hijos van dentro de cada elemento
+          if (node.isInner) {
+            normalizeLevel(row, node.children, nested);
           } else {
-            const hasNonNull = Object.values(nested).some(v => v !== null && v !== undefined);
-            result[alias] = hasNonNull ? [nested] : [];
+            // Los hijos de un array join van dentro del único elemento
+            // (asumimos que es 0..1 array para simplificar)
+            normalizeLevel(row, node.children, nested);
+          }
+        }
+
+        // Guardar en target con nombre de tabla original (no alias)
+        if (hasAny || node.children.length > 0) {
+          if (node.isInner) {
+            target[tableName] = nested;
+          } else {
+            // FK inversa → array (0 o 1 elemento por fila con PGlite plano)
+            const hasData = hasAny && Object.values(nested).some(v => v !== null && v !== undefined);
+            target[tableName] = hasData ? [nested] : [];
           }
         }
       }
+    }
 
+    return rows.map(row => {
+      if (!row || typeof row !== 'object') return row;
+      const result = { ...row };
+      normalizeLevel(row, joins, result);
       return result;
     });
   }

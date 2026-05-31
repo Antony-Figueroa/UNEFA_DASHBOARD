@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Modal } from '../../../components/ui/modal';
 import Button from '../../../components/ui/button/Button';
 import InputField from '../../../components/form/input/InputField';
 import toast from 'react-hot-toast';
-import reportsService from '../services/reportsService';
+import reportsService, { PracticeSearchResult } from '../services/reportsService';
 import { getAllDocumentTexts } from '../services/reportTextsService';
 import { SingleReportModal } from '../../../components/ui/pdf/SingleReportModal';
 import {
@@ -18,6 +18,12 @@ import {
   ConstanciaTutorAcademicoPDF,
   ConstanciaTutorInstitucionalPDF,
 } from '../../../components/ui/pdf/templates/institutional';
+
+const PRACTICE_DOCS = new Set([
+  'aceptacion-tutor', 'solicitud-institucion', 'carta-postulacion',
+  'acta-validacion', 'evaluacion-final', 'evaluacion-tutor-institucional',
+  'evaluacion-tutor-academico', 'evaluacion-comite',
+]);
 
 const DOCUMENT_CONFIG: Record<string, {
   title: string;
@@ -106,11 +112,50 @@ interface DocumentReportModalProps {
 
 export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentReportModalProps) {
   const config = DOCUMENT_CONFIG[documentType];
+  const isPracticeDoc = PRACTICE_DOCS.has(documentType);
   const [recordId, setRecordId] = useState('');
   const [loading, setLoading] = useState(false);
   const [pdfData, setPdfData] = useState<any>(null);
   const [textos, setTextos] = useState<Record<string, string>>({});
   const [showPdf, setShowPdf] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<PracticeSearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchTerm('');
+      setSearchResults([]);
+      setRecordId('');
+    }
+  }, [isOpen, documentType]);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!isPracticeDoc || searchTerm.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    setSearching(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await reportsService.searchPractices(searchTerm);
+        setSearchResults(res.data || []);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchTerm, isPracticeDoc]);
+
+  const selectResult = (result: PracticeSearchResult) => {
+    setRecordId(String(result.practiceId));
+    setSearchTerm('');
+    setSearchResults([]);
+  };
 
   if (!config) return null;
 
@@ -152,19 +197,65 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
               {config.title}
             </h2>
             <p className="text-sm text-text-tertiary mt-1">
-              Ingrese el ID del registro para generar el documento
+              {isPracticeDoc
+                ? 'Busque el estudiante por CI o nombre, o ingrese el ID directamente'
+                : 'Ingrese el ID del registro para generar el documento'
+              }
             </p>
           </div>
 
-          <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">
-            {config.idLabel}
-          </label>
-          <InputField
-            placeholder={config.idPlaceholder}
-            type="number"
-            value={recordId}
-            onChange={(e) => setRecordId(e.target.value)}
-          />
+          {isPracticeDoc && (
+            <div className="relative">
+              <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">
+                Buscar Estudiante
+              </label>
+              <InputField
+                placeholder="CI o nombre del estudiante..."
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              {searching && (
+                <div className="absolute right-3 top-9">
+                  <div className="animate-spin h-4 w-4 border-2 border-brand-500 border-t-transparent rounded-full" />
+                </div>
+              )}
+              {searchResults.length > 0 && (
+                <div className="absolute z-50 mt-1 w-full rounded-lg border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface shadow-lg max-h-60 overflow-y-auto">
+                  {searchResults.map((r) => (
+                    <button
+                      key={r.practiceId}
+                      type="button"
+                      onClick={() => selectResult(r)}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 border-b border-border-default dark:border-border-dark last:border-b-0 transition-colors"
+                    >
+                      <p className="text-sm font-medium text-text-primary dark:text-text-emphasis">
+                        {r.studentName}
+                      </p>
+                      <p className="text-xs text-text-tertiary mt-0.5">
+                        CI: {r.studentCi} · {r.careerName} · ID Práctica: {r.practiceId}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {searchTerm.length >= 2 && !searching && searchResults.length === 0 && (
+                <p className="text-xs text-text-tertiary mt-1">Sin resultados. Puede ingresar el ID manualmente.</p>
+              )}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">
+              {config.idLabel}
+            </label>
+            <InputField
+              placeholder={config.idPlaceholder}
+              type="number"
+              value={recordId}
+              onChange={(e) => setRecordId(e.target.value)}
+            />
+          </div>
 
           <div className="flex items-center gap-3 justify-end pt-2">
             <Button variant="outline" onClick={onClose}>

@@ -298,6 +298,7 @@ export const getEvaluationStats = async (req: AuthRequest, res: Response) => {
       .from('t_professional_practices')
       .select(`
         PROFESSIONAL_PRACTICE_ID,
+        CAREER_ID,
         t_students (
           CAREER_ID
         ),
@@ -322,6 +323,24 @@ export const getEvaluationStats = async (req: AuthRequest, res: Response) => {
     }
 
     const practiceIds = (practices as any[]).map(p => p.PROFESSIONAL_PRACTICE_ID);
+
+    // Obtener MINIMUM_GRADE de todas las carreras involucradas
+    const careerIds = [...new Set((practices as any[]).map(p => p.CAREER_ID).filter(Boolean))] as number[];
+    const careerMinGradeMap = new Map<number, number>();
+    if (careerIds.length > 0) {
+      const { data: careers } = await supabase
+        .from('t_career')
+        .select('CAREER_ID, MINIMUM_GRADE')
+        .in('CAREER_ID', careerIds);
+      (careers || []).forEach((c: any) => {
+        careerMinGradeMap.set(c.CAREER_ID, c.MINIMUM_GRADE || 10);
+      });
+    }
+    // Mapa practiceId -> minimumGrade (fallback 10 si no hay carrera)
+    const practiceMinGrade = new Map<number, number>();
+    (practices as any[]).forEach(p => {
+      practiceMinGrade.set(p.PROFESSIONAL_PRACTICE_ID, careerMinGradeMap.get(p.CAREER_ID) || 10);
+    });
 
     // Obtener evaluaciones
     const { data: evaluations } = await supabase
@@ -358,13 +377,14 @@ export const getEvaluationStats = async (req: AuthRequest, res: Response) => {
       practiceEvals.set(String(e.PROFESSIONAL_PRACTICE_ID), existing);
     });
 
-    practiceEvals.forEach((typeScores) => {
+    practiceEvals.forEach((typeScores, practiceId) => {
       const hasAll = evaluatorTypes.every(type => typeScores[type] !== undefined);
       if (hasAll) {
         const finalGrade = evaluatorTypes.reduce((sum, type) => {
           return sum + (typeScores[type] || 0) * evaluationConfig.weights[type as keyof typeof evaluationConfig.weights];
         }, 0);
-        if (finalGrade >= 10) approved++;
+        const minGrade = practiceMinGrade.get(Number(practiceId)) || 10;
+        if (finalGrade >= minGrade) approved++;
         else failed++;
       }
     });

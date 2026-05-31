@@ -584,6 +584,55 @@ export async function generateRelacionIndividualDocenteExcel(data: any[], period
   }
 }
 
+/**
+ * Genera un Excel simple a partir de columnas y datos.
+ * Útil para reportes que no tienen un formato institucional específico.
+ */
+export async function generateSimpleExcel(
+  data: any[],
+  columns: { header: string; accessor: string | ((item: any) => string | number | boolean | null | undefined) }[],
+  fileName: string,
+  title?: string,
+) {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Reporte');
+  const totalCols = columns.length;
+
+  worksheet.columns = columns.map(() => ({
+    width: 20,
+  }));
+
+  if (title) {
+    applyTitleRow(worksheet, 1, title, totalCols);
+  }
+
+  const headerRow = title ? 3 : 1;
+  applyHeaderRow(worksheet, headerRow, columns.map((col, i) => ({
+    col: i + 1,
+    text: col.header,
+  })));
+
+  let currentRow = headerRow + 1;
+  data.forEach((item) => {
+    const values = columns.map((col) => {
+      if (typeof col.accessor === 'function') {
+        const v = col.accessor(item);
+        return v ?? '';
+      }
+      return (item as any)[col.accessor] ?? '';
+    });
+    applyDataRow(worksheet, currentRow, values);
+    currentRow++;
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  if (typeof window !== 'undefined') {
+    const { saveAs } = await import('file-saver');
+    saveAs(blob, `${fileName}.xlsx`);
+  }
+}
+
 export async function generateDistribucionTutoresV2Excel(data: any[], period: string, fileName: string) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Distribucion Tutores V2');

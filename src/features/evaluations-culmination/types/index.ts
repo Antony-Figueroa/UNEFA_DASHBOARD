@@ -5,7 +5,11 @@
 
 import { EvaluatorType } from '../../evaluations/types';
 
-/** Pesos de cada tipo de evaluación */
+/**
+ * Pesos de cada tipo de evaluación.
+ * @deprecated Los pesos reales vienen del backend. Si necesitás calcular en frontend,
+ * obtenelos desde useSystemEvaluationConfig().config.weights en vez de este valor fijo.
+ */
 const EVALUATION_WEIGHTS: Record<EvaluatorType, number> = {
   'INSTITUCIONAL': 0.40,
   'ACADEMICO': 0.30,
@@ -195,30 +199,6 @@ export const STATUS_COLORS = {
     failed: 'error' as const,
     pending: 'gray' as const
   }
-};
-
-/** Helper para calcular nota final */
-export const calculateFinalGrade = (evaluations: EvaluationState): number | null => {
-  const inst = evaluations.INSTITUCIONAL;
-  const acad = evaluations.ACADEMICO;
-  const comite = evaluations.COMITE;
-  
-  if (!inst.completed || !acad.completed || !comite.completed) {
-    return null;
-  }
-  
-  const grade = 
-    (inst.score * EVALUATION_WEIGHTS.INSTITUCIONAL) +
-    (acad.score * EVALUATION_WEIGHTS.ACADEMICO) +
-    (comite.score * EVALUATION_WEIGHTS.COMITE);
-  
-  return Math.round(grade * 100) / 100;
-};
-
-/** Helper para determinar resultado */
-export const getPracticeResult = (finalGrade: number | null, minimumGrade: number = 10): PracticeResult => {
-  if (finalGrade === null) return 'pending';
-  return finalGrade >= minimumGrade ? 'approved' : 'failed';
 };
 
 /** Helper para obtener label de resultado */

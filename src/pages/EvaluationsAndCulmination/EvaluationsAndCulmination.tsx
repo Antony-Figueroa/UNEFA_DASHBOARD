@@ -22,9 +22,6 @@ import { EvaluationCell } from '../../features/evaluations-culmination/component
 import { StatsCardsGrid } from '../../features/evaluations-culmination/components/StatsCards';
 import { EvaluationFilters } from '../../features/evaluations-culmination/components/EvaluationFilters';
 import { useEvaluationsCulmination } from '../../features/evaluations-culmination/hooks/useEvaluationsCulmination';
-import {
-  EVALUATION_WEIGHTS,
-} from '../../features/evaluations/types';
 import type { EvaluatorType } from '../../features/evaluations/types';
 import type { PracticeWithEvaluations } from '../../features/evaluations-culmination/types';
 import {

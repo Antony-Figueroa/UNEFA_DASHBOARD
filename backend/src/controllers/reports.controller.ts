@@ -2,35 +2,98 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 
+interface PeriodInfo {
+  PERIOD_ID: number;
+  DESCRIPTION: string;
+  START_DATE: string;
+}
+
+function calcTrend(current: number, previous: number): { change: number; trend: 'up' | 'down' | 'stable' } {
+  if (previous === 0) {
+    return { change: current > 0 ? 100 : 0, trend: current > 0 ? 'up' : 'stable' };
+  }
+  const pct = Math.round(((current - previous) / previous) * 100);
+  return {
+    change: Math.abs(pct),
+    trend: pct > 0 ? 'up' : pct < 0 ? 'down' : 'stable',
+  };
+}
+
 export const getReportsStats = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
-    const period = req.query.period as string || '';
+    const periodDesc = (req.query.period as string) || '';
+
+    // ── Resolver períodos para filtros y comparaciones ──
+    let currentPeriodId: number | null = null;
+    let previousPeriodId: number | null = null;
+    let currentPeriodStart: string | null = null;
+
+    if (periodDesc) {
+      const { data: periods } = await supabase
+        .from('t_internships_period')
+        .select('PERIOD_ID, DESCRIPTION, START_DATE')
+        .eq('STATUS', 1)
+        .order('START_DATE', { ascending: false });
+
+      const list = (periods as PeriodInfo[] | null) || [];
+      const matched = list.find((p) => p.DESCRIPTION === periodDesc);
+      if (matched) {
+        currentPeriodId = matched.PERIOD_ID;
+        currentPeriodStart = matched.START_DATE;
+        const idx = list.findIndex((p) => p.PERIOD_ID === currentPeriodId);
+        if (idx < list.length - 1) {
+          previousPeriodId = list[idx + 1].PERIOD_ID;
+        }
+      }
+    }
 
     const [
       { count: activeStudents },
-      { count: totalEnrollments },
+
+      { count: currentEnrollments },
+      { count: prevEnrollments },
+
       { data: activeTrackings },
-      { data: authLogs }
+
+      { count: certifiedCount },
+      { count: prevCertified },
     ] = await Promise.all([
       supabase.from('t_students').select('*', { count: 'exact', head: true }).eq('STATUS', 1),
-      supabase.from('t_enrollment').select('*', { count: 'exact', head: true }).eq('STATUS', 1),
+
+      // Inscripciones (filtradas por período si corresponde)
+      currentPeriodId
+        ? supabase.from('t_enrollment').select('*', { count: 'exact', head: true }).eq('STATUS', 1).eq('PERIOD_ID', currentPeriodId)
+        : supabase.from('t_enrollment').select('*', { count: 'exact', head: true }).eq('STATUS', 1),
+
+      // Inscripciones del período anterior (para tendencia)
+      previousPeriodId
+        ? supabase.from('t_enrollment').select('*', { count: 'exact', head: true }).eq('STATUS', 1).eq('PERIOD_ID', previousPeriodId)
+        : Promise.resolve({ count: 0 }),
+
       supabase.from('t_tracking').select('TRACKING_ID').eq('STATUS', 1),
-      supabase.from('t_auth_log').select('ACTION')
+
+      // Certificados: filtramos en DB
+      supabase.from('t_auth_log').select('*', { count: 'exact', head: true }).eq('ACTION', 'CERTIFICATE_GENERATED'),
+
+      // Certificados emitidos antes del período actual (para tendencia)
+      currentPeriodStart
+        ? supabase.from('t_auth_log').select('*', { count: 'exact', head: true }).eq('ACTION', 'CERTIFICATE_GENERATED').lt('CREATED_AT', currentPeriodStart)
+        : Promise.resolve({ count: 0 }),
     ]);
 
     const trackingCount = activeTrackings?.length || 0;
-    const certifiedCount = authLogs?.filter((log: any) => log.ACTION === 'CERTIFICATE_GENERATED').length || 0;
+    const enrollTrend = calcTrend(currentEnrollments || 0, prevEnrollments || 0);
+    const certTrend = calcTrend(certifiedCount || 0, prevCertified || 0);
 
     res.json({
       metrics: [
-        { label: 'Estudiantes Activos', value: activeStudents || 0, change: 12, trend: 'up' },
-        { label: 'Inscripciones del Período', value: totalEnrollments || 0, change: -3, trend: 'down' },
-        { label: 'Prácticas en Curso', value: trackingCount, change: 8, trend: 'up' },
-        { label: 'Certificados Emitidos', value: certifiedCount, change: 15, trend: 'up' }
-      ]
+        { label: 'Estudiantes Activos', value: activeStudents || 0 },
+        { label: 'Inscripciones del Período', value: currentEnrollments || 0, change: enrollTrend.change, trend: enrollTrend.trend },
+        { label: 'Prácticas en Curso', value: trackingCount },
+        { label: 'Certificados Emitidos', value: certifiedCount || 0, change: certTrend.change, trend: certTrend.trend },
+      ],
     });
-
   } catch (error) {
     console.error('Reports Stats Error:', error);
     res.status(500).json({ message: 'Error al obtener estadísticas de reportes', error });
@@ -67,13 +130,34 @@ export const getStudentsByCareer = async (req: Request, res: Response) => {
     });
 
     const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
-    const result = Array.from(careerMap.values())
+
+    // Largest remainder method: asegura que los porcentajes sumen exactamente 100
+    function computePercentages(values: number[], total: number): number[] {
+      const raw = values.map((v) => (v / total) * 100);
+      const floors = raw.map(Math.floor);
+      const remainder = 100 - floors.reduce((s, v) => s + v, 0);
+      // Ordenar índices por fracción decimal descendente
+      const idxSorted = raw
+        .map((_, i) => i)
+        .sort((a, b) => raw[b] - floors[b] - (raw[a] - floors[a]));
+      for (let i = 0; i < remainder && i < idxSorted.length; i++) {
+        floors[idxSorted[i]] += 1;
+      }
+      return floors;
+    }
+
+    const careerValues = Array.from(careerMap.values());
+    const percentages = totalActive
+      ? computePercentages(careerValues.map((c) => c.count), totalActive)
+      : careerValues.map(() => 0);
+
+    const result = careerValues
       .map((c, i) => ({
         label: c.abbreviation || c.name,
         fullName: c.name,
         value: c.count,
         color: colors[i % colors.length],
-        percentage: totalActive ? Math.round((c.count / totalActive) * 100) : 0
+        percentage: percentages[i],
       }))
       .sort((a, b) => b.value - a.value);
 

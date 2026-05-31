@@ -626,3 +626,286 @@ export const getCulminatedStudentsReport = async (req: Request, res: Response) =
     res.status(500).json({ message: 'Error al obtener reporte de estudiantes culminados', error });
   }
 };
+
+export const getRelacionEmpresasDemandan = async (req: Request, res: Response) => {
+  try {
+    const supabase = dbManager.getConnection();
+    const { periodId, careerId } = req.query;
+
+    let query = supabase
+      .from('t_professional_practices')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        t_institution(INSTITUTION_NAME, RIF, INSTITUTION_TYPE, REGION, NUCLEUS, EXTENSION),
+        t_career(CAREER_NAME),
+        STUDENTS_ID
+      `)
+      .eq('STATUS', 1);
+
+    if (periodId) query = query.eq('PERIOD_ID', Number(periodId));
+    if (careerId) query = query.eq('CAREER_ID', Number(careerId));
+
+    const { data: practices, error } = await query;
+
+    if (error) throw error;
+
+    const empresaCount = new Map<string, {
+      region: string; nucleo: string; extension: string;
+      empresa: string; rif: string; tipo: string;
+      carreras: Set<string>; estudiantes: number;
+    }>();
+
+    for (const p of practices || []) {
+      const inst: any = p.t_institution;
+      if (!inst) continue;
+      const key = inst.INSTITUTION_NAME || 'unknown';
+      const carrera = (p.t_career as any)?.CAREER_NAME || '';
+
+      if (!empresaCount.has(key)) {
+        empresaCount.set(key, {
+          region: inst.REGION || '',
+          nucleo: inst.NUCLEUS || '',
+          extension: inst.EXTENSION || '',
+          empresa: inst.INSTITUTION_NAME || '',
+          rif: inst.RIF || '',
+          tipo: inst.INSTITUTION_TYPE || '',
+          carreras: new Set(),
+          estudiantes: 0,
+        });
+      }
+      const entry = empresaCount.get(key)!;
+      entry.carreras.add(carrera);
+      entry.estudiantes++;
+    }
+
+    const result = Array.from(empresaCount.values()).map(e => ({
+      region: e.region,
+      nucleo: e.nucleo,
+      extension: e.extension,
+      empresa: e.empresa,
+      rif: e.rif,
+      tipo: e.tipo,
+      carrera: Array.from(e.carreras).join(', '),
+      cantidadEstudiantes: e.estudiantes,
+    }));
+
+    res.json({ success: true, data: result, meta: { total: result.length } });
+  } catch (error) {
+    console.error('[reports] getRelacionEmpresasDemandan error:', error);
+    res.status(500).json({ message: 'Error al obtener relación de empresas' });
+  }
+};
+
+export const getDistribucionTutores = async (req: Request, res: Response) => {
+  try {
+    const supabase = dbManager.getConnection();
+    const { periodId, careerId } = req.query;
+
+    let query = supabase
+      .from('t_professional_practices')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        t_career(CAREER_NAME),
+        t_students(STUDENTS_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME),
+        t_professional_practices_tutor(
+          TUTOR_TYPE,
+          t_tutors(TUTOR_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME,
+            TITULO, CONTACT_PHONE, EMAIL, ATTENTION_SCHEDULE)
+        )
+      `)
+      .eq('STATUS', 1);
+
+    if (periodId) query = query.eq('PERIOD_ID', Number(periodId));
+    if (careerId) query = query.eq('CAREER_ID', Number(careerId));
+
+    const { data: practices, error } = await query;
+
+    if (error) throw error;
+
+    const result = (practices || []).map((p: any, idx: number) => {
+      const tutors: any[] = p.t_professional_practices_tutor || [];
+      const getTutor = (type: string) => tutors.find((t: any) => t.TUTOR_TYPE === type)?.t_tutors;
+      const tutorAcad = getTutor('ACADEMICO');
+      const tutorMeto = getTutor('METODOLOGICO');
+      const evaluador = getTutor('INSTITUCIONAL');
+      const estudiante: any = p.t_students;
+
+      return {
+        nro: idx + 1,
+        carrera: (p.t_career as any)?.CAREER_NAME || '',
+        estudiante: estudiante ? `${estudiante.NAME || ''} ${estudiante.SURNAME || ''}`.trim() : '',
+        tutorAcademico: {
+          titulo: tutorAcad?.TITULO || '',
+          nombre: tutorAcad ? `${tutorAcad.NAME || ''} ${tutorAcad.SURNAME || ''}`.trim() : '',
+          contacto: tutorAcad?.CONTACT_PHONE || '',
+          email: tutorAcad?.EMAIL || '',
+        },
+        tutorMetodologico: {
+          titulo: tutorMeto?.TITULO || '',
+          nombre: tutorMeto ? `${tutorMeto.NAME || ''} ${tutorMeto.SURNAME || ''}`.trim() : '',
+          contacto: tutorMeto?.CONTACT_PHONE || '',
+          horario: tutorMeto?.ATTENTION_SCHEDULE || '',
+        },
+        evaluador: {
+          titulo: evaluador?.TITULO || '',
+          nombre: evaluador ? `${evaluador.NAME || ''} ${evaluador.SURNAME || ''}`.trim() : '',
+          contacto: evaluador?.CONTACT_PHONE || '',
+        },
+      };
+    });
+
+    res.json({ success: true, data: result, meta: { total: result.length } });
+  } catch (error) {
+    console.error('[reports] getDistribucionTutores error:', error);
+    res.status(500).json({ message: 'Error al obtener distribución de tutores' });
+  }
+};
+
+export const getDistribucionTutoresV2 = async (req: Request, res: Response) => {
+  try {
+    const supabase = dbManager.getConnection();
+    const { periodId, careerId } = req.query;
+
+    let query = supabase
+      .from('t_professional_practices')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        t_career(CAREER_NAME),
+        t_students(STUDENTS_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME),
+        t_professional_practices_tutor(
+          TUTOR_TYPE,
+          t_tutors(TUTOR_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME,
+            TITULO, CONTACT_PHONE, EMAIL, ATTENTION_SCHEDULE,
+            CONDITION, DEDICATION, CATEGORY)
+        )
+      `)
+      .eq('STATUS', 1);
+
+    if (periodId) query = query.eq('PERIOD_ID', Number(periodId));
+    if (careerId) query = query.eq('CAREER_ID', Number(careerId));
+
+    const { data: practices, error } = await query;
+
+    if (error) throw error;
+
+    const result = (practices || []).map((p: any, idx: number) => {
+      const tutors: any[] = p.t_professional_practices_tutor || [];
+      const getTutor = (type: string) => tutors.find((t: any) => t.TUTOR_TYPE === type)?.t_tutors;
+      const tutorAcad = getTutor('ACADEMICO');
+      const tutorMeto = getTutor('METODOLOGICO');
+      const evaluador = getTutor('INSTITUCIONAL');
+      const estudiante: any = p.t_students;
+
+      return {
+        nro: idx + 1,
+        carrera: (p.t_career as any)?.CAREER_NAME || '',
+        estudiante: estudiante ? `${estudiante.NAME || ''} ${estudiante.SURNAME || ''}`.trim() : '',
+        tutorAcademico: {
+          titulo: tutorAcad?.TITULO || '',
+          nombre: tutorAcad ? `${tutorAcad.NAME || ''} ${tutorAcad.SURNAME || ''}`.trim() : '',
+          contacto: tutorAcad?.CONTACT_PHONE || '',
+          email: tutorAcad?.EMAIL || '',
+        },
+        tutorMetodologico: {
+          titulo: tutorMeto?.TITULO || '',
+          nombre: tutorMeto ? `${tutorMeto.NAME || ''} ${tutorMeto.SURNAME || ''}`.trim() : '',
+          contacto: tutorMeto?.CONTACT_PHONE || '',
+          horario: tutorMeto?.ATTENTION_SCHEDULE || '',
+          horarioDetallado: tutorMeto?.ATTENTION_SCHEDULE || '',
+        },
+        evaluador: {
+          titulo: evaluador?.TITULO || '',
+          nombre: evaluador ? `${evaluador.NAME || ''} ${evaluador.SURNAME || ''}`.trim() : '',
+          contacto: evaluador?.CONTACT_PHONE || '',
+        },
+      };
+    });
+
+    res.json({ success: true, data: result, meta: { total: result.length } });
+  } catch (error) {
+    console.error('[reports] getDistribucionTutoresV2 error:', error);
+    res.status(500).json({ message: 'Error al obtener distribución de tutores v2' });
+  }
+};
+
+export const getRelacionIndividualDocente = async (req: Request, res: Response) => {
+  try {
+    const supabase = dbManager.getConnection();
+    const tutorId = parseInt(String(req.params.tutorId));
+
+    const { data: tutor } = await supabase
+      .from('t_tutors')
+      .select(`
+        TUTOR_ID, TUTOR_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME,
+        TITULO, CONDITION, DEDICATION, CATEGORY, CONTACT_PHONE, EMAIL
+      `)
+      .eq('TUTOR_ID', tutorId)
+      .single();
+
+    if (!tutor) {
+      return res.status(404).json({ success: false, message: 'Tutor no encontrado' });
+    }
+
+    const { data: assignments } = await supabase
+      .from('t_professional_practices_tutor')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        t_professional_practices!inner(
+          START_DATE, END_DATE, REGIME, SEMESTER, SECTION,
+          t_students(STUDENTS_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME,
+            GENDER, STUDENT_TYPE, CONTACT_PHONE),
+          t_career(CAREER_NAME),
+          t_institution(INSTITUTION_NAME, INSTITUTION_TYPE, INSTITUTION_ADDRESS,
+            REGION, NUCLEUS, EXTENSION),
+          t_professional_practices_tutor!inner(
+            t_tutors!inner(TUTOR_CI, NAME, SECOND_NAME, SURNAME,
+              SECOND_SURNAME, TITULO)
+          )
+        )
+      `)
+      .eq('TUTOR_ID', tutorId)
+      .eq('TUTOR_TYPE', 'ACADEMICO');
+
+    const result = (assignments || []).map((a: any, idx: number) => {
+      const pp: any = a.t_professional_practices;
+      const estudiante: any = pp?.t_students;
+      const carrera: any = pp?.t_career;
+      const inst: any = pp?.t_institution;
+      const tutorInstArr = pp?.t_professional_practices_tutor || [];
+      const tutorInst = tutorInstArr.find((t: any) => t.TUTOR_TYPE === 'INSTITUCIONAL')?.t_tutors;
+
+      return {
+        nro: idx + 1,
+        region: inst?.REGION || '',
+        nucleo: inst?.NUCLEUS || '',
+        extension: inst?.EXTENSION || '',
+        carrera: carrera?.CAREER_NAME || '',
+        estudiante: {
+          nombre: `${estudiante?.NAME || ''} ${estudiante?.SECOND_NAME || ''}`.trim(),
+          apellido: `${estudiante?.SURNAME || ''} ${estudiante?.SECOND_SURNAME || ''}`.trim(),
+          ci: estudiante?.STUDENTS_CI || '',
+          sexo: estudiante?.GENDER || '',
+          tipo: estudiante?.STUDENT_TYPE || '',
+          telefono: estudiante?.CONTACT_PHONE || '',
+        },
+        institucion: {
+          nombre: inst?.INSTITUTION_NAME || '',
+          tipo: inst?.INSTITUTION_TYPE || '',
+        },
+        tutorInstitucional: {
+          nombre: `${tutorInst?.NAME || ''} ${tutorInst?.SECOND_NAME || ''}`.trim(),
+          apellido: `${tutorInst?.SURNAME || ''} ${tutorInst?.SECOND_SURNAME || ''}`.trim(),
+          ci: tutorInst?.TUTOR_CI || '',
+          cargo: tutorInst?.TITULO || '',
+        },
+        direccion: inst?.INSTITUTION_ADDRESS || '',
+        observaciones: '',
+      };
+    });
+
+    res.json({ success: true, data: result, meta: { total: result.length } });
+  } catch (error) {
+    console.error('[reports] getRelacionIndividualDocente error:', error);
+    res.status(500).json({ message: 'Error al obtener relación individual de docente' });
+  }
+};

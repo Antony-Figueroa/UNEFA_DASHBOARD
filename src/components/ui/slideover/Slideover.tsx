@@ -47,12 +47,8 @@ const Slideover = ({ isOpen, onClose, title, badge, children }: SlideoverProps) 
             animate={{ x: 0 }}
             exit={{ x: PANEL_WIDTH }}
             transition={{ type: 'spring', damping: 30, stiffness: 300, mass: 0.8 }}
-            className="fixed right-0 h-full bg-white dark:bg-gray-900 shadow-2xl z-[56] flex flex-col"
-            style={{
-              width: PANEL_WIDTH,
-              top: 'var(--banner-height, 0px)',
-              height: 'calc(100vh - var(--banner-height, 0px))'
-            }}
+            className="fixed inset-y-0 right-0 bg-white dark:bg-gray-900 shadow-2xl z-[56] flex flex-col"
+            style={{ width: PANEL_WIDTH }}
             role="dialog"
             aria-modal="true"
             aria-label={title || 'Panel lateral'}

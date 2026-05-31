@@ -7,8 +7,6 @@ import Button from '../../../components/ui/button/Button';
 import {
   EvaluatorType,
   EVALUATOR_TYPE_LABELS,
-  SCORE_RANGE,
-  DISPLAY_SCALE,
   SystemEvaluationConfig,
   EvaluationCriteria,
   EvaluationWithDetails,

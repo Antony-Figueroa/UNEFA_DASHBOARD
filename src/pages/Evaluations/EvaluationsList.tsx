@@ -6,7 +6,8 @@ import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton } from '../../compone
 import { useEvaluations } from '../../features/evaluations/hooks/useEvaluations';
 import { EvaluationModal } from '../../features/evaluations/components/EvaluationModal';
 import EvaluationDetailModal from '../../features/evaluations/components/EvaluationDetailModal';
-import { EvaluatorType, EVALUATION_WEIGHTS, EvaluationStatus } from '../../features/evaluations/types';
+import { EvaluatorType, EvaluationStatus } from '../../features/evaluations/types';
+import { useSystemEvaluationConfig } from '../../features/evaluations/hooks/useSystemEvaluationConfig';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
 import { CheckCircleIcon, TimeIcon, AlertIcon, EyeIcon } from '../../icons';
 import apiClient from '../../api/apiClient';
@@ -28,6 +29,7 @@ interface ApiPracticeResponse {
 }
 
 export default function EvaluationsPage() {
+  const { config: evalConfig } = useSystemEvaluationConfig();
   const [pageLoading, setPageLoading] = useState(true);
   const [practices, setPractices] = useState<PracticeWithStudent[]>([]);
   const [practicesLoading, setPracticesLoading] = useState(true);
@@ -237,13 +239,13 @@ export default function EvaluationsPage() {
                       Institución
                     </th>
                     <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Institucional (40%)
+                      Institucional ({(evalConfig.weights['INSTITUCIONAL'] * 100).toFixed(0)}%)
                     </th>
                     <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Académico (30%)
+                      Académico ({(evalConfig.weights['ACADEMICO'] * 100).toFixed(0)}%)
                     </th>
                     <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Comité (30%)
+                      Comité ({(evalConfig.weights['COMITE'] * 100).toFixed(0)}%)
                     </th>
                     <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
                       Nota Final
@@ -319,7 +321,7 @@ export default function EvaluationsPage() {
                 Realizada por el tutor de la institución donde el estudiante realiza su pasantía.
               </p>
               <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {EVALUATION_WEIGHTS['INSTITUCIONAL'] * 100}%
+                {(evalConfig.weights['INSTITUCIONAL'] * 100).toFixed(0)}%
               </p>
             </ComponentCard>
 
@@ -328,7 +330,7 @@ export default function EvaluationsPage() {
                 Realizada por el tutor académico asignado por la universidad.
               </p>
               <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                {EVALUATION_WEIGHTS['ACADEMICO'] * 100}%
+                {(evalConfig.weights['ACADEMICO'] * 100).toFixed(0)}%
               </p>
             </ComponentCard>
 
@@ -337,7 +339,7 @@ export default function EvaluationsPage() {
                 Realizada por el comité evaluador durante la defensa oral.
               </p>
               <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {EVALUATION_WEIGHTS['COMITE'] * 100}%
+                {(evalConfig.weights['COMITE'] * 100).toFixed(0)}%
               </p>
             </ComponentCard>
           </div>

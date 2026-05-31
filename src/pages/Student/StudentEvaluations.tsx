@@ -5,7 +5,8 @@ import ComponentCard from "../../components/common/ComponentCard";
 import Badge from "../../components/ui/badge/Badge";
 import { CheckCircleIcon, TimeIcon, AlertIcon, EyeIcon } from "../../icons";
 import apiClient from "../../api/apiClient";
-import { EvaluatorType, EVALUATOR_TYPE_LABELS, EVALUATION_WEIGHTS, EvaluationStatus } from "../../features/evaluations/types";
+import { EvaluatorType, EVALUATOR_TYPE_LABELS, EvaluationStatus } from "../../features/evaluations/types";
+import { useSystemEvaluationConfig } from "../../features/evaluations/hooks/useSystemEvaluationConfig";
 import EvaluationDetailModal from "../../features/evaluations/components/EvaluationDetailModal";
 
 interface StudentInfo {
@@ -19,6 +20,7 @@ interface StudentInfo {
 }
 
 export default function StudentEvaluations() {
+  const { config: evalConfig } = useSystemEvaluationConfig();
   const [loading, setLoading] = useState(true);
   const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
   const [evaluationStatus, setEvaluationStatus] = useState<EvaluationStatus | null>(null);
@@ -70,7 +72,7 @@ export default function StudentEvaluations() {
 
   const getEvaluationCard = (type: EvaluatorType) => {
     const evaluation = evaluationStatus?.evaluations[type];
-    const weight = EVALUATION_WEIGHTS[type];
+    const weight = evalConfig.weights[type] || 0;
     const label = EVALUATOR_TYPE_LABELS[type];
 
     return (
@@ -262,15 +264,15 @@ export default function StudentEvaluations() {
             <ul className="space-y-2">
               <li className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
-                <strong>Evaluación Institucional (40%):</strong> Realizada por el supervisor de la empresa donde realizaste tu pasantía.
+                <strong>Evaluación Institucional ({(evalConfig.weights['INSTITUCIONAL'] * 100).toFixed(0)}%):</strong> Realizada por el supervisor de la empresa donde realizaste tu pasantía.
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-purple-500 rounded-full"></span>
-                <strong>Evaluación Académica (30%):</strong> Realizada por tu tutor académico asignado por la universidad.
+                <strong>Evaluación Académica ({(evalConfig.weights['ACADEMICO'] * 100).toFixed(0)}%):</strong> Realizada por tu tutor académico asignado por la universidad.
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                <strong>Evaluación Comité (30%):</strong> Realizada por el comité evaluador durante la defensa oral.
+                <strong>Evaluación Comité ({(evalConfig.weights['COMITE'] * 100).toFixed(0)}%):</strong> Realizada por el comité evaluador durante la defensa oral.
               </li>
             </ul>
             <p className="text-xs text-text-tertiary mt-4">

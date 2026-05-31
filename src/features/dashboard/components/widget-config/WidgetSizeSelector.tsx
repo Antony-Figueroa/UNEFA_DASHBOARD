@@ -28,7 +28,7 @@ interface WidgetSizeSelectorProps {
 
 const WidgetSizeSelector = ({ value, onChange }: WidgetSizeSelectorProps) => {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5 flex-wrap">
       {SIZES.map((size) => {
         const isActive = (value ?? 'sm') === size.value;
         return (

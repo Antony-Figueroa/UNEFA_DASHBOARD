@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
+import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 
 export interface CulminationRecord {
   id: string;
@@ -176,7 +177,7 @@ export const approveCulmination = async (req: Request, res: Response) => {
 
     const { error: updateError } = await supabase
       .from('t_professional_practices')
-      .update({ PRACTICES_STATUS: 3 })
+      .update({ PRACTICES_STATUS: PRACTICES_STATUS.CULMINADO })
       .eq('PROFESSIONAL_PRACTICE_ID', enrollmentId);
 
     if (updateError) {

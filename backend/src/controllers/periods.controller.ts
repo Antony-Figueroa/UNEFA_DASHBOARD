@@ -3,6 +3,7 @@ import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-helpers.js';
 import { periodNotificationService } from '../services/period-notification.service.js';
+import { PERIOD_STATUS } from '../constants/practice-status.constants.js';
 
 const TABLE_NAME = 't_internships_period';
 
@@ -100,7 +101,7 @@ export const getCurrentPeriod = async (_req: Request, res: Response) => {
       const { data, error } = await supabase
         .from(TABLE_NAME)
         .select('*')
-        .eq('PERIOD_STATUS', '1')
+        .eq('PERIOD_STATUS', PERIOD_STATUS.PENDIENTE)
         .eq('STATUS', 1)
         .order('START_DATE', { ascending: false })
         .limit(1)
@@ -161,7 +162,7 @@ export const createPeriod = async (req: AuthRequest, res: Response) => {
       DESCRIPTION: description,
       START_DATE: formatToDate(startDate),
       END_DATE: formatToDate(endDate),
-      PERIOD_STATUS: String(periodStatus || '1'),
+      PERIOD_STATUS: String(periodStatus || PERIOD_STATUS.PENDIENTE),
       STATUS: status === false ? 0 : 1,
       CREATION_DATE: now,
       T_INTERNSHIPS_CODE: code || `P${Date.now().toString().slice(-7)}`
@@ -316,7 +317,7 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
             .from(TABLE_NAME)
             .select('PERIOD_ID, DESCRIPTION, START_DATE, END_DATE, PERIOD_STATUS')
             .eq('STATUS', 1)
-            .eq('PERIOD_STATUS', '1')  // Solo pendientes
+            .eq('PERIOD_STATUS', PERIOD_STATUS.PENDIENTE)  // Solo pendientes
             .order('START_DATE', { ascending: true });
 
           if (pendingError) {
@@ -368,9 +369,9 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
         const oldStatus = oldData.PERIOD_STATUS;
         const newStatus = updatePayload.PERIOD_STATUS ? String(updatePayload.PERIOD_STATUS) : oldStatus;
         
-        // Notificar si el período cambió a "En Curso" (PERIOD_STATUS = 2)
+        // Notificar si el período cambió a "En Curso"
         // Las notificaciones NO deben fallar el request principal
-        if (oldStatus !== '2' && newStatus === '2') {
+        if (oldStatus !== PERIOD_STATUS.EN_CURSO && newStatus === PERIOD_STATUS.EN_CURSO) {
           try {
             await periodNotificationService.notifyPeriodStarted({
               description: data[0].DESCRIPTION,
@@ -382,8 +383,8 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
           }
         }
         
-        // Notificar si el período cambió a "Finalizado" (PERIOD_STATUS = 3)
-        if (oldStatus !== '3' && newStatus === '3') {
+        // Notificar si el período cambió a "Finalizado"
+        if (oldStatus !== PERIOD_STATUS.CULMINADO && newStatus === PERIOD_STATUS.CULMINADO) {
           try {
             await periodNotificationService.notifyPeriodEnded({
               description: data[0].DESCRIPTION,
@@ -397,7 +398,7 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
         
         // Notificación de edición general
         const hasMeaningfulChanges = updatePayload.DESCRIPTION || updatePayload.START_DATE || updatePayload.END_DATE;
-        if (hasMeaningfulChanges && oldStatus !== '2' && newStatus !== '3') {
+        if (hasMeaningfulChanges && oldStatus !== PERIOD_STATUS.EN_CURSO && newStatus !== PERIOD_STATUS.CULMINADO) {
           try {
             await periodNotificationService.notifyPeriodUpdated({
               description: data[0].DESCRIPTION,
@@ -415,6 +416,117 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
       return (data as unknown) as Period[];
     });
     res.json(data[0]);
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+/**
+ * POST /api/periodos/bulk-delete
+ * Desactiva (STATUS=0) múltiples periodos en una sola operación.
+ */
+export const bulkDeletePeriods = async (req: AuthRequest, res: Response) => {
+  try {
+    const { ids } = req.body;
+    
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'Se requiere un arreglo de IDs de períodos.' });
+    }
+
+    await dbManager.withRetry(async (supabase) => {
+      const { error } = await supabase
+        .from(TABLE_NAME)
+        .update({ STATUS: 0 })
+        .in('PERIOD_ID', ids);
+
+      if (error) throw error;
+
+      // Notificar eliminación de cada período
+      for (const id of ids) {
+        try {
+          await periodNotificationService.notifyPeriodDeleted({ description: `ID: ${id}` });
+        } catch (notifError) {
+          console.error(`[PeriodsController] Error notificando eliminación de período ${id}:`, notifError);
+        }
+      }
+    });
+
+    res.json({ success: true, message: `${ids.length} período(s) desactivado(s) exitosamente.`, affectedCount: ids.length });
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+/**
+ * POST /api/periodos/bulk-restore
+ * Restaura (STATUS=1) múltiples periodos en una sola operación.
+ */
+export const bulkRestorePeriods = async (req: AuthRequest, res: Response) => {
+  try {
+    const { ids } = req.body;
+    
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ message: 'Se requiere un arreglo de IDs de períodos.' });
+    }
+
+    await dbManager.withRetry(async (supabase) => {
+      const { error } = await supabase
+        .from(TABLE_NAME)
+        .update({ STATUS: 1 })
+        .in('PERIOD_ID', ids);
+
+      if (error) throw error;
+    });
+
+    res.json({ success: true, message: `${ids.length} período(s) restaurado(s) exitosamente.`, affectedCount: ids.length });
+  } catch (error: unknown) {
+    handleDbError(res, error);
+  }
+};
+
+/**
+ * PATCH /api/periodos/:id/toggle-status
+ * Cambia el estado (STATUS) de un período entre activo (1) e inactivo (0).
+ */
+export const togglePeriodStatus = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (status === undefined) {
+      return res.status(400).json({ message: 'El campo "status" es requerido.' });
+    }
+
+    const newStatus = status === true || status === 1 ? 1 : 0;
+
+    await dbManager.withRetry(async (supabase) => {
+      const { data: oldData } = await supabase
+        .from(TABLE_NAME)
+        .select('PERIOD_ID, STATUS, DESCRIPTION')
+        .eq('PERIOD_ID', id)
+        .single();
+
+      if (!oldData) {
+        const notFoundError = new Error(`No se encontró el período con PERIOD_ID: ${id}`) as AppError;
+        notFoundError.code = '404';
+        throw notFoundError;
+      }
+
+      const { error } = await supabase
+        .from(TABLE_NAME)
+        .update({ STATUS: newStatus })
+        .eq('PERIOD_ID', id);
+
+      if (error) throw error;
+
+      await auditStatusChange(req, 't_internships_period', id, oldData.STATUS, newStatus);
+
+      if (newStatus === 0) {
+        await periodNotificationService.notifyPeriodDeleted({ description: oldData.DESCRIPTION });
+      }
+    });
+
+    res.json({ success: true, message: `Estado del período actualizado exitosamente.` });
   } catch (error: unknown) {
     handleDbError(res, error);
   }

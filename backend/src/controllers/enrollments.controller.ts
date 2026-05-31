@@ -3,6 +3,7 @@ import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
 import { cacheManager } from '../lib/cache-manager.js';
 import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-helpers.js';
+import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 
 const TABLE_NAME = 't_professional_practices';
 const CACHE_PREFIX = 'enrollments:';
@@ -132,7 +133,7 @@ export const getEnrollments = async (req: Request, res: Response) => {
             t_persons!inner (first_name, last_name, phone)
           )
         `)
-        .eq('PRACTICES_STATUS', 2)
+        .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO)
         .order('REGISTRATION_DATE', { ascending: false });
 
       if (error) throw error;
@@ -245,7 +246,7 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
         .from(TABLE_NAME)
         .select('PROFESSIONAL_PRACTICE_ID')
         .eq('STUDENTS_ID', student.STUDENTS_ID)
-        .eq('PRACTICES_STATUS', 2)
+        .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO)
         .eq('STATUS', 1)
         .limit(1);
 
@@ -259,7 +260,7 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
         .from(TABLE_NAME)
         .select('PROFESSIONAL_PRACTICE_ID, PERIOD_ID, INTERNSHIP_TYPE_ID')
         .eq('STUDENTS_ID', student.STUDENTS_ID)
-        .eq('PRACTICES_STATUS', 1)
+        .eq('PRACTICES_STATUS', PRACTICES_STATUS.PRE_INSCRITO)
         .eq('STATUS', 1)
         .order('REGISTRATION_DATE', { ascending: false })
         .maybeSingle();
@@ -273,7 +274,7 @@ export const createEnrollment = async (req: AuthRequest, res: Response) => {
 
       const updateData: Partial<ProfessionalPractice> & { ENROLLMENT?: string } = {
         REGISTRATION_DATE: now,
-        PRACTICES_STATUS: 2,
+        PRACTICES_STATUS: PRACTICES_STATUS.INSCRITO,
         INSTITUTION_ID: parseInt(institutionId),
         MANAGER_ID: parseInt(institutionResponsibleId),
         STATUS: 1,
@@ -543,7 +544,7 @@ export const getPracticesForEvaluation = async (req: AuthRequest, res: Response)
         )
       `)
       .eq('STATUS', 1)
-      .eq('PRACTICES_STATUS', 2);
+      .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO);
 
     const { data: allPractices, error } = await query;
 

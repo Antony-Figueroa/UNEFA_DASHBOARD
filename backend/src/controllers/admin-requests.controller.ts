@@ -3,6 +3,7 @@ import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-helpers.js';
 import { notifyRequestCreated, notifyTutorAssigned } from '../services/notification.service.js';
+import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 
 interface AdminRequest {
   id: number;
@@ -219,7 +220,7 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
           .from('t_professional_practices')
           .select('PROFESSIONAL_PRACTICE_ID')
           .eq('STUDENTS_ID', studentId)
-          .eq('PRACTICES_STATUS', 2) // Activa
+          .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO) // Activa
           .single();
 
         practiceData = practice;

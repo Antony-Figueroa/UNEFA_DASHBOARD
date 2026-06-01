@@ -23,8 +23,6 @@ interface SlideoverProps {
   children: ReactNode;
 }
 
-const PANEL_WIDTH = 400;
-
 const Slideover = ({ isOpen, onClose, title, badge, children }: SlideoverProps) => {
   return (
     <AnimatePresence>
@@ -43,33 +41,32 @@ const Slideover = ({ isOpen, onClose, title, badge, children }: SlideoverProps) 
 
           {/* Panel */}
           <motion.div
-            initial={{ x: PANEL_WIDTH }}
+            initial={{ x: '100%' }}
             animate={{ x: 0 }}
-            exit={{ x: PANEL_WIDTH }}
+            exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300, mass: 0.8 }}
-            className="fixed inset-y-0 right-0 bg-white dark:bg-gray-900 shadow-2xl z-[56] flex flex-col"
-            style={{ width: PANEL_WIDTH }}
+            className="fixed inset-y-0 right-0 w-full sm:w-[400px] bg-white dark:bg-gray-900 shadow-2xl z-[56] flex flex-col"
             role="dialog"
             aria-modal="true"
             aria-label={title || 'Panel lateral'}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border-light dark:border-border-dark shrink-0">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border-light dark:border-border-dark shrink-0">
               <div className="flex items-center gap-3">
                 {title && (
-                  <h2 className="text-lg font-semibold text-text-emphasis dark:text-text-emphasis">
+                  <h2 className="text-lg font-semibold text-text-emphasis dark:text-text-emphasis truncate max-w-[200px] sm:max-w-none">
                     {title}
                   </h2>
                 )}
                 {badge !== undefined && badge > 0 && (
-                  <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full text-[11px] font-bold text-white bg-red-500">
+                  <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full text-[11px] font-bold text-white bg-red-500 shrink-0">
                     {badge}
                   </span>
                 )}
               </div>
               <button
                 onClick={onClose}
-                className="p-2 rounded-lg text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="p-2 rounded-lg text-text-secondary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shrink-0"
                 aria-label="Cerrar panel"
               >
                 <FiX className="size-5" />
@@ -77,7 +74,7 @@ const Slideover = ({ isOpen, onClose, title, badge, children }: SlideoverProps) 
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto px-6 py-5">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
               {children}
             </div>
           </motion.div>

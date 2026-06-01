@@ -1,0 +1,36 @@
+appId: com.unefa.dashboard
+productName: UNEFA Dashboard
+copyright: Copyright © 2024 UNEFA
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**/*
+  - electron/**/*.mjs
+  - package.json
+
+extraResources:
+  - from: backend/dist
+    to: backend/dist
+    filter:
+      - "server-offline.js"
+      - "package.json"
+      - "pglite.wasm"
+      - "pglite.data"
+
+asar: true
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+
+nodeGypRebuild: false

@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
 import { Persona } from '../../types/person';
 import { personService } from '../services/personService';
 import { CreatePersonPayload, UpdatePersonPayload } from '../types';
+
+const resourceName = 'Persona';
 
 export const usePersons = (page = 1, limit = 20, filters?: { status?: number; search?: string }) => {
   const [persons, setPersons] = useState<Persona[]>([]);
@@ -35,10 +38,10 @@ export const usePersons = (page = 1, limit = 20, filters?: { status?: number; se
     try {
       const newPerson = await personService.create(data);
       setPersons(prev => [newPerson, ...prev]);
-      toast.success('Persona creada exitosamente');
+      toast.success(TOAST_SUCCESS.created(resourceName));
       return newPerson;
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Error al crear persona');
+      toast.error(err.response?.data?.message || TOAST_ERROR.create(resourceName));
       throw err;
     } finally {
       setLoadingAction(false);
@@ -50,10 +53,10 @@ export const usePersons = (page = 1, limit = 20, filters?: { status?: number; se
     try {
       const updated = await personService.update(data.personId, data);
       setPersons(prev => prev.map(p => (Number(p.personId) === data.personId ? updated : p)));
-      toast.success('Persona actualizada exitosamente');
+      toast.success(TOAST_SUCCESS.updated(resourceName));
       return updated;
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Error al actualizar persona');
+      toast.error(err.response?.data?.message || TOAST_ERROR.update(resourceName));
       throw err;
     } finally {
       setLoadingAction(false);
@@ -69,9 +72,9 @@ export const usePersons = (page = 1, limit = 20, filters?: { status?: number; se
           Number(p.personId) === personId ? { ...p, status: !p.status } : p
         )
       );
-      toast.success('Estado actualizado');
+      toast.success(TOAST_SUCCESS.updated(resourceName));
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Error al cambiar estado');
+      toast.error(err.response?.data?.message || TOAST_ERROR.update(resourceName));
       throw err;
     } finally {
       setLoadingAction(false);

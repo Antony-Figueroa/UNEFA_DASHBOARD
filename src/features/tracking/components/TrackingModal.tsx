@@ -20,6 +20,7 @@ import CustomSelect from '../../../components/form/CustomSelect';
 import { useLists } from '../../lists/hooks/useLists';
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
+import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
 import { isSafeInput } from '../../../utils/inputValidation';
 
 
@@ -331,10 +332,7 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                 onClose={cancelClose}
                 onConfirm={confirmClose}
                 variant="warning"
-                title="Cambios no guardados"
-                message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
-                confirmLabel="Cerrar sin guardar"
-                cancelLabel="Continuar editando"
+                {...SYSTEM_DIALOGS.closeWithoutSaving}
             />
 
             <UnifiedDialog
@@ -344,10 +342,8 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
                     setPendingData(null);
                 }}
                 onConfirm={handleConfirmSave}
-                title="Actualizar Seguimiento"
-                message="¿Estás seguro de que deseas actualizar el seguimiento del estudiante?"
                 variant="confirm"
-                confirmLabel="Actualizar"
+                {...CONFIRM_MESSAGES.update('Seguimiento del estudiante')}
                 isLoading={isLoading}
             />
         </>

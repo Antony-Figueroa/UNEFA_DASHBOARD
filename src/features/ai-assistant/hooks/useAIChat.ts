@@ -9,6 +9,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
 import { streamChatFromBackend } from '../services/BackendChatService';
 import * as chatSessionsService from '../services/chatSessionsService';
 import { notifyNewMessage, requestNotificationPermission } from '../services/notificationService';
@@ -89,7 +90,7 @@ export const useAIChat = (): UseAIChatReturn => {
       }
     } catch (error) {
       console.error('[useAIChat] Error loading session:', error);
-      toast.error('Error al cargar la sesión');
+      toast.error(TOAST_ERROR.load('Sesión'));
     }
   }, []);
 
@@ -103,12 +104,12 @@ export const useAIChat = (): UseAIChatReturn => {
         setCurrentSession(newSession);
         setMessages([]);
         setSessions(prev => [newSession, ...prev]);
-        toast.success('Nueva conversación iniciada');
+        toast.success(TOAST_SUCCESS.created('Conversación'));
         return newSession;
       }
     } catch (error) {
       console.error('[useAIChat] Error creating session:', error);
-      toast.error('Error al crear sesión');
+      toast.error(TOAST_ERROR.create('Sesión'));
     }
     return null;
   }, []);
@@ -163,11 +164,11 @@ export const useAIChat = (): UseAIChatReturn => {
           setCurrentSession(null);
           setMessages([]);
         }
-        toast.success('Sesión eliminada');
+        toast.success(TOAST_SUCCESS.deleted('Sesión'));
       }
     } catch (error) {
       console.error('[useAIChat] Error deleting session:', error);
-      toast.error('Error al eliminar sesión');
+      toast.error(TOAST_ERROR.delete('Sesión'));
     }
   }, [currentSession]);
 
@@ -305,7 +306,7 @@ export const useAIChat = (): UseAIChatReturn => {
           msg.id === assistantMessageId
             ? {
                 ...msg,
-                content: '❌ Lo siento, hubo un error al procesar tu mensaje. Por favor, intenta de nuevo.',
+                content: 'Lo siento, hubo un error al procesar tu mensaje. Por favor, intenta de nuevo.',
                 status: 'error',
               }
             : msg

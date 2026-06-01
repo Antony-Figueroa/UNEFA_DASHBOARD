@@ -1,7 +1,10 @@
 import { useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
 import { studentRequestsService } from '../services/studentRequestsService';
 import type { StudentRequest, RequestType, CreateRequestPayload } from '../types';
+
+const resourceName = 'Solicitud';
 
 export const useStudentRequests = () => {
   const [requests, setRequests] = useState<StudentRequest[]>([]);
@@ -19,7 +22,7 @@ export const useStudentRequests = () => {
     } catch (err) {
       console.error('[useStudentRequests] Error fetching requests:', err);
       setError('Error al cargar las solicitudes');
-      toast.error('Error al cargar las solicitudes');
+      toast.error(TOAST_ERROR.load(resourceName));
       return [];
     } finally {
       setLoading(false);
@@ -42,13 +45,13 @@ export const useStudentRequests = () => {
     setError(null);
     try {
       await studentRequestsService.createRequest(payload);
-      toast.success('Solicitud enviada exitosamente');
+      toast.success(TOAST_SUCCESS.created(resourceName));
       await fetchRequests();
       return true;
     } catch (err) {
       console.error('[useStudentRequests] Error creating request:', err);
-      setError('Error al enviar la solicitud');
-      toast.error('Error al enviar la solicitud');
+      setError(TOAST_ERROR.create(resourceName));
+      toast.error(TOAST_ERROR.create(resourceName));
       return false;
     } finally {
       setLoading(false);

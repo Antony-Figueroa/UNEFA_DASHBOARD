@@ -12,6 +12,7 @@ import MultiSelect from "../../../components/form/MultiSelect";
 
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { getCareers } from "../../careers/services/careersService";
 import { Career } from "../../careers/types";
 import CareerModal from "../../careers/components/CareerModal";
@@ -1152,9 +1153,7 @@ export default function TutorModal({
           setConfirmSaveOpen(false);
         }}
         variant="confirm"
-        title={editingTutor ? "Confirmar actualización" : "Confirmar registro"}
-        message={editingTutor ? "¿Desea actualizar los datos del tutor?" : "¿Desea guardar el nuevo tutor?"}
-        confirmLabel={editingTutor ? "Actualizar" : "Guardar"}
+        {...(editingTutor ? CONFIRM_MESSAGES.update('Tutor') : CONFIRM_MESSAGES.create('Tutor'))}
       />
     )}
 
@@ -1163,10 +1162,7 @@ export default function TutorModal({
       onClose={cancelClose}
       onConfirm={confirmClose}
       variant="warning"
-      title="Cambios no guardados"
-      message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
-      confirmLabel="Cerrar sin guardar"
-      cancelLabel="Continuar editando"
+      {...SYSTEM_DIALOGS.closeWithoutSaving}
     />
 
     {/* Modal para agregar nueva opción a la lista */}

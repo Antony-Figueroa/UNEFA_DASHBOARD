@@ -15,6 +15,7 @@ import AsyncButton from '../../../components/ui/button/AsyncButton';
 import { getPeriodSchema, PeriodFormData, getLapsoValue } from '../utils/periodValidations';
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
+import { SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
 
 /**
  * Propiedades del componente PeriodModal.
@@ -619,10 +620,7 @@ export default function PeriodModal({
             onClose={cancelClose}
             onConfirm={confirmClose}
             variant="warning"
-            title="Cambios no guardados"
-            message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
-            confirmLabel="Cerrar sin guardar"
-            cancelLabel="Continuar editando"
+            {...SYSTEM_DIALOGS.closeWithoutSaving}
         />
 
         <UnifiedDialog

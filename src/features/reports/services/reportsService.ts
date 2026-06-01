@@ -87,6 +87,28 @@ export interface PracticeSearchResult {
   studentCi: string;
   studentName: string;
   careerName: string;
+  institutionName?: string;
+  status?: number;
+  period?: string;
+}
+
+export interface TutorSearchResult {
+  tutorId: number;
+  fullName: string;
+  ci: string;
+  email: string;
+  phone: string;
+  careers: string;
+}
+
+export interface PaginatedResponse<T> {
+  success: boolean;
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+  };
 }
 
 export const reportsService = {
@@ -159,6 +181,25 @@ export const reportsService = {
 
   searchPractices: async (q: string): Promise<{ success: boolean; data: PracticeSearchResult[] }> => {
     const response = await apiClient.get(`/institutional-documents/search-practices?q=${encodeURIComponent(q)}`);
+    return response.data;
+  },
+
+  searchTutors: async (q: string): Promise<{ success: boolean; data: TutorSearchResult[] }> => {
+    const response = await apiClient.get(`/institutional-documents/search-tutors?q=${encodeURIComponent(q)}`);
+    return response.data;
+  },
+
+  listPractices: async (page = 0, limit = 10, q = ''): Promise<PaginatedResponse<PracticeSearchResult>> => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (q) params.append('q', q);
+    const response = await apiClient.get(`/institutional-documents/list-practices?${params.toString()}`);
+    return response.data;
+  },
+
+  listTutors: async (page = 0, limit = 10, q = ''): Promise<PaginatedResponse<TutorSearchResult>> => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (q) params.append('q', q);
+    const response = await apiClient.get(`/institutional-documents/list-tutors?${params.toString()}`);
     return response.data;
   },
 

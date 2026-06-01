@@ -307,7 +307,9 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
       if (endDate !== undefined) updatePayload.END_DATE = formatToDate(endDate);
       if (periodStatus !== undefined) {
         // VALIDACIÓN CRONOLÓGICA: Solo se puede activar el período pendiente MÁS ANTIGUO
-        if (String(periodStatus) === '2') { // Intentando activar a "En Curso"
+        // Solo validar si REALMENTE está cambiando a "En Curso" (no si ya lo está)
+        const isChangingToActive = String(periodStatus) === '2' && String(oldData.PERIOD_STATUS) !== '2';
+        if (isChangingToActive) { // Intentando activar a "En Curso"
           const currentPeriodId = parseInt(id, 10); // Convertir a número
           
           console.log(`[PeriodValidation] Intentando activar período ID: ${currentPeriodId}`);
@@ -413,7 +415,17 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
         }
       }
 
-      return (data as unknown) as Period[];
+      // Incluir isInUse en la respuesta (misma lógica que getPeriods)
+      const { data: usageCheck } = await supabase
+        .from('t_professional_practices')
+        .select('PERIOD_ID')
+        .eq('PERIOD_ID', id)
+        .limit(1);
+
+      const result = data[0]
+        ? { ...data[0], isInUse: usageCheck && usageCheck.length > 0 }
+        : data[0];
+      return [result] as Period[];
     });
     res.json(data[0]);
   } catch (error: unknown) {

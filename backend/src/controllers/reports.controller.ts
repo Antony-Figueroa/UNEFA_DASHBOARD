@@ -54,7 +54,7 @@ export const getReportsStats = async (req: Request, res: Response) => {
       { count: currentEnrollments },
       { count: prevEnrollments },
 
-      { data: activeTrackings },
+      { count: activeTrackings },
 
       { count: certifiedCount },
       { count: prevCertified },
@@ -63,15 +63,15 @@ export const getReportsStats = async (req: Request, res: Response) => {
 
       // Inscripciones (filtradas por período si corresponde)
       currentPeriodId
-        ? supabase.from('t_enrollment').select('*', { count: 'exact', head: true }).eq('STATUS', 1).eq('PERIOD_ID', currentPeriodId)
-        : supabase.from('t_enrollment').select('*', { count: 'exact', head: true }).eq('STATUS', 1),
+        ? supabase.from('t_professional_practices').select('*', { count: 'exact', head: true }).eq('STATUS', 1).eq('PERIOD_ID', currentPeriodId)
+        : supabase.from('t_professional_practices').select('*', { count: 'exact', head: true }).eq('STATUS', 1),
 
       // Inscripciones del período anterior (para tendencia)
       previousPeriodId
-        ? supabase.from('t_enrollment').select('*', { count: 'exact', head: true }).eq('STATUS', 1).eq('PERIOD_ID', previousPeriodId)
+        ? supabase.from('t_professional_practices').select('*', { count: 'exact', head: true }).eq('STATUS', 1).eq('PERIOD_ID', previousPeriodId)
         : Promise.resolve({ count: 0 }),
 
-      supabase.from('t_tracking').select('TRACKING_ID').eq('STATUS', 1),
+      supabase.from('t_professional_practices').select('PROFESSIONAL_PRACTICE_ID', { count: 'exact', head: true }).eq('STATUS', 1).eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO),
 
       // Certificados: filtramos en DB
       supabase.from('t_auth_log').select('*', { count: 'exact', head: true }).eq('ACTION', 'CERTIFICATE_GENERATED'),
@@ -82,7 +82,7 @@ export const getReportsStats = async (req: Request, res: Response) => {
         : Promise.resolve({ count: 0 }),
     ]);
 
-    const trackingCount = activeTrackings?.length || 0;
+    const trackingCount = activeTrackings || 0;
     const enrollTrend = calcTrend(currentEnrollments || 0, prevEnrollments || 0);
     const certTrend = calcTrend(certifiedCount || 0, prevCertified || 0);
 
@@ -104,30 +104,49 @@ export const getStudentsByCareer = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
 
-    const { data: students, count: totalActive } = await supabase
-      .from('t_students')
-      .select('CAREER_ID, t_career(CAREER_NAME, CAREER_ABBREVIATION)')
+    // t_students no tiene CAREER_ID; obtenemos la relación desde t_professional_practices
+    const { data: practices, error } = await supabase
+      .from('t_professional_practices')
+      .select(`
+        CAREER_ID,
+        STUDENTS_ID,
+        t_career(CAREER_NAME, CAREER_ABBREVIATION)
+      `)
       .eq('STATUS', 1);
 
-    const careerMap = new Map<string, { name: string; abbreviation: string; count: number }>();
+    if (error) throw error;
 
-    interface StudentWithCareer {
+    // Agrupar estudiantes únicos por carrera
+    const careerMap = new Map<string, { name: string; abbreviation: string; count: number }>();
+    const seenStudent = new Set<string>();
+
+    interface PracticeWithCareer {
       CAREER_ID: number;
-      t_career: { CAREER_NAME: string; CAREER_ABBREVIATION: string } | { CAREER_NAME: string; CAREER_ABBREVIATION: string }[] | null;
+      STUDENTS_ID: number;
+      t_career: { CAREER_NAME: string; CAREER_ABBREVIATION: string } | null;
     }
 
-    (students as unknown as StudentWithCareer[])?.forEach((s) => {
-      const careerInfo = Array.isArray(s.t_career) ? s.t_career[0] : s.t_career;
-      const name = careerInfo?.CAREER_NAME || 'Desconocida';
-      const abbreviation = careerInfo?.CAREER_ABBREVIATION || 'N/A';
-      const key = `${name}|${abbreviation}`;
-      
-      if (careerMap.has(key)) {
-        careerMap.get(key)!.count++;
+    (practices as unknown as PracticeWithCareer[])?.forEach((p) => {
+      const careerInfo = p.t_career;
+      if (!careerInfo || !p.STUDENTS_ID) return;
+
+      const name = careerInfo.CAREER_NAME || 'Desconocida';
+      const abbreviation = careerInfo.CAREER_ABBREVIATION || 'N/A';
+      const studentKey = `${p.CAREER_ID}-${p.STUDENTS_ID}`;
+
+      // Evitar duplicar el mismo estudiante en la misma carrera
+      if (seenStudent.has(studentKey)) return;
+      seenStudent.add(studentKey);
+
+      const mapKey = `${name}|${abbreviation}`;
+      if (careerMap.has(mapKey)) {
+        careerMap.get(mapKey)!.count++;
       } else {
-        careerMap.set(key, { name, abbreviation, count: 1 });
+        careerMap.set(mapKey, { name, abbreviation, count: 1 });
       }
     });
+
+    const totalActive = seenStudent.size;
 
     const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
@@ -188,7 +207,7 @@ export const getEnrollmentsByPeriod = async (req: Request, res: Response) => {
     const periodIds = periods.map((p: any) => p.PERIOD_ID);
 
     const { data: enrollments } = await supabase
-      .from('t_enrollment')
+      .from('t_professional_practices')
       .select('PERIOD_ID')
       .eq('STATUS', 1)
       .in('PERIOD_ID', periodIds);
@@ -654,15 +673,19 @@ export const getCulminatedStudentsReport = async (req: Request, res: Response) =
 
     const practiceIds = practices.map((p: any) => p.PROFESSIONAL_PRACTICE_ID);
 
-    const { data: tracking } = await supabase
-      .from('t_tracking')
-      .select('PROFESSIONAL_PRACTICE_ID, TOTAL_HOURS')
-      .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
-
+    // t_tracking no existe; calculamos horas desde t_practice_visits
     const hoursMap = new Map<number, number>();
-    (tracking || []).forEach((t: any) => {
-      hoursMap.set(t.PROFESSIONAL_PRACTICE_ID, t.TOTAL_HOURS || 0);
-    });
+    if (practiceIds.length > 0) {
+      const { data: visits } = await supabase
+        .from('t_practice_visits')
+        .select('PROFESSIONAL_PRACTICE_ID, HOURS_WORKED')
+        .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
+
+      (visits || []).forEach((v: any) => {
+        const current = hoursMap.get(v.PROFESSIONAL_PRACTICE_ID) || 0;
+        hoursMap.set(v.PROFESSIONAL_PRACTICE_ID, current + Number(v.HOURS_WORKED || 0));
+      });
+    }
 
     let filteredPractices = practices.filter((p: any) => {
       if (periodId && p.PERIOD_ID !== Number(periodId)) return false;

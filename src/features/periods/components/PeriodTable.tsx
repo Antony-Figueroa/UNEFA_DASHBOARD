@@ -459,23 +459,26 @@ const PeriodTable = ({
              return sortOrder === "asc" ? statusA - statusB : statusB - statusA;
         }
 
-        // Manejo especial para fechas (startDate, endDate)
-        if (sortKey === "startDate" || sortKey === "endDate") {
-            const dateA = new Date(a[sortKey]);
-            const dateB = new Date(b[sortKey]);
-            
-            const isValidA = !isNaN(dateA.getTime());
-            const isValidB = !isNaN(dateB.getTime());
-
-            if (!isValidA && !isValidB) return 0;
-            if (!isValidA) return 1; // Inválidos al final
-            if (!isValidB) return -1;
-
-            if (sortOrder === "asc") {
-                return dateA.getTime() - dateB.getTime();
-            } else {
-                return dateB.getTime() - dateA.getTime();
-            }
+        // Manejo especial para fechas (startDate, endDate) — usa raw Date objects
+        if (sortKey === "startDate") {
+            const dateA = a.rawStartDate;
+            const dateB = b.rawStartDate;
+            if (!dateA && !dateB) return 0;
+            if (!dateA) return 1;
+            if (!dateB) return -1;
+            return sortOrder === "asc"
+                ? dateA.getTime() - dateB.getTime()
+                : dateB.getTime() - dateA.getTime();
+        }
+        if (sortKey === "endDate") {
+            const dateA = a.rawEndDate;
+            const dateB = b.rawEndDate;
+            if (!dateA && !dateB) return 0;
+            if (!dateA) return 1;
+            if (!dateB) return -1;
+            return sortOrder === "asc"
+                ? dateA.getTime() - dateB.getTime()
+                : dateB.getTime() - dateA.getTime();
         }
 
         if (aValue === bValue) return 0;

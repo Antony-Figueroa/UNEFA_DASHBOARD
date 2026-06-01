@@ -712,9 +712,12 @@ export class SqlBuilder {
     let prev = '';
     while (prev !== cleaned) {
       prev = cleaned;
-      cleaned = cleaned.replace(/\b\w+(?:\.\w+)?\s*:\s*\w+\s*\([^)]*\)/g, '');
-      cleaned = cleaned.replace(/\b\w+\s*!?\w*\s*\([^)]*\)/g, '');
+      // Sin \b para capturar joins pegados a comas/parens
+      cleaned = cleaned.replace(/\w+(?:\.\w+)?\s*:\s*\w+\s*\([^)]*\)/g, '');
+      cleaned = cleaned.replace(/\w+\s*!?\w*\s*\([^)]*\)/g, '');
     }
+    // Limpiar cualquier resto de paréntesis, llaves, etc. que hayan quedado
+    cleaned = cleaned.replace(/[(){}[\]]/g, '');
     // Partir por comas y limpiar
     const parts = cleaned.split(',').map(p => p.trim()).filter(p => p && p !== '*');
     if (parts.length === 0) return ['*'];

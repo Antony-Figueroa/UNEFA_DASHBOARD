@@ -427,7 +427,7 @@ export default function ReportsPage() {
     const config = reportType ? reportConfig[reportType] : null;
     if (!config) return;
     try {
-      await generateSimpleExcel(data, config.columns, fileName, config.title);
+      await generateSimpleExcel(data, config.columns as { header: string; accessor: string | ((item: any) => string | number | boolean | null | undefined) }[], fileName, config.title);
       toast.success('Reporte exportado exitosamente');
     } catch (error) {
       console.error('[Reports] Error exporting Excel:', error);

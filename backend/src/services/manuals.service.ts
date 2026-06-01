@@ -199,6 +199,6 @@ export const getCategories = async (): Promise<string[]> => {
     return ['General', 'Inscripciones', 'Seguimiento', 'Reportes', 'Configuración', 'Videos'];
   }
 
-  const categories = [...new Set((data || []).map((m: any) => m.CATEGORY))];
+  const categories = [...new Set((data || []).map((m: any) => m.CATEGORY))] as string[];
   return categories.length > 0 ? categories : ['General', 'Inscripciones', 'Seguimiento', 'Reportes', 'Configuración', 'Videos'];
 };

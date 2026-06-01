@@ -98,7 +98,7 @@ const getInstitutionsForManager = async (supabase: any, managerId: number) => {
     .select('INSTITUTION_ID, INSTITUTION_NAME')
     .in('INSTITUTION_ID', institutionIds);
 
-  const instMap = new Map((instData || []).map((i: any) => [i.INSTITUTION_ID, i.INSTITUTION_NAME]));
+  const instMap = new Map<number, string>((instData || []).map((i: any) => [i.INSTITUTION_ID, i.INSTITUTION_NAME]));
 
   return pivotData.map((p: any) => {
     const iId = p.INSTITUTION_ID ?? p.institution_id;
@@ -158,7 +158,7 @@ export const getInstitutionalResponsibles = async (_req: Request, res: Response)
 
       // Obtener instituciones desde tabla pivote
       const { data: instData } = await supabase.from('t_institution').select('INSTITUTION_ID, INSTITUTION_NAME');
-      const instMap = new Map((instData || []).map((i: any) => [i.INSTITUTION_ID, i.INSTITUTION_NAME]));
+      const instMap = new Map<number, string>((instData || []).map((i: any) => [i.INSTITUTION_ID, i.INSTITUTION_NAME]));
 
       const { data: pivotData } = await supabase
         .from(PIVOT_TABLE)
@@ -340,7 +340,7 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
         .select('INSTITUTION_ID, INSTITUTION_NAME')
         .in('INSTITUTION_ID', instIds);
 
-      const instMap = new Map((instData || []).map((i: any) => [i.INSTITUTION_ID, i.INSTITUTION_NAME]));
+      const instMap = new Map<number, string>((instData || []).map((i: any) => [i.INSTITUTION_ID, i.INSTITUTION_NAME]));
 
       return {
         ...newManager,

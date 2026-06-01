@@ -72,6 +72,9 @@ interface DBUserRow {
   CREATION_DATE: string;
   t_persons: DBPersonJoin;
   t_user_roles: { ID_ROLES: number; t_roles?: { NAME: string } }[];
+  /** Flat columns for PGlite adapter joins */
+  t_user_roles_ID_ROLES?: number;
+  t_user_roles_t_roles_NAME?: string;
 }
 
 // ============================================================

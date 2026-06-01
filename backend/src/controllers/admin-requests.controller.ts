@@ -92,7 +92,7 @@ export const getAllRequests = async (req: AuthRequest, res: Response) => {
         .select('USER_ID, t_persons!inner(first_name, last_name)')
         .in('USER_ID', [...new Set(processedByUserIds)]);
 
-      const userMap = new Map((users || []).map((u: any) => [u.USER_ID, `${u.t_persons?.first_name || ''} ${u.t_persons?.last_name || ''}`.trim()]));
+      const userMap = new Map<number, string>((users || []).map((u: any) => [u.USER_ID, `${u.t_persons?.first_name || ''} ${u.t_persons?.last_name || ''}`.trim()]));
 
       requests = requests.map(r => {
         const requestData = data?.find((d: any) => d.REQUEST_ID === r.id);

@@ -74,6 +74,8 @@ interface UserRow {
   EMAIL: string;
   PHONE_NUMBER?: string;
   t_user_roles?: { ID_ROLES: number }[];
+  /** Flat column for PGlite adapter joins */
+  t_user_roles_ID_ROLES?: number;
 }
 
 interface UserKeyRow {

@@ -256,7 +256,7 @@ export const getAuditStats = async (req: AuthRequest, res: Response) => {
       .select('OPERATION_ID, ACTION')
       .eq('STATUS', 1);
 
-    const opMap = new Map((opData || []).map((op: any) => [op.OPERATION_ID, op.ACTION]));
+    const opMap = new Map<number, string>((opData || []).map((op: any) => [op.OPERATION_ID, op.ACTION]));
 
     (operations || []).forEach((entry: any) => {
       const action = opMap.get(entry.OPERATION_ID);

@@ -121,7 +121,7 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<PracticeSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     if (!isOpen) {

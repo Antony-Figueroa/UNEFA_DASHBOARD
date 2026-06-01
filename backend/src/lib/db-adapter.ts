@@ -31,6 +31,7 @@ export interface FilterQueryBuilder {
   range(from: number, to: number, options?: { foreignTable?: string }): this;
   single(): this;
   maybeSingle(): this;
+  select(columns?: string): this;
   or(filters: string, options?: { foreignTable?: string }): this;
   returns(type: 'minimal' | 'representation'): this;
   textSearch(column: string, query: string, options?: { type?: string; config?: string }): this;
@@ -55,6 +56,7 @@ export interface UpdateQueryBuilder {
   in(column: string, values: any[]): this;
   select(columns?: string): this;
   single(): this;
+  maybeSingle(): this;
   returns(type: 'minimal' | 'representation'): this;
   then<TResult1 = QueryResponse, TResult2 = never>(
     onfulfilled?: ((value: QueryResponse) => TResult1 | PromiseLike<TResult1>) | null,

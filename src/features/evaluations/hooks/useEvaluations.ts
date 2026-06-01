@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
 import { evaluationService } from '../services/evaluationService';
 import {
   Evaluation,
@@ -10,6 +11,8 @@ import {
   EvaluatorType
 } from '../types';
 import toast from 'react-hot-toast';
+
+const resourceName = 'Evaluación';
 
 interface UseEvaluationsReturn {
   evaluations: Evaluation[];
@@ -38,7 +41,7 @@ export const useEvaluations = (): UseEvaluationsReturn => {
       const data = await evaluationService.getEvaluations(practiceId);
       setEvaluations(data);
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Error al cargar evaluaciones';
+      const message = err.response?.data?.message || TOAST_ERROR.load(resourceName);
       setError(message);
       toast.error(message);
     } finally {
@@ -53,7 +56,7 @@ export const useEvaluations = (): UseEvaluationsReturn => {
       const data = await evaluationService.getCriteria(type);
       setCriteria(data);
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Error al cargar criterios';
+      const message = err.response?.data?.message || TOAST_ERROR.load(resourceName);
       setError(message);
       toast.error(message);
     } finally {
@@ -66,11 +69,11 @@ export const useEvaluations = (): UseEvaluationsReturn => {
       setLoading(true);
       setError(null);
       const result = await evaluationService.createEvaluation(payload);
-      toast.success('Evaluación creada exitosamente');
+      toast.success(TOAST_SUCCESS.created(resourceName));
       await fetchEvaluations(payload.professionalPracticeId);
       return result;
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Error al crear evaluación';
+      const message = err.response?.data?.message || TOAST_ERROR.create(resourceName);
       setError(message);
       toast.error(message);
       return null;
@@ -84,10 +87,10 @@ export const useEvaluations = (): UseEvaluationsReturn => {
       setLoading(true);
       setError(null);
       await evaluationService.updateEvaluation(id, data);
-      toast.success('Evaluación actualizada exitosamente');
+      toast.success(TOAST_SUCCESS.updated(resourceName));
       return true;
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Error al actualizar evaluación';
+      const message = err.response?.data?.message || TOAST_ERROR.update(resourceName);
       setError(message);
       toast.error(message);
       return false;
@@ -101,11 +104,11 @@ export const useEvaluations = (): UseEvaluationsReturn => {
       setLoading(true);
       setError(null);
       await evaluationService.deleteEvaluation(id);
-      toast.success('Evaluación eliminada exitosamente');
+      toast.success(TOAST_SUCCESS.deleted(resourceName));
       setEvaluations(prev => prev.filter(e => e.evaluationId !== id));
       return true;
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Error al eliminar evaluación';
+      const message = err.response?.data?.message || TOAST_ERROR.delete(resourceName);
       setError(message);
       toast.error(message);
       return false;
@@ -120,7 +123,7 @@ export const useEvaluations = (): UseEvaluationsReturn => {
       setError(null);
       return await evaluationService.getPracticeEvaluationStatus(practiceId);
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Error al obtener estado de evaluación';
+      const message = err.response?.data?.message || TOAST_ERROR.load(resourceName);
       setError(message);
       toast.error(message);
       return null;
@@ -135,7 +138,7 @@ export const useEvaluations = (): UseEvaluationsReturn => {
       setError(null);
       return await evaluationService.getEvaluationById(id);
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Error al obtener evaluación';
+      const message = err.response?.data?.message || TOAST_ERROR.load(resourceName);
       setError(message);
       toast.error(message);
       return null;

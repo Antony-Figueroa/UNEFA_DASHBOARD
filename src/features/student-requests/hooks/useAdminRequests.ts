@@ -1,7 +1,10 @@
 import { useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
 import { adminRequestsService } from '../services/adminRequestsService';
 import type { AdminRequest, RequestStats, RequestFilters, UpdateStatusPayload } from '../types';
+
+const resourceName = 'Solicitud';
 
 export const useAdminRequests = () => {
   const [requests, setRequests] = useState<AdminRequest[]>([]);
@@ -33,7 +36,7 @@ export const useAdminRequests = () => {
     } catch (err) {
       console.error('[useAdminRequests] Error fetching requests:', err);
       setError('Error al cargar las solicitudes');
-      toast.error('Error al cargar las solicitudes');
+      toast.error(TOAST_ERROR.load(resourceName));
       return { data: [], stats: { total: 0, pending: 0, in_review: 0, approved: 0, rejected: 0 } };
     } finally {
       setLoading(false);
@@ -45,10 +48,10 @@ export const useAdminRequests = () => {
     setError(null);
     try {
       await adminRequestsService.updateStatus(id, data);
-      toast.success('Solicitud actualizada exitosamente');
+      toast.success(TOAST_SUCCESS.updated(resourceName));
       return true;
     } catch (err) {
-      const serverMsg = (err as any)?.response?.data?.message || (err as any)?.message || 'Error al actualizar la solicitud';
+      const serverMsg = (err as any)?.response?.data?.message || (err as any)?.message || TOAST_ERROR.update(resourceName);
       console.error('[useAdminRequests] Error updating request:', {
         id,
         data,

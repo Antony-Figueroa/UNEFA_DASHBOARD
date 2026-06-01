@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
 import { ReminderRule } from '../types';
 import { reminderService } from '../services/reminderService';
+
+const resourceName = 'Recordatorio';
 
 export const useReminders = () => {
   const [rules, setRules] = useState<ReminderRule[]>([]);
@@ -13,7 +16,7 @@ export const useReminders = () => {
       const data = await reminderService.getAll();
       setRules(data);
     } catch (error: any) {
-      toast.error('Error al cargar reglas de recordatorios');
+      toast.error(TOAST_ERROR.load(resourceName));
       console.error('[useReminders] Error fetching rules:', error);
     } finally {
       setLoading(false);
@@ -29,9 +32,9 @@ export const useReminders = () => {
       const updated = await reminderService.toggle(id);
       setRules(updated);
       const rule = updated.find(r => r.id === id);
-      toast.success(rule?.active ? 'Recordatorio activado' : 'Recordatorio desactivado');
+      toast.success(TOAST_SUCCESS.statusChanged(resourceName, !!rule?.active));
     } catch (error: any) {
-      toast.error('Error al cambiar estado');
+      toast.error(TOAST_ERROR.update(resourceName));
     }
   };
 
@@ -39,9 +42,9 @@ export const useReminders = () => {
     try {
       const updated = await reminderService.create(rule);
       setRules(updated);
-      toast.success('Recordatorio creado');
+      toast.success(TOAST_SUCCESS.created(resourceName));
     } catch (error: any) {
-      toast.error('Error al crear recordatorio');
+      toast.error(TOAST_ERROR.create(resourceName));
     }
   };
 
@@ -49,9 +52,9 @@ export const useReminders = () => {
     try {
       const updated = await reminderService.update(id, updates);
       setRules(updated);
-      toast.success('Recordatorio actualizado');
+      toast.success(TOAST_SUCCESS.updated(resourceName));
     } catch (error: any) {
-      toast.error('Error al actualizar recordatorio');
+      toast.error(TOAST_ERROR.update(resourceName));
     }
   };
 
@@ -59,9 +62,9 @@ export const useReminders = () => {
     try {
       const updated = await reminderService.remove(id);
       setRules(updated);
-      toast.success('Recordatorio eliminado');
+      toast.success(TOAST_SUCCESS.deleted(resourceName));
     } catch (error: any) {
-      toast.error('Error al eliminar recordatorio');
+      toast.error(TOAST_ERROR.delete(resourceName));
     }
   };
 

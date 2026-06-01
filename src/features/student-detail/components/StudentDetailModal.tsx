@@ -20,6 +20,7 @@ import {
   DocsIcon
 } from '../../../icons';
 import toast from 'react-hot-toast';
+import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
 import {
   StudentDetail,
   ReportOptions,
@@ -29,6 +30,8 @@ import {
   DOCUMENT_STATUS_LABELS
 } from '../types';
 import { studentDetailService } from '../services/studentDetailService';
+
+const resourceName = 'Reporte';
 
 type DetailTab = 'general' | 'evaluations' | 'visits' | 'documents';
 
@@ -100,7 +103,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       }
     } catch (error) {
       console.error('[StudentDetail] Error loading:', error);
-      toast.error('Error al cargar los detalles');
+      toast.error(TOAST_ERROR.load(resourceName));
     } finally {
       setLoading(false);
     }
@@ -112,11 +115,11 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
     try {
       toast.loading('Generando reporte...', { id: 'report' });
       await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Reporte generado exitosamente', { id: 'report' });
+      toast.success(TOAST_SUCCESS.created(resourceName), { id: 'report' });
       setShowReportOptions(false);
     } catch (error) {
       console.error('[StudentDetail] Error generating report:', error);
-      toast.error('Error al generar el reporte', { id: 'report' });
+      toast.error(TOAST_ERROR.create(resourceName), { id: 'report' });
     } finally {
       setGeneratingReport(false);
     }

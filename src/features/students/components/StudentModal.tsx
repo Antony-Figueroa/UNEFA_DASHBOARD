@@ -14,6 +14,7 @@ import CustomSelect from "../../../components/form/CustomSelect";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import { useToast } from "../../../context/toast";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { useLists } from "../../lists/hooks/useLists";
 import { List, ListValue } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
@@ -1096,10 +1097,7 @@ useEffect(() => {
       onClose={cancelClose}
       onConfirm={confirmClose}
       variant="warning"
-      title="Cambios no guardados"
-      message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
-      confirmLabel="Cerrar sin guardar"
-      cancelLabel="Continuar editando"
+      {...SYSTEM_DIALOGS.closeWithoutSaving}
     />
   </>
 );

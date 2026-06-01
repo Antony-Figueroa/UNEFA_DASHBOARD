@@ -18,6 +18,7 @@ import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import Badge from "../../../components/ui/badge/Badge";
 import { NAME_PATTERN, SAFE_TEXT_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
@@ -655,10 +656,7 @@ export default function CareerModal({
         onClose={cancelClose}
         onConfirm={confirmClose}
         variant="warning"
-        title="Cambios no guardados"
-        message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
-        confirmLabel="Cerrar sin guardar"
-        cancelLabel="Continuar editando"
+        {...SYSTEM_DIALOGS.closeWithoutSaving}
       />
 
       <UnifiedDialog
@@ -666,9 +664,7 @@ export default function CareerModal({
         onClose={() => setShowSaveConfirmation(false)}
         onConfirm={handleConfirmSave}
         variant="confirm"
-        title="¿Guardar cambios?"
-        message="¿Estás seguro de que deseas guardar la información de la carrera?"
-        confirmLabel="Guardar"
+        {...(editingCareer ? CONFIRM_MESSAGES.update('Carrera') : CONFIRM_MESSAGES.create('Carrera'))}
         cancelLabel="Cancelar"
         isLoading={isLoading}
       />

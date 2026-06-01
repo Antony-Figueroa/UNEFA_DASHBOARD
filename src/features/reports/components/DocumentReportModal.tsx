@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { Modal } from '../../../components/ui/modal';
 import Button from '../../../components/ui/button/Button';
 import toast from 'react-hot-toast';
+import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
 import reportsService, { PracticeSearchResult, TutorSearchResult } from '../services/reportsService';
+
+const resourceName = 'Reporte';
 import { getAllDocumentTexts } from '../services/reportTextsService';
 import { SingleReportModal } from '../../../components/ui/pdf/SingleReportModal';
 import { SearchableInput } from './SearchableInput';
@@ -184,7 +187,7 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
       setPdfData(response.data);
       setShowPdf(true);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Error al cargar datos');
+      toast.error(error?.response?.data?.message || TOAST_ERROR.load(resourceName));
     } finally {
       setLoading(false);
     }

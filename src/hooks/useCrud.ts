@@ -9,6 +9,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useToast } from "../context/toast";
+import { TOAST_SUCCESS, TOAST_ERROR, TOAST_TITLES } from "../components/ui/dialog/DialogConfig";
 
 /** Estados posibles de la carga de datos */
 export type CrudStatus = "loading" | "success" | "error" | "idle";
@@ -80,7 +81,7 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
         addToast({
           variant: "error",
           title: `Error de Carga`,
-          message: `No se pudieron cargar los datos de ${resourceName}s. ${err.message}`
+          message: `${TOAST_ERROR.load(resourceName)}. ${err.message}`
         });
       }
     }
@@ -110,14 +111,14 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       if (!options?.silent) {
         addToast({
           variant: "success",
-          title: `${resourceName} Registrado`,
-          message: `El registro de ${resourceName} se ha guardado exitosamente.`
+          title: TOAST_TITLES.created(resourceName),
+          message: TOAST_SUCCESS.created(resourceName),
         });
       }
       
       return newItem;
     } catch (e) {
-      const err = e instanceof Error ? e : new Error(`Error al crear ${resourceName}`);
+      const err = e instanceof Error ? e : new Error(TOAST_ERROR.create(resourceName));
       
       if (!options?.silent) {
         addToast({ 
@@ -151,14 +152,14 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       if (!options?.silent) {
         addToast({
           variant: "success",
-          title: `${resourceName} Actualizado`,
-          message: `Los cambios en ${resourceName} se han guardado exitosamente.`
+          title: TOAST_TITLES.updated(resourceName),
+          message: TOAST_SUCCESS.updated(resourceName),
         });
       }
       
       return updatedItem;
     } catch (e) {
-      const err = e instanceof Error ? e : new Error(`Error al actualizar ${resourceName}`);
+      const err = e instanceof Error ? e : new Error(TOAST_ERROR.update(resourceName));
       
       if (!options?.silent) {
         addToast({ 
@@ -192,14 +193,14 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       if (!options?.silent) {
         addToast({
           variant: "success",
-          title: `${resourceName} Eliminado`,
-          message: `El registro de ${resourceName} ha sido eliminado exitosamente.`
+          title: TOAST_TITLES.deleted(resourceName),
+          message: TOAST_SUCCESS.deleted(resourceName),
         });
       }
       
       return true;
     } catch (e) {
-      const err = e instanceof Error ? e : new Error(`Error al eliminar ${resourceName}`);
+      const err = e instanceof Error ? e : new Error(TOAST_ERROR.delete(resourceName));
       
       if (!options?.silent) {
         addToast({ 
@@ -238,13 +239,13 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
         addToast({
           variant: "success",
           title: "Estado Actualizado",
-          message: `El registro de ${resourceName} ha sido ${newStatus ? 'activado' : 'inactivado'} exitosamente.`
+          message: TOAST_SUCCESS.statusChanged(resourceName, newStatus),
         });
       }
       
       return true;
     } catch (e) {
-      const err = e instanceof Error ? e : new Error(`Error al cambiar estado de ${resourceName}`);
+      const err = e instanceof Error ? e : new Error(TOAST_ERROR.update(resourceName));
       
       if (!options?.silent) {
         addToast({ 

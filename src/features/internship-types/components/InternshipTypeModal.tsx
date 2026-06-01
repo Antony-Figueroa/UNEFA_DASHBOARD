@@ -19,6 +19,7 @@ import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { NAME_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 
 /**
@@ -275,10 +276,7 @@ export default function InternshipTypeModal({
         onClose={cancelClose}
         onConfirm={confirmClose}
         variant="warning"
-        title="Cambios no guardados"
-        message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
-        confirmLabel="Cerrar sin guardar"
-        cancelLabel="Continuar editando"
+        {...SYSTEM_DIALOGS.closeWithoutSaving}
       />
       <UnifiedDialog
         isOpen={showSaveConfirmation}
@@ -287,10 +285,8 @@ export default function InternshipTypeModal({
           setPendingData(null);
         }}
         onConfirm={handleConfirmSave}
-        title={editingItem ? "Actualizar Tipo de Práctica" : "Guardar Tipo de Práctica"}
-        message={`¿Estás seguro de que deseas ${editingItem ? 'actualizar' : 'guardar'} el tipo de práctica profesional?`}
         variant="confirm"
-        confirmLabel={editingItem ? "Actualizar" : "Guardar"}
+        {...(editingItem ? CONFIRM_MESSAGES.update('Tipo de práctica profesional') : CONFIRM_MESSAGES.create('Tipo de práctica profesional'))}
         isLoading={isLoading}
       />
     </>

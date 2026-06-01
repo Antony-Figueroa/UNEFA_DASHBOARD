@@ -344,7 +344,7 @@ export default function ActivityLogPage() {
         isOpen={deleteDialog.isOpen}
         onClose={() => setDeleteDialog({ isOpen: false, log: null })}
         title="Eliminar Registro"
-        message="¿Está seguro de eliminar este registro de actividad? Esta acción no se puede deshacer."
+        message="¿Estás seguro de que deseas eliminar este registro de actividad? Esta acción no se puede deshacer."
         confirmLabel="Eliminar"
         variant="error"
         onConfirm={handleDelete}

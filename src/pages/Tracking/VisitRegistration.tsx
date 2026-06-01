@@ -518,7 +518,7 @@ export default function VisitRegistration() {
         isOpen={deleteDialog.isOpen}
         onClose={() => setDeleteDialog({ isOpen: false, visitId: null })}
         title="Eliminar Visita"
-        message="¿Está seguro de eliminar esta visita? Podrá restaurarla desde la pestaña de inactivas."
+        message="¿Estás seguro de que deseas eliminar esta visita? Podrás restaurarla desde la pestaña de inactivas."
         confirmLabel="Eliminar"
         variant="error"
         onConfirm={handleDelete}
@@ -528,7 +528,7 @@ export default function VisitRegistration() {
         isOpen={restoreDialog.isOpen}
         onClose={() => setRestoreDialog({ isOpen: false, visitId: null })}
         title="Restaurar Visita"
-        message="¿Está seguro de restaurar esta visita? Volverá a aparecer en la pestaña de activos."
+        message="¿Estás seguro de que deseas restaurar esta visita? Volverá a aparecer en la pestaña de activos."
         confirmLabel="Restaurar"
         variant="success"
         onConfirm={handleRestoreConfirm}

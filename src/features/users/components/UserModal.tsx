@@ -11,6 +11,7 @@ import { userSchema, UserFormData, UserFormOutput } from "../constants/validatio
 import { User, CreateUserPayload, UpdateUserPayload } from "../types";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { AuthUser } from "../../../context/auth";
 import { useToast } from "../../../context/toast";
 import { formatCedulaDisplay, cleanCedula, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
@@ -446,20 +447,15 @@ const UserModal: React.FC<UserModalProps> = ({
       onClose={cancelClose}
       onConfirm={confirmClose}
       variant="warning"
-      title="Cambios no guardados"
-      message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
-      confirmLabel="Cerrar sin guardar"
-      cancelLabel="Continuar editando"
+      {...SYSTEM_DIALOGS.closeWithoutSaving}
     />
 
     <UnifiedDialog
       isOpen={showSaveConfirm}
       onClose={() => setShowSaveConfirm(false)}
       onConfirm={handleConfirmSave}
-      title={user ? "Actualizar Usuario" : "Crear Usuario"}
-      message={`¿Estás seguro de que deseas ${user ? 'actualizar los datos del' : 'crear este nuevo'} usuario?`}
-      confirmLabel={user ? "Actualizar" : "Crear"}
       variant="confirm"
+      {...(user ? CONFIRM_MESSAGES.update('Usuario') : CONFIRM_MESSAGES.create('Usuario'))}
       isLoading={isSubmitting}
     />
     </>

@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
 import {
   PracticeWithEvaluations,
   PracticeFilters,
@@ -16,6 +17,8 @@ import type { EvaluatorType } from '../../evaluations/types';
 import { evaluationsCulminationService } from '../services/evaluationsCulminationService';
 import { matchSearch } from '../../../utils/searchNormalizer';
 import { generateCertificatePDF } from '../../../components/ui/pdf/templates/CertificatePDF';
+
+const resourceName = 'Culminación';
 
 export interface UseEvaluationsCulminationReturn {
   /** Datos */
@@ -142,7 +145,7 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
       }
     } catch (error) {
       console.error('[useEvaluationsCulmination] Error fetching practices:', error);
-      toast.error('Error al cargar los datos');
+      toast.error(TOAST_ERROR.load(resourceName));
     } finally {
       setLoading(false);
     }
@@ -230,10 +233,10 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
       onConfirm: async () => {
         try {
           await evaluationsCulminationService.approveCulmination(practice.practiceId);
-          toast.success('Culminación aprobada exitosamente');
+          toast.success(TOAST_SUCCESS.updated(resourceName));
           fetchPractices();
         } catch (error) {
-          toast.error('Error al aprobar culminación');
+          toast.error(TOAST_ERROR.update(resourceName));
         } finally {
           setConfirmDialog(null);
         }
@@ -250,11 +253,11 @@ export const useEvaluationsCulmination = (): UseEvaluationsCulminationReturn => 
         try {
           const response = await evaluationsCulminationService.generateCertificate(practice.practiceId);
           if (response.success) {
-            toast.success(`Certificado generado: ${response.certificate.number}`);
+            toast.success(`${TOAST_SUCCESS.created('Certificado')}: ${response.certificate.number}`);
             fetchPractices();
           }
         } catch (error) {
-          toast.error('Error al generar certificado');
+          toast.error(TOAST_ERROR.create('Certificado'));
         } finally {
           setConfirmDialog(null);
         }

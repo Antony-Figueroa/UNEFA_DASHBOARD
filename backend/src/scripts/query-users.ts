@@ -34,7 +34,7 @@ async function main() {
       .select('t_roles!inner(NAME)')
       .eq('USER_ID', u.USER_ID);
 
-    const roleName = roles?.[0]?.NAME || '(sin rol)';
+    const roleName = (roles?.[0] as any)?.t_roles?.NAME || '(sin rol)';
     console.log(`  CI: ${u.USER_CI} | ${u.NAME} ${u.SURNAME} | ${u.EMAIL} | status: ${u.STATUS} | rol: ${roleName}`);
   }
 

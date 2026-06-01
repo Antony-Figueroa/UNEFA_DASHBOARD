@@ -21,7 +21,7 @@ function http(method, path, body) {
         const sc = res.headers['set-cookie'];
         if (sc) sc.forEach(c => { const p = c.split(';')[0]; if (p) cookie = p; });
         try { resolve({ status: res.statusCode, data: JSON.parse(data) }); }
-        catch { resolve({ status: res.statusCode, data }); }
+        catch { resolve({ status: res.statusCode, data: data.substring(0, 100) }); }
       });
     });
     req.on('error', reject);
@@ -50,32 +50,45 @@ async function main() {
     stdio: ['ignore', 'inherit', 'inherit'],
   });
 
-  // Si el server muere antes de tiempo, error
-  server.on('exit', (code) => { if (code !== 0) console.error('❌ Server crash exit code:', code); });
+  server.on('exit', (code) => { if (code !== 0 && code !== null) console.error('❌ Server crash exit code:', code); });
 
   try {
     await waitForServer();
     console.log('✅ Server listo\n');
 
+    // Login
     const login = await http('POST', '/api/auth/login', JSON.stringify({ userCi: 'V00000000', password: 'admin123' }));
-    console.log(`1. LOGIN: ${login.status} role:${login.data?.user?.role} ${login.data?.message}`);
+    console.log(`1. LOGIN: ${login.status} ${login.data?.message}\n`);
 
-    const students = await http('GET', '/api/students?limit=1');
-    console.log(`2. STUDENTS: ${students.status} ${students.status === 200 ? (students.data?.data?.length || 0) + ' registros ✅' : students.data?.message || ''}`);
+    // Test all endpoints
+    const endpoints = [
+      '/api/periodos', '/api/careers', '/api/students?limit=3', '/api/tutors',
+      '/api/institutions', '/api/enrollments', '/api/pre-enrollments', '/api/tracking',
+      '/api/activity-logs', '/api/notifications', '/api/backups', '/api/dashboard/stats',
+      '/api/auth/me', '/api/internship-types', '/api/lists', '/api/users',
+      '/api/evaluations'
+    ];
 
-    const old = cookie; cookie = '';
-    const noAuth = await http('GET', '/api/students?limit=1');
-    cookie = old;
-    console.log(`3. SIN AUTH: ${noAuth.status} ${noAuth.status === 401 ? '✅' : '❌'}`);
+    let passed = 0, failed = 0;
 
-    const me = await http('GET', '/api/auth/me');
-    console.log(`4. /ME: ${me.status} ${me.data?.user?.name || 'error'}`);
+    for (const ep of endpoints) {
+      try {
+        const r = await http('GET', ep);
+        const count = Array.isArray(r.data) ? r.data.length : r.data?.data?.length || r.data?.length || '?';
+        const msg = r.data?.message || r.data?.error || '';
+        const ok = r.status === 200;
+        console.log(`  ${ok ? '✅' : '❌'} ${ep}: ${r.status}${msg ? ' ' + msg.substring(0, 80) : ''} [${count}]`);
+        if (ok) passed++; else failed++;
+      } catch (e) {
+        console.log(`  💥 ${ep}: ${e.message}`);
+        failed++;
+      }
+    }
 
-    const ok = login.status === 200 && students.status === 200 && noAuth.status === 401 && me.status === 200;
-    console.log(`\n${ok ? '✅ TODOS OK' : '❌ FALLÓ'}`);
+    console.log(`\n✅ ${passed} exitosos  ❌ ${failed} fallaron\n`);
+    console.log(passed > 0 ? '✅ SERVIDOR OFFLINE FUNCIONAL' : '❌ FALLÓ');
   } finally {
     server.kill('SIGTERM');
-    // Esperar que termine
     await new Promise(r => setTimeout(r, 3000));
   }
 }

@@ -1,7 +1,7 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Modal } from "../modal";
 import { DownloadIcon, FileIcon, EyeIcon, UserIcon } from "../../../icons";
-import { XIcon } from "../../../icons/actions";
+import { XIcon, ListIcon } from "../../../icons/actions";
 import { useSingleReport } from "../../../hooks/pdf/useSingleReport";
 import { PDFViewer, DocumentProps } from "@react-pdf/renderer";
 
@@ -32,6 +32,7 @@ export const SingleReportModal = <T,>({
   extraSidebarContent,
 }: SingleReportModalProps<T>) => {
   const { generatePDF, previewPDF, isGenerating } = useSingleReport({ fileName });
+  const [activeTab, setActiveTab] = useState<"preview" | "info">("preview");
 
   const finalTemplate = useMemo(() => template(data), [template, data]);
 
@@ -44,6 +45,7 @@ export const SingleReportModal = <T,>({
       className="p-0! rounded-none!"
     >
       <div className="flex flex-col h-screen bg-bg-secondary dark:bg-bg-dark overflow-hidden">
+        {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-white dark:bg-bg-primary border-b border-border-light dark:border-white/5 shadow-sm z-20">
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl bg-brand-500/10 text-brand-500">
@@ -67,8 +69,42 @@ export const SingleReportModal = <T,>({
           </button>
         </div>
 
+        {/* Mobile Tab Selector */}
+        <div className="flex sm:hidden bg-white dark:bg-bg-primary border-b border-border-light dark:border-white/5 z-10">
+          <button
+            onClick={() => setActiveTab("preview")}
+            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 ${
+              activeTab === "preview" 
+                ? "border-brand-500 text-brand-500 bg-brand-500/5" 
+                : "border-transparent text-text-tertiary"
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <EyeIcon className="h-3.5 w-3.5" />
+              Vista Previa
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab("info")}
+            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 ${
+              activeTab === "info" 
+                ? "border-brand-500 text-brand-500 bg-brand-500/5" 
+                : "border-transparent text-text-tertiary"
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <ListIcon className="h-3.5 w-3.5" />
+              Información
+            </div>
+          </button>
+        </div>
+
+        {/* Main Content */}
         <div className="flex flex-1 overflow-hidden relative">
-          <div className="flex-1 bg-gray-500/10 dark:bg-black/20 p-2 sm:p-8 overflow-hidden flex flex-col items-center justify-center">
+          {/* Left Side: Preview */}
+          <div className={`flex-1 bg-gray-500/10 dark:bg-black/20 p-2 sm:p-8 overflow-hidden flex flex-col items-center justify-center ${
+            activeTab === "preview" ? "flex" : "hidden sm:flex"
+          }`}>
             <div className="w-full h-full max-w-5xl bg-white dark:bg-bg-primary shadow-2xl rounded-lg overflow-hidden border border-border-light dark:border-white/10 relative">
               <PDFViewer 
                 width="100%" 
@@ -92,7 +128,10 @@ export const SingleReportModal = <T,>({
             </div>
           </div>
 
-          <div className="w-full sm:max-w-sm bg-white dark:bg-bg-primary border-l border-border-light dark:border-white/5 flex flex-col shadow-xl z-10 hidden sm:flex">
+          {/* Right Side: Info & Actions */}
+          <div className={`w-full sm:max-w-sm bg-white dark:bg-bg-primary border-l border-border-light dark:border-white/5 flex flex-col shadow-xl z-10 ${
+            activeTab === "info" ? "flex" : "hidden sm:flex"
+          }`}>
             <div className="p-4 sm:p-6 flex-1 overflow-y-auto custom-scrollbar">
               <div className="flex items-center gap-2 text-brand-500 mb-6">
                 <UserIcon className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -101,11 +140,11 @@ export const SingleReportModal = <T,>({
 
               <div className="space-y-4 sm:space-y-6">
                 {subtitle && (
-                  <div className="p-4 rounded-xl bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10">
+                  <div className="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10">
                     <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">
                       {recordInfo?.label || "Registro"}
                     </label>
-                    <p className="text-sm font-semibold text-text-primary dark:text-white/90">
+                    <p className="text-xs sm:text-sm font-semibold text-text-primary dark:text-white/90">
                       {subtitle}
                     </p>
                   </div>
@@ -124,13 +163,14 @@ export const SingleReportModal = <T,>({
                 </div>
 
                 {extraSidebarContent && (
-                  <div className="pt-6 border-t border-border-light dark:border-white/5 space-y-4">
+                  <div className="pt-4 sm:pt-6 border-t border-border-light dark:border-white/5 space-y-3 sm:space-y-4">
                     {extraSidebarContent}
                   </div>
                 )}
               </div>
             </div>
 
+            {/* Footer Actions */}
             <div className="p-4 sm:p-6 bg-bg-secondary/30 dark:bg-white/5 border-t border-border-light dark:border-white/5 space-y-2 sm:space-y-3">
               <button
                 onClick={() => previewPDF(finalTemplate)}
@@ -151,26 +191,6 @@ export const SingleReportModal = <T,>({
               </button>
             </div>
           </div>
-        </div>
-
-        <div className="sm:hidden bg-white dark:bg-bg-primary border-t border-border-light dark:border-white/5 p-4 flex flex-col gap-2">
-          <button
-            onClick={() => previewPDF(finalTemplate)}
-            disabled={isGenerating}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-bg-primary hover:bg-bg-secondary dark:hover:bg-white/5 text-text-primary dark:text-white border border-border-light dark:border-white/10 rounded-lg font-bold text-xs transition-all shadow-sm disabled:opacity-50"
-          >
-            <EyeIcon className="h-3.5 w-3.5" />
-            Abrir en Nueva Pestaña
-          </button>
-          
-          <button
-            onClick={() => generatePDF(finalTemplate)}
-            disabled={isGenerating}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-lg font-bold text-xs shadow-lg shadow-brand-500/25 transition-all disabled:opacity-50"
-          >
-            <DownloadIcon className="h-3.5 w-3.5" />
-            {isGenerating ? "Generando..." : "Descargar PDF"}
-          </button>
         </div>
       </div>
     </Modal>

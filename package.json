@@ -21,6 +21,7 @@
     "electron:build": "npm run build && electron-builder"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.4.6",
     "@fullcalendar/core": "^6.1.15",
     "@fullcalendar/daygrid": "^6.1.15",
     "@fullcalendar/interaction": "^6.1.15",
@@ -95,6 +96,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^10.0.0",
     "electron": "^42.3.0",
+    "electron-builder": "^26.8.1",
     "eslint": "^9.19.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.18",

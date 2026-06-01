@@ -11,6 +11,9 @@ import {
   getDataConstanciaTutorAcademico,
   getDataConstanciaTutorInstitucional,
   searchPractices,
+  searchTutors,
+  listPractices,
+  listTutors,
 } from '../controllers/institutional-documents.controller.js';
 import { requirePermission } from '../middlewares/auth.middleware.js';
 
@@ -27,5 +30,8 @@ router.get('/evaluacion-comite/:practiceId', requirePermission('reports:view'), 
 router.get('/constancia-tutor-academico/:tutorId', requirePermission('reports:view'), getDataConstanciaTutorAcademico);
 router.get('/constancia-tutor-institucional/:tutorId', requirePermission('reports:view'), getDataConstanciaTutorInstitucional);
 router.get('/search-practices', requirePermission('reports:view'), searchPractices);
+router.get('/search-tutors', requirePermission('reports:view'), searchTutors);
+router.get('/list-practices', requirePermission('reports:view'), listPractices);
+router.get('/list-tutors', requirePermission('reports:view'), listTutors);
 
 export default router;

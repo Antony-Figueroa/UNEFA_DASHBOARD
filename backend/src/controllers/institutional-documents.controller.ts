@@ -635,10 +635,13 @@ export const searchPractices = async (req: Request, res: Response) => {
       .select(`
         PROFESSIONAL_PRACTICE_ID,
         STUDENTS_ID,
+        STATUS,
         t_students!inner(STUDENTS_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME),
-        t_career!inner(CAREER_NAME)
+        t_career!inner(CAREER_NAME),
+        t_institution(INSTITUTION_NAME),
+        t_internships_period(DESCRIPTION)
       `)
-      .or(`STUDENTS_CI.ilike.${term},t_students.NAME.ilike.${term},t_students.SURNAME.ilike.${term}`)
+      .or(`t_students.STUDENTS_CI.ilike.${term},t_students.NAME.ilike.${term},t_students.SURNAME.ilike.${term}`)
       .limit(20);
 
     if (error) {
@@ -648,13 +651,15 @@ export const searchPractices = async (req: Request, res: Response) => {
 
     const results = (data || []).map((p: any) => {
       const student = p.t_students;
-      const career = p.t_career;
       return {
         practiceId: p.PROFESSIONAL_PRACTICE_ID,
         studentCi: student.STUDENTS_CI,
         studentName: [student.NAME, student.SECOND_NAME, student.SURNAME, student.SECOND_SURNAME]
           .filter(Boolean).join(' '),
-        careerName: career?.CAREER_NAME || '',
+        careerName: p.t_career?.CAREER_NAME || '',
+        institutionName: p.t_institution?.INSTITUTION_NAME || '',
+        status: p.STATUS,
+        period: p.t_internships_period?.DESCRIPTION || '',
       };
     });
 
@@ -662,5 +667,193 @@ export const searchPractices = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('[institutional-documents] searchPractices error:', error);
     res.status(500).json({ success: false, message: 'Error al buscar prácticas' });
+  }
+};
+
+/**
+ * Busca tutores por CI o nombre del tutor.
+ * GET /api/institutional-documents/search-tutors?q=termino
+ */
+export const searchTutors = async (req: Request, res: Response) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    if (!q || q.length < 2) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const term = `%${q}%`;
+    const { data, error } = await supabase
+      .from('t_tutors')
+      .select(`
+        TUTOR_ID,
+        t_persons!inner(
+          ci, first_name, middle_name, last_name, second_last_name,
+          email, phone
+        ),
+        t_tutor_career(
+          t_career(CAREER_NAME)
+        )
+      `)
+      .or(`t_persons.ci.ilike.${term},t_persons.first_name.ilike.${term},t_persons.last_name.ilike.${term}`)
+      .limit(20);
+
+    if (error) {
+      console.error('[institutional-documents] searchTutors error:', error);
+      return res.status(500).json({ success: false, message: 'Error al buscar tutores' });
+    }
+
+    const results = (data || []).map((t: any) => {
+      const person = t.t_persons;
+      const careers = (t.t_tutor_career || [])
+        .map((tc: any) => tc.t_career?.CAREER_NAME)
+        .filter(Boolean)
+        .join(', ');
+      return {
+        tutorId: t.TUTOR_ID,
+        fullName: [person.first_name, person.middle_name, person.last_name, person.second_last_name]
+          .filter(Boolean).join(' '),
+        ci: person.ci,
+        email: person.email,
+        phone: person.phone || '',
+        careers,
+      };
+    });
+
+    res.json({ success: true, data: results });
+  } catch (error) {
+    console.error('[institutional-documents] searchTutors error:', error);
+    res.status(500).json({ success: false, message: 'Error al buscar tutores' });
+  }
+};
+
+/**
+ * Lista prácticas paginadas con búsqueda opcional.
+ * GET /api/institutional-documents/list-practices?page=0&limit=10&q=termino
+ */
+export const listPractices = async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(String(req.query.page || '0'), 10);
+    const limit = parseInt(String(req.query.limit || '10'), 10);
+    const q = String(req.query.q || '').trim();
+    const term = q.length >= 2 ? `%${q}%` : null;
+
+    const from = page * limit;
+    const to = from + limit - 1;
+
+    let query = supabase
+      .from('t_professional_practices')
+      .select(`
+        PROFESSIONAL_PRACTICE_ID,
+        STUDENTS_ID,
+        STATUS,
+        t_students!inner(STUDENTS_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME),
+        t_career!inner(CAREER_NAME),
+        t_institution(INSTITUTION_NAME),
+        t_internships_period(DESCRIPTION)
+      `, { count: 'exact' });
+
+    if (term) {
+      query = (query as any).or(`t_students.STUDENTS_CI.ilike.${term},t_students.NAME.ilike.${term},t_students.SURNAME.ilike.${term}`);
+    }
+
+    const { data, error, count } = await query
+      .range(from, to)
+      .order('PROFESSIONAL_PRACTICE_ID', { ascending: false });
+
+    if (error) {
+      console.error('[institutional-documents] listPractices error:', error);
+      return res.status(500).json({ success: false, message: 'Error al listar prácticas' });
+    }
+
+    const results = (data || []).map((p: any) => {
+      const student = p.t_students;
+      return {
+        practiceId: p.PROFESSIONAL_PRACTICE_ID,
+        studentCi: student.STUDENTS_CI,
+        studentName: [student.NAME, student.SECOND_NAME, student.SURNAME, student.SECOND_SURNAME]
+          .filter(Boolean).join(' '),
+        careerName: p.t_career?.CAREER_NAME || '',
+        institutionName: p.t_institution?.INSTITUTION_NAME || '',
+        status: p.STATUS,
+        period: p.t_internships_period?.DESCRIPTION || '',
+      };
+    });
+
+    res.json({
+      success: true,
+      data: results,
+      meta: { total: count || 0, page, limit },
+    });
+  } catch (error) {
+    console.error('[institutional-documents] listPractices error:', error);
+    res.status(500).json({ success: false, message: 'Error al listar prácticas' });
+  }
+};
+
+/**
+ * Lista tutores paginados con búsqueda opcional.
+ * GET /api/institutional-documents/list-tutors?page=0&limit=10&q=termino
+ */
+export const listTutors = async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(String(req.query.page || '0'), 10);
+    const limit = parseInt(String(req.query.limit || '10'), 10);
+    const q = String(req.query.q || '').trim();
+    const term = q.length >= 2 ? `%${q}%` : null;
+
+    const from = page * limit;
+    const to = from + limit - 1;
+
+    let query = supabase
+      .from('t_tutors')
+      .select(`
+        TUTOR_ID,
+        t_persons!inner(
+          ci, first_name, middle_name, last_name, second_last_name,
+          email, phone
+        ),
+        t_tutor_career(
+          t_career(CAREER_NAME)
+        )
+      `, { count: 'exact' });
+
+    if (term) {
+      query = (query as any).or(`t_persons.ci.ilike.${term},t_persons.first_name.ilike.${term},t_persons.last_name.ilike.${term}`);
+    }
+
+    const { data, error, count } = await query
+      .range(from, to)
+      .order('TUTOR_ID', { ascending: false });
+
+    if (error) {
+      console.error('[institutional-documents] listTutors error:', error);
+      return res.status(500).json({ success: false, message: 'Error al listar tutores' });
+    }
+
+    const results = (data || []).map((t: any) => {
+      const person = t.t_persons;
+      const careers = (t.t_tutor_career || [])
+        .map((tc: any) => tc.t_career?.CAREER_NAME)
+        .filter(Boolean)
+        .join(', ');
+      return {
+        tutorId: t.TUTOR_ID,
+        fullName: [person.first_name, person.middle_name, person.last_name, person.second_last_name]
+          .filter(Boolean).join(' '),
+        ci: person.ci,
+        email: person.email,
+        phone: person.phone || '',
+        careers,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: results,
+      meta: { total: count || 0, page, limit },
+    });
+  } catch (error) {
+    console.error('[institutional-documents] listTutors error:', error);
+    res.status(500).json({ success: false, message: 'Error al listar tutores' });
   }
 };

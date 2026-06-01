@@ -1,11 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Modal } from '../../../components/ui/modal';
 import Button from '../../../components/ui/button/Button';
-import InputField from '../../../components/form/input/InputField';
 import toast from 'react-hot-toast';
-import reportsService, { PracticeSearchResult } from '../services/reportsService';
+import reportsService, { PracticeSearchResult, TutorSearchResult } from '../services/reportsService';
 import { getAllDocumentTexts } from '../services/reportTextsService';
 import { SingleReportModal } from '../../../components/ui/pdf/SingleReportModal';
+import { SearchableInput } from './SearchableInput';
+import { RecordListModal } from './RecordListModal';
+import { SelectionSummary } from './SelectionSummary';
 import {
   AceptacionTutorPDF,
   SolicitudInstitucionPDF,
@@ -23,6 +25,10 @@ const PRACTICE_DOCS = new Set([
   'aceptacion-tutor', 'solicitud-institucion', 'carta-postulacion',
   'acta-validacion', 'evaluacion-final', 'evaluacion-tutor-institucional',
   'evaluacion-tutor-academico', 'evaluacion-comite',
+]);
+
+const TUTOR_DOCS = new Set([
+  'constancia-tutor-academico', 'constancia-tutor-institucional',
 ]);
 
 const DOCUMENT_CONFIG: Record<string, {
@@ -112,54 +118,52 @@ interface DocumentReportModalProps {
 
 export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentReportModalProps) {
   const config = DOCUMENT_CONFIG[documentType];
+
+  // Early return ANTES de cualquier hook para evitar "Rendered more hooks than during previous render"
+  if (!config) return null;
+
   const isPracticeDoc = PRACTICE_DOCS.has(documentType);
+  const isTutorDoc = TUTOR_DOCS.has(documentType);
+
   const [recordId, setRecordId] = useState('');
   const [loading, setLoading] = useState(false);
   const [pdfData, setPdfData] = useState<any>(null);
   const [textos, setTextos] = useState<Record<string, string>>({});
   const [showPdf, setShowPdf] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<PracticeSearchResult[]>([]);
-  const [searching, setSearching] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // Selection state for summary card
+  const [selectedRecord, setSelectedRecord] = useState<PracticeSearchResult | TutorSearchResult | null>(null);
+
+  // Record list modal
+  const [showRecordList, setShowRecordList] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
-      setSearchTerm('');
-      setSearchResults([]);
       setRecordId('');
+      setSelectedRecord(null);
+      setShowRecordList(false);
     }
   }, [isOpen, documentType]);
 
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!isPracticeDoc || searchTerm.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-    setSearching(true);
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const res = await reportsService.searchPractices(searchTerm);
-        setSearchResults(res.data || []);
-      } catch {
-        setSearchResults([]);
-      } finally {
-        setSearching(false);
-      }
-    }, 300);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [searchTerm, isPracticeDoc]);
-
-  const selectResult = (result: PracticeSearchResult) => {
-    setRecordId(String(result.practiceId));
-    setSearchTerm('');
-    setSearchResults([]);
+  const handleSelectPractice = (item: PracticeSearchResult | TutorSearchResult) => {
+    const practice = item as PracticeSearchResult;
+    setRecordId(String(practice.practiceId));
+    setSelectedRecord(item);
   };
 
-  if (!config) return null;
+  const handleSelectTutor = (item: PracticeSearchResult | TutorSearchResult) => {
+    const tutor = item as TutorSearchResult;
+    setRecordId(String(tutor.tutorId));
+    setSelectedRecord(item);
+  };
 
-  const handleGenerate = async () => {
+  const handleClearSelection = () => {
+    setRecordId('');
+    setSelectedRecord(null);
+  };
+
+  const handleGenerate = async (e: React.MouseEvent) => {
+    e.preventDefault();
     const id = parseInt(recordId, 10);
     if (!id || id <= 0) {
       toast.error('Ingrese un ID válido');
@@ -188,6 +192,17 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
 
   const Template = config.pdfTemplate;
 
+  const renderTemplate = useCallback(
+    (data: any) => <Template data={data} textos={textos} />,
+    [Template, textos]
+  );
+
+  const searchSubtitle = isPracticeDoc
+    ? 'Buscá el estudiante por CI o nombre, o explorá la lista de prácticas'
+    : isTutorDoc
+      ? 'Buscá el tutor por CI o nombre, o explorá la lista de tutores'
+      : 'Ingresá el ID del registro para generar el documento';
+
   return (
     <>
       <Modal isOpen={isOpen} onClose={onClose} size="md">
@@ -196,77 +211,81 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
             <h2 className="text-lg font-bold text-text-primary dark:text-text-emphasis">
               {config.title}
             </h2>
-            <p className="text-sm text-text-tertiary mt-1">
-              {isPracticeDoc
-                ? 'Busque el estudiante por CI o nombre, o ingrese el ID directamente'
-                : 'Ingrese el ID del registro para generar el documento'
-              }
-            </p>
+            <p className="text-sm text-text-tertiary mt-1">{searchSubtitle}</p>
           </div>
 
-          {isPracticeDoc && (
-            <div className="relative">
-              <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">
-                Buscar Estudiante
+          {/* Search section for practice or tutor docs */}
+          {(isPracticeDoc || isTutorDoc) && (
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest">
+                {isPracticeDoc ? 'Buscar Estudiante' : 'Buscar Tutor'}
               </label>
-              <InputField
-                placeholder="CI o nombre del estudiante..."
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+
+              <SearchableInput
+                placeholder={isPracticeDoc ? 'CI o nombre del estudiante...' : 'CI o nombre del tutor...'}
+                search={(q) => (isPracticeDoc ? reportsService.searchPractices(q).then(r => r.data || []) : reportsService.searchTutors(q).then(r => r.data || [])) as Promise<{ id: string | number }[]>}
+                renderItem={(item: any) => (
+                  <div>
+                    <p className="text-sm font-medium text-text-primary dark:text-text-emphasis">
+                      {isPracticeDoc ? item.studentName : item.fullName}
+                    </p>
+                    <p className="text-xs text-text-tertiary mt-0.5">
+                      CI: {isPracticeDoc ? item.studentCi : item.ci}
+                      {isPracticeDoc && item.careerName && ` · ${item.careerName}`}
+                      {!isPracticeDoc && item.careers && ` · ${item.careers}`}
+                      {isPracticeDoc && ` · ID: ${item.practiceId}`}
+                      {!isPracticeDoc && ` · ID: ${item.tutorId}`}
+                    </p>
+                  </div>
+                )}
+                onSelect={(item) => isPracticeDoc ? handleSelectPractice(item as any) : handleSelectTutor(item as any)}
+                getKey={(item: any) => isPracticeDoc ? item.practiceId : item.tutorId}
               />
-              {searching && (
-                <div className="absolute right-3 top-9">
-                  <div className="animate-spin h-4 w-4 border-2 border-brand-500 border-t-transparent rounded-full" />
-                </div>
-              )}
-              {searchResults.length > 0 && (
-                <div className="absolute z-50 mt-1 w-full rounded-lg border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface shadow-lg max-h-60 overflow-y-auto">
-                  {searchResults.map((r) => (
-                    <button
-                      key={r.practiceId}
-                      type="button"
-                      onClick={() => selectResult(r)}
-                      className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 border-b border-border-default dark:border-border-dark last:border-b-0 transition-colors"
-                    >
-                      <p className="text-sm font-medium text-text-primary dark:text-text-emphasis">
-                        {r.studentName}
-                      </p>
-                      <p className="text-xs text-text-tertiary mt-0.5">
-                        CI: {r.studentCi} · {r.careerName} · ID Práctica: {r.practiceId}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {searchTerm.length >= 2 && !searching && searchResults.length === 0 && (
-                <p className="text-xs text-text-tertiary mt-1">Sin resultados. Puede ingresar el ID manualmente.</p>
-              )}
+
+              <button
+                type="button"
+                onClick={() => setShowRecordList(true)}
+                className="text-xs font-medium text-brand-600 dark:text-brand-400 hover:underline"
+              >
+                Ver lista completa →
+              </button>
             </div>
           )}
 
-          <div>
-            <label className="block text-xs font-bold text-text-tertiary uppercase tracking-widest mb-2">
-              {config.idLabel}
-            </label>
-            <InputField
-              placeholder={config.idPlaceholder}
-              type="number"
-              value={recordId}
-              onChange={(e) => setRecordId(e.target.value)}
+          {/* Selection summary */}
+          {selectedRecord && (
+            <SelectionSummary
+              type={isPracticeDoc ? 'practice' : 'tutor'}
+              data={selectedRecord}
+              onChange={handleClearSelection}
             />
-          </div>
+          )}
 
           <div className="flex items-center gap-3 justify-end pt-2">
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" type="button" onClick={onClose}>
               Cancelar
             </Button>
-            <Button variant="primary" onClick={handleGenerate} disabled={loading}>
+            <Button variant="primary" type="button" onClick={handleGenerate} disabled={loading}>
               {loading ? 'Cargando...' : 'Generar Documento'}
             </Button>
           </div>
         </div>
       </Modal>
+
+      {/* Record list explorer modal */}
+      <RecordListModal
+        isOpen={showRecordList}
+        onClose={() => setShowRecordList(false)}
+        recordType={isPracticeDoc ? 'practice' : 'tutor'}
+        onSelect={(item) => {
+          setShowRecordList(false);
+          if (isPracticeDoc) {
+            handleSelectPractice(item);
+          } else {
+            handleSelectTutor(item);
+          }
+        }}
+      />
 
       {showPdf && pdfData && (
         <SingleReportModal
@@ -275,7 +294,7 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
           title={config.title}
           subtitle={`ID: ${recordId}`}
           data={pdfData}
-          template={(data: any) => <Template data={data} textos={textos} />}
+          template={renderTemplate}
           fileName={`${documentType}_${recordId}`}
           recordInfo={{ label: config.idLabel, value: recordId }}
         />

@@ -118,7 +118,7 @@ const PeriodSection = ({ period, onNavigate }: PeriodSectionProps) => {
         <FiChevronRight className="size-4 text-brand-400 group-hover:text-brand-600 transition-colors shrink-0" />
       </div>
 
-      <div className="flex items-center justify-between text-xs text-brand-600/60 dark:text-brand-400/60 mb-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-0 text-xs text-brand-600/60 dark:text-brand-400/60 mb-2">
         <span>Inicio: {formatDate(period.startDate)}</span>
         <span>Cierre: {formatDate(period.endDate)}</span>
       </div>

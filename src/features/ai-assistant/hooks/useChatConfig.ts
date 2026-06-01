@@ -11,6 +11,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
 import chatConfigService from '../services/chatConfigService';
 
 // ============================================
@@ -103,7 +104,7 @@ export const useChatConfig = () => {
       await chatConfigService.saveConfig(newConfig);
     } catch (error) {
       console.error('[useChatConfig] Error saving to DB:', error);
-      toast.error('Error al guardar configuración');
+      toast.error(TOAST_ERROR.update('Configuración'));
     } finally {
       setIsSaving(false);
     }

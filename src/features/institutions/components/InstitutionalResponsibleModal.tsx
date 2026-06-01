@@ -21,6 +21,7 @@ import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
@@ -996,9 +997,7 @@ onChange={(val) => {
           }
         }}
         variant="confirm"
-        title={editingResp ? "Confirmar actualización" : "Confirmar registro"}
-        message={editingResp ? "¿Desea actualizar los datos del responsable?" : "¿Desea guardar el nuevo responsable?"}
-        confirmLabel={editingResp ? "Actualizar" : "Guardar"}
+        {...(editingResp ? CONFIRM_MESSAGES.update('Responsable institucional') : CONFIRM_MESSAGES.create('Responsable institucional'))}
         isLoading={isLoading}
       />
     )}
@@ -1008,10 +1007,7 @@ onChange={(val) => {
       onClose={cancelClose}
       onConfirm={confirmClose}
       variant="warning"
-      title="Cambios no guardados"
-      message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
-      confirmLabel="Cerrar sin guardar"
-      cancelLabel="Continuar editando"
+      {...SYSTEM_DIALOGS.closeWithoutSaving}
     />
 
     {/* Modal para agregar nueva opción a la lista */}

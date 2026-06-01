@@ -15,6 +15,7 @@ import { getTutors } from "../../tutors/services/tutorsService";
 import { getInstitutions } from "../../institutions/services/institutionsService";
 import { getCareers } from "../../careers/services/careersService";
 import { useInstitutionalResponsibles } from "../../institutions/hooks/useInstitutionalResponsibles";
+import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { getPreEnrollments } from "../../pre-enrollment/services/preEnrollmentService";
 import { Periodo } from "../../periods/types";
 import { Tutor } from "../../tutors/types";
@@ -1267,10 +1268,7 @@ export default function EnrollmentModal({
       onClose={cancelClose}
       onConfirm={confirmClose}
       variant="warning"
-      title="Cambios no guardados"
-      message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
-      confirmLabel="Cerrar sin guardar"
-      cancelLabel="Continuar editando"
+      {...SYSTEM_DIALOGS.closeWithoutSaving}
     />
 
     <UnifiedDialog
@@ -1280,10 +1278,8 @@ export default function EnrollmentModal({
         setPendingData(null);
       }}
       onConfirm={handleConfirmSave}
-      title={editingEntry ? "Actualizar Inscripción" : "Guardar Inscripción"}
-      message={`¿Estás seguro de que deseas ${editingEntry ? 'actualizar' : 'guardar'} la inscripción del estudiante?`}
       variant="confirm"
-      confirmLabel={editingEntry ? "Actualizar" : "Guardar"}
+      {...(editingEntry ? CONFIRM_MESSAGES.update('Inscripción del estudiante') : CONFIRM_MESSAGES.create('Inscripción del estudiante'))}
       isLoading={isLoading}
     />
 

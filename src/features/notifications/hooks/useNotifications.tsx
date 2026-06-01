@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
 import {
   notificationService,
   connectToNotificationStream,
 } from '../services/notificationService';
 import type { Notification, SSENotification } from '../types';
 import { useAuth } from '../../../context/auth';
+
+const resourceName = 'Notificación';
 
 interface UseNotificationsOptions {
   autoConnect?: boolean;
@@ -76,7 +79,7 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
       console.error('[useNotifications] Error marking as read:', error);
-      toast.error('Error al marcar notificación como leída');
+      toast.error(TOAST_ERROR.update(resourceName));
     }
   }, [isReady]);
 
@@ -91,10 +94,10 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
       );
       
       setUnreadCount(0);
-      toast.success('Todas las notificaciones marcadas como leídas');
+      toast.success(TOAST_SUCCESS.updated(resourceName));
     } catch (error) {
       console.error('[useNotifications] Error marking all as read:', error);
-      toast.error('Error al marcar notificaciones');
+      toast.error(TOAST_ERROR.update(resourceName));
     }
   }, [isReady]);
 
@@ -112,7 +115,7 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
       }
     } catch (error) {
       console.error('[useNotifications] Error deleting notification:', error);
-      toast.error('Error al eliminar notificación');
+      toast.error(TOAST_ERROR.delete(resourceName));
     }
   }, [notifications, isReady]);
 

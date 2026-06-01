@@ -71,6 +71,10 @@ interface PersonData {
   secondLastName?: string;
   email: string;
   phone: string;
+  birthDate?: string;
+  gender?: string;
+  address?: string;
+  maritalStatus?: string;
 }
 
 /**

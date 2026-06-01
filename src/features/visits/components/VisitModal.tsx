@@ -16,6 +16,7 @@ import { Visit, CreateVisitPayload, UpdateVisitPayload, LEGACY_VISIT_TYPES, LEGA
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import { useToast } from '../../../context/toast';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
+import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
 import Input from '../../../components/form/input/InputField';
 import { SAFE_LONG_TEXT_PATTERN, isSafeInput } from '../../../utils/inputValidation';
 import { useTutors } from '../../tutors/hooks/useTutors';
@@ -854,13 +855,13 @@ export default function VisitModal({
       <UnifiedDialog
         isOpen={confirmSaveOpen}
         onClose={() => setConfirmSaveOpen(false)}
-        title={isEditing ? '¿Actualizar Visita?' : '¿Registrar Visita?'}
+        title={isEditing ? CONFIRM_MESSAGES.update('Visita').title : CONFIRM_MESSAGES.create('Visita').title}
         message={
           <div className="space-y-2">
             <p className="text-sm text-text-secondary">
               {isEditing 
-                ? '¿Estás seguro de que deseas actualizar esta visita de seguimiento?' 
-                : '¿Estás seguro de que deseas registrar esta nueva visita de seguimiento?'}
+                ? CONFIRM_MESSAGES.update('Visita').message
+                : CONFIRM_MESSAGES.create('Visita').message}
             </p>
             {pendingData && (
               <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm space-y-1">
@@ -872,7 +873,7 @@ export default function VisitModal({
             )}
           </div>
         }
-        confirmLabel={isEditing ? 'Sí, actualizar' : 'Sí, registrar'}
+        confirmLabel={isEditing ? CONFIRM_MESSAGES.update('Visita').confirmLabel : CONFIRM_MESSAGES.create('Visita').confirmLabel}
         variant="confirm"
         onConfirm={handleConfirmSave}
       />
@@ -881,11 +882,8 @@ export default function VisitModal({
       <UnifiedDialog
         isOpen={showConfirmation}
         onClose={cancelClose}
-        title="¿Cerrar sin guardar?"
-        message="Tienes cambios sin guardar. ¿Estás seguro de que deseas cerrar sin guardar los cambios?"
-        confirmLabel="Sí, cerrar"
-        cancelLabel="Continuar editando"
         variant="warning"
+        {...SYSTEM_DIALOGS.closeWithoutSaving}
         onConfirm={confirmClose}
       />
 

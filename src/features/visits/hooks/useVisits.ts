@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
 import visitsService from '../services/visitsService';
 import {
   Visit,
@@ -7,6 +8,8 @@ import {
   UpdateVisitPayload,
   VisitStats
 } from '../types';
+
+const resourceName = 'Visita';
 
 interface UseVisitsReturn {
   visits: Visit[];
@@ -45,7 +48,7 @@ export const useVisits = (): UseVisitsReturn => {
         setVisits(response.data);
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Error al cargar visitas';
+      const errorMessage = err.response?.data?.message || TOAST_ERROR.load(resourceName);
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -68,7 +71,7 @@ export const useVisits = (): UseVisitsReturn => {
         setVisits(response.data);
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Error al cargar visitas';
+      const errorMessage = err.response?.data?.message || TOAST_ERROR.load(resourceName);
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -86,7 +89,7 @@ export const useVisits = (): UseVisitsReturn => {
       }
       return null;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Error al cargar visita';
+      const errorMessage = err.response?.data?.message || TOAST_ERROR.load(resourceName);
       setError(errorMessage);
       toast.error(errorMessage);
       return null;
@@ -101,13 +104,13 @@ export const useVisits = (): UseVisitsReturn => {
     try {
       const response = await visitsService.createVisit(payload);
       if (response.success) {
-        toast.success('Visita registrada exitosamente');
+        toast.success(TOAST_SUCCESS.created(resourceName));
         setVisits(prev => [response.data, ...prev]);
         return response.data;
       }
       return null;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Error al crear visita';
+      const errorMessage = err.response?.data?.message || TOAST_ERROR.create(resourceName);
       setError(errorMessage);
       toast.error(errorMessage);
       return null;
@@ -122,13 +125,13 @@ export const useVisits = (): UseVisitsReturn => {
     try {
       const response = await visitsService.updateVisit(id, payload);
       if (response.success) {
-        toast.success('Visita actualizada exitosamente');
+        toast.success(TOAST_SUCCESS.updated(resourceName));
         setVisits(prev => prev.map(v => v.visitId === id ? response.data : v));
         return response.data;
       }
       return null;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Error al actualizar visita';
+      const errorMessage = err.response?.data?.message || TOAST_ERROR.update(resourceName);
       setError(errorMessage);
       toast.error(errorMessage);
       return null;
@@ -143,13 +146,13 @@ export const useVisits = (): UseVisitsReturn => {
     try {
       const response = await visitsService.deleteVisit(id);
       if (response.success) {
-        toast.success('Visita eliminada exitosamente');
+        toast.success(TOAST_SUCCESS.deleted(resourceName));
         setVisits(prev => prev.filter(v => v.visitId !== id));
         return true;
       }
       return false;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Error al eliminar visita';
+      const errorMessage = err.response?.data?.message || TOAST_ERROR.delete(resourceName);
       setError(errorMessage);
       toast.error(errorMessage);
       return false;
@@ -164,13 +167,13 @@ export const useVisits = (): UseVisitsReturn => {
     try {
       const response = await visitsService.restoreVisit(id);
       if (response.success) {
-        toast.success('Visita restaurada exitosamente');
+        toast.success(TOAST_SUCCESS.restored(resourceName));
         setVisits(prev => prev.map(v => v.visitId === id ? { ...v, status: true } : v));
         return true;
       }
       return false;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Error al restaurar visita';
+      const errorMessage = err.response?.data?.message || TOAST_ERROR.restore(resourceName);
       setError(errorMessage);
       toast.error(errorMessage);
       return false;

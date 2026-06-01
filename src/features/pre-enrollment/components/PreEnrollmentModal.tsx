@@ -27,6 +27,7 @@ import { getPreEnrollments, getCompletedPracticeTypes } from "../services/preEnr
 import * as enrollmentService from "../../enrollment/services/enrollmentService";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { useLists } from "../../lists/hooks/useLists";
 import { generateMatricula } from "../../../utils/matricula";
 import { formatCedulaDisplay, cleanCedula, formatPhoneDisplay, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
@@ -1068,20 +1069,15 @@ if (student) {
       onClose={cancelClose}
       onConfirm={confirmClose}
       variant="warning"
-      title="Cambios no guardados"
-      message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
-      confirmLabel="Cerrar sin guardar"
-      cancelLabel="Continuar editando"
+      {...SYSTEM_DIALOGS.closeWithoutSaving}
     />
 
     <UnifiedDialog
       isOpen={showConfirmDialog}
       onClose={() => setShowConfirmDialog(false)}
       onConfirm={handleConfirmSave}
-      title={editingEntry ? "Actualizar Preinscripción" : "Guardar Preinscripción"}
-      message={`¿Estás seguro de que deseas ${editingEntry ? 'actualizar' : 'guardar'} la pre-inscripción del estudiante?`}
-      confirmLabel={editingEntry ? "Actualizar" : "Guardar"}
       variant="confirm"
+      {...(editingEntry ? CONFIRM_MESSAGES.update('Pre-inscripción del estudiante') : CONFIRM_MESSAGES.create('Pre-inscripción del estudiante'))}
       isLoading={isLoading}
     />
   </>

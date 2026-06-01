@@ -17,6 +17,7 @@ import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { useLists } from "../../lists/hooks/useLists";
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
@@ -1615,9 +1616,7 @@ export default function InstitutionModal({
           }
         }}
         variant="confirm"
-        title={editingInst ? "Confirmar actualización" : "Confirmar registro"}
-        message={editingInst ? "¿Desea actualizar los datos de la institución?" : "¿Desea guardar la nueva institución?"}
-        confirmLabel={editingInst ? "Actualizar" : "Guardar"}
+        {...(editingInst ? CONFIRM_MESSAGES.update('Institución') : CONFIRM_MESSAGES.create('Institución'))}
         isLoading={isLoading}
       />
     )}
@@ -1662,7 +1661,7 @@ export default function InstitutionModal({
       variant="error"
       title="Desvincular Responsable"
       confirmLabel="Desvincular"
-      message={`¿Está seguro que desea quitar a ${responsibleToRemove?.firstName} ${responsibleToRemove?.lastName} de esta institución? Dejará de aparecer en este listado pero sus datos se mantendrán en el sistema.`}
+      message={`¿Estás seguro de que deseas quitar a ${responsibleToRemove?.firstName} ${responsibleToRemove?.lastName} de esta institución? Dejará de aparecer en este listado pero sus datos se mantendrán en el sistema.`}
       onConfirm={handleConfirmRemove}
     />
 
@@ -1681,7 +1680,7 @@ export default function InstitutionModal({
         }}
         variant="info"
         title="Agregar Responsables"
-        message="¿Desea agregar responsables institucionales ahora? También puede hacerlo más adelante desde la edición de la institución."
+        message="¿Deseas agregar responsables institucionales ahora? También puedes hacerlo más adelante desde la edición de la institución."
         confirmLabel="Sí, agregar responsables"
         cancelLabel="No, cerrar"
       />
@@ -1692,10 +1691,7 @@ export default function InstitutionModal({
       onClose={cancelClose}
       onConfirm={confirmClose}
       variant="warning"
-      title="Cambios no guardados"
-      message="¿Estás seguro de que deseas cerrar? Los cambios no guardados se perderán."
-      confirmLabel="Cerrar sin guardar"
-      cancelLabel="Continuar editando"
+      {...SYSTEM_DIALOGS.closeWithoutSaving}
     />
 
     {/* Modal de confirmación de RIF duplicado */}

@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
 import activityLogsService from '../services/activityLogsService';
 import {
   ActivityLog,
@@ -7,6 +8,8 @@ import {
   ActivityLogStats
 } from '../types';
 import toast from 'react-hot-toast';
+
+const resourceName = 'Registro de actividad';
 
 export const useActivityLogs = () => {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -28,7 +31,7 @@ export const useActivityLogs = () => {
       }
     } catch (error) {
       console.error('[useActivityLogs] Error fetching logs:', error);
-      toast.error('Error al cargar los registros de actividad');
+      toast.error(TOAST_ERROR.load(resourceName));
     } finally {
       setLoading(false);
     }
@@ -50,13 +53,13 @@ export const useActivityLogs = () => {
       const response = await activityLogsService.create(data);
       if (response.success) {
         setLogs(prev => [response.data, ...prev]);
-        toast.success('Registro de actividad creado exitosamente');
+        toast.success(TOAST_SUCCESS.created(resourceName));
         return true;
       }
       return false;
     } catch (error) {
       console.error('[useActivityLogs] Error creating log:', error);
-      toast.error('Error al crear el registro de actividad');
+      toast.error(TOAST_ERROR.create(resourceName));
       return false;
     }
   }, []);
@@ -68,13 +71,13 @@ export const useActivityLogs = () => {
         setLogs(prev => prev.map(log => 
           log.activityLogId === id ? response.data : log
         ));
-        toast.success('Registro de actividad actualizado exitosamente');
+        toast.success(TOAST_SUCCESS.updated(resourceName));
         return true;
       }
       return false;
     } catch (error) {
       console.error('[useActivityLogs] Error updating log:', error);
-      toast.error('Error al actualizar el registro de actividad');
+      toast.error(TOAST_ERROR.update(resourceName));
       return false;
     }
   }, []);
@@ -83,11 +86,11 @@ export const useActivityLogs = () => {
     try {
       await activityLogsService.delete(id);
       setLogs(prev => prev.filter(log => log.activityLogId !== id));
-      toast.success('Registro de actividad eliminado exitosamente');
+      toast.success(TOAST_SUCCESS.deleted(resourceName));
       return true;
     } catch (error) {
       console.error('[useActivityLogs] Error deleting log:', error);
-      toast.error('Error al eliminar el registro de actividad');
+      toast.error(TOAST_ERROR.delete(resourceName));
       return false;
     }
   }, []);
@@ -99,13 +102,13 @@ export const useActivityLogs = () => {
         setLogs(prev => prev.map(log => 
           log.activityLogId === id ? response.data : log
         ));
-        toast.success('Registro de actividad aprobado exitosamente');
+        toast.success(TOAST_SUCCESS.updated(resourceName));
         return true;
       }
       return false;
     } catch (error) {
       console.error('[useActivityLogs] Error approving log:', error);
-      toast.error('Error al aprobar el registro de actividad');
+      toast.error(TOAST_ERROR.update(resourceName));
       return false;
     }
   }, []);

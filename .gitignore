@@ -37,6 +37,15 @@ backend/data/
 
 # Release builds
 release-v2/
+release/
+
+# Backend local test artifacts
+backend/debug*.txt
+backend/server-log.txt
+backend/test-*.mjs
+
+# SDD artifacts
+openspec/
 
 # Backend build output
 backend/dist/

@@ -623,9 +623,9 @@ const PeriodTable = ({
                 </div>
             )}
 
-            {/* Timeline View */}
+            {/* Timeline View — solo desktop */}
             {viewMode === "timeline" && (
-                <div className="p-6 bg-white dark:bg-gray-900 rounded-xl border border-border-light dark:border-border-dark">
+                <div className="hidden md:block p-6 bg-white dark:bg-gray-900 rounded-xl border border-border-light dark:border-border-dark">
                     <PeriodTimeline 
                         periods={filteredData} 
                         activePeriodId={currentPeriod?.periodId}
@@ -634,8 +634,8 @@ const PeriodTable = ({
                 </div>
             )}
 
-            {/* Tabla Desktop */}
-            <div className={`${viewMode === "timeline" ? "hidden" : ""} md:block overflow-hidden rounded-lg border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface shadow-sm`}>
+            {/* Tabla Desktop — solo desktop */}
+            <div className={`${viewMode === "timeline" ? "hidden" : ""} hidden md:block overflow-hidden rounded-lg border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface shadow-sm`}>
                 <Table>
                     <TableHeader>
                         <TableRow>

@@ -87,15 +87,19 @@ async function createMainWindow() {
 // ─── Iniciar Backend offline (solo en producción) ───
 // En dev, el backend se corre aparte con `cd backend && npm run dev`
 function startOfflineBackend() {
-  const backendDir = join(__dirname, '../backend');
-
-  // Buscar el compilado del servidor offline
+  // En producción el backend está en extraResources
+  const backendDir = isDev
+    ? join(__dirname, '../backend')
+    : join(process.resourcesPath, 'backend');
   const serverPath = join(backendDir, 'dist/server-offline.js');
+  // En producción, CWD apunta a dist/ donde están pglite.wasm + pglite.data.
+  // El bundle es ESM (type:module) y resuelve wasm/data vía import.meta.url.
+  const cwd = isDev ? backendDir : join(backendDir, 'dist');
 
   console.log(`[Electron] 🚀 Iniciando backend offline desde ${serverPath}...`);
 
   const proc = spawn(process.execPath, [serverPath], {
-    cwd: backendDir,
+    cwd,
     env: {
       ...process.env,
       PORT: String(BACKEND_PORT),

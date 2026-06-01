@@ -218,6 +218,7 @@ const navItems: NavItem[] = [
       { name: "Mantenimiento", path: "/configure/maintenance", permissions: ['config:view'] },
       { name: "Respaldos", path: "/configure/backups", permissions: ['backups:view'] },
       { name: "Landing Page", path: "/configure/landing", permissions: ['config:view'] },
+      { name: "Recordatorios", path: "/configure/reminders", permissions: ['config:view'] },
       { name: "Dashboard Config", path: "/dashboard/configure", permissions: ['config:view'] },
     ],
   },

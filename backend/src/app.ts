@@ -24,6 +24,7 @@ import usersRoutes from './routes/users.routes.js';
 import aiRoutes from './routes/ai.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import reportsRoutes from './routes/reports.routes.js';
+import reminderConfigRoutes from './routes/reminder-config.routes.js';
 import configRoutes from './routes/config.routes.js';
 import culminationRoutes from './routes/culmination.routes.js';
 import manualsRoutes from './routes/manuals.routes.js';
@@ -56,6 +57,7 @@ import { authenticateToken, restrictAsistente } from './middlewares/auth.middlew
 import * as listsService from './services/lists.service.js';
 import * as usersService from './services/users.service.js';
 import { startPeriodScheduler } from './services/period-scheduler.service.js';
+import { startReminderScheduler } from './services/reminder-scheduler.service.js';
 
 // Detectar si estamos en Vercel (serverless)
 const isVercel = !!process.env.VERCEL;
@@ -85,11 +87,12 @@ dbManager.connect().catch(err => {
 listsService.ensurePhonePrefixesSeeded().catch(() => {});
 usersService.ensureRolesSeeded().catch(() => {});
 
-// Iniciar scheduler de notificaciones de períodos (SOLO en modo tradicional, NO en Vercel)
+// Iniciar schedulers (SOLO en modo tradicional, NO en Vercel)
 if (!isVercel) {
   setTimeout(() => {
     try {
       startPeriodScheduler();
+      startReminderScheduler();
     } catch (err: unknown) {
       console.error('[Scheduler] Error starting:', err);
     }
@@ -251,6 +254,7 @@ app.use('/api/visits', visitsRoutes);
 app.use('/api/documents', documentsRoutes);
 app.use('/api/permissions', permissionRoutes);
 app.use('/api/security-questions', securityQuestionsRoutes);
+app.use('/api/reminder-config', reminderConfigRoutes);
 // SSE endpoint — deshabilitado en Vercel (no compatible con serverless)
 if (isVercel) {
   app.get('/api/notifications/stream', (_req, res) => {

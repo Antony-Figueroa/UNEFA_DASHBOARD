@@ -209,6 +209,7 @@ export default function CareerModal({
           setValue("careerAbbreviation", existingCareerData.careerAbbreviation || "", { shouldDirty: true });
           setValue("careerType", existingCareerData.careerType as 'CORTA' | 'LARGA', { shouldDirty: true });
           setValue("internshipTypeIds", (existingCareerData.internshipTypeIds || []).map(String), { shouldDirty: true });
+          setValue("semester", existingCareerData.semester || "", { shouldDirty: true });
           
           // Limpiar errores de validación ya que los datos autocompletados
           // pertenecen a la misma carrera existente (no es un duplicado real)

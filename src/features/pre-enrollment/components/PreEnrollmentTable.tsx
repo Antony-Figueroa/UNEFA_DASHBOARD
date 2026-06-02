@@ -577,7 +577,7 @@ export default function PreEnrollmentTable({
                                     <TableCell className="table-cell">
                                         <Tooltip 
                                             content={s.isInUse ? "Esta pre-inscripción ya tiene tutores asignados y no puede ser seleccionada para eliminar" : ""}
-                                            isDisabled={s.isInUse}
+                                            isDisabled={!s.isInUse}
                                         >
                                             <div>
                                                 <Checkbox 

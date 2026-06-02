@@ -549,8 +549,8 @@ export default function TutorTable({
                                 >
                                     <TableCell className="table-cell">
                                         <Tooltip 
-                                            content={t.isInUse ? "Este tutor tiene carreras asignadas y no puede ser seleccionada para eliminar" : ""}
-                                            isDisabled={t.isInUse}
+                                            content={t.isInUse ? "Este tutor tiene carreras asignadas y no puede ser seleccionado para eliminar" : ""}
+                                            isDisabled={!t.isInUse}
                                         >
                                             <div className="flex items-center justify-center">
                                                 <Checkbox 

@@ -8,6 +8,7 @@ import { AsyncActionButton } from "../../../components/common/AsyncActionButton"
 import { EditIcon, TrashIcon, RefreshIcon, ChevronDownIcon } from "../../../icons/actions";
 import { UserRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
+import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import Badge from "../../../components/ui/badge/Badge";
 import { maskEmail } from "../../../utils/maskData";
 import { AuthUser } from "../../../context/auth";
@@ -258,11 +259,18 @@ export default function UserTable({
                             data.map((user, idx) => (
                                 <TableRow key={user.id} className={idx % 2 === 0 ? "bg-white dark:bg-transparent" : "bg-bg-secondary/50 dark:bg-white/2"}>
                                     <TableCell className="table-cell">
-                                        <Checkbox
-                                            checked={selectedIds.includes(user.id)}
-                                            onChange={(checked) => onSelectRow(user.id, checked)}
-                                            disabled={user.isInUse}
-                                        />
+                                        <Tooltip
+                                            content={user.isInUse ? "Este usuario tiene registros asociados y no puede ser seleccionado para eliminar" : ""}
+                                            isDisabled={!user.isInUse}
+                                        >
+                                            <div>
+                                                <Checkbox
+                                                    checked={selectedIds.includes(user.id)}
+                                                    onChange={(checked) => onSelectRow(user.id, checked)}
+                                                    disabled={user.isInUse}
+                                                />
+                                            </div>
+                                        </Tooltip>
                                     </TableCell>
                                     <TableCell className="table-cell font-medium uppercase">{user.userCi}</TableCell>
                                     <TableCell className="table-cell uppercase">{user.name} {user.surname}</TableCell>

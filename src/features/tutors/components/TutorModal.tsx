@@ -86,8 +86,9 @@ export default function TutorModal({
     const [isCheckingCi, setIsCheckingCi] = useState(false);
     const [isLookingUpCi, setIsLookingUpCi] = useState(false);
     const [isCheckingEmail, setIsCheckingEmail] = useState(false);
-   const [existingTutor, setExistingTutor] = useState<any | null>(null);
-   const [viewOnlyMode, setViewOnlyMode] = useState(false);
+    const [existingTutor, setExistingTutor] = useState<any | null>(null);
+    const [existingPerson, setExistingPerson] = useState(false);
+    const [viewOnlyMode, setViewOnlyMode] = useState(false);
    
    // State for career modal
    const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
@@ -269,12 +270,15 @@ export default function TutorModal({
     setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
     clearErrors("identificationNumber");
     
-    // Si se cambia la cédula y hay un existingTutor, limpiar el formulario
-    if (existingTutor) {
-      const currentStoredDigits = existingTutor.identificationNumber?.replace(/\D/g, '') || '';
+    // Si se cambia la cédula y hay un existingTutor o existingPerson, limpiar el formulario
+    if (existingTutor || existingPerson) {
+      const currentStoredDigits = existingTutor
+        ? existingTutor.identificationNumber?.replace(/\D/g, '') || ''
+        : '';
       // Si el usuario borró al menos 1 carácter o cambió algo
-      if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits) {
+      if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits || !existingTutor) {
         setExistingTutor(null);
+        setExistingPerson(false);
         setViewOnlyMode(false);
         clearErrors("identificationNumber");
         // Resetear los campos del formulario
@@ -303,7 +307,7 @@ export default function TutorModal({
     }
     
     // Verificar si la cédula existe mientras escribe (7 u 8 dígitos)
-    if (!existingTutor && !editingTutor && (digitsOnly.length === 7 || digitsOnly.length === 8)) {
+    if (!existingTutor && !existingPerson && !editingTutor && (digitsOnly.length === 7 || digitsOnly.length === 8)) {
       setIsCheckingCi(true);
       const prefix = watch("identificationPrefix") || 'V';
       const fullCi = `${prefix}-${digitsOnly}`;
@@ -312,6 +316,7 @@ export default function TutorModal({
         if (result?.tutor) {
           const tutorData = result.tutor;
           setExistingTutor(tutorData);
+          setExistingPerson(false);
           setViewOnlyMode(true);
 
           const areaCode = tutorData.phone ? tutorData.phone.substring(0, 4) : "";
@@ -339,6 +344,10 @@ export default function TutorModal({
           setValue("carreras", tutorData.carreras || []);
         } else if (result?.person) {
           // Persona existe (estudiante, usuario, etc.) pero no como tutor → pre-cargar datos
+          setExistingTutor(null);
+          setExistingPerson(true);
+          setViewOnlyMode(false);
+
           const personData = result.person;
           setValue("identificationPrefix", personData.identificationPrefix || 'V');
           setDisplayIdentificationNumber(formatCedulaDisplay(personData.identificationNumber || ''));
@@ -347,6 +356,9 @@ export default function TutorModal({
           setValue("middleName", personData.middleName || "");
           setValue("lastName", personData.lastName || "");
           setValue("secondLastName", personData.secondLastName || "");
+          setValue("sex", personData.gender || "");
+          setValue("birthDate", personData.birthDate || "");
+          setValue("civilStatus", personData.maritalStatus || "");
           setValue("email", personData.email || "");
 
           const areaCode = personData.phone ? personData.phone.substring(0, 4) : "";
@@ -381,7 +393,7 @@ export default function TutorModal({
   // Handler onBlur para verificar CI existente al salir del campo
   const handleCiBlur = useCallback(
     async (e: React.FocusEvent<HTMLInputElement>) => {
-      if (!existingTutor && !editingTutor) {
+      if (!existingTutor && !existingPerson && !editingTutor) {
         const val = e.target.value;
         const digitsOnly = val.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
         if (digitsOnly.length >= 6) {
@@ -393,6 +405,7 @@ export default function TutorModal({
             if (result?.tutor) {
               const tutorData = result.tutor;
               setExistingTutor(tutorData);
+              setExistingPerson(false);
               setViewOnlyMode(true);
 
               const areaCode = tutorData.phone ? tutorData.phone.substring(0, 4) : "";
@@ -420,6 +433,10 @@ export default function TutorModal({
               setValue("carreras", tutorData.carreras || []);
             } else if (result?.person) {
               // Persona existe (estudiante, usuario, etc.) pero no como tutor → pre-cargar datos
+              setExistingTutor(null);
+              setExistingPerson(true);
+              setViewOnlyMode(false);
+
               const personData = result.person;
               setValue("identificationPrefix", personData.identificationPrefix || 'V');
               setDisplayIdentificationNumber(formatCedulaDisplay(personData.identificationNumber || ''));
@@ -428,6 +445,9 @@ export default function TutorModal({
               setValue("middleName", personData.middleName || "");
               setValue("lastName", personData.lastName || "");
               setValue("secondLastName", personData.secondLastName || "");
+              setValue("sex", personData.gender || "");
+              setValue("birthDate", personData.birthDate || "");
+              setValue("civilStatus", personData.maritalStatus || "");
               setValue("email", personData.email || "");
 
               const areaCode = personData.phone ? personData.phone.substring(0, 4) : "";
@@ -450,12 +470,12 @@ export default function TutorModal({
         }
       }
     },
-    [existingTutor, editingTutor, watch, setValue, setError, clearErrors]
+    [existingTutor, existingPerson, editingTutor, watch, setValue, setError, clearErrors]
   );
 
   // Handle CI lookup via external API (SENIAT / CNE)
   const handleCiLookup = useCallback(async () => {
-    if (existingTutor || editingTutor || isLookingUpCi) return;
+    if (existingTutor || existingPerson || editingTutor || isLookingUpCi) return;
 
     const rawCi = watch("identificationNumber") || "";
     const digitsOnly = rawCi.replace(/\D/g, "").substring(0, CEDULA_MAX_DIGITS);
@@ -504,7 +524,7 @@ export default function TutorModal({
     } finally {
       setIsLookingUpCi(false);
     }
-  }, [existingTutor, editingTutor, isLookingUpCi, watch, setValue, addToast]);
+  }, [existingTutor, existingPerson, editingTutor, isLookingUpCi, watch, setValue, addToast]);
 
   // Email blur handler: check email availability (cross-entity)
   const handleEmailBlur = useCallback(
@@ -763,6 +783,7 @@ export default function TutorModal({
     if (isOpen) {
       // Limpiar estados de duplicado cuando se abre el modal
       setExistingTutor(null);
+      setExistingPerson(false);
       setViewOnlyMode(false);
       
       if (editingTutor) {

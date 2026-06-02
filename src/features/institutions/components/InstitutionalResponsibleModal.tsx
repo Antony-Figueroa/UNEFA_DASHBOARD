@@ -168,6 +168,7 @@ export default function InstitutionalResponsibleModal({
     const [isLookingUpCi, setIsLookingUpCi] = useState(false);
     const [isCheckingEmail, setIsCheckingEmail] = useState(false);
    const [existingResponsible, setExistingResponsible] = useState<any | null>(null);
+   const [existingPerson, setExistingPerson] = useState(false);
    const [viewOnlyMode, setViewOnlyMode] = useState(false);
 
 // Check if institutional responsible exists by CI
@@ -192,11 +193,13 @@ export default function InstitutionalResponsibleModal({
         } else if (result?.person) {
           // Persona existe (estudiante, tutor, etc.) pero no como responsable → pre-cargar datos
           setExistingResponsible(null);
+          setExistingPerson(true);
           setViewOnlyMode(false);
           preFillFromPersonData(result.person);
         } else {
           // CI is available, clear any existing data
           setExistingResponsible(null);
+          setExistingPerson(false);
           setViewOnlyMode(false);
         }
       } catch (error) {
@@ -333,12 +336,15 @@ export default function InstitutionalResponsibleModal({
      setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
      clearErrors("identificationNumber");
      
-     // Si se cambia la cédula y hay un existingResponsible, limpiar el formulario
-     if (existingResponsible) {
-       const currentStoredDigits = existingResponsible.identificationNumber?.replace(/\D/g, '') || '';
+     // Si se cambia la cédula y hay un existingResponsible o existingPerson, limpiar el formulario
+     if (existingResponsible || existingPerson) {
+       const currentStoredDigits = existingResponsible
+         ? existingResponsible.identificationNumber?.replace(/\D/g, '') || ''
+         : '';
        // Si el usuario borró al menos 1 carácter o cambió algo
-       if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits) {
+       if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits || !existingResponsible) {
          setExistingResponsible(null);
+         setExistingPerson(false);
          setViewOnlyMode(false);
          clearErrors("identificationNumber");
          // Resetear los campos del formulario
@@ -359,7 +365,7 @@ export default function InstitutionalResponsibleModal({
      }
      
 // Trigger CI check ONLY when we have exactly 7 or 8 digits (not before)
-     if (!existingResponsible && !editingResp && (digitsOnly.length === 7 || digitsOnly.length === 8)) {
+     if (!existingResponsible && !existingPerson && !editingResp && (digitsOnly.length === 7 || digitsOnly.length === 8)) {
        checkInstitutionalResponsibleByCi(digitsOnly);
      }
    };
@@ -367,7 +373,7 @@ export default function InstitutionalResponsibleModal({
   // CI blur handler: check availability when user leaves the CI field
   const handleCiBlur = useCallback(
     async (e: React.FocusEvent<HTMLInputElement>) => {
-      if (!existingResponsible && !editingResp) {
+      if (!existingResponsible && !existingPerson && !editingResp) {
         const val = e.target.value;
         const digitsOnly = val.replace(/\D/g, '').substring(0, CEDULA_MAX_DIGITS);
         if (digitsOnly.length >= 6) {
@@ -382,10 +388,12 @@ export default function InstitutionalResponsibleModal({
               fillFormWithExistingData(result.responsible);
             } else if (result?.person) {
               setExistingResponsible(null);
+              setExistingPerson(true);
               setViewOnlyMode(false);
               preFillFromPersonData(result.person);
             } else {
               setExistingResponsible(null);
+              setExistingPerson(false);
               setViewOnlyMode(false);
             }
           } catch (err) {
@@ -396,12 +404,12 @@ export default function InstitutionalResponsibleModal({
         }
       }
     },
-    [existingResponsible, editingResp, watch, setValue, setError, clearErrors]
+    [existingResponsible, existingPerson, editingResp, watch, setValue, setError, clearErrors]
   );
 
   // Handle CI lookup via external API (SENIAT / CNE)
   const handleCiLookup = useCallback(async () => {
-    if (existingResponsible || editingResp || isLookingUpCi) return;
+    if (existingResponsible || existingPerson || editingResp || isLookingUpCi) return;
 
     const rawCi = watch("identificationNumber") || "";
     const digitsOnly = rawCi.replace(/\D/g, "").substring(0, CEDULA_MAX_DIGITS);
@@ -450,7 +458,7 @@ export default function InstitutionalResponsibleModal({
     } finally {
       setIsLookingUpCi(false);
     }
-  }, [existingResponsible, editingResp, isLookingUpCi, watch, setValue, addToast]);
+  }, [existingResponsible, existingPerson, editingResp, isLookingUpCi, watch, setValue, addToast]);
 
   // Handle phone number input change with formatting
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -531,6 +539,7 @@ export default function InstitutionalResponsibleModal({
       // Limpiar estados cuando se abre el modal para nuevo registro
       if (!editingResp) {
         setExistingResponsible(null);
+        setExistingPerson(false);
         setViewOnlyMode(false);
         setDisplayIdentificationNumber("");
         setDisplayPhoneNumber("");
@@ -722,6 +731,7 @@ export default function InstitutionalResponsibleModal({
 
    const handleClose = () => {
      setExistingResponsible(null);
+     setExistingPerson(false);
      setViewOnlyMode(false);
      onClose();
    };
@@ -731,6 +741,7 @@ export default function InstitutionalResponsibleModal({
       // Salir del modo viewOnly para permitir edición
       setViewOnlyMode(false);
       setExistingResponsible(null);
+      setExistingPerson(false);
     };
 
   return (

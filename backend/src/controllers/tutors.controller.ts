@@ -655,6 +655,10 @@ export const getTutorByCi = async (req: Request, res: Response) => {
           secondLastName: person.secondLastName || '',
           email: person.email,
           phone: person.phone || '',
+          birthDate: person.birthDate || '',
+          gender: person.gender || '',
+          address: person.address || '',
+          maritalStatus: person.maritalStatus || '',
         }
       });
     }

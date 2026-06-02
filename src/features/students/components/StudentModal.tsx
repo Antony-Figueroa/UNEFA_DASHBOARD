@@ -87,6 +87,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   
   // State for existing record (when duplicate is found)
   const [existingStudent, setExistingStudent] = useState<any | null>(null);
+  const [existingPerson, setExistingPerson] = useState(false);
   const [viewOnlyMode, setViewOnlyMode] = useState(false);
 
   const {
@@ -132,12 +133,15 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
     setValue("identificationNumber", digitsOnly, { shouldValidate: true });
     clearErrors("identificationNumber");
     
-    // Si se cambia la cédula y hay un existingStudent, limpiar el formulario
-    if (existingStudent) {
-      const currentStoredDigits = existingStudent.identificationNumber?.replace(/\D/g, '') || '';
+    // Si se cambia la cédula y hay un existingStudent o existingPerson, limpiar el formulario
+    if (existingStudent || existingPerson) {
+      const currentStoredDigits = existingStudent
+        ? existingStudent.identificationNumber?.replace(/\D/g, '') || ''
+        : '';
       // Si el usuario borró al menos 1 carácter o cambió algo
-      if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits) {
+      if (digitsOnly.length < currentStoredDigits.length || digitsOnly !== currentStoredDigits || !existingStudent) {
         setExistingStudent(null);
+        setExistingPerson(false);
         setViewOnlyMode(false);
         clearErrors("identificationNumber");
         // Resetear los campos del formulario
@@ -166,7 +170,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
     // Verificar si la cédula existe en BD local mientras escribe (7 u 8 dígitos)
     // NOTA: lookupCi (API externa) SOLO se llama en onBlur (handleCiBlur)
     // para evitar múltiples consultas en cada keystroke y violaciones de reflow
-    if (!existingStudent && !editingStudent && (digitsOnly.length === 7 || digitsOnly.length === 8)) {
+    if (!existingStudent && !existingPerson && !editingStudent && (digitsOnly.length === 7 || digitsOnly.length === 8)) {
       setIsCheckingCi(true);
       const prefix = watch("identificationPrefix") || 'V';
       const fullCi = `${prefix}-${digitsOnly}`;
@@ -176,6 +180,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
           // Estudiante ya existe → modo solo lectura con datos pre-cargados
           const studentData = result.student;
           setExistingStudent(studentData);
+          setExistingPerson(false);
           setViewOnlyMode(true);
           
           // Parse phone number into prefix and local
@@ -209,6 +214,10 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
           setValue("works", studentData.works || "");
         } else if (result?.person) {
           // Persona existe (tutor, usuario, etc.) pero no como estudiante → pre-cargar datos
+          setExistingStudent(null);
+          setExistingPerson(true);
+          setViewOnlyMode(false);
+
           const personData = result.person;
           setValue("identificationPrefix", personData.identificationPrefix || 'V');
           setDisplayIdentificationNumber(formatCedulaDisplay(personData.identificationNumber || ''));
@@ -217,6 +226,10 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
           setValue("middleName", personData.middleName || "");
           setValue("lastName", personData.lastName || "");
           setValue("secondLastName", personData.secondLastName || "");
+          setValue("sex", personData.gender || "");
+          setValue("birthDate", personData.birthDate || "");
+          setValue("civilStatus", personData.maritalStatus || "");
+          setValue("address", personData.address || "");
           setValue("email", personData.email || "");
 
           let phonePrefix = "";
@@ -273,7 +286,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   // CI blur handler: solo verifica disponibilidad en BD local (NO llama a API externa)
   const handleCiBlur = useCallback(
     async (e: React.FocusEvent<HTMLInputElement>) => {
-      if (!existingStudent && !editingStudent) {
+      if (!existingStudent && !existingPerson && !editingStudent) {
         const val = e.target.value;
         const digitsOnly = val.replace(/\D/g, "").substring(0, CEDULA_MAX_DIGITS);
         if (digitsOnly.length >= 6) {
@@ -286,6 +299,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
               // Estudiante ya existe → modo solo lectura con datos pre-cargados
               const studentData = result.student;
               setExistingStudent(studentData);
+              setExistingPerson(false);
               setViewOnlyMode(true);
 
               // Parse phone
@@ -322,6 +336,10 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
               setValue("works", studentData.works || "");
             } else if (result?.person) {
               // Persona existe (tutor, usuario, etc.) pero no como estudiante → pre-cargar datos
+              setExistingStudent(null);
+              setExistingPerson(true);
+              setViewOnlyMode(false);
+
               const personData = result.person;
               setValue("identificationPrefix", personData.identificationPrefix || "V");
               setDisplayIdentificationNumber(
@@ -332,6 +350,10 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
               setValue("middleName", personData.middleName || "");
               setValue("lastName", personData.lastName || "");
               setValue("secondLastName", personData.secondLastName || "");
+              setValue("sex", personData.gender || "");
+              setValue("birthDate", personData.birthDate || "");
+              setValue("civilStatus", personData.maritalStatus || "");
+              setValue("address", personData.address || "");
               setValue("email", personData.email || "");
 
               let phonePrefix = "";
@@ -363,12 +385,12 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
         }
       }
     },
-    [existingStudent, editingStudent, setValue, watch],
+    [existingStudent, existingPerson, editingStudent, setValue, watch],
   );
 
   // Handler para el botón Buscar en SENIAT — consulta API externa SOLO cuando el usuario lo pulsa
   const handleCiLookup = useCallback(async () => {
-    if (existingStudent || editingStudent || isLookingUpCi) return;
+    if (existingStudent || existingPerson || editingStudent || isLookingUpCi) return;
 
     const rawCi = watch("identificationNumber") || "";
     const digitsOnly = rawCi.replace(/\D/g, "").substring(0, CEDULA_MAX_DIGITS);
@@ -417,7 +439,7 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
     } finally {
       setIsLookingUpCi(false);
     }
-  }, [existingStudent, editingStudent, isLookingUpCi, watch, setValue, addToast]);
+  }, [existingStudent, existingPerson, editingStudent, isLookingUpCi, watch, setValue, addToast]);
 
   // Email blur handler: check email availability
   const handleEmailBlur = useCallback(
@@ -649,6 +671,7 @@ useEffect(() => {
     if (isOpen) {
       // Limpiar estados de duplicado cuando se abre el modal
       setExistingStudent(null);
+      setExistingPerson(false);
       setViewOnlyMode(false);
       
       if (editingStudent) {
@@ -716,6 +739,7 @@ useEffect(() => {
     if (!isOpen) {
       // Cuando el modal se cierra, asegurar limpieza
       setExistingStudent(null);
+      setExistingPerson(false);
       setViewOnlyMode(false);
     }
   }, [isOpen]);

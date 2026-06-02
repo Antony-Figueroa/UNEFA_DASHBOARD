@@ -10,6 +10,7 @@ import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { Institution } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
+import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { formatPhoneDisplay } from "../../../utils/inputFormat";
 import { matchSearch } from "../../../utils/searchNormalizer";
@@ -379,11 +380,18 @@ export default function InstitutionTable({
                         className={`${index % 2 === 0 ? "bg-white dark:bg-transparent" : "bg-bg-secondary/50 dark:bg-white/2"} ${selectedIds.includes(i.institutionId) ? "bg-brand-50/30 dark:bg-brand-500/5" : ""}`}
                     >
                         <TableCell>
-                            <Checkbox
-                                checked={selectedIds.includes(i.institutionId)}
-                                onChange={(checked) => handleSelectRow(i.institutionId, checked)}
-                                disabled={i.isInUse}
-                            />
+                            <Tooltip
+                                content={i.isInUse ? "Esta institución está en uso y no puede ser seleccionada para eliminar" : ""}
+                                isDisabled={!i.isInUse}
+                            >
+                                <div>
+                                    <Checkbox
+                                        checked={selectedIds.includes(i.institutionId)}
+                                        onChange={(checked) => handleSelectRow(i.institutionId, checked)}
+                                        disabled={i.isInUse}
+                                    />
+                                </div>
+                            </Tooltip>
                         </TableCell>
                         <TableCell className="font-medium text-text-primary dark:text-white/90">
                             {i.rif}

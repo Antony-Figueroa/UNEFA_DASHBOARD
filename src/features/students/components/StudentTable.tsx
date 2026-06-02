@@ -592,7 +592,7 @@ export default function StudentTable({
                                     <TableCell className="table-cell">
                                         <Tooltip 
                                             content={s.isInUse ? "Este estudiante tiene registros relacionados y no puede ser seleccionado para eliminar" : ""}
-                                            isDisabled={s.isInUse}
+                                            isDisabled={!s.isInUse}
                                         >
                                             <div className="flex items-center justify-center">
                                                 <Checkbox

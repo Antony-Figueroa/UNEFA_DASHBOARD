@@ -122,16 +122,15 @@ export function RecordListModal({ isOpen, onClose, recordType, onSelect }: Recor
                   <tr className="bg-gray-50 dark:bg-white/5 border-b border-border-default dark:border-border-dark">
                     {isPractice ? (
                       <>
-                        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">ID</th>
                         <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Estudiante</th>
                         <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">CI</th>
                         <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Carrera</th>
                         <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Institución</th>
                         <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Periodo</th>
+                        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Estado</th>
                       </>
                     ) : (
                       <>
-                        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">ID</th>
                         <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Nombre</th>
                         <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">CI</th>
                         <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Email</th>
@@ -149,16 +148,21 @@ export function RecordListModal({ isOpen, onClose, recordType, onSelect }: Recor
                     >
                       {isPractice ? (
                         <>
-                          <td className="px-4 py-3 font-medium text-text-primary">{item.practiceId}</td>
                           <td className="px-4 py-3 text-text-primary">{item.studentName}</td>
                           <td className="px-4 py-3 text-text-secondary">{item.studentCi}</td>
                           <td className="px-4 py-3 text-text-secondary">{item.careerName}</td>
                           <td className="px-4 py-3 text-text-secondary hidden md:table-cell">{item.institutionName || '-'}</td>
                           <td className="px-4 py-3 text-text-secondary hidden md:table-cell">{item.period || '-'}</td>
+                          <td className="px-4 py-3 text-text-secondary hidden md:table-cell">
+                            <span className={`text-xs font-medium ${
+                              item.status === 1 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'
+                            }`}>
+                              {item.status === 1 ? 'Activo' : 'Inactivo'}
+                            </span>
+                          </td>
                         </>
                       ) : (
                         <>
-                          <td className="px-4 py-3 font-medium text-text-primary">{item.tutorId}</td>
                           <td className="px-4 py-3 text-text-primary">{item.fullName}</td>
                           <td className="px-4 py-3 text-text-secondary">{item.ci}</td>
                           <td className="px-4 py-3 text-text-secondary">{item.email}</td>
@@ -175,20 +179,49 @@ export function RecordListModal({ isOpen, onClose, recordType, onSelect }: Recor
               <p className="text-xs text-text-tertiary">
                 {total} registro{total !== 1 ? 's' : ''} — Página {currentPageLabel} de {totalPages}
               </p>
-              <div className="flex gap-1">
+              <div className="flex items-center gap-1">
                 <button
                   onClick={() => setPage(p => Math.max(0, p - 1))}
                   disabled={page === 0}
                   className="px-3 py-1.5 text-sm rounded-lg border border-border-default dark:border-border-dark disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
                 >
-                  ← Anterior
+                  ←
                 </button>
+
+                {/* Page numbers */}
+                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                  // Window logic: show pages around current, with first+last
+                  let pageNum: number;
+                  if (totalPages <= 7) {
+                    pageNum = i;
+                  } else if (page < 4) {
+                    pageNum = i;
+                  } else if (page > totalPages - 5) {
+                    pageNum = totalPages - 7 + i;
+                  } else {
+                    pageNum = page - 3 + i;
+                  }
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setPage(pageNum)}
+                      className={`w-8 h-8 text-sm rounded-lg transition-colors ${
+                        pageNum === page
+                          ? 'bg-brand-500 text-white font-semibold'
+                          : 'hover:bg-gray-50 dark:hover:bg-white/5 border border-border-default dark:border-border-dark'
+                      }`}
+                    >
+                      {pageNum + 1}
+                    </button>
+                  );
+                })}
+
                 <button
                   onClick={() => setPage(p => p + 1)}
                   disabled={page >= totalPages - 1}
                   className="px-3 py-1.5 text-sm rounded-lg border border-border-default dark:border-border-dark disabled:opacity-40 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
                 >
-                  Siguiente →
+                  →
                 </button>
               </div>
             </div>

@@ -76,18 +76,17 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
 
     const practiceIds = practices.map((p: any) => p.PROFESSIONAL_PRACTICE_ID);
 
-    const { data: tracking } = await supabase
-      .from('t_tracking')
-      .select('PROFESSIONAL_PRACTICE_ID, HOURS_WORKED, TRACKING_DATE')
-      .eq('STATUS', 1)
+    const { data: visits } = await supabase
+      .from('t_practice_visits')
+      .select('PROFESSIONAL_PRACTICE_ID, HOURS_WORKED, VISIT_DATE')
       .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
 
     const hoursMap = new Map<number, { total: number; lastDate: string }>();
-    (tracking || []).forEach((t: any) => {
+    (visits || []).forEach((t: any) => {
       const existing = hoursMap.get(t.PROFESSIONAL_PRACTICE_ID) || { total: 0, lastDate: '' };
       existing.total += t.HOURS_WORKED || 0;
-      if (t.TRACKING_DATE && (!existing.lastDate || t.TRACKING_DATE > existing.lastDate)) {
-        existing.lastDate = t.TRACKING_DATE;
+      if (t.VISIT_DATE && (!existing.lastDate || t.VISIT_DATE > existing.lastDate)) {
+        existing.lastDate = t.VISIT_DATE;
       }
       hoursMap.set(t.PROFESSIONAL_PRACTICE_ID, existing);
     });

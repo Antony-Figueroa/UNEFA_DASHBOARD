@@ -189,9 +189,10 @@ export const reportsService = {
     return response.data;
   },
 
-  listPractices: async (page = 0, limit = 10, q = ''): Promise<PaginatedResponse<PracticeSearchResult>> => {
+  listPractices: async (page = 0, limit = 10, q = '', documentType?: string): Promise<PaginatedResponse<PracticeSearchResult>> => {
     const params = new URLSearchParams({ page: String(page), limit: String(limit) });
     if (q) params.append('q', q);
+    if (documentType) params.append('documentType', documentType);
     const response = await apiClient.get(`/institutional-documents/list-practices?${params.toString()}`);
     return response.data;
   },

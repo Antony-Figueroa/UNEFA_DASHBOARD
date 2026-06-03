@@ -49,7 +49,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   evaluationId,
   onSuccess
 }) => {
-  const { criteria, fetchCriteria, createEvaluation, updateEvaluation, loading } = useEvaluations();
+  const { criteria, fetchCriteria, createEvaluation, updateEvaluation, loading, error: submitError } = useEvaluations();
   const { config } = useSystemEvaluationConfig();
   const scoreRange = { min: config.score.min, max: config.score.max };
   const midpoint = scoreRange.min + Math.floor((scoreRange.max - scoreRange.min) / 2);
@@ -260,6 +260,23 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
       ) : (
         <form onSubmit={handleSubmit(onSubmit)}>
           <ModalBody className="space-y-6">
+            {submitError && (
+              <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800/50">
+                <div className="flex items-start gap-2">
+                  <svg className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-medium text-red-800 dark:text-red-300">
+                      Error al guardar
+                    </p>
+                    <p className="text-sm text-red-700 dark:text-red-400 mt-0.5">
+                      {submitError}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

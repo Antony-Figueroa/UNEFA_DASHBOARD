@@ -12,6 +12,7 @@ export interface ReminderRule {
   targetRoleName: TargetRoleName;
   templateTitle: string;
   templateMessage: string;
+  sendEmail: boolean;
   createdAt: string;
   updatedAt: string;
 }

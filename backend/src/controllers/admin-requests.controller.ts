@@ -197,7 +197,7 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
         STUDENT_ID,
         REQUEST_TYPE_ID,
         IS_REASSIGNMENT,
-        t_request_types (NAME, IS_REASSIGNMENT, CATEGORY),
+        t_request_types (NAME, IS_REASSIGNMENT, CATEGORY)
       `)
       .eq('REQUEST_ID', id)
       .single() as { data: any };

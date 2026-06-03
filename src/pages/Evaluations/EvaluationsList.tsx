@@ -9,10 +9,11 @@ import EvaluationDetailModal from '../../features/evaluations/components/Evaluat
 import { EvaluatorType, EvaluationStatus } from '../../features/evaluations/types';
 import { useSystemEvaluationConfig } from '../../features/evaluations/hooks/useSystemEvaluationConfig';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
-import { CheckCircleIcon, TimeIcon, AlertIcon, EyeIcon } from '../../icons';
+import { CheckCircleIcon, TimeIcon, AlertIcon, EyeIcon, LockIcon } from '../../icons';
 import apiClient from '../../api/apiClient';
 import toast from 'react-hot-toast';
 import { matchSearch } from '../../utils/searchNormalizer';
+import { useAuth } from '../../context/auth';
 
 interface PracticeWithStudent {
   professionalPracticeId: number;
@@ -30,6 +31,9 @@ interface ApiPracticeResponse {
 
 export default function EvaluationsPage() {
   const { config: evalConfig } = useSystemEvaluationConfig();
+  const { user } = useAuth();
+  const isReadOnly = user?.role === 2; // ASISTENTE = solo lectura
+
   const [pageLoading, setPageLoading] = useState(true);
   const [practices, setPractices] = useState<PracticeWithStudent[]>([]);
   const [practicesLoading, setPracticesLoading] = useState(true);
@@ -130,15 +134,31 @@ export default function EvaluationsPage() {
           >
             <EyeIcon className="w-4 h-4" />
           </button>
-          <button
-            onClick={() => handleOpenEvaluation(practice, type)}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
-            title="Editar evaluación"
-          >
-            <CheckCircleIcon className="w-4 h-4" />
-            <span>{evaluation.score.toFixed(1)}</span>
-          </button>
+          {isReadOnly ? (
+            <span className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-lg cursor-not-allowed" title="Solo lectura: no puedes editar evaluaciones">
+              <LockIcon className="w-4 h-4" />
+              <span>{evaluation.score.toFixed(1)}</span>
+            </span>
+          ) : (
+            <button
+              onClick={() => handleOpenEvaluation(practice, type)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+              title="Editar evaluación"
+            >
+              <CheckCircleIcon className="w-4 h-4" />
+              <span>{evaluation.score.toFixed(1)}</span>
+            </button>
+          )}
         </div>
+      );
+    }
+
+    if (isReadOnly) {
+      return (
+        <span className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-lg cursor-not-allowed" title="Solo lectura: no puedes crear evaluaciones">
+          <LockIcon className="w-4 h-4" />
+          <span>Pendiente</span>
+        </span>
       );
     }
 
@@ -216,6 +236,17 @@ export default function EvaluationsPage() {
               </SkeletonLoader>
             </div>
           </div>
+
+          {isReadOnly && (
+            <div className="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40">
+              <div className="flex items-start gap-2">
+                <LockIcon className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                <p className="text-sm text-amber-800 dark:text-amber-300">
+                  Modo solo lectura: tu rol de ASISTENTE no permite crear o editar evaluaciones.
+                </p>
+              </div>
+            </div>
+          )}
 
           <ComponentCard title="Prácticas Profesionales">
             <div className="mb-4">

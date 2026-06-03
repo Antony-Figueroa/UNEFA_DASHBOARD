@@ -121,10 +121,6 @@ interface DocumentReportModalProps {
 
 export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentReportModalProps) {
   const config = DOCUMENT_CONFIG[documentType];
-
-  // Early return ANTES de cualquier hook para evitar "Rendered more hooks than during previous render"
-  if (!config) return null;
-
   const isPracticeDoc = PRACTICE_DOCS.has(documentType);
   const isTutorDoc = TUTOR_DOCS.has(documentType);
 
@@ -193,11 +189,12 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
     }
   };
 
-  const Template = config.pdfTemplate;
-
   const renderTemplate = useCallback(
-    (data: any) => <Template data={data} textos={textos} />,
-    [Template, textos]
+    (data: any) => {
+      const Tpl = DOCUMENT_CONFIG[documentType]?.pdfTemplate;
+      return Tpl ? <Tpl data={data} textos={textos} /> : null;
+    },
+    [documentType, textos]
   );
 
   const searchSubtitle = isPracticeDoc
@@ -205,6 +202,9 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
     : isTutorDoc
       ? 'Buscá el tutor por CI o nombre, o explorá la lista de tutores'
       : 'Ingresá el ID del registro para generar el documento';
+
+  // Guard después de TODOS los hooks
+  if (!config) return null;
 
   return (
     <>
@@ -236,8 +236,6 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
                       CI: {isPracticeDoc ? item.studentCi : item.ci}
                       {isPracticeDoc && item.careerName && ` · ${item.careerName}`}
                       {!isPracticeDoc && item.careers && ` · ${item.careers}`}
-                      {isPracticeDoc && ` · ID: ${item.practiceId}`}
-                      {!isPracticeDoc && ` · ID: ${item.tutorId}`}
                     </p>
                   </div>
                 )}
@@ -295,11 +293,10 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
           isOpen={showPdf}
           onClose={() => { setShowPdf(false); onClose(); }}
           title={config.title}
-          subtitle={`ID: ${recordId}`}
+          subtitle={`${config.title}`}
           data={pdfData}
           template={renderTemplate}
           fileName={`${documentType}_${recordId}`}
-          recordInfo={{ label: config.idLabel, value: recordId }}
         />
       )}
     </>

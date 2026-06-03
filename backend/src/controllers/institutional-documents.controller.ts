@@ -19,7 +19,7 @@ async function getPracticeBase(supabase: any, practiceId: number) {
       t_career!inner(CAREER_NAME, CAREER_ABBREVIATION),
       t_institution(INSTITUTION_NAME, INSTITUTION_TYPE, INSTITUTION_ADDRESS,
         REGION, NUCLEUS, EXTENSION, RIF, INSTITUTION_CONTACT),
-      t_internships_period(DESCRIPTION, START_DATE as period_start, END_DATE as period_end),
+      t_internships_period(DESCRIPTION, START_DATE, END_DATE),
       t_internship_type(NAME)
     `)
     .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
@@ -495,22 +495,43 @@ export const getDataConstanciaTutorAcademico = async (req: Request, res: Respons
       return res.status(404).json({ success: false, message: 'Tutor no encontrado' });
     }
 
-    const { data: tracking } = await supabase
-      .from('t_tracking')
-      .select('TOTAL_HOURS, PERIOD_ID')
-      .eq('TUTOR_ID', tutorId)
-      .eq('STATUS', 1)
-      .order('TRACKING_ID', { ascending: false })
-      .limit(1);
+    // Obtener horas desde t_practice_visits (t_tracking no existe)
+    const { data: tutorPractices } = await supabase
+      .from('t_professional_practices_tutor')
+      .select('PROFESSIONAL_PRACTICE_ID')
+      .eq('TUTOR_ID', tutorId);
 
-    const totalHours = tracking?.[0]?.TOTAL_HOURS || 0;
+    const practiceIds = (tutorPractices || []).map((tp: any) => tp.PROFESSIONAL_PRACTICE_ID);
+    let totalHours = 0;
+    let activePeriodId: number | null = null;
+
+    if (practiceIds.length > 0) {
+      const { data: visits } = await supabase
+        .from('t_practice_visits')
+        .select('PROFESSIONAL_PRACTICE_ID, HOURS_WORKED')
+        .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
+
+      (visits || []).forEach((v: any) => {
+        totalHours += Number(v.HOURS_WORKED || 0);
+      });
+
+      // Usar el período de la práctica más reciente
+      const { data: latest } = await supabase
+        .from('t_professional_practices')
+        .select('PERIOD_ID')
+        .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
+        .eq('STATUS', 1)
+        .order('START_DATE', { ascending: false })
+        .limit(1);
+      activePeriodId = latest?.[0]?.PERIOD_ID || null;
+    }
 
     let periodoData = null;
-    if (tracking?.[0]?.PERIOD_ID) {
+    if (activePeriodId) {
       const { data: periodo } = await supabase
         .from('t_internships_period')
         .select('DESCRIPTION, START_DATE, END_DATE')
-        .eq('PERIOD_ID', tracking[0].PERIOD_ID)
+        .eq('PERIOD_ID', activePeriodId)
         .single();
       periodoData = periodo;
     }
@@ -559,27 +580,48 @@ export const getDataConstanciaTutorInstitucional = async (req: Request, res: Res
       return res.status(404).json({ success: false, message: 'Tutor no encontrado' });
     }
 
-    const { data: tracking } = await supabase
-      .from('t_tracking')
-      .select('TOTAL_HOURS, PERIOD_ID')
-      .eq('TUTOR_ID', tutorId)
-      .eq('STATUS', 1)
-      .order('TRACKING_ID', { ascending: false })
-      .limit(1);
+    // Obtener horas desde t_practice_visits (t_tracking no existe)
+    const { data: tutorPractices } = await supabase
+      .from('t_professional_practices_tutor')
+      .select('PROFESSIONAL_PRACTICE_ID')
+      .eq('TUTOR_ID', tutorId);
 
-    const totalHours = tracking?.[0]?.TOTAL_HOURS || 0;
-    let institucionData = null;
+    const practiceIds = (tutorPractices || []).map((tp: any) => tp.PROFESSIONAL_PRACTICE_ID);
+    let totalHours = 0;
+    let activePeriodId: number | null = null;
+
+    if (practiceIds.length > 0) {
+      const { data: visits } = await supabase
+        .from('t_practice_visits')
+        .select('PROFESSIONAL_PRACTICE_ID, HOURS_WORKED')
+        .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
+
+      (visits || []).forEach((v: any) => {
+        totalHours += Number(v.HOURS_WORKED || 0);
+      });
+
+      const { data: latest } = await supabase
+        .from('t_professional_practices')
+        .select('PERIOD_ID')
+        .in('PROFESSIONAL_PRACTICE_ID', practiceIds)
+        .eq('STATUS', 1)
+        .order('START_DATE', { ascending: false })
+        .limit(1);
+      activePeriodId = latest?.[0]?.PERIOD_ID || null;
+    }
+
     let periodoData = null;
-
-    if (tracking?.[0]?.PERIOD_ID) {
+    if (activePeriodId) {
       const { data: periodo } = await supabase
         .from('t_internships_period')
         .select('DESCRIPTION, START_DATE, END_DATE')
-        .eq('PERIOD_ID', tracking[0].PERIOD_ID)
+        .eq('PERIOD_ID', activePeriodId)
         .single();
       periodoData = periodo;
     }
 
+    // Institución asociada al tutor institucional
+    let institucionData = null;
     const { data: ppt } = await supabase
       .from('t_professional_practices_tutor')
       .select('PROFESSIONAL_PRACTICES!inner(PROFESSIONAL_PRACTICE_ID, t_institution(INSTITUTION_NAME))')

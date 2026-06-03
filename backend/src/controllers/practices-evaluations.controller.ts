@@ -111,11 +111,10 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
       .eq('STATUS', 1)
       .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
 
-    // Obtener horas trabajadas
-    const { data: tracking } = await supabase
-      .from('t_tracking')
+    // Obtener horas trabajadas desde t_practice_visits
+    const { data: visits } = await supabase
+      .from('t_practice_visits')
       .select('PROFESSIONAL_PRACTICE_ID, HOURS_WORKED')
-      .eq('STATUS', 1)
       .in('PROFESSIONAL_PRACTICE_ID', practiceIds);
 
     // Obtener estados de culminación
@@ -131,7 +130,7 @@ export const getPracticesWithEvaluations = async (req: AuthRequest, res: Respons
 
     // Map de horas
     const hoursMap = new Map<number, number>();
-    (tracking || []).forEach(t => {
+    (visits || []).forEach(t => {
       const current = hoursMap.get(t.PROFESSIONAL_PRACTICE_ID) || 0;
       hoursMap.set(t.PROFESSIONAL_PRACTICE_ID, current + (t.HOURS_WORKED || 0));
     });
@@ -501,19 +500,8 @@ export const getStudentDetail = async (req: AuthRequest, res: Response) => {
       .eq('PRACTICE_ID', practiceId)
       .single();
 
-    // Obtener horas trabajadas desde tracking
-    const { data: tracking } = await supabase
-      .from('t_tracking')
-      .select('HOURS_WORKED')
-      .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
-      .eq('STATUS', 1);
-
-    let totalHours = (tracking || []).reduce((sum, t) => sum + (t.HOURS_WORKED || 0), 0);
-    
-    // Si no hay horas en tracking, obtenerlas de las visitas
-    if (totalHours === 0 && visits && visits.length > 0) {
-      totalHours = visits.reduce((sum, v) => sum + (v.HOURS_WORKED || 0), 0);
-    }
+    // Obtener horas trabajadas desde t_practice_visits
+    let totalHours = (visits || []).reduce((sum, v) => sum + (v.HOURS_WORKED || 0), 0);
 
     // Procesar estado de evaluaciones
     const evaluatorTypes = Object.keys(evaluationConfig.weights);

@@ -51,9 +51,7 @@ export function SelectionSummary({ type, data, onChange }: SelectionSummaryProps
           {!isPractice && (
             <p className="text-xs text-text-tertiary mt-0.5">{d.email}</p>
           )}
-          <p className="text-xs text-text-tertiary mt-1">
-            ID: {isPractice ? d.practiceId : d.tutorId}
-          </p>
+
         </div>
         <button
           onClick={onChange}

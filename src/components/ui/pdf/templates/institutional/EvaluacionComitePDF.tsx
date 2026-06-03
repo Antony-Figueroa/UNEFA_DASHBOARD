@@ -52,7 +52,7 @@ interface Props {
   data: {
     estudiante: { ci: string; primerNombre: string; segundoNombre?: string; primerApellido: string; segundoApellido?: string };
     carrera: { nombre: string };
-    tutorAcademico: { titulo: string | null; primerNombre: string; segundoNombre?: string; primerApellido: string; segundoApellido?: string } | null;
+    tutorAcademico: { titulo: string | null; primerNombre: string; segundoNombre?: string; primerApellido: string; segundoApellido?: string; ci?: string } | null;
     periodo: { description: string } | null;
     coordinadorPP: { nombreCompleto: string; ci: string; cargo: string } | null;
     coordinadorCarrera: { nombreCompleto: string; ci: string; cargo: string } | null;

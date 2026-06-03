@@ -1,43 +1,21 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Configuración del transportador de nodemailer
-const createTransporter = () => {
-  // Asegurarse de que dotenv esté configurado (aunque ya se llama arriba)
-  dotenv.config();
-  
-  // Solo crear el transportador si las variables de entorno están presentes
-  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    return null;
-  }
-
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true', // true para 465, false para otros
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    tls: {
-      // No fallar en certificados que no coinciden (útil para algunos servidores corporativos)
-      rejectUnauthorized: process.env.NODE_ENV === 'production'
-    }
-  });
-};
-
-const transporter = createTransporter();
+// Inicializar Resend
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 /**
- * Función genérica para enviar correos
+ * Función genérica para enviar correos via Resend
  */
-const sendEmail = async (options: { to: string, subject: string, html: string, text?: string }) => {
-  const fromName = process.env.SMTP_FROM_NAME || 'SIGP UNEFA';
-  const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER;
+export const sendEmail = async (options: { to: string; subject: string; html: string; text?: string }) => {
+  const fromName = process.env.RESEND_FROM_NAME || 'SIGP UNEFA';
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 
-  if (!transporter) {
+  if (!resend) {
     console.log(`
       -----------------------------------------
       SIMULACIÓN DE ENVÍO DE EMAIL
@@ -46,28 +24,27 @@ const sendEmail = async (options: { to: string, subject: string, html: string, t
       Contenido: ${options.text || 'Ver HTML'}
       -----------------------------------------
     `);
-    
-    // Si no hay transportador, es un error de configuración, no deberíamos simular éxito silencioso si SMTP está en el env
-    if (process.env.SMTP_HOST) {
-       console.error('❌ Error crítico: SMTP_HOST existe pero el transportador no se inicializó correctamente.');
-    }
-    
     return true;
   }
 
   try {
-    const info = await transporter.sendMail({
-      from: `"${fromName}" <${fromEmail}>`,
+    const { data, error } = await resend.emails.send({
+      from: `${fromName} <${fromEmail}>`,
       to: options.to,
       subject: options.subject,
-      text: options.text,
       html: options.html,
+      ...(options.text && { text: options.text }),
     });
-    console.log(`✅ Correo enviado a ${options.to}: ${info.messageId}`);
+
+    if (error) {
+      throw error;
+    }
+
+    console.log(`✅ Correo enviado a ${options.to}: ${data?.id}`);
     return true;
   } catch (error) {
     console.error(`❌ Error enviando correo a ${options.to}:`, error);
-    // En desarrollo, no bloqueamos el flujo por error de correo si no es crítico
+    // En desarrollo, no bloqueamos el flujo por error de correo
     if (process.env.NODE_ENV === 'development') {
       console.warn('Continuando flujo a pesar del error de correo (entorno de desarrollo)');
       return true;
@@ -121,7 +98,7 @@ export const sendUserCreationEmail = async (email: string, name: string, userCi:
  */
 export const sendLoginNotification = async (email: string, name: string, ip: string, userAgent: string) => {
   const date = new Date().toLocaleString('es-VE');
-  
+
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 30px; color: #1e293b;">
       <h2 style="color: #1e40af;">Nuevo inicio de sesión</h2>
@@ -134,7 +111,7 @@ export const sendLoginNotification = async (email: string, name: string, ip: str
       <p style="font-size: 0.875rem; color: #64748b;">Si has sido tú, puedes ignorar este mensaje. Si no reconoces este acceso, cambia tu contraseña inmediatamente.</p>
     </div>
   `;
-  
+
   return sendEmail({
     to: email,
     subject: 'Notificación de Acceso - SIGP UNEFA',
@@ -152,22 +129,51 @@ export const sendPasswordRecoveryEmail = async (email: string, name: string, tok
   const validityHours = 24;
 
   const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
-      <div style="background-color: #1e40af; color: white; padding: 20px; text-align: center;">
-        <h1 style="margin: 0;">SIGP UNEFA</h1>
+    <div style="font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); padding: 32px 24px; text-align: center;">
+        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">SIGP UNEFA</h1>
+        <p style="color: rgba(255,255,255,0.75); margin: 6px 0 0; font-size: 14px;">Sistema de Gestión de Personal</p>
       </div>
-      <div style="padding: 30px; color: #1e293b; line-height: 1.6;">
-        <h2 style="color: #1e40af;">Recuperación de Contraseña</h2>
-        <p>Hola ${name}, has solicitado restablecer tu contraseña para acceder al Panel de Control UNEFA.</p>
-        <p>Para continuar con el proceso, haz clic en el siguiente botón seguro:</p>
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${recoveryUrl}" style="background-color: #1e40af; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Restablecer Contraseña</a>
+
+      <!-- Body -->
+      <div style="padding: 32px 32px 24px; color: #1e293b; line-height: 1.6;">
+        <h2 style="color: #1e40af; font-size: 20px; margin: 0 0 16px;">Recuperación de Contraseña</h2>
+        <p style="margin: 0 0 8px;">Hola <strong>${name}</strong>,</p>
+        <p style="margin: 0 0 16px; color: #475569;">
+          Recibimos una solicitud para restablecer la contraseña de tu cuenta en el Sistema de Gestión de Personal UNEFA.
+        </p>
+        <p style="margin: 0 0 20px; color: #475569;">
+          Hacé clic en el siguiente botón para crear una nueva contraseña:
+        </p>
+
+        <!-- Button -->
+        <div style="text-align: center; margin: 24px 0;">
+          <a href="${recoveryUrl}" style="display: inline-block; background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: #ffffff; padding: 14px 36px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 2px 4px rgba(30,64,175,0.3);">
+            Restablecer Contraseña
+          </a>
         </div>
-        <p>O copia y pega el siguiente enlace en tu navegador:</p>
-        <p style="word-break: break-all; color: #1e40af; font-size: 0.875rem;">${recoveryUrl}</p>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;">
-        <p style="font-size: 0.875rem; color: #64748b;">
-          Este enlace tiene una validez de ${validityHours} horas. Si no has solicitado este cambio, puedes ignorar este mensaje.
+
+        <!-- Fallback link -->
+        <p style="margin: 20px 0 8px; font-size: 13px; color: #64748b;">
+          Si el botón no funciona, copiá y pegá este enlace en tu navegador:
+        </p>
+        <p style="word-break: break-all; color: #2563eb; font-size: 13px; background: #f8fafc; padding: 10px 14px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 0 0 24px; font-family: monospace;">${recoveryUrl}</p>
+
+        <!-- Divider -->
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+
+        <!-- Security notice -->
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px 16px; margin: 16px 0;">
+          <p style="margin: 0; font-size: 13px; color: #991b1b;">
+            <strong>⚠️ Importante:</strong> Este enlace expira en ${validityHours} horas. Si no solicitaste este cambio, ignorá este mensaje y contactá al administrador del sistema.
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 24px 0 0;">
+          SIGP UNEFA — Sistema de Gestión de Personal<br>
+          Si tenés dudas, contactá a soporte técnico.
         </p>
       </div>
     </div>
@@ -177,7 +183,7 @@ export const sendPasswordRecoveryEmail = async (email: string, name: string, tok
     to: email,
     subject: 'Recuperación de Contraseña - SIGP UNEFA',
     html,
-    text: `Hola ${name}, restablece tu contraseña en: ${recoveryUrl}`
+    text: `Hola ${name}, restablecé tu contraseña en: ${recoveryUrl}. Este enlace expira en ${validityHours} horas. Si no solicitaste esto, contactá al administrador.`
   });
 };
 
@@ -210,7 +216,7 @@ export const sendSecurityAlert = async (email: string, name: string, type: 'FAIL
   const date = new Date().toLocaleString('es-VE');
   const subject = type === 'ACCOUNT_LOCKED' ? 'ALERTA: Cuenta bloqueada' : 'Intento de acceso detectado';
   const title = type === 'ACCOUNT_LOCKED' ? 'Tu cuenta ha sido bloqueada' : 'Múltiples intentos fallidos';
-  const message = type === 'ACCOUNT_LOCKED' 
+  const message = type === 'ACCOUNT_LOCKED'
     ? 'Debido a múltiples intentos de acceso fallidos, tu cuenta ha sido bloqueada temporalmente por seguridad.'
     : 'Se han detectado varios intentos fallidos de inicio de sesión en tu cuenta.';
 

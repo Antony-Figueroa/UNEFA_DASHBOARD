@@ -8,30 +8,13 @@ import { UnifiedDialog } from '../../../components/ui/dialog/UnifiedDialog';
 import { useReminders } from '../../../features/reminders/hooks/useReminders';
 import {
   ReminderRule,
-  ReminderType,
-  TargetRoleName,
   REMINDER_TYPE_LABELS,
   REMINDER_TYPE_ICONS,
   TARGET_ROLE_LABELS,
 } from '../../../features/reminders/types';
+import ReminderFormModal from '../../../features/reminders/components/ReminderFormModal';
 import { PlusCircleIcon } from '../../../icons/actions';
 import { PencilIcon, TrashBinIcon } from '../../../icons';
-
-// ─── Constantes de formulario ────────────────────────────────────────────
-
-const REMINDER_TYPES = Object.keys(REMINDER_TYPE_LABELS) as ReminderType[];
-const TARGET_ROLES: TargetRoleName[] = ['all', 'admin', 'asistente', 'tutor', 'estudiante'];
-
-const FORM_DEFAULTS = {
-  name: '',
-  description: '',
-  type: 'pending_evaluation' as ReminderType,
-  active: true,
-  daysThreshold: null as number | null,
-  targetRoleName: 'tutor' as TargetRoleName,
-  templateTitle: '',
-  templateMessage: '',
-};
 
 // ─── Componente principal ────────────────────────────────────────────────
 
@@ -41,7 +24,6 @@ const ReminderConfigPage = () => {
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<ReminderRule | null>(null);
-  const [form, setForm] = useState(FORM_DEFAULTS);
   const [saving, setSaving] = useState(false);
 
   // Confirm delete
@@ -51,32 +33,21 @@ const ReminderConfigPage = () => {
 
   const openCreate = () => {
     setEditingRule(null);
-    setForm(FORM_DEFAULTS);
     setIsModalOpen(true);
   };
 
   const openEdit = (rule: ReminderRule) => {
     setEditingRule(rule);
-    setForm({
-      name: rule.name,
-      description: rule.description,
-      type: rule.type,
-      active: rule.active,
-      daysThreshold: rule.daysThreshold,
-      targetRoleName: rule.targetRoleName,
-      templateTitle: rule.templateTitle,
-      templateMessage: rule.templateMessage,
-    });
     setIsModalOpen(true);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (form: any) => {
     setSaving(true);
     try {
       if (editingRule) {
         await updateRule(editingRule.id, form);
       } else {
-        await createRule(form as any);
+        await createRule(form);
       }
       setIsModalOpen(false);
     } finally {
@@ -143,140 +114,15 @@ const ReminderConfigPage = () => {
         </ComponentCard>
       </div>
 
-      {/* Edit/Create modal */}
-      <UnifiedDialog
+      {/* Edit/Create modal — key remounts for fresh form state */}
+      <ReminderFormModal
+        key={`reminder-modal-${editingRule?.id ?? 'new'}`}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingRule ? 'Editar recordatorio' : 'Nuevo recordatorio'}
-        variant="info"
-        size="lg"
-      >
-        <div className="space-y-5">
-          {/* Nombre */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Nombre
-            </label>
-            <input
-              type="text"
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-              value={form.name}
-              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              placeholder="Ej: Evaluaciones 5 días"
-            />
-          </div>
-
-          {/* Descripción */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Descripción
-            </label>
-            <input
-              type="text"
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-              value={form.description}
-              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              placeholder="Breve descripción del recordatorio"
-            />
-          </div>
-
-          {/* Tipo (solo editable al crear) */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Tipo
-              </label>
-              <select
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                value={form.type}
-                onChange={e => setForm(f => ({ ...f, type: e.target.value as ReminderType }))}
-                disabled={!!editingRule}
-              >
-                {REMINDER_TYPES.map(t => (
-                  <option key={t} value={t}>
-                    {REMINDER_TYPE_ICONS[t]} {REMINDER_TYPE_LABELS[t]}
-                  </option>
-                ))}
-              </select>
-              {editingRule && (
-                <p className="mt-1 text-xs text-gray-400">El tipo no se puede cambiar después de crear la regla.</p>
-              )}
-            </div>
-
-            {/* Días */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Días de anticipación
-              </label>
-              <input
-                type="number"
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-                value={form.daysThreshold ?? ''}
-                onChange={e => setForm(f => ({ ...f, daysThreshold: e.target.value ? Number(e.target.value) : null }))}
-                placeholder="Ej: 3"
-                min={0}
-              />
-              <p className="mt-1 text-xs text-gray-400">Dejá vacío para sin límite de días.</p>
-            </div>
-          </div>
-
-          {/* Rol destino */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Dirigido a
-            </label>
-            <select
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-              value={form.targetRoleName}
-              onChange={e => setForm(f => ({ ...f, targetRoleName: e.target.value as TargetRoleName }))}
-            >
-              {TARGET_ROLES.map(r => (
-                <option key={r} value={r}>{TARGET_ROLE_LABELS[r]}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Template título */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Título de la notificación
-            </label>
-            <input
-              type="text"
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
-              value={form.templateTitle}
-              onChange={e => setForm(f => ({ ...f, templateTitle: e.target.value }))}
-              placeholder="Ej: 📋 Evaluación pendiente"
-            />
-          </div>
-
-          {/* Template mensaje */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Mensaje
-            </label>
-            <textarea
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 min-h-[80px]"
-              value={form.templateMessage}
-              onChange={e => setForm(f => ({ ...f, templateMessage: e.target.value }))}
-              placeholder="Ej: Tenés {{count}} evaluación(es) sin calificar."
-            />
-            <p className="mt-1 text-xs text-gray-400">
-              Variables disponibles: {'{{count}}'}, {'{{student}}'}, {'{{date}}'}, {'{{docs}}'}, {'{{lastDate}}'}
-            </p>
-          </div>
-
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
-              Cancelar
-            </Button>
-            <Button variant="primary" onClick={handleSave} disabled={saving || !form.name}>
-              {saving ? 'Guardando...' : editingRule ? 'Guardar cambios' : 'Crear recordatorio'}
-            </Button>
-          </div>
-        </div>
-      </UnifiedDialog>
+        onSave={handleSave}
+        editingRule={editingRule}
+        saving={saving}
+      />
 
       {/* Delete confirmation */}
       <UnifiedDialog
@@ -334,20 +180,25 @@ const RuleRow = ({ rule, index, onToggle, onEdit, onDelete }: RuleRowProps) => {
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="font-medium text-gray-900 dark:text-white truncate">
             {rule.name}
           </span>
-          <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 uppercase">
+          <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 uppercase whitespace-nowrap">
             {TARGET_ROLE_LABELS[rule.targetRoleName]}
           </span>
+          {rule.sendEmail && (
+            <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 whitespace-nowrap">
+              email
+            </span>
+          )}
           {isSeed && (
-            <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+            <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 whitespace-nowrap">
               preset
             </span>
           )}
           {rule.daysThreshold !== null && (
-            <span className="text-xs px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+            <span className="text-xs px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 whitespace-nowrap">
               {rule.daysThreshold}d
             </span>
           )}

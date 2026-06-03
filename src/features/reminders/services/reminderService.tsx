@@ -1,7 +1,7 @@
 import apiClient from '../../../api/apiClient';
 import { ReminderRule } from '../types';
 
-const BASE_URL = '/api/reminder-config';
+const BASE_URL = '/reminder-config';
 
 export const reminderService = {
   getAll: async (): Promise<ReminderRule[]> => {

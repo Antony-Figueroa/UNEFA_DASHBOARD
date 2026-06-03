@@ -10,12 +10,13 @@ interface RecordListModalProps {
   isOpen: boolean;
   onClose: () => void;
   recordType: 'practice' | 'tutor';
+  documentType?: string;
   onSelect: (item: PracticeSearchResult | TutorSearchResult) => void;
 }
 
 const LIMIT = 10;
 
-export function RecordListModal({ isOpen, onClose, recordType, onSelect }: RecordListModalProps) {
+export function RecordListModal({ isOpen, onClose, recordType, documentType, onSelect }: RecordListModalProps) {
   const [page, setPage] = useState(0);
   const [query, setQuery] = useState('');
   const [records, setRecords] = useState<(PracticeSearchResult | TutorSearchResult)[]>([]);
@@ -39,7 +40,7 @@ export function RecordListModal({ isOpen, onClose, recordType, onSelect }: Recor
       setLoading(true);
       try {
         if (recordType === 'practice') {
-          const res = await reportsService.listPractices(page, LIMIT, query);
+          const res = await reportsService.listPractices(page, LIMIT, query, documentType);
           setRecords(res.data);
           setTotal(res.meta.total);
         } else {

@@ -278,6 +278,11 @@ export const getDataEvaluacionFinal = async (req: Request, res: Response) => {
     const estudiante: any = practice.t_students;
     const carrera: any = practice.t_career;
     const institucion: any = practice.t_institution;
+    const evaluaciones = await getEvaluations(supabase, practiceId);
+
+    const evalInst = evaluaciones.find((e: any) => e.evaluatorType === 'INSTITUCIONAL');
+    const evalAcad = evaluaciones.find((e: any) => e.evaluatorType === 'ACADEMICO');
+    const evalComite = evaluaciones.find((e: any) => e.evaluatorType === 'COMITE');
 
     res.json({
       success: true,
@@ -299,6 +304,12 @@ export const getDataEvaluacionFinal = async (req: Request, res: Response) => {
           startDate: practice.START_DATE || '',
           endDate: practice.END_DATE || '',
           grade: practice.GRADE || 0,
+        },
+        evaluaciones: {
+          tutorInstitucional: evalInst ? { parcial: evalInst.totalScore || 0, weight: 40 } : null,
+          tutorAcademico: evalAcad ? { parcial: evalAcad.totalScore || 0, weight: 30 } : null,
+          comiteEvaluador: evalComite ? { parcial: evalComite.totalScore || 0, weight: 30 } : null,
+          notaFinal: practice.GRADE || 0,
         },
       },
     });
@@ -436,6 +447,9 @@ export const getDataEvaluacionComite = async (req: Request, res: Response) => {
       (c: any) => c.TIPO === 'CARRERA' && c.CAREER_ID === practice.CAREER_ID
     );
 
+    const evaluaciones = await getEvaluations(supabase, practiceId);
+    const evalComite = evaluaciones.find((e: any) => e.evaluatorType === 'COMITE');
+
     const formatCoord = (c: any) => c ? {
       coordinadorId: c.COORDINADOR_ID,
       tipo: c.TIPO,
@@ -472,6 +486,7 @@ export const getDataEvaluacionComite = async (req: Request, res: Response) => {
         } : null,
         coordinadorPP: formatCoord(coordinadorPP),
         coordinadorCarrera: formatCoord(coordinadorCarrera),
+        evaluacion: evalComite || null,
       },
     });
   } catch (error) {
@@ -769,18 +784,47 @@ export const searchTutors = async (req: Request, res: Response) => {
 };
 
 /**
- * Lista prácticas paginadas con búsqueda opcional.
- * GET /api/institutional-documents/list-practices?page=0&limit=10&q=termino
+ * Lista prácticas paginadas con búsqueda opcional y filtro por tipo de documento.
+ * GET /api/institutional-documents/list-practices?page=0&limit=10&q=termino&documentType=aceptacion-tutor
  */
 export const listPractices = async (req: Request, res: Response) => {
   try {
     const page = parseInt(String(req.query.page || '0'), 10);
     const limit = parseInt(String(req.query.limit || '10'), 10);
     const q = String(req.query.q || '').trim();
+    const documentType = String(req.query.documentType || '').trim();
     const term = q.length >= 2 ? `%${q}%` : null;
 
     const from = page * limit;
     const to = from + limit - 1;
+
+    // Resolver IDs elegibles según el tipo de documento
+    let eligibleIds: number[] | null = null;
+
+    if (documentType) {
+      if (documentType === 'aceptacion-tutor') {
+        // Prácticas que tienen al menos un tutor asignado
+        const { data: ppt } = await supabase
+          .from('t_professional_practices_tutor')
+          .select('PROFESSIONAL_PRACTICE_ID');
+        eligibleIds = [...new Set((ppt || []).map((r: any) => r.PROFESSIONAL_PRACTICE_ID))];
+      } else if (['evaluacion-final', 'evaluacion-tutor-institucional', 'evaluacion-tutor-academico', 'evaluacion-comite'].includes(documentType)) {
+        const evalTypeMap: Record<string, string> = {
+          'evaluacion-tutor-institucional': 'INSTITUCIONAL',
+          'evaluacion-tutor-academico': 'ACADEMICO',
+          'evaluacion-comite': 'COMITE',
+        };
+        const evaluatorType = evalTypeMap[documentType];
+        let query = supabase.from('t_evaluation').select('PROFESSIONAL_PRACTICE_ID');
+        if (evaluatorType) {
+          query = query.eq('EVALUATOR_TYPE', evaluatorType);
+        }
+        const { data: evals } = await query;
+        eligibleIds = [...new Set((evals || []).map((r: any) => r.PROFESSIONAL_PRACTICE_ID))];
+      }
+      // Para otros tipos (solicitud-institucion, carta-postulacion, acta-validacion):
+      // se filtran por STATUS = 1 abajo
+    }
 
     let query = supabase
       .from('t_professional_practices')
@@ -793,6 +837,17 @@ export const listPractices = async (req: Request, res: Response) => {
         t_institution(INSTITUTION_NAME),
         t_internships_period(DESCRIPTION)
       `, { count: 'exact' });
+
+    // Filtrar por STATUS = 1 (activas) para todos los tipos de documento
+    query = query.eq('STATUS', 1);
+
+    if (eligibleIds !== null && eligibleIds.length >= 0) {
+      if (eligibleIds.length === 0) {
+        // Sin IDs elegibles → resultado vacío
+        return res.json({ success: true, data: [], meta: { total: 0, page, limit } });
+      }
+      query = query.in('PROFESSIONAL_PRACTICE_ID', eligibleIds);
+    }
 
     if (term) {
       query = (query as any).or(`t_students.STUDENTS_CI.ilike.${term},t_students.NAME.ilike.${term},t_students.SURNAME.ilike.${term}`);

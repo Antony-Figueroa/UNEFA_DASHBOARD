@@ -4,17 +4,17 @@
  */
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import PageMeta from '../../components/common/PageMeta';
-import PageBreadcrumb from '../../components/common/PageBreadCrumb';
-import ComponentCard from '../../components/common/ComponentCard';
-import Button from '../../components/ui/button/Button';
-import Badge from '../../components/ui/badge/Badge';
-import type { BadgeColor } from '../../components/ui/badge/Badge';
-import Input from '../../components/form/input/InputField';
-import CustomSelect from '../../components/form/CustomSelect';
-import { Pagination } from '../../components/ui/table';
-import { matchSearch as fuzzyMatch } from '../../utils/searchNormalizer';
-import apiClient from '../../api/apiClient';
+import PageMeta from '../../../components/common/PageMeta';
+import PageBreadcrumb from '../../../components/common/PageBreadCrumb';
+import ComponentCard from '../../../components/common/ComponentCard';
+import Button from '../../../components/ui/button/Button';
+import Badge from '../../../components/ui/badge/Badge';
+import type { BadgeColor } from '../../../components/ui/badge/Badge';
+import Input from '../../../components/form/input/InputField';
+import CustomSelect from '../../../components/form/CustomSelect';
+import { Pagination } from '../../../components/ui/table';
+import { matchSearch as fuzzyMatch } from '../../../utils/searchNormalizer';
+import apiClient from '../../../api/apiClient';
 
 // Icons
 import { 
@@ -24,7 +24,7 @@ import {
   EyeIcon,
   EditIcon,
   CalendarIcon
-} from '../../icons/actions';
+} from '../../../icons/actions';
 
 // Types
 type TabType = 'auth' | 'changes' | 'activities';

@@ -16,8 +16,9 @@ const PasswordRecovery = lazy(() => import("../pages/AuthPages/PasswordRecovery"
 const UserProfiles = lazy(() => import("../pages/UserProfiles"));
 const UserManagementPage = lazy(() => import("../pages/Config/UserManagementPage"));
 const ListsConfiguration = lazy(() => import("../pages/Config/ListsConfiguration"));
-const AuditoriaPage = lazy(() => import("../pages/Auditoria/AuditoriaPage"));
+const AuditoriaPage = lazy(() => import("../features/activity-logs/pages/AuditoriaPage"));
 const RolesPermissions = lazy(() => import("../pages/Config/RolesPermissions"));
+const SystemSettings = lazy(() => import("../pages/Config/SystemSettings"));
 const Maintenance = lazy(() => import("../pages/Config/Maintenance"));
 const Backups = lazy(() => import("../pages/Config/Backups"));
 const LandingConfigPage = lazy(() => import("../pages/Config/LandingConfigPage"));
@@ -336,6 +337,14 @@ export const AppRoutes = () => {
               element={
                 <ProtectedRoute requiredPermissions={['roles:manage']}>
                   <RolesPermissions />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/configure/settings"
+              element={
+                <ProtectedRoute requiredPermissions={['config:view']}>
+                  <SystemSettings />
                 </ProtectedRoute>
               }
             />

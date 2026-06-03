@@ -192,7 +192,7 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
   const renderTemplate = useCallback(
     (data: any) => {
       const Tpl = DOCUMENT_CONFIG[documentType]?.pdfTemplate;
-      return Tpl ? <Tpl data={data} textos={textos} /> : null;
+      return Tpl ? <Tpl data={data} textos={textos} /> : <></>;
     },
     [documentType, textos]
   );
@@ -278,6 +278,7 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
         isOpen={showRecordList}
         onClose={() => setShowRecordList(false)}
         recordType={isPracticeDoc ? 'practice' : 'tutor'}
+        documentType={isPracticeDoc ? documentType : undefined}
         onSelect={(item) => {
           setShowRecordList(false);
           if (isPracticeDoc) {

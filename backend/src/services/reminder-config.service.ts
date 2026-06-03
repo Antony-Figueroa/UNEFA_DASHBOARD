@@ -26,6 +26,7 @@ export interface ReminderRule {
   targetRoleName: 'all' | 'admin' | 'asistente' | 'tutor' | 'estudiante';
   templateTitle: string;
   templateMessage: string;
+  sendEmail: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -45,6 +46,7 @@ const SEED_RULES: ReminderRule[] = [
     active: true,
     daysThreshold: null,
     targetRoleName: 'tutor',
+    sendEmail: false,
     templateTitle: '📋 Evaluación pendiente',
     templateMessage: 'Tenés {{count}} evaluación(es) sin calificar.',
     createdAt: new Date().toISOString(),
@@ -58,6 +60,7 @@ const SEED_RULES: ReminderRule[] = [
     active: true,
     daysThreshold: 3,
     targetRoleName: 'tutor',
+    sendEmail: false,
     templateTitle: '📅 Visita programada',
     templateMessage: 'Tenés una visita con {{student}} para el {{date}}.',
     createdAt: new Date().toISOString(),
@@ -71,6 +74,7 @@ const SEED_RULES: ReminderRule[] = [
     active: true,
     daysThreshold: 7,
     targetRoleName: 'estudiante',
+    sendEmail: false,
     templateTitle: '⚠️ Bitácora pendiente',
     templateMessage: 'No registrás actividades desde {{lastDate}}. Pasó el reporte semanal.',
     createdAt: new Date().toISOString(),
@@ -84,6 +88,7 @@ const SEED_RULES: ReminderRule[] = [
     active: true,
     daysThreshold: null,
     targetRoleName: 'estudiante',
+    sendEmail: false,
     templateTitle: '📄 Documentos pendientes',
     templateMessage: 'Tenés {{count}} documento(s) pendiente(s): {{docs}}.',
     createdAt: new Date().toISOString(),

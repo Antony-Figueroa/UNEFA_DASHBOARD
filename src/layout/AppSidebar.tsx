@@ -21,7 +21,7 @@ import PendingTasksCard from "../components/Sidebar/PendingTasksCard";
 
 type SubNavItem = {
   name: string;
-  path: string;
+  path?: string;
   pro?: boolean;
   new?: boolean;
   /** Legacy: mostrar solo si el usuario tiene este rol */
@@ -29,6 +29,8 @@ type SubNavItem = {
   /** Mostrar solo si el usuario tiene ALGUNO de estos permisos (reemplaza roles) */
   permissions?: string[];
   badge?: string | number;
+  /** Renderiza como encabezado de sección (no es un link) */
+  isHeader?: boolean;
 };
 
 type NavItem = {
@@ -211,15 +213,24 @@ const navItems: NavItem[] = [
     name: "Configuración", icon: <PlugInIcon />,
     permissions: ['users:view', 'lists:view', 'activity-logs:view', 'roles:manage', 'config:view', 'backups:view'],
     subItems: [
+      // 👥 Administración
+      { name: "ADMINISTRACIÓN", isHeader: true },
       { name: "Usuarios", path: "/configure/users", permissions: ['users:view'] },
-      { name: "Listas", path: "/configure/lists", permissions: ['lists:view'] },
-      { name: "Auditoría", path: "/configure/auditoria", permissions: ['activity-logs:view'] },
       { name: "Roles y Permisos", path: "/configure/roles", permissions: ['roles:manage'] },
-      { name: "Mantenimiento", path: "/configure/maintenance", permissions: ['config:view'] },
+      { name: "Auditoría", path: "/configure/auditoria", permissions: ['activity-logs:view'] },
+
+      // 🗂️ Sistema
+      { name: "SISTEMA", isHeader: true },
+      { name: "Parámetros", path: "/configure/settings", permissions: ['config:view'] },
+      { name: "Listas (Combos)", path: "/configure/lists", permissions: ['lists:view'] },
       { name: "Respaldos", path: "/configure/backups", permissions: ['backups:view'] },
+      { name: "Mantenimiento", path: "/configure/maintenance", permissions: ['config:view'] },
+
+      // 🎨 Personalización
+      { name: "PERSONALIZACIÓN", isHeader: true },
       { name: "Landing Page", path: "/configure/landing", permissions: ['config:view'] },
+      { name: "Dashboard", path: "/dashboard/configure", permissions: ['config:view'] },
       { name: "Recordatorios", path: "/configure/reminders", permissions: ['config:view'] },
-      { name: "Dashboard Config", path: "/dashboard/configure", permissions: ['config:view'] },
     ],
   },
   { icon: <DocsIcon />, name: "Manuales", path: "/manuals" },
@@ -352,7 +363,7 @@ const AppSidebar: React.FC = () => {
 
     if (isCollapsed) {
       const popupItems = hasSubmenu
-        ? nav.subItems || []
+        ? (nav.subItems || []).filter((s): s is SubNavItem & { path: string } => !s.isHeader && !!s.path)
         : nav.path ? [{ name: nav.name, path: nav.path }] : [];
 
       const ButtonContent = (
@@ -434,22 +445,34 @@ const AppSidebar: React.FC = () => {
 
           <div className="overflow-hidden transition-all duration-200 ease-out" style={{ maxHeight: isSubmenuOpen ? 500 : 0, opacity: isSubmenuOpen ? 1 : 0 }}>
             <ul className="py-1 pl-4 ml-3 border-l-2 border-border-light/50 dark:border-white/5">
-              {nav.subItems?.map(subItem => (
-                <li key={subItem.name}>
-                  <Link
-                    to={subItem.path}
-                    onClick={() => setIsMobileOpen(false)}
-                    className={`group/sub relative flex items-center gap-2 px-3 py-2 text-theme-sm rounded-lg transition-all duration-200 ${isActive(subItem.path)
-                        ? "text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/20"
-                        : "text-text-secondary hover:text-text-primary hover:bg-gray-50 dark:text-text-tertiary dark:hover:text-white dark:hover:bg-white/3"
-                      }`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all duration-200 ${isActive(subItem.path) ? "bg-brand-500 scale-125" : "bg-text-tertiary/40 group-hover/sub:bg-brand-400"}`} />
-                    <span className="truncate">{subItem.name}</span>
-                    {subItem.new && <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-brand-500 text-white">NUEVO</span>}
-                  </Link>
-                </li>
-              ))}
+              {nav.subItems?.map(subItem => {
+                if (subItem.isHeader) {
+                  return (
+                    <li key={subItem.name} className="pt-4 pb-1 first:pt-0">
+                      <span className="flex items-center gap-2 px-3">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-text-tertiary/50">{subItem.name}</span>
+                        <span className="flex-1 h-px bg-border-light/40 dark:bg-white/5" />
+                      </span>
+                    </li>
+                  );
+                }
+                return (
+                  <li key={subItem.name}>
+                    <Link
+                      to={subItem.path!}
+                      onClick={() => setIsMobileOpen(false)}
+                      className={`group/sub relative flex items-center gap-2 px-3 py-2 text-theme-sm rounded-lg transition-all duration-200 ${subItem.path && isActive(subItem.path)
+                          ? "text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/20"
+                          : "text-text-secondary hover:text-text-primary hover:bg-gray-50 dark:text-text-tertiary dark:hover:text-white dark:hover:bg-white/3"
+                        }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all duration-200 ${subItem.path && isActive(subItem.path) ? "bg-brand-500 scale-125" : "bg-text-tertiary/40 group-hover/sub:bg-brand-400"}`} />
+                      <span className="truncate">{subItem.name}</span>
+                      {subItem.new && <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-brand-500 text-white">NUEVO</span>}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>

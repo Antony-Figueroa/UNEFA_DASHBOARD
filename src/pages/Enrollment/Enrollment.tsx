@@ -3,7 +3,7 @@
  * @description Página principal para la gestión del módulo de Inscripción.
  */
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
@@ -169,6 +169,7 @@ export default function EnrollmentPage() {
     const [isResponsibleModalOpen, setIsResponsibleModalOpen] = useState(false);
     const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
     const [preselectedInstitutionId, setPreselectedInstitutionId] = useState<string | undefined>(undefined);
+    const tutorTargetRef = useRef<string>("academicTutorId");
     const [pdfPeriodFilter, setPdfPeriodFilter] = useState("");
     const [pdfPracticeTypeFilter, setPdfPracticeTypeFilter] = useState("");
     const [pdfSelectedIds, setPdfSelectedIds] = useState<Set<string>>(new Set());
@@ -196,7 +197,11 @@ export default function EnrollmentPage() {
      */
     useEffect(() => {
         const handleAddPreEnrollment = () => setIsPreEnrollmentModalOpen(true);
-        const handleAddTutor = () => setIsTutorModalOpen(true);
+        const handleAddTutor = (e: Event) => {
+            const detail = (e as CustomEvent).detail;
+            tutorTargetRef.current = detail?.targetField || "academicTutorId";
+            setIsTutorModalOpen(true);
+        };
         const handleAddInstitution = () => setIsInstitutionModalOpen(true);
         const handleAddResponsible = (e: Event) => {
             const detail = (e as CustomEvent).detail;
@@ -560,7 +565,7 @@ export default function EnrollmentPage() {
                                     
                                     // Seleccionar el nuevo tutor automáticamente
                                     const selectEvt = new CustomEvent("enrollment:setTutor", { 
-                                        detail: { tutorId: newTutor.tutorId } 
+                                        detail: { tutorId: newTutor.tutorId, targetField: tutorTargetRef.current } 
                                     });
                                     window.dispatchEvent(selectEvt);
                                     

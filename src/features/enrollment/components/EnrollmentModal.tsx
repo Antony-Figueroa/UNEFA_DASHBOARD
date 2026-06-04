@@ -578,7 +578,10 @@ export default function EnrollmentModal({
     const handleSetTutor = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       if (detail && detail.tutorId) {
-        setValue("academicTutorId", detail.tutorId, { shouldValidate: true, shouldDirty: true });
+        const field = detail.targetField || "academicTutorId";
+        if (field === "methodologicalTutorId" || field === "academicTutorId") {
+          setValue(field, detail.tutorId, { shouldValidate: true, shouldDirty: true });
+        }
       }
     };
     window.addEventListener("enrollment:setTutor", handleSetTutor as EventListener);
@@ -961,11 +964,27 @@ export default function EnrollmentModal({
             <div className="lg:col-span-5 space-y-6">
               {/* Card: Tutor Académico */}
               <div className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-border-light dark:border-white/10 shadow-sm space-y-5">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600">
-                    <AcademicCapIcon className="w-5 h-5" />
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600">
+                      <AcademicCapIcon className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-base font-bold text-text-primary dark:text-white">Tutor Académico</h3>
                   </div>
-                  <h3 className="text-base font-bold text-text-primary dark:text-white">Tutor Académico</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      window.dispatchEvent(new CustomEvent("enrollment:addTutor", {
+                        detail: { targetField: "academicTutorId" }
+                      }));
+                    }}
+                    className="shrink-0 text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20 rounded-xl font-bold text-xs px-3 py-1.5"
+                  >
+                    <PlusIcon className="w-3.5 h-3.5 mr-1" />
+                    Nuevo Tutor
+                  </Button>
                 </div>
 
                 <div className="space-y-4">
@@ -1014,11 +1033,27 @@ export default function EnrollmentModal({
 
               {/* Card: Tutor Metodológico */}
               <div className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-border-light dark:border-white/10 shadow-sm space-y-5">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-600">
-                    <UsersIcon className="w-5 h-5" />
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-600">
+                      <UsersIcon className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-base font-bold text-text-primary dark:text-white">Tutor Metodológico</h3>
                   </div>
-                  <h3 className="text-base font-bold text-text-primary dark:text-white">Tutor Metodológico</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      window.dispatchEvent(new CustomEvent("enrollment:addTutor", {
+                        detail: { targetField: "methodologicalTutorId" }
+                      }));
+                    }}
+                    className="shrink-0 text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20 rounded-xl font-bold text-xs px-3 py-1.5"
+                  >
+                    <PlusIcon className="w-3.5 h-3.5 mr-1" />
+                    Nuevo Tutor
+                  </Button>
                 </div>
 
                 <div className="space-y-4">
@@ -1067,11 +1102,25 @@ export default function EnrollmentModal({
 
               {/* Card: Empresa/Institución */}
               <div className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-border-light dark:border-white/10 shadow-sm space-y-5">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-600">
-                    <BuildingOfficeIcon className="w-5 h-5" />
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-600">
+                      <BuildingOfficeIcon className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-base font-bold text-text-primary dark:text-white">Empresa / Institución</h3>
                   </div>
-                  <h3 className="text-base font-bold text-text-primary dark:text-white">Empresa / Institución</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      window.dispatchEvent(new CustomEvent("enrollment:addInstitution"));
+                    }}
+                    className="shrink-0 text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20 rounded-xl font-bold text-xs px-3 py-1.5"
+                  >
+                    <PlusIcon className="w-3.5 h-3.5 mr-1" />
+                    Nueva Empresa
+                  </Button>
                 </div>
 
                 <div className="space-y-4">
@@ -1201,7 +1250,22 @@ export default function EnrollmentModal({
 
                   {/* Responsable */}
                   <div className="space-y-3 pt-2">
-                    <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Responsable Institucional *</label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Responsable Institucional *</label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent("enrollment:addResponsible", { detail: { institutionId: selectedInstitutionId } }));
+                        }}
+                        className="shrink-0 text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20 rounded-xl font-bold text-[10px] px-2 py-1"
+                        disabled={!selectedInstitutionId}
+                      >
+                        <PlusIcon className="w-3 h-3 mr-0.5" />
+                        Nuevo
+                      </Button>
+                    </div>
                     <Controller
                       name="institutionResponsibleId"
                       control={control}

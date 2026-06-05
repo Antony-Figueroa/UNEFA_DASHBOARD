@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Modal } from '../../../components/ui/modal';
 import Button from '../../../components/ui/button/Button';
+import AsyncButton from '../../../components/ui/button/AsyncButton';
 import toast from 'react-hot-toast';
 import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
 import reportsService, { PracticeSearchResult, TutorSearchResult } from '../services/reportsService';
@@ -266,9 +267,9 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
             <Button variant="outline" type="button" onClick={onClose}>
               Cancelar
             </Button>
-            <Button variant="primary" type="button" onClick={handleGenerate} disabled={loading}>
-              {loading ? 'Cargando...' : 'Generar Documento'}
-            </Button>
+            <AsyncButton variant="primary" onClick={handleGenerate} loading={loading}>
+              Generar Documento
+            </AsyncButton>
           </div>
         </div>
       </Modal>

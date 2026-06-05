@@ -11,8 +11,8 @@ interface AsyncActionButtonProps {
   label?: string;
   /** Click handler function that can be async. */
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => Promise<void> | void;
-  /** Visual variant of the button. */
-  variant?: "primary" | "danger" | "success" | "warning" | "info";
+  /** Visual variant of the button. error/info are aliases for danger/primary. */
+  variant?: "primary" | "danger" | "success" | "warning" | "info" | "error";
   /** Additional CSS classes for the button. */
   className?: string;
   /** Whether the button is disabled. */
@@ -74,6 +74,17 @@ export const AsyncActionButton = React.forwardRef<HTMLButtonElement, AsyncAction
       }
     };
 
+    const variantMap: Record<string, "primary" | "danger" | "success" | "warning" | "info"> = {
+      primary: "primary",
+      danger: "danger",
+      error: "danger",
+      success: "success",
+      warning: "warning",
+      info: "info",
+    };
+
+    const resolvedVariant = variantMap[variant] || "primary";
+
     const variantClasses = {
       primary: label 
         ? "bg-bg-secondary dark:bg-white/5 text-text-secondary dark:text-text-tertiary border-transparent hover:border-border-medium dark:hover:border-white/10"
@@ -101,7 +112,7 @@ export const AsyncActionButton = React.forwardRef<HTMLButtonElement, AsyncAction
         disabled={isDisabled}
         className={cn(
           "inline-flex items-center justify-center rounded-xl transition-all border disabled:opacity-50 disabled:cursor-not-allowed active:scale-95",
-          variantClasses[variant],
+          variantClasses[resolvedVariant],
           sizeClasses,
           className
         )}

@@ -111,7 +111,7 @@ const ActionButtons = ({
                     icon={status === 1 ? <TrashIcon /> : <RefreshIcon />}
                     tooltip={isCurrentUser ? "No puedes desactivarte a ti mismo" : (status === 1 ? "Desactivar usuario" : "Activar usuario")}
                     label={isMobile ? (status === 1 ? "Desactivar Usuario" : "Activar Usuario") : undefined}
-                    variant={status === 1 ? "danger" : "success"}
+                    variant={status === 1 ? "error" : "success"}
                     fullWidth={isMobile}
                 />
             )}

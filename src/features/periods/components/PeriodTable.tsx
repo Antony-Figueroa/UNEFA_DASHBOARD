@@ -195,7 +195,7 @@ const ActionButtons = ({
                             icon={<TrashIcon />}
                             tooltip={isDisabled ? disabledTooltip : "Eliminar"}
                             label={isMobile ? "Eliminar Período" : undefined}
-                            variant="danger"
+                            variant="error"
                             fullWidth={isMobile}
                             disabled={isDisabled}
                         />

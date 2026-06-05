@@ -6,6 +6,8 @@
 import { useMemo, useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
+import Button from "../../../components/ui/button/Button";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { Institution } from "../types";
@@ -82,7 +84,7 @@ const ActionButtons = ({
                     icon={activeTab === "Inactivas" ? <RefreshIcon /> : <TrashIcon />}
                     tooltip={activeTab === "Inactivas" ? "Restaurar" : (isInUse ? "Esta institución está en uso y no se puede eliminar" : "Eliminar")}
                     label={isMobile ? (activeTab === "Inactivas" ? "Restaurar Institución" : "Eliminar Institución") : undefined}
-                    variant={activeTab === "Inactivas" ? "success" : "danger"}
+                    variant={activeTab === "Inactivas" ? "success" : "error"}
                     fullWidth={isMobile}
                     disabled={isInUse && activeTab === "Activas"}
                 />
@@ -300,10 +302,7 @@ export default function InstitutionTable({
 
             <div className="flex items-center gap-2">
                 {paged.length > 0 && (
-                    <button
-                        onClick={toggleAllRows}
-                        className="md:hidden flex items-center gap-2 rounded-lg bg-bg-secondary px-3 py-2 text-xs font-medium text-text-secondary hover:bg-bg-secondary/80 dark:bg-white/5 dark:text-text-tertiary transition-colors min-h-12"
-                    >
+                    <Button variant="ghost" size="sm" className="md:hidden" onClick={toggleAllRows}>
                         {expandedRows.size === paged.length ? (
                             <>
                                 <ChevronUpIcon className="icon-sm" />
@@ -315,7 +314,7 @@ export default function InstitutionTable({
                                 Expandir todo
                             </>
                         )}
-                    </button>
+                    </Button>
                 )}
 
                 {selectedIds.length > 0 && (
@@ -324,21 +323,13 @@ export default function InstitutionTable({
                             {selectedIds.length} seleccionados
                         </span>
                         {activeTab === "Activas" ? (
-                            <button
-                                onClick={async () => onBulkDelete?.(selectedIds)}
-                                className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12"
-                            >
-                                <TrashIcon className="icon-sm" />
+                            <Button variant="error" size="sm" onClick={async () => onBulkDelete?.(selectedIds)}>
                                 Eliminar
-                            </button>
+                            </Button>
                         ) : (
-                            <button
-                                onClick={async () => onBulkRestore?.(selectedIds)}
-                                className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-600 hover:bg-brand-100 dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400/20 transition-colors min-h-12"
-                            >
-                                <RefreshIcon className="icon-sm" />
+                            <AsyncButton variant="success" size="sm" onClick={async () => onBulkRestore?.(selectedIds)}>
                                 Restaurar
-                            </button>
+                            </AsyncButton>
                         )}
                     </div>
                 )}

@@ -18,6 +18,7 @@ export interface Evaluation {
   evaluationId: number;
   professionalPracticeId: number;
   evaluatorType: EvaluatorType;
+  comiteMemberIndex?: number;
   evaluatorId?: number;
   evaluatorName: string;
   evaluatorCi?: string;
@@ -35,6 +36,7 @@ export interface EvaluationWithDetails extends Evaluation {
 export interface CreateEvaluationPayload {
   professionalPracticeId: number;
   evaluatorType: EvaluatorType;
+  comiteMemberIndex?: number;
   evaluatorId?: number;
   evaluatorName: string;
   evaluatorCi?: string;
@@ -53,16 +55,36 @@ export interface UpdateEvaluationPayload {
   items?: EvaluationDetail[];
 }
 
+export interface ComiteMemberStatus {
+  memberIndex: number;
+  score: number;
+  evaluatorName: string;
+  evaluationId: number;
+}
+
 export interface EvaluationStatus {
   practiceId: string;
   currentGrade: number | null;
   evaluationStatus: 'pending' | 'partial' | 'completed';
   evaluations: {
-    [key in EvaluatorType]: {
+    INSTITUCIONAL: {
       completed: boolean;
       score: number;
       evaluatorName: string;
       evaluationId?: number;
+    };
+    ACADEMICO: {
+      completed: boolean;
+      score: number;
+      evaluatorName: string;
+      evaluationId?: number;
+    };
+    COMITE: {
+      completed: boolean;
+      score: number;
+      evaluatorName: string;
+      completedCount: string;
+      members: ComiteMemberStatus[];
     };
   };
   finalGrade: string;

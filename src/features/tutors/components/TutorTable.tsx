@@ -2,6 +2,8 @@ import { useMemo, useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
+import Button from "../../../components/ui/button/Button";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { TutorRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
@@ -112,7 +114,7 @@ const ActionButtons = ({
                     : "Restaurar"
             }
             label={isMobile ? (activeTab === "Activas" ? "Eliminar Tutor" : "Restaurar Tutor") : undefined}
-            variant={activeTab === "Activas" ? "danger" : "success"}
+            variant={activeTab === "Activas" ? "error" : "success"}
             fullWidth={isMobile}
             disabled={activeTab === "Activas" && isInUse}
         />
@@ -461,10 +463,7 @@ export default function TutorTable({
 
                     <div className="flex items-center gap-2">
                         {paged.length > 0 && (
-                            <button
-                                onClick={toggleAllRows}
-                                className="md:hidden flex items-center gap-2 rounded-lg bg-bg-secondary px-3 py-2 text-xs font-medium text-text-secondary hover:bg-bg-main dark:bg-white/5 dark:text-text-tertiary transition-colors min-h-12"
-                            >
+                            <Button variant="ghost" size="sm" className="md:hidden" onClick={toggleAllRows}>
                                 {expandedRows.size === paged.length ? (
                                     <>
                                         <ChevronUpIcon className="icon-sm" />
@@ -476,7 +475,7 @@ export default function TutorTable({
                                         Expandir todo
                                     </>
                                 )}
-                            </button>
+                            </Button>
                         )}
 
                         {selectedIds.length > 0 && (
@@ -485,21 +484,13 @@ export default function TutorTable({
                                     {selectedIds.length} seleccionados
                                 </span>
                                 {activeTab === "Activas" ? (
-                                    <button
-                                        onClick={async () => onBulkDelete?.(selectedIds)}
-                                        className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12"
-                                    >
-                                        <TrashIcon className="icon-sm" />
+                                    <Button variant="error" size="sm" onClick={async () => onBulkDelete?.(selectedIds)}>
                                         Eliminar
-                                    </button>
+                                    </Button>
                                 ) : (
-                                    <button
-                                        onClick={async () => onBulkRestore?.(selectedIds)}
-                                        className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-600 hover:bg-brand-100 dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400/20 transition-colors min-h-12"
-                                    >
-                                        <RefreshIcon className="icon-sm" />
+                                    <AsyncButton variant="success" size="sm" onClick={async () => onBulkRestore?.(selectedIds)}>
                                         Restaurar
-                                    </button>
+                                    </AsyncButton>
                                 )}
                             </div>
                         )}

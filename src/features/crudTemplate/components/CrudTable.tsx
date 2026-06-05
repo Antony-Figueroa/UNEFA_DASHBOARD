@@ -1,7 +1,8 @@
 import { useMemo, useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import Checkbox from "../../../components/form/input/Checkbox";
-import { ActionButton } from "../../../components/common/ActionButton";
+import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
+import Button from "../../../components/ui/button/Button";
 import type { CrudColumn, CrudFilterConfig, CrudFilterState, CrudActionConfig, CrudRowAction } from "../types";
 import { TrashIcon, RefreshIcon, EditIcon, EyeIcon } from "../../../icons/actions";
 import { matchSearch } from "../../../utils/searchNormalizer";
@@ -341,21 +342,18 @@ export function CrudTable<TItem extends { id: string }>({
                   <RefreshIcon className="h-4 w-4" />
                 ) : null;
 
+              const bulkVariant = isDanger ? "error" : isPrimary ? "primary" : "outline";
+
               return (
-                <button
+                <Button
                   key={action.id}
-                  type="button"
+                  variant={bulkVariant as "error" | "primary" | "outline"}
+                  size="sm"
                   onClick={async () => action.onAction(items.filter((i) => selectedIds.includes(i.id)))}
-                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isDanger
-                    ? "bg-error-50 text-error-600 hover:bg-error-100 dark:bg-error-400/10 dark:text-error-400 dark:hover:bg-error-400/20"
-                    : isPrimary
-                      ? "bg-brand-50 text-brand-600 hover:bg-brand-100 dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400/20"
-                      : "bg-bg-secondary text-text-secondary hover:bg-bg-secondary/80 dark:bg-white/5 dark:text-text-secondary dark:hover:bg-white/10"
-                    }`}
+                  startIcon={icon}
                 >
-                  {icon}
                   {action.label}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -488,12 +486,12 @@ export function CrudTable<TItem extends { id: string }>({
 
                           const variant =
                             action.icon === "edit" ? "primary" :
-                              action.icon === "delete" ? "danger" :
+                              action.icon === "delete" ? "error" :
                                 action.icon === "view" ? "primary" :
                                   action.icon === "restore" ? "success" : "primary";
 
                           return (
-                            <ActionButton
+                            <AsyncActionButton
                               key={action.id}
                               onClick={async () => action.onClick(item)}
                               icon={icon}

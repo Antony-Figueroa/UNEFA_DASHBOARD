@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
+import Button from "../../../components/ui/button/Button";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { EnrollmentRowData } from "../types";
@@ -123,7 +124,7 @@ const ActionButtons = ({
           icon={status ? <TrashIcon /> : <RefreshIcon />}
           tooltip={status ? "Eliminar" : "Restaurar"}
           label={isMobile ? (status ? "Eliminar Inscripción" : "Restaurar Inscripción") : undefined}
-          variant={status ? "danger" : "success"}
+          variant={status ? "error" : "success"}
           fullWidth={isMobile}
         />
       )}
@@ -466,10 +467,7 @@ export default function EnrollmentTable({
 
                     <div className="flex items-center gap-2">
                         {paged.length > 0 && (
-                            <button
-                                onClick={toggleAllRows}
-                                className="md:hidden flex items-center gap-2 rounded-lg bg-bg-secondary px-3 py-2 text-xs font-medium text-text-secondary hover:bg-bg-secondary hover:text-text-emphasis dark:bg-white/5 dark:text-text-tertiary transition-colors min-h-12"
-                            >
+                            <Button variant="ghost" size="sm" className="md:hidden" onClick={toggleAllRows}>
                                 {expandedRows.size === paged.length ? (
                                     <>
                                         <ChevronUpIcon className="icon-sm" />
@@ -481,7 +479,7 @@ export default function EnrollmentTable({
                                         Expandir todo
                                     </>
                                 )}
-                            </button>
+                            </Button>
                         )}
                     </div>
                 </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
 import Button from '../../../components/ui/button/Button';
+import AsyncButton from '../../../components/ui/button/AsyncButton';
 import { STATUS_OPTIONS } from '../utils/requestUtils';
 import ReassignmentFields from './ReassignmentFields';
 import type { AdminRequest, ReassignmentOption } from '../types';
@@ -191,9 +192,9 @@ export const RequestAttentionModal = ({
         <Button variant="outline" onClick={onClose}>
           Cancelar
         </Button>
-        <Button variant="primary" onClick={handleSubmit} disabled={saving}>
-          {saving ? 'Guardando...' : 'Guardar Cambios'}
-        </Button>
+        <AsyncButton variant="primary" onClick={handleSubmit} loading={saving}>
+          Guardar Cambios
+        </AsyncButton>
       </ModalFooter>
     </Modal>
   );

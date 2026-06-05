@@ -342,7 +342,7 @@ export default function VisitRegistration() {
                               onClick={async () => setDeleteDialog({ isOpen: true, visitId: visit.visitId })}
                               icon={<TrashIcon />}
                               tooltip="Eliminar"
-                              variant="danger"
+                              variant="error"
                             />
                           </>
                         )}

@@ -16,6 +16,8 @@ import { useMemo, useState, useEffect } from "react";
 import { useDbStatus } from "../../../context/db-status";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
+import Button from "../../../components/ui/button/Button";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon } from "../../../icons/actions";
 import { InternshipType } from "../types";
 import { Career } from "../../careers/types";
@@ -162,12 +164,9 @@ export default function InternshipTypeTable({
         <p className="mt-2 text-text-secondary dark:text-text-tertiary font-medium">
           {dbStatus === "disconnected" ? "La conexión con la base de datos se ha perdido" : "No hay conexión a la base de datos"}
         </p>
-        <button 
-          onClick={() => window.location.reload()}
-          className="mt-6 px-4 py-2 bg-error-600 text-white rounded-lg hover:bg-error-700 transition-colors text-sm font-medium"
-        >
+        <Button variant="error" onClick={() => window.location.reload()}>
           Reintentar conexión
-        </button>
+        </Button>
       </div>
     );
   }
@@ -219,17 +218,15 @@ export default function InternshipTypeTable({
             <span className="text-sm text-text-secondary dark:text-text-tertiary">
               {selectedIds.length} seleccionados
             </span>
-            <button
-              onClick={() => inactiveMode ? onBulkRestore?.(selectedIds) : onBulkDelete?.(selectedIds)}
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                inactiveMode 
-                  ? "bg-success-50 text-success-600 hover:bg-success-100 dark:bg-success-900/20 dark:text-success-400" 
-                  : "bg-error-50 text-error-600 hover:bg-error-100 dark:bg-error-900/20 dark:text-error-400"
-              }`}
-            >
-              {inactiveMode ? <RefreshIcon className="h-4 w-4" /> : <TrashIcon className="h-4 w-4" />}
-              {inactiveMode ? "Restaurar" : "Eliminar"}
-            </button>
+            {inactiveMode ? (
+              <AsyncButton variant="success" size="sm" onClick={() => onBulkRestore?.(selectedIds)}>
+                Restaurar
+              </AsyncButton>
+            ) : (
+              <Button variant="error" size="sm" onClick={() => onBulkDelete?.(selectedIds)}>
+                Eliminar
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -317,7 +314,7 @@ export default function InternshipTypeTable({
                                 onClick={() => {}}
                                 icon={<TrashIcon />}
                                 tooltip="Bloqueado: Uso en carreras"
-                                variant="danger"
+                                variant="error"
                               />
                             </div>
                           </Tooltip>
@@ -326,7 +323,7 @@ export default function InternshipTypeTable({
                             onClick={() => onToggleStatus?.(item.id)}
                             icon={inactiveMode ? <RefreshIcon /> : <TrashIcon />}
                             tooltip={inactiveMode ? "Restaurar" : "Eliminar"}
-                            variant={inactiveMode ? "success" : "danger"}
+                            variant={inactiveMode ? "success" : "error"}
                           />
                         )}
                       </div>

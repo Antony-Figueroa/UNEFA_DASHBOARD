@@ -123,7 +123,7 @@ const ActionButtons = ({
                     icon={activeTab === "Inactivas" ? <RefreshIcon /> : <TrashIcon />}
                     tooltip={activeTab === "Inactivas" ? "Restaurar" : "Eliminar"}
                     label={isMobile ? (activeTab === "Inactivas" ? "Restaurar Responsable" : "Eliminar Responsable") : undefined}
-                    variant={activeTab === "Inactivas" ? "success" : "danger"}
+                    variant={activeTab === "Inactivas" ? "success" : "error"}
                     fullWidth={isMobile}
                 />
             )}

@@ -1,6 +1,8 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
+import Button from "../../../components/ui/button/Button";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { StudentRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
@@ -162,7 +164,7 @@ const ActionButtons = ({
                     icon={<TrashIcon />}
                     tooltip={isDisabled ? disabledTooltip : "Eliminar"}
                     label={isMobile ? "Eliminar Estudiante" : undefined}
-                    variant="danger"
+                    variant="error"
                     fullWidth={isMobile}
                     disabled={isDisabled}
                 />
@@ -494,10 +496,7 @@ export default function StudentTable({
 
                     <div className="flex items-center gap-2">
                         {paged.length > 0 && (
-                            <button
-                                onClick={toggleAllRows}
-                                className="md:hidden flex items-center gap-2 rounded-lg bg-bg-secondary px-3 py-2 text-xs font-medium text-text-secondary hover:bg-bg-tertiary dark:bg-white/5 dark:text-text-tertiary transition-colors min-h-12"
-                            >
+                            <Button variant="ghost" size="sm" className="md:hidden" onClick={toggleAllRows}>
                                 {expandedRows.size === paged.length ? (
                                     <>
                                         <ChevronUpIcon className="icon-sm" />
@@ -509,7 +508,7 @@ export default function StudentTable({
                                         Expandir todo
                                     </>
                                 )}
-                            </button>
+                            </Button>
                         )}
 
                         {selectedIds.length > 0 && !loading && (
@@ -522,23 +521,19 @@ export default function StudentTable({
                                         content={paged.filter(s => selectedIds.includes(s.studentId)).some(s => s.isInUse) ? "Algunos estudiantes seleccionados están en uso y no pueden ser eliminados" : "Eliminar seleccionados"}
                                         isDisabled={!paged.filter(s => selectedIds.includes(s.studentId)).some(s => s.isInUse)}
                                     >
-                                        <button
+                                        <Button
+                                            variant="error"
+                                            size="sm"
                                             onClick={async () => onBulkDelete?.(selectedIds)}
                                             disabled={paged.filter(s => selectedIds.includes(s.studentId)).some(s => s.isInUse)}
-                                            className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            <TrashIcon className="icon-sm" />
                                             Eliminar
-                                        </button>
+                                        </Button>
                                     </Tooltip>
                                 ) : (
-                                    <button
-                                        onClick={async () => onBulkRestore?.(selectedIds)}
-                                        className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-600 hover:bg-brand-100 dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400/20 transition-colors min-h-12"
-                                    >
-                                        <RefreshIcon className="icon-sm" />
+                                    <AsyncButton variant="success" size="sm" onClick={async () => onBulkRestore?.(selectedIds)}>
                                         Restaurar
-                                    </button>
+                                    </AsyncButton>
                                 )}
                             </div>
                         )}

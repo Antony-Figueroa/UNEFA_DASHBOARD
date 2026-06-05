@@ -9,6 +9,7 @@ import {
   UpdateStudentPayload,
   Student 
 } from "../types";
+import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import CustomSelect from "../../../components/form/CustomSelect";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
@@ -952,9 +953,9 @@ useEffect(() => {
 
       <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
         <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-6xl mx-auto">
-          <AsyncButton variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
+          <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
             Cancelar
-          </AsyncButton>
+          </Button>
           {existingStudent ? (
             viewOnlyMode ? (
             <AsyncButton 
@@ -1077,9 +1078,9 @@ useEffect(() => {
       </ModalBody>
       <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
         <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full">
-          <AsyncButton variant="outline" onClick={() => setIsValueModalOpen(false)} disabled={savingNewValue} className="w-full sm:w-auto min-h-12">
+          <Button variant="outline" onClick={() => setIsValueModalOpen(false)} disabled={savingNewValue} className="w-full sm:w-auto min-h-12">
             Cancelar
-          </AsyncButton>
+          </Button>
           <AsyncButton 
             onClick={handleSaveNewValue} 
             loading={savingNewValue} 

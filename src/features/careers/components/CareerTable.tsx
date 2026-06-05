@@ -22,6 +22,8 @@ import { useMemo, useState, useEffect } from "react";
 import { useDbStatus } from "../../../context/db-status";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
+import Button from "../../../components/ui/button/Button";
+import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import CustomSelect from "../../../components/form/CustomSelect";
 import {
@@ -159,7 +161,7 @@ const ActionButtons = ({
           icon={inactiveMode ? <RefreshIcon /> : <TrashIcon />}
           tooltip={isDisabled && !inactiveMode ? disabledTooltip : (inactiveMode ? "Restaurar" : "Eliminar")}
           label={isMobile ? (inactiveMode ? "Restaurar" : "Eliminar") : undefined}
-          variant={inactiveMode ? "success" : "danger"}
+          variant={inactiveMode ? "success" : "error"}
           fullWidth={isMobile}
           disabled={isDisabled && !inactiveMode}
         />
@@ -170,7 +172,7 @@ const ActionButtons = ({
           icon={<TrashIcon />}
           tooltip={isDisabled ? disabledTooltip : "Eliminar Carrera"}
           label={isMobile ? "Eliminar Carrera" : undefined}
-          variant="danger"
+          variant="error"
           fullWidth={isMobile}
           disabled={isDisabled}
         />
@@ -270,12 +272,9 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
         <p className="mt-2 text-text-secondary dark:text-text-tertiary font-medium">
           {dbStatus === "disconnected" ? "La conexión con la base de datos se ha perdido" : "no hay conexion a la bd"}
         </p>
-        <button 
-          onClick={async () => window.location.reload()}
-          className="mt-6 px-4 py-2 bg-error-600 text-white rounded-lg hover:bg-error-700 transition-colors text-sm font-medium"
-        >
+        <Button variant="error" onClick={() => window.location.reload()}>
           Reintentar conexión
-        </button>
+        </Button>
       </div>
     );
   }
@@ -433,10 +432,7 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
 
           <div className="flex items-center gap-2">
             {paged.length > 0 && (
-              <button
-                onClick={toggleAllRows}
-                className="md:hidden flex items-center gap-2 rounded-lg bg-bg-secondary px-3 py-2 text-xs font-medium text-text-secondary hover:bg-bg-tertiary dark:bg-white/5 dark:text-text-tertiary transition-colors min-h-12"
-              >
+              <Button variant="ghost" size="sm" className="md:hidden" onClick={toggleAllRows}>
                 {expandedRows.size === paged.length ? (
                   <>
                     <ChevronUpIcon className="icon-sm" />
@@ -448,7 +444,7 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
                     Expandir todo
                   </>
                 )}
-              </button>
+              </Button>
             )}
 
             {/* Acciones Masivas */}
@@ -462,23 +458,23 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
                     content={selectedIds.some(id => inUseIds.has(id)) ? "Algunas de las carreras seleccionadas están en uso y no pueden ser eliminadas" : "Eliminar seleccionados"}
                     isDisabled={selectedIds.some(id => inUseIds.has(id))}
                   >
-                    <button
+                    <Button
+                      variant="error"
+                      size="sm"
                       onClick={async () => onBulkDelete?.(selectedIds)}
                       disabled={selectedIds.some(id => inUseIds.has(id))}
-                      className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 dark:bg-red-400/10 dark:text-red-400 dark:hover:bg-red-400/20 transition-colors min-h-12 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <TrashIcon className="icon-sm" />
                       Eliminar
-                    </button>
+                    </Button>
                   </Tooltip>
                 ) : (
-                  <button
+                  <AsyncButton
+                    variant="success"
+                    size="sm"
                     onClick={async () => onBulkRestore?.(selectedIds)}
-                    className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-600 hover:bg-brand-100 dark:bg-brand-400/10 dark:text-brand-400 dark:hover:bg-brand-400/20 transition-colors min-h-12"
                   >
-                    <RefreshIcon className="icon-sm" />
                     Restaurar
-                  </button>
+                  </AsyncButton>
                 )}
               </div>
             )}

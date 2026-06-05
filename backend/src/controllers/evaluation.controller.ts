@@ -21,6 +21,7 @@ interface EvaluationDetail {
 interface CreateEvaluationData {
   professionalPracticeId: number;
   evaluatorType: 'INSTITUCIONAL' | 'ACADEMICO' | 'COMITE';
+  comiteMemberIndex?: number;
   evaluatorId?: number;
   evaluatorName: string;
   evaluatorCi?: string;
@@ -88,6 +89,7 @@ export const getEvaluations = async (req: AuthRequest, res: Response) => {
         EVALUATION_ID,
         PROFESSIONAL_PRACTICE_ID,
         EVALUATOR_TYPE,
+        COMITE_MEMBER_INDEX,
         EVALUATOR_ID,
         EVALUATOR_NAME,
         EVALUATOR_CI,
@@ -112,6 +114,7 @@ export const getEvaluations = async (req: AuthRequest, res: Response) => {
       evaluationId: e.EVALUATION_ID,
       professionalPracticeId: e.PROFESSIONAL_PRACTICE_ID,
       evaluatorType: e.EVALUATOR_TYPE,
+      comiteMemberIndex: e.COMITE_MEMBER_INDEX || undefined,
       evaluatorId: e.EVALUATOR_ID,
       evaluatorName: e.EVALUATOR_NAME,
       evaluatorCi: e.EVALUATOR_CI,
@@ -172,6 +175,7 @@ export const getEvaluationById = async (req: AuthRequest, res: Response) => {
         evaluationId: (evaluation as any).EVALUATION_ID,
         professionalPracticeId: (evaluation as any).PROFESSIONAL_PRACTICE_ID,
         evaluatorType: (evaluation as any).EVALUATOR_TYPE,
+        comiteMemberIndex: (evaluation as any).COMITE_MEMBER_INDEX || undefined,
         evaluatorId: (evaluation as any).EVALUATOR_ID,
         evaluatorName: (evaluation as any).EVALUATOR_NAME,
         evaluatorCi: (evaluation as any).EVALUATOR_CI,
@@ -217,19 +221,44 @@ export const createEvaluation = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { data: existing, error: checkError } = await supabase
-      .from('t_evaluation')
-      .select('EVALUATION_ID')
-      .eq('PROFESSIONAL_PRACTICE_ID', data.professionalPracticeId)
-      .eq('EVALUATOR_TYPE', data.evaluatorType)
-      .eq('STATUS', 1)
-      .maybeSingle();
+    if (data.evaluatorType === 'COMITE') {
+      if (!data.comiteMemberIndex || ![1, 2, 3].includes(data.comiteMemberIndex)) {
+        return res.status(400).json({
+          success: false,
+          message: 'comiteMemberIndex es requerido (1, 2 o 3) para evaluaciones COMITE'
+        });
+      }
 
-    if (existing) {
-      return res.status(400).json({
-        success: false,
-        message: 'Ya existe una evaluación de este tipo para esta práctica'
-      });
+      const { data: existingComite, error: comiteError } = await supabase
+        .from('t_evaluation')
+        .select('EVALUATION_ID')
+        .eq('PROFESSIONAL_PRACTICE_ID', data.professionalPracticeId)
+        .eq('EVALUATOR_TYPE', 'COMITE')
+        .eq('COMITE_MEMBER_INDEX', data.comiteMemberIndex)
+        .eq('STATUS', 1)
+        .maybeSingle();
+
+      if (existingComite) {
+        return res.status(400).json({
+          success: false,
+          message: `Ya existe una evaluación del miembro #${data.comiteMemberIndex} del comité para esta práctica`
+        });
+      }
+    } else {
+      const { data: existing, error: checkError } = await supabase
+        .from('t_evaluation')
+        .select('EVALUATION_ID')
+        .eq('PROFESSIONAL_PRACTICE_ID', data.professionalPracticeId)
+        .eq('EVALUATOR_TYPE', data.evaluatorType)
+        .eq('STATUS', 1)
+        .maybeSingle();
+
+      if (existing) {
+        return res.status(400).json({
+          success: false,
+          message: 'Ya existe una evaluación de este tipo para esta práctica'
+        });
+      }
     }
 
     // Cada criterio se puntúa según system config, se escala el promedio al displayScale
@@ -242,6 +271,7 @@ export const createEvaluation = async (req: AuthRequest, res: Response) => {
       .insert({
         PROFESSIONAL_PRACTICE_ID: data.professionalPracticeId,
         EVALUATOR_TYPE: data.evaluatorType,
+        COMITE_MEMBER_INDEX: data.evaluatorType === 'COMITE' ? data.comiteMemberIndex : null,
         EVALUATOR_ID: data.evaluatorId || null,
         EVALUATOR_NAME: data.evaluatorName,
         EVALUATOR_CI: data.evaluatorCi || null,
@@ -472,20 +502,38 @@ export const getPracticeEvaluationStatus = async (req: AuthRequest, res: Respons
 
     const { data: evaluations, error: evalError } = await supabase
       .from('t_evaluation')
-      .select('EVALUATION_ID, EVALUATOR_TYPE, TOTAL_SCORE, EVALUATOR_NAME')
+      .select('EVALUATION_ID, EVALUATOR_TYPE, TOTAL_SCORE, EVALUATOR_NAME, COMITE_MEMBER_INDEX')
       .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
       .eq('STATUS', 1);
 
     if (evalError) throw evalError;
 
     const evaluatorTypes = Object.keys(evaluationConfig.weights);
-    const statusMap: Record<string, { completed: boolean; score: number; evaluatorName: string; evaluationId?: number }> = {};
+    const statusMap: Record<string, any> = {};
     evaluatorTypes.forEach(type => {
-      statusMap[type] = { completed: false, score: 0, evaluatorName: '' };
+      if (type === 'COMITE') {
+        statusMap[type] = { completed: false, score: 0, completedCount: '0/3', members: [], evaluatorName: '' };
+      } else {
+        statusMap[type] = { completed: false, score: 0, evaluatorName: '' };
+      }
     });
 
     (evaluations || []).forEach((e: any) => {
-      if (statusMap[e.EVALUATOR_TYPE]) {
+      if (e.EVALUATOR_TYPE === 'COMITE') {
+        const comiteStatus = statusMap['COMITE'];
+        comiteStatus.members.push({
+          memberIndex: e.COMITE_MEMBER_INDEX,
+          score: e.TOTAL_SCORE,
+          evaluatorName: e.EVALUATOR_NAME,
+          evaluationId: e.EVALUATION_ID
+        });
+        comiteStatus.completedCount = `${comiteStatus.members.length}/3`;
+        // Score provisional: promedio simple de total_scores
+        comiteStatus.score = parseFloat(
+          (comiteStatus.members.reduce((sum: number, m: any) => sum + m.score, 0) / comiteStatus.members.length).toFixed(2)
+        );
+        comiteStatus.evaluatorName = comiteStatus.members.map((m: any) => m.evaluatorName).join(', ');
+      } else if (statusMap[e.EVALUATOR_TYPE]) {
         statusMap[e.EVALUATOR_TYPE] = {
           completed: true,
           score: e.TOTAL_SCORE,
@@ -495,8 +543,13 @@ export const getPracticeEvaluationStatus = async (req: AuthRequest, res: Respons
       }
     });
 
+    // COMITE se considera completado solo con 3 miembros
+    if (statusMap['COMITE']?.members?.length === 3) {
+      statusMap['COMITE'].completed = true;
+    }
+
     const totalEvaluatorTypes = Object.keys(evaluationConfig.weights).length;
-    const completedCount = Object.values(statusMap).filter(s => s.completed).length;
+    const completedCount = Object.values(statusMap).filter((s: any) => s.completed).length;
     let evaluationStatus = 'pending';
     if (completedCount === totalEvaluatorTypes) {
       evaluationStatus = 'completed';
@@ -649,9 +702,23 @@ async function updatePracticeGrade(practiceId: number): Promise<void> {
   }
 
   const typeScores: Record<string, number> = {};
+  const comiteScores: number[] = [];
+
   (evaluations as any[]).forEach((e: any) => {
-    typeScores[e.EVALUATOR_TYPE] = e.TOTAL_SCORE;
+    if (e.EVALUATOR_TYPE === 'COMITE') {
+      comiteScores.push(e.TOTAL_SCORE);
+    } else {
+      typeScores[e.EVALUATOR_TYPE] = e.TOTAL_SCORE;
+    }
   });
+
+  // Para COMITE, el score es el promedio de los miembros existentes
+  // Solo se considera completado si hay exactamente 3
+  if (comiteScores.length === 3) {
+    typeScores['COMITE'] = parseFloat(
+      (comiteScores.reduce((sum, s) => sum + s, 0) / comiteScores.length).toFixed(2)
+    );
+  }
 
   const evaluatorTypes = Object.keys(evaluationConfig.weights);
   const allCompleted = evaluatorTypes.every(type => typeScores[type] !== undefined);

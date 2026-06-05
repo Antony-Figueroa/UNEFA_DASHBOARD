@@ -123,7 +123,105 @@ export default function EvaluationsPage() {
   const getEvaluationButton = (practice: PracticeWithStudent, type: EvaluatorType) => {
     const status = practiceStatuses[practice.professionalPracticeId];
     const evaluation = status?.evaluations[type];
+    const isComite = type === 'COMITE';
 
+    // COMITE: mostrar progreso de miembros
+    if (isComite) {
+      const comite = status?.evaluations['COMITE'] as any;
+      const memberCount = comite?.members?.length || 0;
+      const completedCount = `${memberCount}/3`;
+      const isFullComite = memberCount === 3;
+      const allMembers = comite?.members || [];
+
+      if (isFullComite) {
+        return (
+          <div className="flex flex-col items-center gap-1">
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => allMembers[0]?.evaluationId && handleViewDetails(allMembers[0].evaluationId)}
+                className="flex items-center gap-1 px-2 py-1.5 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                title="Ver detalles"
+              >
+                <EyeIcon className="w-4 h-4" />
+              </button>
+              {isReadOnly ? (
+                <span className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-lg cursor-not-allowed">
+                  <LockIcon className="w-4 h-4" />
+                  <span>{comite.score.toFixed(1)}</span>
+                </span>
+              ) : (
+                <button
+                  onClick={() => handleOpenEvaluation(practice, type)}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                  title="Añadir/editar miembro del comité"
+                >
+                  <CheckCircleIcon className="w-4 h-4" />
+                  <span>{comite.score.toFixed(1)}</span>
+                </button>
+              )}
+            </div>
+            <span className="text-xs text-gray-400 dark:text-gray-500">
+              {completedCount}
+            </span>
+          </div>
+        );
+      }
+
+      if (memberCount > 0) {
+        return (
+          <div className="flex flex-col items-center gap-1">
+            {isReadOnly ? (
+              <span className="flex items-center gap-2 px-3 py-1.5 text-sm bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-lg cursor-not-allowed border border-amber-200 dark:border-amber-800/30">
+                <TimeIcon className="w-4 h-4" />
+                <span>{completedCount}</span>
+              </span>
+            ) : (
+              <button
+                onClick={() => handleOpenEvaluation(practice, type)}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors border border-amber-200 dark:border-amber-800/30"
+                title="Añadir miembro del comité"
+              >
+                <TimeIcon className="w-4 h-4" />
+                <span>{completedCount}</span>
+              </button>
+            )}
+            <div className="flex gap-1">
+              {allMembers.map((m: any) => (
+                <button
+                  key={m.memberIndex}
+                  onClick={() => m.evaluationId && handleViewDetails(m.evaluationId)}
+                  className="w-5 h-5 flex items-center justify-center text-[10px] font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50"
+                  title={`Miembro #${m.memberIndex}: ${m.evaluatorName} — ${m.score.toFixed(1)}pts`}
+                >
+                  {m.memberIndex}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      if (isReadOnly) {
+        return (
+          <span className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-lg cursor-not-allowed">
+            <LockIcon className="w-4 h-4" />
+            <span>Pendiente</span>
+          </span>
+        );
+      }
+
+      return (
+        <button
+          onClick={() => handleOpenEvaluation(practice, type)}
+          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-brand-100 dark:hover:bg-brand-900/30 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+        >
+          <TimeIcon className="w-4 h-4" />
+          <span>Pendiente</span>
+        </button>
+      );
+    }
+
+    // INSTITUCIONAL / ACADEMICO
     if (evaluation?.completed) {
       return (
         <div className="flex items-center gap-1">

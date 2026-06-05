@@ -54,6 +54,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   const scoreRange = { min: config.score.min, max: config.score.max };
   const midpoint = scoreRange.min + Math.floor((scoreRange.max - scoreRange.min) / 2);
   const [itemScores, setItemScores] = useState<Record<number, number>>({});
+  const [comiteMemberIndex, setComiteMemberIndex] = useState<1 | 2 | 3 | null>(null);
   const [criteriaLoaded, setCriteriaLoaded] = useState<EvaluationCriteria[]>([]);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [existingData, setExistingData] = useState<EvaluationWithDetails | null>(null);
@@ -170,6 +171,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     }
   };
 
+  const comiteMembers = [1, 2, 3] as const;
+
   const handleScoreChange = (criteriaId: number, score: number) => {
     if (score >= scoreRange.min && score <= scoreRange.max) {
       setItemScores(prev => ({
@@ -186,7 +189,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
       score: itemScores[c.criteriaId] ?? midpoint
     }));
 
-    const payload = {
+    const payload: any = {
       professionalPracticeId: practiceId,
       evaluatorType,
       evaluatorName: formData.evaluatorName,
@@ -194,6 +197,10 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
       observations: formData.observations || undefined,
       items
     };
+
+    if (evaluatorType === 'COMITE' && comiteMemberIndex) {
+      payload.comiteMemberIndex = comiteMemberIndex;
+    }
 
     let result;
     if (isEditing && evaluationId) {
@@ -277,6 +284,30 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                 </div>
               </div>
             )}
+            {evaluatorType === 'COMITE' && !isEditing && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Miembro del Comité *
+                </label>
+                <div className="flex gap-2">
+                  {comiteMembers.map((idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setComiteMemberIndex(idx)}
+                      className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium border-2 transition-all ${
+                        comiteMemberIndex === idx
+                          ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 shadow-sm'
+                          : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500'
+                      }`}
+                    >
+                      Miembro #{idx}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

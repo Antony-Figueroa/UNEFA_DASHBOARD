@@ -553,6 +553,7 @@ export default function EnrollmentPage() {
                     <TutorModal
                         isOpen={isTutorModalOpen}
                         onClose={() => setIsTutorModalOpen(false)}
+                        tutorType={tutorTargetRef.current === "methodologicalTutorId" ? "methodological" : "academic"}
                         onSave={async (payload) => {
                             try {
                                 const newTutor = await addTutor(payload as any);

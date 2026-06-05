@@ -52,6 +52,8 @@ interface TutorModalProps {
   modalId?: string;
   /** Callback cuando se quiere editar un registro existente (convierte de crear a editar) */
   onEditExisting?: (tutor: Tutor) => void;
+  /** Tipo de tutor: "academic" (default) o "methodological" */
+  tutorType?: "academic" | "methodological";
 }
 
 /**
@@ -69,6 +71,7 @@ export default function TutorModal({
   tutors = [],
   modalId,
   onEditExisting,
+  tutorType = "academic",
 }: TutorModalProps) {
   const [careers, setCareers] = useState<Career[]>([]);
   const [careersLoading, setCareersLoading] = useState(false);
@@ -899,9 +902,9 @@ export default function TutorModal({
       >
         <ModalHeader>
           <span className="text-xl font-semibold text-text-primary dark:text-white/90">
-            {editingTutor ? "Editar Tutor" : "Registrar Tutor"}
+            {editingTutor ? "Editar" : "Registrar"} Tutor {tutorType === "methodological" ? "Metodológico" : "Académico"}
           </span>
-          <p className="text-sm text-text-secondary">Complete la información del tutor académico.</p>
+          <p className="text-sm text-text-secondary">Complete la información del tutor {tutorType === "methodological" ? "metodológico" : "académico"}.</p>
           {isInUse && (
             <div className="mt-2 text-xs font-medium text-warning-700 dark:text-warning-400 bg-warning-50 dark:bg-warning-900/20 p-2.5 rounded-md border border-warning-200 dark:border-warning-800/50 flex items-start gap-2">
               <span className="mt-0.5">⚠️</span>

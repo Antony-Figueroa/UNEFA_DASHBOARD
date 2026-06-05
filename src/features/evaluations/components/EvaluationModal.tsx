@@ -53,6 +53,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
   const { config } = useSystemEvaluationConfig();
   const scoreRange = { min: config.score.min, max: config.score.max };
   const midpoint = scoreRange.min + Math.floor((scoreRange.max - scoreRange.min) / 2);
+  const scoreStep = 0.5;
   const [itemScores, setItemScores] = useState<Record<number, number>>({});
   const [comiteMemberIndex, setComiteMemberIndex] = useState<1 | 2 | 3 | null>(null);
   const [criteriaLoaded, setCriteriaLoaded] = useState<EvaluationCriteria[]>([]);
@@ -389,17 +390,18 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                             type="range"
                             min={scoreRange.min}
                             max={scoreRange.max}
-                            step="1"
+                            step={scoreStep}
                             value={itemScores[criterion.criteriaId] ?? midpoint}
-                            onChange={(e) => handleScoreChange(criterion.criteriaId, parseInt(e.target.value))}
+                            onChange={(e) => handleScoreChange(criterion.criteriaId, parseFloat(e.target.value))}
                             className="flex-1 sm:w-24 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
                           />
                           <input
                             type="number"
                             min={scoreRange.min}
                             max={scoreRange.max}
+                            step={scoreStep}
                             value={itemScores[criterion.criteriaId] ?? midpoint}
-                            onChange={(e) => handleScoreChange(criterion.criteriaId, parseInt(e.target.value) || 0)}
+                            onChange={(e) => handleScoreChange(criterion.criteriaId, parseFloat(e.target.value) || 0)}
                             className={`w-14 px-2 py-1 text-center border rounded-lg focus:ring-2 focus:ring-brand-500 dark:bg-gray-700 dark:text-white ${getScoreInputClass(criterion.criteriaId)}`}
                           />
                           <span className="text-xs text-gray-400">/{scoreRange.max}</span>

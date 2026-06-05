@@ -163,6 +163,7 @@ CREATE TABLE IF NOT EXISTS "t_evaluation" (
   "TOTAL_SCORE" NUMERIC(5,2) NOT NULL,
   "OBSERVATIONS" TEXT,
   "EVALUATION_DATE" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  "COMITE_MEMBER_INDEX" INT DEFAULT NULL,
   "REGISTERED_BY" INTEGER,
   "STATUS" SMALLINT DEFAULT 1
 );
@@ -182,7 +183,7 @@ CREATE TABLE IF NOT EXISTS "t_evaluation_detail" (
   "EVALUATION_ID" INTEGER NOT NULL,
   "CRITERIA_ID" INTEGER,
   "ITEM_NUMBER" INTEGER NOT NULL,
-  "SCORE" INTEGER NOT NULL,
+  "SCORE" NUMERIC(5,2) NOT NULL,
   "STATUS" SMALLINT DEFAULT 1
 );
 
@@ -953,7 +954,12 @@ ALTER TABLE "t_notifications" ADD CONSTRAINT "chk_notification_type" CHECK ("TYP
   'pre_enrollment', 'enrollment', 'tracking', 'tracking_visit',
   'user_management', 'reminder', 'system', 'approval'
 ));
-ALTER TABLE "t_evaluation_detail" ADD CONSTRAINT "chk_score_range" CHECK ("SCORE" >= 1 AND "SCORE" <= 5);
+ALTER TABLE "t_evaluation" ADD CONSTRAINT "chk_comite_member_index" CHECK (
+  ("EVALUATOR_TYPE" = 'COMITE' AND "COMITE_MEMBER_INDEX" BETWEEN 1 AND 3)
+  OR
+  ("EVALUATOR_TYPE" != 'COMITE' AND "COMITE_MEMBER_INDEX" IS NULL)
+);
+ALTER TABLE "t_evaluation_detail" ADD CONSTRAINT "chk_score_range" CHECK ("SCORE" >= 1 AND "SCORE" <= 10);
 
 -- ============================================================
 -- INDEXES
@@ -1170,5 +1176,56 @@ INSERT INTO "t_landing_config" ("config_key", "config_value", "updated_by") VALU
 ('missionVision', '{"missionTitle":"Misión","missionText":"Formar a través de la docencia, la investigación y la extensión, ciudadanos corresponsables con la seguridad y Defensa Integral de la Nación, comprometidos con la Revolución Bolivariana, con competencias emancipadoras y humanistas necesarias para sustentar los planes de desarrollo del país, promoviendo la producción y el intercambio de saberes, como mecanismo de integración latinoamericana y caribeña.","visionTitle":"Visión","visionText":"Ser la primera universidad socialista, reconocida por su Excelencia Educativa en el territorio nacional e internacional, líder en los saberes humanistas, científicos, tecnológicos y militares, inspirada en el ideario bolivariano."}', 'system'),
 ('careers', '[{"id":"1","title":"INGENIERÍA AGRONÓMICA","description":"Formamos profesionales para el desarrollo agrícola sostenible, gestión de recursos naturales y producción vegetal.","category":"Ingeniería","image":"/unefa-img/agronomia.jpg","color":"success","order":1,"active":true},{"id":"2","title":"INGENIERÍA AGROINDUSTRIAL","description":"Carrera enfocada en la transformación de productos agrícolas, tecnología de alimentos y gestión agroindustrial.","category":"Ingeniería","image":"/unefa-img/agroindustrial.jpg","color":"primary","order":2,"active":true},{"id":"3","title":"ENFERMERÍA","description":"Formamos profesionales de la salud con competencias para el cuidado integral, prevención y promoción de la salud.","category":"T.S.U","image":"/unefa-img/enfermeria.jpg","color":"info","order":3,"active":true}]', 'system'),
 ('graduateStats', '{"title":"Ficha de Datos: Pasantías y Prácticas Profesionales","subtitle":"Estimado Histórico y Estadísticas de Cumplimiento Académico - Extensión Acarigua (2008 - 2025).","totalRangeMin":3200,"totalRangeMax":5100,"annualRangeMin":180,"annualRangeMax":350,"successRate":98,"processDefinition":"Prácticas Profesionales (Pasantías) - Obligatorio y curricular para todas las carreras de pregrado.","durationText":"Entre 12 y 16 semanas (dependiendo del diseño curricular de la carrera).","notes":"Cifras consolidadas con base en los registros históricos de la Unidad de Gestión Educativa."}', 'system');
+
+-- ============================================================
+-- t_prospect_lists (prospect lists for internship prospecting)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS "t_prospect_lists" (
+  "LIST_ID" SERIAL NOT NULL,
+  "NAME" VARCHAR(255) NOT NULL,
+  "DESCRIPTION" TEXT,
+  "PERIOD_ID" INTEGER NOT NULL,
+  "STATUS" SMALLINT NOT NULL DEFAULT 1,
+  "CREATED_AT" TIMESTAMP NOT NULL DEFAULT NOW(),
+  "UPDATED_AT" TIMESTAMP NOT NULL DEFAULT NOW(),
+  "CREATED_BY" INTEGER,
+  PRIMARY KEY ("LIST_ID")
+);
+
+ALTER TABLE "t_prospect_lists"
+  ADD CONSTRAINT "fk_prospect_lists_period"
+  FOREIGN KEY ("PERIOD_ID") REFERENCES "t_internships_period" ("PERIOD_ID");
+
+ALTER TABLE "t_prospect_lists"
+  ADD CONSTRAINT "fk_prospect_lists_user"
+  FOREIGN KEY ("CREATED_BY") REFERENCES "t_user" ("USER_ID");
+
+-- t_prospect_list_items (students in a prospect list)
+CREATE TABLE IF NOT EXISTS "t_prospect_list_items" (
+  "ITEM_ID" SERIAL NOT NULL,
+  "LIST_ID" INTEGER NOT NULL,
+  "STUDENTS_ID" INTEGER NOT NULL,
+  "ENROLLED" BOOLEAN NOT NULL DEFAULT FALSE,
+  "NOTES" TEXT,
+  "ADDED_AT" TIMESTAMP NOT NULL DEFAULT NOW(),
+  "ADDED_BY" INTEGER,
+  PRIMARY KEY ("ITEM_ID")
+);
+
+ALTER TABLE "t_prospect_list_items"
+  ADD CONSTRAINT "fk_prospect_items_list"
+  FOREIGN KEY ("LIST_ID") REFERENCES "t_prospect_lists" ("LIST_ID") ON DELETE CASCADE;
+
+ALTER TABLE "t_prospect_list_items"
+  ADD CONSTRAINT "fk_prospect_items_student"
+  FOREIGN KEY ("STUDENTS_ID") REFERENCES "t_students" ("STUDENTS_ID");
+
+ALTER TABLE "t_prospect_list_items"
+  ADD CONSTRAINT "fk_prospect_items_user"
+  FOREIGN KEY ("ADDED_BY") REFERENCES "t_user" ("USER_ID");
+
+ALTER TABLE "t_prospect_list_items"
+  ADD CONSTRAINT "uq_prospect_list_student"
+  UNIQUE ("LIST_ID", "STUDENTS_ID");
 
 COMMIT;

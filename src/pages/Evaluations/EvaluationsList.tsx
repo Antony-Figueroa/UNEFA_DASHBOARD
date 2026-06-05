@@ -147,7 +147,7 @@ export default function EvaluationsPage() {
               {isReadOnly ? (
                 <span className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-lg cursor-not-allowed">
                   <LockIcon className="w-4 h-4" />
-                  <span>{comite.score.toFixed(1)}</span>
+                  <span>{comite.score.toFixed(2)}</span>
                 </span>
               ) : (
                 <button
@@ -156,7 +156,7 @@ export default function EvaluationsPage() {
                   title="Añadir/editar miembro del comité"
                 >
                   <CheckCircleIcon className="w-4 h-4" />
-                  <span>{comite.score.toFixed(1)}</span>
+                  <span>{comite.score.toFixed(2)}</span>
                 </button>
               )}
             </div>
@@ -191,7 +191,7 @@ export default function EvaluationsPage() {
                   key={m.memberIndex}
                   onClick={() => m.evaluationId && handleViewDetails(m.evaluationId)}
                   className="w-5 h-5 flex items-center justify-center text-[10px] font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50"
-                  title={`Miembro #${m.memberIndex}: ${m.evaluatorName} — ${m.score.toFixed(1)}pts`}
+                  title={`Miembro #${m.memberIndex}: ${m.evaluatorName} — ${m.score.toFixed(2)}pts`}
                 >
                   {m.memberIndex}
                 </button>
@@ -235,7 +235,7 @@ export default function EvaluationsPage() {
           {isReadOnly ? (
             <span className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-lg cursor-not-allowed" title="Solo lectura: no puedes editar evaluaciones">
               <LockIcon className="w-4 h-4" />
-              <span>{evaluation.score.toFixed(1)}</span>
+              <span>{evaluation.score.toFixed(2)}</span>
             </span>
           ) : (
             <button
@@ -244,7 +244,7 @@ export default function EvaluationsPage() {
               title="Editar evaluación"
             >
               <CheckCircleIcon className="w-4 h-4" />
-              <span>{evaluation.score.toFixed(1)}</span>
+              <span>{evaluation.score.toFixed(2)}</span>
             </button>
           )}
         </div>

@@ -24,6 +24,9 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Environment variables
+.env
 .env*.local
 
 # Engram AI agent memory

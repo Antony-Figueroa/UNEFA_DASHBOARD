@@ -6,6 +6,8 @@ import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-help
 
 const TABLE_NAME = 't_institution';
 const CACHE_PREFIX = 'institutions:';
+const CACHE_KEY_LIST = `${CACHE_PREFIX}list`;
+const CACHE_KEY_BY_ID = (id: number | string) => `${CACHE_PREFIX}by-id:${id}`;
 const CACHE_TTL = 300000; // 5 minutos cache
 
 const INSTITUTION_COLUMNS_TO_AUDIT = [
@@ -85,168 +87,152 @@ const mapDBToFrontend = (i: any) => ({
   isInUse: !!i.isInUse,
 });
 
-export const getInstitutions = async (_req: Request, res: Response) => {
-  const cacheKey = `${CACHE_PREFIX}list`;
-  try {
-    const cachedData = cacheManager.get(cacheKey);
+export const getInstitutions = async (req: Request, res: Response) => {
+  const { limit: queryLimit, offset: queryOffset } = req.query;
+  const intLimit = Math.min(parseInt(queryLimit as string) || 20, 100);
+  const intOffset = parseInt(queryOffset as string) || 0;
+  const isFullListRequest = queryLimit === undefined && queryOffset === undefined;
+  // Use cache only for non-paginated requests (full list for modals, etc.)
+  if (isFullListRequest) {
+    const cachedData = cacheManager.get(CACHE_KEY_LIST);
     if (cachedData) return res.json(cachedData);
+  }
 
-    const data = await dbManager.withRetry(async (supabase) => {
-      console.log('[getInstitutions] Inicia consulta principal a table:', TABLE_NAME);
-      
-      // 1. Fetch main table with select * to avoid column typos
-      const { data: institutions, error: instError } = await supabase
+  try {
+    const result = await dbManager.withRetry(async (supabase) => {
+      // 1. Get paginated institutions + total count
+      const countQuery = supabase
         .from(TABLE_NAME)
-        .select('*');
+        .select('*', { count: 'exact', head: true });
+
+      const dataQuery = supabase
+        .from(TABLE_NAME)
+        .select(INSTITUTION_COLUMNS)
+        .order('INSTITUTION_ID', { ascending: true })
+        .range(intOffset, intOffset + intLimit - 1);
+
+      const [{ count: total }, { data: institutions, error: instError }] = await Promise.all([
+        countQuery,
+        dataQuery
+      ]);
 
       if (instError) {
         console.error('[getInstitutions] Error en consulta principal:', instError);
         throw instError;
       }
 
-      console.log(`[getInstitutions] Obtenidas ${institutions?.length || 0} instituciones`);
+      // 2. Fetch relational data only for the paginated institution IDs
+      const instIds = (institutions || []).map(i => i.INSTITUTION_ID);
 
-      // 2. Fetch relational data sequentially for easier debugging
-      // AHORA: Usamos la tabla pivote para responsables y tipos de práctica
-      let responsibles: any[] = [];
-      try {
-        const { data: respData, error: respError } = await supabase
-          .from('t_institution_manager_institution')
-          .select('"INSTITUTION_ID"');
-        if (!respError) responsibles = respData || [];
-      } catch (err) { console.warn('[getInstitutions] Error silenciado en responsibles:', err); }
+      let respCountMap = new Map<number, number>();
+      let careersMap = new Map<number, number[]>();
+      let internshipTypeIdsMap = new Map<number, number[]>();
+      let usage = new Set<number>();
 
-      let careers: any[] = [];
-      try {
-        const { data: careerData, error: careerError } = await supabase
-          .from('t_institution_career')
-          .select('INSTITUTION_ID, CAREER_ID');
-        if (!careerError) careers = careerData || [];
-      } catch (err) { console.warn('[getInstitutions] Error silenciado en careers:', err); }
+      if (instIds.length > 0) {
+        const [respPivot, careerPivot, typePivot, practiceData] = await Promise.all([
+          supabase.from('t_institution_manager_institution')
+            .select('"INSTITUTION_ID"')
+            .in('"INSTITUTION_ID"', instIds),
+          supabase.from('t_institution_career')
+            .select('INSTITUTION_ID, CAREER_ID')
+            .in('INSTITUTION_ID', instIds),
+          supabase.from('t_institution_internship_type')
+            .select('INSTITUTION_ID, INTERNSHIP_TYPE_ID')
+            .in('INSTITUTION_ID', instIds),
+          supabase.from('t_professional_practices')
+            .select('INSTITUTION_ID')
+            .eq('STATUS', 1)
+            .in('INSTITUTION_ID', instIds)
+        ]);
 
-      // NUEVO: Obtener tipos de práctica por institución
-      let internshipTypes: any[] = [];
-      try {
-        const { data: typeData, error: typeError } = await supabase
-          .from('t_institution_internship_type')
-          .select('INSTITUTION_ID, INTERNSHIP_TYPE_ID');
-        if (!typeError) internshipTypes = typeData || [];
-      } catch (err) { console.warn('[getInstitutions] Error silenciado en internshipTypes:', err); }
+        // Process maps
+        (respPivot.data || []).forEach((r: any) => {
+          const id = r.INSTITUTION_ID ?? r.institution_id;
+          respCountMap.set(id, (respCountMap.get(id) || 0) + 1);
+        });
 
-      let usage: Set<number> = new Set();
-      try {
-        const { data: practiceData, error: practiceError } = await supabase
-          .from('t_professional_practices')
-          .select('INSTITUTION_ID')
-          .eq('STATUS', 1);
-        if (!practiceError) usage = new Set((practiceData || []).map((p: any) => p.INSTITUTION_ID));
-      } catch (err) { console.warn('[getInstitutions] Error silenciado en usage:', err); }
+        (careerPivot.data || []).forEach((c: any) => {
+          const list = careersMap.get(c.INSTITUTION_ID) || [];
+          list.push(c.CAREER_ID);
+          careersMap.set(c.INSTITUTION_ID, list);
+        });
 
-      // 3. Process maps
-      const respCountMap = new Map<number, number>();
-      responsibles.forEach((r: any) => {
-        const count = respCountMap.get(r.INSTITUTION_ID) || 0;
-        respCountMap.set(r.INSTITUTION_ID, count + 1);
-      });
+        (typePivot.data || []).forEach((t: any) => {
+          const list = internshipTypeIdsMap.get(t.INSTITUTION_ID) || [];
+          list.push(t.INTERNSHIP_TYPE_ID);
+          internshipTypeIdsMap.set(t.INSTITUTION_ID, list);
+        });
 
-      const careersMap = new Map<number, number[]>();
-      careers.forEach((c: any) => {
-        const list = careersMap.get(c.INSTITUTION_ID) || [];
-        list.push(c.CAREER_ID);
-        careersMap.set(c.INSTITUTION_ID, list);
-      });
+        usage = new Set((practiceData.data || []).map((p: any) => p.INSTITUTION_ID));
+      }
 
-      // NUEVO: Mapa de tipos de práctica
-      const internshipTypeIdsMap = new Map<number, number[]>();
-      internshipTypes.forEach((t: any) => {
-        const list = internshipTypeIdsMap.get(t.INSTITUTION_ID) || [];
-        list.push(t.INTERNSHIP_TYPE_ID);
-        internshipTypeIdsMap.set(t.INSTITUTION_ID, list);
-      });
-
-      // 4. Combine
-      return (institutions || []).map(inst => ({
+      // 3. Combine relational data
+      const enriched = (institutions || []).map(inst => ({
         ...inst,
         responsibleCount: respCountMap.get(inst.INSTITUTION_ID) || 0,
         careerIds: careersMap.get(inst.INSTITUTION_ID) || [],
         internshipTypeIds: internshipTypeIdsMap.get(inst.INSTITUTION_ID) || [],
         isInUse: usage.has(inst.INSTITUTION_ID)
       }));
-    }, 'getInstitutions');
 
-    // 5. Value list for mapping
-    let listValues: any[] = [];
-    let internshipTypeNames: Record<string, string> = {};
+      // 4. Value list mapping (cacheable lookup data)
+      let listValues: any[] = [];
+      let internshipTypeNames: Record<string, string> = {};
 
-    try {
-      const [listRes, typeRes] = await Promise.all([
-        dbManager.withRetry(async (supabase) => {
-          const { data, error } = await supabase
-            .from('t_value_list')
-            .select('NAME, ABBREVIATION')
-            .eq('STATUS', 1);
-          if (error) throw error;
-          return data;
-        }, 'getListValuesForMapping'),
-        dbManager.withRetry(async (supabase) => {
-          const { data, error } = await supabase
-            .from('t_internship_type')
-            .select('INTERNSHIP_TYPE_ID, NAME')
-            .eq('STATUS', 1);
-          if (error) throw error;
-          return data;
-        }, 'getInternshipTypeNames')
-      ]);
-
-      listValues = listRes || [];
-      (typeRes || []).forEach((t: any) => {
-        internshipTypeNames[String(t.INTERNSHIP_TYPE_ID)] = t.NAME;
-      });
-    } catch (err) { 
-      console.warn('[getInstitutions] Falló carga de mapeos (listas o tipos):', err);
-    }
-
-    const nameMap: Record<string, string> = {};
-    listValues.forEach((v: { NAME: string; ABBREVIATION: string }) => {
-      if (v.NAME) nameMap[v.NAME.toUpperCase()] = v.NAME;
-      if (v.ABBREVIATION) nameMap[v.ABBREVIATION.toUpperCase()] = v.NAME;
-    });
-
-    const getFullName = (val: any) => {
-      if (!val) return '';
-      const sVal = String(val).toUpperCase();
-      return nameMap[sVal] || val;
-    };
-
-    // 6. Final Result
-    const result = data.map(i => {
-      const frontend = mapDBToFrontend(i);
-      
-      // Humanizar el tipo de práctica principal (campo legacy)
-      const mainTypeId = i.PRACTICE_TYPE ? String(i.PRACTICE_TYPE) : '';
-      const practiceTypeName = internshipTypeNames[mainTypeId] || getFullName(i.PRACTICE_TYPE);
-      
-      // Humanizar el array de tipos de práctica (relaciones modernas)
-      let pTypes = (frontend.internshipTypeIds || []).map((id: string) => internshipTypeNames[id] || id);
-      
-      // Asegurarnos de que el tipo principal esté incluido y humanizado
-      if (practiceTypeName && !pTypes.includes(practiceTypeName)) {
-        if (pTypes.length === 0) pTypes = [practiceTypeName];
-        else pTypes.unshift(practiceTypeName);
+      try {
+        const [listRes, typeRes] = await Promise.all([
+          supabase.from('t_value_list').select('NAME, ABBREVIATION').eq('STATUS', 1),
+          supabase.from('t_internship_type').select('INTERNSHIP_TYPE_ID, NAME').eq('STATUS', 1)
+        ]);
+        listValues = listRes.data || [];
+        (typeRes.data || []).forEach((t: any) => {
+          internshipTypeNames[String(t.INTERNSHIP_TYPE_ID)] = t.NAME;
+        });
+      } catch (err) {
+        console.warn('[getInstitutions] Falló carga de mapeos:', err);
       }
 
-      return {
-        ...frontend,
-        region: getFullName(i.REGION),
-        nucleus: getFullName(i.NUCLEUS),
-        extension: getFullName(i.EXTENSION),
-        institutionType: getFullName(i.INSTITUTION_TYPE),
-        practiceType: practiceTypeName,
-        practiceTypes: pTypes
+      const nameMap: Record<string, string> = {};
+      listValues.forEach((v: { NAME: string; ABBREVIATION: string }) => {
+        if (v.NAME) nameMap[v.NAME.toUpperCase()] = v.NAME;
+        if (v.ABBREVIATION) nameMap[v.ABBREVIATION.toUpperCase()] = v.NAME;
+      });
+
+      const getFullName = (val: any) => {
+        if (!val) return '';
+        return nameMap[String(val).toUpperCase()] || val;
       };
-    });
-    
-    cacheManager.set(cacheKey, result, CACHE_TTL);
+
+      // 5. Final mapping
+      const data = enriched.map(i => {
+        const frontend = mapDBToFrontend(i);
+        const mainTypeId = i.PRACTICE_TYPE ? String(i.PRACTICE_TYPE) : '';
+        const practiceTypeName = internshipTypeNames[mainTypeId] || getFullName(i.PRACTICE_TYPE);
+        let pTypes = (frontend.internshipTypeIds || []).map((id: string) => internshipTypeNames[id] || id);
+        if (practiceTypeName && !pTypes.includes(practiceTypeName)) {
+          if (pTypes.length === 0) pTypes = [practiceTypeName];
+          else pTypes.unshift(practiceTypeName);
+        }
+        return {
+          ...frontend,
+          region: getFullName(i.REGION),
+          nucleus: getFullName(i.NUCLEUS),
+          extension: getFullName(i.EXTENSION),
+          institutionType: getFullName(i.INSTITUTION_TYPE),
+          practiceType: practiceTypeName,
+          practiceTypes: pTypes
+        };
+      });
+
+      return { data, total: total || 0, limit: intLimit, offset: intOffset };
+    }, 'getInstitutions');
+
+    // Cache solo para requests no paginados (full list para modales)
+    if (queryLimit === undefined && queryOffset === undefined) {
+      cacheManager.set(CACHE_KEY_LIST, result, CACHE_TTL);
+    }
+
     res.json(result);
   } catch (error: unknown) {
     console.error('[getInstitutions] Critical Error:', error);
@@ -278,42 +264,30 @@ export const getInstitutionById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const instId = parseInt(id);
+    const cacheKey = CACHE_KEY_BY_ID(instId);
+
+    const cached = cacheManager.get(cacheKey);
+    if (cached) return res.json(cached);
 
     const data = await dbManager.withRetry(async (supabase) => {
-      // 1. Fetch main table (using select * to be safe)
-      const { data: inst, error } = await supabase
-        .from(TABLE_NAME)
-        .select('*')
-        .eq('INSTITUTION_ID', instId)
-        .single();
+      // 1. Single RPC call — combina institución + responsables + carreras + tipos + práctica check
+      const { data: result, error } = await supabase.rpc('get_institution_by_id', { p_id: instId });
 
       if (error) throw error;
-
-      // 2. Parallel queries for relational data
-      // Ahora usamos la tabla pivote para responsables e internship types
-      const [{ data: respPivot }, { data: careers }, { data: internshipTypes }, { count: practiceCount }] = await Promise.all([
-        // Contar responsibles desde la tabla pivote
-        supabase.from('t_institution_manager_institution')
-          .select('"MANAGER_ID"', { count: 'exact', head: true })
-          .eq('"INSTITUTION_ID"', instId),
-        // Obtener carreras asociadas
-        supabase.from('t_institution_career').select('CAREER_ID').eq('INSTITUTION_ID', instId),
-        // Obtener tipos de práctica asociados
-        supabase.from('t_institution_internship_type').select('INTERNSHIP_TYPE_ID').eq('INSTITUTION_ID', instId),
-        // Contar prácticas activas
-        supabase.from('t_professional_practices').select('INSTITUTION_ID', { count: 'exact', head: true }).eq('INSTITUTION_ID', instId).eq('STATUS', 1).limit(1)
-      ]);
+      if (!result) {
+        throw new Error(`Institución con ID ${instId} no encontrada`);
+      }
 
       return {
-        ...inst,
-        responsibleCount: (respPivot?.length || 0),
-        careerIds: (careers || []).map((c: any) => c.CAREER_ID),
-        internshipTypeIds: (internshipTypes || []).map((t: any) => t.INTERNSHIP_TYPE_ID),
-        isInUse: (practiceCount || 0) > 0
+        ...result.institution,
+        responsibleCount: result.responsibleCount ?? 0,
+        careerIds: result.careerIds ?? [],
+        internshipTypeIds: result.internshipTypeIds ?? [],
+        isInUse: result.isInUse ?? false
       };
     }, 'getInstitutionById');
 
-    // 3. Get name mappings
+    // 2. Get name mappings
     let listValues: any[] = [];
     try {
       const response = await dbManager.withRetry(async (supabase) => {
@@ -341,7 +315,7 @@ export const getInstitutionById = async (req: Request, res: Response) => {
       return nameMap[sVal] || val;
     };
 
-    // 4. Return mapped result
+    // 3. Return mapped result
     const result = {
       ...mapDBToFrontend(data),
       region: getFullName(data.REGION),
@@ -350,6 +324,8 @@ export const getInstitutionById = async (req: Request, res: Response) => {
       institutionType: getFullName(data.INSTITUTION_TYPE),
       practiceType: getFullName(data.PRACTICE_TYPE)
     };
+
+    cacheManager.set(cacheKey, result, CACHE_TTL);
 
     res.json(result);
   } catch (error: unknown) {
@@ -385,7 +361,7 @@ export const createInstitution = async (req: AuthRequest, res: Response) => {
       const { data: inst, error } = await supabase
         .from(TABLE_NAME)
         .insert([dbData])
-        .select('*')
+        .select(INSTITUTION_COLUMNS)
         .single();
 
       if (error) throw error;
@@ -406,7 +382,7 @@ export const createInstitution = async (req: AuthRequest, res: Response) => {
 
     await auditCreate(req, 't_institution', dbData, INSTITUTION_COLUMNS_TO_AUDIT);
 
-    cacheManager.deleteByPrefix(CACHE_PREFIX);
+    cacheManager.delete(CACHE_KEY_LIST);
 
     res.status(201).json(mapDBToFrontend(data));
   } catch (error: unknown) {
@@ -426,7 +402,7 @@ export const getInstitutionByRif = async (req: Request, res: Response) => {
     const data = await dbManager.withRetry(async (supabase) => {
       const { data: inst, error } = await supabase
         .from(TABLE_NAME)
-        .select('*')
+        .select(INSTITUTION_COLUMNS)
         .eq('RIF', rif.toUpperCase())
         .maybeSingle();
 
@@ -472,7 +448,7 @@ export const updateInstitution = async (req: AuthRequest, res: Response) => {
     const data = await dbManager.withRetry(async (supabase) => {
       const { data: oldData } = await supabase
         .from(TABLE_NAME)
-        .select('*')
+        .select(INSTITUTION_COLUMNS)
         .eq('INSTITUTION_ID', id)
         .single();
 
@@ -480,7 +456,7 @@ export const updateInstitution = async (req: AuthRequest, res: Response) => {
         .from(TABLE_NAME)
         .update(dbData)
         .eq('INSTITUTION_ID', id)
-        .select('*')
+        .select(INSTITUTION_COLUMNS)
         .single();
 
       if (error) throw error;
@@ -510,7 +486,8 @@ export const updateInstitution = async (req: AuthRequest, res: Response) => {
       return inst as DBInstitution;
     }, 'updateInstitution');
 
-    cacheManager.deleteByPrefix(CACHE_PREFIX);
+    cacheManager.delete(CACHE_KEY_LIST);
+    cacheManager.delete(CACHE_KEY_BY_ID(id));
 
     res.json(mapDBToFrontend(data));
   } catch (error: unknown) {
@@ -545,7 +522,7 @@ export const deleteInstitution = async (req: AuthRequest, res: Response) => {
 
       const { data: oldData } = await supabase
         .from(TABLE_NAME)
-        .select('*')
+        .select(INSTITUTION_COLUMNS)
         .eq('INSTITUTION_ID', id)
         .single();
 
@@ -561,7 +538,8 @@ export const deleteInstitution = async (req: AuthRequest, res: Response) => {
       }
     }, 'deleteInstitution');
 
-    cacheManager.deleteByPrefix(CACHE_PREFIX);
+    cacheManager.delete(CACHE_KEY_LIST);
+    cacheManager.delete(CACHE_KEY_BY_ID(id));
 
     res.status(204).send();
   } catch (error: unknown) {
@@ -698,7 +676,7 @@ export const toggleInstitutionStatus = async (req: AuthRequest, res: Response) =
         .from(TABLE_NAME)
         .update({ STATUS: status ? 1 : 0 })
         .eq('INSTITUTION_ID', id)
-        .select('*')
+        .select(INSTITUTION_COLUMNS)
         .single();
 
       if (error) throw error;
@@ -710,7 +688,8 @@ export const toggleInstitutionStatus = async (req: AuthRequest, res: Response) =
       return inst as DBInstitution;
     }, 'toggleInstitutionStatus');
 
-    cacheManager.deleteByPrefix(CACHE_PREFIX);
+    cacheManager.delete(CACHE_KEY_LIST);
+    cacheManager.delete(CACHE_KEY_BY_ID(id));
 
     res.json(mapDBToFrontend(data));
   } catch (error: unknown) {
@@ -794,7 +773,9 @@ export const updateInstitutionCareers = async (req: AuthRequest, res: Response) 
       return { success: true };
     }, 'updateInstitutionCareers');
 
-    cacheManager.deleteByPrefix(CACHE_PREFIX);
+    const instId = parseInt(id);
+    cacheManager.delete(CACHE_KEY_LIST);
+    cacheManager.delete(CACHE_KEY_BY_ID(instId));
 
     res.json(data);
   } catch (error: unknown) {

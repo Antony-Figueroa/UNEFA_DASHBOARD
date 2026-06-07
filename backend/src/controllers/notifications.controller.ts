@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { supabase } from "../lib/supabase.js";
+import { notificationsUnified } from "../services/notifications-unified.service.js";
 
 export interface Notification {
   NOTIFICATION_ID: number;
@@ -168,28 +169,8 @@ export const createNotification = async (
   message: string,
   data?: Record<string, unknown>
 ): Promise<unknown> => {
-  try {
-    const { error } = await supabase
-      .from("t_notifications")
-      .insert({
-        USER_ID: userId,
-        TYPE: type,
-        TITLE: title,
-        MESSAGE: message,
-        DATA: data || null,
-        READ: false,
-      });
-
-    if (error) {
-      console.error("[notifications.controller] Error creating notification:", error);
-      return null;
-    }
-
-    return true;
-  } catch (error) {
-    console.error("[notifications.controller] Error creating notification:", error);
-    return null;
-  }
+  const result = await notificationsUnified.create({ userId, type, title, message, data });
+  return result.notification ? true : null;
 };
 
 export const createBulkNotifications = async (
@@ -199,28 +180,6 @@ export const createBulkNotifications = async (
   message: string,
   data?: Record<string, unknown>
 ): Promise<boolean> => {
-  try {
-    const notifications = userIds.map((uid) => ({
-      USER_ID: uid,
-      TYPE: type,
-      TITLE: title,
-      MESSAGE: message,
-      DATA: data || null,
-      READ: false,
-    }));
-
-    const { error } = await supabase
-      .from("t_notifications")
-      .insert(notifications);
-
-    if (error) {
-      console.error("[notifications.controller] Error creating bulk notifications:", error);
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error("[notifications.controller] Error creating bulk notifications:", error);
-    return false;
-  }
+  const count = await notificationsUnified.createBulk({ userIds, type, title, message, data });
+  return count > 0;
 };

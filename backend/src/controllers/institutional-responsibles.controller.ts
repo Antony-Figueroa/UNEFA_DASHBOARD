@@ -1,9 +1,14 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
+import { cacheManager } from '../lib/cache-manager.js';
 import * as personService from '../services/person.service.js';
 
 const TABLE_NAME = 't_institution_manager';
 const PIVOT_TABLE = 't_institution_manager_institution';
+const CACHE_PREFIX_RESP = 'institutional-responsibles:';
+const CACHE_KEY_RESP_LIST = `${CACHE_PREFIX_RESP}list`;
+const CACHE_KEY_RESP_BY_CI = (ci: string) => `${CACHE_PREFIX_RESP}by-ci:${ci}`;
+const CACHE_TTL = 300000; // 5 minutos
 
 interface AppError extends Error {
   code?: string;
@@ -147,7 +152,11 @@ function extractPersonData(body: any) {
 // ============================================================
 
 export const getInstitutionalResponsibles = async (_req: Request, res: Response) => {
+  const cacheKey = CACHE_KEY_RESP_LIST;
   try {
+    const cachedData = cacheManager.get(cacheKey);
+    if (cachedData) return res.json(cachedData);
+
     const data = await dbManager.withRetry(async (supabase) => {
       const { data: responsibles, error } = await supabase
         .from(TABLE_NAME)
@@ -186,7 +195,9 @@ export const getInstitutionalResponsibles = async (_req: Request, res: Response)
       })) as unknown as DBInstitutionalResponsible[];
     }, 'getInstitutionalResponsibles');
 
-    res.json(data.map(mapDBToFrontend));
+    const result = data.map(mapDBToFrontend);
+    cacheManager.set(cacheKey, result, CACHE_TTL);
+    res.json(result);
   } catch (error: unknown) {
     handleDbError(res, error);
   }
@@ -199,6 +210,10 @@ export const getInstitutionalResponsibles = async (_req: Request, res: Response)
 export const getInstitutionalResponsibleByCi = async (req: Request, res: Response) => {
   try {
     const { ci } = req.params;
+    const cacheKey = CACHE_KEY_RESP_BY_CI(ci);
+
+    const cached = cacheManager.get(cacheKey);
+    if (cached) return res.json(cached);
 
     const person = await personService.getPersonByCi(ci);
     if (!person) {
@@ -240,6 +255,7 @@ export const getInstitutionalResponsibleByCi = async (req: Request, res: Respons
       });
     }
 
+    cacheManager.set(cacheKey, { data: mapDBToFrontend(data) }, CACHE_TTL);
     res.json({ data: mapDBToFrontend(data) });
   } catch (error: unknown) {
     handleDbError(res, error);
@@ -356,6 +372,8 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
       } as unknown as DBInstitutionalResponsible;
     }, 'createInstitutionalResponsible');
 
+    cacheManager.delete(CACHE_KEY_RESP_LIST);
+
     res.status(201).json(mapDBToFrontend(data));
   } catch (error: unknown) {
     handleDbError(res, error);
@@ -457,6 +475,8 @@ export const updateInstitutionalResponsible = async (req: Request, res: Response
       return { ...updatedData, institutions } as unknown as DBInstitutionalResponsible;
     });
 
+    cacheManager.delete(CACHE_KEY_RESP_LIST);
+
     res.json(mapDBToFrontend(data));
   } catch (error: unknown) {
     handleDbError(res, error);
@@ -477,6 +497,7 @@ export const deleteInstitutionalResponsible = async (req: Request, res: Response
         .eq('MANAGER_ID', id);
       if (error) throw error;
     });
+    cacheManager.delete(CACHE_KEY_RESP_LIST);
     res.status(204).send();
   } catch (error: unknown) {
     handleDbError(res, error);
@@ -517,6 +538,8 @@ export const toggleInstitutionalResponsibleStatus = async (req: Request, res: Re
       return { ...updatedData, institutions } as unknown as DBInstitutionalResponsible;
     });
 
+    cacheManager.delete(CACHE_KEY_RESP_LIST);
+
     res.json(mapDBToFrontend(data));
   } catch (error: unknown) {
     handleDbError(res, error);
@@ -550,3 +573,4 @@ export const checkIdAvailability = async (req: Request, res: Response) => {
     handleDbError(res, error);
   }
 };
+

@@ -112,6 +112,8 @@ export default function InstitutionsPage() {
     toggleStatus: toggleInstStatus,
     bulkRemoveInstitutions,
     bulkRestoreInstitutions,
+    pagination: instPagination,
+    setPage: setInstPage,
   } = useInstitutions();
 
   const {
@@ -124,11 +126,13 @@ export default function InstitutionsPage() {
     refreshResponsibles,
     bulkRemoveResponsibles,
     bulkRestoreResponsibles,
+    pagination: respPagination,
+    setPage: setRespPage,
   } = useInstitutionalResponsibles();
 
-  const { careers, refreshCareers } = useCareers();
+  const { careers, refreshCareers } = useCareers({ autoLoad: false });
 
-  const { activeOptions: internshipTypeOptions } = useInternshipTypes();
+  const { activeOptions: internshipTypeOptions } = useInternshipTypes({ autoLoad: false });
 
   const careerOptions = useMemo(() =>
     careers.filter(c => c.status).map(c => ({
@@ -221,6 +225,7 @@ export default function InstitutionsPage() {
    const handleOpenAddModal = () => {
      if (mainTab === "Instituciones") {
        setEditingInst(null);
+       refreshCareers();
        setIsModalOpen(true);
      } else {
        setEditingResp(null);
@@ -242,9 +247,6 @@ export default function InstitutionsPage() {
   const handleOpenEditModal = async (inst: InstitutionRowData) => {
     const original = institutions.find(i => i.institutionId === inst.institutionId);
     if (original) {
-      // Refrescar datos de responsables para obtener los cargos específicos por institución
-      await refreshResponsibles();
-      
       // Obtener datos frescos del servidor para asegurar tener internshipTypeIds
       try {
         const { getInstitutionById } = await import("../../features/institutions/services/institutionsService");
@@ -471,6 +473,8 @@ export default function InstitutionsPage() {
                   onBulkDelete={(ids) => handleBulkInstAction(ids, "inactivate")}
                   onBulkRestore={(ids) => handleBulkInstAction(ids, "restore")}
                   institutionTypeOptions={institutionTypeOptions}
+                  pagination={instPagination}
+                  onPageChange={setInstPage}
                 />
               ) : (
                 <InstitutionalResponsibleTable
@@ -482,6 +486,8 @@ export default function InstitutionsPage() {
                   onToggleStatus={handleToggleRespStatus}
                   onBulkAction={handleBulkRespAction}
                   isLoading={respStatus === "loading"}
+                  pagination={respPagination}
+                  onPageChange={setRespPage}
                 />
               )}
             </SkeletonLoader>

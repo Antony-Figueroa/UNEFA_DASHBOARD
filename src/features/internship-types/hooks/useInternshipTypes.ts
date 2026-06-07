@@ -33,7 +33,7 @@ const serviceAdapter = {
  * 
  * @returns {Object} Estado y funciones para manipular tipos de práctica.
  */
-export const useInternshipTypes = () => {
+export const useInternshipTypes = (crudOptions?: { autoLoad?: boolean }) => {
   const {
     data: internshipTypes,
     status,
@@ -51,6 +51,7 @@ export const useInternshipTypes = () => {
     {
       resourceName: "Tipo de Práctica",
       idField: "id",
+      autoLoad: crudOptions?.autoLoad ?? true,
     }
   );
 

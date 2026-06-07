@@ -114,6 +114,8 @@ export default function InstitutionTable({
   onBulkRestore,
   activeTab = "Activas",
   institutionTypeOptions = [],
+  pagination,
+  onPageChange,
 }: InstitutionTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [institutionTypeFilter, setInstitutionTypeFilter] = useState("");

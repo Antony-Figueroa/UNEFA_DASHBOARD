@@ -1,28 +1,64 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Modal } from '../../../components/ui/modal';
 import InputField from '../../../components/form/input/InputField';
 import reportsService, {
   PracticeSearchResult,
   TutorSearchResult,
 } from '../services/reportsService';
+import { prospectsService } from '../../prospectos/services/prospectsService';
+import { EligibleStudent } from '../../prospectos/types';
+
+type RecordType = 'practice' | 'tutor' | 'student';
 
 interface RecordListModalProps {
   isOpen: boolean;
   onClose: () => void;
-  recordType: 'practice' | 'tutor';
+  recordType: RecordType;
   documentType?: string;
-  onSelect: (item: PracticeSearchResult | TutorSearchResult) => void;
+  /** Período para filtrar estudiantes elegibles (solo para student) */
+  periodId?: number;
+  onSelect: (item: PracticeSearchResult | TutorSearchResult | EligibleStudent) => void;
 }
 
 const LIMIT = 10;
 
-export function RecordListModal({ isOpen, onClose, recordType, documentType, onSelect }: RecordListModalProps) {
+interface StudentRecord {
+  id: number;
+  displayName: string;
+  ci: string;
+  careerName?: string;
+  email?: string;
+  phone?: string;
+}
+
+export function RecordListModal({ isOpen, onClose, recordType, documentType, periodId, onSelect }: RecordListModalProps) {
   const [page, setPage] = useState(0);
   const [query, setQuery] = useState('');
-  const [records, setRecords] = useState<(PracticeSearchResult | TutorSearchResult)[]>([]);
+  const [records, setRecords] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [searchInput, setSearchInput] = useState('');
+
+  const isPractice = recordType === 'practice';
+  const isStudent = recordType === 'student';
+
+  const title = isPractice ? 'Explorar Prácticas' : isStudent ? 'Explorar Estudiantes' : 'Explorar Tutores';
+  const placeholder = isPractice
+    ? 'Buscar por CI o nombre del estudiante...'
+    : isStudent
+      ? 'Buscar por CI o nombre del estudiante...'
+      : 'Buscar por CI o nombre del tutor...';
+
+  const fetchFn = useCallback(async (p: number, q: string) => {
+    if (recordType === 'practice') {
+      return reportsService.listPractices(p, LIMIT, q, documentType);
+    } else if (recordType === 'student') {
+      const { data, total } = await prospectsService.getEligibleStudents({ search: q, periodId, page: p, limit: LIMIT });
+      return { data, meta: { total } };
+    } else {
+      return reportsService.listTutors(p, LIMIT, q);
+    }
+  }, [recordType, documentType, periodId]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -39,15 +75,9 @@ export function RecordListModal({ isOpen, onClose, recordType, documentType, onS
     const fetchRecords = async () => {
       setLoading(true);
       try {
-        if (recordType === 'practice') {
-          const res = await reportsService.listPractices(page, LIMIT, query, documentType);
-          setRecords(res.data);
-          setTotal(res.meta.total);
-        } else {
-          const res = await reportsService.listTutors(page, LIMIT, query);
-          setRecords(res.data);
-          setTotal(res.meta.total);
-        }
+        const res = await fetchFn(page, query);
+        setRecords(res.data || []);
+        setTotal(res.meta?.total || 0);
       } catch {
         setRecords([]);
         setTotal(0);
@@ -56,7 +86,7 @@ export function RecordListModal({ isOpen, onClose, recordType, documentType, onS
       }
     };
     fetchRecords();
-  }, [isOpen, page, query, recordType]);
+  }, [isOpen, page, query, fetchFn]);
 
   const handleSearch = () => {
     setQuery(searchInput);
@@ -70,24 +100,100 @@ export function RecordListModal({ isOpen, onClose, recordType, documentType, onS
   const totalPages = Math.max(1, Math.ceil(total / LIMIT));
   const currentPageLabel = page + 1;
 
-  const isPractice = recordType === 'practice';
+  const renderHeaders = () => {
+    if (isPractice) {
+      return (
+        <>
+          <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Estudiante</th>
+          <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">CI</th>
+          <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Carrera</th>
+          <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Institución</th>
+          <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Periodo</th>
+          <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Estado</th>
+        </>
+      );
+    }
+    if (isStudent) {
+      return (
+        <>
+          <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Nombre</th>
+          <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">CI</th>
+          <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Carrera</th>
+          <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Email</th>
+        </>
+      );
+    }
+    return (
+      <>
+        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Nombre</th>
+        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">CI</th>
+        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Email</th>
+        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Carreras</th>
+      </>
+    );
+  };
+
+  const renderRow = (item: any) => {
+    if (isPractice) {
+      return (
+        <>
+          <td className="px-4 py-3 text-text-primary">{item.studentName}</td>
+          <td className="px-4 py-3 text-text-secondary">{item.studentCi}</td>
+          <td className="px-4 py-3 text-text-secondary">{item.careerName}</td>
+          <td className="px-4 py-3 text-text-secondary hidden md:table-cell">{item.institutionName || '-'}</td>
+          <td className="px-4 py-3 text-text-secondary hidden md:table-cell">{item.period || '-'}</td>
+          <td className="px-4 py-3 text-text-secondary hidden md:table-cell">
+            <span className={`text-xs font-medium ${
+              item.status === 1 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'
+            }`}>
+              {item.status === 1 ? 'Activo' : 'Inactivo'}
+            </span>
+          </td>
+        </>
+      );
+    }
+    if (isStudent) {
+      return (
+        <>
+          <td className="px-4 py-3 text-text-primary">{item.firstName} {item.lastName}</td>
+          <td className="px-4 py-3 text-text-secondary">{item.identificationPrefix}-{item.identificationNumber}</td>
+          <td className="px-4 py-3 text-text-secondary">{item.careerName || '-'}</td>
+          <td className="px-4 py-3 text-text-secondary hidden md:table-cell">{item.email || '-'}</td>
+        </>
+      );
+    }
+    return (
+      <>
+        <td className="px-4 py-3 text-text-primary">{item.fullName}</td>
+        <td className="px-4 py-3 text-text-secondary">{item.ci}</td>
+        <td className="px-4 py-3 text-text-secondary">{item.email}</td>
+        <td className="px-4 py-3 text-text-secondary hidden md:table-cell">{item.careers || '-'}</td>
+      </>
+    );
+  };
+
+  const getRowKey = (item: any) => {
+    if (isPractice) return item.practiceId;
+    if (isStudent) return item.studentsId;
+    return item.tutorId;
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="3xl">
       <div className="p-6 space-y-4">
         <div>
           <h3 className="text-lg font-bold text-text-primary dark:text-text-emphasis">
-            {isPractice ? 'Explorar Prácticas' : 'Explorar Tutores'}
+            {title}
           </h3>
           <p className="text-sm text-text-tertiary mt-1">
-            Seleccioná un registro de la lista para completar el ID automáticamente
+            Seleccioná un registro de la lista
           </p>
         </div>
 
         <div className="flex gap-2">
           <div className="flex-1">
             <InputField
-              placeholder={isPractice ? 'Buscar por CI o nombre del estudiante...' : 'Buscar por CI o nombre del tutor...'}
+              placeholder={placeholder}
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
@@ -121,55 +227,17 @@ export function RecordListModal({ isOpen, onClose, recordType, documentType, onS
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 dark:bg-white/5 border-b border-border-default dark:border-border-dark">
-                    {isPractice ? (
-                      <>
-                        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Estudiante</th>
-                        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">CI</th>
-                        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Carrera</th>
-                        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Institución</th>
-                        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Periodo</th>
-                        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Estado</th>
-                      </>
-                    ) : (
-                      <>
-                        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Nombre</th>
-                        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">CI</th>
-                        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Email</th>
-                        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Carreras</th>
-                      </>
-                    )}
+                    {renderHeaders()}
                   </tr>
                 </thead>
                 <tbody>
                   {records.map((item: any) => (
                     <tr
-                      key={isPractice ? item.practiceId : item.tutorId}
+                      key={getRowKey(item)}
                       onClick={() => onSelect(item)}
                       className="cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 border-b border-border-default dark:border-border-dark last:border-b-0 transition-colors"
                     >
-                      {isPractice ? (
-                        <>
-                          <td className="px-4 py-3 text-text-primary">{item.studentName}</td>
-                          <td className="px-4 py-3 text-text-secondary">{item.studentCi}</td>
-                          <td className="px-4 py-3 text-text-secondary">{item.careerName}</td>
-                          <td className="px-4 py-3 text-text-secondary hidden md:table-cell">{item.institutionName || '-'}</td>
-                          <td className="px-4 py-3 text-text-secondary hidden md:table-cell">{item.period || '-'}</td>
-                          <td className="px-4 py-3 text-text-secondary hidden md:table-cell">
-                            <span className={`text-xs font-medium ${
-                              item.status === 1 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'
-                            }`}>
-                              {item.status === 1 ? 'Activo' : 'Inactivo'}
-                            </span>
-                          </td>
-                        </>
-                      ) : (
-                        <>
-                          <td className="px-4 py-3 text-text-primary">{item.fullName}</td>
-                          <td className="px-4 py-3 text-text-secondary">{item.ci}</td>
-                          <td className="px-4 py-3 text-text-secondary">{item.email}</td>
-                          <td className="px-4 py-3 text-text-secondary hidden md:table-cell">{item.careers || '-'}</td>
-                        </>
-                      )}
+                      {renderRow(item)}
                     </tr>
                   ))}
                 </tbody>
@@ -188,10 +256,7 @@ export function RecordListModal({ isOpen, onClose, recordType, documentType, onS
                 >
                   ←
                 </button>
-
-                {/* Page numbers */}
                 {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                  // Window logic: show pages around current, with first+last
                   let pageNum: number;
                   if (totalPages <= 7) {
                     pageNum = i;
@@ -216,7 +281,6 @@ export function RecordListModal({ isOpen, onClose, recordType, documentType, onS
                     </button>
                   );
                 })}
-
                 <button
                   onClick={() => setPage(p => p + 1)}
                   disabled={page >= totalPages - 1}

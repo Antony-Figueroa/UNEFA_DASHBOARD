@@ -20,7 +20,7 @@ import { matchSearch } from "../../../utils/searchNormalizer";
  * 
  * @returns {Object} Estado y funciones para manipular carreras.
  */
-export const useCareers = () => {
+export const useCareers = (options?: { autoLoad?: boolean }) => {
   const {
     data: careers,
     filteredData: filteredCareers,
@@ -39,6 +39,7 @@ export const useCareers = () => {
   } = useCrud<Career, CreateCareerPayload, UpdateCareerPayload>(careerService, {
     resourceName: "Carrera",
     idField: "careerId",
+    autoLoad: options?.autoLoad ?? true,
     filterFn: (c, term) => {
       return (
         matchSearch(String(c.careerName), term) ||

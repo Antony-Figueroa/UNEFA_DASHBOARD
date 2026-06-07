@@ -203,7 +203,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const nextWeek = new Date();
     nextWeek.setDate(nextWeek.getDate() + 7);
     const { count: upcomingVisitsCount } = await supabase
-      .from('t_visits')
+      .from('t_visit')
       .select('*', { count: 'exact', head: true })
       .gte('VISIT_DATE', new Date().toISOString())
       .lte('VISIT_DATE', nextWeek.toISOString());

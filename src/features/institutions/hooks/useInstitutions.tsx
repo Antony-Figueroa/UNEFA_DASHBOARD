@@ -61,9 +61,15 @@ export const useInstitutions = () => {
     error,
     refresh: refreshInstitutions,
     deleteItem: removeInstitution,
+    pagination,
+    setPage,
+    setLimit,
   } = useCrud<Institution, CreateInstitutionPayload, UpdateInstitutionPayload>(institutionService, {
     resourceName: "Institución",
     idField: "institutionId",
+    optimistic: true,
+    usePagination: true,
+    pageSize: 20,
   });
 
   /**
@@ -186,13 +192,16 @@ export const useInstitutions = () => {
     const failMessages: string[] = [];
 
     try {
-      for (const id of ids) {
-        try {
-          await institutionService.toggleStatus!(id, false);
+      const results = await Promise.allSettled(
+        ids.map(id => institutionService.toggleStatus!(id, false))
+      );
+
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
           successCount++;
-        } catch (innerError) {
-          const error = innerError as { response?: { data?: { message?: string } } };
-          const msg = error.response?.data?.message || `Error al inactivar institución`;
+        } else {
+          const error = result.reason as { response?: { data?: { message?: string } } };
+          const msg = error.response?.data?.message || 'Error al inactivar institución';
           if (!failMessages.includes(msg)) failMessages.push(msg);
         }
       }
@@ -254,5 +263,8 @@ export const useInstitutions = () => {
     toggleStatus,
     bulkRemoveInstitutions,
     bulkRestoreInstitutions,
+    pagination,
+    setPage,
+    setLimit,
   };
 };

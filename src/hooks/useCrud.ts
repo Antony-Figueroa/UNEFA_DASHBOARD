@@ -10,13 +10,22 @@
 import { useState, useCallback, useEffect } from "react";
 import { useToast } from "../context/toast";
 import { TOAST_SUCCESS, TOAST_ERROR, TOAST_TITLES } from "../components/ui/dialog/DialogConfig";
+import type { GetAllParams, PaginatedResponse } from "../api/crudServiceFactory";
 
 /** Estados posibles de la carga de datos */
 export type CrudStatus = "loading" | "success" | "error" | "idle";
 
+/** Estado de paginación */
+export interface PaginationState {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 /** Interfaz del servicio que consume el hook */
 export interface CrudServiceAdapter<TItem, TCreatePayload, TUpdatePayload> {
-  getAll: () => Promise<TItem[]>;
+  getAll: (params?: GetAllParams) => Promise<TItem[] | PaginatedResponse<TItem>>;
   create: (data: TCreatePayload) => Promise<TItem>;
   update: (data: TUpdatePayload) => Promise<TItem>;
   delete: (id: string | number) => Promise<void>;
@@ -35,6 +44,12 @@ export interface UseCrudOptions<TItem> {
   filterFn?: (item: TItem, term: string) => boolean;
   /** Identificador de campo único (por defecto 'id') */
   idField?: keyof TItem;
+  /** Si es true, muta el estado local sin re-fetch en create/update/delete/toggle */
+  optimistic?: boolean;
+  /** Si es true, habilita paginación server-side con limit/offset */
+  usePagination?: boolean;
+  /** Cantidad de items por página (default: 20, solo si usePagination=true) */
+  pageSize?: number;
 }
 
 /**
@@ -50,25 +65,53 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
   const { 
     resourceName, 
     autoLoad = true, 
-    filterFn, 
+    filterFn,
+    optimistic = false,
+    usePagination: enablePagination = false,
+    pageSize = 20,
   } = options;
+
+  const idKey = options.idField || 'id' as keyof TItem;
 
   const [data, setData] = useState<TItem[]>([]);
   const [status, setStatus] = useState<CrudStatus>("idle");
   const [loadingAction, setLoadingAction] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 1,
+    limit: pageSize,
+    total: 0,
+    totalPages: 0,
+  });
   
   const { addToast } = useToast();
 
   /**
    * Refresca la lista de elementos desde el servidor.
+   * Si usePagination=true, envía limit/offset; de lo contrario mantiene comportamiento anterior.
    */
   const refresh = useCallback(async () => {
     setStatus("loading");
     try {
-      const result = await service.getAll();
-      setData(result);
+      const result = await service.getAll(
+        enablePagination 
+          ? { limit: pagination.limit, offset: pagination.limit * (pagination.page - 1) }
+          : undefined
+      );
+      
+      if (enablePagination && result && typeof result === 'object' && 'total' in result && 'data' in result) {
+        const paginated = result as PaginatedResponse<TItem>;
+        setData(paginated.data);
+        setPagination(prev => ({
+          ...prev,
+          total: paginated.total,
+          totalPages: Math.ceil(paginated.total / prev.limit) || 1,
+        }));
+      } else {
+        setData(result as TItem[]);
+      }
+      
       setStatus("success");
       setError(null);
     } catch (e) {
@@ -85,7 +128,7 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
         });
       }
     }
-  }, [service, resourceName, addToast]);
+  }, [service, resourceName, addToast, enablePagination, pagination.limit, pagination.page]);
 
   useEffect(() => {
     if (autoLoad) {
@@ -106,7 +149,12 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
     setLoadingAction(true);
     try {
       const newItem = await service.create(payload);
-      await refresh();
+      
+      if (optimistic && newItem) {
+        setData(prev => [...prev, newItem]);
+      } else {
+        await refresh();
+      }
       
       if (!options?.silent) {
         addToast({
@@ -147,7 +195,14 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
     setLoadingAction(true);
     try {
       const updatedItem = await service.update(payload);
-      await refresh();
+      
+      if (optimistic && updatedItem) {
+        setData(prev => prev.map(item => 
+          (item as any)[idKey] === (updatedItem as any)[idKey] ? updatedItem : item
+        ));
+      } else {
+        await refresh();
+      }
       
       if (!options?.silent) {
         addToast({
@@ -186,9 +241,18 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
     options?: { silent?: boolean }
   ): Promise<boolean> => {
     setLoadingAction(true);
+    let previousData: TItem[] = [];
+    if (optimistic) {
+      previousData = [...data];
+      setData(prev => prev.filter(item => (item as any)[idKey] !== id));
+    }
+    
     try {
       await service.delete(id);
-      await refresh();
+      
+      if (!optimistic) {
+        await refresh();
+      }
       
       if (!options?.silent) {
         addToast({
@@ -200,6 +264,11 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       
       return true;
     } catch (e) {
+      // Revertir cambio optimista
+      if (optimistic) {
+        setData(previousData);
+      }
+      
       const err = e instanceof Error ? e : new Error(TOAST_ERROR.delete(resourceName));
       
       if (!options?.silent) {
@@ -231,9 +300,20 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
     if (!service.toggleStatus) return false;
     
     setLoadingAction(true);
+    let previousData: TItem[] = [];
+    if (optimistic) {
+      previousData = [...data];
+      setData(prev => prev.map(item => 
+        (item as any)[idKey] === id ? { ...item, status: newStatus } as TItem : item
+      ));
+    }
+    
     try {
       await service.toggleStatus(id, newStatus);
-      await refresh();
+      
+      if (!optimistic) {
+        await refresh();
+      }
       
       if (!options?.silent) {
         addToast({
@@ -245,6 +325,11 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       
       return true;
     } catch (e) {
+      // Revertir cambio optimista
+      if (optimistic) {
+        setData(previousData);
+      }
+      
       const err = e instanceof Error ? e : new Error(TOAST_ERROR.update(resourceName));
       
       if (!options?.silent) {
@@ -272,9 +357,19 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
   ): Promise<boolean> => {
     if (!service.bulkDelete) return false;
     setLoadingAction(true);
+    let previousData: TItem[] = [];
+    if (optimistic) {
+      previousData = [...data];
+      const idSet = new Set(ids.map(String));
+      setData(prev => prev.filter(item => !idSet.has(String((item as any)[idKey]))));
+    }
+    
     try {
       await service.bulkDelete(ids);
-      await refresh();
+      
+      if (!optimistic) {
+        await refresh();
+      }
       
       if (!options?.silent) {
         addToast({
@@ -286,6 +381,7 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       
       return true;
     } catch (e) {
+      if (optimistic) setData(previousData);
       const err = e instanceof Error ? e : new Error(`Error en eliminación masiva de ${resourceName}`);
       
       if (!options?.silent) {
@@ -313,9 +409,21 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
   ): Promise<boolean> => {
     if (!service.bulkRestore) return false;
     setLoadingAction(true);
+    let previousData: TItem[] = [];
+    if (optimistic) {
+      previousData = [...data];
+      // Toggle status for matching items (optimistic — status becomes true)
+      setData(prev => prev.map(item => 
+        ids.includes((item as any)[idKey]) ? { ...item, status: true } as TItem : item
+      ));
+    }
+    
     try {
       await service.bulkRestore(ids);
-      await refresh();
+      
+      if (!optimistic) {
+        await refresh();
+      }
       
       if (!options?.silent) {
         addToast({
@@ -327,6 +435,7 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       
       return true;
     } catch (e) {
+      if (optimistic) setData(previousData);
       const err = e instanceof Error ? e : new Error(`Error en restauración masiva de ${resourceName}`);
       
       if (!options?.silent) {
@@ -342,6 +451,18 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       setLoadingAction(false);
     }
   };
+
+  /** Navega a una página específica (solo si usePagination=true) */
+  const setPage = useCallback((page: number) => {
+    if (!enablePagination) return;
+    setPagination(prev => ({ ...prev, page: Math.max(1, Math.min(page, prev.totalPages || 1)) }));
+  }, [enablePagination]);
+
+  /** Cambia el tamaño de página (solo si usePagination=true) */
+  const setLimit = useCallback((limit: number) => {
+    if (!enablePagination) return;
+    setPagination(prev => ({ ...prev, limit, page: 1 }));
+  }, [enablePagination]);
 
   /** Lista filtrada según el término de búsqueda y la función proporcionada */
   const filteredData = searchTerm && filterFn 
@@ -362,6 +483,9 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
     deleteItem,
     toggleItemStatus,
     bulkDelete,
-    bulkRestore
+    bulkRestore,
+    pagination: enablePagination ? pagination : undefined,
+    setPage: enablePagination ? setPage : undefined,
+    setLimit: enablePagination ? setLimit : undefined,
   };
 }

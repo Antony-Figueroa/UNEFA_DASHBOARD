@@ -239,3 +239,47 @@ export const sendSecurityAlert = async (email: string, name: string, type: 'FAIL
     text: `${message} Fecha: ${date}, IP: ${ip}.`
   });
 };
+
+/**
+ * Envía notificaciones de período académico por email a múltiples usuarios
+ */
+export const sendPeriodNotification = async (
+  users: Array<{ email: string; name: string }>,
+  subject: string,
+  message: string,
+  periodName: string,
+): Promise<void> => {
+  const html = `
+    <div style="font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+      <div style="background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); padding: 24px; text-align: center;">
+        <h1 style="color: #ffffff; margin: 0; font-size: 20px;">SIGP UNEFA</h1>
+        <p style="color: rgba(255,255,255,0.75); margin: 6px 0 0; font-size: 13px;">Notificación de Período Académico</p>
+      </div>
+      <div style="padding: 28px; color: #1e293b; line-height: 1.6;">
+        <h2 style="color: #1e40af; font-size: 18px; margin: 0 0 12px;">${subject}</h2>
+        <p style="margin: 0 0 16px; color: #475569;">${message}</p>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+        <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">
+          SIGP UNEFA — Sistema de Gestión de Personal<br>
+          Este es un mensaje automático, por favor no responder.
+        </p>
+      </div>
+    </div>
+  `;
+
+  const results = await Promise.allSettled(
+    users.map(u =>
+      sendEmail({
+        to: u.email,
+        subject: `${subject} - SIGP UNEFA`,
+        html,
+        text: `${subject}\n\nHola ${u.name},\n\n${message}`,
+      })
+    )
+  );
+
+  const failed = results.filter(r => r.status === 'rejected').length;
+  if (failed > 0) {
+    console.error(`[PeriodEmail] ${failed}/${users.length} emails failed to send`);
+  }
+};

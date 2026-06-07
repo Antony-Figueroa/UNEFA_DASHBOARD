@@ -1,9 +1,9 @@
 /**
  * @file notification.service.ts
- * @description Backend service for creating notifications for critical actions
+ * @description Wrapper de compatibilidad — delega al unified notification service.
  */
 
-import { dbManager } from '../lib/db-manager.js';
+import { notificationsUnified } from './notifications-unified.service.js';
 
 export interface CreateNotificationParams {
   userId: number;
@@ -20,23 +20,14 @@ class NotificationService {
    */
   async create(params: CreateNotificationParams): Promise<{ success: boolean; id?: number; error?: string }> {
     try {
-      const { data, error } = await dbManager.withRetry(async (supabase) => {
-        return await supabase.from('t_notifications').insert({
-          USER_ID: params.userId,
-          TITLE: params.title,
-          MESSAGE: params.message,
-          TYPE: params.type || 'info',
-          RELATED_ENTITY: params.relatedEntity || null,
-          RELATED_ENTITY_ID: params.relatedEntityId || null,
-          STATUS: 1, // unread
-          IS_READ: false
-        }).select('NOTIFICATION_ID').single();
+      const result = await notificationsUnified.create({
+        userId: params.userId,
+        type: params.type || 'info',
+        title: params.title,
+        message: params.message,
+        data: params.relatedEntity ? { entity: params.relatedEntity, entityId: params.relatedEntityId } : undefined,
       });
-
-      if (error) throw error;
-
-      console.log(`[Notification] Created notification #${(data as any)?.NOTIFICATION_ID}: ${params.title}`);
-      return { success: true, id: (data as any)?.NOTIFICATION_ID };
+      return { success: true, id: (result.notification as any)?.NOTIFICATION_ID };
     } catch (error) {
       console.error('[Notification] Error creating notification:', error);
       return { success: false, error: String(error) };
@@ -44,46 +35,16 @@ class NotificationService {
   }
 
   /**
-   * Creates a notification for all admin users
+   * Creates notifications for all admin users via unified service
    */
   async notifyAdmins(params: Omit<CreateNotificationParams, 'userId'>): Promise<{ success: boolean; count: number }> {
-    try {
-      // Get all admin users
-      const { data: admins, error: adminError } = await dbManager.withRetry(async (supabase) => {
-        return await supabase
-          .from('t_user')
-          .select('USER_ID')
-          .eq('STATUS', 1);
-      });
-
-      if (adminError) throw adminError;
-      if (!admins || admins.length === 0) {
-        return { success: true, count: 0 };
-      }
-
-      const notifications = (admins as any[]).map(admin => ({
-        USER_ID: admin.USER_ID,
-        TITLE: params.title,
-        MESSAGE: params.message,
-        TYPE: params.type || 'info',
-        RELATED_ENTITY: params.relatedEntity || null,
-        RELATED_ENTITY_ID: params.relatedEntityId || null,
-        STATUS: 1,
-        IS_READ: false
-      }));
-
-      const { error: insertError } = await dbManager.withRetry(async (supabase) => {
-        return await supabase.from('t_notifications').insert(notifications);
-      });
-
-      if (insertError) throw insertError;
-
-      console.log(`[Notification] Notified ${admins.length} admins: ${params.title}`);
-      return { success: true, count: admins.length };
-    } catch (error) {
-      console.error('[Notification] Error notifying admins:', error);
-      return { success: false, count: 0 };
-    }
+    const count = await notificationsUnified.sendToRole({
+      role: 'admin',
+      type: params.type || 'info',
+      title: params.title,
+      message: params.message,
+    });
+    return { success: count !== null, count: count || 0 };
   }
 
   /**
@@ -95,19 +56,16 @@ class NotificationService {
     userMessage: string
   ): Promise<{ success: boolean; adminCount: number; userSuccess: boolean }> {
     const adminResult = await this.notifyAdmins(adminParams);
-    const userResult = await this.create({
+    const userResult = await notificationsUnified.create({
       userId,
+      type: adminParams.type || 'info',
       title: userMessage,
       message: adminParams.message,
-      type: adminParams.type,
-      relatedEntity: adminParams.relatedEntity,
-      relatedEntityId: adminParams.relatedEntityId
     });
-
     return {
-      success: adminResult.success && userResult.success,
+      success: adminResult.success && !!userResult.notification,
       adminCount: adminResult.count,
-      userSuccess: userResult.success
+      userSuccess: !!userResult.notification,
     };
   }
 }

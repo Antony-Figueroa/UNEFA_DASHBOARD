@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import reportsService from '../services/reportsService';
+import { getReportConfig } from '../config/reportConfig';
 import {
   generateRelacionGeneralTutoresExcel,
   generateResumenPasantiasExcel,
@@ -9,17 +9,6 @@ import {
   generateRelacionIndividualDocenteExcel,
   generateDistribucionTutoresV2Excel,
 } from '../../../utils/unefaExcelReports';
-import type { TutorAcademicReportResponse } from '../services/reportsService';
-
-export interface ReportConfig {
-  id: string;
-  title: string;
-  subtitle: string;
-  category: 'documentos' | 'generales';
-  icon: string;
-  type: 'pdf' | 'excel';
-  loadData: (periodId?: number, careerId?: number) => Promise<any>;
-}
 
 export function useReports() {
   const [loading, setLoading] = useState(false);
@@ -62,38 +51,19 @@ export function useReports() {
     }
   }, []);
 
+  /** Carga datos usando la config del reporte en lugar de un switch */
   const fetchData = useCallback(async (
     type: string,
     periodId?: number,
     careerId?: number,
+    page?: number,
+    limit?: number,
   ) => {
     setLoading(true);
     try {
-      let result;
-      switch (type) {
-        case 'tutores-academicos':
-          result = await reportsService.getTutorsAcademicReport(periodId, careerId);
-          return result as TutorAcademicReportResponse;
-        case 'resumen-pasantias':
-          result = await reportsService.getResumenPasantiasReport(periodId, careerId);
-          return result;
-        case 'relacion-empresas':
-          result = await reportsService.getRelacionEmpresas(periodId, careerId);
-          return result;
-        case 'distribucion-tutores':
-          result = await reportsService.getDistribucionTutores(periodId, careerId);
-          return result;
-        case 'distribucion-tutores-v2':
-          result = await reportsService.getDistribucionTutoresV2(periodId, careerId);
-          return result;
-        case 'relacion-individual-docente': {
-          if (!periodId) throw new Error('Se requiere tutorId');
-          result = await reportsService.getRelacionIndividualDocente(periodId);
-          return result;
-        }
-        default:
-          throw new Error(`Tipo desconocido: ${type}`);
-      }
+      const config = getReportConfig(type);
+      if (!config) throw new Error(`Tipo de reporte desconocido: ${type}`);
+      return await config.loadData(periodId, careerId, page, limit);
     } catch (error: any) {
       toast.error(error?.message || 'Error al cargar datos');
       throw error;

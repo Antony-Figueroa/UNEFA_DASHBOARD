@@ -17,6 +17,7 @@ import {
 } from '../../../features/reminders/types';
 import ReminderFormModal from '../../../features/reminders/components/ReminderFormModal';
 import ExpressEmailModal from '../../../features/reminders/components/ExpressEmailModal';
+import TemplateManager from '../../../features/reminders/components/TemplateManager';
 import { PlusCircleIcon, SearchIcon, MailIcon } from '../../../icons/actions';
 import { PencilIcon, TrashBinIcon } from '../../../icons';
 
@@ -42,6 +43,18 @@ const ReminderConfigPage = () => {
   const [filterRole, setFilterRole] = useState<'' | TargetRoleName>('');
   const [filterEmail, setFilterEmail] = useState<'' | 'yes' | 'no'>('');
   const [filterActive, setFilterActive] = useState<'' | 'yes' | 'no'>('');
+
+  // ── Dynamic filter options (derived from actual data, not hardcoded) ──────
+
+  const dynamicTypeOptions = useMemo(() => {
+    const types = [...new Set(rules.map(r => r.type))] as ReminderType[];
+    return types.sort();
+  }, [rules]);
+
+  const dynamicRoleOptions = useMemo(() => {
+    const roles = [...new Set(rules.map(r => r.targetRoleName))] as TargetRoleName[];
+    return roles.sort();
+  }, [rules]);
 
   const filteredRules = useMemo(() => {
     let result = rules;
@@ -119,11 +132,6 @@ const ReminderConfigPage = () => {
     setConfirmDelete(null);
   };
 
-  // ─── Constants for filter selects ──────────────────────────────────────
-
-  const REMINDER_TYPES = Object.keys(REMINDER_TYPE_LABELS) as ReminderType[];
-  const TARGET_ROLES: TargetRoleName[] = ['all', 'admin', 'asistente', 'tutor', 'estudiante'];
-
   // ─── Render ────────────────────────────────────────────────────────────
 
   return (
@@ -169,26 +177,26 @@ const ReminderConfigPage = () => {
             />
           </div>
 
-          {/* Type filter */}
+          {/* Type filter — dinámico desde datos */}
           <select
             value={filterType}
             onChange={e => setFilterType(e.target.value as '' | ReminderType)}
             className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
           >
             <option value="">Todos los tipos</option>
-            {REMINDER_TYPES.map(t => (
+            {dynamicTypeOptions.map(t => (
               <option key={t} value={t}>{REMINDER_TYPE_LABELS[t]}</option>
             ))}
           </select>
 
-          {/* Role filter */}
+          {/* Role filter — dinámico desde datos */}
           <select
             value={filterRole}
             onChange={e => setFilterRole(e.target.value as '' | TargetRoleName)}
             className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
           >
             <option value="">Todos los roles</option>
-            {TARGET_ROLES.map(r => (
+            {dynamicRoleOptions.map(r => (
               <option key={r} value={r}>{TARGET_ROLE_LABELS[r]}</option>
             ))}
           </select>
@@ -249,12 +257,19 @@ const ReminderConfigPage = () => {
                     onToggle={() => toggleRule(rule.id)}
                     onEdit={() => openEdit(rule)}
                     onDelete={() => setConfirmDelete(rule.id)}
+                    onFilterType={(type) => setFilterType(type)}
+                    onFilterRole={(role) => setFilterRole(role)}
                   />
                 ))}
               </AnimatePresence>
             </div>
           )}
         </ComponentCard>
+
+        {/* ══════════════════════════════════════════════════════════════
+            Plantillas de Email — embebido en el módulo de recordatorios
+         ══════════════════════════════════════════════════════════════ */}
+        <TemplateManager />
       </div>
 
       {/* Edit/Create modal — key remounts for fresh form state */}
@@ -308,10 +323,14 @@ interface RuleRowProps {
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onFilterType: (type: ReminderType) => void;
+  onFilterRole: (role: TargetRoleName) => void;
 }
 
-const RuleRow = ({ rule, index, onToggle, onEdit, onDelete }: RuleRowProps) => {
+const RuleRow = ({ rule, index, onToggle, onEdit, onDelete, onFilterType, onFilterRole }: RuleRowProps) => {
   const isSeed = rule.id.startsWith('seed_');
+  const typeLabel = REMINDER_TYPE_LABELS[rule.type];
+  const roleLabel = TARGET_ROLE_LABELS[rule.targetRoleName];
 
   return (
     <motion.div
@@ -333,9 +352,21 @@ const RuleRow = ({ rule, index, onToggle, onEdit, onDelete }: RuleRowProps) => {
           <span className="font-medium text-gray-900 dark:text-white truncate">
             {rule.name}
           </span>
-          <Badge variant="outline" color="dark" size="sm">
-            {TARGET_ROLE_LABELS[rule.targetRoleName]}
-          </Badge>
+
+          {/* Badge de tipo — clickeable para filtrar */}
+          <button type="button" onClick={() => onFilterType(rule.type)} title="Filtrar por este tipo">
+            <Badge variant="outline" color="dark" size="sm" className="cursor-pointer hover:ring-2 hover:ring-brand-500/40 transition-all">
+              {typeLabel}
+            </Badge>
+          </button>
+
+          {/* Badge de rol — clickeable para filtrar */}
+          <button type="button" onClick={() => onFilterRole(rule.targetRoleName)} title="Filtrar por este rol">
+            <Badge variant="light" color="light" size="sm" className="cursor-pointer hover:ring-2 hover:ring-brand-500/40 transition-all">
+              {roleLabel}
+            </Badge>
+          </button>
+
           {rule.sendEmail && (
             <Badge color="info" size="sm" startIcon={<MailIcon className="w-3 h-3" />}>
               Email

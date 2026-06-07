@@ -24,8 +24,8 @@ export interface UnifiedDialogProps {
   onClose: () => void;
   /** Función opcional que se llama cuando se confirma la acción. */
   onConfirm?: () => void | Promise<void>;
-  /** Variante del diálogo (success, error, warning, info, confirm). */
-  variant: DialogVariant;
+  /** Variante del diálogo (success, error, warning, info, confirm). Por defecto "info". */
+  variant?: DialogVariant;
   /** Título del diálogo. */
   title?: string;
   /** Mensaje o contenido del diálogo. */
@@ -62,7 +62,7 @@ export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
   isOpen,
   onClose,
   onConfirm,
-  variant,
+  variant = "info",
   title,
   message,
   children,

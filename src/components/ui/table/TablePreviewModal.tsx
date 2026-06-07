@@ -22,6 +22,12 @@ interface TablePreviewModalProps<T> {
   onSearchChange?: (val: string) => void;
   renderFilters?: () => React.ReactNode;
   exportToExcel?: (data: T[], fileName: string) => void;
+  pagination?: {
+    page: number;
+    totalPages: number;
+    totalRecords: number;
+    onPageChange: (page: number) => void;
+  };
 }
 
 export function TablePreviewModal<T>({
@@ -36,6 +42,7 @@ export function TablePreviewModal<T>({
   onSearchChange,
   renderFilters,
   exportToExcel,
+  pagination,
 }: TablePreviewModalProps<T>) {
   const [activeTab, setActiveTab] = useState<"preview" | "filters">("preview");
   const [isExporting, setIsExporting] = useState(false);
@@ -82,7 +89,9 @@ export function TablePreviewModal<T>({
                 {title}
               </h3>
               <p className="text-[10px] sm:text-xs font-medium text-text-tertiary">
-                {subtitle || `${filteredData.length} registros encontrados`}
+                {pagination
+                  ? `Página ${pagination.page + 1} de ${pagination.totalPages} — ${pagination.totalRecords} registros`
+                  : subtitle || `${filteredData.length} registros encontrados`}
               </p>
             </div>
           </div>
@@ -184,8 +193,29 @@ export function TablePreviewModal<T>({
                 </div>
 
                 {filteredData.length > 0 && (
-                  <div className="px-4 py-3 bg-bg-secondary/50 dark:bg-white/5 border-t border-border-light dark:border-white/5 text-xs text-text-tertiary">
-                    Mostrando {filteredData.length} de {data.length} registros
+                  <div className="px-4 py-3 bg-bg-secondary/50 dark:bg-white/5 border-t border-border-light dark:border-white/5 flex items-center justify-between text-xs text-text-tertiary">
+                    <span>Mostrando {filteredData.length} de {data.length} registros</span>
+                    {pagination && pagination.totalPages > 1 && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => pagination.onPageChange(pagination.page - 1)}
+                          disabled={pagination.page === 0}
+                          className="px-2 py-1 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold"
+                        >
+                          ← Anterior
+                        </button>
+                        <span className="px-2 font-bold text-text-emphasis">
+                          {pagination.page + 1} / {pagination.totalPages}
+                        </span>
+                        <button
+                          onClick={() => pagination.onPageChange(pagination.page + 1)}
+                          disabled={pagination.page >= pagination.totalPages - 1}
+                          className="px-2 py-1 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors font-bold"
+                        >
+                          Siguiente →
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -1,6 +1,19 @@
 import { Request, Response } from "express";
 import { supabase } from "../lib/supabase.js";
 import { notificationsUnified } from "../services/notifications-unified.service.js";
+import { sendEmail } from "../utils/email.utils.js";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Reemplaza variables {{variable}} con valores del contexto */
+function replaceVariables(text: string, ctx: Record<string, string>): string {
+  return text
+    .replace(/\{\{(\w+)\}\}/g, (_match, key: string) => ctx[key] ?? '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 
 export interface Notification {
   NOTIFICATION_ID: number;
@@ -159,6 +172,183 @@ export const getUnreadCount = async (req: Request, res: Response): Promise<void>
   } catch (error) {
     console.error("[notifications.controller] Error getting unread count:", error);
     res.status(500).json({ error: "Error al obtener conteo de notificaciones" });
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Express Email
+// ---------------------------------------------------------------------------
+
+interface ExpressEmailRequest {
+  subject: string;
+  message: string;
+  recipients: {
+    roles?: string[];
+    users?: Array<{ id: number }>;
+    externalEmails?: string[];
+  };
+  templateId?: number;
+}
+
+export const expressEmail = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { subject, message, recipients, templateId } = req.body as ExpressEmailRequest;
+
+    // Validar campos obligatorios
+    if (!subject?.trim()) {
+      res.status(400).json({ success: false, error: 'El asunto es obligatorio' });
+      return;
+    }
+    if (!message?.trim()) {
+      res.status(400).json({ success: false, error: 'El mensaje es obligatorio' });
+      return;
+    }
+
+    const roles = recipients?.roles ?? [];
+    const users = recipients?.users ?? [];
+    const externalEmails = recipients?.externalEmails ?? [];
+
+    if (roles.length === 0 && users.length === 0 && externalEmails.length === 0) {
+      res.status(400).json({
+        success: false,
+        error: 'Debe proporcionar al menos un destinatario (rol, usuario o email externo)',
+      });
+      return;
+    }
+
+    // 1. Resolver roles → usuarios del sistema
+    let systemUserIds: number[] = [];
+    for (const role of roles) {
+      if (role === 'all') {
+        const { data: allUsers, error } = await supabase
+          .from('t_user')
+          .select('USER_ID, NAME, SURNAME, EMAIL')
+          .eq('STATUS', 1);
+
+        if (error) throw error;
+        systemUserIds = [
+          ...systemUserIds,
+          ...(allUsers || []).map((u: any) => u.USER_ID),
+        ];
+      } else {
+        const { data: roleUsers, error } = await supabase
+          .from('t_user_roles')
+          .select('ur_USER_ID')
+          .eq('ur_ROLE_NAME', role.toUpperCase())
+          .eq('ur_STATUS', 1);
+
+        if (error) throw error;
+        systemUserIds = [
+          ...systemUserIds,
+          ...(roleUsers || []).map((u: any) => u.ur_USER_ID),
+        ];
+      }
+    }
+
+    // 2. Obtener datos de usuarios del sistema (resueltos + directos)
+    const directUserIds = users.map(u => u.id);
+    const allUserIds = [...new Set([...systemUserIds, ...directUserIds])];
+
+    const systemRecipients: Array<{ email: string; name: string; userId: number }> = [];
+    if (allUserIds.length > 0) {
+      const { data: userData, error } = await supabase
+        .from('t_user')
+        .select('USER_ID, NAME, SURNAME, EMAIL')
+        .in('USER_ID', allUserIds)
+        .eq('STATUS', 1);
+
+      if (error) throw error;
+
+      for (const u of userData || []) {
+        if (u.EMAIL) {
+          systemRecipients.push({
+            userId: u.USER_ID,
+            email: u.EMAIL,
+            name: [u.NAME, u.SURNAME].filter(Boolean).join(' ').trim() || 'Usuario',
+          });
+        }
+      }
+    }
+
+    // 3. Preparar destinatarios externos
+    const externalRecipients = externalEmails.map(email => ({
+      email,
+      name: 'Estimado/a',
+    }));
+
+    // 4. Unificar y deduplicar por email
+    const allRecipients = [
+      ...systemRecipients.map(r => ({ email: r.email, name: r.name, userId: r.userId })),
+      ...externalRecipients.map(r => ({ email: r.email, name: r.name, userId: null })),
+    ];
+
+    const seenEmails = new Set<string>();
+    const uniqueRecipients = allRecipients.filter(r => {
+      if (seenEmails.has(r.email)) return false;
+      seenEmails.add(r.email);
+      return true;
+    });
+
+    // 5. Enviar emails
+    const results = await Promise.all(
+      uniqueRecipients.map(r => {
+        const ctx: Record<string, string> = {
+          nombre: r.name,
+          fecha: new Date().toLocaleDateString('es-VE'),
+          email: r.email,
+        };
+        const personalizedHtml = replaceVariables(message, ctx);
+        const personalizedSubject = replaceVariables(subject, ctx);
+
+        return sendEmail({
+          to: r.email,
+          subject: personalizedSubject,
+          html: personalizedHtml,
+        }).then(result => ({ ...result, recipientEmail: r.email }));
+      })
+    );
+
+    // 6. Crear notificaciones en DB solo para usuarios del sistema
+    if (systemRecipients.length > 0) {
+      const sentSystem = uniqueRecipients.filter(r => r.userId !== null);
+      if (sentSystem.length > 0) {
+        await notificationsUnified.createBulk({
+          userIds: sentSystem.map(r => r.userId!),
+          type: 'info',
+          title: subject,
+          message,
+        }).catch(err => console.error('[ExpressEmail] Error creating bulk notifications:', err));
+      }
+    }
+
+    // 7. Armar respuesta
+    const successful = results.filter(r => r.success);
+    const failed = results.filter(r => !r.success);
+    const errors: Array<{ recipient: string; error: string }> = [];
+
+    failed.forEach(r => {
+      errors.push({
+        recipient: r.recipientEmail,
+        error: r.error || 'Error desconocido',
+      });
+    });
+
+    res.json({
+      success: true,
+      data: {
+        total: uniqueRecipients.length,
+        sent: successful.length,
+        failed: failed.length,
+        ...(errors.length > 0 && { errors }),
+      },
+    });
+  } catch (error: any) {
+    console.error('[ExpressEmail] Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al enviar correo express',
+      details: error?.message || String(error),
+    });
   }
 };
 

@@ -1,62 +1,101 @@
 import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Inicializar Resend
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
+// ─── Transportes ───────────────────────────────────────────────
 
-/**
- * Función genérica para enviar correos via Resend
- */
-export const sendEmail = async (options: { to: string; subject: string; html: string; text?: string }) => {
+type SendResult = { success: true } | { success: false; error: string };
+
+/** Enviar via Gmail SMTP con contraseña de aplicación */
+const tryGmail = async (opts: { to: string; subject: string; html: string; text?: string }): Promise<SendResult | null> => {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASS;
+  if (!user || !pass) return null; // no configurado
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user, pass },
+    });
+
+    await transporter.sendMail({
+      from: `"SIGP UNEFA" <${user}>`,
+      to: opts.to,
+      subject: opts.subject,
+      html: opts.html,
+      ...(opts.text && { text: opts.text }),
+    });
+
+    console.log(`✅ [Gmail] Correo enviado a ${opts.to}`);
+    return { success: true };
+  } catch (error: any) {
+    const reason = error?.message || error?.code || 'Error Gmail SMTP';
+    console.error(`❌ [Gmail] Error enviando a ${opts.to}:`, reason);
+    return { success: false, error: reason };
+  }
+};
+
+/** Enviar via Resend API */
+const tryResend = async (opts: { to: string; subject: string; html: string; text?: string }): Promise<SendResult | null> => {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null; // no configurado
+
+  const resend = new Resend(apiKey);
   const fromName = process.env.RESEND_FROM_NAME || 'SIGP UNEFA';
   const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
-
-  if (!resend) {
-    console.log(`
-      -----------------------------------------
-      SIMULACIÓN DE ENVÍO DE EMAIL
-      Para: ${options.to}
-      Asunto: ${options.subject}
-      Contenido: ${options.text || 'Ver HTML'}
-      -----------------------------------------
-    `);
-    return true;
-  }
 
   try {
     const { data, error } = await resend.emails.send({
       from: `${fromName} <${fromEmail}>`,
-      to: options.to,
-      subject: options.subject,
-      html: options.html,
-      ...(options.text && { text: options.text }),
+      to: opts.to,
+      subject: opts.subject,
+      html: opts.html,
+      ...(opts.text && { text: opts.text }),
     });
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
-    console.log(`✅ Correo enviado a ${options.to}: ${data?.id}`);
-    return true;
-  } catch (error) {
-    console.error(`❌ Error enviando correo a ${options.to}:`, error);
-    // En desarrollo, no bloqueamos el flujo por error de correo
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('Continuando flujo a pesar del error de correo (entorno de desarrollo)');
-      return true;
-    }
-    throw error;
+    console.log(`✅ [Resend] Correo enviado a ${opts.to}: ${data?.id}`);
+    return { success: true };
+  } catch (error: any) {
+    const reason = error?.message || error?.name || 'Error Resend';
+    console.error(`❌ [Resend] Error enviando a ${opts.to}:`, reason);
+    return { success: false, error: reason };
   }
+};
+
+/** Simular envío en consola (último recurso) */
+const trySimulation = (opts: { to: string; subject: string; html: string; text?: string }): SendResult => {
+  console.log(`
+    -----------------------------------------
+    SIMULACIÓN DE ENVÍO DE EMAIL
+    Para: ${opts.to}
+    Asunto: ${opts.subject}
+    Contenido: ${opts.text || 'Ver HTML'}
+    -----------------------------------------
+  `);
+  return { success: true };
+};
+
+/**
+ * Función genérica para enviar correos.
+ * Prioridad: Gmail SMTP → Resend → Simulación en consola.
+ */
+export const sendEmail = async (options: { to: string; subject: string; html: string; text?: string }): Promise<SendResult> => {
+  // 1. Gmail SMTP (si está configurado)
+  const gmailResult = await tryGmail(options);
+  if (gmailResult !== null) return gmailResult;
+
+  // 2. Simulación en consola (Resend deshabilitado por ahora)
+  return trySimulation(options);
 };
 
 /**
  * Servicio para envío de correos electrónicos.
  */
-export const sendUserCreationEmail = async (email: string, name: string, userCi: string, tempPass: string) => {
+export const sendUserCreationEmail = async (email: string, name: string, userCi: string, tempPass: string): Promise<{ success: boolean; error?: string }> => {
   const portalUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   const validityHours = 24;
 
@@ -96,7 +135,7 @@ export const sendUserCreationEmail = async (email: string, name: string, userCi:
 /**
  * Notifica un inicio de sesión exitoso
  */
-export const sendLoginNotification = async (email: string, name: string, ip: string, userAgent: string) => {
+export const sendLoginNotification = async (email: string, name: string, ip: string, userAgent: string): Promise<{ success: boolean; error?: string }> => {
   const date = new Date().toLocaleString('es-VE');
 
   const html = `
@@ -123,7 +162,7 @@ export const sendLoginNotification = async (email: string, name: string, ip: str
 /**
  * Envía un correo con el enlace para restablecer la contraseña
  */
-export const sendPasswordRecoveryEmail = async (email: string, name: string, token: string) => {
+export const sendPasswordRecoveryEmail = async (email: string, name: string, token: string): Promise<{ success: boolean; error?: string }> => {
   const portalUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   const recoveryUrl = `${portalUrl}/reset-password?token=${token}`;
   const validityHours = 24;
@@ -190,7 +229,7 @@ export const sendPasswordRecoveryEmail = async (email: string, name: string, tok
 /**
  * Notifica que la contraseña ha sido cambiada exitosamente
  */
-export const sendPasswordChangedNotification = async (email: string, name: string) => {
+export const sendPasswordChangedNotification = async (email: string, name: string): Promise<{ success: boolean; error?: string }> => {
   const date = new Date().toLocaleString('es-VE');
 
   const html = `
@@ -212,7 +251,7 @@ export const sendPasswordChangedNotification = async (email: string, name: strin
 /**
  * Notifica un intento de inicio de sesión fallido o bloqueo
  */
-export const sendSecurityAlert = async (email: string, name: string, type: 'FAILED_ATTEMPT' | 'ACCOUNT_LOCKED', ip: string) => {
+export const sendSecurityAlert = async (email: string, name: string, type: 'FAILED_ATTEMPT' | 'ACCOUNT_LOCKED', ip: string): Promise<{ success: boolean; error?: string }> => {
   const date = new Date().toLocaleString('es-VE');
   const subject = type === 'ACCOUNT_LOCKED' ? 'ALERTA: Cuenta bloqueada' : 'Intento de acceso detectado';
   const title = type === 'ACCOUNT_LOCKED' ? 'Tu cuenta ha sido bloqueada' : 'Múltiples intentos fallidos';
@@ -267,7 +306,7 @@ export const sendPeriodNotification = async (
     </div>
   `;
 
-  const results = await Promise.allSettled(
+  const results = await Promise.all(
     users.map(u =>
       sendEmail({
         to: u.email,
@@ -278,7 +317,7 @@ export const sendPeriodNotification = async (
     )
   );
 
-  const failed = results.filter(r => r.status === 'rejected').length;
+  const failed = results.filter(r => !r.success).length;
   if (failed > 0) {
     console.error(`[PeriodEmail] ${failed}/${users.length} emails failed to send`);
   }

@@ -4,7 +4,7 @@ import { ProspectList, ProspectListItem, EligibleStudent, CreateProspectListPayl
 const API_URL = "/prospects";
 
 /** Unwrap backend envelope: { success, data, message } → data */
-const unwrap = <T>(response: { data: { success?: boolean; data?: T; message?: string } }): T => {
+const unwrap = <T,>(response: { data: { success?: boolean; data?: T; message?: string } }): T => {
   return response.data?.data ?? response.data as unknown as T;
 };
 

@@ -1,182 +1,106 @@
 --
 -- Clean DB — UNEFA Dashboard
 -- Elimina datos operacionales/de prueba, preservando datos de sistema y referencia.
--- Uso: psql -f scripts/clean-db.sql
---       psql "postgresql://..." -f scripts/clean-db.sql
+-- Uso: psql "postgresql://..." -f scripts/clean-db.sql
 --
--- Compatible con Supabase PostgreSQL y PGlite.
--- Generado: 2026-05-31
+-- ⚠  Las secuencias se resetean con quoted names porque el schema usa
+--    identificadores con mayúsculas ("t_activity_logs"."ACTIVITY_LOG_ID").
+--    En Supabase, setval requiere doble quoting.
+--
+-- Generado: 2026-05-31 | Ejecutado con éxito en prod
 --
 
 BEGIN;
 
 -- ============================================================
--- DESHABILITAR TRIGGERS (evita checks FK temporales)
--- ============================================================
-SET session_replication_role = replica;
-
--- ============================================================
--- 1. TABLAS OPERACIONALES
+-- 1. TABLAS OPERACIONALES (hijas primero, padres después)
 -- ============================================================
 
--- Las tablas se listan respetando orden de FK para claridad,
--- pero con los triggers deshabilitados el orden no importa.
+-- NIVEL 1: Tablas que solo dependen de otras operacionales
+DELETE FROM "t_evaluation_detail";
+DELETE FROM "t_activity_logs";
+DELETE FROM "t_practice_visits";
+DELETE FROM "t_professional_practices_tutor";
+DELETE FROM "t_student_documents";
+DELETE FROM "t_student_requests";
+DELETE FROM "t_visit";
+DELETE FROM "t_tutor_career";
+DELETE FROM "t_institution_manager_institution";
+DELETE FROM "t_session_history";
+DELETE FROM "t_key_history";
+DELETE FROM "t_prospect_list_items";
+DELETE FROM "t_prospect_lists";
+DELETE FROM "t_coordinadores";
 
-DELETE FROM t_evaluation_detail;
-DELETE FROM t_evaluation;
-DELETE FROM t_activity_logs;
-DELETE FROM t_practice_visits;
-DELETE FROM t_professional_practices_tutor;
-DELETE FROM t_student_documents;
-DELETE FROM t_student_requests;
-DELETE FROM t_professional_practices;
-DELETE FROM t_tutor_career;
-DELETE FROM t_institution_manager_institution;
-DELETE FROM t_institution_manager;
-DELETE FROM t_institution_internship_type;
-DELETE FROM t_institution_career;
-DELETE FROM t_institution;
-DELETE FROM t_students;
-DELETE FROM t_tutors;
-DELETE FROM t_visit;
-DELETE FROM t_persons;
-DELETE FROM t_auth_log;
-DELETE FROM t_session_history;
-DELETE FROM t_session_attempts;
-DELETE FROM t_session;
-DELETE FROM t_recovery_tokens;
-DELETE FROM t_password_history;
-DELETE FROM t_key_history;
-DELETE FROM t_security_questions;
-DELETE FROM t_notifications;
-DELETE FROM t_chat_sessions;
-DELETE FROM t_backups;
-DELETE FROM t_change_log;
+-- NIVEL 2: Tablas que dependen de t_user + operacionales
+DELETE FROM "t_evaluation";
+DELETE FROM "t_session_attempts";
+DELETE FROM "t_session";
+DELETE FROM "t_change_log";
+DELETE FROM "t_auth_log";
+DELETE FROM "t_recovery_tokens";
+DELETE FROM "t_password_history";
+DELETE FROM "t_security_questions";
+DELETE FROM "t_notifications";
+DELETE FROM "t_chat_sessions";
+DELETE FROM "t_backups";
 
--- Tablas con datos mixtos — preservar solo admin (USER_ID = 3)
-DELETE FROM t_user_theme   WHERE USER_ID != 3;
-DELETE FROM t_user_questions WHERE USER_ID != 3;
-DELETE FROM t_user_key      WHERE USER_ID != 3;
-DELETE FROM t_user_roles    WHERE ID_USER != 3;
-DELETE FROM t_user          WHERE USER_ID != 3;
+-- NIVEL 3: Padres operacionales
+DELETE FROM "t_professional_practices";
+DELETE FROM "t_institution_manager";
+DELETE FROM "t_institution_career";
+DELETE FROM "t_institution_internship_type";
+DELETE FROM "t_institution";
+DELETE FROM "t_students";
+DELETE FROM "t_tutors";
 
--- ============================================================
--- 2. RESETEAR SECUENCIAS (dinámico, maneja quoting mixto)
--- ============================================================
+-- NIVEL 4: Tablas del usuario (preservar solo admin, USER_ID = 3)
+DELETE FROM "t_user_key"      WHERE "USER_ID" != 3;
+DELETE FROM "t_user_roles"    WHERE "ID_USER" != 3;
+DELETE FROM "t_user_theme"    WHERE "USER_ID" != 3;
+DELETE FROM "t_user_questions" WHERE "USER_ID" != 3;
+DELETE FROM "t_user"          WHERE "USER_ID" != 3;
 
-DO $$
-DECLARE
-    seq_name TEXT;
-    col_name TEXT;
-    tbl_name TEXT;
-    next_val INT;
-BEGIN
-    -- Tablas completamente limpiadas → reset a 1
-    FOR tbl_name IN
-        SELECT unnest(ARRAY[
-            't_evaluation_detail',
-            't_evaluation',
-            't_activity_logs',
-            't_practice_visits',
-            't_professional_practices_tutor',
-            't_student_documents',
-            't_student_requests',
-            't_professional_practices',
-            't_tutor_career',
-            't_institution_manager_institution',
-            't_institution_manager',
-            't_institution_internship_type',
-            't_institution_career',
-            't_institution',
-            't_students',
-            't_tutors',
-            't_visit',
-            't_persons',
-            't_auth_log',
-            't_session_history',
-            't_session_attempts',
-            't_session',
-            't_recovery_tokens',
-            't_password_history',
-            't_key_history',
-            't_security_questions',
-            't_notifications',
-            't_chat_sessions',
-            't_backups',
-            't_change_log',
-            't_user_questions',
-            't_user_theme'
-        ])
-    LOOP
-        -- Buscar la columna serial o identity
-        SELECT a.attname INTO col_name
-        FROM pg_index i
-        JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = i.indkey[0]
-        WHERE i.indrelid = tbl_name::regclass
-          AND i.indisprimary;
-
-        IF col_name IS NOT NULL THEN
-            seq_name := pg_get_serial_sequence(tbl_name, col_name);
-            IF seq_name IS NOT NULL THEN
-                EXECUTE format('ALTER SEQUENCE %I RESTART WITH 1', seq_name);
-            END IF;
-        END IF;
-    END LOOP;
-
-    -- Tablas con datos preservados: avanzar secuencia post-admin
-    -- t_user: admin tiene USER_ID = 3 → próximo = 4
-    seq_name := pg_get_serial_sequence('t_user', 'USER_ID');
-    IF seq_name IS NOT NULL THEN
-        EXECUTE format('ALTER SEQUENCE %I RESTART WITH 4', seq_name);
-    END IF;
-
-    -- t_user_key: admin tiene USER_KEY_ID = 10 → próximo = 11
-    seq_name := pg_get_serial_sequence('t_user_key', 'USER_KEY_ID');
-    IF seq_name IS NOT NULL THEN
-        EXECUTE format('ALTER SEQUENCE %I RESTART WITH 11', seq_name);
-    END IF;
-END $$;
-
--- ============================================================
--- 3. REHABILITAR TRIGGERS
--- ============================================================
-SET session_replication_role = DEFAULT;
-
--- ============================================================
--- VERIFICACIÓN
--- ============================================================
-DO $$
-DECLARE
-    tbl TEXT;
-    rec RECORD;
-    total BIGINT := 0;
-BEGIN
-    RAISE NOTICE '============================================';
-    RAISE NOTICE 'RESUMEN DE LIMPIEZA';
-    RAISE NOTICE '============================================';
-
-    FOR rec IN
-        SELECT tablename FROM pg_tables
-        WHERE schemaname = 'public'
-          AND tablename NOT IN (
-            't_config', 't_roles', 't_permissions', 't_roles_permissions',
-            't_internship_type', 't_career', 't_career_internship_type',
-            't_internships_period', 't_list', 't_value_list',
-            't_landing_config', 't_preset_questions', 't_request_types',
-            't_evaluation_criteria', 't_operation', 't_tables', 't_columns',
-            't_user', 't_user_key', 't_user_roles', 't_user_theme',
-            't_user_questions'
-          )
-        ORDER BY tablename
-    LOOP
-        EXECUTE format('SELECT count(*) FROM %I', rec.tablename) INTO total;
-        IF total > 0 THEN
-            RAISE WARNING '⚠  % — % fila(s) restante(s)', rec.tablename, total;
-        END IF;
-    END LOOP;
-
-    RAISE NOTICE '============================================';
-    RAISE NOTICE 'Limpieza completada. Solo persisten datos de sistema.';
-END $$;
+-- NIVEL 5: Raíces (sin dependencias)
+DELETE FROM "t_internships_period";
+DELETE FROM "t_persons" WHERE "person_id" != 125;
 
 COMMIT;
+
+-- ============================================================
+-- 2. RESETEAR SECUENCIAS (usar quoted names para mayúsculas)
+-- ============================================================
+
+SELECT setval('"t_activity_logs_ACTIVITY_LOG_ID_seq"', 1, false);
+SELECT setval('"t_auth_log_ID_seq"', 1, false);
+SELECT setval('"t_change_log_CHANGE_LOG_ID_seq"', 1, false);
+SELECT setval('"t_evaluation_EVALUATION_ID_seq"', 1, false);
+SELECT setval('"t_evaluation_detail_DETAIL_ID_seq"', 1, false);
+SELECT setval('"t_institution_INSTITUTION_ID_seq"', 1, false);
+SELECT setval('"t_institution_manager_MANAGER_ID_seq"', 1, false);
+SELECT setval('"t_internships_period_PERIOD_ID_seq"', 1, false);
+SELECT setval('"t_key_history_KEY_HISTORY_ID_seq"', 1, false);
+SELECT setval('"t_notifications_NOTIFICATION_ID_seq"', 1, false);
+SELECT setval('"t_password_history_HISTORY_ID_seq"', 1, false);
+SELECT setval('"t_persons_person_id_seq"', 1, false);
+SELECT setval('"t_practice_visits_VISIT_ID_seq"', 1, false);
+SELECT setval('"t_professional_practices_PROFESSIONAL_PRACTICE_ID_seq"', 1, false);
+SELECT setval('"t_professional_practices_tuto_PROFESSIONAL_PRACTICES_TUTOR__seq"', 1, false);
+SELECT setval('"t_recovery_tokens_TOKEN_ID_seq"', 1, false);
+SELECT setval('"t_security_questions_SECURITY_QUESTIONS_ID_seq"', 1, false);
+SELECT setval('"t_session_SESSION_ID_seq"', 1, false);
+SELECT setval('"t_session_attempts_ATTEMPT_ID_seq"', 1, false);
+SELECT setval('"t_session_history_SESSION_HISTORY_ID_seq"', 1, false);
+SELECT setval('"t_student_documents_DOCUMENT_ID_seq"', 1, false);
+SELECT setval('"t_student_requests_REQUEST_ID_seq"', 1, false);
+SELECT setval('"t_students_STUDENTS_ID_seq"', 1, false);
+SELECT setval('"t_tutors_TUTOR_ID_seq"', 1, false);
+SELECT setval('"t_user_questions_USER_QUESTION_ID_seq"', 1, false);
+SELECT setval('"t_user_theme_USER_THEME_ID_seq"', 1, false);
+SELECT setval('"t_visit_VISIT_ID_seq"', 1, false);
+SELECT setval('"t_prospect_list_items_ITEM_ID_seq"', 1, false);
+SELECT setval('"t_prospect_lists_LIST_ID_seq"', 1, false);
+SELECT setval('"t_coordinadores_COORDINADOR_ID_seq"', 1, false);
+-- Admin-specific: saltar IDs del admin
+SELECT setval('"t_user_USER_ID_seq"', 4, false);
+SELECT setval('"t_user_key_USER_KEY_ID_seq"', 11, false);

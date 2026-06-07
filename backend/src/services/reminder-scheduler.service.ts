@@ -115,17 +115,19 @@ const sendReminderEmail = async (
       </div>
     `;
 
-    const ok = await sendEmail({
+    const result = await sendEmail({
       to: user.EMAIL,
       subject: `🔔 ${title} - SIGP UNEFA`,
       html,
       text: `${title}\n\nHola ${user.NAME},\n\n${message}`,
     });
 
-    if (ok) {
+    if (result.success) {
       console.log(`[ReminderScheduler] ✓ Email sent to user ${userId} (${user.EMAIL})`);
+    } else {
+      console.warn(`[ReminderScheduler] ✗ Email failed to user ${userId} (${user.EMAIL}): ${result.error}`);
     }
-    return ok;
+    return result.success;
   } catch (err) {
     console.error(`[ReminderScheduler] Error sending email to user ${userId}:`, err);
     return false;

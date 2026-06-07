@@ -314,7 +314,9 @@ export const generateReport = async (req: Request, res: Response) => {
 
 export const getTutorsAcademicReport = async (req: Request, res: Response) => {
   try {
-    const { periodId, careerId } = req.query;
+    const { periodId, careerId, page: pageQuery, limit: limitQuery } = req.query;
+    const pageNum = Math.max(0, parseInt(pageQuery as string) || 0);
+    const limitNum = Math.min(Math.max(1, parseInt(limitQuery as string) || 50), 500);
     const supabase = dbManager.getConnection();
 
     const { data: tutorPractices, error } = await supabase
@@ -440,11 +442,15 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
         cantidadEstudiantes: item.studentCount
       }));
 
+    const totalCount = reportData.length;
+    const paginatedData = reportData.slice(pageNum * limitNum, (pageNum + 1) * limitNum);
     res.json({
       success: true,
-      data: reportData,
+      data: paginatedData,
       meta: {
-        total: reportData.length,
+        total: totalCount,
+        page: pageNum,
+        limit: limitNum,
         totalEstudiantes: reportData.reduce((sum, t) => sum + t.cantidadEstudiantes, 0)
       }
     });
@@ -487,7 +493,9 @@ export interface CulminatedStudentReportRow {
 
 export const getResumenPasantiasReport = async (req: Request, res: Response) => {
   try {
-    const { periodId, careerId } = req.query;
+    const { periodId, careerId, institutionId, extensionFilter, regionFilter, nucleusFilter, page: pageQuery, limit: limitQuery } = req.query;
+    const pageNum = Math.max(0, parseInt(pageQuery as string) || 0);
+    const limitNum = Math.min(Math.max(1, parseInt(limitQuery as string) || 50), 500);
     const supabase = dbManager.getConnection();
 
     // Consultamos las practicas profesionales
@@ -584,11 +592,15 @@ export const getResumenPasantiasReport = async (req: Request, res: Response) => 
       return a.empresa.localeCompare(b.empresa);
     });
 
+    const totalCount = reportData.length;
+    const paginatedData = reportData.slice(pageNum * limitNum, (pageNum + 1) * limitNum);
     res.json({
       success: true,
-      data: reportData,
+      data: paginatedData,
       meta: {
-        total: reportData.length
+        total: totalCount,
+        page: pageNum,
+        limit: limitNum
       }
     });
 
@@ -600,7 +612,9 @@ export const getResumenPasantiasReport = async (req: Request, res: Response) => 
 
 export const getCulminatedStudentsReport = async (req: Request, res: Response) => {
   try {
-    const { periodId, careerId, status, institutionId } = req.query;
+    const { periodId, careerId, status, institutionId, page: pageQuery, limit: limitQuery } = req.query;
+    const pageNum = Math.max(0, parseInt(pageQuery as string) || 0);
+    const limitNum = Math.min(Math.max(1, parseInt(limitQuery as string) || 50), 500);
     const supabase = dbManager.getConnection();
 
     const { data: practices, error: practicesError } = await supabase
@@ -694,7 +708,9 @@ export const getCulminatedStudentsReport = async (req: Request, res: Response) =
       return true;
     });
 
-    const reportData: CulminatedStudentReportRow[] = filteredPractices.map((p: any) => {
+    const totalCount = filteredPractices.length;
+    const paginatedPractices = filteredPractices.slice(pageNum * limitNum, (pageNum + 1) * limitNum);
+    const reportData: CulminatedStudentReportRow[] = paginatedPractices.map((p: any) => {
       const tutor = p.t_professional_practices_tutor?.[0]?.t_tutors;
       const student = p.t_persons;
       
@@ -717,15 +733,13 @@ export const getCulminatedStudentsReport = async (req: Request, res: Response) =
       };
     });
 
-    if (status && status !== 'all') {
-      reportData.filter(r => r.status === status);
-    }
-
     res.json({
       success: true,
       data: reportData,
       meta: {
-        total: reportData.length
+        total: totalCount,
+        page: pageNum,
+        limit: limitNum
       }
     });
 
@@ -738,7 +752,9 @@ export const getCulminatedStudentsReport = async (req: Request, res: Response) =
 export const getRelacionEmpresasDemandan = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
-    const { periodId, careerId } = req.query;
+    const { periodId, careerId, page: pageQuery, limit: limitQuery } = req.query;
+    const pageNum = Math.max(0, parseInt(pageQuery as string) || 0);
+    const limitNum = Math.min(Math.max(1, parseInt(limitQuery as string) || 50), 500);
 
     let query = supabase
       .from('t_professional_practices')
@@ -797,7 +813,9 @@ export const getRelacionEmpresasDemandan = async (req: Request, res: Response) =
       cantidadEstudiantes: e.estudiantes,
     }));
 
-    res.json({ success: true, data: result, meta: { total: result.length } });
+    const totalCount = result.length;
+    const paginatedResult = result.slice(pageNum * limitNum, (pageNum + 1) * limitNum);
+    res.json({ success: true, data: paginatedResult, meta: { total: totalCount, page: pageNum, limit: limitNum } });
   } catch (error) {
     console.error('[reports] getRelacionEmpresasDemandan error:', error);
     res.status(500).json({ message: 'Error al obtener relación de empresas' });
@@ -807,7 +825,9 @@ export const getRelacionEmpresasDemandan = async (req: Request, res: Response) =
 export const getDistribucionTutores = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
-    const { periodId, careerId } = req.query;
+    const { periodId, careerId, page: pageQuery, limit: limitQuery } = req.query;
+    const pageNum = Math.max(0, parseInt(pageQuery as string) || 0);
+    const limitNum = Math.min(Math.max(1, parseInt(limitQuery as string) || 50), 500);
 
     let query = supabase
       .from('t_professional_practices')
@@ -862,7 +882,9 @@ export const getDistribucionTutores = async (req: Request, res: Response) => {
       };
     });
 
-    res.json({ success: true, data: result, meta: { total: result.length } });
+    const totalCount = result.length;
+    const paginatedResult = result.slice(pageNum * limitNum, (pageNum + 1) * limitNum);
+    res.json({ success: true, data: paginatedResult, meta: { total: totalCount, page: pageNum, limit: limitNum } });
   } catch (error) {
     console.error('[reports] getDistribucionTutores error:', error);
     res.status(500).json({ message: 'Error al obtener distribución de tutores' });
@@ -872,7 +894,9 @@ export const getDistribucionTutores = async (req: Request, res: Response) => {
 export const getDistribucionTutoresV2 = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
-    const { periodId, careerId } = req.query;
+    const { periodId, careerId, page: pageQuery, limit: limitQuery } = req.query;
+    const pageNum = Math.max(0, parseInt(pageQuery as string) || 0);
+    const limitNum = Math.min(Math.max(1, parseInt(limitQuery as string) || 50), 500);
 
     let query = supabase
       .from('t_professional_practices')
@@ -929,7 +953,9 @@ export const getDistribucionTutoresV2 = async (req: Request, res: Response) => {
       };
     });
 
-    res.json({ success: true, data: result, meta: { total: result.length } });
+    const totalCount = result.length;
+    const paginatedResult = result.slice(pageNum * limitNum, (pageNum + 1) * limitNum);
+    res.json({ success: true, data: paginatedResult, meta: { total: totalCount, page: pageNum, limit: limitNum } });
   } catch (error) {
     console.error('[reports] getDistribucionTutoresV2 error:', error);
     res.status(500).json({ message: 'Error al obtener distribución de tutores v2' });

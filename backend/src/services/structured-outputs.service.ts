@@ -140,7 +140,7 @@ El usuario pregunta: "${userMessage}"
 
 Genera una respuesta en formato JSON con los datos solicitados en formato de tabla.`;
 
-  const response = await sendChat({
+  const result = await sendChat({
     messages: [{ role: 'user', content: userMessage }],
     systemInstruction: prompt,
     maxTokens: 4096,
@@ -148,8 +148,10 @@ Genera una respuesta en formato JSON con los datos solicitados en formato de tab
     responseFormat: { type: 'json_object' },
   });
 
+  const responseText = result.content;
+
   try {
-    const parsed = JSON.parse(response);
+    const parsed = JSON.parse(responseText);
 
     // Validar que tenga el formato correcto
     if (parsed.response_type === 'table') {
@@ -159,13 +161,13 @@ Genera una respuesta en formato JSON con los datos solicitados en formato de tab
     // Si no es tabla, envolver en formato texto
     return {
       response_type: 'text',
-      message: response,
+      message: responseText,
     };
   } catch {
     // Si no es JSON válido, retornar como texto
     return {
       response_type: 'text',
-      message: response,
+      message: responseText,
     };
   }
 };
@@ -189,7 +191,7 @@ Detalles: ${details}
 
 Genera una respuesta en formato JSON con el resultado de la acción.`;
 
-  const response = await sendChat({
+  const result = await sendChat({
     messages: [{ role: 'user', content: `Por favor, ejecuta la acción: ${action} ${entity}` }],
     systemInstruction: prompt,
     maxTokens: 2048,
@@ -198,7 +200,7 @@ Genera una respuesta en formato JSON con el resultado de la acción.`;
   });
 
   try {
-    return JSON.parse(response);
+    return JSON.parse(result.content);
   } catch {
     return {
       response_type: 'error',

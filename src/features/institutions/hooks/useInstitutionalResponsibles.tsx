@@ -46,10 +46,16 @@ export const useInstitutionalResponsibles = () => {
     updateItem: baseEditResponsible,
     toggleItemStatus: baseToggleStatus,
     bulkDelete: baseBulkDelete,
-    bulkRestore: baseBulkRestore
+    bulkRestore: baseBulkRestore,
+    pagination,
+    setPage,
+    setLimit,
   } = useCrud<InstitutionalResponsible, CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload>(responsibleService, {
     resourceName: "Responsable",
     idField: "responsibleId",
+    optimistic: true,
+    usePagination: true,
+    pageSize: 20,
   });
 
   /**
@@ -238,5 +244,8 @@ export const useInstitutionalResponsibles = () => {
     bulkRemoveResponsibles,
     bulkRestoreResponsibles,
     refreshResponsibles,
+    pagination,
+    setPage,
+    setLimit,
   };
 };

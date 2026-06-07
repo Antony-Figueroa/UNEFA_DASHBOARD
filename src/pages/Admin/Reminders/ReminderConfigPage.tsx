@@ -1,19 +1,23 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageBreadcrumb from '../../../components/common/PageBreadCrumb';
 import PageMeta from '../../../components/common/PageMeta';
 import ComponentCard from '../../../components/common/ComponentCard';
 import Button from '../../../components/ui/button/Button';
+import Badge from '../../../components/ui/badge/Badge';
 import { UnifiedDialog } from '../../../components/ui/dialog/UnifiedDialog';
 import { useReminders } from '../../../features/reminders/hooks/useReminders';
 import {
   ReminderRule,
+  ReminderType,
+  TargetRoleName,
   REMINDER_TYPE_LABELS,
   REMINDER_TYPE_ICONS,
   TARGET_ROLE_LABELS,
 } from '../../../features/reminders/types';
 import ReminderFormModal from '../../../features/reminders/components/ReminderFormModal';
-import { PlusCircleIcon } from '../../../icons/actions';
+import ExpressEmailModal from '../../../features/reminders/components/ExpressEmailModal';
+import { PlusCircleIcon, SearchIcon, MailIcon } from '../../../icons/actions';
 import { PencilIcon, TrashBinIcon } from '../../../icons';
 
 // ─── Componente principal ────────────────────────────────────────────────
@@ -28,6 +32,61 @@ const ReminderConfigPage = () => {
 
   // Confirm delete
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  // Express email
+  const [expressEmailOpen, setExpressEmailOpen] = useState(false);
+
+  // ── Search & filters ────────────────────────────────────────────────────
+  const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState<'' | ReminderType>('');
+  const [filterRole, setFilterRole] = useState<'' | TargetRoleName>('');
+  const [filterEmail, setFilterEmail] = useState<'' | 'yes' | 'no'>('');
+  const [filterActive, setFilterActive] = useState<'' | 'yes' | 'no'>('');
+
+  const filteredRules = useMemo(() => {
+    let result = rules;
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        r =>
+          r.name.toLowerCase().includes(q) ||
+          r.description.toLowerCase().includes(q),
+      );
+    }
+
+    if (filterType) {
+      result = result.filter(r => r.type === filterType);
+    }
+
+    if (filterRole) {
+      result = result.filter(r => r.targetRoleName === filterRole);
+    }
+
+    if (filterEmail === 'yes') {
+      result = result.filter(r => r.sendEmail);
+    } else if (filterEmail === 'no') {
+      result = result.filter(r => !r.sendEmail);
+    }
+
+    if (filterActive === 'yes') {
+      result = result.filter(r => r.active);
+    } else if (filterActive === 'no') {
+      result = result.filter(r => !r.active);
+    }
+
+    return result;
+  }, [rules, search, filterType, filterRole, filterEmail, filterActive]);
+
+  const clearFilters = () => {
+    setSearch('');
+    setFilterType('');
+    setFilterRole('');
+    setFilterEmail('');
+    setFilterActive('');
+  };
+
+  const hasActiveFilters = search || filterType || filterRole || filterEmail || filterActive;
 
   // ─── Handlers ──────────────────────────────────────────────────────────
 
@@ -60,6 +119,11 @@ const ReminderConfigPage = () => {
     setConfirmDelete(null);
   };
 
+  // ─── Constants for filter selects ──────────────────────────────────────
+
+  const REMINDER_TYPES = Object.keys(REMINDER_TYPE_LABELS) as ReminderType[];
+  const TARGET_ROLES: TargetRoleName[] = ['all', 'admin', 'asistente', 'tutor', 'estudiante'];
+
   // ─── Render ────────────────────────────────────────────────────────────
 
   return (
@@ -79,10 +143,87 @@ const ReminderConfigPage = () => {
               tutores y estudiantes.
             </p>
           </div>
-          <Button onClick={openCreate} variant="primary" size="sm">
-            <PlusCircleIcon className="w-4 h-4 mr-1.5" />
-            Nuevo recordatorio
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => setExpressEmailOpen(true)} variant="outline" size="sm">
+              <MailIcon className="w-4 h-4 mr-1.5" />
+              Express Email
+            </Button>
+            <Button onClick={openCreate} variant="primary" size="sm">
+              <PlusCircleIcon className="w-4 h-4 mr-1.5" />
+              Nuevo recordatorio
+            </Button>
+          </div>
+        </div>
+
+        {/* Filters bar */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search */}
+          <div className="relative flex-1 min-w-[200px] max-w-xs">
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Buscar por nombre o descripción..."
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            />
+          </div>
+
+          {/* Type filter */}
+          <select
+            value={filterType}
+            onChange={e => setFilterType(e.target.value as '' | ReminderType)}
+            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
+          >
+            <option value="">Todos los tipos</option>
+            {REMINDER_TYPES.map(t => (
+              <option key={t} value={t}>{REMINDER_TYPE_LABELS[t]}</option>
+            ))}
+          </select>
+
+          {/* Role filter */}
+          <select
+            value={filterRole}
+            onChange={e => setFilterRole(e.target.value as '' | TargetRoleName)}
+            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
+          >
+            <option value="">Todos los roles</option>
+            {TARGET_ROLES.map(r => (
+              <option key={r} value={r}>{TARGET_ROLE_LABELS[r]}</option>
+            ))}
+          </select>
+
+          {/* Email filter */}
+          <select
+            value={filterEmail}
+            onChange={e => setFilterEmail(e.target.value as '' | 'yes' | 'no')}
+            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
+          >
+            <option value="">Email: todos</option>
+            <option value="yes">Email: sí</option>
+            <option value="no">Email: no</option>
+          </select>
+
+          {/* Active filter */}
+          <select
+            value={filterActive}
+            onChange={e => setFilterActive(e.target.value as '' | 'yes' | 'no')}
+            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
+          >
+            <option value="">Estado: todos</option>
+            <option value="yes">Activo</option>
+            <option value="no">Inactivo</option>
+          </select>
+
+          {/* Clear filters */}
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="text-xs text-brand-600 dark:text-brand-400 hover:underline whitespace-nowrap"
+            >
+              Limpiar filtros
+            </button>
+          )}
         </div>
 
         {/* Rules list */}
@@ -91,14 +232,16 @@ const ReminderConfigPage = () => {
             <div className="py-12 text-center text-gray-400 dark:text-gray-500">
               Cargando reglas...
             </div>
-          ) : rules.length === 0 ? (
+          ) : filteredRules.length === 0 ? (
             <div className="py-12 text-center text-gray-400 dark:text-gray-500">
-              No hay reglas de recordatorios configuradas.
+              {hasActiveFilters
+                ? 'No se encontraron reglas con los filtros aplicados.'
+                : 'No hay reglas de recordatorios configuradas.'}
             </div>
           ) : (
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
               <AnimatePresence mode="popLayout">
-                {rules.map((rule, idx) => (
+                {filteredRules.map((rule, idx) => (
                   <RuleRow
                     key={rule.id}
                     rule={rule}
@@ -122,6 +265,12 @@ const ReminderConfigPage = () => {
         onSave={handleSave}
         editingRule={editingRule}
         saving={saving}
+      />
+
+      {/* Express email modal */}
+      <ExpressEmailModal
+        isOpen={expressEmailOpen}
+        onClose={() => setExpressEmailOpen(false)}
       />
 
       {/* Delete confirmation */}
@@ -184,23 +333,23 @@ const RuleRow = ({ rule, index, onToggle, onEdit, onDelete }: RuleRowProps) => {
           <span className="font-medium text-gray-900 dark:text-white truncate">
             {rule.name}
           </span>
-          <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 uppercase whitespace-nowrap">
+          <Badge variant="outline" color="dark" size="sm">
             {TARGET_ROLE_LABELS[rule.targetRoleName]}
-          </span>
+          </Badge>
           {rule.sendEmail && (
-            <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 whitespace-nowrap">
-              email
-            </span>
+            <Badge color="info" size="sm" startIcon={<MailIcon className="w-3 h-3" />}>
+              Email
+            </Badge>
           )}
           {isSeed && (
-            <span className="text-xs px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 whitespace-nowrap">
-              preset
-            </span>
+            <Badge color="primary" size="sm">
+              Preset
+            </Badge>
           )}
           {rule.daysThreshold !== null && (
-            <span className="text-xs px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 whitespace-nowrap">
+            <Badge color="warning" size="sm">
               {rule.daysThreshold}d
-            </span>
+            </Badge>
           )}
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-0.5">

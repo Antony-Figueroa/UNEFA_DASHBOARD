@@ -15,6 +15,7 @@ import { EnrollmentPDF } from "../../components/ui/pdf/templates/EnrollmentPDF";
 import { CulminatedStudentsPDF } from "../../components/ui/pdf/templates/CulminatedStudentsPDF";
 import { ReportList } from "../../features/reports/components/ReportList";
 import { DocumentReportModal } from "../../features/reports/components/DocumentReportModal";
+import { ProspectListModal } from "../../features/prospectos/components/ProspectListModal";
 import { useReports } from "../../features/reports/hooks/useReports";
 import { generateSimpleExcel } from "../../utils/unefaExcelReports";
 import { getStudents } from "../../features/students/services/studentsService";
@@ -47,6 +48,13 @@ const DOCUMENT_SECTIONS = [
       { id: "evaluacion-comite", title: "Eval. Comité Evaluador", subtitle: "Evaluación del comité evaluador", icon: "fileText", type: "pdf" as const },
       { id: "constancia-tutor-academico", title: "Const. Tutor Académico", subtitle: "Constancia de tutor académico", icon: "fileText", type: "pdf" as const },
       { id: "constancia-tutor-institucional", title: "Const. Tutor Institucional", subtitle: "Constancia de tutor institucional", icon: "fileText", type: "pdf" as const },
+    ],
+  },
+  {
+    title: "Prospectos",
+    description: "Listas editables de estudiantes elegibles para pasantías",
+    reports: [
+      { id: "prospectos", title: "Reporte de Prospectos", subtitle: "Crear y gestionar listas de prospectos por período", icon: "users", type: "pdf" as const },
     ],
   },
   {
@@ -85,6 +93,7 @@ export default function ReportsPage() {
   const [pdfSearchTerm, setPdfSearchTerm] = useState("");
   const [loadingReport, setLoadingReport] = useState(false);
   const [loadingExcelId, setLoadingExcelId] = useState<string | null>(null);
+  const [isProspectosModalOpen, setIsProspectosModalOpen] = useState(false);
 
   const { fetchData: fetchReportData, exportExcel } = useReports();
 
@@ -323,6 +332,10 @@ export default function ReportsPage() {
   };
 
   const handleViewReport = useCallback(async (type: string) => {
+    if (type === "prospectos") {
+      setIsProspectosModalOpen(true);
+      return;
+    }
     if (type === "tutores-academicos" || type === "resumen-pasantias" || type === "relacion-empresas" || type === "distribucion-tutores" || type === "distribucion-tutores-v2" || type === "relacion-individual-docente") {
       if (type === "relacion-individual-docente") {
         toast("Seleccione un tutor desde la sección de tutores", { icon: "ℹ️" });
@@ -681,6 +694,11 @@ export default function ReportsPage() {
           isOpen={isDocumentModalOpen}
           onClose={() => { setIsDocumentModalOpen(false); setSelectedDocumentType(""); }}
           documentType={selectedDocumentType}
+        />
+
+        <ProspectListModal
+          isOpen={isProspectosModalOpen}
+          onClose={() => setIsProspectosModalOpen(false)}
         />
       </div>
     </>

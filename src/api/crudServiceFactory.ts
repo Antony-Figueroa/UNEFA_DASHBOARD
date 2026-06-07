@@ -24,10 +24,29 @@ export interface CrudServiceConfig<TItem, TCreatePayload, TUpdatePayload, TApiDT
 }
 
 /**
+ * Parámetros opcionales para getAll con paginación server-side.
+ */
+export interface GetAllParams {
+  limit?: number;
+  offset?: number;
+  [key: string]: any;
+}
+
+/**
+ * Respuesta paginada de getAll cuando se pasan params.
+ */
+export interface PaginatedResponse<TItem> {
+  data: TItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+/**
  * Interfaz resultante de un servicio CRUD generado.
  */
 export interface CrudService<TItem, TCreatePayload, TUpdatePayload> {
-  getAll: () => Promise<TItem[]>;
+  getAll: (params?: GetAllParams) => Promise<TItem[] | PaginatedResponse<TItem>>;
   getById: (id: string | number) => Promise<TItem>;
   create: (data: TCreatePayload) => Promise<TItem>;
   update: (data: TUpdatePayload) => Promise<TItem>;
@@ -49,10 +68,24 @@ export function createCrudService<TItem, TCreatePayload, TUpdatePayload, TApiDTO
   const { endpoint, idField, mapFromApi } = config;
 
   return {
-    getAll: async () => {
-      const response = await apiClient.get<TApiDTO[] | { data: TApiDTO[] }>(endpoint);
-      const data = Array.isArray(response.data) ? response.data : response.data.data;
-      return data.map(mapFromApi);
+    getAll: async (params?: GetAllParams) => {
+      const response = await apiClient.get<any>(endpoint, { params });
+
+      // Backward compatibility: si no hay params, mantener comportamiento anterior
+      if (!params) {
+        const data = Array.isArray(response.data) ? response.data : response.data?.data || response.data;
+        return Array.isArray(data) ? data.map(mapFromApi) : data;
+      }
+
+      // Respuesta paginada: { data: [], total, limit, offset }
+      const rawData = response.data?.data || response.data || [];
+      const items = Array.isArray(rawData) ? rawData.map(mapFromApi) : [];
+      return {
+        data: items,
+        total: response.data?.total ?? items.length,
+        limit: response.data?.limit ?? params.limit ?? 20,
+        offset: response.data?.offset ?? params.offset ?? 0,
+      };
     },
 
     getById: async (id: string | number) => {

@@ -33,6 +33,13 @@ import { matchSearch } from "../../../utils/searchNormalizer";
 /**
  * Props for the InstitutionalResponsibleTable component.
  */
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 interface InstitutionalResponsibleTableProps {
   /** Array of institutional responsible records to display */
   data: InstitutionalResponsible[];
@@ -52,6 +59,10 @@ interface InstitutionalResponsibleTableProps {
   onBulkAction?: (ids: string[], action: "inactivate" | "restore") => void;
   /** Whether a background loading action is in progress */
   isLoading?: boolean;
+  /** Paginación server-side — reemplaza la paginación local */
+  pagination?: PaginationInfo;
+  /** Callback para cambiar de página (requerido si se usa paginación server-side) */
+  onPageChange?: (page: number) => void;
 }
 
 /**
@@ -158,7 +169,7 @@ export default function InstitutionalResponsibleTable({
 }: InstitutionalResponsibleTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [currentPage, setCurrentPage] = useState(1);
+  const [localPage, setLocalPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; order: "asc" | "desc" }>({
     key: "lastName",
@@ -222,9 +233,11 @@ export default function InstitutionalResponsibleTable({
     return [{ value: "all", label: "Todas las Instituciones" }, ...uniqueInstitutions];
   }, [data]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+  // Paginación server-side o local
+  const isServerSide = !!pagination && !!onPageChange;
+  const currentPage = isServerSide ? pagination.page : localPage;
+  const totalPages = isServerSide ? pagination.totalPages : Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
+  const currentData = isServerSide ? data : filteredData.slice((localPage - 1) * itemsPerPage, localPage * itemsPerPage);
 
   if (status === "error") {
     return (
@@ -609,18 +622,19 @@ export default function InstitutionalResponsibleTable({
         )}
       </div>
 
-      {/* Pagination */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        itemsPerPage={itemsPerPage}
-        onItemsPerPageChange={(newItems) => {
-          setItemsPerPage(newItems);
-          setCurrentPage(1); // Reset to first page when changing items per page
-        }}
-        totalItems={filteredData.length}
-      />
+      {isServerSide && pagination.total === 0 ? null : (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={isServerSide ? onPageChange : setLocalPage}
+          itemsPerPage={isServerSide ? pagination.limit : itemsPerPage}
+          onItemsPerPageChange={isServerSide ? undefined : (newItems) => {
+            setItemsPerPage(newItems);
+            setLocalPage(1);
+          }}
+          totalItems={isServerSide ? pagination.total : filteredData.length}
+        />
+      )}
     </div>
   );
 }

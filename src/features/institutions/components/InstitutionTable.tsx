@@ -17,6 +17,13 @@ import { useDebounce } from "../../../hooks/useDebounce";
 import { formatPhoneDisplay } from "../../../utils/inputFormat";
 import { matchSearch } from "../../../utils/searchNormalizer";
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 interface InstitutionTableProps {
   data: Institution[];
   status: "loading" | "success" | "error";
@@ -27,6 +34,10 @@ interface InstitutionTableProps {
   onBulkRestore?: (ids: string[]) => void;
   activeTab?: "Activas" | "Inactivas";
   institutionTypeOptions?: { value: string; label: string }[];
+  /** Paginación server-side — si se provee, reemplaza la paginación local */
+  pagination?: PaginationInfo;
+  /** Callback para cambiar de página (requerido si se usa paginación server-side) */
+  onPageChange?: (page: number) => void;
 }
 
 type SortKey = "rif" | "name";
@@ -107,7 +118,8 @@ export default function InstitutionTable({
   const [searchTerm, setSearchTerm] = useState("");
   const [institutionTypeFilter, setInstitutionTypeFilter] = useState("");
 
-  const [currentPage, setCurrentPage] = useState(1);
+  // Paginación local (fallback cuando no se usa server-side pagination)
+  const [localPage, setLocalPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -154,7 +166,7 @@ export default function InstitutionTable({
   ]);
 
   useEffect(() => {
-    setCurrentPage(1);
+    setLocalPage(1);
   }, [
     debouncedSearch, 
     institutionTypeFilter,
@@ -177,9 +189,11 @@ export default function InstitutionTable({
     );
   }
 
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paged = filteredData.slice(startIndex, startIndex + itemsPerPage);
+  // Usar paginación server-side si está disponible, sino la local
+  const isServerSide = !!pagination && !!onPageChange;
+  const currentPage = isServerSide ? pagination.page : localPage;
+  const totalPages = isServerSide ? pagination.totalPages : Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
+  const paged = isServerSide ? data : filteredData.slice((localPage - 1) * itemsPerPage, localPage * itemsPerPage);
 
   const handleSort = (key: SortKey) => {
     setSortConfig(prev => ({
@@ -478,16 +492,18 @@ export default function InstitutionTable({
         )}
       </div>
 
-      <div className="p-4 border-t border-border-light dark:border-white/5">
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          itemsPerPage={itemsPerPage}
-          onItemsPerPageChange={setItemsPerPage}
-          totalItems={filteredData.length}
-        />
-      </div>
+      {isServerSide && pagination.total === 0 ? null : (
+        <div className="p-4 border-t border-border-light dark:border-white/5">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={isServerSide ? onPageChange : setLocalPage}
+            itemsPerPage={isServerSide ? pagination.limit : itemsPerPage}
+            onItemsPerPageChange={isServerSide ? undefined : setItemsPerPage}
+            totalItems={isServerSide ? pagination.total : filteredData.length}
+          />
+        </div>
+      )}
     </div>
   );
 }

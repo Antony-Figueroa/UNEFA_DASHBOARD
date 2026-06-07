@@ -3,6 +3,7 @@ import * as usersService from '../services/users.service.js';
 import * as personService from '../services/person.service.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
+import { sendUserCreationEmail } from '../utils/email.utils.js';
 
 export const getUsers = async (req: Request, res: Response) => {
   try {
@@ -98,8 +99,9 @@ export const createUser = async (req: AuthRequest, res: Response) => {
       });
     });
     
-    // TODO: Enviar email con la clave temporal cuando se implemente el sistema de emails
-    // await sendUserCreationEmail(userData.email, userData.name, userData.userCi, tempPass);
+    // Enviar email con credenciales (no bloqueante)
+    sendUserCreationEmail(userData.email, userData.name, userData.userCi, tempPass)
+      .catch(err => console.error('[UserController] Error sending welcome email:', err));
 
     res.status(201).json(newUser);
   } catch (error: unknown) {

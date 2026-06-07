@@ -1,0 +1,71 @@
+#!/bin/sh
+#
+# Pre-commit hook: bloquea commits que incluyan credenciales reales.
+# Escanea el contenido de archivos staged en busca de patrones de
+# API keys, tokens, o secrets con valores no-placeholder.
+#
+# Esto NO interfiere con .env.example porque usa placeholders (your-*).
+#
+# Para activarlo:
+#   git config core.hooksPath .githooks
+#
+# Para saltearlo (solo si estás SEGURO de que es falso positivo):
+#   git commit --no-verify
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+
+HAS_SECRETS=0
+
+# ─── helpers ──────────────────────────────────────────────────────────────
+detect() {
+  FILE="$1"
+  PATTERN="$2"
+  LABEL="$3"
+  MATCHES=$(git show :"$FILE" 2>/dev/null | grep -nE "$PATTERN" 2>/dev/null)
+  if [ -n "$MATCHES" ]; then
+    echo "⚠️  $LABEL detected in \`$FILE\`:"
+    echo "$MATCHES" | while IFS= read -r LINE; do
+      echo "    $LINE"
+    done
+    echo ""
+    HAS_SECRETS=1
+  fi
+}
+
+# ─── chequeos ──────────────────────────────────────────────────────────────
+for FILE in $STAGED; do
+  [ ! -f "$FILE" ] && continue
+
+  # Bloquear si se intenta commitear cualquier archivo .env
+  case "$(basename "$FILE")" in
+    .env|.env.*)
+      echo "❌ BLOCKED: \`$FILE\` es un archivo de entorno y no debería committearse."
+      echo "   Si realmente necesitás trackearlo, usá .env.example en su lugar."
+      echo ""
+      HAS_SECRETS=1
+      continue
+      ;;
+  esac
+
+  # Patrones de valores reales de credenciales (NO placeholders)
+  detect "$FILE" 'sb_secret_[A-Za-z0-9_-]{10,}'    'Supabase Secret Key (sb_secret_)'
+  detect "$FILE" 're_[A-Za-z0-9_-]{20,}'           'Resend API Key (re_)'
+  detect "$FILE" 'AIza[0-9A-Za-z_-]{35}'           'Google API Key (AIza)'
+  detect "$FILE" 'gsk_[A-Za-z0-9_-]{40,}'          'Groq API Key (gsk_)'
+  detect "$FILE" 'sk_live_[A-Za-z0-9]+'            'Stripe Live Secret Key'
+  detect "$FILE" 'CEDULA_TOKEN=[a-f0-9]{32}'       'CEDULA Token (formato hash)'
+done
+
+if [ $HAS_SECRETS -eq 1 ]; then
+  echo "❌ Commit BLOCKED — se detectaron credenciales reales en archivos staged."
+  echo "   Eliminá los secrets de los archivos y volvé a intentar."
+  echo ""
+  echo "   Si es un falso positivo, usá:"
+  echo "     git commit --no-verify"
+  exit 1
+fi
+
+exit 0

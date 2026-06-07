@@ -12,12 +12,14 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       { count: activeStudents },
       { count: totalInstitutions },
       { count: activeInstitutions },
+      { count: activeCareers },
       { data: currentPeriodData }
     ] = await Promise.all([
       supabase.from('t_students').select('*', { count: 'exact', head: true }),
       supabase.from('t_students').select('*', { count: 'exact', head: true }).eq('STATUS', 1),
       supabase.from('t_institution').select('*', { count: 'exact', head: true }),
       supabase.from('t_institution').select('*', { count: 'exact', head: true }).eq('STATUS', 1),
+      supabase.from('t_career').select('*', { count: 'exact', head: true }).eq('STATUS', 1),
       supabase.from('t_internships_period').select('*').eq('PERIOD_STATUS', PERIOD_STATUS.EN_CURSO).eq('STATUS', 1).order('START_DATE', { ascending: false }).limit(1).single()
     ]);
 
@@ -213,6 +215,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       activeStudents: activeStudents || 0,
       totalInstitutions: totalInstitutions || 0,
       activeInstitutions: activeInstitutions || 0,
+      activeCareers: activeCareers || 0,
       currentPeriod: currentPeriodData ? {
         description: currentPeriodData.DESCRIPTION,
         startDate: currentPeriodData.START_DATE,

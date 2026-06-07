@@ -15,6 +15,8 @@ export interface DashboardStats {
   totalInstitutions: number;
   /** Number of institutions with 'active' status */
   activeInstitutions: number;
+  /** Number of careers with 'active' status */
+  activeCareers: number;
   /** Information about the currently active period, if any */
   currentPeriod: {
     /** Period description or name */

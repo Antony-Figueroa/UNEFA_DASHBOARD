@@ -25,6 +25,7 @@ import aiRoutes from './routes/ai.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import reportsRoutes from './routes/reports.routes.js';
 import reminderConfigRoutes from './routes/reminder-config.routes.js';
+import emailTemplatesRoutes from './routes/email-templates.routes.js';
 import configRoutes from './routes/config.routes.js';
 import culminationRoutes from './routes/culmination.routes.js';
 import manualsRoutes from './routes/manuals.routes.js';
@@ -47,6 +48,7 @@ import securityQuestionsRoutes from './routes/securityQuestions.routes.js';
 import landingConfigRoutes from './routes/landing-config.routes.js';
 import globalSearchRoutes from './routes/global-search.routes.js';
 import dashboardConfigRoutes from './routes/dashboard-config.routes.js';
+import knowledgeBaseRoutes from './routes/knowledge-base.routes.js';
 import personsRoutes from './routes/persons.routes.js';
 import institutionalDocumentsRoutes from './routes/institutional-documents.routes.js';
 import reportTextsRoutes from './routes/report-texts.routes.js';
@@ -59,6 +61,8 @@ import * as listsService from './services/lists.service.js';
 import * as usersService from './services/users.service.js';
 import { startPeriodScheduler } from './services/period-scheduler.service.js';
 import { startReminderScheduler } from './services/reminder-scheduler.service.js';
+import { emailTemplatesService } from './services/email-templates.service.js';
+import { seedIfEmpty as seedKBIfEmpty } from './services/knowledge-base-seed.service.js';
 
 // Detectar si estamos en Vercel (serverless)
 const isVercel = !!process.env.VERCEL;
@@ -87,6 +91,8 @@ dbManager.connect().catch(err => {
 });
 listsService.ensurePhonePrefixesSeeded().catch(() => {});
 usersService.ensureRolesSeeded().catch(() => {});
+emailTemplatesService.seedIfEmpty();
+seedKBIfEmpty();
 
 // Iniciar schedulers (SOLO en modo tradicional, NO en Vercel)
 if (!isVercel) {
@@ -257,6 +263,8 @@ app.use('/api/documents', documentsRoutes);
 app.use('/api/permissions', permissionRoutes);
 app.use('/api/security-questions', securityQuestionsRoutes);
 app.use('/api/reminder-config', reminderConfigRoutes);
+app.use('/api/email-templates', emailTemplatesRoutes);
+app.use('/api/knowledge-base', knowledgeBaseRoutes);
 // SSE endpoint — deshabilitado en Vercel (no compatible con serverless)
 if (isVercel) {
   app.get('/api/notifications/stream', (_req, res) => {

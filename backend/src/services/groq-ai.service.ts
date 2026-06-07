@@ -51,11 +51,23 @@ export interface StreamChatParams {
   maxTokens?: number;
   temperature?: number;
   responseFormat?: ResponseFormat;
+  tools?: NonStreamChatParams['tools'];
+  tool_choice?: NonStreamChatParams['tool_choice'];
 }
 
 export interface NonStreamChatParams extends StreamChatParams {
   // For structured outputs / JSON mode
   responseFormat?: ResponseFormat;
+  // Native tool calling via Groq SDK
+  tools?: Array<{
+    type: 'function';
+    function: {
+      name: string;
+      description: string;
+      parameters: Record<string, unknown>;
+    };
+  }>;
+  tool_choice?: 'auto' | 'none' | { type: 'function'; function: { name: string } };
 }
 
 export type ResponseFormat = 
@@ -211,16 +223,25 @@ export const streamChat = async (
     return fullText;
 
   } catch (error: unknown) {
-    return handleGroqError(error, 'streaming') as unknown as string;
+    handleGroqError(error, 'streaming');
   }
 };
 
-export const sendChat = async (params: NonStreamChatParams): Promise<string> => {
+export interface ChatResult {
+  content: string;
+  tool_calls?: Array<{
+    id: string;
+    type: 'function';
+    function: { name: string; arguments: string };
+  }>;
+}
+
+export const sendChat = async (params: NonStreamChatParams): Promise<ChatResult> => {
   const model = DEFAULT_MODEL;
   const maxTokens = params.maxTokens || MAX_TOKENS;
   const temperature = params.temperature || TEMPERATURE;
 
-  console.log(`[Groq] Non-streaming chat with model: ${model}`);
+  console.log(`[Groq] Non-streaming chat with model: ${model}${params.tools ? `, tools: ${params.tools.length}` : ''}`);
 
   try {
     const systemMessage = { role: 'system' as const, content: params.systemInstruction };
@@ -233,19 +254,39 @@ export const sendChat = async (params: NonStreamChatParams): Promise<string> => 
       temperature,
       // Response format for JSON mode / structured outputs
       ...(params.responseFormat && { response_format: params.responseFormat }),
+      // Native tool calling
+      ...(params.tools && { tools: params.tools }),
+      ...(params.tools && { tool_choice: params.tool_choice || 'auto' }),
     });
 
-    const content = completion.choices[0]?.message?.content || '';
+    const message = completion.choices[0]?.message;
+    const content = message?.content || '';
     
     // Log usage stats if available
     if (completion.usage) {
       console.log(`[Groq] Usage - Prompt: ${completion.usage.prompt_tokens}, Completion: ${completion.usage.completion_tokens}, Total: ${completion.usage.total_tokens}`);
     }
 
-    return content;
+    // Check for tool_calls in the response
+    if (message?.tool_calls && message.tool_calls.length > 0) {
+      console.log(`[Groq] Tool calls detected: ${message.tool_calls.length}`);
+      return {
+        content,
+        tool_calls: message.tool_calls.map(tc => ({
+          id: tc.id,
+          type: 'function' as const,
+          function: {
+            name: tc.function.name,
+            arguments: tc.function.arguments,
+          },
+        })),
+      };
+    }
+
+    return { content, tool_calls: undefined };
 
   } catch (error: unknown) {
-    return handleGroqError(error, 'non-streaming chat') as unknown as string;
+    handleGroqError(error, 'non-streaming chat');
   }
 };
 
@@ -265,9 +306,9 @@ export const sendJsonChat = async (
   });
   
   try {
-    return JSON.parse(result);
+    return JSON.parse(result.content);
   } catch {
-    console.error('[Groq] Failed to parse JSON response:', result);
+    console.error('[Groq] Failed to parse JSON response:', result.content);
     throw new GroqAPIError('La respuesta de la IA no es un JSON válido.', undefined, false);
   }
 };

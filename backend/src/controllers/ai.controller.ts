@@ -3,16 +3,15 @@ import { aiService, AIQuerySchema } from '../services/ai.service.js';
 import { z } from 'zod';
 import { AIAuthRequest } from '../middlewares/ai-auth.middleware.js';
 import { streamChat as streamChatGoogle, ChatMessage } from '../services/google-ai.service.js';
-import { streamChat as streamChatGroq, sendChat as sendChatGroq, GroqAPIError } from '../services/groq-ai.service.js';
-import { detectIntent, fetchContextForIntent } from '../services/intent-detection.service.js';
-import { fetchContextWithCache, getCacheStats, clearRagCache } from '../services/rag-cache.service.js';
+import { streamChat as streamChatGroq, sendChat as sendChatGroq, GroqAPIError, ChatResult } from '../services/groq-ai.service.js';
+import { getCacheStats, clearRagCache } from '../services/rag-cache.service.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import * as chatSessionsService from '../services/chat-sessions.service.js';
-import { aiProviderFactory, getToolsForProvider } from '../services/ai-provider.factory.js';
+import { aiProviderFactory, getToolsForProvider, AITool } from '../services/ai-provider.factory.js';
 import { initializeAITools, getAvailableTools, executeAITool } from '../services/ai-tools.service.js';
-import { processMessageWithTools } from '../services/tool-use.service.js';
 import { analyzeFile } from '../services/vision.service.js';
 import * as chatConfigService from '../services/chat-config.service.js';
+import { pipeline as ragPipeline } from '../services/rag.service.js';
 
 // ============================================
 // Initialize AI Tools al cargar el módulo
@@ -35,11 +34,21 @@ console.log('[AI Controller] Providers:', {
   activeProvider: USE_GROQ ? 'GROQ' : (USE_GOOGLE ? 'GOOGLE' : 'NONE')
 });
 
+// ============================================
+// System Prompt
+// ============================================
+
 const BASE_SYSTEM_PROMPT = `### REGLA DE ORO DE IDIOMA: responde EXCLUSIVAMENTE EN ESPAÑOL. ###
 Está TERMINANTEMENTE PROHIBIDO hablar en inglés, usar palabras en inglés o cerrar el mensaje en inglés. 100% ESPAÑOL.
 
 IDENTIDAD: Eres el ASISTENTE DE IA OFICIAL del Dashboard UNEFA (Universidad Nacional Experimental Politécnica de la Fuerza Armada).
 Solo respondes cuando el usuario hace una pregunta explícita o solicita información específica.
+
+### CONTEXTO INSTITUCIONAL:
+- Sistema: Dashboard UNEFA
+- Módulos disponibles: estudiantes, carreras, períodos, tutores, instituciones, pasantías, evaluaciones, documentos, notificaciones, reportes, usuario
+- Roles: Administrador Maestro (0), Administrador (1), Asistente (2), Tutor (3), Estudiante (4)
+- El sistema gestiona pasantías/prácticas profesionales institucionales
 
 REGLAS CRÍTICAS DE RESPUESTA:
 1. IDIOMA: Responde 100% en ESPAÑOL.
@@ -52,30 +61,172 @@ REGLAS CRÍTICAS DE RESPUESTA:
 5. PRECISIÓN: Si los datos dicen "14 estudiantes activos", responde "Hay 14 estudiantes activos". No digas que no tienes acceso.
 6. Si no hay datos de contexto para responder una pregunta específica, indica que la información no está disponible actualmente.
 
+### USO DE LA BASE DE CONOCIMIENTO:
+- Tienes acceso a una base de conocimiento con información institucional verificada (reglamentos, procesos, FAQs)
+- Cuando te pregunten sobre CÓMO hacer algo en el sistema, busca en la sección INFORMACIÓN DE LA BASE DE CONOCIMIENTO
+- Si encuentras una guía relevante, preséntala paso a paso
+- Si el contexto no contiene la respuesta, indica que no tienes esa información disponible
+- NO inventes datos institucionales, números de artículos, fechas, ni procedimientos
+
+### HERRAMIENTAS DISPONIBLES:
+Puedes usar las herramientas del sistema para consultar datos en tiempo real (estudiantes, carreras, pasantías, etc.).
+Cuando necesites información específica del sistema, USA las herramientas disponibles. NO inventes datos.
+
 ### PROHIBIDO:
 - Dar resúmenes de datos sin que el usuario los solicite
 - Agregar "¿Te gustaría saber más sobre...?" cuando no se solicita
 - Inventar datos que no estén en el contexto proporcionado
 - Responder con más de lo mínimo necesario para saludos o agradecimientos`;
 
-const buildSystemPrompt = (userContext: any, ragContext: string | null): string => {
+/**
+ * Construye el system prompt completo con contexto del usuario, RAG y herramientas.
+ */
+const buildSystemPrompt = (
+  userContext: any,
+  ragContext: string | null,
+  tools: AITool[]
+): string => {
   const parts: string[] = [BASE_SYSTEM_PROMPT];
 
+  // Contexto del usuario
   if (userContext) {
-    parts.push(`\nCONTEXTO DEL USUARIO:`);
+    const roleNames: Record<number, string> = {
+      0: 'Administrador Maestro',
+      1: 'Administrador',
+      2: 'Asistente',
+      3: 'Tutor',
+      4: 'Estudiante',
+    };
+    parts.push(`\n### CONTEXTO DEL USUARIO:`);
     parts.push(`- Nombre: ${userContext.name || 'No identificado'} ${userContext.surname || ''}`);
-    parts.push(`- Rol: ${userContext.role === 0 ? 'Administrador Maestro' : userContext.role === 1 ? 'Administrador' : 'Asistente'}`);
+    parts.push(`- Rol: ${roleNames[userContext.role] || `Rol ${userContext.role}`}`);
     parts.push(`- Fecha actual: ${new Date().toLocaleDateString('es-VE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`);
   }
 
+  // Contexto RAG (KB o DB)
   if (ragContext) {
-    parts.push(`\nDATOS DEL SISTEMA (obtenidos en tiempo real de la base de datos):`);
     parts.push(ragContext);
     parts.push(`\nUSA ESTOS DATOS para responder la pregunta del usuario. Son datos REALES y ACTUALIZADOS.`);
   }
 
+  // Herramientas disponibles
+  if (tools.length > 0) {
+    const toolsDesc = tools
+      .map(t => `- ${t.function.name}: ${t.function.description}`)
+      .join('\n');
+    parts.push(`\n### HERRAMIENTAS:\n${toolsDesc}`);
+  }
+
   return parts.join('\n');
 };
+
+// ============================================
+// Sliding Window
+// ============================================
+
+/**
+ * Limita el historial a los últimos N mensajes para controlar tokens.
+ * Si hay más de N, resume los primeros en un mensaje system.
+ */
+function trimContext(messages: ChatMessage[], maxMessages = 20): ChatMessage[] {
+  if (messages.length <= maxMessages) return messages;
+
+  // Separar: los primeros para resumir, los últimos para mantener
+  const keepCount = maxMessages - 1; // 1 slot para el resumen
+  const toSummarize = messages.slice(0, messages.length - keepCount);
+  const keep = messages.slice(-keepCount);
+
+  // Construir resumen simple
+  const summaryLines = toSummarize
+    .filter(m => m.role === 'user' || m.role === 'assistant')
+    .slice(-8) // últimos 8 mensajes interesantes
+    .map(m => {
+      const preview = m.content.substring(0, 120).replace(/\n/g, ' ');
+      return `${m.role === 'user' ? 'Usuario' : 'Asistente'}: ${preview}`;
+    });
+
+  const summary: ChatMessage = {
+    role: 'system',
+    content: `[Resumen de la conversación anterior (${toSummarize.length} mensajes):\n${summaryLines.join('\n')}\n]`,
+  };
+
+  return [summary, ...keep];
+}
+
+/**
+ * Ejecuta el ciclo de tool calling nativo de Groq.
+ */
+async function executeNativeToolCalling(
+  messages: ChatMessage[],
+  systemInstruction: string,
+  tools: AITool[]
+): Promise<{ text: string; toolCount: number }> {
+  console.log('[AI Controller] Native tool calling cycle started');
+
+  // Primera llamada: enviar mensaje + tools a Groq
+  const result = await sendChatGroq({
+    messages,
+    systemInstruction,
+    maxTokens: 4096,
+    temperature: 0.7,
+    tools,
+    tool_choice: 'auto',
+  });
+
+  // Si Groq no usó herramientas, retornar respuesta directa
+  if (!result.tool_calls || result.tool_calls.length === 0) {
+    console.log('[AI Controller] No tool calls, using direct response');
+    return { text: result.content, toolCount: 0 };
+  }
+
+  console.log(`[AI Controller] Groq requested ${result.tool_calls.length} tool calls`);
+
+  // Ejecutar cada tool
+  const toolResults: Array<{
+    role: 'tool';
+    tool_call_id: string;
+    content: string;
+  }> = [];
+
+  for (const toolCall of result.tool_calls) {
+    try {
+      const args = JSON.parse(toolCall.function.arguments);
+      console.log(`[AI Controller] Executing tool: ${toolCall.function.name}`, args);
+
+      const toolResult = await executeAITool(toolCall.function.name, args);
+
+      toolResults.push({
+        role: 'tool',
+        tool_call_id: toolCall.id,
+        content: JSON.stringify(toolResult),
+      });
+    } catch (err: any) {
+      console.error(`[AI Controller] Tool execution error: ${toolCall.function.name}`, err.message);
+      toolResults.push({
+        role: 'tool',
+        tool_call_id: toolCall.id,
+        content: JSON.stringify({ success: false, error: err.message }),
+      });
+    }
+  }
+
+  // Segunda llamada: enviar resultados de las tools a Groq
+  console.log('[AI Controller] Sending tool results back to Groq');
+  const finalResult = await sendChatGroq({
+    messages: [
+      ...messages,
+      { role: 'assistant', content: result.content || null, tool_calls: result.tool_calls } as any,
+      ...toolResults,
+    ].filter(Boolean),
+    systemInstruction: systemInstruction + '\n\nLos resultados de las herramientas están arriba. Presenta esta información de manera clara al usuario.',
+    maxTokens: 4096,
+    temperature: 0.5,
+    tools,
+    tool_choice: 'none', // No permitir más tool calls en la segunda vuelta
+  });
+
+  return { text: finalResult.content, toolCount: result.tool_calls.length };
+}
 
 export const executeAIQuery = async (req: AIAuthRequest, res: Response) => {
   try {
@@ -131,28 +282,20 @@ export const chatWithAI = async (req: AuthRequest, res: Response) => {
     const lastUserMessage = messages[messages.length - 1];
     console.log(`[AI Chat:${requestId}] Last message preview:`, lastUserMessage?.content?.substring(0, 50) || '(empty)');
 
-    // Detect intent and fetch RAG context
-    console.log(`[AI Chat:${requestId}] Detecting intent...`);
-    const intent = detectIntent(lastUserMessage.content);
-    console.log(`[AI Chat:${requestId}] Intent: action=${intent?.action}, entity=${intent?.entity}`);
-    
-    let ragContext: string | null = null;
+    // RAG Pipeline — busca en KB primero, fallback a DB
+    const ragCtx = await ragPipeline(lastUserMessage.content, req.user?.role);
+    console.log(`[AI Chat:${requestId}] RAG source: ${ragCtx.source}, kbChunks: ${ragCtx.kbChunksUsed}`);
 
-    if (intent.entity && intent.action !== 'none') {
-      console.log(`[AI Chat:${requestId}] Fetching RAG context for entity: ${intent.entity}`);
-      try {
-        ragContext = await fetchContextForIntent(intent, req.user?.userId || 'ai-chat');
-        console.log(`[AI Chat:${requestId}] RAG context fetched, length: ${ragContext?.length || 0} chars`);
-      } catch (ragError: any) {
-        console.error(`[AI Chat:${requestId}] RAG Error:`, ragError.message);
-        ragContext = '[NOTA: No se pudo obtener contexto de la base de datos. Responde basado en tu conocimiento.]';
-      }
-    }
+    // Sliding Window
+    const trimmedMessages = trimContext(messages, 20);
+    console.log(`[AI Chat:${requestId}] Messages trimmed: ${messages.length} → ${trimmedMessages.length}`);
 
-    // Build system prompt
+    // Build system prompt (sin tools para streaming)
+    const tools = USE_GROQ ? getAvailableTools() : [];
     const systemPrompt = buildSystemPrompt(
-      req.user ? { name: req.user.userCi, role: req.user.role } : null,
-      ragContext
+      req.user ? { name: req.user.userCi, surname: '', role: req.user.role } : null,
+      ragCtx.context,
+      []
     );
     console.log(`[AI Chat:${requestId}] System prompt built, length: ${systemPrompt.length} chars`);
 
@@ -199,7 +342,7 @@ export const chatWithAI = async (req: AuthRequest, res: Response) => {
     try {
       await streamChatFn(
         {
-          messages,
+          messages: trimmedMessages,
           systemInstruction: systemPrompt,
           maxTokens: 4096,
           temperature: 0.7,
@@ -224,7 +367,7 @@ export const chatWithAI = async (req: AuthRequest, res: Response) => {
         try {
           await streamChatGoogle(
             {
-              messages,
+              messages: trimmedMessages,
               systemInstruction: systemPrompt,
               maxTokens: 4096,
               temperature: 0.7,
@@ -343,101 +486,76 @@ export const chatWithAINoStream = async (req: AuthRequest, res: Response) => {
     }
 
     const lastUserMessage = messages[messages.length - 1];
-    console.log(`[AI Chat NoStream:${requestId}] Last message:`, lastUserMessage?.content?.substring(0, 50));
+    console.log(`[AI Chat NoStream:${requestId}] Last message:`, lastUserMessage?.content?.substring(0, 80));
 
-    // Detect intent y verificar si necesita herramientas
-    const intent = detectIntent(lastUserMessage.content);
-    console.log(`[AI Chat NoStream:${requestId}] Intent:`, intent?.action, intent?.entity);
+    // ============================================
+    // 1. RAG Pipeline — busca en KB primero, fallback a DB
+    // ============================================
+    const ragCtx = await ragPipeline(lastUserMessage.content, req.user?.role);
+    console.log(`[AI Chat NoStream:${requestId}] RAG source: ${ragCtx.source}, kbChunks: ${ragCtx.kbChunksUsed}`);
 
-    // Obtener herramientas disponibles (solo si es Groq)
+    // ============================================
+    // 2. Sliding Window — limitar historial
+    // ============================================
+    const trimmedMessages = trimContext(messages, 20);
+    console.log(`[AI Chat NoStream:${requestId}] Messages trimmed: ${messages.length} → ${trimmedMessages.length}`);
+
+    // ============================================
+    // 3. Tools — disponibles solo con Groq
+    // ============================================
     const availableTools = USE_GROQ ? getAvailableTools() : [];
-    const useTools = availableTools.length > 0 && intent.entity && intent.action !== 'none';
+    console.log(`[AI Chat NoStream:${requestId}] Tools available: ${availableTools.length}`);
 
-    if (useTools) {
-      console.log(`[AI Chat NoStream:${requestId}] Using Tool Use with ${availableTools.length} tools`);
-    }
-
-    // Obtener contexto RAG (con caché)
-    let ragContext: string | null = null;
-
-    if (intent.entity && intent.action !== 'none') {
-      try {
-        // Usar caché para evitar consultas repetitivas
-        ragContext = await fetchContextWithCache(intent, req.user?.userId || 'ai-chat');
-        console.log(`[AI Chat NoStream:${requestId}] RAG context: ${ragContext ? 'found' : 'not found'}`);
-      } catch (ragError: any) {
-        console.error(`[AI Chat NoStream:${requestId}] RAG Error:`, ragError.message);
-        ragContext = null; // Si falla, la IA usará las herramientas
-      }
-    }
-
-    // Log de estadísticas del caché (para debugging)
-    const cacheStats = getCacheStats();
-    console.log(`[AI Chat NoStream:${requestId}] Cache stats:`, cacheStats);
-
-    // Construir prompt del sistema
+    // ============================================
+    // 4. Build System Prompt con contexto RAG + herramientas
+    // ============================================
     const systemPrompt = buildSystemPrompt(
-      req.user ? { name: req.user.userCi, role: req.user.role } : null,
-      ragContext
+      req.user ? { name: req.user.userCi, surname: '', role: req.user.role } : null,
+      ragCtx.context,
+      availableTools
     );
 
-    // Agregar instrucciones de herramientas al prompt si corresponde
-    let enhancedSystemPrompt = systemPrompt;
-    if (useTools) {
-      const toolsDescription = availableTools
-        .map(t => `- ${t.function.name}: ${t.function.description}`)
-        .join('\n');
-
-      enhancedSystemPrompt += `\n\n### HERRAMIENTAS DISPONIBLES:\nPuedes usar las siguientes herramientas para obtener datos de la base de datos:\n${toolsDescription}\n\nCuando necesites información específica del sistema, usa estas herramientas en lugar de pedirle al usuario que la proporcione.`;
-    }
-
+    // ============================================
+    // 5. Ejecutar con native tool calling (si es Groq) o simple (Google)
+    // ============================================
     const providerName = USE_GROQ ? 'GROQ' : 'GOOGLE';
-    console.log(`[AI Chat NoStream:${requestId}] Using ${providerName}, tools: ${useTools}`);
-
-    // Obtener respuesta - usar Tool Use completo si hay intent detectado
     let responseText: string;
-    let toolUseDetected = false;
     let toolCount = 0;
 
-    // Try Groq first, fallback to Google on error
     try {
-      if (USE_GROQ && intent.entity && intent.action !== 'none') {
-        // Usar procesamiento completo de Tool Use
-        console.log(`[AI Chat NoStream:${requestId}] Using full Tool Use processing`);
-        const toolResult = await processMessageWithTools(messages, enhancedSystemPrompt);
-        responseText = toolResult.text;
-        toolUseDetected = toolResult.toolUse;
-        toolCount = toolResult.toolCount;
-      } else if (USE_GROQ) {
-        // Usar chat normal con Groq
-        responseText = await sendChatGroq({
-          messages,
-          systemInstruction: enhancedSystemPrompt,
-          maxTokens: 4096,
-          temperature: 0.7,
-        });
+      if (USE_GROQ) {
+        // Native tool calling con Groq
+        const result = await executeNativeToolCalling(
+          trimmedMessages,
+          systemPrompt,
+          availableTools
+        );
+        responseText = result.text;
+        toolCount = result.toolCount;
       } else {
-        // Usar Google
+        // Google no soporta tools, chat simple
         const googleChat = (await import('../services/google-ai.service.js')).sendChat;
         responseText = await googleChat({
-          messages,
-          systemInstruction: enhancedSystemPrompt,
+          messages: trimmedMessages,
+          systemInstruction: systemPrompt,
           maxTokens: 4096,
           temperature: 0.7,
         });
       }
     } catch (primaryError: any) {
-      // Si Groq falla Y Google está disponible, intentar fallback
-      const isRateLimit = primaryError?.status === 429 || primaryError?.message?.includes('Rate limit');
+      // Fallback a Google si Groq falla por rate limit
+      const isRateLimit = primaryError?.status === 429 ||
+        primaryError?.message?.includes('Rate limit') ||
+        primaryError?.message?.includes('rate_limit');
       const shouldFallback = USE_GROQ && USE_GOOGLE && isRateLimit;
 
       if (shouldFallback) {
-        console.log(`[AI Chat NoStream:${requestId}] Groq failed (${primaryError.message}), trying GOOGLE as fallback...`);
+        console.log(`[AI Chat NoStream:${requestId}] Groq failed, trying GOOGLE fallback...`);
         try {
           const googleChat = (await import('../services/google-ai.service.js')).sendChat;
           responseText = await googleChat({
-            messages,
-            systemInstruction: enhancedSystemPrompt,
+            messages: trimmedMessages,
+            systemInstruction: systemPrompt,
             maxTokens: 4096,
             temperature: 0.7,
           });
@@ -451,18 +569,21 @@ export const chatWithAINoStream = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    console.log(`[AI Chat NoStream:${requestId}] Response length: ${responseText.length} chars, toolUse: ${toolUseDetected}, toolCount: ${toolCount}`);
+    console.log(`[AI Chat NoStream:${requestId}] Response length: ${responseText.length} chars, tools used: ${toolCount}`);
 
-    // Return complete response as JSON
+    // ============================================
+    // 6. Response
+    // ============================================
     res.json({
       success: true,
       text: responseText,
       meta: {
         provider: providerName,
-        usedTools: toolUseDetected,
+        source: ragCtx.source,
+        kbChunksUsed: ragCtx.kbChunksUsed,
+        toolsUsed: toolCount > 0,
         toolCount,
-        intentDetected: intent.action !== 'none' ? intent : null,
-      }
+      },
     });
 
   } catch (error: any) {
@@ -504,11 +625,14 @@ export const getAIConfig = async (req: AuthRequest, res: Response) => {
           })),
         },
         features: {
-          streaming: false, // Deshabilitado por problemas de compatibility
+          streaming: true,
           noStream: true,
-          toolUse: USE_GROQ,
+          toolUse: USE_GROQ, // Native Groq tool calling
+          nativeToolCalling: USE_GROQ,
+          ragSemantic: true,  // KB + pgvector
+          knowledgeBase: true,
+          slidingWindow: true,
           structuredOutputs: true,
-          ragCaching: true,
         },
         model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
       },

@@ -170,10 +170,22 @@ const HomeQuickStats: React.FC<HomeQuickStatsProps> = ({ stats, loading }) => {
       colorClass: "bg-warning-50 text-warning-600 dark:bg-warning-500/10 dark:text-warning-400",
       isNumber: true,
     },
+    {
+      icon: (
+        <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M22 10v6M2 10l10-5 10 5-10 5z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 12v5c0 1.657 2.686 3 6 3s6-1.343 6-3v-5" />
+        </svg>
+      ),
+      label: "Carreras activas",
+      value: stats?.activeCareers || 0,
+      colorClass: "bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400",
+      isNumber: true,
+    },
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {statsData.map((stat, index) => (
         <QuickStatItem
           key={stat.label}

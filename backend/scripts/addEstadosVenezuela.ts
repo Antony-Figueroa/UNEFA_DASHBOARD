@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: './.env' });
 
 const supabaseUrl = process.env.SUPABASE_URL || 'https://rgvnwslyvixviypgegra.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJndm53c2x5dml4dml5cGdlZ3JhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY0ODQ2NTIwMCwiZXhwIjoxOTY0MDQxNDAwfQ.W6BVBmJ5J-JG4K6o3uZ8f9yFyN2vX4hK8jL3mP1oR0s';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 

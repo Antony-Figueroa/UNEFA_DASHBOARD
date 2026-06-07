@@ -120,7 +120,7 @@ export const getCareers = async () => {
 
     // 6. Verificar uso de forma eficiente (estudiantes, instituciones, prácticas)
     const { data: studentUsage } = await supabase.from('t_students').select('CAREER_ID').eq('STATUS', 1);
-    const { data: institutionUsage } = await supabase.from('t_institution').select('CAREER_ID').eq('STATUS', 1);
+    const { data: institutionUsage } = await supabase.from('t_institution_career').select('CAREER_ID');
     const { data: practiceUsage } = await supabase.from('t_professional_practices').select('CAREER_ID').eq('STATUS', 1);
 
     // 7. Verificar si hay evaluaciones pendientes para la restricción de nota mínima
@@ -331,7 +331,14 @@ export const updateCareer = async (id: string, payload: Record<string, unknown>,
 
     // 1. Verificar si la carrera está en uso para restricciones generales
     const { data: students } = await supabase.from('t_students').select('STUDENTS_ID').eq('CAREER_ID', id).eq('STATUS', 1).limit(1);
-    const { data: institutions } = await supabase.from('t_institution').select('INSTITUTION_ID').eq('CAREER_ID', id).eq('STATUS', 1).limit(1);
+    const { data: activeInsts } = await supabase.from('t_institution').select('INSTITUTION_ID').eq('STATUS', 1);
+    const activeInstIds = (activeInsts || []).map((i: { INSTITUTION_ID: number }) => i.INSTITUTION_ID);
+    let institutionData: { INSTITUTION_ID: number }[] = [];
+    if (activeInstIds.length > 0) {
+      const { data } = await supabase.from('t_institution_career').select('INSTITUTION_ID').eq('CAREER_ID', id).in('INSTITUTION_ID', activeInstIds).limit(1);
+      institutionData = data || [];
+    }
+    const institutions = institutionData;
     const { data: practices } = await supabase.from('t_professional_practices').select('PROFESSIONAL_PRACTICE_ID').eq('CAREER_ID', id).eq('STATUS', 1).limit(1);
     
     const isInUse = (students && students.length > 0) || (institutions && institutions.length > 0) || (practices && practices.length > 0);
@@ -417,7 +424,14 @@ export const deleteCareer = async (id: string, userId: number = 1) => {
 
     // 2. Verificar si está en uso antes de "eliminar" (desactivar)
     const { data: students } = await supabase.from('t_students').select('STUDENTS_ID').eq('CAREER_ID', id).eq('STATUS', 1).limit(1);
-    const { data: institutions } = await supabase.from('t_institution').select('INSTITUTION_ID').eq('CAREER_ID', id).eq('STATUS', 1).limit(1);
+    const { data: activeInsts } = await supabase.from('t_institution').select('INSTITUTION_ID').eq('STATUS', 1);
+    const activeInstIds = (activeInsts || []).map((i: { INSTITUTION_ID: number }) => i.INSTITUTION_ID);
+    let institutionData: { INSTITUTION_ID: number }[] = [];
+    if (activeInstIds.length > 0) {
+      const { data } = await supabase.from('t_institution_career').select('INSTITUTION_ID').eq('CAREER_ID', id).in('INSTITUTION_ID', activeInstIds).limit(1);
+      institutionData = data || [];
+    }
+    const institutions = institutionData;
     const { data: practices } = await supabase.from('t_professional_practices').select('PROFESSIONAL_PRACTICE_ID').eq('CAREER_ID', id).eq('STATUS', 1).limit(1);
 
     if ((students && students.length > 0) || (institutions && institutions.length > 0) || (practices && practices.length > 0)) {
@@ -441,8 +455,15 @@ export const bulkDeleteCareers = async (ids: (string | number)[], userId: number
     const now = new Date().toISOString();
     // 1. Verificar si alguna de las carreras está en uso
     const { data: students } = await supabase.from('t_students').select('CAREER_ID').in('CAREER_ID', ids).eq('STATUS', 1);
-    const { data: institutions } = await supabase.from('t_institution').select('CAREER_ID').in('CAREER_ID', ids).eq('STATUS', 1);
-    const { data: practices } = await supabase.from('t_professional_practices').select('CAREER_ID').in('CAREER_ID', ids).eq('STATUS', 1);
+    const { data: activeInsts } = await supabase.from('t_institution').select('INSTITUTION_ID').eq('STATUS', 1);
+    const activeInstIds = (activeInsts || []).map((i: { INSTITUTION_ID: number }) => i.INSTITUTION_ID);
+    let institutionData: { CAREER_ID: number }[] = [];
+    if (activeInstIds.length > 0) {
+      const { data } = await supabase.from('t_institution_career').select('CAREER_ID').in('CAREER_ID', ids).in('INSTITUTION_ID', activeInstIds);
+      institutionData = data || [];
+    }
+    const institutions = institutionData;
+    const { data: practices } = await supabase.from('t_professional_practices').select('CAREER_ID').in('CAREER_ID', ids).eq('STATUS', 1).limit(1);
 
     const usedIds = new Set([
       ...(students || []).map(s => String(s.CAREER_ID)),

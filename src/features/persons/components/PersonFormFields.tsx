@@ -307,7 +307,7 @@ export default function PersonFormFields({
               <button
                 type="button"
                 onClick={onCiLookup}
-                disabled={isCheckingCi}
+                disabled={isLookingUpCi}
                 title="Buscar datos en SENIAT / CNE"
                 className="absolute right-14 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400 transition-colors disabled:opacity-50"
               >

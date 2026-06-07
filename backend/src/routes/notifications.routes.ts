@@ -5,6 +5,7 @@ import {
   markAllAsRead,
   deleteNotification,
   getUnreadCount,
+  expressEmail,
 } from "../controllers/notifications.controller.js";
 import { requirePermission } from "../middlewares/auth.middleware.js";
 import { supabase } from "../lib/supabase.js";
@@ -18,6 +19,9 @@ router.get("/unread-count", requirePermission('notifications:view'), getUnreadCo
 router.patch("/:id/read", requirePermission('notifications:view'), markAsRead);
 router.patch("/read-all", requirePermission('notifications:view'), markAllAsRead);
 router.delete("/:id", requirePermission('notifications:view'), deleteNotification);
+
+// Express email: enviar correo masivo a roles, usuarios y/o emails externos
+router.post("/express-email", requirePermission('notifications:send'), expressEmail);
 
 // Endpoint para crear notificaciones de prueba
 router.post("/", requirePermission('notifications:send'), async (req: Request, res: Response) => {

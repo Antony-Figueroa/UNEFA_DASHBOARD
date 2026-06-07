@@ -495,7 +495,17 @@ export const requestPasswordReset = async (email: string, ip: string, userAgent:
     await logAuthAction(user.USER_ID, user.USER_CI, 'PASSWORD_RESET_REQUESTED', ip, userAgent, 'Solicitud de restablecimiento de contraseña vía email');
 
     // 5. Enviar email
-    await sendPasswordRecoveryEmail(user.EMAIL, user.NAME, token);
+    const emailResult = await sendPasswordRecoveryEmail(user.EMAIL, user.NAME, token);
+
+    if (!emailResult.success) {
+      console.error(`[Auth] Error sending recovery email to ${user.EMAIL}: ${emailResult.error}`);
+      // El token se creó pero el email falló — informamos al usuario
+      return {
+        success: true,
+        warning: true,
+        message: 'No se pudo enviar el correo electrónico. Intentalo más tarde o contactá al administrador.',
+      };
+    }
 
     return { success: true, message: 'Instrucciones enviadas al correo electrónico.' };
   });

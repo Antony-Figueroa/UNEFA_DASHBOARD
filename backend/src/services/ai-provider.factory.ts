@@ -133,10 +133,13 @@ class GroqProvider implements AIProvider {
     // Agregar tools si están disponibles
     const tools = params.tools && params.tools.length > 0 ? params.tools : undefined;
 
-    return sendGroq({
+    const result = await sendGroq({
       ...params,
       responseFormat: params.responseFormat,
     } as any);
+
+    // sendGroq ahora retorna ChatResult { content, tool_calls }
+    return result.content;
   }
 }
 

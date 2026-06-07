@@ -166,6 +166,8 @@ export default function InstitutionalResponsibleTable({
   onToggleStatus,
   onBulkAction,
   isLoading = false,
+  pagination,
+  onPageChange,
 }: InstitutionalResponsibleTableProps) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());

@@ -5,7 +5,7 @@
 
 import { createCrudService } from "../../../api/crudServiceFactory";
 import apiClient from "../../../api/apiClient";
-import { User, CreateUserPayload, UpdateUserPayload } from "../types";
+import { User, UserDetail, AuthLog, CreateUserPayload, UpdateUserPayload } from "../types";
 
 /**
  * Interface para el Objeto de Transferencia de Datos (DTO) de Usuario de la API.
@@ -72,6 +72,22 @@ export const checkUserCi = async (ci: string): Promise<UserCiCheckResult> => {
  */
 export const resetUserPassword = async (userId: number): Promise<void> => {
   await apiClient.post(`/users/${userId}/reset-password`);
+};
+
+/**
+ * Obtiene el detalle completo de un usuario por su ID.
+ */
+export const getUserById = async (id: number): Promise<UserDetail> => {
+  const response = await apiClient.get(`/users/${id}`);
+  return response.data;
+};
+
+/**
+ * Obtiene el historial de login de un usuario específico.
+ */
+export const getLoginHistory = async (userId: number, limit: number = 20): Promise<{ logs: AuthLog[]; totalCount: number }> => {
+  const response = await apiClient.get(`/users/${userId}/login-history`, { params: { limit } });
+  return response.data;
 };
 
 interface UserCiCheckResult {

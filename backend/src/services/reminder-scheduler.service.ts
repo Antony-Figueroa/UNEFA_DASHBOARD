@@ -125,7 +125,7 @@ const sendReminderEmail = async (
     if (result.success) {
       console.log(`[ReminderScheduler] ✓ Email sent to user ${userId} (${user.EMAIL})`);
     } else {
-      console.warn(`[ReminderScheduler] ✗ Email failed to user ${userId} (${user.EMAIL}): ${result.error}`);
+      console.warn(`[ReminderScheduler] ✗ Email failed to user ${userId} (${user.EMAIL}): ${(result as { success: false; error: string }).error}`);
     }
     return result.success;
   } catch (err) {

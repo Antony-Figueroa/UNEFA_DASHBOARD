@@ -5,7 +5,7 @@
 
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
-import { EditIcon, TrashIcon, RefreshIcon, ChevronDownIcon, KeyIcon } from "../../../icons/actions";
+import { EditIcon, TrashIcon, RefreshIcon, ChevronDownIcon, KeyIcon, EyeIcon } from "../../../icons/actions";
 import { UserRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
@@ -29,6 +29,8 @@ interface UserTableProps {
     onToggleStatus?: (user: UserRowData) => void;
     /** Función para resetear clave de un usuario */
     onResetPassword?: (user: UserRowData) => void;
+    /** Función para ver detalle de un usuario */
+    onViewDetail?: (user: UserRowData) => void;
     /** Mapa de roles (ID -> Nombre) */
     rolesMap: Record<number, string>;
     /** Lista de IDs seleccionados */
@@ -73,6 +75,7 @@ interface ActionButtonsProps {
     onEdit?: () => void;
     onToggleStatus?: () => void;
     onResetPassword?: () => void;
+    onViewDetail?: () => void;
     status: number;
     isMobile?: boolean;
     userId?: number;
@@ -86,6 +89,7 @@ const ActionButtons = ({
     onEdit,
     onToggleStatus,
     onResetPassword,
+    onViewDetail,
     status,
     isMobile = false,
     userId,
@@ -105,6 +109,16 @@ const ActionButtons = ({
                     tooltip="Editar usuario"
                     label={isMobile ? "Editar Usuario" : undefined}
                     variant="primary"
+                    fullWidth={isMobile}
+                />
+            )}
+            {onViewDetail && (
+                <AsyncActionButton
+                    onClick={async () => onViewDetail()}
+                    icon={<EyeIcon />}
+                    tooltip="Ver detalle"
+                    label={isMobile ? "Ver Detalle" : undefined}
+                    variant="info"
                     fullWidth={isMobile}
                 />
             )}
@@ -143,6 +157,7 @@ export default function UserTable({
     onEdit,
     onToggleStatus,
     onResetPassword,
+    onViewDetail,
     rolesMap,
     selectedIds,
     onSelectRow,
@@ -299,6 +314,7 @@ export default function UserTable({
                                         <ActionButtons
                                             status={user.status}
                                             onEdit={() => onEdit?.(user)}
+                                            onViewDetail={() => onViewDetail?.(user)}
                                             onToggleStatus={() => onToggleStatus?.(user)}
                                             onResetPassword={() => onResetPassword?.(user)}
                                             userId={user.id}

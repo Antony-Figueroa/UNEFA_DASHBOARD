@@ -329,7 +329,7 @@ export const expressEmail = async (req: Request, res: Response): Promise<void> =
     failed.forEach(r => {
       errors.push({
         recipient: r.recipientEmail,
-        error: r.error || 'Error desconocido',
+        error: (r as { success: false; error: string }).error || 'Error desconocido',
       });
     });
 

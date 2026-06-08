@@ -356,7 +356,7 @@ export const refreshSession = async (req: AuthRequest, res: Response) => {
 };
 
 export const changePassword = async (req: Request, res: Response) => {
-  const { userId, newPassword, securityQuestions, profileData } = req.body;
+  const { userId, newPassword, securityQuestions, profileData, currentPassword } = req.body;
 
   if (!userId || !newPassword) {
     return res.status(400).json({ message: 'ID de usuario y nueva contraseña son requeridos' });
@@ -365,6 +365,13 @@ export const changePassword = async (req: Request, res: Response) => {
   const passwordValidation = await validatePassword(newPassword);
   if (!passwordValidation.isValid) {
     return res.status(400).json({ message: passwordValidation.message });
+  }
+
+  if (currentPassword) {
+    const isValid = await authService.verifyCurrentPassword(userId, currentPassword);
+    if (!isValid) {
+      return res.status(401).json({ success: false, message: 'La contraseña actual no es correcta' });
+    }
   }
 
   try {

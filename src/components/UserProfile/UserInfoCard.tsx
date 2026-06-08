@@ -1,5 +1,12 @@
 import { useAuth } from "../../context/auth";
 
+const ROLE_LABELS: Record<number, string> = {
+  1: "Administrador",
+  2: "Asistente",
+  3: "Tutor",
+  4: "Estudiante"
+};
+
 export default function UserInfoCard() {
   const { user } = useAuth();
 
@@ -67,7 +74,7 @@ export default function UserInfoCard() {
             Rol
           </p>
           <p className="text-sm font-medium text-text-emphasis dark:text-white">
-            {user?.role === 1 ? "Administrador" : "Usuario"}
+            {ROLE_LABELS[user?.role ?? -1] ?? "Desconocido"}
           </p>
         </div>
       </div>

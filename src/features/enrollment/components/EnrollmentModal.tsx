@@ -1022,6 +1022,12 @@ export default function EnrollmentModal({
                           value={String(field.value)}
                           className="rounded-xl h-[48px]"
                           disabled={!careerId && !editingEntry}
+                          onAddNew={(!careerId && !editingEntry) ? undefined : () => {
+                            window.dispatchEvent(new CustomEvent("enrollment:addTutor", {
+                              detail: { targetField: "academicTutorId" }
+                            }));
+                          }}
+                          addNewLabel={(!careerId && !editingEntry) ? undefined : "Nuevo Tutor"}
                         />
                       );
                     }}
@@ -1091,6 +1097,12 @@ export default function EnrollmentModal({
                           value={String(field.value)}
                           className="rounded-xl h-[48px]"
                           disabled={!careerId && !editingEntry}
+                          onAddNew={(!careerId && !editingEntry) ? undefined : () => {
+                            window.dispatchEvent(new CustomEvent("enrollment:addTutor", {
+                              detail: { targetField: "methodologicalTutorId" }
+                            }));
+                          }}
+                          addNewLabel={(!careerId && !editingEntry) ? undefined : "Nuevo Tutor"}
                         />
                       );
                     }}

@@ -12,9 +12,10 @@ import { useLists } from "../../features/lists/hooks/useLists";
 import { useDebounce } from "../../hooks/useDebounce";
 import { useAuth } from "../../context/auth";
 import { useToast } from "../../context/toast";
-import { User, CreateUserPayload, UpdateUserPayload } from "../../features/users/types";
+import { User, UserRowData, CreateUserPayload, UpdateUserPayload } from "../../features/users/types";
 import { rolesService } from "../../features/roles/services/rolesService";
 import { resetUserPassword } from "../../features/users/services/userService";
+import UserDetailModal from "../../features/users/components/UserDetailModal";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 
@@ -31,6 +32,7 @@ const UserManagementPage = () => {
   const [activeTab, setActiveTab] = useState<"Activos" | "Inactivos">("Activos");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [userForDetail, setUserForDetail] = useState<{ id: number; name: string } | null>(null);
   
   // Estados de filtros y paginación
   const [page, setPage] = useState(1);
@@ -212,6 +214,10 @@ const UserManagementPage = () => {
     });
   };
 
+  const handleViewDetail = (user: UserRowData) => {
+    setUserForDetail({ id: user.id, name: `${user.name} ${user.surname}` });
+  };
+
   const handleBulkAction = () => {
     const newStatus = activeTab === "Activos" ? 0 : 1;
     const isDeactivating = activeTab === "Activos";
@@ -365,6 +371,7 @@ const UserManagementPage = () => {
                 error={error}
                 onEdit={handleEdit}
                 onToggleStatus={handleToggleStatus}
+                onViewDetail={handleViewDetail}
                 onResetPassword={handleResetPassword}
                 rolesMap={rolesMap}
                 selectedIds={selectedIds}
@@ -399,6 +406,14 @@ const UserManagementPage = () => {
         onSave={handleSave}
         isSubmitting={loadingAction}
         roleOptions={rolesOptions}
+      />
+
+      {/* Modal de Detalle de Usuario */}
+      <UserDetailModal
+        userId={userForDetail?.id ?? null}
+        userName={userForDetail?.name}
+        isOpen={!!userForDetail}
+        onClose={() => setUserForDetail(null)}
       />
 
       {/* Diálogo de confirmación */}

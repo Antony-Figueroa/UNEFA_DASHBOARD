@@ -1,0 +1,497 @@
+- generic [ref=e6]:
+  - navigation "Navegacion principal" [ref=e8]:
+    - generic [ref=e10]:
+      - link "Volver al inicio" [ref=e12] [cursor=pointer]:
+        - /url: /
+        - img "UNEFA Logo" [ref=e13]
+        - generic [ref=e14]: UNEFA
+      - generic [ref=e15]:
+        - link "Inicio" [ref=e16] [cursor=pointer]:
+          - /url: /
+        - link "Nosotros" [ref=e17] [cursor=pointer]:
+          - /url: /nosotros
+        - link "Carreras" [ref=e18] [cursor=pointer]:
+          - /url: /carreras
+        - link "Pasantias" [ref=e19] [cursor=pointer]:
+          - /url: /pasantias
+      - generic [ref=e20]:
+        - link "Iniciar Sesion" [ref=e22] [cursor=pointer]:
+          - /url: /signin
+          - button "Iniciar Sesion" [ref=e23]
+        - button [ref=e24] [cursor=pointer]:
+          - img [ref=e25]
+  - generic [ref=e27]:
+    - main "Contenido principal" [ref=e28]:
+      - generic [ref=e159]:
+        - generic [ref=e160]:
+          - generic [ref=e162]: Inicia tu futuro profesional
+          - heading "Impulsa tu carrera con Éxito" [level=1] [ref=e163]:
+            - text: Impulsa tu carrera con
+            - generic [ref=e164]:
+              - generic [ref=e165]: Éxito
+              - generic [ref=e166]:
+                - generic [ref=e167]: É
+                - generic [ref=e168]: x
+                - generic [ref=e169]: i
+                - generic [ref=e170]: t
+                - generic [ref=e171]: o
+          - paragraph [ref=e172]: Conectamos estudiantes talentosos de la UNEFA con las mejores oportunidades en el sector público y privado para transformar su potencial en experiencia real.
+        - generic [ref=e173]:
+          - link "Comenzar ahora" [ref=e174] [cursor=pointer]:
+            - /url: /signin
+            - button "Comenzar ahora" [ref=e175]
+          - button "Saber más" [ref=e176] [cursor=pointer]
+        - generic [ref=e177]:
+          - generic [ref=e178]:
+            - img "User" [ref=e180]
+            - img "User" [ref=e182]
+            - img "User" [ref=e184]
+            - img "User" [ref=e186]
+          - paragraph [ref=e187]:
+            - generic [ref=e188]: + de 3,200
+            - text: estudiantes han impulsado su carrera con nosotros.
+      - generic [ref=e191]:
+        - generic [ref=e192]:
+          - generic [ref=e193]:
+            - img [ref=e195]
+            - heading "Misión" [level=2] [ref=e197]
+          - paragraph [ref=e198]: Formar a través de la docencia, la investigación y la extensión, ciudadanos corresponsables con la seguridad y Defensa Integral de la Nación, comprometidos con la Revolución Bolivariana, con competencias emancipadoras y humanistas necesarias para sustentar los planes de desarrollo del país, promoviendo la producción y el intercambio de saberes, como mecanismo de integración latinoamericana y caribeña.
+        - generic [ref=e199]:
+          - generic [ref=e200]:
+            - img [ref=e202]
+            - heading "Visión" [level=2] [ref=e204]
+          - paragraph [ref=e205]: Ser la primera universidad socialista, reconocida por su Excelencia Educativa en el territorio nacional e internacional, líder en los saberes humanistas, científicos, tecnológicos y militares, inspirada en el ideario bolivariano.
+      - generic [ref=e207]:
+        - paragraph [ref=e209]: Nuestra Presencia Digital
+        - generic "Redes Sociales UNEFA" [ref=e211]:
+          - generic [ref=e212]:
+            - link [ref=e215] [cursor=pointer]:
+              - /url: https://www.facebook.com/unefaoficial/
+              - img [ref=e217]
+            - link [ref=e221] [cursor=pointer]:
+              - /url: https://twitter.com/unefa_ve
+              - img [ref=e223]
+            - link [ref=e227] [cursor=pointer]:
+              - /url: https://www.instagram.com/unefa_ve/
+              - img [ref=e229]
+            - link [ref=e233] [cursor=pointer]:
+              - /url: https://www.youtube.com/@unefa_ve
+              - img [ref=e235]
+            - link [ref=e239] [cursor=pointer]:
+              - /url: http://www.unefa.edu.ve/
+              - img [ref=e241]
+            - link [ref=e245] [cursor=pointer]:
+              - /url: https://www.facebook.com/unefaoficial/
+              - img [ref=e247]
+            - link [ref=e251] [cursor=pointer]:
+              - /url: https://twitter.com/unefa_ve
+              - img [ref=e253]
+            - link [ref=e257] [cursor=pointer]:
+              - /url: https://www.instagram.com/unefa_ve/
+              - img [ref=e259]
+            - link [ref=e263] [cursor=pointer]:
+              - /url: https://www.youtube.com/@unefa_ve
+              - img [ref=e265]
+            - link [ref=e269] [cursor=pointer]:
+              - /url: http://www.unefa.edu.ve/
+              - img [ref=e271]
+            - link [ref=e275] [cursor=pointer]:
+              - /url: https://www.facebook.com/unefaoficial/
+              - img [ref=e277]
+            - link [ref=e281] [cursor=pointer]:
+              - /url: https://twitter.com/unefa_ve
+              - img [ref=e283]
+            - link [ref=e287] [cursor=pointer]:
+              - /url: https://www.instagram.com/unefa_ve/
+              - img [ref=e289]
+            - link [ref=e293] [cursor=pointer]:
+              - /url: https://www.youtube.com/@unefa_ve
+              - img [ref=e295]
+            - link [ref=e299] [cursor=pointer]:
+              - /url: http://www.unefa.edu.ve/
+              - img [ref=e301]
+            - link [ref=e305] [cursor=pointer]:
+              - /url: https://www.facebook.com/unefaoficial/
+              - img [ref=e307]
+            - link [ref=e311] [cursor=pointer]:
+              - /url: https://twitter.com/unefa_ve
+              - img [ref=e313]
+            - link [ref=e317] [cursor=pointer]:
+              - /url: https://www.instagram.com/unefa_ve/
+              - img [ref=e319]
+            - link [ref=e323] [cursor=pointer]:
+              - /url: https://www.youtube.com/@unefa_ve
+              - img [ref=e325]
+            - link [ref=e329] [cursor=pointer]:
+              - /url: http://www.unefa.edu.ve/
+              - img [ref=e331]
+      - generic [ref=e334]:
+        - generic [ref=e336]:
+          - 'heading "Oferta Académica: Extensión Acarigua" [level=2] [ref=e337]'
+          - paragraph [ref=e338]: Explora las carreras disponibles exclusivamente en nuestra sede Acarigua. Formación de excelencia para el desarrollo de la región.
+        - generic [ref=e339]:
+          - generic [ref=e340]:
+            - generic [ref=e341]:
+              - img "INGENIERÍA AGRONÓMICA" [ref=e342]
+              - generic [ref=e345]: Ingeniería
+            - generic [ref=e346]:
+              - heading "INGENIERÍA AGRONÓMICA" [level=3] [ref=e347]
+              - paragraph [ref=e348]: Formamos profesionales para el desarrollo agrícola sostenible, gestión de recursos naturales y producción vegetal.
+          - generic [ref=e349]:
+            - generic [ref=e350]:
+              - img "INGENIERÍA AGROINDUSTRIAL" [ref=e351]
+              - generic [ref=e354]: Ingeniería
+            - generic [ref=e355]:
+              - heading "INGENIERÍA AGROINDUSTRIAL" [level=3] [ref=e356]
+              - paragraph [ref=e357]: Carrera enfocada en la transformación de productos agrícolas, tecnología de alimentos y gestión agroindustrial.
+          - generic [ref=e358]:
+            - generic [ref=e359]:
+              - img "ENFERMERÍA" [ref=e360]
+              - generic [ref=e363]: T.S.U
+            - generic [ref=e364]:
+              - heading "ENFERMERÍA" [level=3] [ref=e365]
+              - paragraph [ref=e366]: Formamos profesionales de la salud con competencias para el cuidado integral, prevención y promoción de la salud.
+      - generic [ref=e368]:
+        - generic [ref=e369]:
+          - 'heading "Ficha de Datos: Pasantías y Prácticas Profesionales" [level=2] [ref=e370]'
+          - paragraph [ref=e372]: Estimado Histórico y Estadísticas de Cumplimiento Académico - Extensión Acarigua (2008 - 2025).
+        - generic [ref=e373]:
+          - generic [ref=e374]:
+            - heading "Total Acumulado" [level=3] [ref=e377]
+            - generic [ref=e380]:
+              - paragraph [ref=e381]: "-"
+              - paragraph [ref=e382]: Estudiantes en Pasantías
+          - generic [ref=e383]:
+            - heading "Promedio Anual" [level=3] [ref=e386]
+            - generic [ref=e389]:
+              - paragraph [ref=e390]: "-"
+              - paragraph [ref=e391]: Pasantes por Ciclo
+          - generic [ref=e392]:
+            - heading "Tasa de Cumplimiento" [level=3] [ref=e395]
+            - generic [ref=e398]:
+              - paragraph [ref=e399]:
+                - text: ~
+                - text: "%"
+              - paragraph [ref=e400]: Inicio de Pasantías
+        - generic [ref=e401]:
+          - generic [ref=e403]:
+            - heading "Definición del Proceso" [level=3] [ref=e404]: Definición del Proceso
+            - generic [ref=e406]:
+              - generic [ref=e407]:
+                - paragraph [ref=e408]: Término Académico
+                - paragraph [ref=e409]: Prácticas Profesionales (Pasantías)
+              - generic [ref=e410]:
+                - paragraph [ref=e411]: Carácter
+                - paragraph [ref=e412]: Obligatorio y curricular para todas las carreras de pregrado (T.S.U., Ingeniería y Licenciatura).
+              - generic [ref=e413]:
+                - paragraph [ref=e414]: Duración Promedio
+                - paragraph [ref=e415]: Entre 12 y 16 semanas (dependiendo del diseño curricular de la carrera).
+          - generic [ref=e416]:
+            - heading "Relación Pasantía vs. Graduación" [level=3] [ref=e417]: Relación Pasantía vs. Graduación
+            - list [ref=e419]:
+              - listitem [ref=e420]:
+                - generic [ref=e421]: "1"
+                - generic [ref=e422]:
+                  - heading "Factor de Conversión" [level=4] [ref=e423]
+                  - paragraph [ref=e424]: Se estima que el número de pasantes es un 10-15% superior al número de graduados finales.
+                  - paragraph [ref=e425]: "Nota: Estudiantes que completan la práctica pero postergan el Trabajo Especial de Grado (TEG) o el acto administrativo."
+              - listitem [ref=e426]:
+                - generic [ref=e427]: "2"
+                - generic [ref=e428]:
+                  - heading "Ubicación y Alcance" [level=4] [ref=e429]
+                  - paragraph [ref=e430]: Los estudiantes inician sus pasantías predominantemente en empresas de la región Acarigua-Araure.
+              - listitem [ref=e431]:
+                - generic [ref=e432]: "3"
+                - generic [ref=e433]:
+                  - heading "Efectividad Académica" [level=4] [ref=e434]
+                  - paragraph [ref=e435]: ~98% de los estudiantes que llegan al último semestre inician exitosamente su vinculación con el sector productivo.
+            - paragraph [ref=e438]:
+              - generic [ref=e439]: "Nota de Datos:"
+              - text: Cifras consolidadas con base en los registros históricos de la Unidad de Gestión Educativa.
+      - generic [ref=e441]:
+        - generic [ref=e442]:
+          - heading "¿Cómo funciona el proceso?" [level=2] [ref=e443]
+          - paragraph [ref=e444]: Nuestra plataforma gestiona el ciclo completo de tus prácticas profesionales en siete etapas estructuradas.
+        - generic [ref=e445]:
+          - generic [ref=e446]:
+            - generic [ref=e447]:
+              - img [ref=e449]
+              - generic [ref=e451]: "01"
+            - heading "Postulación" [level=3] [ref=e452]
+            - paragraph [ref=e453]: Completa tu información personal y académica en la plataforma aliada SICEU.
+          - generic [ref=e454]:
+            - generic [ref=e455]:
+              - img [ref=e457]
+              - generic [ref=e459]: "02"
+            - heading "Preinscripción" [level=3] [ref=e460]
+            - paragraph [ref=e461]: Entrega de los documentos solicitados.
+          - generic [ref=e462]:
+            - generic [ref=e463]:
+              - img [ref=e465]
+              - generic [ref=e467]: "03"
+            - heading "Inscripción" [level=3] [ref=e468]
+            - paragraph [ref=e469]: Se selecciona la institución y los tutores que mejor se adapte a tus metas.
+          - generic [ref=e470]:
+            - generic [ref=e471]:
+              - img [ref=e473]
+              - generic [ref=e475]: "04"
+            - heading "Desarrollo" [level=3] [ref=e476]
+            - paragraph [ref=e477]: Ejecución de las prácticas profesionales.
+          - generic [ref=e478]:
+            - generic [ref=e479]:
+              - img [ref=e481]
+              - generic [ref=e483]: "05"
+            - heading "Seguimiento" [level=3] [ref=e484]
+            - paragraph [ref=e485]: Realiza el seguimiento de tus actividades y recibe feedback de tus tutores.
+          - generic [ref=e486]:
+            - generic [ref=e487]:
+              - img [ref=e489]
+              - generic [ref=e491]: "06"
+            - heading "Defensa" [level=3] [ref=e492]
+            - paragraph [ref=e493]: Defiende el informe final de las prácticas profesionales.
+          - generic [ref=e494]:
+            - generic [ref=e495]:
+              - img [ref=e497]
+              - generic [ref=e499]: "07"
+            - heading "Culminación" [level=3] [ref=e500]
+            - paragraph [ref=e501]: Finaliza tu proceso con éxito y obtén tu certificación académica.
+      - generic [ref=e503]:
+        - generic [ref=e504]:
+          - heading "Nuestra Comunidad y Espacios" [level=2] [ref=e505]
+          - paragraph [ref=e506]: Conoce los espacios donde se forja el futuro profesional de la Patria. La UNEFA es compromiso, disciplina y excelencia.
+        - generic [ref=e509]:
+          - generic [ref=e511]:
+            - button "Infraestructura Fachada Principal Fachada Principal" [ref=e513] [cursor=pointer]:
+              - generic [ref=e514]:
+                - paragraph [ref=e515]: Infraestructura
+                - paragraph [ref=e516]: Fachada Principal
+              - img "Fachada Principal" [ref=e517]
+            - button "Graduaciones Forjando el Futuro Forjando el Futuro" [ref=e519] [cursor=pointer]:
+              - generic [ref=e520]:
+                - paragraph [ref=e521]: Graduaciones
+                - paragraph [ref=e522]: Forjando el Futuro
+              - img "Forjando el Futuro" [ref=e523]
+            - button "Institución Excelencia Educativa Excelencia Educativa" [ref=e525] [cursor=pointer]:
+              - generic [ref=e526]:
+                - paragraph [ref=e527]: Institución
+                - paragraph [ref=e528]: Excelencia Educativa
+              - img "Excelencia Educativa" [ref=e529]
+            - button "Formación Soberanía Tecnológica Soberanía Tecnológica" [ref=e531] [cursor=pointer]:
+              - generic [ref=e532]:
+                - paragraph [ref=e533]: Formación
+                - paragraph [ref=e534]: Soberanía Tecnológica
+              - img "Soberanía Tecnológica" [ref=e535]
+            - button "Comunidad Identidad y Cultura Identidad y Cultura" [ref=e537] [cursor=pointer]:
+              - generic [ref=e538]:
+                - paragraph [ref=e539]: Comunidad
+                - paragraph [ref=e540]: Identidad y Cultura
+              - img "Identidad y Cultura" [ref=e541]
+            - button "Valores Disciplina y Compromiso Disciplina y Compromiso" [ref=e543] [cursor=pointer]:
+              - generic [ref=e544]:
+                - paragraph [ref=e545]: Valores
+                - paragraph [ref=e546]: Disciplina y Compromiso
+              - img "Disciplina y Compromiso" [ref=e547]
+          - generic [ref=e548]:
+            - button [disabled] [ref=e549]:
+              - img [ref=e550]
+            - button [ref=e552] [cursor=pointer]:
+              - img [ref=e553]
+      - generic [ref=e557]:
+        - generic [ref=e558]:
+          - heading "Información Institucional" [level=2] [ref=e560]
+          - generic [ref=e561]:
+            - heading "Ingenieria Agronomica" [level=3] [ref=e562]
+            - paragraph [ref=e563]: Formacion de ingenieros capaces de desarrollar soluciones tecnologicas para el sector agricola venezolano, contribuyendo a la soberania alimentaria.
+            - generic [ref=e565]: "Fuente: Carreras UNEFA"
+        - generic [ref=e566]:
+          - img "Ingenieria Agronomica" [ref=e568]
+          - button "Nueva información" [ref=e569] [cursor=pointer]:
+            - img [ref=e571]
+            - text: Nueva información
+      - generic [ref=e578]:
+        - generic [ref=e579]:
+          - generic [ref=e580]:
+            - heading "Ubicacion" [level=2] [ref=e581]
+            - paragraph [ref=e582]: Nuestra sede principal de la Extension Araure esta ubicada en un punto clave de Portuguesa, rodeada de servicios esenciales y facil acceso para toda la comunidad universitaria.
+          - generic [ref=e583]:
+            - generic [ref=e584]:
+              - img [ref=e586]
+              - generic [ref=e589]:
+                - heading "Direccion" [level=4] [ref=e590]
+                - paragraph [ref=e591]: Av. 23 con Calle 6, Araure 3303, Portuguesa, Venezuela.
+            - generic [ref=e592]:
+              - img [ref=e594]
+              - generic [ref=e596]:
+                - heading "Conectividad" [level=4] [ref=e597]
+                - paragraph [ref=e598]: A metros del Terminal de Araure y cerca de las principales vias de Acarigua.
+            - generic [ref=e599]:
+              - img [ref=e601]
+              - generic [ref=e603]:
+                - heading "Contacto" [level=4] [ref=e604]
+                - paragraph [ref=e605]: +58 255-1234567 | extension.araure@unefa.edu.ve
+            - generic [ref=e606]:
+              - img [ref=e608]
+              - generic [ref=e610]:
+                - heading "Horario" [level=4] [ref=e611]
+                - paragraph [ref=e612]: "Lunes a Viernes: 8:00 AM - 5:00 PM"
+          - link "Google Maps" [ref=e614] [cursor=pointer]:
+            - /url: https://www.google.com/maps/search/?api=1&query=9.569627,-69.219552
+            - img [ref=e615]
+            - generic [ref=e617]: Google Maps
+        - generic [ref=e618]:
+          - generic [ref=e620]:
+            - generic:
+              - region "Map" [ref=e621]
+              - button "Map marker" [ref=e622] [cursor=pointer]:
+                - img [ref=e623]
+            - generic:
+              - generic [ref=e641]:
+                - button "Zoom in" [ref=e642] [cursor=pointer]
+                - button "Zoom out" [ref=e644] [cursor=pointer]
+              - group [ref=e646]:
+                - generic "Toggle attribution" [ref=e647] [cursor=pointer]
+                - generic [ref=e648]:
+                  - text: ©
+                  - link "OpenStreetMap" [ref=e649] [cursor=pointer]:
+                    - /url: https://www.openstreetmap.org/copyright
+                  - text: ©
+                  - link "CARTO" [ref=e650] [cursor=pointer]:
+                    - /url: https://carto.com/attributions
+          - generic [ref=e651]:
+            - button "Centrar en UNEFA" [ref=e652] [cursor=pointer]:
+              - img [ref=e653]
+              - generic: Centrar en UNEFA
+            - button "Claro" [ref=e657] [cursor=pointer]:
+              - img [ref=e658]
+              - generic: Claro
+            - button "Oscuro" [ref=e660] [cursor=pointer]:
+              - img [ref=e661]
+              - generic: Oscuro
+            - button "Satelite" [ref=e663] [cursor=pointer]:
+              - img [ref=e664]
+              - generic: Satelite
+            - button "Colores" [ref=e666] [cursor=pointer]:
+              - img [ref=e667]
+              - generic: Colores
+      - generic [ref=e670]:
+        - generic [ref=e671]:
+          - generic [ref=e672]: ¿Tienes dudas?
+          - heading "Preguntas Frecuentes" [level=2] [ref=e673]
+          - paragraph [ref=e674]: Encuentra respuestas a las dudas más comunes sobre el proceso de prácticas profesionales.
+        - generic [ref=e675]:
+          - button "¿Cuáles son los requisitos para iniciar mis prácticas profesionales?" [ref=e677] [cursor=pointer]:
+            - generic [ref=e678]: ¿Cuáles son los requisitos para iniciar mis prácticas profesionales?
+            - img [ref=e681]
+          - button "¿Cuántas horas de pasantía debo realizar?" [ref=e684] [cursor=pointer]:
+            - generic [ref=e685]: ¿Cuántas horas de pasantía debo realizar?
+            - img [ref=e688]
+          - button "¿Puedo realizar mis pasantías en cualquier empresa?" [ref=e691] [cursor=pointer]:
+            - generic [ref=e692]: ¿Puedo realizar mis pasantías en cualquier empresa?
+            - img [ref=e695]
+          - button "¿Qué documentos debo entregar para la preinscripción?" [ref=e698] [cursor=pointer]:
+            - generic [ref=e699]: ¿Qué documentos debo entregar para la preinscripción?
+            - img [ref=e702]
+          - button "¿Quién me tutora durante las prácticas profesionales?" [ref=e705] [cursor=pointer]:
+            - generic [ref=e706]: ¿Quién me tutora durante las prácticas profesionales?
+            - img [ref=e709]
+          - button "¿Las pasantías son remuneradas?" [ref=e712] [cursor=pointer]:
+            - generic [ref=e713]: ¿Las pasantías son remuneradas?
+            - img [ref=e716]
+          - button "¿Qué sucede si debo suspender mis pasantías?" [ref=e719] [cursor=pointer]:
+            - generic [ref=e720]: ¿Qué sucede si debo suspender mis pasantías?
+            - img [ref=e723]
+          - button "¿Cómo se evalúa el desempeño en las pasantías?" [ref=e726] [cursor=pointer]:
+            - generic [ref=e727]: ¿Cómo se evalúa el desempeño en las pasantías?
+            - img [ref=e730]
+        - paragraph [ref=e733]:
+          - text: ¿Aún tienes dudas?
+          - link "Contáctanos" [ref=e734] [cursor=pointer]:
+            - /url: /contacto
+    - contentinfo "Pie de página" [ref=e735]:
+      - contentinfo [ref=e736]:
+        - generic [ref=e737]:
+          - generic [ref=e738]:
+            - generic [ref=e739]:
+              - link "UNEFA Logo UNEFA" [ref=e740] [cursor=pointer]:
+                - /url: "#inicio"
+                - img "UNEFA Logo" [ref=e741]
+                - generic [ref=e742]: UNEFA
+              - paragraph [ref=e743]: Sistema de Información para la Gestión de Prácticas Profesionales de la UNEFA. Transformando el futuro académico a través de la experiencia profesional.
+            - generic [ref=e744]:
+              - heading "Plataforma" [level=4] [ref=e745]
+              - list [ref=e746]:
+                - listitem [ref=e747]:
+                  - link "Inicio" [ref=e748] [cursor=pointer]:
+                    - /url: /
+                - listitem [ref=e749]:
+                  - link "Nosotros" [ref=e750] [cursor=pointer]:
+                    - /url: /nosotros
+                - listitem [ref=e751]:
+                  - link "Carreras" [ref=e752] [cursor=pointer]:
+                    - /url: /carreras
+                - listitem [ref=e753]:
+                  - link "Pasantías" [ref=e754] [cursor=pointer]:
+                    - /url: /pasantias
+                - listitem [ref=e755]:
+                  - link "Preguntas Frecuentes" [ref=e756] [cursor=pointer]:
+                    - /url: "#faq"
+            - generic [ref=e757]:
+              - heading "Recursos" [level=4] [ref=e758]
+              - list [ref=e759]:
+                - listitem [ref=e760]:
+                  - link "Reglamento de Prácticas" [ref=e761] [cursor=pointer]:
+                    - /url: /docs/reglamento PRACTICAS PROFESIONALES vigente.pdf
+                - listitem [ref=e762]:
+                  - link "Carta de Postulación" [ref=e763] [cursor=pointer]:
+                    - /url: /docs/CARTA DE POSTULACION PP.pdf
+                - listitem [ref=e764]:
+                  - link "Actas Evaluativas" [ref=e765] [cursor=pointer]:
+                    - /url: /docs/ACTAS EVALUATIVAS.pdf
+                - listitem [ref=e766]:
+                  - link "Estructura del Informe" [ref=e767] [cursor=pointer]:
+                    - /url: /docs/ESTRUCTURA DEL INFORME.pdf
+                - listitem [ref=e768]:
+                  - link "Guía Metodológica" [ref=e769] [cursor=pointer]:
+                    - /url: /docs/METODOLOGÍA.pdf
+                - listitem [ref=e770]:
+                  - link "Guía de Prácticas" [ref=e771] [cursor=pointer]:
+                    - /url: /docs/PRACTICAS PROFESIONALES.pdf
+                - listitem [ref=e772]:
+                  - link "Plan de la Patria 7T" [ref=e773] [cursor=pointer]:
+                    - /url: /docs/plan-de-la-patria-de-las-7t-uv-2.pdf
+                - listitem [ref=e774]:
+                  - link "Constitución RBV" [ref=e775] [cursor=pointer]:
+                    - /url: /docs/CONSTITUCION RBV (1).pdf
+                - listitem [ref=e776]:
+                  - link "Plan de la Patria 2019-2025" [ref=e777] [cursor=pointer]:
+                    - /url: /docs/Venezuela_Plan de la Patria 2019-2025 (2019).pdf
+                - listitem [ref=e778]:
+                  - link "Formato de Membrete" [ref=e779] [cursor=pointer]:
+                    - /url: /docs/MEMBRETE.doc
+                - listitem [ref=e780]:
+                  - 'link "Anexo: Portada" [ref=e781] [cursor=pointer]':
+                    - /url: /docs/ANEXO K_PORTADA.doc
+            - generic [ref=e782]:
+              - heading "Contacto Acarigua" [level=4] [ref=e783]
+              - list [ref=e784]:
+                - listitem [ref=e785]:
+                  - generic [ref=e786]: HQ9J+R7P, Calle 6, Araure 3303, Portuguesa
+                - listitem [ref=e787]:
+                  - link "www.unefa.edu.ve" [ref=e788] [cursor=pointer]:
+                    - /url: https://www.unefa.edu.ve
+                - listitem [ref=e789]:
+                  - link "@unefaportuguesa" [ref=e790] [cursor=pointer]:
+                    - /url: https://instagram.com/unefaportuguesa
+                - listitem [ref=e791]:
+                  - generic [ref=e792]:
+                    - link "atencion.egresado.unefa19@gmail.com" [ref=e793] [cursor=pointer]:
+                      - /url: mailto:atencion.egresado.unefa19@gmail.com
+                    - link "registro@unefa.edu.ve" [ref=e794] [cursor=pointer]:
+                      - /url: mailto:registro@unefa.edu.ve
+                - listitem [ref=e795]:
+                  - generic [ref=e796]:
+                    - generic [ref=e797]: +58 (212) 908.21.07
+                    - generic [ref=e798]: +58 (212) 908.20.94
+                - listitem [ref=e799]:
+                  - generic [ref=e800]: Trámites específicos se gestionan presencialmente en la sede Acarigua Araure.
+          - paragraph [ref=e802]: © 2026 UNEFA - SIGP. Todos los derechos reservados.

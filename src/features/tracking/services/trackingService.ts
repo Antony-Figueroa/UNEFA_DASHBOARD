@@ -98,13 +98,8 @@ const toApi = (tracking: Partial<Tracking> | CreateTrackingPayload | UpdateTrack
  * @returns Promesa con el arreglo de seguimientos.
  */
 export const getTrackings = async (): Promise<Tracking[]> => {
-    try {
-        const response = await apiClient.get<TrackingApiDTO[]>(API_URL);
-        return response.data.map(fromApi);
-    } catch (error) {
-        console.error("[trackingService] Error al obtener seguimientos:", error);
-        return [];
-    }
+    const response = await apiClient.get<TrackingApiDTO[]>(API_URL);
+    return response.data.map(fromApi);
 };
 
 /**

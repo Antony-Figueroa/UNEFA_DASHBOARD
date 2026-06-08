@@ -41,7 +41,6 @@ export default function UserProfiles() {
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <UserLoginHistoryCard />
-            <div></div>
           </div>
           
           <UserInfoCard />

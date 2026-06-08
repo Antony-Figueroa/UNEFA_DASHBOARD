@@ -8,10 +8,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../../../components/ui/button/Button';
 import Badge from '../../../components/ui/badge/Badge';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
 import { UnifiedDialog } from '../../../components/ui/dialog/UnifiedDialog';
+import { SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
+import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import emailTemplatesService, { EmailTemplate, CreateEmailTemplate } from '../../../api/emailTemplatesService';
 import { PlusCircleIcon, ChevronDownIcon } from '../../../icons/actions';
-import { PencilIcon, TrashBinIcon } from '../../../icons';
+import { TrashBinIcon } from '../../../icons';
+import { EditIcon } from '../../../icons/actions';
 import { EmailEditor } from './EmailEditor';
 
 // ─── Category config ─────────────────────────────────────────────────────
@@ -50,6 +54,17 @@ const TemplateManager = () => {
   const [formBody, setFormBody] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  // Dirty tracking & close confirmation
+  const [isDirty, setIsDirty] = useState(false);
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setEditing(null);
+    setIsDirty(false);
+  };
+
+  const { showConfirmation: showCloseWarning, handleCloseAttempt, confirmClose, cancelClose } = useUnsavedChanges(isDirty, closeModal);
+
   // Section collapsed
   const [collapsed, setCollapsed] = useState(false);
 
@@ -81,6 +96,7 @@ const TemplateManager = () => {
     setFormSubject('');
     setFormBody('');
     setFormErrors({});
+    setIsDirty(false);
     setModalOpen(true);
   };
 
@@ -92,12 +108,8 @@ const TemplateManager = () => {
     setFormSubject(t.subject);
     setFormBody(t.body_html);
     setFormErrors({});
+    setIsDirty(false);
     setModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setModalOpen(false);
-    setEditing(null);
   };
 
   // ── Validation ────────────────────────────────────────────────────────
@@ -133,6 +145,7 @@ const TemplateManager = () => {
       }
 
       await fetchTemplates();
+      setIsDirty(false);
       closeModal();
     } catch (err) {
       console.error('[TemplateManager] Error saving:', err);
@@ -253,7 +266,7 @@ const TemplateManager = () => {
                                 className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
                                 title="Editar"
                               >
-                                <PencilIcon className="w-3.5 h-3.5" />
+                                <EditIcon className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => setConfirmDelete(t.id)}
@@ -278,110 +291,124 @@ const TemplateManager = () => {
       {/* ════════════════════════════════════════════════════════════════
           Create/Edit Modal
        ════════════════════════════════════════════════════════════════ */}
-      <UnifiedDialog
+      <Modal
         isOpen={modalOpen}
         onClose={closeModal}
-        title={editing ? 'Editar plantilla' : 'Nueva plantilla'}
+        onCloseAttempt={handleCloseAttempt}
+        showCloseButton
         size="lg"
       >
-        <div className="space-y-5">
-          {/* Name */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nombre *</label>
-            <input
-              type="text"
-              value={formName}
-              onChange={e => setFormName(e.target.value)}
-              className={`w-full rounded-lg border ${formErrors.name ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20`}
-              placeholder="Ej: Inicio de Lapso Académico"
-            />
-            {formErrors.name && <p className="mt-1 text-[11px] text-red-500">{formErrors.name}</p>}
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Descripción</label>
-            <input
-              type="text"
-              value={formDescription}
-              onChange={e => setFormDescription(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
-              placeholder="¿Para qué se usa esta plantilla?"
-            />
-          </div>
-
-          {/* Category */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Categoría *</label>
-            <select
-              value={formCategory}
-              onChange={e => setFormCategory(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
-            >
-              {CATEGORY_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Subject */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Asunto * <span className="text-gray-400 font-normal">(podés usar {'{{variable}}'})</span>
-            </label>
-            <input
-              type="text"
-              value={formSubject}
-              onChange={e => setFormSubject(e.target.value)}
-              className={`w-full rounded-lg border ${formErrors.subject ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20`}
-              placeholder="Ej: 📢 Inicio de lapso {{periodo}}"
-            />
-            {formErrors.subject && <p className="mt-1 text-[11px] text-red-500">{formErrors.subject}</p>}
-          </div>
-
-          {/* Cuerpo del email — editor visual */}
-          <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Cuerpo del correo * <span className="text-gray-400 font-normal">(usá los botones para dar formato)</span>
-            </label>
-            <EmailEditor
-              value={formBody}
-              onChange={setFormBody}
-              error={formErrors.body}
-              minHeight="220px"
-            />
-          </div>
-
-          {formErrors.submit && (
-            <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-              <p className="text-xs text-red-600 dark:text-red-400">{formErrors.submit}</p>
+        <ModalHeader>
+          <span className="font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+            {editing ? 'Editar plantilla' : 'Nueva plantilla'}
+          </span>
+        </ModalHeader>
+        <ModalBody>
+          <div className="space-y-5">
+            {/* Name */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nombre *</label>
+              <input
+                type="text"
+                value={formName}
+                onChange={e => { setFormName(e.target.value); setIsDirty(true); }}
+                className={`w-full rounded-lg border ${formErrors.name ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20`}
+                placeholder="Ej: Inicio de Lapso Académico"
+              />
+              {formErrors.name && <p className="mt-1 text-[11px] text-red-500">{formErrors.name}</p>}
             </div>
-          )}
-        </div>
 
-        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <Button variant="outline" onClick={closeModal} disabled={saving}>
+            {/* Description */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Descripción</label>
+              <input
+                type="text"
+                value={formDescription}
+                onChange={e => { setFormDescription(e.target.value); setIsDirty(true); }}
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+                placeholder="¿Para qué se usa esta plantilla?"
+              />
+            </div>
+
+            {/* Category */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Categoría *</label>
+              <select
+                value={formCategory}
+                onChange={e => { setFormCategory(e.target.value); setIsDirty(true); }}
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+              >
+                {CATEGORY_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Subject */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Asunto * <span className="text-gray-400 font-normal">(podés usar {'{{variable}}'})</span>
+              </label>
+              <input
+                type="text"
+                value={formSubject}
+                onChange={e => { setFormSubject(e.target.value); setIsDirty(true); }}
+                className={`w-full rounded-lg border ${formErrors.subject ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20`}
+                placeholder="Ej: 📢 Inicio de lapso {{periodo}}"
+              />
+              {formErrors.subject && <p className="mt-1 text-[11px] text-red-500">{formErrors.subject}</p>}
+            </div>
+
+            {/* Cuerpo del email — editor visual */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Cuerpo del correo * <span className="text-gray-400 font-normal">(usá los botones para dar formato)</span>
+              </label>
+              <EmailEditor
+                value={formBody}
+                onChange={v => { setFormBody(v); setIsDirty(true); }}
+                error={formErrors.body}
+                minHeight="220px"
+              />
+            </div>
+
+            {formErrors.submit && (
+              <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                <p className="text-xs text-red-600 dark:text-red-400">{formErrors.submit}</p>
+              </div>
+            )}
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="outline" onClick={handleCloseAttempt} disabled={saving}>
             Cancelar
           </Button>
           <Button variant="primary" onClick={handleSave} disabled={saving}>
             {saving ? 'Guardando...' : editing ? 'Guardar cambios' : 'Crear plantilla'}
           </Button>
-        </div>
-      </UnifiedDialog>
+        </ModalFooter>
+      </Modal>
 
       {/* ════════════════════════════════════════════════════════════════
           Delete Confirm Dialog
        ════════════════════════════════════════════════════════════════ */}
-      <UnifiedDialog
+      <Modal
         isOpen={confirmDelete !== null}
         onClose={() => setConfirmDelete(null)}
-        title="Eliminar plantilla"
+        showCloseButton
         size="sm"
       >
-        <p className="text-sm text-gray-600 dark:text-gray-300">
-          ¿Estás seguro de eliminar esta plantilla? Esta acción no se puede deshacer.
-        </p>
-        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <ModalHeader>
+          <span className="font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
+            Eliminar plantilla
+          </span>
+        </ModalHeader>
+        <ModalBody>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            ¿Estás seguro de eliminar esta plantilla? Esta acción no se puede deshacer.
+          </p>
+        </ModalBody>
+        <ModalFooter>
           <Button variant="outline" onClick={() => setConfirmDelete(null)}>
             Cancelar
           </Button>
@@ -391,8 +418,19 @@ const TemplateManager = () => {
           >
             Eliminar
           </Button>
-        </div>
-      </UnifiedDialog>
+        </ModalFooter>
+      </Modal>
+
+      {/* ════════════════════════════════════════════════════════════════
+          Close Without Saving Warning
+       ════════════════════════════════════════════════════════════════ */}
+      <UnifiedDialog
+        isOpen={showCloseWarning}
+        onClose={cancelClose}
+        onConfirm={confirmClose}
+        variant="warning"
+        {...SYSTEM_DIALOGS.closeWithoutSaving}
+      />
     </div>
   );
 };

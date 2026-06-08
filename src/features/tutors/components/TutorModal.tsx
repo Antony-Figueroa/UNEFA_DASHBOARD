@@ -151,6 +151,7 @@ export default function TutorModal({
         }
         return age >= 16;
       }, "El tutor debe tener al menos 16 años"),
+    address: z.string().optional().default(""),
     civilStatus: z.string().min(1, "Seleccione el estado civil"),
     phoneAreaCode: z.string().min(1, "El código de área es obligatorio"),
     phoneNumber: z.string()
@@ -245,6 +246,7 @@ export default function TutorModal({
       secondLastName: "",
       sex: "",
       birthDate: "",
+      address: "",
       civilStatus: "",
       phoneAreaCode: "",
       phoneNumber: "",
@@ -295,6 +297,7 @@ export default function TutorModal({
           secondLastName: "",
           sex: "",
           birthDate: "",
+          address: "",
           civilStatus: "",
           phoneAreaCode: "",
           phoneNumber: "",
@@ -802,6 +805,7 @@ export default function TutorModal({
           secondLastName: editingTutor.secondLastName || "",
           sex: editingTutor.sex,
           birthDate: editingTutor.birthDate || "",
+          address: editingTutor.address || "",
           civilStatus: editingTutor.civilStatus || "",
           phoneAreaCode: areaCode,
           phoneNumber: number,
@@ -829,6 +833,7 @@ export default function TutorModal({
           secondLastName: "",
           sex: "",
           birthDate: "",
+          address: "",
           civilStatus: "",
           phoneAreaCode: "",
           phoneNumber: "",
@@ -866,6 +871,7 @@ export default function TutorModal({
         secondLastName: (data.secondLastName || "").toUpperCase(),
         sex: data.sex as "FEMENINO" | "MASCULINO",
         birthDate: data.birthDate || undefined,
+        address: data.address || undefined,
         civilStatus: data.civilStatus || undefined,
         phone: `${data.phoneAreaCode}${data.phoneNumber}`,
         email: (data.email || "").toUpperCase(),

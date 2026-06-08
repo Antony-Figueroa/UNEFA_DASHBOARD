@@ -67,6 +67,7 @@ interface UserRow {
   FAILED_ATTEMPTS?: number;
   LOCK_DATE?: string;
   FORCE_PASSWORD_CHANGE?: boolean;
+  LOGIN?: number;
   NAME: string;
   SECOND_NAME?: string;
   SURNAME: string;
@@ -217,11 +218,15 @@ export const login = async (userCi: string, password: string, ip: string, userAg
 
     // 6. Verificar si requiere cambio de clave
     if (userKey.IS_TEMPORARY || user.FORCE_PASSWORD_CHANGE) {
+      const isFirstLogin = (user.LOGIN ?? 0) === 0;
       return { 
         success: true,
         requirePasswordChange: true,
         userId: user.USER_ID,
-        message: 'Debe cambiar su contraseña antes de continuar'
+        isFirstLogin,
+        message: isFirstLogin 
+          ? 'Debe completar la configuración inicial de su cuenta'
+          : 'Un administrador reseteó su clave. Debe cambiarla antes de continuar.'
       };
     }
 

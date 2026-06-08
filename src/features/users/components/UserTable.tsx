@@ -5,7 +5,7 @@
 
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
-import { EditIcon, TrashIcon, RefreshIcon, ChevronDownIcon } from "../../../icons/actions";
+import { EditIcon, TrashIcon, RefreshIcon, ChevronDownIcon, KeyIcon } from "../../../icons/actions";
 import { UserRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
@@ -27,6 +27,8 @@ interface UserTableProps {
     onEdit?: (user: UserRowData) => void;
     /** Función para cambiar el estado de un usuario */
     onToggleStatus?: (user: UserRowData) => void;
+    /** Función para resetear clave de un usuario */
+    onResetPassword?: (user: UserRowData) => void;
     /** Mapa de roles (ID -> Nombre) */
     rolesMap: Record<number, string>;
     /** Lista de IDs seleccionados */
@@ -70,6 +72,7 @@ interface UserTableProps {
 interface ActionButtonsProps {
     onEdit?: () => void;
     onToggleStatus?: () => void;
+    onResetPassword?: () => void;
     status: number;
     isMobile?: boolean;
     userId?: number;
@@ -82,6 +85,7 @@ interface ActionButtonsProps {
 const ActionButtons = ({
     onEdit,
     onToggleStatus,
+    onResetPassword,
     status,
     isMobile = false,
     userId,
@@ -101,6 +105,16 @@ const ActionButtons = ({
                     tooltip="Editar usuario"
                     label={isMobile ? "Editar Usuario" : undefined}
                     variant="primary"
+                    fullWidth={isMobile}
+                />
+            )}
+            {onResetPassword && status === 1 && (
+                <AsyncActionButton
+                    onClick={async () => await onResetPassword()}
+                    icon={<KeyIcon />}
+                    tooltip="Resetear clave"
+                    label={isMobile ? "Resetear Clave" : undefined}
+                    variant="warning"
                     fullWidth={isMobile}
                 />
             )}
@@ -128,6 +142,7 @@ export default function UserTable({
     error,
     onEdit,
     onToggleStatus,
+    onResetPassword,
     rolesMap,
     selectedIds,
     onSelectRow,
@@ -285,6 +300,7 @@ export default function UserTable({
                                             status={user.status}
                                             onEdit={() => onEdit?.(user)}
                                             onToggleStatus={() => onToggleStatus?.(user)}
+                                            onResetPassword={() => onResetPassword?.(user)}
                                             userId={user.id}
                                             currentUserId={currentUserId}
                                         />

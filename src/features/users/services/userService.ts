@@ -67,6 +67,13 @@ export const checkUserCi = async (ci: string): Promise<UserCiCheckResult> => {
   return response.data;
 };
 
+/**
+ * Resetea la clave de un usuario (genera clave temporal y envía por email).
+ */
+export const resetUserPassword = async (userId: number): Promise<void> => {
+  await apiClient.post(`/users/${userId}/reset-password`);
+};
+
 interface UserCiCheckResult {
   exists: boolean;
   asUser?: boolean;

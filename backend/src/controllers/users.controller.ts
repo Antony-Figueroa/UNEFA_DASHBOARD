@@ -3,7 +3,7 @@ import * as usersService from '../services/users.service.js';
 import * as personService from '../services/person.service.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
-import { sendUserCreationEmail } from '../utils/email.utils.js';
+import { sendUserCreationEmail, sendPasswordResetEmail } from '../utils/email.utils.js';
 
 export const getUsers = async (req: Request, res: Response) => {
   try {
@@ -192,6 +192,54 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
     res.status(500).json({ message: 'Error eliminando usuario', error: errorMessage });
+  }
+};
+
+export const resetUserPassword = async (req: AuthRequest, res: Response) => {
+  try {
+    const adminId = req.user?.userId;
+    const { id } = req.params;
+
+    const result = await usersService.resetUserPassword(Number(id));
+
+    // Enviar email con la nueva clave temporal (no bloqueante)
+    if (result.isFirstLogin) {
+      // Primera vez → email de bienvenida con setup completo
+      sendUserCreationEmail(result.email, result.name, result.userCi, result.tempPassword)
+        .catch(err => console.error('[UserController] Error sending welcome email:', err));
+    } else {
+      // Usuario existente → email de notificación de reseteo
+      sendPasswordResetEmail(result.email, result.name, result.userCi, result.tempPassword)
+        .catch(err => console.error('[UserController] Error sending reset email:', err));
+    }
+      .catch(err => console.error('[UserController] Error sending reset email:', err));
+
+    // Registrar auditoría
+    await dbManager.withRetry(async (supabase) => {
+      await supabase.from('t_auth_log').insert({
+        USER_ID: adminId,
+        ACTION: 'RESET_PASSWORD',
+        IP_ADDRESS: req.ip,
+        USER_AGENT: req.headers['user-agent'],
+        DETAILS: `Reset de clave para usuario ID: ${id} (${result.name})`
+      });
+    });
+
+    res.json({ success: true, message: 'Clave reseteada exitosamente. El usuario recibirá un correo con la nueva clave temporal.' });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    
+    if (error && typeof error === 'object' && 'code' in error) {
+      const svcError = error as { code: string; status?: number; message: string };
+      if (svcError.code === 'USER_NOT_FOUND') {
+        return res.status(404).json({ message: svcError.message });
+      }
+      if (svcError.code === 'USER_NO_EMAIL') {
+        return res.status(400).json({ message: svcError.message });
+      }
+    }
+    
+    res.status(500).json({ message: 'Error al resetear clave', error: errorMessage });
   }
 };
 

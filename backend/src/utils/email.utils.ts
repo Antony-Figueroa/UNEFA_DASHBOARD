@@ -93,7 +93,50 @@ export const sendEmail = async (options: { to: string; subject: string; html: st
 };
 
 /**
- * Servicio para envío de correos electrónicos.
+ * Envía correo de notificación de reseteo de clave para usuario existente.
+ */
+export const sendPasswordResetEmail = async (email: string, name: string, userCi: string, tempPass: string): Promise<{ success: boolean; error?: string }> => {
+  const portalUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+  const html = `
+    <div style="font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+      <div style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%); padding: 32px 24px; text-align: center;">
+        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">SIGP UNEFA</h1>
+        <p style="color: rgba(255,255,255,0.75); margin: 6px 0 0; font-size: 14px;">Sistema de Gestión de Personal</p>
+      </div>
+      <div style="padding: 32px 32px 24px; color: #1e293b; line-height: 1.6;">
+        <h2 style="color: #d97706; font-size: 20px; margin: 0 0 16px;">Clave Reseteada</h2>
+        <p style="margin: 0 0 8px;">Hola <strong>${name}</strong>,</p>
+        <p style="margin: 0 0 16px; color: #475569;">
+          Un administrador ha solicitado el reseteo de tu clave de acceso al SIGP UNEFA.
+        </p>
+        <p style="margin: 0 0 8px; color: #475569;">A continuación tus credenciales temporales:</p>
+        <div style="background-color: #fefce8; padding: 15px; border-radius: 6px; margin: 20px 0; border: 1px solid #fde68a;">
+          <p style="margin: 5px 0;"><strong>Usuario:</strong> ${userCi}</p>
+          <p style="margin: 5px 0;"><strong>Clave Temporal:</strong> <span style="font-family: monospace; font-size: 1.1em; font-weight: bold; color: #92400e;">${tempPass}</span></p>
+        </div>
+        <p style="margin: 0 0 8px; color: #475569;">Al iniciar sesión se te solicitará cambiar esta clave por una nueva.</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${portalUrl}/signin" style="background-color: #d97706; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Ir al Portal</a>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+        <p style="font-size: 0.875rem; color: #64748b;">
+          Si no solicitaste este cambio, contactá al administrador del sistema de inmediato.
+        </p>
+      </div>
+    </div>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: 'Tu clave ha sido reseteada - SIGP UNEFA',
+    html,
+    text: `Hola ${name}, tu clave de acceso ha sido reseteada. Usuario: ${userCi}, Clave temporal: ${tempPass}. Accedé en: ${portalUrl}/signin`
+  });
+};
+
+/**
+ * Servicio para envío de correos electrónicos de creación de cuenta.
  */
 export const sendUserCreationEmail = async (email: string, name: string, userCi: string, tempPass: string): Promise<{ success: boolean; error?: string }> => {
   const portalUrl = process.env.FRONTEND_URL || 'http://localhost:5173';

@@ -57,6 +57,8 @@ export interface LoginResponse {
   requirePasswordChange?: boolean;
   /** The ID of the user (if successful) */
   userId?: number;
+  /** Whether this is the user's first login (LOGIN=0) */
+  isFirstLogin?: boolean;
 }
 
 /**

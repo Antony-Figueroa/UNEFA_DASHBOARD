@@ -59,12 +59,21 @@ export default function SignInForm() {
       const data = await authService.login(userCi, password);
 
       if (data.requirePasswordChange) {
-        addToast({
-          variant: "warning",
-          title: "Cambio de Contraseña Requerido",
-          message: "Por seguridad, debe actualizar su contraseña antes de continuar."
-        });
-        navigate("/first-login", { state: { userId: data.userId } });
+        if (data.isFirstLogin) {
+          addToast({
+            variant: "warning",
+            title: "Configuración Requerida",
+            message: "Complete la configuración inicial de su cuenta."
+          });
+          navigate("/first-login", { state: { userId: data.userId, isFirstLogin: true } });
+        } else {
+          addToast({
+            variant: "warning",
+            title: "Cambio de Contraseña Requerido",
+            message: "Un administrador reseteó su clave. Debe cambiarla para continuar."
+          });
+          navigate("/first-login", { state: { userId: data.userId, isFirstLogin: false } });
+        }
         return;
       }
 

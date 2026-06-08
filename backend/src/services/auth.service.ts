@@ -822,6 +822,20 @@ export const generateRefreshToken = (payload: { userId: number; userCi: string; 
   }, expiresIn || '1h');
 };
 
+export const verifyCurrentPassword = async (userId: number, currentPassword: string): Promise<boolean> => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { data } = await supabase
+      .from('t_user_key')
+      .select('KEY')
+      .eq('USER_ID', userId)
+      .eq('STATUS', 1)
+      .single();
+
+    if (!data) return false;
+    return comparePassword(currentPassword, data.KEY);
+  });
+};
+
 export const getLoginHistory = async (userId: number, limit: number = 10) => {
   return await dbManager.withRetry(async (supabase) => {
     const { data, error } = await supabase

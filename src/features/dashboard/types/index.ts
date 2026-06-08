@@ -6,6 +6,13 @@
 /**
  * Main interface for dashboard statistics data.
  */
+export interface PeriodInfo {
+  periodId: number;
+  description: string;
+  startDate: string;
+  endDate: string;
+}
+
 export interface DashboardStats {
   /** Total number of students in the system */
   totalStudents: number;
@@ -19,6 +26,8 @@ export interface DashboardStats {
   activeCareers: number;
   /** Information about the currently active period, if any */
   currentPeriod: {
+    /** Period ID */
+    periodId: number;
     /** Period description or name */
     description: string;
     /** Period start date (ISO string) */
@@ -116,4 +125,7 @@ export interface DashboardStats {
     /** Percentage of target achieved */
     percentage: number;
   };
+
+  /** Available academic periods for the period selector */
+  availablePeriods: PeriodInfo[];
 }

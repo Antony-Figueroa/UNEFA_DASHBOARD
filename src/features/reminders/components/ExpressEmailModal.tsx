@@ -9,6 +9,7 @@ import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/
 import Button from '../../../components/ui/button/Button';
 import RecipientSelector, { RecipientSelection } from './RecipientSelector';
 import TemplateSelector from './TemplateSelector';
+import { EmailEditor } from './EmailEditor';
 import { MailIcon } from '../../../icons/actions';
 import apiClient from '../../../api/apiClient';
 import type { EmailTemplate } from '../../../api/emailTemplatesService';
@@ -216,16 +217,16 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Mensaje *</label>
-                  <textarea
-                    className={`w-full rounded-lg border ${errors.message ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all min-h-[120px] placeholder:text-gray-400 resize-y`}
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Mensaje * <span className="text-gray-400 font-normal">(usá los botones para dar formato)</span>
+                  </label>
+                  <EmailEditor
                     value={message}
-                    onChange={e => setMessage(e.target.value)}
-                    placeholder="Escribí el contenido del correo..."
-                    rows={5}
+                    onChange={setMessage}
+                    error={errors.message}
+                    minHeight="180px"
                     disabled={sending}
                   />
-                  {errors.message && <p className="mt-1 text-[11px] text-red-500">{errors.message}</p>}
                 </div>
               </div>
 

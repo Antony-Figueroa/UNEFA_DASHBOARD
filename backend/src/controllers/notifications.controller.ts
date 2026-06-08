@@ -3,6 +3,14 @@ import { supabase } from "../lib/supabase.js";
 import { notificationsUnified } from "../services/notifications-unified.service.js";
 import { sendEmail } from "../utils/email.utils.js";
 
+// Mapeo de nombres de rol a IDs de la tabla t_user_roles
+const ROLE_NAME_TO_ID: Record<string, number> = {
+  admin: 1,
+  asistente: 2,
+  tutor: 3,
+  estudiante: 4,
+};
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -231,16 +239,20 @@ export const expressEmail = async (req: Request, res: Response): Promise<void> =
           ...(allUsers || []).map((u: any) => u.USER_ID),
         ];
       } else {
+        const roleId = ROLE_NAME_TO_ID[role.toLowerCase()];
+        if (roleId == null) {
+          console.warn(`[ExpressEmail] Rol desconocido: ${role}`);
+          continue;
+        }
         const { data: roleUsers, error } = await supabase
           .from('t_user_roles')
-          .select('ur_USER_ID')
-          .eq('ur_ROLE_NAME', role.toUpperCase())
-          .eq('ur_STATUS', 1);
+          .select('ID_USER')
+          .eq('ID_ROLES', roleId);
 
         if (error) throw error;
         systemUserIds = [
           ...systemUserIds,
-          ...(roleUsers || []).map((u: any) => u.ur_USER_ID),
+          ...(roleUsers || []).map((u: any) => u.ID_USER),
         ];
       }
     }
@@ -314,7 +326,7 @@ export const expressEmail = async (req: Request, res: Response): Promise<void> =
       if (sentSystem.length > 0) {
         await notificationsUnified.createBulk({
           userIds: sentSystem.map(r => r.userId!),
-          type: 'info',
+          type: 'system',
           title: subject,
           message,
         }).catch(err => console.error('[ExpressEmail] Error creating bulk notifications:', err));

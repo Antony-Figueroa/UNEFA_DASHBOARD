@@ -15,7 +15,7 @@ import PendingTasksPanel from "../../features/dashboard/components/PendingTasksP
  * los widgets según la configuración guardada en DB para el rol Admin.
  */
 export default function Home() {
-  const { stats, loading, error, isStale, refresh } = useDashboardStats();
+  const { stats, loading, error, isStale, refresh, selectedPeriodId, handlePeriodChange, availablePeriods } = useDashboardStats();
   const { widgets, loading: layoutLoading } = useDashboardLayout();
   const { addToast } = useToast();
   const [isSlideoverOpen, setIsSlideoverOpen] = useState(false);
@@ -61,7 +61,7 @@ export default function Home() {
         {/* 2. Dashboard dinámico con widgets configurables */}
         <DynamicDashboard
           widgets={widgets}
-          data={{ stats, loading }}
+          data={{ stats, loading, selectedPeriodId, handlePeriodChange, availablePeriods }}
           loading={layoutLoading || loading}
         />
       </div>

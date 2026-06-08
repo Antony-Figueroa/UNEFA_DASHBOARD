@@ -25,6 +25,8 @@ export interface AuthUser {
   phoneNumber?: string;
   /** User's role ID */
   role: number;
+  /** User's locale preference */
+  locale?: string;
 }
 
 /**

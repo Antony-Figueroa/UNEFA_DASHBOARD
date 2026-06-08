@@ -5,9 +5,11 @@ import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
 const styles = StyleSheet.create({
   page: { padding: 50, fontFamily: 'Helvetica', fontSize: 11, lineHeight: 1.4 },
   title: { textAlign: 'center', fontSize: 14, fontWeight: 'bold', marginBottom: 25, textDecoration: 'underline' },
+  jurorTitle: { textAlign: 'center', fontSize: 12, fontWeight: 'bold', marginBottom: 12, marginTop: 15, backgroundColor: '#f0f0f0', padding: 6 },
   paragraph: { marginBottom: 20, textAlign: 'justify' },
   section: { marginBottom: 20 },
   sectionTitle: { fontWeight: 'bold', marginBottom: 8, fontSize: 12 },
+  evaluatorName: { fontSize: 11, fontWeight: 'bold', marginBottom: 8, color: '#2d3748' },
   row: { flexDirection: 'row', marginBottom: 4 },
   label: { fontWeight: 'bold', width: 180, fontSize: 10 },
   value: { flex: 1, fontSize: 10 },
@@ -22,7 +24,7 @@ const styles = StyleSheet.create({
   commHeaderName: { flex: 2, fontWeight: 'bold', fontSize: 9, textAlign: 'center' },
   commHeaderCi: { flex: 1, fontWeight: 'bold', fontSize: 9, textAlign: 'center' },
 
-  criteriaTable: { marginTop: 10, marginBottom: 15 },
+  criteriaTable: { marginTop: 8, marginBottom: 12 },
   criteriaHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', borderTopWidth: 1, borderTopColor: '#000', backgroundColor: '#f5f5f5', paddingVertical: 4 },
   criteriaRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#eee', paddingVertical: 3, alignItems: 'flex-start' },
   crNum: { width: 25, fontSize: 9, textAlign: 'center' },
@@ -37,6 +39,11 @@ const styles = StyleSheet.create({
   totalScoreRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 5, paddingRight: 10 },
   totalScoreText: { fontWeight: 'bold', fontSize: 11 },
 
+  avgRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 20, marginBottom: 15, paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#000', borderBottomWidth: 2, borderBottomColor: '#000' },
+  avgText: { fontWeight: 'bold', fontSize: 13 },
+
+  separator: { borderBottomWidth: 1, borderBottomColor: '#ccc', marginVertical: 10, borderStyle: 'dashed' },
+
   firmaContainer: { marginTop: 50, flexDirection: 'row', justifyContent: 'space-around' },
   firmaBox: { alignItems: 'center', width: 200 },
   firmaLine: { marginBottom: 5, width: 180, borderBottomWidth: 1, borderBottomColor: '#000' },
@@ -48,6 +55,14 @@ interface Criterio {
   score: number;
 }
 
+interface EvaluacionComite {
+  evaluationId: number;
+  evaluatorName: string;
+  totalScore: number;
+  observations: string;
+  criterios: Criterio[];
+}
+
 interface Props {
   data: {
     estudiante: { ci: string; primerNombre: string; segundoNombre?: string; primerApellido: string; segundoApellido?: string };
@@ -56,13 +71,37 @@ interface Props {
     periodo: { description: string } | null;
     coordinadorPP: { nombreCompleto: string; ci: string; cargo: string } | null;
     coordinadorCarrera: { nombreCompleto: string; ci: string; cargo: string } | null;
-    evaluacion: {
-      totalScore: number;
-      observations: string;
-      criterios: Criterio[];
-    } | null;
+    evaluacionesComite: EvaluacionComite[];
+    comiteTotalScore: number;
   };
   textos: Record<string, string>;
+}
+
+/** Renderiza la tabla de criterios para una evaluación de jurado */
+function renderCriterios(evalucion: EvaluacionComite) {
+  return (
+    <View style={styles.criteriaTable}>
+      <View style={styles.criteriaHeader}>
+        <Text style={styles.hNum}>N°</Text>
+        <Text style={styles.hDesc}>Aspecto a evaluar</Text>
+        <Text style={styles.hRange}>Intervalo</Text>
+        <Text style={styles.hScore}>Calif.</Text>
+      </View>
+      {evalucion.criterios.map((c: Criterio) => (
+        <View style={styles.criteriaRow} key={c.itemNumber}>
+          <Text style={styles.crNum}>{c.itemNumber}</Text>
+          <Text style={styles.crDesc}>{c.description}</Text>
+          <Text style={styles.crRange}>0-20</Text>
+          <Text style={styles.crScore}>{c.score}</Text>
+        </View>
+      ))}
+      <View style={styles.totalScoreRow}>
+        <Text style={styles.totalScoreText}>
+          Subtotal / {evalucion.criterios.length}: {evalucion.totalScore.toFixed(1)} pts
+        </Text>
+      </View>
+    </View>
+  );
 }
 
 export function EvaluacionComitePDF({ data, textos }: Props) {
@@ -132,31 +171,38 @@ export function EvaluacionComitePDF({ data, textos }: Props) {
           </View>
         </View>
 
-        {/* Evaluation criteria table */}
-        {data.evaluacion && data.evaluacion.criterios && data.evaluacion.criterios.length > 0 && (
+        {/* Evaluaciones de cada jurado */}
+        {data.evaluacionesComite && data.evaluacionesComite.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Evaluación del Desempeño del Estudiante</Text>
-            <View style={styles.criteriaTable}>
-              <View style={styles.criteriaHeader}>
-                <Text style={styles.hNum}>N°</Text>
-                <Text style={styles.hDesc}>Aspecto a evaluar</Text>
-                <Text style={styles.hRange}>Intervalo</Text>
-                <Text style={styles.hScore}>Calif.</Text>
+            <Text style={styles.sectionTitle}>Evaluación del Desempeño del Estudiante por Jurado</Text>
+
+            {data.evaluacionesComite.map((ev, idx) => (
+              <View key={ev.evaluationId}>
+                {idx > 0 && <View style={styles.separator} />}
+                <Text style={styles.jurorTitle}>
+                  JURADO N° {idx + 1} — {ev.evaluatorName || `Miembro del Comité`}
+                </Text>
+                {ev.observations && (
+                  <Text style={{ fontSize: 10, marginBottom: 6, fontStyle: 'italic' }}>
+                    Observaciones: {ev.observations}
+                  </Text>
+                )}
+                {renderCriterios(ev)}
               </View>
-              {data.evaluacion.criterios.map((c: Criterio) => (
-                <View style={styles.criteriaRow} key={c.itemNumber}>
-                  <Text style={styles.crNum}>{c.itemNumber}</Text>
-                  <Text style={styles.crDesc}>{c.description}</Text>
-                  <Text style={styles.crRange}>0-20</Text>
-                  <Text style={styles.crScore}>{c.score}</Text>
-                </View>
-              ))}
-            </View>
-            <View style={styles.totalScoreRow}>
-              <Text style={styles.totalScoreText}>
-                Calificación final = (Subtotal / {data.evaluacion.criterios.length}): {data.evaluacion.totalScore.toFixed(1)}
+            ))}
+
+            {/* Promedio final del comité */}
+            <View style={styles.avgRow}>
+              <Text style={styles.avgText}>
+                Calificación Promedio del Comité Evaluador: {data.comiteTotalScore.toFixed(1)} / 20 pts
               </Text>
             </View>
+          </View>
+        ) : (
+          <View style={styles.section}>
+            <Text style={{ fontSize: 10, textAlign: 'center', color: '#718096' }}>
+              No hay evaluaciones registradas del comité evaluador.
+            </Text>
           </View>
         )}
 

@@ -52,7 +52,7 @@ async function getEvaluations(supabase: any, practiceId: number) {
     .from('t_evaluation')
     .select(`
       EVALUATION_ID, EVALUATOR_TYPE, EVALUATOR_NAME, EVALUATOR_CI,
-      TOTAL_SCORE, OBSERVATIONS, EVALUATION_DATE,
+      TOTAL_SCORE, OBSERVATIONS, EVALUATION_DATE, COMITE_MEMBER_INDEX,
       t_evaluation_detail(ITEM_NUMBER, SCORE),
       t_evaluation_criteria(DESCRIPTION)
     `)
@@ -67,6 +67,7 @@ async function getEvaluations(supabase: any, practiceId: number) {
     totalScore: e.TOTAL_SCORE || 0,
     observations: e.OBSERVATIONS || '',
     evaluationDate: e.EVALUATION_DATE,
+    comiteMemberIndex: e.COMITE_MEMBER_INDEX || null,
     criterios: (e.t_evaluation_detail || []).map((d: any) => ({
       itemNumber: d.ITEM_NUMBER,
       description: '',
@@ -448,7 +449,17 @@ export const getDataEvaluacionComite = async (req: Request, res: Response) => {
     );
 
     const evaluaciones = await getEvaluations(supabase, practiceId);
-    const evalComite = evaluaciones.find((e: any) => e.evaluatorType === 'COMITE');
+    const evaluacionesComite = evaluaciones
+      .filter((e: any) => e.evaluatorType === 'COMITE')
+      .sort((a: any, b: any) => (a.comiteMemberIndex || 0) - (b.comiteMemberIndex || 0));
+
+    // Promedio de las 3 evaluaciones del comité
+    let comiteTotalScore = 0;
+    if (evaluacionesComite.length > 0) {
+      comiteTotalScore = parseFloat(
+        (evaluacionesComite.reduce((sum: number, e: any) => sum + e.totalScore, 0) / evaluacionesComite.length).toFixed(1)
+      );
+    }
 
     const formatCoord = (c: any) => c ? {
       coordinadorId: c.COORDINADOR_ID,
@@ -486,7 +497,8 @@ export const getDataEvaluacionComite = async (req: Request, res: Response) => {
         } : null,
         coordinadorPP: formatCoord(coordinadorPP),
         coordinadorCarrera: formatCoord(coordinadorCarrera),
-        evaluacion: evalComite || null,
+        evaluacionesComite,
+        comiteTotalScore,
       },
     });
   } catch (error) {

@@ -132,6 +132,37 @@ export interface PresetQuestionsResponse {
 }
 
 /**
+ * Represents an active user session.
+ */
+export interface ActiveSession {
+  ID: number;
+  USER_ID: number;
+  DEVICE_INFO: string;
+  IP_ADDRESS: string;
+  LAST_ACTIVITY: string;
+  CREATED_AT: string;
+  STATUS: number;
+}
+
+/**
+ * Represents a notification preference for a user.
+ */
+export interface NotificationPreference {
+  id?: number;
+  type: string;
+  channel: string;
+  enabled: boolean;
+}
+
+/**
+ * Response from avatar upload/delete operations.
+ */
+export interface AvatarResponse {
+  uploadUrl: string;
+  publicUrl: string;
+}
+
+/**
  * Response for general authentication-related actions.
  */
 export interface AuthActionResponse {

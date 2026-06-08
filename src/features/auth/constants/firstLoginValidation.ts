@@ -50,6 +50,7 @@ export const firstLoginSchema = z.object({
 });
 
 export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Debe ingresar su contraseña actual"),
   newPassword: z.string()
     .min(12, "La contraseña debe tener al menos 12 caracteres")
     .refine(val => passwordRegex.uppercase.test(val), "Debe contener al menos una mayúscula")
@@ -61,5 +62,7 @@ export const changePasswordSchema = z.object({
   message: "Las contraseñas no coinciden",
   path: ["confirmPassword"]
 });
+
+export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 
 export type FirstLoginFormData = z.infer<typeof firstLoginSchema>;

@@ -14,6 +14,9 @@ import {
   VerifyQuestionsResponse,
   PresetQuestionsResponse,
   AuthActionResponse,
+  ActiveSession,
+  NotificationPreference,
+  AvatarResponse,
 } from "../types";
 
 /**
@@ -204,6 +207,46 @@ export const refreshSession = async (): Promise<{ success: boolean; message: str
   return response.data;
 };
 
+export const uploadAvatar = async (fileName: string, contentType: string): Promise<AvatarResponse> => {
+  const response = await apiClient.post<AvatarResponse>("/auth/avatar", { fileName, contentType });
+  return response.data;
+};
+
+export const deleteAvatar = async (): Promise<{ success: boolean; message: string }> => {
+  const response = await apiClient.delete("/auth/avatar");
+  return response.data;
+};
+
+export const getActiveSessions = async (): Promise<ActiveSession[]> => {
+  const response = await apiClient.get("/auth/sessions");
+  return response.data;
+};
+
+export const terminateSession = async (sessionId: number): Promise<{ success: boolean; message: string }> => {
+  const response = await apiClient.delete(`/auth/sessions/${sessionId}`);
+  return response.data;
+};
+
+export const getNotificationPrefs = async (): Promise<NotificationPreference[]> => {
+  const response = await apiClient.get("/auth/notification-preferences");
+  return response.data;
+};
+
+export const saveNotificationPrefs = async (prefs: NotificationPreference[]): Promise<{ success: boolean; message: string }> => {
+  const response = await apiClient.put("/auth/notification-preferences", { preferences: prefs });
+  return response.data;
+};
+
+export const deactivateAccount = async (currentPassword: string, reason?: string): Promise<{ success: boolean; message: string }> => {
+  const response = await apiClient.post("/auth/deactivate", { currentPassword, reason });
+  return response.data;
+};
+
+export const updateLocale = async (locale: string): Promise<{ success: boolean; locale: string }> => {
+  const response = await apiClient.put("/auth/locale", { locale });
+  return response.data;
+};
+
 export const authService = {
   login,
   getMe,
@@ -219,6 +262,14 @@ export const authService = {
   verifyAnswersAndReset,
   resetWithToken,
   refreshSession,
+  uploadAvatar,
+  deleteAvatar,
+  getActiveSessions,
+  terminateSession,
+  getNotificationPrefs,
+  saveNotificationPrefs,
+  deactivateAccount,
+  updateLocale,
   validateToken: async (_token: string): Promise<AuthUser> => {
     // Si ya hay un token en el storage, getMe usará el interceptor para validarlo
     const response = await getMe();

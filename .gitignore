@@ -45,6 +45,9 @@ release/
 # Build error logs (may contain credentials)
 *.err
 
+# Test artifact snapshots (root-level test outputs)
+/login-page.yml
+
 # Backend local test artifacts
 backend/debug*.txt
 backend/server-log.txt

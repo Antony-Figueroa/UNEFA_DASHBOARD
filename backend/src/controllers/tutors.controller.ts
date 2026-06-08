@@ -37,7 +37,8 @@ const PERSON_JOIN = `
     phone,
     gender,
     birthdate,
-    marital_status
+    marital_status,
+    address
   )
 `;
 
@@ -88,6 +89,7 @@ interface DBTutorPerson {
   gender: string;
   birthdate: string | null;
   marital_status: string | null;
+  address: string | null;
 }
 
 interface DBVisit {
@@ -143,6 +145,7 @@ function extractPersonData(body: any) {
     secondLastName: body.secondLastName || null,
     gender: body.sex || null,
     birthdate: body.birthDate || null,
+    address: body.address || null,
     maritalStatus: body.civilStatus ? (maritalToDb[body.civilStatus.toUpperCase()] || null) : null,
     phone: body.phone || null,
     email: body.email,
@@ -198,6 +201,7 @@ const mapDBToFrontend = (t: DBTutor) => {
     secondLastName: p.second_last_name || undefined,
     sex: p.gender,
     birthDate: p.birthdate || undefined,
+    address: p.address || undefined,
     civilStatus: p.marital_status ? (maritalFromDb[p.marital_status.trim()] || p.marital_status) : undefined,
     phone: p.phone,
     email: p.email,

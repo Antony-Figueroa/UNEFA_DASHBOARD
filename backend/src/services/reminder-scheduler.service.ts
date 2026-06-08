@@ -11,7 +11,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { dbManager } from '../lib/db-manager.js';
 import { reminderConfigService, ReminderRule, ReminderType } from './reminder-config.service.js';
-import { sendEmail } from '../utils/email.utils.js';
+import { sendEmail, buildEmailHtml } from '../utils/email.utils.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -94,26 +94,14 @@ const sendReminderEmail = async (
       return false;
     }
 
-    const html = `
-      <div style="font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-        <div style="background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); padding: 24px; text-align: center;">
-          <h1 style="color: #ffffff; margin: 0; font-size: 20px;">SIGP UNEFA</h1>
-          <p style="color: rgba(255,255,255,0.75); margin: 6px 0 0; font-size: 13px;">Recordatorio Automático</p>
-        </div>
-        <div style="padding: 28px; color: #1e293b; line-height: 1.6;">
-          <h2 style="color: #1e40af; font-size: 18px; margin: 0 0 12px;">${title}</h2>
-          <p style="margin: 0 0 16px; color: #475569;">Hola <strong>${user.NAME}</strong>,</p>
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 0 0 16px;">
-            <p style="margin: 0; color: #334155; white-space: pre-wrap;">${message}</p>
-          </div>
-          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-          <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">
-            SIGP UNEFA — Sistema de Gestión de Personal<br>
-            Este es un mensaje automático, por favor no responder.
-          </p>
-        </div>
+    const body = `
+      <h2 style="color: #1e40af; font-size: 18px; margin: 0 0 12px;">${title}</h2>
+      <p style="margin: 0 0 16px; color: #475569;">Hola <strong>${user.NAME}</strong>,</p>
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 0 0 16px;">
+        <p style="margin: 0; color: #334155; white-space: pre-wrap;">${message}</p>
       </div>
     `;
+    const html = buildEmailHtml(body, { headerSubtitle: 'Recordatorio Automático' });
 
     const result = await sendEmail({
       to: user.EMAIL,

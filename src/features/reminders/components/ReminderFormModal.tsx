@@ -18,6 +18,9 @@ import {
 } from '../types';
 import RecipientSelector, { RecipientSelection } from './RecipientSelector';
 import { CalendarIcon, MailIcon, BellIcon, ClockIcon, EyeIcon } from '../../../icons/actions';
+import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
+import { UnifiedDialog } from '../../../components/ui/dialog/UnifiedDialog';
+import { SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
 
 // ─── Constants ───────────────────────────────────────────────────────────
 
@@ -426,6 +429,8 @@ export const ReminderFormModal = ({
   const [form, setForm] = useState(getInitialForm);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [isDirty, setIsDirty] = useState(false);
+  const { showConfirmation, handleCloseAttempt, confirmClose, cancelClose } = useUnsavedChanges(isDirty, onClose);
 
   // Reset errors when form changes
   useEffect(() => {
@@ -441,6 +446,7 @@ export const ReminderFormModal = ({
   ) => {
     setForm(f => ({ ...f, [key]: value }));
     setTouched(t => ({ ...t, [key]: true }));
+    setIsDirty(true);
   };
 
   const handleSave = () => {
@@ -448,13 +454,15 @@ export const ReminderFormModal = ({
     setErrors(validationErrors);
     setTouched({ name: true, sendDate: true, recipients: true, templateTitle: true, templateMessage: true });
     if (Object.keys(validationErrors).length > 0) return;
+    setIsDirty(false);
     onSave(form);
   };
 
   const isValid = form.name.trim().length > 0;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} showCloseButton size="3xl">
+    <>
+      <Modal isOpen={isOpen} onClose={onClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="3xl">
       <ModalHeader>
         <div className="max-w-4xl mx-auto w-full">
           <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
@@ -669,7 +677,7 @@ export const ReminderFormModal = ({
 
       <ModalFooter className="shrink-0 px-6 sm:px-12 py-5 bg-white dark:bg-gray-800/80 border-t border-gray-200 dark:border-gray-700">
         <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-4xl mx-auto">
-          <Button variant="outline" onClick={onClose} disabled={saving} className="w-full sm:w-auto min-h-11">Cancelar</Button>
+          <Button variant="outline" onClick={handleCloseAttempt} disabled={saving} className="w-full sm:w-auto min-h-11">Cancelar</Button>
           <Button
             variant="primary"
             onClick={handleSave}
@@ -680,7 +688,16 @@ export const ReminderFormModal = ({
           </Button>
         </div>
       </ModalFooter>
-    </Modal>
+      </Modal>
+
+      <UnifiedDialog
+        isOpen={showConfirmation}
+        onClose={cancelClose}
+        onConfirm={confirmClose}
+        variant="warning"
+        {...SYSTEM_DIALOGS.closeWithoutSaving}
+      />
+    </>
   );
 };
 

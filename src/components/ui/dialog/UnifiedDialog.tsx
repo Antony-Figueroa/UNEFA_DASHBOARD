@@ -198,7 +198,7 @@ export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
               colors.button
             )}
           >
-            Entendido
+            Cerrar
           </Button>
         )}
       </ModalFooter>

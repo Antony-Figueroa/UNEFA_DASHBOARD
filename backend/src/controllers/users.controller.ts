@@ -3,6 +3,7 @@ import * as usersService from '../services/users.service.js';
 import * as personService from '../services/person.service.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
+import * as authService from '../services/auth.service.js';
 import { sendUserCreationEmail, sendPasswordResetEmail } from '../utils/email.utils.js';
 
 export const getUsers = async (req: Request, res: Response) => {
@@ -260,5 +261,36 @@ export const saveSecurityQuestions = async (req: AuthRequest, res: Response) => 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
     res.status(500).json({ message: 'Error guardando preguntas de seguridad', error: errorMessage });
+  }
+};
+
+export const getUserById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const result = await usersService.getUserDetail(Number(id));
+    res.json(result);
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'code' in error) {
+      const svcError = error as { code: string; status?: number; message: string };
+      if (svcError.code === 'USER_NOT_FOUND') {
+        return res.status(404).json({ message: svcError.message });
+      }
+    }
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    res.status(500).json({ message: 'Error obteniendo usuario', error: errorMessage });
+  }
+};
+
+export const getUserLoginHistory = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const limit = req.query.limit ? Number(req.query.limit) : 20;
+    const offset = req.query.offset ? Number(req.query.offset) : 0;
+    
+    const result = await authService.getAllAuthLogs(limit, offset, Number(id));
+    res.json({ success: true, logs: result.data, totalCount: result.total });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    res.status(500).json({ message: 'Error obteniendo historial de login', error: errorMessage });
   }
 };

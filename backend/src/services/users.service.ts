@@ -637,6 +637,72 @@ const ROLE_PERMISSION_MAP: Record<number, string[]> = {
       'dashboard:view'],
 };
 
+/**
+ * Obtiene el detalle completo de un usuario por su ID.
+ * Incluye datos personales, clave activa y roles.
+ */
+export const getUserDetail = async (userId: number) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { data, error } = await supabase
+      .from('t_user')
+      .select(`
+        USER_ID, USER, USER_CI, person_id, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME,
+        EMAIL, PHONE_NUMBER, STATUS, STATUS_SESSION, FAILED_ATTEMPTS, LOCK_DATE,
+        FORCE_PASSWORD_CHANGE, LOGIN, TERMS_CONDITIONS, CREATION_DATE,
+        t_user_key(
+          IS_TEMPORARY, START_DATE, END_DATE, STATUS
+        ),
+        t_user_roles(
+          ID_ROLES,
+          t_roles(NAME)
+        )
+      `)
+      .eq('USER_ID', userId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      const err = new Error('Usuario no encontrado') as ServiceError;
+      err.code = 'USER_NOT_FOUND';
+      err.status = 404;
+      throw err;
+    }
+
+    const user = data as any;
+    const key = user.t_user_key?.[0];
+    const roleInfo = user.t_user_roles?.[0];
+
+    return {
+      id: user.USER_ID,
+      user: user.USER,
+      userCi: user.USER_CI,
+      personId: user.person_id,
+      firstName: user.NAME,
+      secondName: user.SECOND_NAME,
+      lastName: user.SURNAME,
+      secondSurname: user.SECOND_SURNAME,
+      email: user.EMAIL,
+      phoneNumber: user.PHONE_NUMBER,
+      status: user.STATUS,
+      statusSession: user.STATUS_SESSION,
+      failedAttempts: user.FAILED_ATTEMPTS,
+      lockDate: user.LOCK_DATE,
+      forcePasswordChange: user.FORCE_PASSWORD_CHANGE,
+      loginCount: user.LOGIN,
+      termsConditions: user.TERMS_CONDITIONS,
+      creationDate: user.CREATION_DATE,
+      role: roleInfo?.ID_ROLES ?? 0,
+      roleName: roleInfo?.t_roles?.NAME ?? '',
+      key: key ? {
+        isTemporary: key.IS_TEMPORARY,
+        startDate: key.START_DATE,
+        endDate: key.END_DATE,
+        status: key.STATUS
+      } : null
+    };
+  });
+};
+
 export const ensureRolesSeeded = async (): Promise<void> => {
   try {
     const supabase = dbManager.getConnection();

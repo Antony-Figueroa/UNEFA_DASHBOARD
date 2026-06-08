@@ -1,36 +1,10 @@
-import { useState, useEffect } from "react";
 import { useAuth } from "../../context/auth";
-import apiClient from "../../api/apiClient";
-
+import { useLoginHistory } from "../../features/auth/hooks/useLoginHistory";
 import { Skeleton } from "../ui/skeleton";
-
-interface LoginRecord {
-  ID: number;
-  USER_ID: number;
-  ACTION: string;
-  USER_AGENT: string;
-  CREATED_AT: string;
-}
 
 export default function UserLoginHistoryCard() {
   const { user } = useAuth();
-  const [history, setHistory] = useState<LoginRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const response = await apiClient.get('/auth/login-history');
-        if (response.data.success) setHistory(response.data.data);
-      } catch (error) {
-        console.error('Error fetching login history:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (user) fetchHistory();
-  }, [user]);
+  const { records, loading } = useLoginHistory();
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleString('es-VE', {
@@ -95,13 +69,13 @@ export default function UserLoginHistoryCard() {
             </div>
           ))}
         </div>
-      ) : history.length === 0 ? (
+      ) : records.length === 0 ? (
         <div className="py-6 text-center">
           <p className="text-sm text-text-tertiary">Sin actividad registrada</p>
         </div>
       ) : (
         <div className="space-y-1">
-          {history.slice(0, 5).map((record) => {
+          {records.slice(0, 5).map((record) => {
             const config = getActionConfig(record.ACTION);
             return (
               <div 

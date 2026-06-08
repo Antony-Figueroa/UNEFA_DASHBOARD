@@ -90,12 +90,46 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       }))
       .sort((a, b) => b.studentCount - a.studentCount);
 
+    // --- Period filtering ---
+    const periodId = req.query.periodId ? parseInt(req.query.periodId as string, 10) : null;
+
+    let periodStartDate: string | null = null;
+    let periodEndDate: string | null = null;
+
+    if (periodId) {
+      const { data: selectedPeriod } = await supabase
+        .from('t_internships_period')
+        .select('START_DATE, END_DATE')
+        .eq('PERIOD_ID', periodId)
+        .single();
+
+      if (!selectedPeriod) {
+        return res.status(400).json({ message: 'El período especificado no existe' });
+      }
+
+      periodStartDate = selectedPeriod.START_DATE;
+      periodEndDate = selectedPeriod.END_DATE;
+    } else if (currentPeriodData) {
+      periodStartDate = currentPeriodData.START_DATE;
+      periodEndDate = currentPeriodData.END_DATE;
+    }
+
+    // Fetch all active periods for the selector
+    const { data: allPeriods } = await supabase
+      .from('t_internships_period')
+      .select('PERIOD_ID, DESCRIPTION, START_DATE, END_DATE')
+      .eq('STATUS', 1)
+      .order('START_DATE', { ascending: false });
+    // --- END Period filtering ---
+
     // 3. Registration Stats - All students with dates and names
     const { data: registrationData } = await supabase
       .from('t_students')
       .select('REGISTRATION_DATE, person_id, t_persons!inner(ci, first_name, last_name)')
       .eq('STATUS', 1)
       .not('REGISTRATION_DATE', 'is', null)
+      .gte('REGISTRATION_DATE', periodStartDate || '2000-01-01')
+      .lte('REGISTRATION_DATE', periodEndDate || '2099-12-31')
       .order('REGISTRATION_DATE', { ascending: true });
 
     const regMap = new Map<string, { count: number; students: { firstName: string; lastName: string; idNumber: string }[] }>();
@@ -217,6 +251,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       activeInstitutions: activeInstitutions || 0,
       activeCareers: activeCareers || 0,
       currentPeriod: currentPeriodData ? {
+        periodId: currentPeriodData.PERIOD_ID,
         description: currentPeriodData.DESCRIPTION,
         startDate: currentPeriodData.START_DATE,
         endDate: currentPeriodData.END_DATE
@@ -243,7 +278,13 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       institutionDistribution,
       completionRate: 0,
       monthlyEnrollments: [],
-      monthlyTarget: { target: 1000, current: activeStudents || 0, today: 0, percentage: 0 }
+      monthlyTarget: { target: 1000, current: activeStudents || 0, today: 0, percentage: 0 },
+      availablePeriods: (allPeriods || []).map(p => ({
+        periodId: p.PERIOD_ID,
+        description: p.DESCRIPTION,
+        startDate: p.START_DATE,
+        endDate: p.END_DATE
+      }))
     });
 
   } catch (error) {

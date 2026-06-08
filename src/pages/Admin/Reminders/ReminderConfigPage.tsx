@@ -183,7 +183,7 @@ const ReminderConfigPage = () => {
             onChange={e => setFilterType(e.target.value as '' | ReminderType)}
             className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
           >
-            <option value="">Todos los tipos</option>
+            <option key="all-types" value="">Todos los tipos</option>
             {dynamicTypeOptions.map(t => (
               <option key={t} value={t}>{REMINDER_TYPE_LABELS[t]}</option>
             ))}
@@ -195,7 +195,7 @@ const ReminderConfigPage = () => {
             onChange={e => setFilterRole(e.target.value as '' | TargetRoleName)}
             className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
           >
-            <option value="">Todos los roles</option>
+            <option key="all-roles" value="">Todos los roles</option>
             {dynamicRoleOptions.map(r => (
               <option key={r} value={r}>{TARGET_ROLE_LABELS[r]}</option>
             ))}
@@ -207,9 +207,9 @@ const ReminderConfigPage = () => {
             onChange={e => setFilterEmail(e.target.value as '' | 'yes' | 'no')}
             className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
           >
-            <option value="">Email: todos</option>
-            <option value="yes">Email: sí</option>
-            <option value="no">Email: no</option>
+            <option key="all-email" value="">Email: todos</option>
+            <option key="email-yes" value="yes">Email: sí</option>
+            <option key="email-no" value="no">Email: no</option>
           </select>
 
           {/* Active filter */}
@@ -218,9 +218,9 @@ const ReminderConfigPage = () => {
             onChange={e => setFilterActive(e.target.value as '' | 'yes' | 'no')}
             className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all"
           >
-            <option value="">Estado: todos</option>
-            <option value="yes">Activo</option>
-            <option value="no">Inactivo</option>
+            <option key="all-active" value="">Estado: todos</option>
+            <option key="active-yes" value="yes">Activo</option>
+            <option key="active-no" value="no">Inactivo</option>
           </select>
 
           {/* Clear filters */}

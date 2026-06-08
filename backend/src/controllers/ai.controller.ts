@@ -380,8 +380,13 @@ export const chatWithAI = async (req: AuthRequest, res: Response) => {
           );
           console.log(`[AI Chat:${requestId}] Fallback to GOOGLE succeeded`);
         } catch (fallbackError: any) {
-          console.error(`[AI Chat:${requestId}] Fallback also failed:`, fallbackError.message);
-          throw fallbackError;
+          console.error(`[AI Chat:${requestId}] Fallback also failed, sending friendly error.`);
+          if (!aborted.value) {
+            res.write(`data: ${JSON.stringify({ error: 'El servicio de IA está con alta demanda. Esperá unos segundos y reintentá.' })}\n\n`);
+            res.write(`data: [DONE]\n\n`);
+            res.end();
+          }
+          return;
         }
       } else {
         throw streamError;
@@ -550,7 +555,7 @@ export const chatWithAINoStream = async (req: AuthRequest, res: Response) => {
       const shouldFallback = USE_GROQ && USE_GOOGLE && isRateLimit;
 
       if (shouldFallback) {
-        console.log(`[AI Chat NoStream:${requestId}] Groq failed, trying GOOGLE fallback...`);
+        console.log(`[AI Chat NoStream:${requestId}] Groq rate limited, trying GOOGLE fallback...`);
         try {
           const googleChat = (await import('../services/google-ai.service.js')).sendChat;
           responseText = await googleChat({
@@ -561,8 +566,13 @@ export const chatWithAINoStream = async (req: AuthRequest, res: Response) => {
           });
           console.log(`[AI Chat NoStream:${requestId}] Fallback to GOOGLE successful`);
         } catch (fallbackError: any) {
-          console.error(`[AI Chat NoStream:${requestId}] Fallback also failed:`, fallbackError.message);
-          throw fallbackError;
+          console.error(`[AI Chat NoStream:${requestId}] Fallback also failed. Returning friendly message.`);
+          // Fallback también falló — devolver mensaje amigable en vez de 500
+          return res.status(429).json({
+            success: false,
+            message: 'El servicio de IA está experimentando alta demanda. Por favor, esperá unos segundos y reintentá.',
+            retryAfter: 5,
+          });
         }
       } else {
         throw primaryError;

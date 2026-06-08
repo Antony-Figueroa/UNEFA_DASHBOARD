@@ -264,7 +264,7 @@ export const createEvaluation = async (req: AuthRequest, res: Response) => {
     // Cada criterio se puntúa según system config, se escala el promedio al displayScale
     const { score: scoreCfg } = evaluationConfig;
     const rawAverage = data.items.reduce((sum, item) => sum + item.score, 0) / data.items.length;
-    const totalScore = parseFloat(((rawAverage / scoreCfg.max) * scoreCfg.displayScale).toFixed(2));
+    const totalScore = parseFloat(((rawAverage / scoreCfg.max) * scoreCfg.displayScale).toFixed(1));
 
     const { data: evaluation, error: evalError } = await supabase
       .from('t_evaluation')
@@ -367,7 +367,7 @@ export const updateEvaluation = async (req: AuthRequest, res: Response) => {
     let totalScore = 0;
     if (items && items.length > 0) {
       const rawAverage = items.reduce((sum: number, item: any) => sum + item.score, 0) / items.length;
-      totalScore = parseFloat(((rawAverage / scoreCfg.max) * scoreCfg.displayScale).toFixed(2));
+      totalScore = parseFloat(((rawAverage / scoreCfg.max) * scoreCfg.displayScale).toFixed(1));
     }
 
     const { error: updateError } = await supabase
@@ -567,7 +567,7 @@ export const getPracticeEvaluationStatus = async (req: AuthRequest, res: Respons
         comiteStatus.completedCount = `${comiteStatus.members.length}/3`;
         // Score provisional: promedio simple de total_scores
         comiteStatus.score = parseFloat(
-          (comiteStatus.members.reduce((sum: number, m: any) => sum + m.score, 0) / comiteStatus.members.length).toFixed(2)
+          (comiteStatus.members.reduce((sum: number, m: any) => sum + m.score, 0) / comiteStatus.members.length).toFixed(1)
         );
         comiteStatus.evaluatorName = comiteStatus.members.map((m: any) => m.evaluatorName).join(', ');
       } else if (statusMap[e.EVALUATOR_TYPE]) {
@@ -607,7 +607,7 @@ export const getPracticeEvaluationStatus = async (req: AuthRequest, res: Respons
         currentGrade: (practice as any).GRADE,
         evaluationStatus,
         evaluations: statusMap,
-        finalGrade: finalGrade.toFixed(2),
+        finalGrade: finalGrade.toFixed(1),
         completedCount,
         canEvaluate,
         periodMessage
@@ -755,7 +755,7 @@ async function updatePracticeGrade(practiceId: number): Promise<void> {
   // Solo se considera completado si hay exactamente 3
   if (comiteScores.length === 3) {
     typeScores['COMITE'] = parseFloat(
-      (comiteScores.reduce((sum, s) => sum + s, 0) / comiteScores.length).toFixed(2)
+      (comiteScores.reduce((sum, s) => sum + s, 0) / comiteScores.length).toFixed(1)
     );
   }
 
@@ -770,7 +770,7 @@ async function updatePracticeGrade(practiceId: number): Promise<void> {
     await supabase
       .from('t_professional_practices')
       .update({ 
-        GRADE: parseFloat(finalGrade.toFixed(2)),
+        GRADE: parseFloat(finalGrade.toFixed(1)),
         EVALUATION_STATUS: 'completed'
       })
       .eq('PROFESSIONAL_PRACTICE_ID', practiceId);

@@ -83,7 +83,7 @@ export const EvaluationDetailModal: React.FC<EvaluationDetailModalProps> = ({
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <p className="text-xs font-bold uppercase text-text-tertiary mb-1">Puntaje Total</p>
                 <p className={`text-2xl font-bold ${getScoreColor(evaluation.totalScore)}`}>
-                  {evaluation.totalScore.toFixed(2)} / 20
+                  {evaluation.totalScore.toFixed(1)} / 20
                 </p>
               </div>
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">

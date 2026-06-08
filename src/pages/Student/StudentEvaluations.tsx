@@ -99,7 +99,7 @@ export default function StudentEvaluations() {
               <p className="text-xs text-text-tertiary mb-1">Calificación</p>
               {evaluation?.completed ? (
                 <p className={`text-xl font-bold ${evaluation.score >= 10 ? "text-green-500" : "text-red-500"}`}>
-                  {evaluation.score.toFixed(2)}
+                  {evaluation.score.toFixed(1)}
                 </p>
               ) : (
                 <p className="text-xl font-bold text-text-tertiary">-</p>

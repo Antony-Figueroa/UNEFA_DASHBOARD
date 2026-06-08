@@ -151,7 +151,7 @@ export default function TutorModal({
         }
         return age >= 16;
       }, "El tutor debe tener al menos 16 años"),
-    address: z.string().default(""),
+    address: z.string(),
     civilStatus: z.string().min(1, "Seleccione el estado civil"),
     phoneAreaCode: z.string().min(1, "El código de área es obligatorio"),
     phoneNumber: z.string()

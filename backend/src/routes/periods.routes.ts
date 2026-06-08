@@ -10,6 +10,7 @@ import {
   bulkRestorePeriods,
   togglePeriodStatus
 } from '../controllers/periods.controller.js';
+import { updatePeriodGraceConfig } from '../controllers/grace-config.controller.js';
 import { requirePermission } from '../middlewares/auth.middleware.js';
 
 const router = Router();
@@ -20,6 +21,7 @@ router.get('/', requirePermission('periods:view'), getPeriods);
 router.get('/current', requirePermission('periods:view'), getCurrentPeriod);
 router.post('/bulk-delete', requirePermission('periods:delete'), bulkDeletePeriods);
 router.post('/bulk-restore', requirePermission('periods:edit'), bulkRestorePeriods);
+router.patch('/:id/grace-config', requirePermission('academic-config:edit'), updatePeriodGraceConfig);
 router.get('/:id', requirePermission('periods:view'), getPeriodById);
 router.post('/', requirePermission('periods:create'), createPeriod);
 router.put('/:id', requirePermission('periods:edit'), updatePeriod);

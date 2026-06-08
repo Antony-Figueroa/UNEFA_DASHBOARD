@@ -89,6 +89,8 @@ export interface EvaluationStatus {
   };
   finalGrade: string;
   completedCount: number;
+  canEvaluate: boolean;
+  periodMessage: string;
 }
 
 /**

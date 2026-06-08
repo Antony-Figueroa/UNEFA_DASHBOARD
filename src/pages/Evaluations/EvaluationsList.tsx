@@ -9,7 +9,7 @@ import EvaluationDetailModal from '../../features/evaluations/components/Evaluat
 import { EvaluatorType, EvaluationStatus } from '../../features/evaluations/types';
 import { useSystemEvaluationConfig } from '../../features/evaluations/hooks/useSystemEvaluationConfig';
 import ErrorBoundary from '../../components/common/ErrorBoundary';
-import { CheckCircleIcon, TimeIcon, AlertIcon, EyeIcon, LockIcon } from '../../icons';
+import { CheckCircleIcon, TimeIcon, AlertIcon, EyeIcon, LockIcon, CloseLineIcon } from '../../icons';
 import apiClient from '../../api/apiClient';
 import toast from 'react-hot-toast';
 import { matchSearch } from '../../utils/searchNormalizer';
@@ -123,7 +123,12 @@ export default function EvaluationsPage() {
   const getEvaluationButton = (practice: PracticeWithStudent, type: EvaluatorType) => {
     const status = practiceStatuses[practice.professionalPracticeId];
     const evaluation = status?.evaluations[type];
+    const canEvaluate = status?.canEvaluate !== false;
     const isComite = type === 'COMITE';
+
+    // Si ya está completa o el periodo está cerrado, no permitir crear
+    const canCreate = canEvaluate && (evaluation?.completed ? false : true);
+    const isPeriodBlocked = !canEvaluate && !evaluation?.completed;
 
     // COMITE: mostrar progreso de miembros
     if (isComite) {
@@ -170,8 +175,15 @@ export default function EvaluationsPage() {
       if (memberCount > 0) {
         return (
           <div className="flex flex-col items-center gap-1">
-            {isReadOnly ? (
-              <span className="flex items-center gap-2 px-3 py-1.5 text-sm bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-lg cursor-not-allowed border border-amber-200 dark:border-amber-800/30">
+            {isReadOnly || isPeriodBlocked ? (
+              <span
+                className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg cursor-not-allowed border ${
+                  isPeriodBlocked
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700'
+                    : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/30'
+                }`}
+                title={isPeriodBlocked ? status?.periodMessage || 'Periodo cerrado' : ''}
+              >
                 <TimeIcon className="w-4 h-4" />
                 <span>{completedCount}</span>
               </span>
@@ -206,6 +218,18 @@ export default function EvaluationsPage() {
           <span className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-lg cursor-not-allowed">
             <LockIcon className="w-4 h-4" />
             <span>Pendiente</span>
+          </span>
+        );
+      }
+
+      if (isPeriodBlocked) {
+        return (
+          <span
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-lg cursor-not-allowed"
+            title={status?.periodMessage || 'Periodo cerrado'}
+          >
+            <CloseLineIcon className="w-4 h-4" />
+            <span>Cerrado</span>
           </span>
         );
       }
@@ -256,6 +280,18 @@ export default function EvaluationsPage() {
         <span className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-lg cursor-not-allowed" title="Solo lectura: no puedes crear evaluaciones">
           <LockIcon className="w-4 h-4" />
           <span>Pendiente</span>
+        </span>
+      );
+    }
+
+      if (isPeriodBlocked) {
+      return (
+        <span
+          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-lg cursor-not-allowed"
+          title={status?.periodMessage || 'Periodo cerrado'}
+        >
+          <CloseLineIcon className="w-4 h-4" />
+          <span>Cerrado</span>
         </span>
       );
     }

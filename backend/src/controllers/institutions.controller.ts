@@ -270,20 +270,49 @@ export const getInstitutionById = async (req: Request, res: Response) => {
     if (cached) return res.json(cached);
 
     const data = await dbManager.withRetry(async (supabase) => {
-      // 1. Single RPC call — combina institución + responsables + carreras + tipos + práctica check
-      const { data: result, error } = await supabase.rpc('get_institution_by_id', { p_id: instId });
+      // 1. Get main institution record
+      const { data: institution, error: instError } = await supabase
+        .from(TABLE_NAME)
+        .select(INSTITUTION_COLUMNS)
+        .eq('INSTITUTION_ID', instId)
+        .single();
 
-      if (error) throw error;
-      if (!result) {
-        throw new Error(`Institución con ID ${instId} no encontrada`);
+      if (instError) {
+        if (instError.code === 'PGRST116') {
+          throw new Error(`Institución con ID ${instId} no encontrada`);
+        }
+        throw instError;
       }
 
+      // 2. Fetch relational data in parallel
+      const [
+        { data: respPivot },
+        { data: careerPivot },
+        { data: typePivot },
+        { data: practiceData }
+      ] = await Promise.all([
+        supabase.from('t_institution_manager_institution')
+          .select('"INSTITUTION_ID"')
+          .eq('"INSTITUTION_ID"', instId),
+        supabase.from('t_institution_career')
+          .select('CAREER_ID')
+          .eq('INSTITUTION_ID', instId),
+        supabase.from('t_institution_internship_type')
+          .select('INTERNSHIP_TYPE_ID')
+          .eq('INSTITUTION_ID', instId),
+        supabase.from('t_professional_practices')
+          .select('INSTITUTION_ID')
+          .eq('INSTITUTION_ID', instId)
+          .eq('STATUS', 1)
+          .limit(1)
+      ]);
+
       return {
-        ...result.institution,
-        responsibleCount: result.responsibleCount ?? 0,
-        careerIds: result.careerIds ?? [],
-        internshipTypeIds: result.internshipTypeIds ?? [],
-        isInUse: result.isInUse ?? false
+        ...institution,
+        responsibleCount: (respPivot || []).length,
+        careerIds: (careerPivot || []).map((c: any) => c.CAREER_ID),
+        internshipTypeIds: (typePivot || []).map((t: any) => t.INTERNSHIP_TYPE_ID),
+        isInUse: (practiceData || []).length > 0
       };
     }, 'getInstitutionById');
 

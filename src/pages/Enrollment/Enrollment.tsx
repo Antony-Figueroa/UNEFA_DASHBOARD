@@ -556,7 +556,8 @@ export default function EnrollmentPage() {
                         tutorType={tutorTargetRef.current === "methodologicalTutorId" ? "methodological" : "academic"}
                         onSave={async (payload) => {
                             try {
-                                const newTutor = await addTutor(payload as any);
+                                const tutorType = tutorTargetRef.current === "methodologicalTutorId" ? "Metodológico" : "Académico";
+                                const newTutor = await addTutor(payload as any, tutorType);
                                 if (newTutor) {
                                     // Disparar evento para actualizar la lista de tutores en el EnrollmentModal
                                     const updateEvt = new CustomEvent("enrollment:tutorAdded", { 

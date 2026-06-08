@@ -75,7 +75,7 @@ export const useTutors = () => {
     refreshTutors();
   }, [refreshTutors]);
 
-  const addTutor = async (tutorData: CreateTutorPayload): Promise<Tutor | null> => {
+  const addTutor = async (tutorData: CreateTutorPayload, tutorType?: string): Promise<Tutor | null> => {
     // Validar duplicidad de cédula localmente antes de intentar crear
     const isDuplicate = tutors.some(
       t => t.identificationNumber === tutorData.identificationNumber && 
@@ -94,13 +94,14 @@ export const useTutors = () => {
     const newTutor = await baseAddTutor(tutorData, { silent: true });
     if (newTutor) {
       const careerNames = getCareerNames(newTutor.carreras || []);
+      const typeLabel = tutorType ? `Tutor ${tutorType}` : 'Tutor';
 
       addToast({
         variant: "success",
-        title: "Tutor Registrado",
+        title: `${typeLabel} Registrado`,
         message: (
           <>
-            <p>El tutor <strong>{newTutor.firstName} {newTutor.lastName}</strong> ha sido registrado exitosamente.</p>
+            <p>El {typeLabel.toLowerCase()} <strong>{newTutor.firstName} {newTutor.lastName}</strong> ha sido registrado exitosamente.</p>
             <RecordDetails
               data={{ ...newTutor, carreras: careerNames } as unknown as Record<string, unknown>}
               labels={TUTOR_LABELS}
@@ -114,7 +115,7 @@ export const useTutors = () => {
     return null;
   };
 
-  const editTutor = async (tutorData: UpdateTutorPayload) => {
+  const editTutor = async (tutorData: UpdateTutorPayload, tutorType?: string) => {
     const { tutorId } = tutorData;
     const oldTutor = tutors.find(t => t.tutorId === tutorId);
     const updatedTutor = await baseEditTutor(tutorData, { silent: true });
@@ -122,10 +123,11 @@ export const useTutors = () => {
     if (updatedTutor) {
       const oldCareerNames = oldTutor ? getCareerNames(oldTutor.carreras || []) : "";
       const newCareerNames = getCareerNames(updatedTutor.carreras || []);
+      const typeLabel = tutorType ? `Tutor ${tutorType}` : 'Tutor';
 
       addToast({
         variant: "success",
-        title: "Tutor Actualizado",
+        title: `${typeLabel} Actualizado`,
         message: (
           <>
             <p>Los datos de <strong>{updatedTutor.firstName} {updatedTutor.lastName}</strong> han sido actualizados.</p>

@@ -423,7 +423,7 @@ export default function UserPasswordCard() {
             <Button variant="outline" onClick={handleClose} disabled={loading}>Cancelar</Button>
             <Button 
               type="submit"
-              disabled={loading || !allRequirementsMet || !passwordsMatch}
+              disabled={loading || !allRequirementsMet}
             >
               {loading ? "Guardando..." : "Guardar"}
             </Button>

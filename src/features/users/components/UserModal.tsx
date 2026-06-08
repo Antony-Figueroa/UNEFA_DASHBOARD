@@ -329,6 +329,7 @@ const UserModal: React.FC<UserModalProps> = ({
                     render={({ field }) => (
                       <CustomSelect
                         id="identificationPrefix"
+                        className="w-[76px] min-w-[76px]"
                         options={[
                           { value: "V", label: "V" },
                           { value: "E", label: "E" },

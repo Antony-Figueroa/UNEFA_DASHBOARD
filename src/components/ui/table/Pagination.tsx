@@ -36,7 +36,7 @@ export const Pagination: React.FC<PaginationProps> = ({
                     <select
                         value={itemsPerPage}
                         onChange={(e) => {
-                            onItemsPerPageChange(Number(e.target.value));
+                            onItemsPerPageChange?.(Number(e.target.value));
                         }}
                         className="text-xs sm:text-sm rounded-lg border border-border-medium bg-transparent py-1 px-2 text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis"
                     >

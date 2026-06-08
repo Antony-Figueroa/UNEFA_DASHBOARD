@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
@@ -15,7 +15,7 @@ import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/
 import { AuthUser } from "../../../context/auth";
 import { useToast } from "../../../context/toast";
 import { formatCedulaDisplay, cleanCedula, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
-import { checkUserCi } from "../services/userService";
+import { checkUserCi, PersonCheckData } from "../services/userService";
 
 /**
  * Propiedades para el componente UserModal.
@@ -61,10 +61,12 @@ const UserModal: React.FC<UserModalProps> = ({
     watch,
     setError,
     clearErrors,
+    control,
     formState: { errors, isDirty, isValid }
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
     defaultValues: {
+      identificationPrefix: "V",
       userCi: "",
       name: "",
       surname: "",
@@ -77,10 +79,13 @@ const UserModal: React.FC<UserModalProps> = ({
 
   const hasConsent = watch("hasConsent");
 
+  // CI prefix
+  const [ciPrefix, setCiPrefix] = useState("V");
+
   // State for display values with formatting
   const [displayCi, setDisplayCi] = useState("");
   const [isCheckingCi, setIsCheckingCi] = useState(false);
-  const [autoFilledPerson, setAutoFilledPerson] = useState(false);
+  const [existingPerson, setExistingPerson] = useState<PersonCheckData | null>(null);
   const autoFilledCiRef = useRef<string>("");
 
   // Handle cedula input change with formatting
@@ -89,8 +94,8 @@ const UserModal: React.FC<UserModalProps> = ({
     const cleaned = cleanCedula(input);
 
     // Si se cambiaron los dígitos después de auto-completar, resetear datos
-    if (autoFilledPerson && cleaned !== autoFilledCiRef.current) {
-      setAutoFilledPerson(false);
+    if (existingPerson && cleaned !== autoFilledCiRef.current) {
+      setExistingPerson(null);
       autoFilledCiRef.current = "";
       setValue("name", "", { shouldValidate: true });
       setValue("surname", "", { shouldValidate: true });
@@ -103,45 +108,47 @@ const UserModal: React.FC<UserModalProps> = ({
     clearErrors("userCi");
   };
 
-  // CI blur handler: verificar si la persona ya existe al salir del campo
+  // CI blur handler: buscar persona en la super entidad (t_persons)
   const handleCiBlur = useCallback(
     async (e: React.FocusEvent<HTMLInputElement>) => {
       if (user) return; // No checkear en edición
       const val = e.target.value;
-      // Extraer prefijo (V/E) y dígitos del valor formateado
-      const prefixMatch = val.match(/^([VE])-/);
-      const prefix = prefixMatch ? prefixMatch[1] : '';
       const digitsOnly = val.replace(/\D/g, "");
-      const ciForCheck = prefix ? `${prefix}${digitsOnly}` : digitsOnly;
       if (digitsOnly.length >= 6) {
         setIsCheckingCi(true);
-        setAutoFilledPerson(false);
+        setExistingPerson(null);
         autoFilledCiRef.current = "";
         try {
-          const result = await checkUserCi(ciForCheck);
+          const fullCi = `${ciPrefix}${digitsOnly}`;
+          const result = await checkUserCi(fullCi);
           if (result.exists && result.asUser) {
             setError("userCi", {
               type: "manual",
               message: "Ya existe un usuario del sistema con esta cédula",
             });
           } else if (result.exists && !result.asUser && result.person) {
-            // Persona existe (estudiante/tutor) — auto-completar datos (solo lectura)
+            // Persona existe en t_persons (estudiante/tutor/responsable)
+            // → precargar datos y mostrar alerta (NO deshabilitar campos)
+            const personData = result.person;
+
             const fullName = [
-              result.person.firstName,
-              result.person.middleName,
+              personData.firstName,
+              personData.middleName,
             ].filter(Boolean).join(" ");
             const fullSurname = [
-              result.person.lastName,
-              result.person.secondLastName,
+              personData.lastName,
+              personData.secondLastName,
             ].filter(Boolean).join(" ");
 
             setValue("name", fullName, { shouldValidate: true, shouldDirty: true });
             setValue("surname", fullSurname, { shouldValidate: true, shouldDirty: true });
-            setValue("email", result.person.email, { shouldValidate: true, shouldDirty: true });
-            setAutoFilledPerson(true);
-            autoFilledCiRef.current = ciForCheck;
+            setValue("email", personData.email, { shouldValidate: true, shouldDirty: true });
+            setExistingPerson(personData);
+            autoFilledCiRef.current = `${ciPrefix}${digitsOnly}`;
+
+            clearErrors("userCi");
           }
-          // !exists → no hacer nada, flujo normal de creación
+          // !exists → flujo normal de creación
         } catch (err) {
           console.error("[UserModal] Error checking CI:", err);
         } finally {
@@ -149,13 +156,14 @@ const UserModal: React.FC<UserModalProps> = ({
         }
       }
     },
-    [user, setValue, setError, clearErrors, addToast],
+    [user, setValue, setError, clearErrors, ciPrefix],
   );
 
 // Efecto para cargar los datos del usuario cuando se abre el modal para editar
   useEffect(() => {
     if (user) {
       reset({
+        identificationPrefix: "V",
         userCi: user.userCi,
         name: user.name,
         surname: user.surname,
@@ -165,10 +173,11 @@ const UserModal: React.FC<UserModalProps> = ({
         hasConsent: true // Ya tiene consentimiento si existe
       });
       setDisplayCi(formatCedulaDisplay(user.userCi));
-      setAutoFilledPerson(false);
+      setExistingPerson(null);
       autoFilledCiRef.current = "";
     } else {
       reset({
+        identificationPrefix: "V",
         userCi: "",
         name: "",
         surname: "",
@@ -178,7 +187,8 @@ const UserModal: React.FC<UserModalProps> = ({
         hasConsent: false
       });
       setDisplayCi("");
-      setAutoFilledPerson(false);
+      setCiPrefix("V");
+      setExistingPerson(null);
       autoFilledCiRef.current = "";
     }
   }, [user, reset, isOpen]);
@@ -308,25 +318,53 @@ const UserModal: React.FC<UserModalProps> = ({
               </h6>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
-<div>
+              {/* Prefijo + CI */}
+              <div>
                 <label className="text-sm font-medium text-text-primary dark:text-white/90">Cédula *</label>
-                <Input
-                  value={displayCi}
-                  onChange={handleCiChange}
-                  onBlur={handleCiBlur}
-                  disabled={!!user}
-                  placeholder="V00.000.000"
-                  className="h-11 rounded-lg border-gray-200 dark:border-gray-700 uppercase tracking-widest"
-                  error={!!errors.userCi}
-                  hint={isCheckingCi ? "Verificando cédula..." : errors.userCi?.message}
-                  maxLength={CEDULA_MAX_LENGTH}
-                />
+                <div className="flex gap-2">
+                  {/* Prefix selector */}
+                  <Controller
+                    name="identificationPrefix"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomSelect
+                        id="identificationPrefix"
+                        options={[
+                          { value: "V", label: "V" },
+                          { value: "E", label: "E" },
+                        ]}
+                        placeholder="V"
+                        onChange={(val) => {
+                          field.onChange(val);
+                          setCiPrefix(val);
+                        }}
+                        onBlur={field.onBlur}
+                        value={String(field.value || "V")}
+                        disabled={!!user}
+                      />
+                    )}
+                  />
+                  {/* CI number */}
+                  <div className="flex-1">
+                    <Input
+                      value={displayCi}
+                      onChange={handleCiChange}
+                      onBlur={handleCiBlur}
+                      disabled={!!user}
+                      placeholder="00.000.000"
+                      className="h-11 rounded-lg border-gray-200 dark:border-gray-700 uppercase tracking-widest"
+                      error={!!errors.userCi}
+                      hint={isCheckingCi ? "Verificando cédula..." : errors.userCi?.message}
+                      maxLength={CEDULA_MAX_LENGTH}
+                    />
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium text-text-primary dark:text-white/90">Nombres *</label>
                 <Input
                   {...register("name")}
-                  disabled={autoFilledPerson || (!!user && user.isImported)}
+                  disabled={!!user && user.isImported}
                   placeholder="Nombres del usuario"
                   className="h-11 rounded-lg border-gray-200 dark:border-gray-700 uppercase"
                   error={!!errors.name}
@@ -337,7 +375,7 @@ const UserModal: React.FC<UserModalProps> = ({
                 <label className="text-sm font-medium text-text-primary dark:text-white/90">Apellidos *</label>
                 <Input
                   {...register("surname")}
-                  disabled={autoFilledPerson || (!!user && user.isImported)}
+                  disabled={!!user && user.isImported}
                   placeholder="Apellidos del usuario"
                   className="h-11 rounded-lg border-gray-200 dark:border-gray-700 uppercase"
                   error={!!errors.surname}
@@ -345,6 +383,20 @@ const UserModal: React.FC<UserModalProps> = ({
                 />
               </div>
             </div>
+
+            {/* Alerta de persona existente */}
+            {existingPerson && (
+              <div className="mt-4 rounded-lg border border-yellow-300 bg-yellow-50 p-3 dark:border-yellow-600 dark:bg-yellow-900/20">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                    <strong>Persona existente:</strong>{" "}
+                    {existingPerson.firstName} {existingPerson.lastName} —{" "}
+                    {existingPerson.prefixCi}-{existingPerson.identificationNumber}
+                    {existingPerson.phone && <span className="ml-2 text-yellow-600 dark:text-yellow-400">📞 {existingPerson.phone}</span>}
+                  </p>
+                </div>
+              </div>
+            )}
           </section>
 
           {/* Sección: Credenciales y Acceso */}
@@ -361,7 +413,7 @@ const UserModal: React.FC<UserModalProps> = ({
                 <Input
                   type="email"
                   {...register("email")}
-                  disabled={autoFilledPerson || (!!user && user.isImported)}
+                  disabled={!!user && user.isImported}
                   placeholder="usuario@unefa.edu.ve"
                   className="h-11 rounded-lg border-gray-200 dark:border-gray-700 uppercase"
                   error={!!errors.email}

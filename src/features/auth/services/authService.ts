@@ -73,13 +73,15 @@ export const changePassword = async (
     secondSurname?: string;
     phoneNumber?: string;
     email?: string;
-  }
+  },
+  currentPassword?: string
 ): Promise<PasswordChangeResponse> => {
   const response = await apiClient.post<PasswordChangeResponse>("/auth/change-password", {
     userId,
     newPassword,
     securityQuestions,
     profileData,
+    currentPassword,
   });
   return response.data;
 };

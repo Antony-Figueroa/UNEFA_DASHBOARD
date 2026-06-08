@@ -1,84 +1,51 @@
-/**
- * @file RegistrationStatsChart.tsx
- * @description Component that renders student registration trends over time using an area chart.
- * Includes time-range filtering (7 days, 30 days, all) with animations.
- * Enhanced with contextual tooltips and clearer visual hierarchy.
- */
-
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import ReactApexChart from 'react-apexcharts';
 import { ApexOptions } from 'apexcharts';
-import { DashboardStats } from '../types';
+import { DashboardStats, PeriodInfo } from '../types';
 import { Skeleton } from '../../../components/ui/skeleton';
-import { FiTrendingUp, FiCalendar, FiActivity, FiLayers, FiArrowUp, FiArrowDown, FiMinus } from 'react-icons/fi';
+import { FiTrendingUp, FiCalendar, FiActivity, FiLayers, FiArrowUp, FiArrowDown, FiMinus, FiChevronDown } from 'react-icons/fi';
 import { generateTooltipHTML, formatDateForTooltip } from '../utils/tooltipUtils';
 
-/**
- * Props for the RegistrationStatsChart component.
- */
 interface RegistrationStatsChartProps {
-  /** Array of registration data points (date and count) */
   data: DashboardStats['registrationStats'];
-  /** Whether the data is currently being fetched */
   loading?: boolean;
+  availablePeriods: PeriodInfo[];
+  selectedPeriodId: number | null;
+  onPeriodChange: (periodId: number | null) => void;
 }
 
-/**
- * RegistrationStatsChart component.
- * Visualizes the history of student registrations with interactive filtering.
- * 
- * @example
- * ```tsx
- * <RegistrationStatsChart data={stats.registrationStats} loading={false} />
- * ```
- */
-const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, loading }) => {
-  const [filter, setFilter] = useState<'7d' | '30d' | 'all'>('30d');
-
-  // Mostrar todos los datos disponibles sin bloquear filtros
-  const filteredData = useMemo(() => {
-    if (!data || data.length === 0) return [];
-    // Si filter es 'all', mostrar todos los datos disponibles
-    if (filter === 'all') {
-      return data;
-    }
-    // Para 7d y 30d, mostrar los últimos N registros
-    const available = filter === '7d' ? 7 : 30;
-    return data.slice(-available);
-  }, [data, filter]);
-
+const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, loading, availablePeriods, selectedPeriodId, onPeriodChange }) => {
   const totalRegistrations = useMemo(() => {
-    if (!filteredData || filteredData.length === 0) return 0;
-    return filteredData.reduce((acc, curr) => acc + curr.count, 0);
-  }, [filteredData]);
+    if (!data || data.length === 0) return 0;
+    return data.reduce((acc, curr) => acc + curr.count, 0);
+  }, [data]);
 
   const stats = useMemo(() => {
-    if (!filteredData || filteredData.length === 0) return { avg: 0, max: 0, min: 0, trend: 0 };
-    const counts = filteredData.map(d => d.count || 0);
-    
+    if (!data || data.length === 0) return { avg: 0, max: 0, min: 0, trend: 0 };
+    const counts = data.map(d => d.count || 0);
+
     if (counts.length === 0) return { avg: 0, max: 0, min: 0, trend: 0 };
-    
-    // Calcular tendencia comparando con período anterior
+
     const mid = Math.floor(counts.length / 2);
     const firstHalf = counts.slice(0, mid).reduce((a, b) => a + b, 0);
     const secondHalf = counts.slice(mid).reduce((a, b) => a + b, 0);
     const trend = firstHalf > 0 ? Math.round(((secondHalf - firstHalf) / firstHalf) * 100) : 0;
-    
+
     const total = counts.reduce((a, b) => a + b, 0);
     const avg = counts.length > 0 ? Math.round(total / counts.length) : 0;
-    
+
     return {
       avg: isNaN(avg) || !isFinite(avg) ? 0 : avg,
       max: Math.max(...counts),
       min: Math.min(...counts),
       trend: isNaN(trend) || !isFinite(trend) ? 0 : trend
     };
-  }, [filteredData]);
+  }, [data]);
 
   const series = [{
     name: 'Registros',
-    data: filteredData?.map(d => d.count) || []
+    data: data?.map(d => d.count) || []
   }];
 
   const BRAND_COLOR = '#054F94';
@@ -116,7 +83,7 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
       },
     },
     xaxis: {
-      categories: filteredData?.map(d => d.date) || [],
+      categories: data?.map(d => d.date) || [],
       labels: {
         rotate: -45,
         style: {
@@ -127,7 +94,6 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
         formatter: (val: string) => {
           if (!val) return '';
           try {
-            // Handle YYYY-MM-DD format
             if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
               const parts = val.split('-');
               const day = parseInt(parts[2]).toString().padStart(2, '0');
@@ -135,7 +101,6 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
               const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
               return `${day} ${months[month]}`;
             }
-            // Handle other date formats
             const date = new Date(val);
             if (!isNaN(date.getTime())) {
               const day = date.getDate().toString().padStart(2, '0');
@@ -175,24 +140,21 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
       theme: 'light',
       custom: ({ seriesIndex, dataPointIndex }) => {
         if (dataPointIndex === undefined || dataPointIndex < 0) return '';
-        
-        const point = filteredData?.[dataPointIndex];
+
+        const point = data?.[dataPointIndex];
         if (!point) return '';
-        
+
         const count = point.count ?? 0;
         const dateStr = point.date;
         const students = point.students || [];
-        
-        // Format date using helper
+
         const formattedDate = formatDateForTooltip(dateStr);
-        
-        // Build student list for tooltip items
+
         const items = students.map((s) => ({
           name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || 'Sin nombre',
           subtitle: s.idNumber || undefined,
         }));
-        
-        // Use helper to generate base structure with custom items
+
         const baseTooltip = generateTooltipHTML({
           label: formattedDate,
           count,
@@ -201,7 +163,7 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
           items,
           maxItems: 15,
         });
-        
+
         return baseTooltip;
       },
       y: {
@@ -240,7 +202,7 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
 
   if (loading) {
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="h-full w-full rounded-2xl border border-border-light bg-white p-6 shadow-sm dark:border-border-dark dark:bg-gray-900"
@@ -257,7 +219,6 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
     );
   }
 
-  // Trend indicator helper
   const getTrendIcon = () => {
     if (stats.trend > 0) return <FiArrowUp className="size-3" />;
     if (stats.trend < 0) return <FiArrowDown className="size-3" />;
@@ -270,23 +231,17 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
     return 'text-gray-500';
   };
 
-  const filterLabels = {
-    '7d': '7 días',
-    '30d': '30 días',
-    'all': 'Todo'
-  };
-
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="h-full w-full rounded-2xl border border-border-light bg-white p-6 shadow-sm dark:border-border-dark dark:bg-gray-900"
     >
-      {/* Header - Cleaner hierarchy */}
+      {/* Header */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <motion.div 
+          <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
@@ -303,21 +258,21 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
-          {/* Total Counter - Hidden on small screens, show on larger */}
+          {/* Total Counter */}
           <div className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-md bg-brand-50 dark:bg-brand-500/10">
             <FiCalendar className="size-3 text-brand-600 dark:text-brand-400" />
             <span className="text-xs font-bold text-brand-600 dark:text-brand-400">
               {totalRegistrations}
             </span>
           </div>
-          
+
           {/* Trend Badge */}
           <div className={`flex items-center gap-1 px-2 py-1 rounded-md ${
-            stats.trend > 0 
-              ? 'bg-success-50 dark:bg-success-500/10' 
-              : stats.trend < 0 
+            stats.trend > 0
+              ? 'bg-success-50 dark:bg-success-500/10'
+              : stats.trend < 0
                 ? 'bg-error-50 dark:bg-error-500/10'
                 : 'bg-gray-50 dark:bg-gray-800'
           }`}>
@@ -326,22 +281,24 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
               {stats.trend > 0 ? '+' : ''}{stats.trend}%
             </span>
           </div>
-          
-          {/* Filter Buttons - Always enabled */}
-          <div className="flex rounded bg-gray-100 dark:bg-gray-800 p-0.5">
-            {(['7d', '30d', 'all'] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`rounded text-[10px] font-medium px-2 py-0.5 transition-all ${
-                  filter === f
-                    ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-700 dark:text-brand-400'
-                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
-                }`}
-              >
-                {filterLabels[f]}
-              </button>
-            ))}
+
+          {/* Period Select */}
+          <div className="relative">
+            <select
+              value={selectedPeriodId ?? ''}
+              onChange={(e) => onPeriodChange(e.target.value ? Number(e.target.value) : null)}
+              disabled={availablePeriods.length === 0}
+              className="appearance-none rounded-lg bg-gray-100 dark:bg-gray-800 text-[10px] font-medium px-2 py-1.5 pr-6 text-gray-500 dark:text-gray-400 border-0 outline-none focus:ring-2 focus:ring-brand-500/30 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {availablePeriods.length === 0 ? (
+                <option value="">Sin períodos disponibles</option>
+              ) : (
+                availablePeriods.map((p) => (
+                  <option key={p.periodId} value={p.periodId}>{p.description}</option>
+                ))
+              )}
+            </select>
+            <FiChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 size-3 text-gray-400 pointer-events-none" />
           </div>
         </div>
       </div>
@@ -350,7 +307,7 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
       <div className="h-72">
         {loading ? (
           <Skeleton height={280} className="rounded-xl" />
-        ) : filteredData.length === 0 ? (
+        ) : data.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-6 rounded-xl bg-gray-50/50 dark:bg-gray-800/30 border border-dashed border-gray-200 dark:border-gray-700">
             <div className="size-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
               <FiTrendingUp className="size-6 text-gray-400" />
@@ -362,32 +319,31 @@ const RegistrationStatsChart: React.FC<RegistrationStatsChartProps> = ({ data, l
               Las inscripciones aparecerán aquí cuando se registren estudiantes
             </p>
           </div>
-        ) : filteredData.length === 1 ? (
-          // Mostrar un dato único de forma diferente
+        ) : data.length === 1 ? (
           <div className="h-full flex flex-col items-center justify-center">
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               className="text-center"
             >
               <div className="inline-flex items-center justify-center size-20 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-600 dark:to-brand-700 shadow-xl shadow-brand-500/20 mb-4">
-                <span className="text-3xl font-bold text-white">{filteredData[0].count}</span>
+                <span className="text-3xl font-bold text-white">{data[0].count}</span>
               </div>
               <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-                {filteredData[0].count === 1 ? '1 estudiante' : `${filteredData[0].count} estudiantes`}
+                {data[0].count === 1 ? '1 estudiante' : `${data[0].count} estudiantes`}
               </p>
               <p className="text-xs text-text-secondary dark:text-text-tertiary">
-                registrado el {new Date(filteredData[0].date).toLocaleDateString('es-VE', { day: 'numeric', month: 'long', year: 'numeric' })}
+                registrado el {new Date(data[0].date).toLocaleDateString('es-VE', { day: 'numeric', month: 'long', year: 'numeric' })}
               </p>
             </motion.div>
           </div>
         ) : (
-          <ReactApexChart 
-            key={`chart-${filter}-${filteredData.length}`}
-            options={options} 
-            series={series} 
-            type="area" 
-            height={280} 
+          <ReactApexChart
+            key={`chart-${selectedPeriodId ?? 'default'}-${data.length}`}
+            options={options}
+            series={series}
+            type="area"
+            height={280}
           />
         )}
       </div>

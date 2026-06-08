@@ -12,6 +12,7 @@ import { UnifiedDialog } from '../../../components/ui/dialog/UnifiedDialog';
 import emailTemplatesService, { EmailTemplate, CreateEmailTemplate } from '../../../api/emailTemplatesService';
 import { PlusCircleIcon, ChevronDownIcon } from '../../../icons/actions';
 import { PencilIcon, TrashBinIcon } from '../../../icons';
+import { EmailEditor } from './EmailEditor';
 
 // ─── Category config ─────────────────────────────────────────────────────
 
@@ -49,9 +50,6 @@ const TemplateManager = () => {
   const [formBody, setFormBody] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  // Preview toggle
-  const [showPreview, setShowPreview] = useState(false);
-
   // Section collapsed
   const [collapsed, setCollapsed] = useState(false);
 
@@ -83,7 +81,6 @@ const TemplateManager = () => {
     setFormSubject('');
     setFormBody('');
     setFormErrors({});
-    setShowPreview(false);
     setModalOpen(true);
   };
 
@@ -95,7 +92,6 @@ const TemplateManager = () => {
     setFormSubject(t.subject);
     setFormBody(t.body_html);
     setFormErrors({});
-    setShowPreview(false);
     setModalOpen(true);
   };
 
@@ -157,22 +153,6 @@ const TemplateManager = () => {
       console.error('[TemplateManager] Error deleting:', err);
     }
   };
-
-  // ── Preview ───────────────────────────────────────────────────────────
-
-  const previewHtml = formBody
-    ? formBody
-        .replace(/\{\{nombre\}\}/g, 'Juan Pérez')
-        .replace(/\{\{periodo\}\}/g, '2026-I')
-        .replace(/\{\{fecha\}\}/g, new Date().toLocaleDateString('es-VE'))
-        .replace(/\{\{fecha_inicio\}\}/g, '01/04/2026')
-        .replace(/\{\{fecha_fin\}\}/g, '30/09/2026')
-        .replace(/\{\{tutor\}\}/g, 'Lic. María García')
-        .replace(/\{\{asunto\}\}/g, formSubject || 'Asunto del ejemplo')
-        .replace(/\{\{mensaje\}\}/g, 'Mensaje de ejemplo para la vista previa.')
-        .replace(/\{\{rol\}\}/g, 'estudiante')
-        .replace(/\{\{email\}\}/g, 'ejemplo@correo.com')
-    : '';
 
   // ── Render ────────────────────────────────────────────────────────────
 
@@ -359,39 +339,17 @@ const TemplateManager = () => {
             {formErrors.subject && <p className="mt-1 text-[11px] text-red-500">{formErrors.subject}</p>}
           </div>
 
-          {/* Body HTML */}
+          {/* Cuerpo del email — editor visual */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
-                Cuerpo HTML * <span className="text-gray-400 font-normal">({'{{variable}}'})</span>
-              </label>
-              <button
-                type="button"
-                onClick={() => setShowPreview(!showPreview)}
-                className="text-[11px] text-brand-600 dark:text-brand-400 hover:underline"
-              >
-                {showPreview ? 'Editar' : 'Vista previa'}
-              </button>
-            </div>
-
-            {showPreview ? (
-              <div
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-4 text-sm overflow-auto max-h-[400px]"
-                dangerouslySetInnerHTML={{ __html: previewHtml }}
-              />
-            ) : (
-              <textarea
-                value={formBody}
-                onChange={e => setFormBody(e.target.value)}
-                className={`w-full rounded-lg border ${formErrors.body ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 min-h-[150px] font-mono text-xs leading-relaxed resize-y`}
-                placeholder="<div>Contenido HTML con {{variable}}...</div>"
-                rows={10}
-              />
-            )}
-            {formErrors.body && <p className="mt-1 text-[11px] text-red-500">{formErrors.body}</p>}
-            <p className="text-[11px] text-gray-400 mt-1">
-              Variables: {'{{nombre}}'}, {'{{periodo}}'}, {'{{fecha}}'}, {'{{fecha_inicio}}'}, {'{{fecha_fin}}'}, {'{{tutor}}'}, {'{{rol}}'}, {'{{asunto}}'}, {'{{mensaje}}'}, {'{{email}}'}
-            </p>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Cuerpo del correo * <span className="text-gray-400 font-normal">(usá los botones para dar formato)</span>
+            </label>
+            <EmailEditor
+              value={formBody}
+              onChange={setFormBody}
+              error={formErrors.body}
+              minHeight="220px"
+            />
           </div>
 
           {formErrors.submit && (

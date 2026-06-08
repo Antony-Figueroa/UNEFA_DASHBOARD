@@ -119,8 +119,34 @@ export const useAIChat = (): UseAIChatReturn => {
    */
   const saveCurrentSession = useCallback(async () => {
     if (!currentSession) {
-      // Crear nueva sesión si no hay una activa
-      await createNewSession();
+      // Crear nueva sesión SIN limpiar mensajes (no usar createNewSession)
+      try {
+        const firstUserMessage = messages.find(m => m.role === 'user');
+        const title = firstUserMessage
+          ? firstUserMessage.content.substring(0, 50) + (firstUserMessage.content.length > 50 ? '...' : '')
+          : 'Conversación';
+
+        const messagesToSave = messages
+          .filter(m => m.role === 'user' || m.role === 'assistant')
+          .map(m => ({
+            id: m.id,
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+            timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : new Date().toISOString(),
+          }));
+
+        const newSession = await chatSessionsService.createSession();
+        if (newSession) {
+          await chatSessionsService.updateSession(newSession.id, { title, messages: messagesToSave });
+          setCurrentSession(newSession);
+          setSessions(prev => [newSession, ...prev]);
+          window.dispatchEvent(new CustomEvent('unefa:ai-chat:sessions-updated'));
+          console.log('[useAIChat] Session created and saved:', title);
+        }
+      } catch (error) {
+        console.error('[useAIChat] Error creating session:', error);
+        toast.error(TOAST_ERROR.create('Sesión'));
+      }
       return;
     }
 
@@ -150,7 +176,7 @@ export const useAIChat = (): UseAIChatReturn => {
     } catch (error) {
       console.error('[useAIChat] Error saving session:', error);
     }
-  }, [currentSession, messages, createNewSession]);
+  }, [currentSession, messages]);
 
   /**
    * Elimina una sesión

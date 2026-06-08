@@ -60,6 +60,9 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     getProps: (data: any) => ({
       data: data?.stats?.registrationStats ?? data?.registrationStats ?? [],
       loading: data?.loading ?? false,
+      availablePeriods: data?.stats?.availablePeriods ?? data?.availablePeriods ?? [],
+      selectedPeriodId: data?.selectedPeriodId ?? null,
+      onPeriodChange: data?.handlePeriodChange ?? (() => {}),
     }),
   },
 

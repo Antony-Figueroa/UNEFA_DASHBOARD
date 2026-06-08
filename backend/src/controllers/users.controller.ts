@@ -62,11 +62,20 @@ export const checkUserCi = async (req: Request, res: Response) => {
         exists: true,
         asUser: false,
         person: {
+          personId: existingPerson.personId,
+          ci: existingPerson.ci,
+          prefixCi: existingPerson.prefixCi,
+          identificationNumber: existingPerson.identificationNumber,
           firstName: existingPerson.firstName,
           middleName: existingPerson.middleName,
           lastName: existingPerson.lastName,
           secondLastName: existingPerson.secondLastName,
           email: existingPerson.email,
+          phone: existingPerson.phone,
+          gender: existingPerson.gender,
+          birthDate: existingPerson.birthDate,
+          address: existingPerson.address,
+          maritalStatus: existingPerson.maritalStatus,
         },
       });
     }

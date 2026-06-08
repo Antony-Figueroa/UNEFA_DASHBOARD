@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../../context/auth";
@@ -18,6 +18,10 @@ export default function UserMetaCard() {
   const { addToast } = useToast();
   const { isOpen, openModal, closeModal } = useModal();
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   const {
     register,
@@ -118,10 +122,78 @@ export default function UserMetaCard() {
     <div className="p-5 border border-border-light rounded-2xl dark:border-white/10 lg:p-6 bg-white dark:bg-bg-dark">
       <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
-          <div className="flex items-center justify-center w-24 h-24 overflow-hidden border border-border-light rounded-full bg-brand-50 dark:bg-brand-500/10 dark:border-white/10">
-            <span className="text-2xl font-bold text-brand-600 dark:text-brand-400">
-              {initials}
-            </span>
+          <div className="relative flex-shrink-0">
+            <div className="flex items-center justify-center w-24 h-24 overflow-hidden border border-border-light rounded-full bg-brand-50 dark:bg-brand-500/10 dark:border-white/10">
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-2xl font-bold text-brand-600 dark:text-brand-400">
+                  {initials}
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute -bottom-1 -right-1 flex items-center justify-center w-7 h-7 rounded-full bg-white border border-border-medium shadow-sm hover:bg-gray-50 dark:bg-bg-dark dark:border-white/10 dark:hover:bg-white/5 transition-colors"
+              title="Cambiar foto"
+            >
+              <svg className="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setAvatarFile(file);
+                  setAvatarPreview(URL.createObjectURL(file));
+                }
+              }}
+            />
+
+            {avatarPreview && (
+              <div className="absolute -top-1 left-1/2 -translate-x-1/2 flex gap-1">
+                <button
+                  type="button"
+                  disabled={avatarUploading}
+                  onClick={async () => {
+                    if (!avatarFile) return;
+                    setAvatarUploading(true);
+                    try {
+                      const result = await authService.uploadAvatar(avatarFile.name, avatarFile.type);
+                      console.log('[Avatar] Presigned URL:', result);
+                      addToast({ variant: "success", title: "Foto actualizada", message: "La foto de perfil se ha actualizado." });
+                    } catch {
+                      addToast({ variant: "error", title: "Error", message: "No se pudo subir la foto." });
+                    } finally {
+                      setAvatarUploading(false);
+                      setAvatarFile(null);
+                      setAvatarPreview(null);
+                    }
+                  }}
+                  className="flex items-center gap-1 px-2 py-0.5 text-xs font-medium text-white bg-brand-500 rounded-full hover:bg-brand-600 transition-colors"
+                >
+                  {avatarUploading ? "..." : "Cambiar"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAvatarFile(null);
+                    setAvatarPreview(null);
+                  }}
+                  className="flex items-center gap-1 px-2 py-0.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-full hover:bg-gray-200 dark:text-gray-300 dark:bg-white/10 dark:hover:bg-white/20 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="flex-1 text-center xl:text-left">

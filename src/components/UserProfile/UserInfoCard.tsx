@@ -1,11 +1,5 @@
 import { useAuth } from "../../context/auth";
-
-const ROLE_LABELS: Record<number, string> = {
-  1: "Administrador",
-  2: "Asistente",
-  3: "Tutor",
-  4: "Estudiante"
-};
+import { ROLE_LABELS } from "../../features/auth/constants/roles";
 
 export default function UserInfoCard() {
   const { user } = useAuth();

@@ -213,7 +213,6 @@ export const resetUserPassword = async (req: AuthRequest, res: Response) => {
       sendPasswordResetEmail(result.email, result.name, result.userCi, result.tempPassword)
         .catch(err => console.error('[UserController] Error sending reset email:', err));
     }
-      .catch(err => console.error('[UserController] Error sending reset email:', err));
 
     // Registrar auditoría
     await dbManager.withRetry(async (supabase) => {

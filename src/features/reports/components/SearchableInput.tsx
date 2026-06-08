@@ -12,7 +12,7 @@ interface SearchableInputProps<T> {
   disabled?: boolean;
 }
 
-export function SearchableInput<T extends { id: string | number }>({
+export function SearchableInput<T>({
   placeholder,
   search,
   renderItem,

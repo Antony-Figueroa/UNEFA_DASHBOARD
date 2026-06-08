@@ -428,7 +428,7 @@ const TemplateManager = () => {
             Cancelar
           </Button>
           <Button
-            variant="danger"
+            variant="error"
             onClick={() => confirmDelete !== null && handleDelete(confirmDelete)}
           >
             Eliminar

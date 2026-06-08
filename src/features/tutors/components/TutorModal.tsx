@@ -15,6 +15,7 @@ import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { getCareers } from "../../careers/services/careersService";
 import { Career } from "../../careers/types";
+import { unwrapData } from "../../../api/crudServiceFactory";
 import CareerModal from "../../careers/components/CareerModal";
 import InternshipTypeModal from "../../internship-types/components/InternshipTypeModal";
 import { getInternshipTypes, mapToOptions } from "../../internship-types/services/internshipTypesService";
@@ -753,7 +754,7 @@ export default function TutorModal({
       setCareersLoading(true);
       try {
         const data = await getCareers();
-        setCareers(data.filter(c => c.status));
+        setCareers(unwrapData(data).filter(c => c.status));
       } catch (error) {
         console.error("Error fetching careers:", error);
       } finally {
@@ -1246,7 +1247,7 @@ export default function TutorModal({
       onSave={async () => {
         // Recargar carreras después de crear una nueva
         const allCareers = await getCareers();
-        setCareers(allCareers.filter(c => c.status));
+        setCareers(unwrapData(allCareers).filter(c => c.status));
         setIsCareerModalOpen(false);
         setEditingCareer(null);
       }}

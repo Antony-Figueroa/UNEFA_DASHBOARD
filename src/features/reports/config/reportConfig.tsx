@@ -104,7 +104,7 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
     type: "pdf",
     loadData: async () => {
       const response = await getStudents();
-      return { data: response.data.filter((s: any) => s.status === true) };
+      return { data: unwrapData(response.data).filter((s: any) => s.status === true) };
     },
     pdfTemplate: (data) => <StudentPDF data={data as any[]} />,
     columns: [
@@ -165,7 +165,7 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
     type: "pdf",
     loadData: async () => {
       const data = await getInstitutions();
-      return { data: data.filter((i: any) => i.status === true) };
+      return { data: unwrapData(data).filter((i: any) => i.status === true) };
     },
     pdfTemplate: (data) => <InstitutionPDF data={data as any[]} />,
     columns: [

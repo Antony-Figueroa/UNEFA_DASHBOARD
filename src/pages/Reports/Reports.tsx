@@ -361,7 +361,7 @@ export default function ReportsPage() {
             data={tableData}
             searchTerm={tableSearchTerm}
             onSearchChange={setTableSearchTerm}
-            fileName={`${reportType}_${new Date().toISOString().split('T')[0]}`}
+            fileName={`${activeReportId}_${new Date().toISOString().split('T')[0]}`}
             exportToExcel={exportTableToExcel}
             columns={currentConfig.columns as any[]}
             pagination={paginationInfo ? {
@@ -380,7 +380,7 @@ export default function ReportsPage() {
             title={currentConfig.title}
             data={pdfData as any[]}
             template={pdfTemplate as any}
-            fileName={`${reportType}_${new Date().toISOString().split('T')[0]}.pdf`}
+            fileName={`${activeReportId}_${new Date().toISOString().split('T')[0]}.pdf`}
             searchTerm={pdfSearchTerm}
             onSearchChange={setPdfSearchTerm}
           />

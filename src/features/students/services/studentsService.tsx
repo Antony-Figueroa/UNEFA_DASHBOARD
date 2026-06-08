@@ -8,6 +8,7 @@
 
 import { Student, CreateStudentPayload, UpdateStudentPayload } from "../types";
 import apiClient from "../../../api/apiClient";
+import { unwrapData } from "../../api/crudServiceFactory";
 import { createCrudService } from "../../../api/crudServiceFactory";
 
 const API_URL = "/students";
@@ -166,8 +167,9 @@ export const changeStudentRegistration = async (
 
 // Exportaciones individuales para mantener compatibilidad
 export const getStudents = async () => {
-  const data = await studentService.getAll();
-  return { data, total: data.length, page: 1, limit: data.length, totalPages: 1 };
+  const result = await studentService.getAll();
+  const data = unwrapData(result);
+  return { data, total: data.length, page: 1, limit: data.length, totalPages: 1 }
 };
 export const createStudent = studentService.create;
 export const updateStudent = (id: string, payload: UpdateStudentPayload) => studentService.update({ ...payload, studentId: id } as any);

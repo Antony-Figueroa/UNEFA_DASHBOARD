@@ -29,6 +29,8 @@ export interface AuthUser {
   phoneNumber?: string;
   /** Rol asignado en el sistema (1: Admin, 2: Asistente, etc.) */
   role: number;
+  /** Preferencia de idioma (opcional) */
+  locale?: string;
 }
 
 /**

@@ -1,4 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../../context/auth";
 import Badge from "../ui/badge/Badge";
 import { useModal } from "../../hooks/useModal";
@@ -8,21 +10,30 @@ import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import * as authService from "../../features/auth/services/authService";
 import { useToast } from "../../context/toast";
+import { profileSchema, type ProfileFormData } from "../../features/auth/constants/profileValidation";
 import UnifiedDialog from "../ui/dialog/UnifiedDialog";
 
 export default function UserMetaCard() {
   const { user, checkAuth } = useAuth();
   const { addToast } = useToast();
   const { isOpen, openModal, closeModal } = useModal();
-  const [loading, setLoading] = useState(false);
-  
-  const [formData, setFormData] = useState({
-    name: "",
-    secondName: "",
-    surname: "",
-    secondSurname: "",
-    email: "",
-    phoneNumber: ""
+  const [saving, setSaving] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isDirty },
+  } = useForm<ProfileFormData>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      name: "",
+      secondName: "",
+      surname: "",
+      secondSurname: "",
+      email: "",
+      phoneNumber: "",
+    },
   });
 
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -33,40 +44,21 @@ export default function UserMetaCard() {
     variant: "info" | "warning" | "error" | "success" | "confirm";
   } | null>(null);
 
-  // Precargar datos
   useEffect(() => {
-    if (user && isOpen) {
-      setFormData({
+    if (isOpen && user) {
+      reset({
         name: user.name || "",
         secondName: user.secondName || "",
         surname: user.surname || "",
         secondSurname: user.secondSurname || "",
         email: user.email || "",
-        phoneNumber: user.phoneNumber || ""
+        phoneNumber: user.phoneNumber || "",
       });
     }
-  }, [user, isOpen]);
-
-  // Verificar si hay cambios
-  const hasChanges = useMemo(() => {
-    if (!user) return false;
-    return (
-      formData.name !== (user.name || "") ||
-      formData.secondName !== (user.secondName || "") ||
-      formData.surname !== (user.surname || "") ||
-      formData.secondSurname !== (user.secondSurname || "") ||
-      formData.email !== (user.email || "") ||
-      formData.phoneNumber !== (user.phoneNumber || "")
-    );
-  }, [formData, user]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  }, [isOpen, user, reset]);
 
   const handleCloseAttempt = () => {
-    if (hasChanges) {
+    if (isDirty) {
       setConfirmDialog({
         isOpen: true,
         title: "Cambios sin guardar",
@@ -74,116 +66,62 @@ export default function UserMetaCard() {
         variant: "warning",
         onConfirm: () => {
           setConfirmDialog(null);
+          reset();
           closeModal();
-        }
+        },
       });
     } else {
       closeModal();
     }
   };
 
-  const handleSaveAttempt = () => {
-    const nameTrimmed = formData.name.trim();
-    const surnameTrimmed = formData.surname.trim();
-    const emailTrimmed = formData.email.trim();
-    const phoneTrimmed = formData.phoneNumber.trim();
-
-    // 1. Nombre completo (requerido, mínimo 3 caracteres)
-    if (nameTrimmed.length < 3) {
-      addToast({
-        variant: "error",
-        title: "Error de Validación",
-        message: "El nombre debe tener al menos 3 caracteres."
-      });
-      return;
-    }
-
-    if (!surnameTrimmed) {
-      addToast({
-        variant: "error",
-        title: "Error de Validación",
-        message: "Por favor, ingrese su apellido."
-      });
-      return;
-    }
-
-    // 2. Email (formato válido, requerido)
-    if (!emailTrimmed) {
-      addToast({
-        variant: "error",
-        title: "Error de Validación",
-        message: "Por favor, ingrese su correo electrónico."
-      });
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(emailTrimmed)) {
-      addToast({
-        variant: "error",
-        title: "Error de Validación",
-        message: "Ingrese un correo electrónico con formato válido."
-      });
-      return;
-    }
-
-    // 3. Teléfono (formato válido según región - Venezuela)
-    if (phoneTrimmed) {
-      const phoneRegex = /^04(12|14|16|24|26)\d{7}$/;
-      if (!phoneRegex.test(phoneTrimmed)) {
-        addToast({
-          variant: "error",
-          title: "Error de Validación",
-          message: "Ingrese un número de teléfono válido (ej: 04121234567)."
-        });
-        return;
-      }
-    }
-
+  const onSubmit = async (data: ProfileFormData) => {
     setConfirmDialog({
       isOpen: true,
       title: "Confirmar cambios",
       message: "¿Está seguro que desea guardar los cambios?",
       variant: "confirm",
-      onConfirm: () => {
+      onConfirm: async () => {
         setConfirmDialog(null);
-        executeSave();
-      }
+        setSaving(true);
+        try {
+          const result = await authService.updateProfile({
+            name: data.name.trim(),
+            surname: data.surname.trim(),
+            email: data.email.trim(),
+            secondName: data.secondName || undefined,
+            secondSurname: data.secondSurname || undefined,
+            phoneNumber: data.phoneNumber || undefined,
+          });
+
+          if (result.success) {
+            await checkAuth();
+            addToast({ variant: "success", title: "Perfil Actualizado", message: "Su información personal ha sido actualizada correctamente." });
+            closeModal();
+          } else {
+            addToast({ variant: "error", title: "Error de Actualización", message: result.message || "No se pudo actualizar el perfil." });
+          }
+        } catch {
+          addToast({ variant: "error", title: "Error de Conexión", message: "No se pudo establecer conexión con el servidor." });
+        } finally {
+          setSaving(false);
+        }
+      },
     });
   };
 
-  const executeSave = async () => {
-    setLoading(true);
-    try {
-      const result = await authService.updateProfile({
-        ...formData,
-        name: formData.name.trim(),
-        surname: formData.surname.trim(),
-        email: formData.email.trim(),
-      });
-
-      if (result.success) {
-        await checkAuth();
-        addToast({ variant: "success", title: "Perfil Actualizado", message: "Su información personal ha sido actualizada correctamente." });
-        closeModal();
-      } else {
-        addToast({ variant: "error", title: "Error de Actualización", message: result.message || "No se pudo actualizar el perfil." });
-      }
-    } catch {
-      addToast({ variant: "error", title: "Error de Conexión", message: "No se pudo establecer conexión con el servidor." });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const initials = user
+    ? `${user.name.charAt(0)}${user.surname.charAt(0)}`.toUpperCase()
+    : "??";
 
   return (
     <div className="p-5 border border-border-light rounded-2xl dark:border-white/10 lg:p-6 bg-white dark:bg-bg-dark">
       <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
-          <div className="flex items-center justify-center w-24 h-24 overflow-hidden border border-border-light rounded-full bg-bg-secondary dark:bg-white/5 dark:border-white/10">
-            <svg className="w-14 h-14 text-text-secondary dark:text-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
+          <div className="flex items-center justify-center w-24 h-24 overflow-hidden border border-border-light rounded-full bg-brand-50 dark:bg-brand-500/10 dark:border-white/10">
+            <span className="text-2xl font-bold text-brand-600 dark:text-brand-400">
+              {initials}
+            </span>
           </div>
 
           <div className="flex-1 text-center xl:text-left">
@@ -220,44 +158,46 @@ export default function UserMetaCard() {
             <p className="text-sm text-text-secondary dark:text-text-tertiary">Modifique sus datos personales a continuación.</p>
           </div>
         </ModalHeader>
-        
-        <ModalBody>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="name">Primer Nombre <span className="text-error">*</span></Label>
-              <Input id="name" name="name" value={formData.name} onChange={handleInputChange} placeholder="Su primer nombre" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="secondName">Segundo Nombre</Label>
-              <Input id="secondName" name="secondName" value={formData.secondName} onChange={handleInputChange} placeholder="Opcional" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="surname">Primer Apellido <span className="text-error">*</span></Label>
-              <Input id="surname" name="surname" value={formData.surname} onChange={handleInputChange} placeholder="Su primer apellido" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="secondSurname">Segundo Apellido</Label>
-              <Input id="secondSurname" name="secondSurname" value={formData.secondSurname} onChange={handleInputChange} placeholder="Opcional" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Correo Electrónico <span className="text-error">*</span></Label>
-              <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="Correo" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phoneNumber">Teléfono</Label>
-              <Input id="phoneNumber" name="phoneNumber" type="tel" value={formData.phoneNumber} onChange={handleInputChange} placeholder="Su número de teléfono" />
-            </div>
-          </div>
-        </ModalBody>
 
-        <ModalFooter>
-          <div className="flex w-full justify-end gap-3">
-            <Button variant="outline" onClick={handleCloseAttempt} disabled={loading} className="px-6">Cancelar</Button>
-            <Button onClick={handleSaveAttempt} disabled={loading} className="px-6 min-w-30">
-              {loading ? "Guardando..." : "Guardar Cambios"}
-            </Button>
-          </div>
-        </ModalFooter>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <ModalBody>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="name">Primer Nombre <span className="text-error">*</span></Label>
+                <Input id="name" {...register("name")} error={!!errors.name} hint={errors.name?.message} placeholder="Su primer nombre" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="secondName">Segundo Nombre</Label>
+                <Input id="secondName" {...register("secondName")} placeholder="Opcional" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="surname">Primer Apellido <span className="text-error">*</span></Label>
+                <Input id="surname" {...register("surname")} error={!!errors.surname} hint={errors.surname?.message} placeholder="Su primer apellido" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="secondSurname">Segundo Apellido</Label>
+                <Input id="secondSurname" {...register("secondSurname")} placeholder="Opcional" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Correo Electrónico <span className="text-error">*</span></Label>
+                <Input id="email" type="email" {...register("email")} error={!!errors.email} hint={errors.email?.message} placeholder="Correo" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phoneNumber">Teléfono</Label>
+                <Input id="phoneNumber" type="tel" {...register("phoneNumber")} error={!!errors.phoneNumber} hint={errors.phoneNumber?.message} placeholder="Su número de teléfono" />
+              </div>
+            </div>
+          </ModalBody>
+
+          <ModalFooter>
+            <div className="flex w-full justify-end gap-3">
+              <Button variant="outline" onClick={handleCloseAttempt} disabled={saving} className="px-6">Cancelar</Button>
+              <Button type="submit" disabled={saving || !isDirty} className="px-6 min-w-30">
+                {saving ? "Guardando..." : "Guardar Cambios"}
+              </Button>
+            </div>
+          </ModalFooter>
+        </form>
       </Modal>
 
       {confirmDialog && (

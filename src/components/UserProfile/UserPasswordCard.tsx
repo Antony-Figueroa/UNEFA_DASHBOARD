@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../../context/auth";
 import { useModal } from "../../hooks/useModal";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../ui/modal";
@@ -8,6 +10,7 @@ import Label from "../form/Label";
 import * as authService from "../../features/auth/services/authService";
 import { securityQuestionsService, PresetQuestion } from "../../features/security-questions/services/securityQuestionsService";
 import { useToast } from "../../context/toast";
+import { changePasswordSchema, type ChangePasswordFormData } from "../../features/auth/constants/firstLoginValidation";
 import UnifiedDialog from "../ui/dialog/UnifiedDialog";
 import { EyeClosedIcon, EyeIcon } from "lucide-react";
 
@@ -27,11 +30,21 @@ export default function UserPasswordCard() {
   const [questionsLoading, setQuestionsLoading] = useState(false);
   const [hasSecurityQuestions, setHasSecurityQuestions] = useState(false);
 
-  const [formData, setFormData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: ""
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<ChangePasswordFormData>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
   });
+
   const [showPasswords, setShowPasswords] = useState({
     current: false,
     new: false,
@@ -53,6 +66,9 @@ export default function UserPasswordCard() {
     variant: "info" | "warning" | "error" | "success" | "confirm";
   } | null>(null);
 
+  const newPasswordValue = watch("newPassword");
+  const confirmPasswordValue = watch("confirmPassword");
+
   useEffect(() => {
     const fetchSecurityStatus = async () => {
       try {
@@ -66,42 +82,22 @@ export default function UserPasswordCard() {
   }, []);
 
   const passwordRequirements = [
-    { label: "12+ caracteres", met: formData.newPassword.length >= 12 },
-    { label: "Mayúscula", met: /[A-Z]/.test(formData.newPassword) },
-    { label: "Minúscula", met: /[a-z]/.test(formData.newPassword) },
-    { label: "Número", met: /[0-9]/.test(formData.newPassword) },
-    { label: "Especial", met: /[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(formData.newPassword) },
+    { label: "12+ caracteres", met: newPasswordValue.length >= 12 },
+    { label: "Mayúscula", met: /[A-Z]/.test(newPasswordValue) },
+    { label: "Minúscula", met: /[a-z]/.test(newPasswordValue) },
+    { label: "Número", met: /[0-9]/.test(newPasswordValue) },
+    { label: "Especial", met: /[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(newPasswordValue) },
   ];
 
   const strength = passwordRequirements.filter(r => r.met).length;
   const allRequirementsMet = strength === 5;
-  const passwordsMatch = formData.newPassword === formData.confirmPassword && formData.confirmPassword.length > 0;
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  const passwordsMatch = newPasswordValue === confirmPasswordValue && confirmPasswordValue.length > 0;
 
   const togglePassword = (field: "current" | "new" | "confirm") => {
     setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
   };
 
-  const handleSaveAttempt = () => {
-    if (!formData.currentPassword) {
-      addToast({ variant: "error", title: "Error", message: "Ingrese su contraseña actual" });
-      return;
-    }
-
-    if (!allRequirementsMet) {
-      addToast({ variant: "error", title: "Contraseña débil", message: "La nueva contraseña no cumple los requisitos" });
-      return;
-    }
-
-    if (!passwordsMatch) {
-      addToast({ variant: "error", title: "Error", message: "Las contraseñas no coinciden" });
-      return;
-    }
-
+  const onSubmit = (data: ChangePasswordFormData) => {
     setConfirmDialog({
       isOpen: true,
       title: "Confirmar cambio",
@@ -109,20 +105,20 @@ export default function UserPasswordCard() {
       variant: "warning",
       onConfirm: () => {
         setConfirmDialog(null);
-        executeChange();
+        executeChange(data);
       }
     });
   };
 
-  const executeChange = async () => {
+  const executeChange = async (data: ChangePasswordFormData) => {
     setLoading(true);
     try {
-      const result = await authService.changePassword(user!.id, formData.newPassword, undefined, undefined, formData.currentPassword);
+      const result = await authService.changePassword(user!.id, data.newPassword, undefined, undefined, data.currentPassword);
 
       if (result.success) {
         addToast({ variant: "success", title: "Contraseña actualizada", message: "Iniciando sesión de nuevo..." });
         closeModal();
-        setFormData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+        reset();
         setTimeout(() => { window.location.href = "/signin"; }, 2000);
       } else {
         addToast({ variant: "error", title: "Error", message: result.message || "No se pudo cambiar" });
@@ -135,7 +131,7 @@ export default function UserPasswordCard() {
   };
 
   const handleClose = () => {
-    setFormData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    reset();
     closeModal();
   };
 
@@ -322,115 +318,117 @@ export default function UserPasswordCard() {
           Nueva Contraseña
         </ModalHeader>
         
-        <ModalBody>
-          <div className="space-y-5">
-            <div>
-              <Label htmlFor="currentPassword" className="text-xs text-text-secondary">Actual</Label>
-              <div className="relative mt-1">
-                <Input 
-                  id="currentPassword" 
-                  name="currentPassword" 
-                  type={showPasswords.current ? "text" : "password"}
-                  value={formData.currentPassword} 
-                  onChange={handleInputChange} 
-                  placeholder="••••••••••••"
-                  className="pr-10"
-                  isPassword={true}
-                />
-                <button
-                  type="button"
-                  onClick={() => togglePassword("current")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
-                >
-                  {showPasswords.current ? <EyeIcon className="h-4 w-4" /> : <EyeClosedIcon className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="newPassword" className="text-xs text-text-secondary">Nueva</Label>
-              <div className="relative mt-1">
-                <Input 
-                  id="newPassword" 
-                  name="newPassword" 
-                  type={showPasswords.new ? "text" : "password"}
-                  value={formData.newPassword} 
-                  onChange={handleInputChange} 
-                  placeholder="••••••••••••"
-                  className="pr-10"
-                  isPassword={true}
-                />
-                <button
-                  type="button"
-                  onClick={() => togglePassword("new")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
-                >
-                  {showPasswords.new ? <EyeIcon className="h-4 w-4" /> : <EyeClosedIcon className="h-4 w-4" />}
-                </button>
-              </div>
-              
-              {formData.newPassword && (
-                <div className="mt-3 p-3 rounded-lg bg-gray-50 dark:bg-white/5">
-                  <div className="flex gap-1 mb-2">
-                    {[1,2,3,4,5].map(level => (
-                      <div 
-                        key={level} 
-                        className={`h-1 flex-1 rounded-full transition-colors ${
-                          level <= strength 
-                            ? strength <= 2 ? "bg-red-400" : strength <= 4 ? "bg-amber-400" : "bg-green-400"
-                            : "bg-gray-200 dark:bg-gray-700"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1">
-                    {passwordRequirements.map((req, idx) => (
-                      <span key={idx} className={`text-xs ${req.met ? "text-green-600" : "text-gray-400"}`}>
-                        {req.met ? "✓" : "○"} {req.label}
-                      </span>
-                    ))}
-                  </div>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <ModalBody>
+            <div className="space-y-5">
+              <div>
+                <Label htmlFor="currentPassword" className="text-xs text-text-secondary">Actual</Label>
+                <div className="relative mt-1">
+                  <Input 
+                    id="currentPassword"
+                    type={showPasswords.current ? "text" : "password"}
+                    {...register("currentPassword")}
+                    error={!!errors.currentPassword}
+                    hint={errors.currentPassword?.message}
+                    placeholder="••••••••••••"
+                    className="pr-10"
+                    isPassword={true}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => togglePassword("current")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
+                  >
+                    {showPasswords.current ? <EyeIcon className="h-4 w-4" /> : <EyeClosedIcon className="h-4 w-4" />}
+                  </button>
                 </div>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="confirmPassword" className="text-xs text-text-secondary">Confirmar</Label>
-              <div className="relative mt-1">
-                <Input 
-                  id="confirmPassword" 
-                  name="confirmPassword" 
-                  type={showPasswords.confirm ? "text" : "password"}
-                  value={formData.confirmPassword} 
-                  onChange={handleInputChange} 
-                  placeholder="••••••••••••"
-                  className="pr-10"
-                  isPassword={true}
-                />
-                <button
-                  type="button"
-                  onClick={() => togglePassword("confirm")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
-                >
-                  {showPasswords.confirm ? <EyeIcon className="h-4 w-4" /> : <EyeClosedIcon className="h-4 w-4" />}
-                </button>
               </div>
-              {formData.confirmPassword && !passwordsMatch && (
-                <p className="mt-1 text-xs text-error">No coinciden</p>
-              )}
-            </div>
-          </div>
-        </ModalBody>
 
-        <ModalFooter className="pt-2!">
-          <Button variant="outline" onClick={handleClose} disabled={loading}>Cancelar</Button>
-          <Button 
-            onClick={handleSaveAttempt} 
-            disabled={loading || !allRequirementsMet || !passwordsMatch || !formData.currentPassword}
-          >
-            {loading ? "Guardando..." : "Guardar"}
-          </Button>
-        </ModalFooter>
+              <div>
+                <Label htmlFor="newPassword" className="text-xs text-text-secondary">Nueva</Label>
+                <div className="relative mt-1">
+                  <Input 
+                    id="newPassword"
+                    type={showPasswords.new ? "text" : "password"}
+                    {...register("newPassword")}
+                    error={!!errors.newPassword}
+                    hint={errors.newPassword?.message}
+                    placeholder="••••••••••••"
+                    className="pr-10"
+                    isPassword={true}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => togglePassword("new")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
+                  >
+                    {showPasswords.new ? <EyeIcon className="h-4 w-4" /> : <EyeClosedIcon className="h-4 w-4" />}
+                  </button>
+                </div>
+                
+                {newPasswordValue && (
+                  <div className="mt-3 p-3 rounded-lg bg-gray-50 dark:bg-white/5">
+                    <div className="flex gap-1 mb-2">
+                      {[1,2,3,4,5].map(level => (
+                        <div 
+                          key={level} 
+                          className={`h-1 flex-1 rounded-full transition-colors ${
+                            level <= strength 
+                              ? strength <= 2 ? "bg-red-400" : strength <= 4 ? "bg-amber-400" : "bg-green-400"
+                              : "bg-gray-200 dark:bg-gray-700"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                      {passwordRequirements.map((req, idx) => (
+                        <span key={idx} className={`text-xs ${req.met ? "text-green-600" : "text-gray-400"}`}>
+                          {req.met ? "✓" : "○"} {req.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="confirmPassword" className="text-xs text-text-secondary">Confirmar</Label>
+                <div className="relative mt-1">
+                  <Input 
+                    id="confirmPassword"
+                    type={showPasswords.confirm ? "text" : "password"}
+                    {...register("confirmPassword")}
+                    error={!!errors.confirmPassword}
+                    hint={errors.confirmPassword?.message}
+                    placeholder="••••••••••••"
+                    className="pr-10"
+                    isPassword={true}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => togglePassword("confirm")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
+                  >
+                    {showPasswords.confirm ? <EyeIcon className="h-4 w-4" /> : <EyeClosedIcon className="h-4 w-4" />}
+                  </button>
+                </div>
+                {confirmPasswordValue && !passwordsMatch && (
+                  <p className="mt-1 text-xs text-error">No coinciden</p>
+                )}
+              </div>
+            </div>
+          </ModalBody>
+
+          <ModalFooter className="pt-2!">
+            <Button variant="outline" onClick={handleClose} disabled={loading}>Cancelar</Button>
+            <Button 
+              type="submit"
+              disabled={loading || !allRequirementsMet || !passwordsMatch}
+            >
+              {loading ? "Guardando..." : "Guardar"}
+            </Button>
+          </ModalFooter>
+        </form>
       </Modal>
 
       <Modal isOpen={isQuestionsOpen} onClose={closeQuestionsModal} className="max-w-xl">

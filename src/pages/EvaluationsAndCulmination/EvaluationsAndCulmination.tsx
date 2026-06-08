@@ -175,7 +175,7 @@ export default function EvaluationsAndCulminationPage() {
                 </TableCell>
                 <TableCell className="text-center">
                   <span className="text-lg font-bold text-brand-500">
-                    {practice.finalGrade?.toFixed(2) ?? '-'}
+                    {practice.finalGrade?.toFixed(1) ?? '-'}
                   </span>
                 </TableCell>
                 <TableCell className="text-center">
@@ -261,7 +261,7 @@ export default function EvaluationsAndCulminationPage() {
                   <TableCell className="text-text-secondary">{practice.practiceTypeName}</TableCell>
                   <TableCell className="text-center">
                     <span className="text-lg font-bold text-brand-500">
-                      {practice.finalGrade?.toFixed(2) ?? '-'}
+                      {practice.finalGrade?.toFixed(1) ?? '-'}
                     </span>
                   </TableCell>
                   <TableCell className="text-center">

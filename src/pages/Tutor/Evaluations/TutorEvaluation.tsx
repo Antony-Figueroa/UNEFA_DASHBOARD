@@ -123,7 +123,7 @@ export default function TutorEvaluation() {
     const sum = scores.reduce((a, b) => a + b, 0);
     const rawAvg = sum / scores.length;
     const scaled = (rawAvg / scoreRange.max) * config.score.displayScale;
-    return scaled.toFixed(2);
+    return scaled.toFixed(1);
   };
 
   const handleSubmit = async () => {

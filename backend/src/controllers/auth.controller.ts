@@ -449,3 +449,129 @@ export const getAllAuthLogs = async (req: AuthRequest, res: Response) => {
     handleAuthError(res, error);
   }
 };
+
+export const uploadAvatar = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, message: 'Sesión no válida' });
+
+    const { fileName, contentType } = req.body;
+    if (!fileName || !contentType) return res.status(400).json({ success: false, message: 'fileName y contentType son requeridos' });
+
+    const result = await authService.uploadAvatar(userId, fileName, contentType);
+    res.json(result);
+  } catch (error) {
+    console.error('[Auth] uploadAvatar error:', error);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+};
+
+export const deleteAvatar = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, message: 'Sesión no válida' });
+
+    const result = await authService.deleteAvatar(userId);
+    res.json(result);
+  } catch (error) {
+    console.error('[Auth] deleteAvatar error:', error);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+};
+
+export const getActiveSessions = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, message: 'Sesión no válida' });
+
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+    const result = await authService.getActiveSessions(userId);
+    res.json(result);
+  } catch (error) {
+    console.error('[Auth] getActiveSessions error:', error);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+};
+
+export const terminateSession = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, message: 'Sesión no válida' });
+
+    const sessionId = parseInt(req.params.id);
+    if (!sessionId) return res.status(400).json({ success: false, message: 'ID de sesión requerido' });
+
+    const result = await authService.terminateSession(userId, sessionId);
+    res.json(result);
+  } catch (error) {
+    console.error('[Auth] terminateSession error:', error);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+};
+
+export const getNotificationPrefs = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, message: 'Sesión no válida' });
+
+    const result = await authService.getNotificationPrefs(userId);
+    res.json(result);
+  } catch (error) {
+    console.error('[Auth] getNotificationPrefs error:', error);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+};
+
+export const saveNotificationPrefs = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, message: 'Sesión no válida' });
+
+    const { preferences } = req.body;
+    if (!Array.isArray(preferences)) return res.status(400).json({ success: false, message: 'preferences debe ser un array' });
+
+    const result = await authService.saveNotificationPrefs(userId, preferences);
+    res.json(result);
+  } catch (error) {
+    console.error('[Auth] saveNotificationPrefs error:', error);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+};
+
+export const deactivateAccount = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, message: 'Sesión no válida' });
+
+    const { currentPassword, reason } = req.body;
+    if (!currentPassword) return res.status(400).json({ success: false, message: 'Contraseña actual requerida' });
+
+    const isValid = await authService.verifyCurrentPassword(userId, currentPassword);
+    if (!isValid) return res.status(401).json({ success: false, message: 'La contraseña actual no es correcta' });
+
+    const result = await authService.deactivateAccount(userId, reason || '');
+    if (!result.success) return res.status(500).json(result);
+
+    res.clearCookie('auth_token');
+    res.json(result);
+  } catch (error) {
+    console.error('[Auth] deactivateAccount error:', error);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+};
+
+export const updateLocale = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ success: false, message: 'Sesión no válida' });
+
+    const { locale } = req.body;
+    if (!locale || !['es', 'en'].includes(locale)) return res.status(400).json({ success: false, message: 'Locale debe ser "es" o "en"' });
+
+    const result = await authService.updateLocale(userId, locale);
+    res.json(result);
+  } catch (error) {
+    console.error('[Auth] updateLocale error:', error);
+    res.status(500).json({ success: false, message: 'Error del servidor' });
+  }
+};

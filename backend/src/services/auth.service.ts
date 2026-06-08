@@ -1107,3 +1107,190 @@ export const verifySecurityAnswersAndReset = async (
   });
 };
 
+// ─── Avatar Storage ───
+
+export const uploadAvatar = async (userId: number, fileName: string, contentType: string) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const uuid = crypto.randomUUID();
+    const filePath = `avatars/${userId}/${uuid}`;
+
+    const { data, error } = await supabase.storage
+      .from('avatars')
+      .createSignedUploadUrl(filePath);
+
+    if (error) {
+      console.error('[Auth] Error creating signed upload URL:', error);
+      return { success: false, message: 'Error al generar URL de carga' };
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    return { success: true, uploadUrl: data.signedUrl, publicUrl: publicUrlData.publicUrl };
+  });
+};
+
+export const deleteAvatar = async (userId: number) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { data: files, error: listError } = await supabase.storage
+      .from('avatars')
+      .list(`avatars/${userId}`);
+
+    if (listError) {
+      console.error('[Auth] Error listing avatar files:', listError);
+      return { success: false, message: 'Error al listar archivos de avatar' };
+    }
+
+    if (!files || files.length === 0) {
+      return { success: true, message: 'No hay avatar para eliminar' };
+    }
+
+    const filePaths = files.map((f: any) => `avatars/${userId}/${f.name}`);
+
+    const { error: removeError } = await supabase.storage
+      .from('avatars')
+      .remove(filePaths);
+
+    if (removeError) {
+      console.error('[Auth] Error deleting avatar files:', removeError);
+      return { success: false, message: 'Error al eliminar avatar' };
+    }
+
+    return { success: true, message: 'Avatar eliminado correctamente' };
+  });
+};
+
+// ─── Session Management ───
+
+export const getActiveSessions = async (userId: number) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { data, error } = await supabase
+      .from('t_user_sessions')
+      .select('*')
+      .eq('USER_ID', userId)
+      .eq('STATUS', 1)
+      .order('LAST_ACTIVITY', { ascending: false });
+
+    if (error) throw error;
+
+    const sessions = (data || []).map((s: any) => {
+      const deviceInfo = s.DEVICE_INFO || '';
+      let deviceName = 'Desconocido';
+      if (deviceInfo) {
+        const parts = deviceInfo.split('-');
+        deviceName = parts.map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join(' - ');
+      }
+      return {
+        id: s.ID,
+        deviceName,
+        ipAddress: s.IP_ADDRESS || '',
+        lastActivity: s.LAST_ACTIVITY,
+        isCurrent: false,
+        createdAt: s.CREATED_AT
+      };
+    });
+
+    return { success: true, data: sessions };
+  });
+};
+
+export const terminateSession = async (userId: number, sessionId: number) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { error } = await supabase
+      .from('t_user_sessions')
+      .update({ STATUS: 0 })
+      .eq('ID', sessionId)
+      .eq('USER_ID', userId);
+
+    if (error) throw error;
+
+    return { success: true, message: 'Sesión cerrada correctamente' };
+  });
+};
+
+// ─── Notification Preferences ───
+
+const DEFAULT_NOTIF_TYPES = ['LOGIN_ALERT', 'PASSWORD_CHANGE', 'NEW_DEVICE', 'ACCOUNT_UPDATE', 'GENERAL'];
+const DEFAULT_NOTIF_CHANNELS = ['email', 'in_app'];
+
+export const getNotificationPrefs = async (userId: number) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { data, error } = await supabase
+      .from('t_user_notification_prefs')
+      .select('TYPE, CHANNEL, ENABLED')
+      .eq('USER_ID', userId);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      const defaults: { type: string; channel: string; enabled: boolean }[] = [];
+      for (const type of DEFAULT_NOTIF_TYPES) {
+        for (const channel of DEFAULT_NOTIF_CHANNELS) {
+          defaults.push({ type, channel, enabled: true });
+        }
+      }
+      return { success: true, data: defaults };
+    }
+
+    const prefs = data.map((p: any) => ({
+      type: p.TYPE,
+      channel: p.CHANNEL,
+      enabled: p.ENABLED
+    }));
+
+    return { success: true, data: prefs };
+  });
+};
+
+export const saveNotificationPrefs = async (userId: number, preferences: Array<{ type: string; channel: string; enabled: boolean }>) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const rows = preferences.map(p => ({
+      USER_ID: userId,
+      TYPE: p.type,
+      CHANNEL: p.channel,
+      ENABLED: p.enabled
+    }));
+
+    const { error } = await supabase
+      .from('t_user_notification_prefs')
+      .upsert(rows, { onConflict: 'USER_ID, TYPE, CHANNEL' });
+
+    if (error) throw error;
+
+    return { success: true, message: 'Preferencias guardadas correctamente' };
+  });
+};
+
+// ─── Account Deactivation ───
+
+export const deactivateAccount = async (userId: number, reason: string) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { error } = await supabase
+      .from('t_user')
+      .update({ STATUS: 0 })
+      .eq('USER_ID', userId);
+
+    if (error) throw error;
+
+    await logAuthAction(userId, '', 'ACCOUNT_DEACTIVATED', '', '', reason || 'Desactivación voluntaria');
+
+    return { success: true, message: 'Cuenta desactivada correctamente' };
+  });
+};
+
+// ─── Locale ───
+
+export const updateLocale = async (userId: number, locale: string) => {
+  return await dbManager.withRetry(async (supabase) => {
+    const { error } = await supabase
+      .from('t_user')
+      .update({ LOCALE: locale })
+      .eq('USER_ID', userId);
+
+    if (error) throw error;
+
+    return { success: true, locale };
+  });
+};
+

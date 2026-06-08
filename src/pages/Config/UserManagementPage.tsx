@@ -55,7 +55,7 @@ const UserManagementPage = () => {
   const [confirmation, setConfirmation] = useState<{
     isOpen: boolean;
     title: string;
-    message: string;
+    message: string | React.ReactNode;
     onConfirm: () => void;
     confirmText: string;
     variant: DialogVariant;

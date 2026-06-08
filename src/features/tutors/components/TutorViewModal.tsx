@@ -11,6 +11,7 @@ import AsyncButton from "../../../components/ui/button/AsyncButton";
 import Badge from "../../../components/ui/badge/Badge";
 import { TutorRowData } from "../types";
 import { getCareers } from "../../careers/services/careersService";
+import { unwrapData } from "../../../api/crudServiceFactory";
 import { Career } from "../../careers/types";
 import { SingleReportModal } from "../../../components/ui/pdf/SingleReportModal";
 import { TutorIndividualPDF, TutorCertificatePDF } from "../../../components/ui/pdf/templates/individual";
@@ -74,7 +75,7 @@ export default function TutorViewModal({
 
     useEffect(() => {
         if (isOpen) {
-            getCareers().then(setCareers).catch(console.error);
+            getCareers().then(data => setCareers(unwrapData(data))).catch(console.error);
         }
     }, [isOpen]);
 

@@ -501,7 +501,7 @@ export default function InstitutionTable({
             totalPages={totalPages}
             onPageChange={isServerSide ? onPageChange : setLocalPage}
             itemsPerPage={isServerSide ? pagination.limit : itemsPerPage}
-            onItemsPerPageChange={isServerSide ? undefined : setItemsPerPage}
+            onItemsPerPageChange={isServerSide ? undefined : (n: number) => setItemsPerPage(n)}
             totalItems={isServerSide ? pagination.total : filteredData.length}
           />
         </div>

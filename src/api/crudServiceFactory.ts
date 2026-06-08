@@ -43,6 +43,17 @@ export interface PaginatedResponse<TItem> {
 }
 
 /**
+ * Normaliza un resultado que puede ser PaginatedResponse o array plano,
+ * devolviendo siempre un array plano.
+ */
+export function unwrapData<T>(result: T[] | PaginatedResponse<T>): T[] {
+  if (result && typeof result === 'object' && 'data' in result && Array.isArray((result as PaginatedResponse<T>).data)) {
+    return (result as PaginatedResponse<T>).data;
+  }
+  return result as T[];
+}
+
+/**
  * Interfaz resultante de un servicio CRUD generado.
  */
 export interface CrudService<TItem, TCreatePayload, TUpdatePayload> {

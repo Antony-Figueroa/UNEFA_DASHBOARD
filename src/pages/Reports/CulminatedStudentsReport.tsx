@@ -7,6 +7,7 @@ import CulminatedStudentsFilters from "../../features/reports/components/Culmina
 import CulminatedStudentsTable from "../../features/reports/components/CulminatedStudentsTable";
 import { reportsService, CulminatedStudentReportRow } from "../../features/reports/services/reportsService";
 import { getPeriods } from "../../features/periods/services/periodService";
+import { unwrapData } from "../../api/crudServiceFactory";
 import { getCareers } from "../../features/careers/services/careersService";
 import { getInstitutions } from "../../features/institutions/services/institutionsService";
 import toast from "react-hot-toast";
@@ -41,14 +42,14 @@ export default function CulminatedStudentsReportPage() {
       );
 
       setCareers(
-        (careersRes || []).map((c: any) => ({
+        (unwrapData(careersRes) || []).map((c: any) => ({
           value: String(c.careerId),
           label: c.careerName
         }))
       );
 
       setInstitutions(
-        (institutionsRes || []).map((i: any) => ({
+        (unwrapData(institutionsRes) || []).map((i: any) => ({
           value: String(i.institutionId),
           label: i.institutionName
         }))

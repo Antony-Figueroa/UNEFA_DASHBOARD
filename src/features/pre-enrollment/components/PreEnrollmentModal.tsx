@@ -26,6 +26,7 @@ import { getCareers } from "../../careers/services/careersService";
 import { getPreEnrollments, getCompletedPracticeTypes } from "../services/preEnrollmentService";
 import * as enrollmentService from "../../enrollment/services/enrollmentService";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
+import { unwrapData } from "../../../api/crudServiceFactory";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { useLists } from "../../lists/hooks/useLists";
@@ -213,7 +214,7 @@ export default function PreEnrollmentModal({
     const fetchStudents = async () => {
       try {
         const response = await getStudents();
-        const availableStudents = response.data.filter((s: Student) => !s.isInUse && s.status);
+        const availableStudents = unwrapData(response.data).filter((s: Student) => !s.isInUse && s.status);
         setAllStudents(availableStudents);
       } catch (error) {
         console.error("[PreEnrollmentModal] Error al cargar estudiantes:", error);
@@ -355,7 +356,7 @@ const clearStudentFields = useCallback(() => {
         enrollmentService.getEnrollments(),
         getPreEnrollments(),
       ]);
-      const student = studentsResponse.data.find(
+      const student = unwrapData(studentsResponse.data).find(
         (s: Student) => s.identificationPrefix === prefix && s.identificationNumber === number
       );
 
@@ -373,7 +374,7 @@ const clearStudentFields = useCallback(() => {
         return;
       }
 
-      const hasActivePreEnrollment = preEnrollments.some(
+      const hasActivePreEnrollment = unwrapData(preEnrollments).some(
         (p: any) => p.identificationPrefix === prefix && p.identificationNumber === number && p.status
       );
 

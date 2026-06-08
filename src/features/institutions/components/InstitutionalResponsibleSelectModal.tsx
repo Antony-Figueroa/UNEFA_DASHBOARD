@@ -13,6 +13,7 @@ import { Search, UserPlus, Building2, Lock } from "lucide-react";
 import { useToast } from "../../../context/toast";
 import { cn } from "../../../utils/cn";
 import { matchSearch } from "../../../utils/searchNormalizer";
+import { unwrapData } from "../../../api/crudServiceFactory";
 
 interface Props {
   isOpen: boolean;
@@ -39,7 +40,7 @@ export default function InstitutionalResponsibleSelectModal({ isOpen, onClose, o
     setLoading(true);
     try {
       const response = await responsibleService.getAll();
-      setAllResponsibles(response || []);
+      setAllResponsibles(unwrapData(response || []));
     } catch (error) {
       console.error("Error loading responsibles:", error);
       addToast({

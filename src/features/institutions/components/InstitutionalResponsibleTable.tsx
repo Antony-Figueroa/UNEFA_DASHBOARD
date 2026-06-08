@@ -630,10 +630,7 @@ export default function InstitutionalResponsibleTable({
           totalPages={totalPages}
           onPageChange={isServerSide ? onPageChange : setLocalPage}
           itemsPerPage={isServerSide ? pagination.limit : itemsPerPage}
-          onItemsPerPageChange={isServerSide ? undefined : (newItems) => {
-            setItemsPerPage(newItems);
-            setLocalPage(1);
-          }}
+          onItemsPerPageChange={isServerSide ? undefined : (newItems) => { setItemsPerPage(newItems); setLocalPage(1); }}
           totalItems={isServerSide ? pagination.total : filteredData.length}
         />
       )}

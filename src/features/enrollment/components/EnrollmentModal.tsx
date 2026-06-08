@@ -33,6 +33,7 @@ import { generateMatricula } from "../../../utils/matricula";
 import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
 import { List } from "../../lists/types";
 import * as listsService from "../../lists/services/listsService";
+import { unwrapData } from "../../../api/crudServiceFactory";
 import { formatCedulaDisplay, cleanCedula, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
 import { UserCircleIcon, ShieldCheckIcon, DocsIcon, SearchIcon, UsersIcon, PlusIcon } from "../../../icons";
 import { cn } from "../../../utils/cn";
@@ -333,7 +334,7 @@ export default function EnrollmentModal({
         ]);
         
         setPracticeOptions(mapToOptions(practiceData));
-        setCareersState(careerData.filter((c: any) => c.status));
+        setCareersState(unwrapData(careerData).filter((c: any) => c.status));
         
         // Lógica de periodos (Replicada de PreEnrollmentModal)
         const currentPeriod = periodData.find(p => p.periodStatus === 2);
@@ -356,8 +357,8 @@ export default function EnrollmentModal({
           }
         }
         
-        setTutors(tutorData.filter(t => t.status));
-        setInstitutions(institutionData.filter(i => i.status));
+        setTutors(unwrapData(tutorData).filter(t => t.status));
+        setInstitutions(unwrapData(institutionData).filter(i => i.status));
 
         if (!editingEntry && filteredPeriods.length > 0) {
           setValue("period", filteredPeriods[0].description);
@@ -429,7 +430,7 @@ export default function EnrollmentModal({
     const handleCareerAdded = async () => {
       try {
         const careerData = await getCareers();
-        setCareersState(careerData.filter((c: any) => c.status));
+        setCareersState(unwrapData(careerData).filter((c: any) => c.status));
         console.log("[EnrollmentModal] Carrera actualizada exitosamente");
       } catch (error) {
         console.error("[EnrollmentModal] Error al recargar carreras:", error);
@@ -460,11 +461,11 @@ export default function EnrollmentModal({
         enrollmentService.getEnrollments(),
       ]);
 
-      const student = students.data.find(
+      const student = unwrapData(students.data).find(
         (s: Student) => s.identificationPrefix === prefix && s.identificationNumber === number
       );
 
-      const preEnrollment = preEnrollments.find(
+      const preEnrollment = unwrapData(preEnrollments).find(
         (p: PreEnrollment) => p.identificationPrefix === prefix && p.identificationNumber === number && p.status
       );
 
@@ -500,7 +501,7 @@ export default function EnrollmentModal({
         setValue("studentName", `${student.firstName} ${student.lastName}`);
         
         // Autocompletar Carrera
-        const studentCareer = careerData.find(c => String(c.careerId) === String(preEnrollment.careerId));
+        const studentCareer = unwrapData(careerData).find(c => String(c.careerId) === String(preEnrollment.careerId));
         if (studentCareer) {
           setValue("careerName", String(studentCareer.careerId));
         } else {
@@ -597,7 +598,7 @@ export default function EnrollmentModal({
     const handleTutorAdded = async () => {
       try {
         const tutorData = await getTutors();
-        setTutors(tutorData.filter(t => t.status));
+        setTutors(unwrapData(tutorData).filter(t => t.status));
         console.log("[EnrollmentModal] Tutores actualizados después de registro");
       } catch (error) {
         console.error("[EnrollmentModal] Error al recargar tutores:", error);
@@ -622,7 +623,7 @@ export default function EnrollmentModal({
     const handleInstitutionSaved = async () => {
       try {
         const institutionData = await getInstitutions();
-        setInstitutions(institutionData.filter(i => i.status));
+        setInstitutions(unwrapData(institutionData).filter(i => i.status));
         console.log("[EnrollmentModal] Instituciones actualizadas");
       } catch (error) {
         console.error("[EnrollmentModal] Error al recargar instituciones:", error);

@@ -137,19 +137,24 @@ const maritalToDb: Record<string, string> = { 'SOLTERO': 'S', 'CASADO': 'C', 'DI
 const maritalFromDb: Record<string, string> = { 'S': 'SOLTERO', 'C': 'CASADO', 'D': 'DIVORCIADO', 'V': 'VIUDO' };
 
 function extractPersonData(body: any) {
-  return {
+  const data: Record<string, unknown> = {
     ci: `${body.identificationPrefix || 'V'}-${body.identificationNumber}`,
     firstName: body.firstName,
     middleName: body.middleName || null,
     lastName: body.lastName,
     secondLastName: body.secondLastName || null,
     gender: body.sex || null,
-    birthdate: body.birthDate || null,
-    address: body.address || null,
     maritalStatus: body.civilStatus ? (maritalToDb[body.civilStatus.toUpperCase()] || null) : null,
     phone: body.phone || null,
     email: body.email,
   };
+
+  // Solo incluir birthDate y address cuando tienen valor real
+  // Evita que null/undefined sobrescriba datos existentes en updatePerson
+  if (body.birthDate) data.birthDate = body.birthDate;
+  if (body.address) data.address = body.address;
+
+  return data as any;
 }
 
 function extractTutorData(body: any) {

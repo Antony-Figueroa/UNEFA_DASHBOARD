@@ -266,26 +266,37 @@ export default function PreEnrollmentModal({
           internshipTypesData.map((t: any) => ({ value: t.name?.toUpperCase() || "", label: t.name?.toUpperCase() || "" }))
         );
         
+        const activePeriods = periodData
+          .filter((p: Periodo) => p.periodStatus === 2 && p.status);
+        
         const pendingPeriods = periodData
           .filter((p: Periodo) => p.periodStatus === 1 && p.status)
           .sort((a: Periodo, b: Periodo) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
         
-        const closestPeriod = pendingPeriods.length > 0 ? [pendingPeriods[0]] : [];
+        // Unir: activos primero, luego pendientes ordenados por fecha
+        const availablePeriods = [...activePeriods, ...pendingPeriods];
         
+        // Si estamos editando, asegurar que el período original esté incluido
+        let finalPeriods = [...availablePeriods];
         if (editingEntry) {
-          const exists = closestPeriod.some((p: Periodo) => p.description === editingEntry.period);
+          const exists = finalPeriods.some((p: Periodo) => p.description === editingEntry.period);
           if (!exists) {
             const originalPeriod = periodData.find((p: Periodo) => p.description === editingEntry.period);
             if (originalPeriod) {
-              closestPeriod.push(originalPeriod);
+              finalPeriods.push(originalPeriod);
             }
           }
         }
 
-        setPeriods(closestPeriod);
+        setPeriods(finalPeriods);
         
-        if (closestPeriod.length > 0 && !editingEntry && !getValues("period")) {
-          setValue("period", closestPeriod[0].description);
+        // Auto-seleccionar: activo > pendiente más cercano > nada
+        if (!editingEntry && !getValues("period")) {
+          if (activePeriods.length > 0) {
+            setValue("period", activePeriods[0].description);
+          } else if (pendingPeriods.length > 0) {
+            setValue("period", pendingPeriods[0].description);
+          }
         }
       } catch (error) {
         console.error("[PreEnrollmentModal] Error al cargar períodos/tipos:", error);
@@ -972,10 +983,7 @@ if (student) {
 
                     {/* Período */}
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Período Académico *</label>
-                        <Badge color="info" variant="light" size="sm" className="font-bold text-[9px] px-1.5 backdrop-blur-sm">AUTO</Badge>
-                      </div>
+                      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Período Académico *</label>
                       <Controller
                         name="period"
                         control={control}
@@ -985,9 +993,8 @@ if (student) {
                             options={periods.map((p) => ({ value: p.description, label: p.description }))}
                             onChange={field.onChange}
                             value={field.value}
-                            placeholder="Cargando períodos..."
-                            disabled={true}
-                            className="rounded-xl h-[48px] bg-slate-50/50"
+                            placeholder="Seleccione el período..."
+                            className="rounded-xl h-[48px]"
                           />
                         )}
                       />

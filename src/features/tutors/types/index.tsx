@@ -29,6 +29,8 @@ export interface Tutor {
   sex: "FEMENINO" | "MASCULINO";
   /** Fecha de nacimiento (YYYY-MM-DD) */
   birthDate?: string;
+  /** Dirección de residencia */
+  address?: string;
   /** Estado civil */
   civilStatus?: string;
   /** Teléfono de contacto */

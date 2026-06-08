@@ -4,6 +4,7 @@ import reportsService, { TutorAcademicReportRow } from '../services/reportsServi
 import { getStudents } from '../../students/services/studentsService';
 import { getInstitutions } from '../../institutions/services/institutionsService';
 import { getEnrollments } from '../../enrollment/services/enrollmentService';
+import { unwrapData } from '../../../api/crudServiceFactory';
 
 import { StudentPDF } from '../../../components/ui/pdf/templates/StudentPDF';
 import { TutorPDF } from '../../../components/ui/pdf/templates/TutorPDF';

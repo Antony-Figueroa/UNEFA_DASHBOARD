@@ -210,8 +210,7 @@ export function ProspectListModal({ isOpen, onClose }: ProspectListModalProps) {
 
   const searchFn = useCallback(
     async (query: string) => {
-      const results = await searchEligibleStudents(query, currentList?.periodId);
-      return results as any as { id: string | number }[];
+      return await searchEligibleStudents(query, currentList?.periodId);
     },
     [searchEligibleStudents, currentList?.periodId]
   );

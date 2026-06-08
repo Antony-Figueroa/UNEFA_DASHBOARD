@@ -133,7 +133,7 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
   const [showPdf, setShowPdf] = useState(false);
 
   // Selection state for summary card
-  const [selectedRecord, setSelectedRecord] = useState<PracticeSearchResult | TutorSearchResult | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<PracticeSearchResult | TutorSearchResult | EligibleStudent | null>(null);
 
   // Record list modal
   const [showRecordList, setShowRecordList] = useState(false);

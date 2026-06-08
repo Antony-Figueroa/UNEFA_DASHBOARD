@@ -14,6 +14,7 @@ import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { AuthUser } from "../../../context/auth";
 import { useToast } from "../../../context/toast";
+import CustomSelect from "../../../components/form/CustomSelect";
 import { formatCedulaDisplay, cleanCedula, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
 import { checkUserCi, PersonCheckData } from "../services/userService";
 

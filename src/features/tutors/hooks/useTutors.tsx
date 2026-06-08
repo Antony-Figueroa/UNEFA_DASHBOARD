@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Tutor, CreateTutorPayload, UpdateTutorPayload } from "../types";
 import { tutorsService } from "../services/tutorsService";
 import { getCareers } from "../../careers/services/careersService";
+import { unwrapData } from "../../../api/crudServiceFactory";
 import { Career } from "../../careers/types";
 import { useToast } from "../../../context/toast";
 import { ChangeComparison, RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
@@ -54,7 +55,7 @@ export const useTutors = () => {
   const refreshTutors = useCallback(async () => {
     try {
       const careersData = await getCareers();
-      setCareers(careersData);
+      setCareers(unwrapData(careersData));
       await refreshTutorsBase();
     } catch (e) {
       console.error("[useTutors] Error loading careers:", e);

@@ -9,6 +9,7 @@ import { getCareers } from "../../careers/services/careersService";
 import { Student } from "../../students/types";
 import { Career } from "../../careers/types";
 import { useDebounce } from "../../../hooks/useDebounce";
+import { unwrapData } from "../../../api/crudServiceFactory";
 import { TableSkeleton } from "../../../components/ui/skeleton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { generateMatricula } from "../../../utils/matricula";
@@ -174,10 +175,10 @@ export default function EnrollmentTable({
         const loadRefs = async () => {
             try {
                 const [studentsResp, careers] = await Promise.all([getStudents(), getCareers()]);
-                setStudents(studentsResp.data);
-                setAllCareers(careers);
+                setStudents(unwrapData(studentsResp.data));
+                setAllCareers(unwrapData(careers));
                 const map: Record<string, string> = {};
-                careers.forEach(c => { map[String(c.careerId)] = (c.careerAbbreviation || "").toUpperCase(); });
+                unwrapData(careers).forEach(c => { map[String(c.careerId)] = (c.careerAbbreviation || "").toUpperCase(); });
                 setCareerAbbrById(map);
             } catch {
                 // silencioso: si falla, simplemente no mostramos matrícula

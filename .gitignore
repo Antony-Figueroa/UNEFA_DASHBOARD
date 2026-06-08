@@ -42,6 +42,9 @@ backend/data/
 release-v2/
 release/
 
+# Build error logs (may contain credentials)
+*.err
+
 # Backend local test artifacts
 backend/debug*.txt
 backend/server-log.txt

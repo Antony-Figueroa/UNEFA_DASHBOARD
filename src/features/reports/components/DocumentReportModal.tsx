@@ -5,6 +5,7 @@ import AsyncButton from '../../../components/ui/button/AsyncButton';
 import toast from 'react-hot-toast';
 import { TOAST_SUCCESS, TOAST_ERROR } from '@/components/ui/dialog/DialogConfig';
 import reportsService, { PracticeSearchResult, TutorSearchResult } from '../services/reportsService';
+import type { EligibleStudent } from '../../prospectos/types';
 
 const resourceName = 'Reporte';
 import { getAllDocumentTexts } from '../services/reportTextsService';
@@ -145,13 +146,13 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
     }
   }, [isOpen, documentType]);
 
-  const handleSelectPractice = (item: PracticeSearchResult | TutorSearchResult) => {
+  const handleSelectPractice = (item: PracticeSearchResult | TutorSearchResult | EligibleStudent) => {
     const practice = item as PracticeSearchResult;
     setRecordId(String(practice.practiceId));
     setSelectedRecord(item);
   };
 
-  const handleSelectTutor = (item: PracticeSearchResult | TutorSearchResult) => {
+  const handleSelectTutor = (item: PracticeSearchResult | TutorSearchResult | EligibleStudent) => {
     const tutor = item as TutorSearchResult;
     setRecordId(String(tutor.tutorId));
     setSelectedRecord(item);
@@ -283,9 +284,9 @@ export function DocumentReportModal({ isOpen, onClose, documentType }: DocumentR
         onSelect={(item) => {
           setShowRecordList(false);
           if (isPracticeDoc) {
-            handleSelectPractice(item);
+            handleSelectPractice(item as PracticeSearchResult | TutorSearchResult);
           } else {
-            handleSelectTutor(item);
+            handleSelectTutor(item as PracticeSearchResult | TutorSearchResult);
           }
         }}
       />

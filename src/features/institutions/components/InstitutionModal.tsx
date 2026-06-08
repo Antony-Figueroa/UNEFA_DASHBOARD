@@ -1805,7 +1805,8 @@ export default function InstitutionModal({
             const currentInstId = editingInst?.institutionId || "";
             const updatedInstitutions = (editingResponsible.institutions || []).map(inst => {
               if (inst.institutionId === currentInstId) {
-                return { ...inst, cargo: data.cargo || "" };
+                const instCargo = data.institutions?.find(i => i.institutionId === currentInstId)?.cargo || "";
+                return { ...inst, cargo: instCargo };
               }
               return inst;
             });

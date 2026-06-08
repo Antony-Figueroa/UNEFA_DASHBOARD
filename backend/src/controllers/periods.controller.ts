@@ -8,7 +8,7 @@ import { PERIOD_STATUS } from '../constants/practice-status.constants.js';
 const TABLE_NAME = 't_internships_period';
 
 const PERIOD_COLUMNS_TO_AUDIT = [
-  'DESCRIPTION', 'START_DATE', 'END_DATE', 'PERIOD_STATUS', 'STATUS', 'T_INTERNSHIPS_CODE'
+  'DESCRIPTION', 'START_DATE', 'END_DATE', 'PERIOD_STATUS', 'STATUS', 'T_INTERNSHIPS_CODE', 'ENROLLMENT_GRACE_DAYS', 'EVALUATION_GRACE_DAYS'
 ];
 
 interface AppError extends Error {
@@ -59,6 +59,8 @@ interface Period {
   STATUS: number;
   CREATION_DATE: string;
   T_INTERNSHIPS_CODE: string;
+  ENROLLMENT_GRACE_DAYS: number;
+  EVALUATION_GRACE_DAYS: number;
 }
 
 export const getPeriods = async (_req: Request, res: Response) => {
@@ -81,11 +83,26 @@ export const getPeriods = async (_req: Request, res: Response) => {
 
       const usedPeriodIds = new Set(usedPeriods.map(p => p.PERIOD_ID));
 
-      // 3. Marcar periodos como en uso
-      const enrichedPeriods = (periods as Period[]).map(p => ({
-        ...p,
-        isInUse: usedPeriodIds.has(p.PERIOD_ID)
-      }));
+      // 3. Marcar periodos como en uso y calcular fechas de holgura
+      const enrichedPeriods = (periods as Period[]).map(p => {
+        const startDate = new Date(p.START_DATE);
+        const endDate = new Date(p.END_DATE);
+        const enrollmentDays = p.ENROLLMENT_GRACE_DAYS ?? 21;
+        const evaluationDays = p.EVALUATION_GRACE_DAYS ?? 10;
+
+        const graceEndDate = new Date(startDate);
+        graceEndDate.setDate(graceEndDate.getDate() + enrollmentDays);
+
+        const evaluationGraceEndDate = new Date(endDate);
+        evaluationGraceEndDate.setDate(evaluationGraceEndDate.getDate() + evaluationDays);
+
+        return {
+          ...p,
+          graceEndDate: graceEndDate.toISOString(),
+          evaluationGraceEndDate: evaluationGraceEndDate.toISOString(),
+          isInUse: usedPeriodIds.has(p.PERIOD_ID),
+        };
+      });
 
       return enrichedPeriods;
     });
@@ -111,7 +128,24 @@ export const getCurrentPeriod = async (_req: Request, res: Response) => {
         if (error.code === 'PGRST116') return null;
         throw error;
       }
-      return data as Period;
+
+      const p = data as Period;
+      const startDate = new Date(p.START_DATE);
+      const endDate = new Date(p.END_DATE);
+      const enrollmentDays = p.ENROLLMENT_GRACE_DAYS ?? 21;
+      const evaluationDays = p.EVALUATION_GRACE_DAYS ?? 10;
+
+      const graceEndDate = new Date(startDate);
+      graceEndDate.setDate(graceEndDate.getDate() + enrollmentDays);
+
+      const evaluationGraceEndDate = new Date(endDate);
+      evaluationGraceEndDate.setDate(evaluationGraceEndDate.getDate() + evaluationDays);
+
+      return {
+        ...p,
+        graceEndDate: graceEndDate.toISOString(),
+        evaluationGraceEndDate: evaluationGraceEndDate.toISOString(),
+      };
     });
     res.json(data);
   } catch (error: unknown) {
@@ -147,7 +181,7 @@ export const getPeriodById = async (req: Request, res: Response) => {
 
 export const createPeriod = async (req: AuthRequest, res: Response) => {
   try {
-    const { description, startDate, endDate, periodStatus, status, code } = req.body;
+    const { description, startDate, endDate, periodStatus, status, code, enrollmentGraceDays, evaluationGraceDays } = req.body;
     const now = new Date().toISOString();
     
     const formatToDate = (val: string | number) => {
@@ -158,6 +192,23 @@ export const createPeriod = async (req: AuthRequest, res: Response) => {
       return val;
     };
 
+    // Read global defaults for grace days (non-blocking fallback)
+    let defaultEnrollmentDays = 21;
+    let defaultEvaluationDays = 10;
+    try {
+      const { data: defaults } = await dbManager.getConnection()
+        .from('t_academic_config')
+        .select('DEFAULT_ENROLLMENT_GRACE_DAYS, DEFAULT_EVALUATION_GRACE_DAYS')
+        .eq('CONFIG_ID', 1)
+        .single();
+      if (defaults) {
+        defaultEnrollmentDays = defaults.DEFAULT_ENROLLMENT_GRACE_DAYS;
+        defaultEvaluationDays = defaults.DEFAULT_EVALUATION_GRACE_DAYS;
+      }
+    } catch (e) {
+      console.warn('[PeriodsController] Could not read grace defaults, using hardcoded:', e);
+    }
+
     const dbData = {
       DESCRIPTION: description,
       START_DATE: formatToDate(startDate),
@@ -165,7 +216,9 @@ export const createPeriod = async (req: AuthRequest, res: Response) => {
       PERIOD_STATUS: String(periodStatus || PERIOD_STATUS.PENDIENTE),
       STATUS: status === false ? 0 : 1,
       CREATION_DATE: now,
-      T_INTERNSHIPS_CODE: code || `P${Date.now().toString().slice(-7)}`
+      T_INTERNSHIPS_CODE: code || `P${Date.now().toString().slice(-7)}`,
+      ENROLLMENT_GRACE_DAYS: enrollmentGraceDays ?? defaultEnrollmentDays,
+      EVALUATION_GRACE_DAYS: evaluationGraceDays ?? defaultEvaluationDays,
     };
 
     const data = await dbManager.withRetry(async (supabase) => {
@@ -203,7 +256,7 @@ export const createPeriod = async (req: AuthRequest, res: Response) => {
 export const updatePeriod = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { description, startDate, endDate, periodStatus, status, code } = req.body;
+    const { description, startDate, endDate, periodStatus, status, code, enrollmentGraceDays, evaluationGraceDays } = req.body;
     
     const formatToDate = (val: string | number) => {
       if (typeof val === 'number') {
@@ -349,6 +402,8 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
       }
       if (status !== undefined) updatePayload.STATUS = status === false ? 0 : 1;
       if (code !== undefined) updatePayload.T_INTERNSHIPS_CODE = code;
+      if (enrollmentGraceDays !== undefined) updatePayload.ENROLLMENT_GRACE_DAYS = Number(enrollmentGraceDays);
+      if (evaluationGraceDays !== undefined) updatePayload.EVALUATION_GRACE_DAYS = Number(evaluationGraceDays);
 
       const { data, error } = await supabase
         .from(TABLE_NAME)

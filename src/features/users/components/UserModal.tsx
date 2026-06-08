@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import Input from "../../../components/form/input/InputField";
-import CustomSelect from "../../../components/form/CustomSelect";
+
 import Checkbox from "../../../components/form/input/Checkbox";
 import { userSchema, UserFormData, UserFormOutput } from "../constants/validation";
 import { User, CreateUserPayload, UpdateUserPayload } from "../types";
@@ -61,12 +61,10 @@ const UserModal: React.FC<UserModalProps> = ({
     watch,
     setError,
     clearErrors,
-    control,
     formState: { errors, isDirty, isValid }
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
     defaultValues: {
-      identificationPrefix: "V",
       userCi: "",
       name: "",
       surname: "",
@@ -78,9 +76,6 @@ const UserModal: React.FC<UserModalProps> = ({
   });
 
   const hasConsent = watch("hasConsent");
-
-  // CI prefix
-  const [ciPrefix, setCiPrefix] = useState("V");
 
   // State for display values with formatting
   const [displayCi, setDisplayCi] = useState("");
@@ -112,14 +107,16 @@ const UserModal: React.FC<UserModalProps> = ({
   const handleCiBlur = useCallback(
     async (e: React.FocusEvent<HTMLInputElement>) => {
       if (user) return; // No checkear en edición
-      const val = e.target.value;
-      const digitsOnly = val.replace(/\D/g, "");
+      const val = cleanCedula(e.target.value);
+      const prefixMatch = val.match(/^([VE])/);
+      const prefix = prefixMatch ? prefixMatch[1] : "V";
+      const digitsOnly = val.replace(/^[VE]/, "");
       if (digitsOnly.length >= 6) {
         setIsCheckingCi(true);
         setExistingPerson(null);
         autoFilledCiRef.current = "";
         try {
-          const fullCi = `${ciPrefix}${digitsOnly}`;
+          const fullCi = `${prefix}${digitsOnly}`;
           const result = await checkUserCi(fullCi);
           if (result.exists && result.asUser) {
             setError("userCi", {
@@ -144,7 +141,7 @@ const UserModal: React.FC<UserModalProps> = ({
             setValue("surname", fullSurname, { shouldValidate: true, shouldDirty: true });
             setValue("email", personData.email, { shouldValidate: true, shouldDirty: true });
             setExistingPerson(personData);
-            autoFilledCiRef.current = `${ciPrefix}${digitsOnly}`;
+            autoFilledCiRef.current = `${prefix}${digitsOnly}`;
 
             clearErrors("userCi");
           }
@@ -156,14 +153,13 @@ const UserModal: React.FC<UserModalProps> = ({
         }
       }
     },
-    [user, setValue, setError, clearErrors, ciPrefix],
+    [user, setValue, setError, clearErrors],
   );
 
 // Efecto para cargar los datos del usuario cuando se abre el modal para editar
   useEffect(() => {
     if (user) {
       reset({
-        identificationPrefix: "V",
         userCi: user.userCi,
         name: user.name,
         surname: user.surname,
@@ -177,7 +173,6 @@ const UserModal: React.FC<UserModalProps> = ({
       autoFilledCiRef.current = "";
     } else {
       reset({
-        identificationPrefix: "V",
         userCi: "",
         name: "",
         surname: "",
@@ -187,7 +182,6 @@ const UserModal: React.FC<UserModalProps> = ({
         hasConsent: false
       });
       setDisplayCi("");
-      setCiPrefix("V");
       setExistingPerson(null);
       autoFilledCiRef.current = "";
     }
@@ -318,48 +312,20 @@ const UserModal: React.FC<UserModalProps> = ({
               </h6>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-6">
-              {/* Prefijo + CI */}
+              {/* Cédula */}
               <div>
                 <label className="text-sm font-medium text-text-primary dark:text-white/90">Cédula *</label>
-                <div className="flex gap-2">
-                  {/* Prefix selector */}
-                  <Controller
-                    name="identificationPrefix"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomSelect
-                        id="identificationPrefix"
-                        className="w-[76px] min-w-[76px]"
-                        options={[
-                          { value: "V", label: "V" },
-                          { value: "E", label: "E" },
-                        ]}
-                        placeholder="V"
-                        onChange={(val) => {
-                          field.onChange(val);
-                          setCiPrefix(val);
-                        }}
-                        onBlur={field.onBlur}
-                        value={String(field.value || "V")}
-                        disabled={!!user}
-                      />
-                    )}
-                  />
-                  {/* CI number */}
-                  <div className="flex-1">
-                    <Input
-                      value={displayCi}
-                      onChange={handleCiChange}
-                      onBlur={handleCiBlur}
-                      disabled={!!user}
-                      placeholder="00.000.000"
-                      className="h-11 rounded-lg border-gray-200 dark:border-gray-700 uppercase tracking-widest"
-                      error={!!errors.userCi}
-                      hint={isCheckingCi ? "Verificando cédula..." : errors.userCi?.message}
-                      maxLength={CEDULA_MAX_LENGTH}
-                    />
-                  </div>
-                </div>
+                <Input
+                  value={displayCi}
+                  onChange={handleCiChange}
+                  onBlur={handleCiBlur}
+                  disabled={!!user}
+                  placeholder="V-00.000.000"
+                  className="h-11 rounded-lg border-gray-200 dark:border-gray-700 uppercase tracking-widest"
+                  error={!!errors.userCi}
+                  hint={isCheckingCi ? "Verificando cédula..." : errors.userCi?.message}
+                  maxLength={CEDULA_MAX_LENGTH}
+                />
               </div>
               <div>
                 <label className="text-sm font-medium text-text-primary dark:text-white/90">Nombres *</label>

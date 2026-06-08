@@ -5,7 +5,6 @@ import { NAME_PATTERN, SAFE_EMAIL_PATTERN, isSafeInput } from "../../../utils/in
  * Esquema de validación para la creación y edición de usuarios.
  */
 export const userSchema = z.object({
-  identificationPrefix: z.string().optional().default("V"),
   userCi: z.string()
     .regex(/^[VE]?\d{6,8}$/, "Cédula inválida. Debe tener entre 6 y 8 dígitos (opcional V/E)"),
   name: z.string()

@@ -23,4 +23,13 @@ router.post('/request-recovery', authController.requestPasswordReset);
 router.post('/reset-with-token', authController.resetPasswordWithToken);
 router.post('/logout', authController.logout);
 
+router.post('/avatar', authenticateToken, authController.uploadAvatar);
+router.delete('/avatar', authenticateToken, authController.deleteAvatar);
+router.get('/sessions', authenticateToken, authController.getActiveSessions);
+router.delete('/sessions/:id', authenticateToken, authController.terminateSession);
+router.post('/deactivate', authenticateToken, authController.deactivateAccount);
+router.get('/notification-preferences', authenticateToken, authController.getNotificationPrefs);
+router.put('/notification-preferences', authenticateToken, authController.saveNotificationPrefs);
+router.put('/locale', authenticateToken, authController.updateLocale);
+
 export default router;

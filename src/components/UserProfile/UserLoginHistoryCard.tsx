@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/auth";
+import apiClient from "../../api/apiClient";
 
 import { Skeleton } from "../ui/skeleton";
 
@@ -19,11 +20,8 @@ export default function UserLoginHistoryCard() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login-history`, {
-          credentials: 'include'
-        });
-        const data = await response.json();
-        if (data.success) setHistory(data.data);
+        const response = await apiClient.get('/auth/login-history');
+        if (response.data.success) setHistory(response.data.data);
       } catch (error) {
         console.error('Error fetching login history:', error);
       } finally {

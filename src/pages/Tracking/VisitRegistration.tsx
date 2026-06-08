@@ -6,8 +6,7 @@ import PageMeta from "../../components/common/PageMeta";
 import { AsyncActionButton } from "../../components/common/AsyncActionButton";
 import Button from "../../components/ui/button/Button";
 import Badge from "../../components/ui/badge/Badge";
-import { ArrowLeftIcon, EditIcon, TrashIcon, EyeIcon, RefreshIcon } from "../../icons/actions";
-import { PlusIcon } from "../../icons";
+import { ArrowLeftIcon, EditIcon, TrashIcon, EyeIcon, RefreshIcon, PlusCircleIcon } from "../../icons/actions";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../components/ui/table";
 import { EmptyState } from "../../components/ui/table/EmptyState";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../components/ui/modal";
@@ -188,7 +187,7 @@ export default function VisitRegistration() {
         <Button
           onClick={() => handleOpenModal()}
           className="flex items-center gap-2"
-          startIcon={<PlusIcon />}
+          startIcon={<PlusCircleIcon className="h-5 w-5" />}
         >
           Nueva Visita
         </Button>

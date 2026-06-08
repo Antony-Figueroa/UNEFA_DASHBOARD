@@ -5,7 +5,8 @@ import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import ComponentCard from '../../components/common/ComponentCard';
 import Button from '../../components/ui/button/Button';
 import Badge from '../../components/ui/badge/Badge';
-import { AngleLeftIcon, PlusIcon } from '../../icons';
+import { AngleLeftIcon } from '../../icons';
+import { PlusCircleIcon } from '../../icons/actions';
 import { useActivityLogs } from '../../features/activity-logs/hooks/useActivityLogs';
 import ActivityLogModal from '../../features/activity-logs/components/ActivityLogModal';
 import type { ActivityLog, CreateActivityLogPayload, UpdateActivityLogPayload } from '../../features/activity-logs/types';
@@ -98,7 +99,7 @@ export default function StudentActivityLogs() {
             onClick={() => handleOpenModal()}
             className="flex items-center gap-2"
           >
-            <PlusIcon className="w-4 h-4" />
+            <PlusCircleIcon className="h-5 w-5" />
             Nuevo Registro
           </Button>
         </div>

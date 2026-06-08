@@ -1,8 +1,9 @@
 import { PracticeSearchResult, TutorSearchResult } from '../services/reportsService';
+import type { EligibleStudent } from '../../prospectos/types';
 
 interface SelectionSummaryProps {
   type: 'practice' | 'tutor';
-  data: PracticeSearchResult | TutorSearchResult;
+  data: PracticeSearchResult | TutorSearchResult | EligibleStudent;
   onChange: () => void;
 }
 

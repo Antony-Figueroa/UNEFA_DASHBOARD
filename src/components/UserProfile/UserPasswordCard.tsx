@@ -117,7 +117,7 @@ export default function UserPasswordCard() {
   const executeChange = async () => {
     setLoading(true);
     try {
-      const result = await authService.changePassword(user!.id, formData.newPassword);
+      const result = await authService.changePassword(user!.id, formData.newPassword, undefined, undefined, formData.currentPassword);
 
       if (result.success) {
         addToast({ variant: "success", title: "Contraseña actualizada", message: "Iniciando sesión de nuevo..." });
@@ -335,6 +335,7 @@ export default function UserPasswordCard() {
                   onChange={handleInputChange} 
                   placeholder="••••••••••••"
                   className="pr-10"
+                  isPassword={true}
                 />
                 <button
                   type="button"
@@ -357,6 +358,7 @@ export default function UserPasswordCard() {
                   onChange={handleInputChange} 
                   placeholder="••••••••••••"
                   className="pr-10"
+                  isPassword={true}
                 />
                 <button
                   type="button"
@@ -403,6 +405,7 @@ export default function UserPasswordCard() {
                   onChange={handleInputChange} 
                   placeholder="••••••••••••"
                   className="pr-10"
+                  isPassword={true}
                 />
                 <button
                   type="button"

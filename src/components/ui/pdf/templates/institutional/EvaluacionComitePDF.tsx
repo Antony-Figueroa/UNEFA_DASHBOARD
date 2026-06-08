@@ -154,7 +154,7 @@ export function EvaluacionComitePDF({ data, textos }: Props) {
             </View>
             <View style={styles.totalScoreRow}>
               <Text style={styles.totalScoreText}>
-                Calificación final = (Subtotal / {data.evaluacion.criterios.length}): {data.evaluacion.totalScore.toFixed(2)}
+                Calificación final = (Subtotal / {data.evaluacion.criterios.length}): {data.evaluacion.totalScore.toFixed(1)}
               </Text>
             </View>
           </View>

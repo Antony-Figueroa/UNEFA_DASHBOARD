@@ -275,7 +275,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
           {evaluations.finalGrade !== null && (
             <div className="text-right">
               <span className="text-xs text-text-tertiary block">Nota Final Ponderada</span>
-              <span className="text-2xl font-bold text-brand-500">{evaluations.finalGrade.toFixed(2)}</span>
+              <span className="text-2xl font-bold text-brand-500">{evaluations.finalGrade.toFixed(1)}</span>
             </div>
           )}
         </div>

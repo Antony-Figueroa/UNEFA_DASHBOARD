@@ -14,6 +14,7 @@ import { useAuth } from "../../context/auth";
 import { useToast } from "../../context/toast";
 import { User, CreateUserPayload, UpdateUserPayload } from "../../features/users/types";
 import { rolesService } from "../../features/roles/services/rolesService";
+import { resetUserPassword } from "../../features/users/services/userService";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 
@@ -173,6 +174,44 @@ const UserManagementPage = () => {
     });
   };
 
+  const handleResetPassword = (user: User) => {
+    setConfirmation({
+      isOpen: true,
+      title: "Resetear Clave",
+      message: (
+        <>
+          <p>Se va a resetear la clave del siguiente usuario:</p>
+          <div className="mt-3 rounded-lg bg-gray-50 p-3 text-sm dark:bg-gray-800">
+            <p><strong>Nombre:</strong> {user.name} {user.surname}</p>
+            <p><strong>Cédula:</strong> {user.userCi}</p>
+            <p><strong>Correo:</strong> {user.email}</p>
+          </div>
+          <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">
+            Se generará una clave temporal de 8 caracteres y se enviará por correo al usuario.
+            El usuario deberá cambiar la clave en su próximo inicio de sesión.
+          </p>
+        </>
+      ),
+      onConfirm: async () => {
+        try {
+          await resetUserPassword(user.id);
+          addToast({
+            variant: "success",
+            title: "Clave Reseteada",
+            message: `La clave de ${user.name} ${user.surname} ha sido reseteada. Revisá su correo para la nueva clave temporal.`
+          });
+        } catch (error: any) {
+          const msg = error?.response?.data?.message || "Error al resetear la clave";
+          addToast({ variant: "error", title: "Error", message: msg });
+        } finally {
+          setConfirmation(null);
+        }
+      },
+      confirmText: "Resetear Clave",
+      variant: "warning" as any,
+    });
+  };
+
   const handleBulkAction = () => {
     const newStatus = activeTab === "Activos" ? 0 : 1;
     const isDeactivating = activeTab === "Activos";
@@ -326,6 +365,7 @@ const UserManagementPage = () => {
                 error={error}
                 onEdit={handleEdit}
                 onToggleStatus={handleToggleStatus}
+                onResetPassword={handleResetPassword}
                 rolesMap={rolesMap}
                 selectedIds={selectedIds}
                 onSelectRow={handleSelectRow}

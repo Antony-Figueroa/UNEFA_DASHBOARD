@@ -432,6 +432,84 @@ export const deleteUser = async (userId: number): Promise<void> => {
 };
 
 // ============================================================
+// RESET USER PASSWORD
+// ============================================================
+
+export const resetUserPassword = async (userId: number): Promise<{ tempPassword: string; email: string; name: string; userCi: string; isFirstLogin: boolean }> => {
+  return await dbManager.withRetry(async (supabase) => {
+    // 1. Obtener usuario con datos de persona
+    const { data: user, error: userError } = await supabase
+      .from('t_user')
+      .select(`${USER_COLUMNS}, ${PERSON_JOIN}`)
+      .eq('USER_ID', userId)
+      .single();
+
+    if (userError || !user) {
+      const error = new Error('Usuario no encontrado') as ServiceError;
+      error.code = 'USER_NOT_FOUND';
+      error.status = 404;
+      throw error;
+    }
+
+    const person = (user as any).t_persons;
+    const email = person?.email;
+    const name = `${person?.first_name || ''} ${person?.last_name || ''}`.trim();
+
+    if (!email) {
+      const error = new Error('El usuario no tiene un correo electrónico registrado') as ServiceError;
+      error.code = 'USER_NO_EMAIL';
+      error.status = 400;
+      throw error;
+    }
+
+    // 2. Desactivar claves activas actuales
+    await supabase
+      .from('t_user_key')
+      .update({ STATUS: 0 })
+      .eq('USER_ID', userId)
+      .eq('STATUS', 1);
+
+    // 3. Generar clave temporal aleatoria (8 caracteres)
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    let tempPassword = '';
+    for (let i = 0; i < 8; i++) {
+      tempPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    const hashedPassword = await hashPassword(tempPassword);
+
+    const { error: keyError } = await supabase
+      .from('t_user_key')
+      .insert({
+        USER_ID: userId,
+        KEY: hashedPassword,
+        STATUS: 1,
+        IS_TEMPORARY: true,
+        START_DATE: new Date().toISOString(),
+        END_DATE: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        MODIF_USER_ID: userId,
+        MODIF_USER_DATE: new Date().toISOString(),
+        ELIM_USER_ID: userId,
+        ELIM_USER_DATE: new Date().toISOString(),
+        REST_USER_ID: userId,
+        REST_USER_DATE: new Date().toISOString(),
+      });
+
+    if (keyError) throw keyError;
+
+    // 4. Forzar cambio de clave en próximo login
+    const { error: updateError } = await supabase
+      .from('t_user')
+      .update({ FORCE_PASSWORD_CHANGE: true })
+      .eq('USER_ID', userId);
+
+    if (updateError) throw updateError;
+
+    return { tempPassword, email, name, userCi: user.USER_CI, isFirstLogin: (user.LOGIN ?? 0) === 0 };
+  });
+};
+
+// ============================================================
 // SECURITY QUESTIONS
 // ============================================================
 

@@ -90,14 +90,25 @@ export const getLoginHistory = async (userId: number, limit: number = 20): Promi
   return response.data;
 };
 
+export interface PersonCheckData {
+  personId: number;
+  ci: string;
+  prefixCi: string;
+  identificationNumber: string;
+  firstName: string;
+  middleName: string | null;
+  lastName: string;
+  secondLastName: string | null;
+  email: string;
+  phone: string | null;
+  gender: string | null;
+  birthDate: string | null;
+  address: string | null;
+  maritalStatus: string | null;
+}
+
 interface UserCiCheckResult {
   exists: boolean;
   asUser?: boolean;
-  person?: {
-    firstName: string;
-    middleName: string | null;
-    lastName: string;
-    secondLastName: string | null;
-    email: string;
-  };
+  person?: PersonCheckData;
 }

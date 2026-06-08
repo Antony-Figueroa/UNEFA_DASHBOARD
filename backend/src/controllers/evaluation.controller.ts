@@ -489,7 +489,7 @@ export const getPracticeEvaluationStatus = async (req: AuthRequest, res: Respons
 
     const { data: practice, error: practiceError } = await supabase
       .from('t_professional_practices')
-      .select('PROFESSIONAL_PRACTICE_ID, GRADE, EVALUATION_STATUS')
+      .select('PROFESSIONAL_PRACTICE_ID, PERIOD_ID, PRACTICES_STATUS, GRADE, EVALUATION_STATUS')
       .eq('PROFESSIONAL_PRACTICE_ID', practiceId)
       .single();
 
@@ -498,6 +498,43 @@ export const getPracticeEvaluationStatus = async (req: AuthRequest, res: Respons
         success: false,
         message: 'Práctica no encontrada'
       });
+    }
+
+    // Determinar si se puede evaluar (periodo activo + ventana)
+    let canEvaluate = true;
+    let periodMessage = '';
+
+    try {
+      const { data: period } = await supabase
+        .from('t_internships_period')
+        .select('PERIOD_STATUS, START_DATE, END_DATE')
+        .eq('PERIOD_ID', (practice as any).PERIOD_ID)
+        .single();
+
+      if (period) {
+        const now = new Date();
+        const startDate = new Date(period.START_DATE);
+        const effectiveEndDate = new Date(period.END_DATE);
+        effectiveEndDate.setDate(effectiveEndDate.getDate() + evaluationConfig.evaluationWindowDays);
+
+        if ((practice as any).PRACTICES_STATUS !== 2) {
+          canEvaluate = false;
+          periodMessage = 'La práctica no está inscrita.';
+        } else if (period.PERIOD_STATUS !== '2') {
+          canEvaluate = false;
+          periodMessage = 'El periodo académico no está activo.';
+        } else if (now < startDate) {
+          canEvaluate = false;
+          periodMessage = 'El periodo académico aún no ha iniciado.';
+        } else if (now > effectiveEndDate) {
+          canEvaluate = false;
+          periodMessage = `La ventana de evaluación cerró el ${effectiveEndDate.toLocaleDateString('es-VE')}.`;
+        }
+      }
+    } catch (periodError) {
+      console.error('[Evaluation] Error checking period:', periodError);
+      canEvaluate = false;
+      periodMessage = 'Error al verificar el periodo académico.';
     }
 
     const { data: evaluations, error: evalError } = await supabase
@@ -571,7 +608,9 @@ export const getPracticeEvaluationStatus = async (req: AuthRequest, res: Respons
         evaluationStatus,
         evaluations: statusMap,
         finalGrade: finalGrade.toFixed(2),
-        completedCount
+        completedCount,
+        canEvaluate,
+        periodMessage
       }
     });
 

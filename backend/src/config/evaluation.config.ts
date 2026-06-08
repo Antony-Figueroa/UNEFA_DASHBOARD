@@ -37,7 +37,7 @@ export const evaluationConfig = {
    * - N > 0: se permite evaluar hasta N días después del END_DATE
    * - -1: sin restricción (modo excepción)
    */
-  evaluationWindowDays: 0,
+  evaluationWindowDays: 10,
 } as const;
 
 /** Tipo inferido de la configuración para usar en tipados */

@@ -507,7 +507,7 @@ export const getTutorReports = async (req: AuthRequest, res: Response) => {
           totalStudents: students.length,
           statusDistribution: statusCounts,
           periodDistribution: periodCounts,
-          averageGrade: averageGrade.toFixed(2)
+          averageGrade: averageGrade.toFixed(1)
         },
         students
       }

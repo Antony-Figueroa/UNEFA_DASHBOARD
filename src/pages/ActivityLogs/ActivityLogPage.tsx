@@ -8,7 +8,8 @@ import Badge from '../../components/ui/badge/Badge';
 import InputField from '../../components/form/input/InputField';
 import CustomSelect from '../../components/form/CustomSelect';
 import UnifiedDialog from '../../components/ui/dialog/UnifiedDialog';
-import { AngleLeftIcon, PlusIcon } from '../../icons';
+import { AngleLeftIcon } from '../../icons';
+import { PlusCircleIcon } from '../../icons/actions';
 import { useActivityLogs } from '../../features/activity-logs/hooks/useActivityLogs';
 import ActivityLogModal from '../../features/activity-logs/components/ActivityLogModal';
 import ActivityLogTable from '../../features/activity-logs/components/ActivityLogTable';
@@ -160,7 +161,7 @@ export default function ActivityLogPage() {
           <Button
             onClick={() => handleOpenModal()}
             className="flex items-center gap-2"
-            startIcon={<PlusIcon />}
+            startIcon={<PlusCircleIcon className="h-5 w-5" />}
           >
             Nueva Actividad
           </Button>

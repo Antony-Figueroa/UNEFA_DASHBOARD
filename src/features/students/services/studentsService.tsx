@@ -8,8 +8,7 @@
 
 import { Student, CreateStudentPayload, UpdateStudentPayload } from "../types";
 import apiClient from "../../../api/apiClient";
-import { unwrapData } from "../../api/crudServiceFactory";
-import { createCrudService } from "../../../api/crudServiceFactory";
+import { unwrapData, createCrudService } from "../../../api/crudServiceFactory";
 
 const API_URL = "/students";
 

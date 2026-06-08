@@ -4,7 +4,7 @@
  * Soporta: roles, usuarios del sistema, emails externos y plantillas pre-definidas.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
 import Button from '../../../components/ui/button/Button';
 import RecipientSelector, { RecipientSelection } from './RecipientSelector';
@@ -13,6 +13,9 @@ import { EmailEditor } from './EmailEditor';
 import { MailIcon } from '../../../icons/actions';
 import apiClient from '../../../api/apiClient';
 import type { EmailTemplate } from '../../../api/emailTemplatesService';
+import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
+import { UnifiedDialog } from '../../../components/ui/dialog/UnifiedDialog';
+import { SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
 
 // ─── Validation ─────────────────────────────────────────────────────────
 
@@ -41,6 +44,24 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sent, setSent] = useState(false);
   const [result, setResult] = useState<{ total: number; sent: number; failed: number } | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+
+  const close = useCallback(() => {
+    if (sent) {
+      setSubject('');
+      setMessage('');
+      setRecipients({ roles: [], users: [] });
+      setExternalEmails([]);
+      setEmailInput('');
+      setEmailInputError('');
+      setErrors({});
+      setSent(false);
+      setResult(null);
+    }
+    onClose();
+  }, [sent, onClose]);
+
+  const { showConfirmation, handleCloseAttempt, confirmClose, cancelClose } = useUnsavedChanges(isDirty && !sent, close);
 
   // ── External email handlers ──────────────────────────────────────────
 
@@ -61,10 +82,12 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
     setExternalEmails(prev => [...prev, trimmed]);
     setEmailInput('');
     setEmailInputError('');
+    setIsDirty(true);
   };
 
   const removeEmail = (email: string) => {
     setExternalEmails(prev => prev.filter(e => e !== email));
+    setIsDirty(true);
   };
 
   const handleEmailKeyDown = (e: React.KeyboardEvent) => {
@@ -86,6 +109,7 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
   const handleTemplateSelect = (template: EmailTemplate) => {
     setSubject(template.subject);
     setMessage(template.body_html);
+    setIsDirty(true);
   };
 
   // ── Validation ────────────────────────────────────────────────────────
@@ -129,6 +153,7 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
 
       setResult(res.data.data);
       setSent(true);
+      setIsDirty(false);
     } catch (err: any) {
       const msg = err?.response?.data?.error || 'Error al enviar. Intentá de nuevo.';
       setErrors({ send: msg });
@@ -140,25 +165,13 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
 
   // ── Close / Reset ─────────────────────────────────────────────────────
 
-  const handleClose = () => {
-    if (sent) {
-      setSubject('');
-      setMessage('');
-      setRecipients({ roles: [], users: [] });
-      setExternalEmails([]);
-      setEmailInput('');
-      setEmailInputError('');
-      setErrors({});
-      setSent(false);
-      setResult(null);
-    }
-    onClose();
-  };
+  // `close` is now defined above as a useCallback
 
   // ── Render ────────────────────────────────────────────────────────────
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} showCloseButton size="2xl">
+    <>
+      <Modal isOpen={isOpen} onClose={close} onCloseAttempt={handleCloseAttempt} showCloseButton size="2xl">
       <ModalHeader>
         <div className="max-w-3xl mx-auto w-full">
           <span className="mb-1 font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl flex items-center gap-2">
@@ -209,7 +222,7 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
                     type="text"
                     className={`w-full rounded-lg border ${errors.subject ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 px-3 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all placeholder:text-gray-400`}
                     value={subject}
-                    onChange={e => setSubject(e.target.value)}
+                    onChange={e => { setSubject(e.target.value); setIsDirty(true); }}
                     placeholder="Ej: Aviso importante - SIGP UNEFA"
                     disabled={sending}
                   />
@@ -222,7 +235,7 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
                   </label>
                   <EmailEditor
                     value={message}
-                    onChange={setMessage}
+                    onChange={v => { setMessage(v); setIsDirty(true); }}
                     error={errors.message}
                     minHeight="180px"
                     disabled={sending}
@@ -276,10 +289,10 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
 
               {/* ══════ System recipients ════════════════════════════ */}
               <div className="bg-white dark:bg-gray-800/80 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-                <RecipientSelector
-                  value={recipients}
-                  onChange={setRecipients}
-                  title="Destinatarios del sistema"
+                  <RecipientSelector
+                    value={recipients}
+                    onChange={v => { setRecipients(v); setIsDirty(true); }}
+                    title="Destinatarios del sistema"
                   description="Seleccioná los grupos y/o usuarios registrados a los que querés enviar el correo."
                 />
                 {errors.recipients && <p className="text-[11px] text-red-500">{errors.recipients}</p>}
@@ -303,7 +316,7 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
 
       <ModalFooter className="shrink-0 px-6 sm:px-12 py-5 bg-white dark:bg-gray-800/80 border-t border-gray-200 dark:border-gray-700">
         <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-3xl mx-auto">
-          <Button variant="outline" onClick={handleClose} disabled={sending} className="w-full sm:w-auto min-h-11">
+          <Button variant="outline" onClick={sent ? close : handleCloseAttempt} disabled={sending} className="w-full sm:w-auto min-h-11">
             {sent ? 'Cerrar' : 'Cancelar'}
           </Button>
           {!sent && (
@@ -323,7 +336,16 @@ export const ExpressEmailModal = ({ isOpen, onClose }: ExpressEmailModalProps) =
           )}
         </div>
       </ModalFooter>
-    </Modal>
+      </Modal>
+
+      <UnifiedDialog
+        isOpen={showConfirmation}
+        onClose={cancelClose}
+        onConfirm={confirmClose}
+        variant="warning"
+        {...SYSTEM_DIALOGS.closeWithoutSaving}
+      />
+    </>
   );
 };
 

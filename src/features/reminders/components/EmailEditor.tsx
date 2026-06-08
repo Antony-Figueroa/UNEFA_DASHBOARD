@@ -368,7 +368,7 @@ export const EmailEditor = ({
           onInput={handleEditorInput}
           onPaste={handlePaste}
           suppressContentEditableWarning
-          className={`w-full rounded-lg border ${error ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 px-4 py-3 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all overflow-auto resize-y leading-relaxed ${
+          className={`w-full rounded-lg border ${error ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'} bg-white dark:bg-gray-800 px-4 py-3 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all overflow-auto resize-y prose prose-sm max-w-none dark:prose-invert ${
             disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-text'
           }`}
           style={{ minHeight }}
@@ -381,12 +381,11 @@ export const EmailEditor = ({
       {/* Preview */}
       {mode === 'visual' && showPreview && (
         <div
-          className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-5 text-sm overflow-auto"
+          className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 p-5 overflow-auto prose prose-sm max-w-none dark:prose-invert"
           style={{ minHeight }}
         >
           {lastValueRef.current ? (
             <div
-              className="prose prose-sm max-w-none dark:prose-invert"
               dangerouslySetInnerHTML={{
                 __html: lastValueRef.current
                   .replace(/\{\{nombre\}\}/g, '<span class="text-brand-600 bg-brand-50 dark:bg-brand-500/10 px-1 rounded">Juan Pérez</span>')

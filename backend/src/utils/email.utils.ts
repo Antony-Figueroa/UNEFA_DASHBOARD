@@ -84,13 +84,73 @@ const trySimulation = (opts: { to: string; subject: string; html: string; text?:
  * Prioridad: Gmail SMTP → Resend → Simulación en consola.
  */
 export const sendEmail = async (options: { to: string; subject: string; html: string; text?: string }): Promise<SendResult> => {
-  // 1. Gmail SMTP (si está configurado)
   const gmailResult = await tryGmail(options);
   if (gmailResult !== null) return gmailResult;
 
-  // 2. Simulación en consola (Resend deshabilitado por ahora)
   return trySimulation(options);
 };
+
+// ═════════════════════════════════════════════════════════════════
+//  PLANTILLA HTML UNIFICADA
+// ═════════════════════════════════════════════════════════════════
+
+interface EmailTemplateOptions {
+  /** Título del encabezado (se muestra bajo "SIGP UNEFA") */
+  headerSubtitle?: string;
+  /** Color del header gradient. Por defecto azul institucional */
+  headerGradient?: string;
+  /** Color del texto del botón/acento primario */
+  accentColor?: string;
+  /** Ocultar header */
+  noHeader?: boolean;
+}
+
+/**
+ * Construye HTML completo con el branding unificado de SIGP UNEFA.
+ * Todas las funciones de email deben usar esta función para generar el HTML.
+ */
+export const buildEmailHtml = (bodyContent: string, options?: EmailTemplateOptions): string => {
+  const { headerSubtitle = 'Sistema de Gestión de Personal', headerGradient = 'linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%)' } = options || {};
+
+  return `
+    <div style="font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+      ${options?.noHeader ? '' : `
+        <div style="background: ${headerGradient}; padding: 28px 24px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">SIGP UNEFA</h1>
+          <p style="color: rgba(255,255,255,0.75); margin: 6px 0 0; font-size: 13px;">${headerSubtitle}</p>
+        </div>
+      `}
+      <div style="padding: 28px 32px 24px; color: #1e293b; line-height: 1.6;">
+        ${bodyContent}
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+        <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">
+          SIGP UNEFA — Sistema de Gestión de Personal<br>
+          Este es un mensaje automático, por favor no responder.
+        </p>
+      </div>
+    </div>
+  `;
+};
+
+/** Helper para badge/box con información */
+const infoBox = (content: string, bgColor = '#f8fafc', borderColor = '#e2e8f0'): string => `
+  <div style="background: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 8px; padding: 14px 16px; margin: 16px 0;">
+    ${content}
+  </div>
+`;
+
+/** Helper para botón CTA */
+const ctaButton = (url: string, label: string, color = '#1e40af'): string => `
+  <div style="text-align: center; margin: 24px 0;">
+    <a href="${url}" style="display: inline-block; background: ${color}; color: #ffffff; padding: 13px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+      ${label}
+    </a>
+  </div>
+`;
+
+// ═════════════════════════════════════════════════════════════════
+//  FUNCIONES DE EMAIL (todas usan buildEmailHtml)
+// ═════════════════════════════════════════════════════════════════
 
 /**
  * Envía correo de notificación de reseteo de clave para usuario existente.
@@ -98,39 +158,28 @@ export const sendEmail = async (options: { to: string; subject: string; html: st
 export const sendPasswordResetEmail = async (email: string, name: string, userCi: string, tempPass: string): Promise<{ success: boolean; error?: string }> => {
   const portalUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-  const html = `
-    <div style="font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-      <div style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%); padding: 32px 24px; text-align: center;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">SIGP UNEFA</h1>
-        <p style="color: rgba(255,255,255,0.75); margin: 6px 0 0; font-size: 14px;">Sistema de Gestión de Personal</p>
-      </div>
-      <div style="padding: 32px 32px 24px; color: #1e293b; line-height: 1.6;">
-        <h2 style="color: #d97706; font-size: 20px; margin: 0 0 16px;">Clave Reseteada</h2>
-        <p style="margin: 0 0 8px;">Hola <strong>${name}</strong>,</p>
-        <p style="margin: 0 0 16px; color: #475569;">
-          Un administrador ha solicitado el reseteo de tu clave de acceso al SIGP UNEFA.
-        </p>
-        <p style="margin: 0 0 8px; color: #475569;">A continuación tus credenciales temporales:</p>
-        <div style="background-color: #fefce8; padding: 15px; border-radius: 6px; margin: 20px 0; border: 1px solid #fde68a;">
-          <p style="margin: 5px 0;"><strong>Usuario:</strong> ${userCi}</p>
-          <p style="margin: 5px 0;"><strong>Clave Temporal:</strong> <span style="font-family: monospace; font-size: 1.1em; font-weight: bold; color: #92400e;">${tempPass}</span></p>
-        </div>
-        <p style="margin: 0 0 8px; color: #475569;">Al iniciar sesión se te solicitará cambiar esta clave por una nueva.</p>
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${portalUrl}/signin" style="background-color: #d97706; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Ir al Portal</a>
-        </div>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;">
-        <p style="font-size: 0.875rem; color: #64748b;">
-          Si no solicitaste este cambio, contactá al administrador del sistema de inmediato.
-        </p>
-      </div>
-    </div>
+  const body = `
+    <h2 style="color: #d97706; font-size: 20px; margin: 0 0 16px;">Clave Reseteada</h2>
+    <p style="margin: 0 0 8px;">Hola <strong>${name}</strong>,</p>
+    <p style="margin: 0 0 16px; color: #475569;">
+      Un administrador ha solicitado el reseteo de tu clave de acceso al SIGP UNEFA.
+    </p>
+    <p style="margin: 0 0 8px; color: #475569;">A continuación tus credenciales temporales:</p>
+    ${infoBox(`
+      <p style="margin: 5px 0;"><strong>Usuario:</strong> ${userCi}</p>
+      <p style="margin: 5px 0;"><strong>Clave Temporal:</strong> <span style="font-family: monospace; font-size: 1.1em; font-weight: bold; color: #92400e;">${tempPass}</span></p>
+    `, '#fefce8', '#fde68a')}
+    <p style="margin: 0 0 8px; color: #475569;">Al iniciar sesión se te solicitará cambiar esta clave por una nueva.</p>
+    ${ctaButton(`${portalUrl}/signin`, 'Ir al Portal', '#d97706')}
+    <p style="font-size: 0.875rem; color: #64748b;">
+      Si no solicitaste este cambio, contactá al administrador del sistema de inmediato.
+    </p>
   `;
 
   return sendEmail({
     to: email,
     subject: 'Tu clave ha sido reseteada - SIGP UNEFA',
-    html,
+    html: buildEmailHtml(body, { headerSubtitle: 'Seguridad de Cuenta' }),
     text: `Hola ${name}, tu clave de acceso ha sido reseteada. Usuario: ${userCi}, Clave temporal: ${tempPass}. Accedé en: ${portalUrl}/signin`
   });
 };
@@ -142,35 +191,25 @@ export const sendUserCreationEmail = async (email: string, name: string, userCi:
   const portalUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   const validityHours = 24;
 
-  const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
-      <div style="background-color: #1e40af; color: white; padding: 20px; text-align: center;">
-        <h1 style="margin: 0;">SIGP UNEFA</h1>
-      </div>
-      <div style="padding: 30px; color: #1e293b; line-height: 1.6;">
-        <h2 style="color: #1e40af;">¡Bienvenido, ${name}!</h2>
-        <p>Se ha creado exitosamente tu cuenta en el <strong>Sistema de Gestión de Personal UNEFA</strong>.</p>
-        <p>Para acceder por primera vez, utiliza las siguientes credenciales temporales:</p>
-        <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px; margin: 20px 0;">
-          <p style="margin: 5px 0;"><strong>Usuario:</strong> ${userCi}</p>
-          <p style="margin: 5px 0;"><strong>Contraseña Temporal:</strong> ${tempPass}</p>
-        </div>
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${portalUrl}/signin" style="background-color: #1e40af; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Acceder al Portal</a>
-        </div>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;">
-        <p style="font-size: 0.875rem; color: #64748b;">
-          <strong>Nota:</strong> Se te solicitará cambiar tu contraseña obligatoriamente en el primer acceso. 
-          Esta contraseña temporal tiene una validez de ${validityHours} horas.
-        </p>
-      </div>
-    </div>
+  const body = `
+    <h2 style="color: #1e40af; font-size: 20px; margin: 0 0 16px;">¡Bienvenido, ${name}!</h2>
+    <p style="margin: 0 0 12px; color: #475569;">Se ha creado exitosamente tu cuenta en el <strong>Sistema de Gestión de Personal UNEFA</strong>.</p>
+    <p style="margin: 0 0 8px; color: #475569;">Para acceder por primera vez, utiliza las siguientes credenciales temporales:</p>
+    ${infoBox(`
+      <p style="margin: 5px 0;"><strong>Usuario:</strong> ${userCi}</p>
+      <p style="margin: 5px 0;"><strong>Contraseña Temporal:</strong> ${tempPass}</p>
+    `)}
+    <p style="margin: 0 0 4px; font-size: 13px; color: #64748b;">
+      <strong>Nota:</strong> Se te solicitará cambiar tu contraseña obligatoriamente en el primer acceso.
+      Esta contraseña temporal tiene una validez de ${validityHours} horas.
+    </p>
+    ${ctaButton(`${portalUrl}/signin`, 'Acceder al Portal')}
   `;
 
   return sendEmail({
     to: email,
     subject: 'Bienvenido al SIGP UNEFA - Credenciales de Acceso',
-    html,
+    html: buildEmailHtml(body, { headerSubtitle: 'Creación de Cuenta' }),
     text: `Hola ${name}, tu cuenta ha sido creada. Usuario: ${userCi}, Contraseña: ${tempPass}. Accede en: ${portalUrl}/signin`
   });
 };
@@ -181,23 +220,21 @@ export const sendUserCreationEmail = async (email: string, name: string, userCi:
 export const sendLoginNotification = async (email: string, name: string, ip: string, userAgent: string): Promise<{ success: boolean; error?: string }> => {
   const date = new Date().toLocaleString('es-VE');
 
-  const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 30px; color: #1e293b;">
-      <h2 style="color: #1e40af;">Nuevo inicio de sesión</h2>
-      <p>Hola ${name}, se ha detectado un nuevo inicio de sesión en tu cuenta de SIGP UNEFA.</p>
-      <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px; margin: 20px 0;">
-        <p style="margin: 5px 0;"><strong>Fecha:</strong> ${date}</p>
-        <p style="margin: 5px 0;"><strong>IP:</strong> ${ip}</p>
-        <p style="margin: 5px 0;"><strong>Dispositivo:</strong> ${userAgent}</p>
-      </div>
-      <p style="font-size: 0.875rem; color: #64748b;">Si has sido tú, puedes ignorar este mensaje. Si no reconoces este acceso, cambia tu contraseña inmediatamente.</p>
-    </div>
+  const body = `
+    <h2 style="color: #1e40af; font-size: 20px; margin: 0 0 16px;">Nuevo inicio de sesión</h2>
+    <p style="margin: 0 0 12px; color: #475569;">Hola <strong>${name}</strong>, se ha detectado un nuevo inicio de sesión en tu cuenta de SIGP UNEFA.</p>
+    ${infoBox(`
+      <p style="margin: 5px 0;"><strong>Fecha:</strong> ${date}</p>
+      <p style="margin: 5px 0;"><strong>IP:</strong> ${ip}</p>
+      <p style="margin: 5px 0;"><strong>Dispositivo:</strong> ${userAgent}</p>
+    `)}
+    <p style="font-size: 13px; color: #64748b;">Si has sido tú, puedes ignorar este mensaje. Si no reconoces este acceso, cambia tu contraseña inmediatamente.</p>
   `;
 
   return sendEmail({
     to: email,
     subject: 'Notificación de Acceso - SIGP UNEFA',
-    html,
+    html: buildEmailHtml(body, { headerSubtitle: 'Seguridad de Cuenta' }),
     text: `Nuevo inicio de sesión en tu cuenta el ${date} desde la IP ${ip}.`
   });
 };
@@ -210,61 +247,31 @@ export const sendPasswordRecoveryEmail = async (email: string, name: string, tok
   const recoveryUrl = `${portalUrl}/reset-password?token=${token}`;
   const validityHours = 24;
 
-  const html = `
-    <div style="font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-      <!-- Header -->
-      <div style="background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); padding: 32px 24px; text-align: center;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">SIGP UNEFA</h1>
-        <p style="color: rgba(255,255,255,0.75); margin: 6px 0 0; font-size: 14px;">Sistema de Gestión de Personal</p>
-      </div>
-
-      <!-- Body -->
-      <div style="padding: 32px 32px 24px; color: #1e293b; line-height: 1.6;">
-        <h2 style="color: #1e40af; font-size: 20px; margin: 0 0 16px;">Recuperación de Contraseña</h2>
-        <p style="margin: 0 0 8px;">Hola <strong>${name}</strong>,</p>
-        <p style="margin: 0 0 16px; color: #475569;">
-          Recibimos una solicitud para restablecer la contraseña de tu cuenta en el Sistema de Gestión de Personal UNEFA.
-        </p>
-        <p style="margin: 0 0 20px; color: #475569;">
-          Hacé clic en el siguiente botón para crear una nueva contraseña:
-        </p>
-
-        <!-- Button -->
-        <div style="text-align: center; margin: 24px 0;">
-          <a href="${recoveryUrl}" style="display: inline-block; background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); color: #ffffff; padding: 14px 36px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 2px 4px rgba(30,64,175,0.3);">
-            Restablecer Contraseña
-          </a>
-        </div>
-
-        <!-- Fallback link -->
-        <p style="margin: 20px 0 8px; font-size: 13px; color: #64748b;">
-          Si el botón no funciona, copiá y pegá este enlace en tu navegador:
-        </p>
-        <p style="word-break: break-all; color: #2563eb; font-size: 13px; background: #f8fafc; padding: 10px 14px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 0 0 24px; font-family: monospace;">${recoveryUrl}</p>
-
-        <!-- Divider -->
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-
-        <!-- Security notice -->
-        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px 16px; margin: 16px 0;">
-          <p style="margin: 0; font-size: 13px; color: #991b1b;">
-            <strong>⚠️ Importante:</strong> Este enlace expira en ${validityHours} horas. Si no solicitaste este cambio, ignorá este mensaje y contactá al administrador del sistema.
-          </p>
-        </div>
-
-        <!-- Footer -->
-        <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 24px 0 0;">
-          SIGP UNEFA — Sistema de Gestión de Personal<br>
-          Si tenés dudas, contactá a soporte técnico.
-        </p>
-      </div>
+  const body = `
+    <h2 style="color: #1e40af; font-size: 20px; margin: 0 0 16px;">Recuperación de Contraseña</h2>
+    <p style="margin: 0 0 8px;">Hola <strong>${name}</strong>,</p>
+    <p style="margin: 0 0 16px; color: #475569;">
+      Recibimos una solicitud para restablecer la contraseña de tu cuenta en el Sistema de Gestión de Personal UNEFA.
+    </p>
+    <p style="margin: 0 0 20px; color: #475569;">
+      Hacé clic en el siguiente botón para crear una nueva contraseña:
+    </p>
+    ${ctaButton(recoveryUrl, 'Restablecer Contraseña')}
+    <p style="margin: 16px 0 8px; font-size: 13px; color: #64748b;">
+      Si el botón no funciona, copiá y pegá este enlace en tu navegador:
+    </p>
+    <p style="word-break: break-all; color: #2563eb; font-size: 13px; background: #f8fafc; padding: 10px 14px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 0 0 20px; font-family: monospace;">${recoveryUrl}</p>
+    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px 16px; margin: 16px 0;">
+      <p style="margin: 0; font-size: 13px; color: #991b1b;">
+        <strong>⚠️ Importante:</strong> Este enlace expira en ${validityHours} horas. Si no solicitaste este cambio, ignorá este mensaje y contactá al administrador del sistema.
+      </p>
     </div>
   `;
 
   return sendEmail({
     to: email,
     subject: 'Recuperación de Contraseña - SIGP UNEFA',
-    html,
+    html: buildEmailHtml(body, { headerSubtitle: 'Recuperación de Contraseña' }),
     text: `Hola ${name}, restablecé tu contraseña en: ${recoveryUrl}. Este enlace expira en ${validityHours} horas. Si no solicitaste esto, contactá al administrador.`
   });
 };
@@ -275,18 +282,27 @@ export const sendPasswordRecoveryEmail = async (email: string, name: string, tok
 export const sendPasswordChangedNotification = async (email: string, name: string): Promise<{ success: boolean; error?: string }> => {
   const date = new Date().toLocaleString('es-VE');
 
-  const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 30px; color: #1e293b;">
-      <h2 style="color: #10b981;">Contraseña cambiada exitosamente</h2>
-      <p>Hola ${name}, te informamos que la contraseña de tu cuenta en SIGP UNEFA ha sido actualizada correctamente el ${date}.</p>
-      <p style="font-size: 0.875rem; color: #64748b;">Si no has realizado este cambio, contacta al administrador del sistema de inmediato.</p>
+  const body = `
+    <div style="text-align: center; margin-bottom: 8px;">
+      <div style="display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%; background: #d1fae5;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </div>
     </div>
+    <h2 style="color: #059669; font-size: 20px; margin: 0 0 12px; text-align: center;">Contraseña cambiada</h2>
+    <p style="margin: 0; color: #475569; text-align: center;">
+      Hola <strong>${name}</strong>, la contraseña de tu cuenta en SIGP UNEFA ha sido actualizada correctamente <strong>${date}</strong>.
+    </p>
+    <p style="margin: 16px 0 0; font-size: 13px; color: #64748b; text-align: center;">
+      Si no has realizado este cambio, contactá al administrador del sistema de inmediato.
+    </p>
   `;
 
   return sendEmail({
     to: email,
     subject: 'Seguridad: Tu contraseña ha sido cambiada - SIGP UNEFA',
-    html,
+    html: buildEmailHtml(body, { headerSubtitle: 'Seguridad de Cuenta' }),
     text: `Tu contraseña de SIGP UNEFA fue cambiada exitosamente el ${date}.`
   });
 };
@@ -302,22 +318,31 @@ export const sendSecurityAlert = async (email: string, name: string, type: 'FAIL
     ? 'Debido a múltiples intentos de acceso fallidos, tu cuenta ha sido bloqueada temporalmente por seguridad.'
     : 'Se han detectado varios intentos fallidos de inicio de sesión en tu cuenta.';
 
-  const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ef4444; border-radius: 8px; padding: 30px; color: #1e293b;">
-      <h2 style="color: #ef4444;">${title}</h2>
-      <p>Hola ${name}, ${message}</p>
-      <div style="background-color: #fef2f2; padding: 15px; border-radius: 6px; margin: 20px 0;">
-        <p style="margin: 5px 0;"><strong>Fecha:</strong> ${date}</p>
-        <p style="margin: 5px 0;"><strong>Origen IP:</strong> ${ip}</p>
+  const body = `
+    <div style="text-align: center; margin-bottom: 8px;">
+      <div style="display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%; background: #fef2f2;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
       </div>
-      <p>Si no has sido tú, por favor contacta con soporte técnico de UNEFA.</p>
     </div>
+    <h2 style="color: #ef4444; font-size: 20px; margin: 0 0 12px; text-align: center;">${title}</h2>
+    <p style="margin: 0 0 12px; color: #475569; text-align: center;">Hola <strong>${name}</strong>, ${message}</p>
+    ${infoBox(`
+      <p style="margin: 5px 0;"><strong>Fecha:</strong> ${date}</p>
+      <p style="margin: 5px 0;"><strong>Origen IP:</strong> ${ip}</p>
+    `, '#fef2f2', '#fecaca')}
+    <p style="margin: 0; font-size: 13px; color: #64748b; text-align: center;">
+      Si no has sido tú, por favor contactá con soporte técnico de UNEFA.
+    </p>
   `;
 
   return sendEmail({
     to: email,
     subject: `${subject} - SIGP UNEFA`,
-    html,
+    html: buildEmailHtml(body, { headerSubtitle: 'Alerta de Seguridad' }),
     text: `${message} Fecha: ${date}, IP: ${ip}.`
   });
 };
@@ -331,22 +356,10 @@ export const sendPeriodNotification = async (
   message: string,
   periodName: string,
 ): Promise<void> => {
-  const html = `
-    <div style="font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-      <div style="background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); padding: 24px; text-align: center;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 20px;">SIGP UNEFA</h1>
-        <p style="color: rgba(255,255,255,0.75); margin: 6px 0 0; font-size: 13px;">Notificación de Período Académico</p>
-      </div>
-      <div style="padding: 28px; color: #1e293b; line-height: 1.6;">
-        <h2 style="color: #1e40af; font-size: 18px; margin: 0 0 12px;">${subject}</h2>
-        <p style="margin: 0 0 16px; color: #475569;">${message}</p>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-        <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">
-          SIGP UNEFA — Sistema de Gestión de Personal<br>
-          Este es un mensaje automático, por favor no responder.
-        </p>
-      </div>
-    </div>
+  const body = `
+    <h2 style="color: #1e40af; font-size: 18px; margin: 0 0 12px;">${subject}</h2>
+    <p style="margin: 0 0 8px;">Hola <strong>{{name}}</strong>,</p>
+    <p style="margin: 0 0 16px; color: #475569;">${message}</p>
   `;
 
   const results = await Promise.all(
@@ -354,7 +367,7 @@ export const sendPeriodNotification = async (
       sendEmail({
         to: u.email,
         subject: `${subject} - SIGP UNEFA`,
-        html,
+        html: buildEmailHtml(body.replace('{{name}}', u.name), { headerSubtitle: 'Notificación de Período Académico' }),
         text: `${subject}\n\nHola ${u.name},\n\n${message}`,
       })
     )

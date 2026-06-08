@@ -63,7 +63,7 @@ interface Props {
 }
 
 function calcProp(parcial: number, weight: number): string {
-  return ((parcial * weight) / 100).toFixed(2);
+  return ((parcial * weight) / 100).toFixed(1);
 }
 
 function calcTotal(evaluaciones: Props['data']['evaluaciones']): string {
@@ -71,7 +71,7 @@ function calcTotal(evaluaciones: Props['data']['evaluaciones']): string {
   if (evaluaciones.tutorInstitucional) total += (evaluaciones.tutorInstitucional.parcial * 40) / 100;
   if (evaluaciones.tutorAcademico) total += (evaluaciones.tutorAcademico.parcial * 30) / 100;
   if (evaluaciones.comiteEvaluador) total += (evaluaciones.comiteEvaluador.parcial * 30) / 100;
-  return total.toFixed(2);
+  return total.toFixed(1);
 }
 
 export function EvaluacionFinalPDF({ data, textos }: Props) {

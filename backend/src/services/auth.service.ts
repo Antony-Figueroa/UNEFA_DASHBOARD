@@ -87,6 +87,26 @@ interface UserKeyRow {
   IS_TEMPORARY?: boolean;
 }
 
+/**
+ * Genera un fingerprint simple del dispositivo a partir del User-Agent.
+ * Extrae el navegador y SO para detectar si es un dispositivo conocido.
+ */
+const getDeviceFingerprint = (userAgent: string): string => {
+  const ua = userAgent.toLowerCase();
+  const browser = ua.includes('firefox') ? 'firefox'
+    : ua.includes('edge') || ua.includes('edg/') ? 'edge'
+    : ua.includes('chrome') ? 'chrome'
+    : ua.includes('safari') ? 'safari'
+    : 'unknown';
+  const os = ua.includes('windows') ? 'windows'
+    : ua.includes('mac os') || ua.includes('macintosh') ? 'mac'
+    : ua.includes('linux') || ua.includes('x11') ? 'linux'
+    : ua.includes('android') ? 'android'
+    : ua.includes('iphone') || ua.includes('ipad') ? 'ios'
+    : 'unknown';
+  return `${browser}-${os}`;
+};
+
 export const login = async (userCi: string, password: string, ip: string, userAgent: string, jwtExpiresIn?: string) => {
    return await dbManager.withRetry(async (supabase) => {
      // 1. Buscar usuario por CI
@@ -242,8 +262,24 @@ export const login = async (userCi: string, password: string, ip: string, userAg
 
     await logAuthAction(user.USER_ID, userCi, 'LOGIN_SUCCESS', ip, userAgent, 'Inicio de sesión exitoso');
 
-    // Notificar inicio de sesión exitoso
-    sendLoginNotification(user.EMAIL, user.NAME, ip, userAgent).catch(console.error);
+    // Notificar solo si es un dispositivo/IP no reconocido
+    const deviceFingerprint = getDeviceFingerprint(userAgent);
+    try {
+      const { count: knownLogins } = await supabase
+        .from('t_auth_log')
+        .select('*', { count: 'exact', head: true })
+        .eq('USER_ID', user.USER_ID)
+        .eq('ACTION', 'LOGIN_SUCCESS')
+        .or(`USER_AGENT.ilike.%${deviceFingerprint}%,IP_ADDRESS.eq.${ip}`)
+        .gte('CREATED_AT', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+      if (!knownLogins || knownLogins === 0) {
+        sendLoginNotification(user.EMAIL, user.NAME, ip, userAgent).catch(console.error);
+      }
+    } catch {
+      // Fallback: enviar notificación si falla la verificación
+      sendLoginNotification(user.EMAIL, user.NAME, ip, userAgent).catch(console.error);
+    }
 
     return { 
       success: true,

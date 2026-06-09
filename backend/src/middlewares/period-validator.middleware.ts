@@ -158,6 +158,58 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
           });
         }
 
+        // --- Validar fecha (misma lógica que Ruta B) ---
+        const dateToValidate = config.skipPeriodStatusCheck ? null : config.extractDate(req);
+        if (dateToValidate) {
+          const dateObj = new Date(dateToValidate);
+          const startDate = new Date(period.START_DATE);
+
+          let effectiveEndDate: Date;
+
+          if (config.usePeriodGraceDays) {
+            if (config.extendEndDateDays !== undefined) {
+              // Modo evaluación: END_DATE + EVALUATION_GRACE_DAYS
+              effectiveEndDate = new Date(period.END_DATE);
+              effectiveEndDate.setDate(effectiveEndDate.getDate() + (period.EVALUATION_GRACE_DAYS ?? 0));
+            } else {
+              // Modo inscripción: START_DATE + ENROLLMENT_GRACE_DAYS
+              effectiveEndDate = new Date(period.START_DATE);
+              effectiveEndDate.setDate(effectiveEndDate.getDate() + (period.ENROLLMENT_GRACE_DAYS ?? 0));
+            }
+          } else {
+            effectiveEndDate = new Date(period.END_DATE);
+            if (config.extendEndDateDays && config.extendEndDateDays > 0) {
+              effectiveEndDate.setDate(effectiveEndDate.getDate() + config.extendEndDateDays);
+            }
+          }
+
+          if (isNaN(dateObj.getTime())) {
+            return res.status(400).json({
+              success: false,
+              message: `La fecha proporcionada para la ${config.resourceName} no es válida.`,
+              code: 'INVALID_DATE',
+            });
+          }
+
+          const isValidStart = dateObj >= startDate;
+          const isValidEnd = config.extendEndDateDays === -1 || dateObj <= effectiveEndDate;
+
+          if (!isValidStart || !isValidEnd) {
+            const formatDate = (d: Date) => d.toLocaleDateString('es-VE');
+            const rangeEnd = config.extendEndDateDays === -1 ? 'sin límite' : formatDate(effectiveEndDate);
+            return res.status(403).json({
+              success: false,
+              message: `La fecha de la ${config.resourceName} está fuera del rango permitido (${formatDate(startDate)} - ${rangeEnd}).`,
+              code: 'DATE_OUTSIDE_PERIOD',
+              periodStart: period.START_DATE,
+              periodEnd: period.END_DATE,
+              effectiveEndDate: effectiveEndDate.toISOString(),
+              providedDate: dateToValidate,
+              extendEndDateDays: config.extendEndDateDays ?? 0,
+            });
+          }
+        }
+
         (req as any).periodValidation = { period };
         next();
         return;

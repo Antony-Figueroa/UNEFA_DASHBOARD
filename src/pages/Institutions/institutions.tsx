@@ -253,10 +253,16 @@ export default function InstitutionsPage() {
       setIsModalOpen(true);
       setIsEditingLoading(true);
 
+      // Cargar carreras si no están cargadas (careerOptions para el MultiSelect)
+      const careerPromise = careers.length === 0 ? refreshCareers() : Promise.resolve();
+
       // Fetch en background para datos frescos (internshipTypeIds, careerIds, etc.)
       try {
         const { getInstitutionById } = await import("../../features/institutions/services/institutionsService");
-        const freshData = await getInstitutionById(inst.institutionId);
+        const [freshData] = await Promise.all([
+          getInstitutionById(inst.institutionId),
+          careerPromise,
+        ]);
         if (freshData) {
           setEditingInst(freshData);
         }

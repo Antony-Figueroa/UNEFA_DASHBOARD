@@ -168,9 +168,12 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
 
           if (config.usePeriodGraceDays) {
             if (config.extendEndDateDays !== undefined) {
-              // Modo evaluación: END_DATE + EVALUATION_GRACE_DAYS
+              // Modo evaluación: END_DATE + extendEndDateDays (desde config/toggle UI)
               effectiveEndDate = new Date(period.END_DATE);
-              effectiveEndDate.setDate(effectiveEndDate.getDate() + (period.EVALUATION_GRACE_DAYS ?? 0));
+              const extraDays = config.extendEndDateDays >= 0
+                ? config.extendEndDateDays
+                : (period.EVALUATION_GRACE_DAYS ?? 0);
+              effectiveEndDate.setDate(effectiveEndDate.getDate() + extraDays);
             } else {
               // Modo inscripción: START_DATE + ENROLLMENT_GRACE_DAYS
               effectiveEndDate = new Date(period.START_DATE);
@@ -291,9 +294,12 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
 
         if (config.usePeriodGraceDays) {
           if (config.extendEndDateDays !== undefined) {
-            // Modo evaluación: END_DATE + EVALUATION_GRACE_DAYS
+            // Modo evaluación: END_DATE + extendEndDateDays (desde config/toggle UI)
             effectiveEndDate = new Date(period.END_DATE);
-            effectiveEndDate.setDate(effectiveEndDate.getDate() + (period.EVALUATION_GRACE_DAYS ?? 0));
+            const extraDays = config.extendEndDateDays >= 0
+              ? config.extendEndDateDays
+              : (period.EVALUATION_GRACE_DAYS ?? 0);
+            effectiveEndDate.setDate(effectiveEndDate.getDate() + extraDays);
           } else {
             // Modo inscripción: START_DATE + ENROLLMENT_GRACE_DAYS
             effectiveEndDate = new Date(period.START_DATE);

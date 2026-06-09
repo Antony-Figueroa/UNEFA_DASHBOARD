@@ -21,6 +21,9 @@ export default function GracePeriodBanner({ period }: GracePeriodBannerProps) {
   const enrollmentRemaining = enrollmentEnd
     ? Math.ceil((enrollmentEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
     : null;
+  const evaluationRemaining = evaluationEnd
+    ? Math.ceil((evaluationEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    : null;
 
   const getColorClass = (remaining: number | null) => {
     if (remaining === null) return 'text-text-tertiary';

@@ -941,6 +941,14 @@ export const requestPasswordResetByCi = async (userCi: string, ip: string, userA
       };
     }
 
+    if (!user.EMAIL) {
+      return {
+        success: false,
+        status: 400,
+        message: 'Tu cuenta no tiene un correo electrónico registrado. Comunicate con un administrador para recuperar tu contraseña.'
+      };
+    }
+
     const token = crypto.randomBytes(32).toString('hex');
     const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
@@ -960,7 +968,16 @@ export const requestPasswordResetByCi = async (userCi: string, ip: string, userA
 
     await logAuthAction(user.USER_ID, user.USER_CI, 'PASSWORD_RESET_REQUESTED', ip, userAgent, 'Solicitud de restablecimiento de contraseña');
 
-    await sendPasswordRecoveryEmail(user.EMAIL, user.NAME, token);
+    const emailResult = await sendPasswordRecoveryEmail(user.EMAIL, user.NAME, token);
+
+    if (!emailResult.success) {
+      console.error(`[Auth] Error enviando email de recuperación a ${user.EMAIL}: ${emailResult.error}`);
+      return {
+        success: false,
+        status: 500,
+        message: 'No se pudo enviar el correo de recuperación. Intentalo más tarde o contactá al administrador.'
+      };
+    }
 
     return { success: true, message: 'Instrucciones enviadas al correo electrónico registrado.' };
   });

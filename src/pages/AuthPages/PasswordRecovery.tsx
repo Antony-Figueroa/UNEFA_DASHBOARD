@@ -260,9 +260,9 @@ export default function PasswordRecovery() {
       <div className="grid grid-cols-2 gap-1.5">
         {[
           { test: password.length >= 12, text: "12+ caracteres" },
-          { test: /[A-Z]/.test(password) && /[a-z]/.test(password), text: "Mayúsculas y minúsculas" },
+          { test: /[A-Z]/.test(password), text: "Mayúscula" },
+          { test: /[a-z]/.test(password), text: "Minúscula" },
           { test: /[0-9]/.test(password), text: "Un número" },
-          { test: /[^A-Za-z0-9]/.test(password), text: "Carácter especial" },
         ].map((req, i) => (
           <div key={i} className="flex items-center gap-1.5">
             <div className={`size-3.5 rounded-full flex items-center justify-center ${req.test ? 'bg-green-100 dark:bg-green-500/20' : 'bg-gray-200 dark:bg-gray-700'}`}>

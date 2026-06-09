@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase.js';
-import { sendNotificationByRole, sendNotificationToUser } from './sse.service.js';
+import { sendNotificationByRole, sendNotificationToUser, sendNotificationToMultipleUsers } from './sse.service.js';
 import { sendPeriodNotification } from '../utils/email.utils.js';
 
 export type NotificationType = 'pre_enrollment' | 'enrollment' | 'tracking' | 'tracking_visit' | 'user_management' | 'reminder' | 'system' | 'approval';
@@ -145,5 +145,157 @@ export const periodNotificationService = {
   notifyAll: async (type: NotificationType, title: string, message: string): Promise<boolean> => {
     const result = await sendNotificationByRole('all', type, title, message);
     return !!result;
+  },
+
+  /**
+   * Notifica a los estudiantes de un período que NO han completado la inscripción
+   * que la holgura (grace period) de inscripción está por cerrar.
+   */
+  notifyGracePeriodClosing: async (periodId: number, daysRemaining: number): Promise<boolean> => {
+    try {
+      // Obtener STUDENTS_ID de prácticas en este período que no hayan completado inscripción
+      const { data: practices, error: practicesError } = await supabase
+        .from('t_professional_practices')
+        .select('STUDENTS_ID')
+        .eq('PERIOD_ID', periodId)
+        .neq('PRACTICES_STATUS', 2); // No están INSCRITOS
+
+      if (practicesError || !practices || practices.length === 0) return false;
+
+      const studentIds = practices.map(p => p.STUDENTS_ID);
+
+      // Obtener USER_ID de esos estudiantes
+      const { data: students, error: studentsError } = await supabase
+        .from('t_students')
+        .select('USER_ID')
+        .in('STUDENTS_ID', studentIds);
+
+      if (studentsError || !students) return false;
+
+      const userIds = students
+        .map(s => s.USER_ID)
+        .filter((id): id is number => id !== null && id !== undefined);
+
+      if (userIds.length === 0) return false;
+
+      let title = '';
+      let message = '';
+
+      if (daysRemaining === 7) {
+        title = '⏰ Holgura de inscripción: 1 semana restante';
+        message = `Queda 1 semana para que cierre la holgura de inscripción del período. Completá tu inscripción a la brevedad.`;
+      } else if (daysRemaining === 3) {
+        title = '⚠️ Holgura de inscripción por cerrar';
+        message = `Quedan solo 3 días para que cierre la holgura de inscripción del período. No esperes más.`;
+      } else {
+        title = '⏰ Recordatorio de holgura de inscripción';
+        message = `Quedan ${daysRemaining} días para que cierre la holgura de inscripción del período.`;
+      }
+
+      const result = await sendNotificationToMultipleUsers(userIds, 'reminder', title, message);
+      return !!result;
+    } catch (err) {
+      console.error('[PeriodNotification] Error in notifyGracePeriodClosing:', err);
+      return false;
+    }
+  },
+
+  /**
+   * Notifica a tutores y estudiantes que el período de evaluación ha comenzado.
+   */
+  notifyEvaluationOpened: async (periodId: number): Promise<boolean> => {
+    try {
+      const title = '📝 Período de evaluación iniciado';
+      const message = 'El período de evaluación de pasantías ha comenzado. Ingresá al sistema para más detalles.';
+
+      // Notificar a tutores
+      await sendNotificationByRole('tutor', 'evaluation', title, message);
+      // Notificar a estudiantes
+      await sendNotificationByRole('student', 'evaluation', title, message);
+
+      return true;
+    } catch (err) {
+      console.error('[PeriodNotification] Error in notifyEvaluationOpened:', err);
+      return false;
+    }
+  },
+
+  /**
+   * Notifica a estudiantes y tutores del período que la holgura de evaluación está por cerrar.
+   */
+  notifyEvaluationGraceClosing: async (periodId: number, daysRemaining: number): Promise<boolean> => {
+    try {
+      // Obtener STUDENTS_ID de prácticas en este período
+      const { data: practices, error: practicesError } = await supabase
+        .from('t_professional_practices')
+        .select('STUDENTS_ID')
+        .eq('PERIOD_ID', periodId);
+
+      if (practicesError || !practices || practices.length === 0) return false;
+
+      const studentIds = practices.map(p => p.STUDENTS_ID);
+
+      // Obtener USER_ID de esos estudiantes
+      const { data: students, error: studentsError } = await supabase
+        .from('t_students')
+        .select('USER_ID')
+        .in('STUDENTS_ID', studentIds);
+
+      if (studentsError) return false;
+
+      const userIds: number[] = (students || [])
+        .map(s => s.USER_ID)
+        .filter((id): id is number => id !== null && id !== undefined);
+
+      // Obtener tutores asignados a estas prácticas
+      const { data: practiceIds } = await supabase
+        .from('t_professional_practices')
+        .select('PROFESSIONAL_PRACTICE_ID')
+        .eq('PERIOD_ID', periodId);
+
+      if (practiceIds && practiceIds.length > 0) {
+        const ppIds = practiceIds.map(p => p.PROFESSIONAL_PRACTICE_ID);
+        const { data: tutorLinks } = await supabase
+          .from('t_professional_practices_tutor')
+          .select('TUTOR_ID')
+          .in('PROFESSIONAL_PRACTICE_ID', ppIds);
+
+        if (tutorLinks && tutorLinks.length > 0) {
+          const tutorIds = [...new Set(tutorLinks.map(t => t.TUTOR_ID))];
+          const { data: tutors } = await supabase
+            .from('t_tutors')
+            .select('USER_ID')
+            .in('TUTOR_ID', tutorIds);
+
+          if (tutors) {
+            const tutorUserIds = tutors
+              .map(t => t.USER_ID)
+              .filter((id): id is number => id !== null && id !== undefined);
+            userIds.push(...tutorUserIds);
+          }
+        }
+      }
+
+      if (userIds.length === 0) return false;
+
+      const uniqueIds = [...new Set(userIds)];
+
+      let title = '';
+      let message = '';
+
+      if (daysRemaining === 3) {
+        title = '⚠️ Holgura de evaluación por cerrar';
+        message = `Quedan solo 3 días para que cierre la holgura de evaluación del período. Completá las evaluaciones pendientes.`;
+      } else {
+        title = '⏰ Recordatorio de holgura de evaluación';
+        message = `Quedan ${daysRemaining} días para que cierre la holgura de evaluación del período.`;
+      }
+
+      const result = await sendNotificationToMultipleUsers(uniqueIds, 'reminder', title, message);
+      return !!result;
+    } catch (err) {
+      console.error('[PeriodNotification] Error in notifyEvaluationGraceClosing:', err);
+      return false;
+    }
   },
 };

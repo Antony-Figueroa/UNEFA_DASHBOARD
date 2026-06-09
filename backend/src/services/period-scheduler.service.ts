@@ -10,6 +10,8 @@ interface Period {
   END_DATE: string;
   PERIOD_STATUS: string;
   STATUS: number;
+  ENROLLMENT_GRACE_DAYS: number;
+  EVALUATION_GRACE_DAYS: number;
 }
 
 // Control de notificaciones por día
@@ -52,23 +54,66 @@ export const runPeriodNotificationScheduler = async () => {
     let notificationsSent = 0;
     
     for (const period of periods) {
+      const enrollmentDays = period.ENROLLMENT_GRACE_DAYS ?? 21;
+      const evaluationDays = period.EVALUATION_GRACE_DAYS ?? 10;
+
+      const startDate = new Date(period.START_DATE);
       const endDate = new Date(period.END_DATE);
+      const graceEndDate = new Date(startDate);
+      graceEndDate.setDate(graceEndDate.getDate() + enrollmentDays);
+      const evaluationGraceEndDate = new Date(endDate);
+      evaluationGraceEndDate.setDate(evaluationGraceEndDate.getDate() + evaluationDays);
+
+      // --- Notificaciones de fin de período (existente) ---
       const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       
-      if (daysRemaining > 7 || daysRemaining < 0) continue;
+      if (daysRemaining >= 0 && daysRemaining <= 7) {
+        const notificationKey = `period_${period.PERIOD_ID}_day_${daysRemaining}`;
+        if (!hasNotifiedToday(notificationKey)) {
+          try {
+            await periodNotificationService.notifyPeriodEndingSoon({
+              description: period.DESCRIPTION,
+              endDate: period.END_DATE,
+            }, daysRemaining);
+            markNotifiedToday(notificationKey);
+            notificationsSent++;
+          } catch (err) {
+            // Silenciar errores de notificación
+          }
+        }
+      }
+
+      // --- Notificaciones de holgura de inscripción ---
+      const graceDaysRemaining = Math.ceil((graceEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      const graceNotificationDays = [7, 3];
       
-      const notificationKey = `period_${period.PERIOD_ID}_day_${daysRemaining}`;
-      if (hasNotifiedToday(notificationKey)) continue;
+      if (graceNotificationDays.includes(graceDaysRemaining)) {
+        const graceKey = `grace_${period.PERIOD_ID}_day_${graceDaysRemaining}`;
+        if (!hasNotifiedToday(graceKey)) {
+          try {
+            await periodNotificationService.notifyGracePeriodClosing(period.PERIOD_ID, graceDaysRemaining);
+            markNotifiedToday(graceKey);
+            notificationsSent++;
+          } catch (err) {
+            // Silenciar errores de notificación
+          }
+        }
+      }
+
+      // --- Notificaciones de holgura de evaluación ---
+      const evalGraceDaysRemaining = Math.ceil((evaluationGraceEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       
-      try {
-        await periodNotificationService.notifyPeriodEndingSoon({
-          description: period.DESCRIPTION,
-          endDate: period.END_DATE,
-        }, daysRemaining);
-        markNotifiedToday(notificationKey);
-        notificationsSent++;
-      } catch (err) {
-        // Silenciar errores de notificación
+      if (evalGraceDaysRemaining === 3) {
+        const evalGraceKey = `eval_grace_${period.PERIOD_ID}_day_${evalGraceDaysRemaining}`;
+        if (!hasNotifiedToday(evalGraceKey)) {
+          try {
+            await periodNotificationService.notifyEvaluationGraceClosing(period.PERIOD_ID, evalGraceDaysRemaining);
+            markNotifiedToday(evalGraceKey);
+            notificationsSent++;
+          } catch (err) {
+            // Silenciar errores de notificación
+          }
+        }
       }
     }
     

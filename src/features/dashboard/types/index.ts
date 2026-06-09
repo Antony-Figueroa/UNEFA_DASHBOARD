@@ -34,6 +34,12 @@ export interface DashboardStats {
     startDate: string;
     /** Period end date (ISO string) */
     endDate: string;
+    /** Grace period end date for enrollment (ISO string) */
+    graceEndDate?: string;
+    /** Grace period end date for evaluations (ISO string) */
+    evaluationGraceEndDate?: string;
+    /** Number of grace days allowed for enrollment */
+    enrollmentGraceDays?: number;
   } | null;
   /** Total number of enrollments */
   totalEnrollments: number;

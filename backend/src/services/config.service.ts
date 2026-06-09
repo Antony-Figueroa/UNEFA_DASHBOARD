@@ -31,6 +31,7 @@ export interface SystemConfig {
   TOTAL_PRESET_QUESTIONS: number;
   TOTAL_USER_QUESTIONS: number;
   TOTAL_ANSWERS: number;
+  PERIOD_VALIDATION_RULES?: Record<string, unknown>;
 }
 
 export const getConfig = async (): Promise<SystemConfig | null> => {

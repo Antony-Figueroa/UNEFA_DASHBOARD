@@ -12,7 +12,7 @@ import { SecurityQuestion, SecurityAnswer } from "../../features/auth/types";
 import { EyeClosedIcon, EyeIcon, ShieldCheckIcon, UserIcon, LockIcon, KeyRoundIcon, CheckCircleIcon, XCircleIcon, ChevronRightIcon } from "lucide-react";
 import CustomSelect from "../../components/form/CustomSelect";
 import { useToast } from "../../context/toast";
-import { firstLoginSchema, changePasswordSchema, FirstLoginFormData } from "../../features/auth/constants/firstLoginValidation";
+import { firstLoginSchema, changePasswordSchema, simplePasswordSchema, FirstLoginFormData } from "../../features/auth/constants/firstLoginValidation";
 import apiClient from "../../api/apiClient";
 
 const steps = [
@@ -68,7 +68,7 @@ export default function FirstLogin() {
   }, []);
 
   const schema = useMemo(() => 
-    isFirstLogin ? firstLoginSchema : changePasswordSchema,
+    isFirstLogin ? firstLoginSchema : simplePasswordSchema,
     [isFirstLogin]
   );
 

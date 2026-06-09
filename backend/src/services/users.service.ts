@@ -606,6 +606,7 @@ const PERMISSION_SEED_DATA = [
   { name: 'culmination:approve', module: 'Culminación', description: 'Aprobar culminación de prácticas' },
   { name: 'activity-logs:view', module: 'Bitácora', description: 'Ver bitácora de actividades' },
   { name: 'activity-logs:create', module: 'Bitácora', description: 'Registrar en bitácora' },
+  { name: 'academic-config:edit', module: 'Configuración Académica', description: 'Editar configuración académica global' },
 ];
 
 const ROLE_PERMISSION_MAP: Record<number, string[]> = {

@@ -21,6 +21,8 @@ export const getPeriodSchema = (existingPeriods: Periodo[], currentPeriodId?: st
     endDate: z.date({
         message: 'La fecha de fin es obligatoria.',
     }),
+    enrollmentGraceDays: z.number().int().min(0, "Mínimo 0 días").max(365, "Máximo 365 días").optional().default(0),
+    evaluationGraceDays: z.number().int().min(0, "Mínimo 0 días").max(365, "Máximo 365 días").optional().default(0),
 }).superRefine((data, ctx) => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);

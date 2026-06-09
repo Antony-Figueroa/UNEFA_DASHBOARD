@@ -3,7 +3,7 @@
  * @description Encapsula la lógica de comunicación con la API para las operaciones CRUD.
  */
 
-import { Periodo, CreatePeriodPayload, UpdatePeriodPayload } from "../types";
+import { Periodo, CreatePeriodPayload, UpdatePeriodPayload, GraceDefaults } from "../types";
 import apiClient from "../../../api/apiClient";
 
 /**
@@ -54,6 +54,14 @@ interface PeriodoApiDTO {
   isInUse?: boolean | number;
   IS_IN_USE?: boolean | number;
   is_in_use?: boolean | number;
+  enrollmentGraceDays?: number;
+  ENROLLMENT_GRACE_DAYS?: number;
+  evaluationGraceDays?: number;
+  EVALUATION_GRACE_DAYS?: number;
+  graceEndDate?: string;
+  GRACE_END_DATE?: string;
+  evaluationGraceEndDate?: string;
+  EVALUATION_GRACE_END_DATE?: string;
   [key: string]: unknown;
 }
 
@@ -102,6 +110,10 @@ const fromApi = (dto: PeriodoApiDTO): Periodo => {
   const statusRaw = dto.STATUS ?? dto.status ?? dto.activo ?? dto.enabled ?? true;
   const code = dto.T_INTERNSHIPS_CODE ?? dto.code ?? dto.codigo ?? "";
   const isInUseRaw = dto.isInUse ?? dto.IS_IN_USE ?? dto.is_in_use ?? false;
+  const enrollmentGraceDaysRaw = dto.enrollmentGraceDays ?? dto.ENROLLMENT_GRACE_DAYS ?? 0;
+  const evaluationGraceDaysRaw = dto.evaluationGraceDays ?? dto.EVALUATION_GRACE_DAYS ?? 0;
+  const graceEndDateRaw = dto.graceEndDate ?? dto.GRACE_END_DATE;
+  const evaluationGraceEndDateRaw = dto.evaluationGraceEndDate ?? dto.EVALUATION_GRACE_END_DATE;
 
   return {
     periodId: String(periodId),
@@ -113,6 +125,10 @@ const fromApi = (dto: PeriodoApiDTO): Periodo => {
     status: typeof statusRaw === 'number' ? statusRaw === 1 : !!statusRaw,
     code: String(code),
     isInUse: typeof isInUseRaw === 'number' ? isInUseRaw === 1 : !!isInUseRaw,
+    enrollmentGraceDays: Number(enrollmentGraceDaysRaw),
+    evaluationGraceDays: Number(evaluationGraceDaysRaw),
+    graceEndDate: graceEndDateRaw ? String(graceEndDateRaw) : undefined,
+    evaluationGraceEndDate: evaluationGraceEndDateRaw ? String(evaluationGraceEndDateRaw) : undefined,
   };
 };
 
@@ -131,6 +147,8 @@ const toApi = (periodo: Partial<Periodo>): Partial<PeriodoApiDTO> => {
   if (typeof periodo.status === 'boolean') dto.status = periodo.status;
   if (periodo.periodId) dto.id = periodo.periodId; 
   if (periodo.code) dto.code = periodo.code;
+  if (periodo.enrollmentGraceDays !== undefined) dto.enrollmentGraceDays = periodo.enrollmentGraceDays;
+  if (periodo.evaluationGraceDays !== undefined) dto.evaluationGraceDays = periodo.evaluationGraceDays;
   return dto;
 };
 
@@ -235,6 +253,59 @@ export const bulkRestore = async (ids: (string | number)[]): Promise<void> => {
     await apiClient.post(`${API_URL}/bulk-restore`, { ids });
   } catch (error) {
     console.error(`[periodService] Error en restauración masiva de periodos:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Actualiza la configuración de holgura de un periodo.
+ *
+ * @param id - Identificador del periodo.
+ * @param data - Días de holgura para inscripciones y evaluaciones.
+ * @returns Promesa con el periodo actualizado.
+ */
+export const updateGraceConfig = async (
+  id: string,
+  data: { enrollmentGraceDays: number; evaluationGraceDays: number }
+): Promise<Periodo> => {
+  try {
+    const response = await apiClient.patch<PeriodoApiDTO>(`${API_URL}/${id}/grace-config`, data);
+    return fromApi(response.data);
+  } catch (error) {
+    console.error(`[periodService] Error al actualizar configuración de holgura:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Obtiene los valores por defecto globales de holgura.
+ *
+ * @returns Promesa con los valores por defecto.
+ */
+export const getGraceDefaults = async (): Promise<GraceDefaults> => {
+  try {
+    const response = await apiClient.get<GraceDefaults>("/academic-config/defaults");
+    return response.data;
+  } catch (error) {
+    console.error(`[periodService] Error al obtener valores por defecto de holgura:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Actualiza los valores por defecto globales de holgura.
+ *
+ * @param data - Nuevos valores por defecto.
+ * @returns Promesa con los valores actualizados.
+ */
+export const updateGraceDefaults = async (
+  data: { defaultEnrollmentGraceDays: number; defaultEvaluationGraceDays: number }
+): Promise<GraceDefaults> => {
+  try {
+    const response = await apiClient.patch<GraceDefaults>("/academic-config/defaults", data);
+    return response.data;
+  } catch (error) {
+    console.error(`[periodService] Error al actualizar valores por defecto de holgura:`, error);
     throw error;
   }
 };

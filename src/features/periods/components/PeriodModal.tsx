@@ -16,6 +16,8 @@ import { getPeriodSchema, PeriodFormData, getLapsoValue } from '../utils/periodV
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
 import { SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
+import { usePermissions } from '../../permissions/hooks/usePermissions';
+import { ShieldOff, Clock } from 'lucide-react';
 
 /**
  * Propiedades del componente PeriodModal.
@@ -57,6 +59,8 @@ export default function PeriodModal({
         defaultValues: {
             year: '',
             periodoTipo: '1',
+            enrollmentGraceDays: 0,
+            evaluationGraceDays: 0,
         },
     });
 
@@ -73,6 +77,9 @@ export default function PeriodModal({
         confirmClose,
         cancelClose,
     } = useUnsavedChanges(isDirty, onClose);
+
+    const { hasPermission } = usePermissions();
+    const canEditGrace = hasPermission('academic-config:edit');
 
     const isCulminado = periodo?.periodStatus === 3;
     const isInCurso = periodo?.periodStatus === 2;
@@ -279,6 +286,8 @@ export default function PeriodModal({
                 periodoTipo: '1',
                 startDate: undefined,
                 endDate: undefined,
+                enrollmentGraceDays: 0,
+                evaluationGraceDays: 0,
             });
         }
     }, [isOpen, reset]);
@@ -307,6 +316,8 @@ export default function PeriodModal({
             periodoTipo: tipo as '1' | '2',
             startDate: !isNaN(inicio.getTime()) ? inicio : undefined,
             endDate: !isNaN(fin.getTime()) ? fin : undefined,
+            enrollmentGraceDays: periodo.enrollmentGraceDays ?? 0,
+            evaluationGraceDays: periodo.evaluationGraceDays ?? 0,
         });
         
         // Finalizar inicialización después de un breve delay
@@ -406,7 +417,9 @@ export default function PeriodModal({
                     startDate: startDateToUse,
                     endDate: data.endDate,
                     periodStatus: periodo.periodStatus,
-                    status: periodo.status
+                    status: periodo.status,
+                    enrollmentGraceDays: data.enrollmentGraceDays ?? 0,
+                    evaluationGraceDays: data.evaluationGraceDays ?? 0,
                 };
                 onSave(updatePayload);
             } else {
@@ -416,7 +429,9 @@ export default function PeriodModal({
                     startDate: startDateToUse,
                     endDate: data.endDate,
                     periodStatus: 1, // Pendiente por defecto
-                    status: true
+                    status: true,
+                    enrollmentGraceDays: data.enrollmentGraceDays ?? 0,
+                    evaluationGraceDays: data.evaluationGraceDays ?? 0,
                 };
                 onSave(createPayload);
             }
@@ -591,6 +606,70 @@ export default function PeriodModal({
                                             : `Duración: ${durationWeeks} semanas`
                                         }
                                     </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Grace Days Section */}
+                    <div className="border-t border-border-light dark:border-border-dark pt-5 mt-5">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Clock className="w-4 h-4 text-text-tertiary" />
+                            <span className="text-sm font-semibold text-text-primary dark:text-white/90">Días de Gracia</span>
+                            {!canEditGrace && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-text-tertiary dark:bg-white/5 dark:text-text-tertiary">
+                                    <ShieldOff className="w-3 h-3" />
+                                    Solo lectura
+                                </span>
+                            )}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-text-primary dark:text-white/90 mb-1.5">
+                                    Días de gracia (inscripción)
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        max={365}
+                                        disabled={!canEditGrace}
+                                        {...register('enrollmentGraceDays', { valueAsNumber: true })}
+                                        className={`w-full h-11 rounded-lg border px-4 py-2.5 text-sm transition-all duration-200
+                                            ${!canEditGrace
+                                                ? 'bg-bg-secondary text-text-disabled border-border-light cursor-not-allowed opacity-60 dark:bg-white/5 dark:border-border-dark'
+                                                : 'bg-bg-main text-text-primary border-border-medium focus:border-brand-300 focus:ring-3 focus:ring-brand-500/20 dark:border-border-dark dark:focus:border-brand-800'
+                                            }
+                                            ${errors.enrollmentGraceDays ? 'border-error-500 focus:border-error-300' : ''}
+                                        `}
+                                    />
+                                </div>
+                                {errors.enrollmentGraceDays && (
+                                    <p className="mt-1 text-xs text-error-500">{errors.enrollmentGraceDays.message}</p>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-text-primary dark:text-white/90 mb-1.5">
+                                    Días de gracia (evaluación)
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        max={365}
+                                        disabled={!canEditGrace}
+                                        {...register('evaluationGraceDays', { valueAsNumber: true })}
+                                        className={`w-full h-11 rounded-lg border px-4 py-2.5 text-sm transition-all duration-200
+                                            ${!canEditGrace
+                                                ? 'bg-bg-secondary text-text-disabled border-border-light cursor-not-allowed opacity-60 dark:bg-white/5 dark:border-border-dark'
+                                                : 'bg-bg-main text-text-primary border-border-medium focus:border-brand-300 focus:ring-3 focus:ring-brand-500/20 dark:border-border-dark dark:focus:border-brand-800'
+                                            }
+                                            ${errors.evaluationGraceDays ? 'border-error-500 focus:border-error-300' : ''}
+                                        `}
+                                    />
+                                </div>
+                                {errors.evaluationGraceDays && (
+                                    <p className="mt-1 text-xs text-error-500">{errors.evaluationGraceDays.message}</p>
                                 )}
                             </div>
                         </div>

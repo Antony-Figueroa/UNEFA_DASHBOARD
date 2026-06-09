@@ -7,6 +7,7 @@ import { useToast } from "../../context/toast";
 import { useEffect, useState } from "react";
 import Slideover from "../../components/ui/slideover/Slideover";
 import PendingTasksPanel from "../../features/dashboard/components/PendingTasksPanel";
+import GracePeriodBanner from "../../features/dashboard/components/GracePeriodBanner";
 
 /**
  * Home (Admin Dashboard)
@@ -42,6 +43,11 @@ export default function Home() {
       />
 
       <div className="space-y-6">
+        {/* Grace Period Banner */}
+        {stats?.currentPeriod && (
+          <GracePeriodBanner period={stats.currentPeriod} />
+        )}
+
         {/* Indicador de datos en caché */}
         {isStale && (
           <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-700 dark:text-amber-400 text-xs">

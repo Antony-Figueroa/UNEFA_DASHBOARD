@@ -3,7 +3,8 @@
  * @description Centraliza el estado, llamadas a API y lógica de negocio (CRUD, alertas).
  */
 
-import { Periodo, CreatePeriodPayload, UpdatePeriodPayload } from "../types";
+import { useState } from "react";
+import { Periodo, CreatePeriodPayload, UpdatePeriodPayload, GraceDefaults } from "../types";
 import * as periodService from "../services/periodService";
 import { useToast } from "../../../context/toast";
 import { ChangeComparison, RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
@@ -77,6 +78,8 @@ const transformPeriodForDisplay = (period: Record<string, unknown>): Record<stri
  */
 export const usePeriods = () => {
     const { addToast } = useToast();
+
+    const [graceDefaults, setGraceDefaults] = useState<GraceDefaults | null>(null);
 
     const {
         data: periodos,
@@ -209,6 +212,56 @@ export const usePeriods = () => {
         }
     };
 
+    /**
+     * Actualiza la configuración de holgura de un periodo.
+     */
+    const updateGraceConfig = async (id: string, data: { enrollmentGraceDays: number; evaluationGraceDays: number }) => {
+        try {
+            await periodService.updateGraceConfig(id, data);
+            addToast({
+                variant: "success",
+                title: "Holgura Configurada",
+                message: "La configuración de holgura ha sido actualizada exitosamente.",
+            });
+            await refreshPeriods();
+        } catch (error: any) {
+            const message = error.response?.data?.message || "Error al actualizar configuración de holgura";
+            addToast({ variant: "error", title: "Error", message });
+            throw error;
+        }
+    };
+
+    /**
+     * Carga los valores por defecto globales de holgura.
+     */
+    const loadGraceDefaults = async () => {
+        try {
+            const defaults = await periodService.getGraceDefaults();
+            setGraceDefaults(defaults);
+        } catch (error) {
+            console.error("[usePeriods] Error al cargar valores por defecto de holgura:", error);
+        }
+    };
+
+    /**
+     * Actualiza los valores por defecto globales de holgura.
+     */
+    const updateGraceDefaults = async (data: { defaultEnrollmentGraceDays: number; defaultEvaluationGraceDays: number }) => {
+        try {
+            const updated = await periodService.updateGraceDefaults(data);
+            setGraceDefaults(updated);
+            addToast({
+                variant: "success",
+                title: "Valores por Defecto Actualizados",
+                message: "Los valores por defecto de holgura han sido actualizados exitosamente.",
+            });
+        } catch (error: any) {
+            const message = error.response?.data?.message || "Error al actualizar valores por defecto";
+            addToast({ variant: "error", title: "Error", message });
+            throw error;
+        }
+    };
+
     return {
         periodos,
         status,
@@ -221,6 +274,10 @@ export const usePeriods = () => {
         toggleStatus,
         bulkRemovePeriods,
         bulkRestorePeriods,
+        updateGraceConfig,
+        graceDefaults,
+        loadGraceDefaults,
+        updateGraceDefaults,
     };
 };
 

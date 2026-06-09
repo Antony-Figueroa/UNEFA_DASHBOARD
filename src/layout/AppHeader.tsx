@@ -8,6 +8,7 @@ import UserDropdown from "../components/header/UserDropdown";
 import { SearchIcon } from "../icons";
 import { usePeriods } from "../features/periods/hooks/usePeriods";
 import { useMemo } from "react";
+import { Clock } from "lucide-react";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
@@ -141,6 +142,12 @@ const AppHeader: React.FC = () => {
                     <p className="text-xs text-success-500 dark:text-success-400/70 mt-0.5 leading-tight whitespace-nowrap">
                       {new Date(currentPeriod.startDate).toLocaleDateString('es-VE', { day: '2-digit', month: 'short' })} → {new Date(currentPeriod.endDate).toLocaleDateString('es-VE', { day: '2-digit', month: 'short', year: '2-digit' })}
                     </p>
+                    {currentPeriod.graceEndDate && (
+                      <GraceLabel
+                        label="Inscripción hasta"
+                        dateStr={currentPeriod.graceEndDate}
+                      />
+                    )}
                   </div>
                 </div>
               )}
@@ -169,6 +176,13 @@ const AppHeader: React.FC = () => {
                   <p className="text-[9px] text-success-500/70 dark:text-success-400/50 whitespace-nowrap leading-tight">
                     {new Date(currentPeriod.startDate).toLocaleDateString('es-VE', { day: '2-digit', month: 'short' })} → {new Date(currentPeriod.endDate).toLocaleDateString('es-VE', { day: '2-digit', month: 'short' })}
                   </p>
+                  {currentPeriod.graceEndDate && (
+                    <GraceLabel
+                      label="Insc"
+                      dateStr={currentPeriod.graceEndDate}
+                      className="text-[8px]"
+                    />
+                  )}
                 </div>
               </div>
             )}
@@ -191,5 +205,31 @@ const AppHeader: React.FC = () => {
     </header>
   );
 };
+
+/**
+ * Helper component to render a grace period label with color coding.
+ */
+function GraceLabel({ label, dateStr, className = "text-xs" }: { label: string; dateStr: string; className?: string }) {
+  const remaining = useMemo(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const end = new Date(dateStr);
+    end.setHours(0, 0, 0, 0);
+    return Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  }, [dateStr]);
+
+  const colorClass = remaining > 7
+    ? "text-success-500 dark:text-success-400/70"
+    : remaining > 0
+      ? "text-warning-500 dark:text-warning-400/70"
+      : "text-error-500 dark:text-error-400/70";
+
+  return (
+    <p className={`${colorClass} mt-0.5 leading-tight whitespace-nowrap ${className}`}>
+      <Clock className="inline w-2.5 h-2.5 mr-0.5 -mt-0.5" />
+      {label}: {new Date(dateStr).toLocaleDateString('es-VE', { day: '2-digit', month: 'short' })}
+    </p>
+  );
+}
 
 export default AppHeader;

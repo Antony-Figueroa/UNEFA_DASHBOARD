@@ -9,6 +9,8 @@ import { Request, Response, NextFunction } from 'express';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { dbManager } from '../lib/db-manager.js';
 import { evaluationConfig } from '../config/evaluation.config.js';
+import { getValidationRule, type ModuleType, type OperationType } from '../config/period-validation.config.js';
+import { getPeriodValidationRule } from '../services/period-validation.service.js';
 import { PRACTICES_STATUS, PERIOD_STATUS, PRACTICES_STATUS_LABELS, PERIOD_STATUS_LABELS } from '../constants/practice-status.constants.js';
 
 // ---------------------------------------------------------------------------
@@ -20,6 +22,8 @@ export interface PeriodData {
   PERIOD_STATUS: string;
   START_DATE: string;
   END_DATE: string;
+  ENROLLMENT_GRACE_DAYS?: number;
+  EVALUATION_GRACE_DAYS?: number;
 }
 
 export interface PracticeData {
@@ -60,6 +64,32 @@ export interface PeriodValidationConfig {
    * Útil para ventanas de evaluación configurables.
    */
   extendEndDateDays?: number;
+  /**
+   * Si es true, usa los días de gracia del periodo (ENROLLMENT_GRACE_DAYS /
+   * EVALUATION_GRACE_DAYS) en lugar del END_DATE estático.
+   *
+   * Comportamiento:
+   * - Si además se especifica `extendEndDateDays` → modo evaluación:
+   *   END_DATE + EVALUATION_GRACE_DAYS.
+   * - Si NO se especifica `extendEndDateDays` → modo inscripción:
+   *   START_DATE + ENROLLMENT_GRACE_DAYS como fecha tope.
+   */
+  usePeriodGraceDays?: boolean;
+  /**
+   * Si es true, salta la validación de PERIOD_STATUS === EN_CURSO.
+   * Útil para actualizaciones de pre-inscripciones donde se necesita
+   * cambiar el periodo aunque el actual ya haya finalizado.
+   */
+  skipPeriodStatusCheck?: boolean;
+  /**
+   * Módulo para búsqueda dinámica de reglas desde DB.
+   * Si se provee (junto con `dbOperation`), las reglas se leen desde
+   * t_config.PERIOD_VALIDATION_RULES en cada request, permitiendo
+   * configuración en tiempo real desde Parámetros del Sistema.
+   */
+  dbModule?: ModuleType;
+  /** Operación para búsqueda dinámica de reglas desde DB. */
+  dbOperation?: OperationType;
 }
 
 // ---------------------------------------------------------------------------
@@ -81,6 +111,11 @@ export interface PeriodValidationConfig {
 export const validatePeriodOperation = (config: PeriodValidationConfig) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // Merge dinámico de reglas desde DB si está configurado
+      if (config.dbModule && config.dbOperation) {
+        const dbRules = await getPeriodValidationRule(config.dbModule, config.dbOperation);
+        config = { ...config, ...dbRules };
+      }
       const supabase = dbManager.getConnection();
 
       // -----------------------------------------------------------------------
@@ -101,7 +136,7 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
 
         const { data: period, error: periodError } = await supabase
           .from('t_internships_period')
-          .select('PERIOD_ID, PERIOD_STATUS, START_DATE, END_DATE')
+          .select('PERIOD_ID, PERIOD_STATUS, START_DATE, END_DATE, ENROLLMENT_GRACE_DAYS, EVALUATION_GRACE_DAYS')
           .eq('PERIOD_ID', periodId)
           .single();
 
@@ -114,7 +149,7 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
         }
 
         // Validar PERIOD_STATUS = '2' (En Curso)
-        if (period.PERIOD_STATUS !== PERIOD_STATUS.EN_CURSO) {
+        if (!config.skipPeriodStatusCheck && period.PERIOD_STATUS !== PERIOD_STATUS.EN_CURSO) {
           return res.status(403).json({
             success: false,
             message: `El periodo académico ${PERIOD_STATUS_LABELS[period.PERIOD_STATUS] || 'Desconocido'} no está activo. Solo se permite esta operación en periodos "En Curso".`,
@@ -169,7 +204,7 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
       // --- Paso 3: Obtener el periodo ---
       const { data: period, error: periodError } = await supabase
         .from('t_internships_period')
-        .select('PERIOD_ID, PERIOD_STATUS, START_DATE, END_DATE')
+        .select('PERIOD_ID, PERIOD_STATUS, START_DATE, END_DATE, ENROLLMENT_GRACE_DAYS, EVALUATION_GRACE_DAYS')
         .eq('PERIOD_ID', practice.PERIOD_ID)
         .single();
 
@@ -182,7 +217,7 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
       }
 
       // --- Paso 4: Validar que el periodo esté "En Curso" ---
-      if (period.PERIOD_STATUS !== PERIOD_STATUS.EN_CURSO) {
+      if (!config.skipPeriodStatusCheck && period.PERIOD_STATUS !== PERIOD_STATUS.EN_CURSO) {
         return res.status(403).json({
           success: false,
           message: `El periodo académico ${PERIOD_STATUS_LABELS[period.PERIOD_STATUS] || 'Desconocido'} no está activo. Solo se permite esta operación en periodos "En Curso".`,
@@ -192,15 +227,31 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
       }
 
       // --- Paso 5: Validar que la fecha esté dentro del rango del periodo (si se proporcionó) ---
-      const dateToValidate = config.extractDate(req);
+      // Si skipPeriodStatusCheck está activo, también se salta la validación de fecha
+      // porque el periodo ya finalizó y la fecha actual estaría fuera de rango.
+      const dateToValidate = config.skipPeriodStatusCheck ? null : config.extractDate(req);
       if (dateToValidate) {
         const dateObj = new Date(dateToValidate);
         const startDate = new Date(period.START_DATE);
         
-        // Calcular endDate efectivo: END_DATE + extendEndDateDays
-        const effectiveEndDate = new Date(period.END_DATE);
-        if (config.extendEndDateDays && config.extendEndDateDays > 0) {
-          effectiveEndDate.setDate(effectiveEndDate.getDate() + config.extendEndDateDays);
+        // Calcular endDate efectivo según la configuración
+        let effectiveEndDate: Date;
+
+        if (config.usePeriodGraceDays) {
+          if (config.extendEndDateDays !== undefined) {
+            // Modo evaluación: END_DATE + EVALUATION_GRACE_DAYS
+            effectiveEndDate = new Date(period.END_DATE);
+            effectiveEndDate.setDate(effectiveEndDate.getDate() + (period.EVALUATION_GRACE_DAYS ?? 0));
+          } else {
+            // Modo inscripción: START_DATE + ENROLLMENT_GRACE_DAYS
+            effectiveEndDate = new Date(period.START_DATE);
+            effectiveEndDate.setDate(effectiveEndDate.getDate() + (period.ENROLLMENT_GRACE_DAYS ?? 0));
+          }
+        } else {
+          effectiveEndDate = new Date(period.END_DATE);
+          if (config.extendEndDateDays && config.extendEndDateDays > 0) {
+            effectiveEndDate.setDate(effectiveEndDate.getDate() + config.extendEndDateDays);
+          }
         }
 
         if (isNaN(dateObj.getTime())) {
@@ -261,6 +312,9 @@ export const validateCreateVisitPeriod = validatePeriodOperation({
   extractPracticeId: (req) => req.body.practiceId,
   extractDate: (req) => req.body.visitDate,
   resourceName: 'visita',
+  ...getValidationRule('visit', 'create'),
+  dbModule: 'visit',
+  dbOperation: 'create',
 });
 
 /**
@@ -281,6 +335,9 @@ export const validateUpdateVisitPeriod = validatePeriodOperation({
   },
   extractDate: (req) => req.body.visitDate || null, // null → skip date validation
   resourceName: 'visita',
+  ...getValidationRule('visit', 'update'),
+  dbModule: 'visit',
+  dbOperation: 'update',
 });
 
 /**
@@ -289,13 +346,19 @@ export const validateUpdateVisitPeriod = validatePeriodOperation({
  * También valida que PRACTICES_STATUS = 2.
  * Respeta evaluationWindowDays desde evaluation.config.ts.
  */
+const evaluationCreateRule = getValidationRule('evaluation', 'create');
+
 export const validateCreateEvaluationPeriod = validatePeriodOperation({
   extractPracticeId: (req) => req.body.professionalPracticeId,
   extractDate: () => new Date().toISOString(),
   resourceName: 'evaluación',
-  requirePracticesStatusInscribed: true,
-  extendEndDateDays: evaluationConfig.evaluationWindowDays,
+  ...evaluationCreateRule,
+  extendEndDateDays: evaluationCreateRule.extendEndDateDays ?? evaluationConfig.evaluationWindowDays,
+  dbModule: 'evaluation',
+  dbOperation: 'create',
 });
+
+const evaluationUpdateRule = getValidationRule('evaluation', 'update');
 
 /**
  * Middleware para validar ACTUALIZACIÓN de evaluaciones.
@@ -316,8 +379,10 @@ export const validateUpdateEvaluationPeriod = validatePeriodOperation({
   },
   extractDate: () => new Date().toISOString(),
   resourceName: 'evaluación',
-  requirePracticesStatusInscribed: true,
-  extendEndDateDays: evaluationConfig.evaluationWindowDays,
+  ...evaluationUpdateRule,
+  extendEndDateDays: evaluationUpdateRule.extendEndDateDays ?? evaluationConfig.evaluationWindowDays,
+  dbModule: 'evaluation',
+  dbOperation: 'update',
 });
 
 // ---------------------------------------------------------------------------
@@ -329,6 +394,8 @@ export const validateUpdateEvaluationPeriod = validatePeriodOperation({
  * Extrae el PERIOD_ID directamente desde req.body.period (description string).
  * No hay práctica todavía — se usa extractPeriodDirectly.
  */
+const preEnrollmentCreateRule = getValidationRule('pre-enrollment', 'create');
+
 export const validateCreatePreEnrollmentPeriod = validatePeriodOperation({
   extractPeriodDirectly: async (req) => {
     const supabase = dbManager.getConnection();
@@ -343,7 +410,12 @@ export const validateCreatePreEnrollmentPeriod = validatePeriodOperation({
   },
   extractDate: () => null,
   resourceName: 'pre-inscripción',
+  ...preEnrollmentCreateRule,
+  dbModule: 'pre-enrollment',
+  dbOperation: 'create',
 });
+
+const preEnrollmentUpdateRule = getValidationRule('pre-enrollment', 'update');
 
 /**
  * Middleware para validar ACTUALIZACIÓN de pre-inscripciones.
@@ -354,6 +426,9 @@ export const validateUpdatePreEnrollmentPeriod = validatePeriodOperation({
   extractPracticeId: (req) => req.params.id,
   extractDate: () => new Date().toISOString(),
   resourceName: 'pre-inscripción',
+  ...preEnrollmentUpdateRule,
+  dbModule: 'pre-enrollment',
+  dbOperation: 'update',
 });
 
 // ---------------------------------------------------------------------------
@@ -365,6 +440,8 @@ export const validateUpdatePreEnrollmentPeriod = validatePeriodOperation({
  * Extrae el PERIOD_ID buscando la práctica pre-inscrita del estudiante.
  * No hay practiceId en el body — se busca por CI del estudiante.
  */
+const enrollmentCreateRule = getValidationRule('enrollment', 'create');
+
 export const validateCreateEnrollmentPeriod = validatePeriodOperation({
   extractPeriodDirectly: async (req) => {
     const supabase = dbManager.getConnection();
@@ -402,9 +479,14 @@ export const validateCreateEnrollmentPeriod = validatePeriodOperation({
 
     return practice?.PERIOD_ID;
   },
-  extractDate: () => null,
+  extractDate: () => new Date().toISOString(),
   resourceName: 'inscripción',
+  ...enrollmentCreateRule,
+  dbModule: 'enrollment',
+  dbOperation: 'create',
 });
+
+const enrollmentUpdateRule = getValidationRule('enrollment', 'update');
 
 /**
  * Middleware para validar ACTUALIZACIÓN de inscripciones.
@@ -412,8 +494,11 @@ export const validateCreateEnrollmentPeriod = validatePeriodOperation({
  */
 export const validateUpdateEnrollmentPeriod = validatePeriodOperation({
   extractPracticeId: (req) => req.params.id,
-  extractDate: () => null,
+  extractDate: () => new Date().toISOString(),
   resourceName: 'inscripción',
+  ...enrollmentUpdateRule,
+  dbModule: 'enrollment',
+  dbOperation: 'update',
 });
 
 export default validatePeriodOperation;

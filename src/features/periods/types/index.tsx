@@ -25,6 +25,14 @@ export interface Periodo {
     code: string;
     /** Indica si el periodo está siendo utilizado por otros registros */
     isInUse?: boolean;
+    /** Días de holgura para inscripciones */
+    enrollmentGraceDays: number;
+    /** Días de holgura para evaluaciones */
+    evaluationGraceDays: number;
+    /** Fecha límite extendida para inscripciones (calculada) */
+    graceEndDate?: string;
+    /** Fecha límite extendida para evaluaciones (calculada) */
+    evaluationGraceEndDate?: string;
 }
 
 /**
@@ -38,6 +46,24 @@ export interface CreatePeriodPayload extends Omit<Periodo, 'periodId' | 'creatio
 export interface UpdatePeriodPayload extends Partial<CreatePeriodPayload> {
     /** Identificador único del periodo a actualizar (requerido) */
     periodId: string;
+}
+
+/**
+ * Configuración de holgura para un periodo académico.
+ */
+export interface GraceConfig {
+    enrollmentGraceDays: number;
+    evaluationGraceDays: number;
+}
+
+/**
+ * Valores por defecto globales de holgura.
+ */
+export interface GraceDefaults {
+    defaultEnrollmentGraceDays: number;
+    defaultEvaluationGraceDays: number;
+    updatedAt?: string;
+    updatedBy?: string;
 }
 
 /**

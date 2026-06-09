@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import * as configService from '../services/config.service.js';
+import { getAllPeriodValidationRules } from '../services/period-validation.service.js';
 
 export const getConfig = async (req: Request, res: Response) => {
   try {
@@ -10,6 +11,10 @@ export const getConfig = async (req: Request, res: Response) => {
       res.status(404).json({ message: 'Configuración no encontrada' });
       return;
     }
+
+    const validationRules = config.PERIOD_VALIDATION_RULES
+      ? (config.PERIOD_VALIDATION_RULES as Record<string, any>)
+      : await getAllPeriodValidationRules();
 
     const categorizedConfig = [
       {
@@ -52,6 +57,20 @@ export const getConfig = async (req: Request, res: Response) => {
         items: [
           { id: 'log_retention', key: 'EXPIRATION_DAYS', label: 'Retención de Logs (días)', value: 90, type: 'number', description: 'Días que se mantienen los registros de actividad' }
         ]
+      },
+      {
+        category: 'Validación de Periodos',
+        items: [
+          { id: 'val_pre_enrollment_create_skip_status', key: 'PV_pre-enrollment_create_skipPeriodStatusCheck', label: 'Pre-inscripción (crear) — saltar periodo activo', value: validationRules['pre-enrollment']?.create?.skipPeriodStatusCheck ?? false, type: 'boolean', description: 'Permite crear pre-inscripciones aunque el periodo no esté activo' },
+          { id: 'val_pre_enrollment_update_skip_status', key: 'PV_pre-enrollment_update_skipPeriodStatusCheck', label: 'Pre-inscripción (editar) — saltar periodo activo', value: validationRules['pre-enrollment']?.update?.skipPeriodStatusCheck ?? true, type: 'boolean', description: 'Permite editar pre-inscripciones aunque el periodo haya finalizado' },
+          { id: 'val_enrollment_create_skip_status', key: 'PV_enrollment_create_skipPeriodStatusCheck', label: 'Inscripción (crear) — saltar periodo activo', value: validationRules.enrollment?.create?.skipPeriodStatusCheck ?? false, type: 'boolean', description: 'Permite crear inscripciones aunque el periodo no esté activo' },
+          { id: 'val_enrollment_update_skip_status', key: 'PV_enrollment_update_skipPeriodStatusCheck', label: 'Inscripción (editar) — saltar periodo activo', value: validationRules.enrollment?.update?.skipPeriodStatusCheck ?? false, type: 'boolean', description: 'Permite editar inscripciones aunque el periodo haya finalizado' },
+          { id: 'val_enrollment_create_use_grace', key: 'PV_enrollment_create_usePeriodGraceDays', label: 'Inscripción (crear) — usar días de gracia', value: validationRules.enrollment?.create?.usePeriodGraceDays ?? true, type: 'boolean', description: 'Usa ENROLLMENT_GRACE_DAYS como fecha tope en inscripciones' },
+          { id: 'val_enrollment_update_use_grace', key: 'PV_enrollment_update_usePeriodGraceDays', label: 'Inscripción (editar) — usar días de gracia', value: validationRules.enrollment?.update?.usePeriodGraceDays ?? true, type: 'boolean', description: 'Usa ENROLLMENT_GRACE_DAYS como fecha tope al editar inscripciones' },
+          { id: 'val_evaluation_create_skip_status', key: 'PV_evaluation_create_skipPeriodStatusCheck', label: 'Evaluación (crear) — saltar periodo activo', value: validationRules.evaluation?.create?.skipPeriodStatusCheck ?? false, type: 'boolean', description: 'Permite crear evaluaciones aunque el periodo no esté activo' },
+          { id: 'val_evaluation_create_require_inscribed', key: 'PV_evaluation_create_requirePracticesStatusInscribed', label: 'Evaluación (crear) — requiere práctica inscrita', value: validationRules.evaluation?.create?.requirePracticesStatusInscribed ?? true, type: 'boolean', description: 'Exige que la práctica esté en estado INSCRITO para evaluar' },
+          { id: 'val_evaluation_extend_days', key: 'PV_evaluation_extendEndDateDays', label: 'Evaluación — días extra después del cierre', value: validationRules.evaluation?.create?.extendEndDateDays ?? 10, type: 'number', description: 'Días adicionales después del END_DATE para permitir evaluaciones (0=estricto, -1=sin límite)' },
+        ]
       }
     ];
 
@@ -71,14 +90,54 @@ export const updateConfig = async (req: Request, res: Response) => {
     const updates = req.body;
 
     const dbUpdates: Record<string, number> = {};
+    let periodValidationUpdates: Record<string, any> | null = null;
 
     Object.entries(updates).forEach(([key, value]) => {
-      if (typeof value === 'boolean') {
+      // Las claves PV_ modifican el JSONB PERIOD_VALIDATION_RULES
+      if (key.startsWith('PV_')) {
+        if (!periodValidationUpdates) {
+          periodValidationUpdates = {};
+        }
+        // formato: PV_{module}_{operation}_{field}
+        // ej: PV_pre-enrollment_create_skipPeriodStatusCheck
+        const parts = key.split('_');
+        if (parts.length >= 4) {
+          const field = parts.slice(3).join('_');
+          const module = parts[1];
+          const operation = parts[2] as 'create' | 'update';
+          if (!periodValidationUpdates[module]) periodValidationUpdates[module] = {};
+          if (!periodValidationUpdates[module][operation]) periodValidationUpdates[module][operation] = {};
+          periodValidationUpdates[module][operation][field] = value;
+        }
+      } else if (typeof value === 'boolean') {
         dbUpdates[key.toUpperCase()] = value ? 1 : 0;
       } else if (typeof value === 'number') {
         dbUpdates[key.toUpperCase()] = value;
       }
     });
+
+    // Si hay cambios en validación de periodos, mergear con lo existente
+    if (periodValidationUpdates) {
+      const supabase = dbManager.getConnection();
+      const { data: currentConfig } = await supabase
+        .from('t_config')
+        .select('PERIOD_VALIDATION_RULES')
+        .eq('CONFIG_ID', 1)
+        .maybeSingle();
+
+      const currentRules = currentConfig?.PERIOD_VALIDATION_RULES as Record<string, any> || {};
+      
+      // Merge profundo
+      for (const [module, ops] of Object.entries(periodValidationUpdates)) {
+        if (!currentRules[module]) currentRules[module] = {};
+        for (const [op, fields] of Object.entries(ops as Record<string, any>)) {
+          if (!currentRules[module][op]) currentRules[module][op] = {};
+          Object.assign(currentRules[module][op], fields);
+        }
+      }
+
+      (dbUpdates as any).PERIOD_VALIDATION_RULES = currentRules;
+    }
 
     const updated = await configService.updateConfig(dbUpdates);
 

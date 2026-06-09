@@ -404,7 +404,7 @@ export default function PasswordRecovery() {
                   className="w-full h-12 text-base font-semibold rounded-xl"
                   size="lg"
                   type="submit"
-                  disabled={loading || !isPasswordStrong(newPassword)}
+                  disabled={loading || !newPassword || !confirmPassword}
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">
@@ -642,7 +642,7 @@ export default function PasswordRecovery() {
                   className="flex-1 h-12 text-base font-semibold rounded-xl" 
                   size="lg"
                   type="submit" 
-                  disabled={loading || !isPasswordStrong(newPassword)}
+                  disabled={loading || !newPassword || !confirmPassword}
                 >
                   {loading ? (
                     <span className="flex items-center justify-center gap-2">

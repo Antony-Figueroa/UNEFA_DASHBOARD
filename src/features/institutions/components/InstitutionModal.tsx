@@ -227,7 +227,7 @@ export default function InstitutionModal({
   const [savedDisplayPhoneNumber, setSavedDisplayPhoneNumber] = useState<string>("");
 
   // Determinar si los campos deben estar deshabilitados (todos menos RIF)
-  const isFormDisabled = rifDuplicateStatus === 'rejected';
+  const isFormDisabled = rifDuplicateStatus === 'rejected' || isLoading;
 
   // Handle responsible removal confirmation
   const handleConfirmRemove = async () => {
@@ -881,8 +881,19 @@ export default function InstitutionModal({
           </span>
           <p className="text-sm text-text-secondary">Complete la información de la institución.</p>
         </ModalHeader>
-      <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
-        <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50 relative">
+        {isLoading && editingInst && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-bg-secondary/60 dark:bg-bg-dark/60 rounded-lg backdrop-blur-[1px]">
+            <div className="flex flex-col items-center gap-3">
+              <svg className="animate-spin h-8 w-8 text-brand-500" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              <span className="text-sm text-text-secondary font-medium">Cargando datos de la institución...</span>
+            </div>
+          </div>
+        )}
+        <form onSubmit={handleSubmit(onSubmit)} className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${isLoading && editingInst ? 'opacity-50 pointer-events-none' : ''}`}>
           {existingInstitution && (
             <div className="mb-4 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg md:col-span-2">
               <p className="text-sm text-warning-700 dark:text-warning-300">

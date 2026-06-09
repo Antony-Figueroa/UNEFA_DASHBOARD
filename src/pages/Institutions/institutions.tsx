@@ -148,6 +148,7 @@ export default function InstitutionsPage() {
   // Estados para Instituciones
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInst, setEditingInst] = useState<Institution | null>(null);
+  const [isEditingLoading, setIsEditingLoading] = useState(false);
   const [viewInst, setViewInst] = useState<InstitutionRowData | null>(null);
 
   // Estados para Responsables
@@ -247,20 +248,23 @@ export default function InstitutionsPage() {
   const handleOpenEditModal = async (inst: InstitutionRowData) => {
     const original = institutions.find(i => i.institutionId === inst.institutionId);
     if (original) {
-      // Obtener datos frescos del servidor para asegurar tener internshipTypeIds
+      // Mostrar el modal inmediatamente con datos locales
+      setEditingInst(original);
+      setIsModalOpen(true);
+      setIsEditingLoading(true);
+
+      // Fetch en background para datos frescos (internshipTypeIds, careerIds, etc.)
       try {
         const { getInstitutionById } = await import("../../features/institutions/services/institutionsService");
         const freshData = await getInstitutionById(inst.institutionId);
         if (freshData) {
           setEditingInst(freshData);
-        } else {
-          setEditingInst(original);
         }
       } catch (error) {
-        console.error("Error fetching fresh institution data:", error);
-        setEditingInst(original);
+        console.warn("[handleOpenEditModal] Falló fetch fresco, usando datos locales:", error);
+      } finally {
+        setIsEditingLoading(false);
       }
-      setIsModalOpen(true);
     }
   };
 
@@ -708,7 +712,7 @@ export default function InstitutionsPage() {
          message={confirmation.message}
          confirmLabel={confirmation.confirmText}
           variant={confirmation.variant}
-          isLoading={loadingAction}
+        isLoading={loadingAction || isEditingLoading}
         />
     </>
   );

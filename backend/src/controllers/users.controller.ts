@@ -93,8 +93,9 @@ export const createUser = async (req: AuthRequest, res: Response) => {
     const adminId = req.user?.userId;
     const userData = req.body;
     
-    // La contraseña inicial será la cédula del usuario
-    const tempPass = String(userData.userCi);
+    // Generar clave temporal aleatoria (8 caracteres)
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    const tempPass = Array.from({ length: 8 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
     
     const newUser = await usersService.createUser(userData, tempPass);
     
@@ -110,7 +111,8 @@ export const createUser = async (req: AuthRequest, res: Response) => {
     });
     
     // Enviar email con credenciales (no bloqueante)
-    sendUserCreationEmail(userData.email, userData.name, userData.userCi, tempPass)
+    const fullName = `${userData.name} ${userData.surname}`.trim();
+    sendUserCreationEmail(userData.email, fullName, userData.userCi, tempPass)
       .catch(err => console.error('[UserController] Error sending welcome email:', err));
 
     res.status(201).json(newUser);

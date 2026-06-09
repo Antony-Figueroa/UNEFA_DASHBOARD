@@ -273,30 +273,30 @@ export default function PreEnrollmentModal({
           .filter((p: Periodo) => p.periodStatus === 1 && p.status)
           .sort((a: Periodo, b: Periodo) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
         
-        // Unir: activos primero, luego pendientes ordenados por fecha
-        const availablePeriods = [...activePeriods, ...pendingPeriods];
+        // Mostrar solo el periodo activo, o si no hay activos, el próximo pendiente
+        let selectedPeriods: Periodo[] = [];
+        if (activePeriods.length > 0) {
+          selectedPeriods = [activePeriods[0]];
+        } else if (pendingPeriods.length > 0) {
+          selectedPeriods = [pendingPeriods[0]];
+        }
         
         // Si estamos editando, asegurar que el período original esté incluido
-        let finalPeriods = [...availablePeriods];
         if (editingEntry) {
-          const exists = finalPeriods.some((p: Periodo) => p.description === editingEntry.period);
+          const exists = selectedPeriods.some((p: Periodo) => p.description === editingEntry.period);
           if (!exists) {
             const originalPeriod = periodData.find((p: Periodo) => p.description === editingEntry.period);
             if (originalPeriod) {
-              finalPeriods.push(originalPeriod);
+              selectedPeriods.push(originalPeriod);
             }
           }
         }
 
-        setPeriods(finalPeriods);
+        setPeriods(selectedPeriods);
         
-        // Auto-seleccionar: activo > pendiente más cercano > nada
-        if (!editingEntry && !getValues("period")) {
-          if (activePeriods.length > 0) {
-            setValue("period", activePeriods[0].description);
-          } else if (pendingPeriods.length > 0) {
-            setValue("period", pendingPeriods[0].description);
-          }
+        // Auto-seleccionar
+        if (!editingEntry && !getValues("period") && selectedPeriods.length > 0) {
+          setValue("period", selectedPeriods[0].description);
         }
       } catch (error) {
         console.error("[PreEnrollmentModal] Error al cargar períodos/tipos:", error);

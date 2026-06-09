@@ -5,7 +5,7 @@ import {
   createPeriod, 
   updatePeriod, 
   deletePeriod,
-  getCurrentPeriod,
+  getNextPendingPeriod,
   bulkDeletePeriods,
   bulkRestorePeriods,
   togglePeriodStatus
@@ -18,7 +18,7 @@ const router = Router();
 // Las rutas específicas DEBEN ir antes de /:id para evitar que Express
 // interprete "current", "bulk-delete", "bulk-restore" como un ID
 router.get('/', requirePermission('periods:view'), getPeriods);
-router.get('/current', requirePermission('periods:view'), getCurrentPeriod);
+router.get('/next-pending', requirePermission('periods:view'), getNextPendingPeriod);
 router.post('/bulk-delete', requirePermission('periods:delete'), bulkDeletePeriods);
 router.post('/bulk-restore', requirePermission('periods:edit'), bulkRestorePeriods);
 router.patch('/:id/grace-config', requirePermission('academic-config:edit'), updatePeriodGraceConfig);

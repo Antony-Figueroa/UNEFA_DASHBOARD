@@ -27,66 +27,15 @@ import {
 import { PeriodoRowData } from "../types";
 import PeriodTimeline from "./PeriodTimeline";
 import CurrentPeriodCard from "./CurrentPeriodCard";
-
-// ============================================
-// CONSTANTS
-// ============================================
-const STATUS_COLORS = {
-    1: "warning", // Pendiente
-    2: "success", // En Curso
-    3: "error",   // Culminado
-} as const;
-
-const STATUS_LABELS = {
-    1: "Pendiente",
-    2: "En Curso",
-    3: "Culminado",
-} as const;
+import {
+  STATUS_COLORS,
+  STATUS_LABELS,
+  getSafePeriodStatus,
+  getSafeProgress,
+  getStatusLabel,
+} from "./periodUtils";
 
 type SortKey = keyof PeriodoRowData;
-
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-
-
-/**
- * Obtiene el estatus numérico de un periodo de forma segura.
- * 
- * @param periodo - Objeto de datos del periodo.
- * @returns El estatus como número (1: Pendiente, 2: En Curso, 3: Culminado).
- */
-const getSafePeriodStatus = (periodo: PeriodoRowData): number => {
-    if (!periodo) return 1;
-    // Convierte a número si es necesario
-    const status = periodo.periodStatus;
-    if (typeof status === 'string') return parseInt(status) || 1;
-    return Number(status) || 1;
-};
-
-/**
- * Obtiene el progreso numérico de un periodo de forma segura, normalizado entre 0 y 100.
- * 
- * @param periodo - Objeto de datos del periodo.
- * @returns El progreso como número o null si no aplica.
- */
-const getSafeProgress = (periodo: PeriodoRowData): number | null => {
-    if (!periodo) return null;
-    const progress = periodo.progress;
-    if (progress === undefined || progress === null) return null;
-    const numProgress = Number(progress);
-    return isNaN(numProgress) ? null : Math.min(Math.max(numProgress, 0), 100);
-};
-
-/**
- * Obtiene la etiqueta legible de un estatus de periodo.
- * 
- * @param status - Estatus numérico.
- * @returns Etiqueta de texto.
- */
-const getStatusLabel = (status: number) => {
-    return STATUS_LABELS[status as keyof typeof STATUS_LABELS] || "Desconocido";
-};
 
 /**
  * Propiedades para el sub-componente de botones de acción.
@@ -275,6 +224,19 @@ const PeriodTable = ({
     const [viewMode, setViewMode] = useState<"timeline" | "table">("table");
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+    // IDs elegibles para operaciones bulk (eliminar o restaurar)
+    const eligibleForBulkIds = useMemo(() => {
+      const eligible = new Set<string>();
+      data.forEach(p => {
+        const canDelete = p.status === true && getSafePeriodStatus(p) === 1 && !inUseIds.has(p.periodId);
+        const canRestore = p.status === false;
+        if (canDelete || canRestore) {
+          eligible.add(p.periodId);
+        }
+      });
+      return eligible;
+    }, [data, inUseIds]);
+
     // Período actual (en curso)
     const currentPeriod = useMemo(() => {
         return data.find(p => getSafePeriodStatus(p) === 2) || null;
@@ -287,6 +249,18 @@ const PeriodTable = ({
         });
         setInUseIds(used);
     }, [data]);
+
+    // IDs elegibles realmente procesables (ya filtrados por bulk handler)
+    const actionableSelectedCount = useMemo(() => {
+        let deleteCount = 0;
+        let restoreCount = 0;
+        data.forEach(p => {
+            if (!selectedIds.has(p.periodId)) return;
+            if (p.status === true && getSafePeriodStatus(p) === 1 && !inUseIds.has(p.periodId)) deleteCount++;
+            if (p.status === false) restoreCount++;
+        });
+        return { total: selectedIds.size, deleteCount, restoreCount };
+    }, [data, selectedIds, inUseIds]);
 
     // Verificar si hay algún período "En Curso"
     const hasActivePeriod = useMemo(() => {
@@ -349,14 +323,30 @@ const PeriodTable = ({
     };
 
     const toggleSelectAll = () => {
-        if (selectedIds.size === filteredData.length) {
-            setSelectedIds(new Set());
+        const eligibleIds = filteredData
+            .filter(p => eligibleForBulkIds.has(p.periodId))
+            .map(p => p.periodId);
+        
+        // Si ya están todos los elegibles seleccionados, deseleccionar todo
+        const allEligibleSelected = eligibleIds.length > 0 && eligibleIds.every(id => selectedIds.has(id));
+        
+        if (allEligibleSelected) {
+            // Solo deseleccionar los elegibles, mantener los no elegibles si estaban
+            const newSelected = new Set(selectedIds);
+            eligibleIds.forEach(id => newSelected.delete(id));
+            setSelectedIds(newSelected);
         } else {
-            setSelectedIds(new Set(filteredData.map(p => p.periodId)));
+            // Seleccionar todos los elegibles (merge con lo ya seleccionado)
+            const newSelected = new Set(selectedIds);
+            eligibleIds.forEach(id => newSelected.add(id));
+            setSelectedIds(newSelected);
         }
     };
 
     const toggleSelectRow = (id: string) => {
+        // No permitir seleccionar períodos no elegibles
+        if (!eligibleForBulkIds.has(id)) return;
+        
         const newSelected = new Set(selectedIds);
         if (newSelected.has(id)) {
             newSelected.delete(id);
@@ -367,12 +357,22 @@ const PeriodTable = ({
     };
 
     const handleBulkDelete = () => {
-        const selectedPeriods = data.filter(p => selectedIds.has(p.periodId));
+        const selectedPeriods = data.filter(p => 
+            selectedIds.has(p.periodId) && 
+            p.status === true && 
+            getSafePeriodStatus(p) === 1 && 
+            !inUseIds.has(p.periodId)
+        );
+        if (selectedPeriods.length === 0) return;
         onBulkDelete?.(selectedPeriods);
     };
 
     const handleBulkRestore = () => {
-        const selectedPeriods = data.filter(p => selectedIds.has(p.periodId));
+        const selectedPeriods = data.filter(p => 
+            selectedIds.has(p.periodId) && 
+            p.status === false
+        );
+        if (selectedPeriods.length === 0) return;
         onBulkRestore?.(selectedPeriods);
     };
 
@@ -399,9 +399,9 @@ const PeriodTable = ({
                 </div>
                 <h3 className="text-lg font-semibold text-alert-error-text dark:text-error-400">Error de conexión</h3>
         <p className="mt-2 text-text-secondary dark:text-text-tertiary font-medium">
-          no hay conexion a la bd
+          {error?.message || 'Error de conexión con la base de datos'}
         </p>
-        {error && error.message !== 'no hay conexion a la bd' && (
+        {error && (
           <div className="mt-4 text-xs text-alert-error-text/70 dark:text-error-500/70 italic">
             Detalles: {error.message}
           </div>
@@ -587,31 +587,50 @@ const PeriodTable = ({
 
             {/* Bulk Action Toolbar */}
             {selectedIds.size > 0 && (
-                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 flex items-center justify-between">
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                            {selectedIds.size} elemento{selectedIds.size > 1 ? 's' : ''} seleccionado{selectedIds.size > 1 ? 's' : ''}
+                            {actionableSelectedCount.total} seleccionado{actionableSelectedCount.total > 1 ? 's' : ''}
+                            {actionableSelectedCount.deleteCount > 0 && actionableSelectedCount.restoreCount > 0 && (
+                                <span className="text-xs ml-2 font-normal text-blue-500 dark:text-blue-400">
+                                    ({actionableSelectedCount.deleteCount} a eliminar, {actionableSelectedCount.restoreCount} a restaurar)
+                                </span>
+                            )}
+                            {actionableSelectedCount.deleteCount > 0 && actionableSelectedCount.restoreCount === 0 && (
+                                <span className="text-xs ml-2 font-normal text-blue-500 dark:text-blue-400">
+                                    ({actionableSelectedCount.deleteCount} a eliminar)
+                                </span>
+                            )}
+                            {actionableSelectedCount.restoreCount > 0 && actionableSelectedCount.deleteCount === 0 && (
+                                <span className="text-xs ml-2 font-normal text-blue-500 dark:text-blue-400">
+                                    ({actionableSelectedCount.restoreCount} a restaurar)
+                                </span>
+                            )}
                         </span>
                     </div>
                     <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleBulkRestore}
-                            className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400"
-                        >
-                            <RefreshIcon className="w-4 h-4 mr-1" />
-                            Restaurar
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleBulkDelete}
-                            className="border-red-300 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400"
-                        >
-                            <TrashIcon className="w-4 h-4 mr-1" />
-                            Eliminar
-                        </Button>
+                        {actionableSelectedCount.restoreCount > 0 && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleBulkRestore}
+                                className="border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400"
+                            >
+                                <RefreshIcon className="w-4 h-4 mr-1" />
+                                Restaurar ({actionableSelectedCount.restoreCount})
+                            </Button>
+                        )}
+                        {actionableSelectedCount.deleteCount > 0 && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleBulkDelete}
+                                className="border-red-300 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400"
+                            >
+                                <TrashIcon className="w-4 h-4 mr-1" />
+                                Eliminar ({actionableSelectedCount.deleteCount})
+                            </Button>
+                        )}
                         <Button
                             variant="ghost"
                             size="sm"
@@ -642,7 +661,10 @@ const PeriodTable = ({
                             <TableCell isHeader className="w-10">
                                 <input
                                     type="checkbox"
-                                    checked={selectedIds.size === filteredData.length && filteredData.length > 0}
+                                    checked={
+                                        filteredData.filter(p => eligibleForBulkIds.has(p.periodId)).length > 0 &&
+                                        filteredData.filter(p => eligibleForBulkIds.has(p.periodId)).every(p => selectedIds.has(p.periodId))
+                                    }
                                     onChange={toggleSelectAll}
                                     className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
                                 />
@@ -705,7 +727,25 @@ const PeriodTable = ({
                                                 type="checkbox"
                                                 checked={selectedIds.has(periodo.periodId)}
                                                 onChange={() => toggleSelectRow(periodo.periodId)}
-                                                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                                                disabled={!eligibleForBulkIds.has(periodo.periodId)}
+                                                className={`w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 ${
+                                                    !eligibleForBulkIds.has(periodo.periodId)
+                                                        ? 'opacity-40 cursor-not-allowed'
+                                                        : 'cursor-pointer'
+                                                }`}
+                                                title={
+                                                    !eligibleForBulkIds.has(periodo.periodId)
+                                                        ? periodo.status === false
+                                                            ? 'Período ya inactivo — use restaurar'
+                                                            : periodo.isInUse
+                                                                ? 'Tiene registros asociados'
+                                                                : getSafePeriodStatus(periodo) === 2
+                                                                    ? 'Período en curso — no se puede eliminar'
+                                                                    : getSafePeriodStatus(periodo) === 3
+                                                                        ? 'Período culminado — no se puede eliminar'
+                                                                        : 'No elegible para acciones masivas'
+                                                        : ''
+                                                }
                                             />
                                         </TableCell>
                                         <TableCell className="font-medium text-text-primary dark:text-text-emphasis">
@@ -765,7 +805,7 @@ const PeriodTable = ({
                             })
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-32 text-center text-text-secondary dark:text-text-tertiary">
+                                <TableCell colSpan={7} className="h-32 text-center text-text-secondary dark:text-text-tertiary">
                                     No se encontraron periodos que coincidan con los filtros.
                                 </TableCell>
                             </TableRow>

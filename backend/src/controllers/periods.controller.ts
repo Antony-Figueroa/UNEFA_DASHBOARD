@@ -112,7 +112,7 @@ export const getPeriods = async (_req: Request, res: Response) => {
   }
 };
 
-export const getCurrentPeriod = async (_req: Request, res: Response) => {
+export const getNextPendingPeriod = async (_req: Request, res: Response) => {
   try {
     const data = await dbManager.withRetry(async (supabase) => {
       const { data, error } = await supabase
@@ -165,7 +165,7 @@ export const getPeriodById = async (req: Request, res: Response) => {
 
       if (error) {
         if (error.code === 'PGRST116') { // PostgREST error code for no rows found
-          const notFoundError = new Error(`No se encontró el périodo con PERIOD_ID: ${id}`) as AppError;
+          const notFoundError = new Error(`No se encontró el período con PERIOD_ID: ${id}`) as AppError;
           notFoundError.code = '404';
           throw notFoundError;
         }
@@ -288,9 +288,6 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
 
       const isInUse = usageData && usageData.length > 0;
 
-      // Debug: ver qué campos vienen en el request
-      console.log('[PeriodUpdate] req.body:', JSON.stringify(req.body));
-      
       // Si está en uso y se está cambiando SOLO periodStatus (activar=2 o culminar=3), permitir
       // No validar campos forbidden porque el cambio de estado es válido
       if (isInUse) {
@@ -300,8 +297,6 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
         // Solo permitir si: viene periodStatus Y el status enviado es igual al actual (no se está cambiando status)
         const isOnlyChangingPeriodStatus = newPeriodStatus !== undefined && 
           (req.body.status === undefined || req.body.status === currentStatus || req.body.status === (currentStatus === 1 ? true : false));
-        
-        console.log('[PeriodUpdate] currentStatus:', currentStatus, 'req.body.status:', req.body.status, 'isOnlyChanging:', isOnlyChangingPeriodStatus);
         
         if (isOnlyChangingPeriodStatus) {
           // periodStatus 2 = activar, 3 = culminar - ambos son válidos
@@ -363,38 +358,26 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
         // Solo validar si REALMENTE está cambiando a "En Curso" (no si ya lo está)
         const isChangingToActive = String(periodStatus) === '2' && String(oldData.PERIOD_STATUS) !== '2';
         if (isChangingToActive) { // Intentando activar a "En Curso"
-          const currentPeriodId = parseInt(id, 10); // Convertir a número
-          
-          console.log(`[PeriodValidation] Intentando activar período ID: ${currentPeriodId}`);
-          
+          const currentPeriodId = parseInt(id, 10);
+
           // Obtener todos los períodos pendientes (PERIOD_STATUS = 1) ordenados por fecha
           const { data: pendingPeriods, error: pendingError } = await supabase
             .from(TABLE_NAME)
             .select('PERIOD_ID, DESCRIPTION, START_DATE, END_DATE, PERIOD_STATUS')
             .eq('STATUS', 1)
-            .eq('PERIOD_STATUS', PERIOD_STATUS.PENDIENTE)  // Solo pendientes
+            .eq('PERIOD_STATUS', PERIOD_STATUS.PENDIENTE)
             .order('START_DATE', { ascending: true });
 
-          if (pendingError) {
-            console.error('[PeriodValidation] Error obteniendo períodos pendientes:', pendingError);
-          }
-
-          console.log(`[PeriodValidation] Períodos pendientes encontrados: ${pendingPeriods?.length || 0}`);
-          console.log(`[PeriodValidation] IDs pendientes (ordenados): ${pendingPeriods?.map(p => p.PERIOD_ID).join(', ')}`);
+          if (pendingError) throw pendingError;
 
           if (pendingPeriods && pendingPeriods.length > 0) {
-            // El primer período de la lista ordenada es el MÁS ANTIGUO
             const oldestPending = pendingPeriods[0];
-            
-            // Solo permite activar si ES el más antiguo
+
             if (oldestPending.PERIOD_ID !== currentPeriodId) {
               const errorMsg = `No se puede activar el período "${oldData?.DESCRIPTION}" porque primero debes activar el período "${oldestPending.DESCRIPTION}" (inicio: ${new Date(oldestPending.START_DATE).toLocaleDateString('es-VE')}).`;
-              console.warn(`[PeriodValidation] BLOQUEADO: ${errorMsg}`);
               const validationError = new Error(errorMsg) as AppError;
               validationError.code = '400';
               throw validationError;
-            } else {
-              console.log('[PeriodValidation] OK: Este es el período pendiente más antiguo');
             }
           }
         }
@@ -437,6 +420,13 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
             });
           } catch (notifError) {
             console.error('[PeriodsController] Error en notificación (no crítico):', notifError);
+          }
+
+          // Notificar apertura del período de evaluación
+          try {
+            await periodNotificationService.notifyEvaluationOpened(data[0].PERIOD_ID);
+          } catch (notifError) {
+            console.error('[PeriodsController] Error en notificación de evaluación (no crítico):', notifError);
           }
         }
         
@@ -501,6 +491,23 @@ export const bulkDeletePeriods = async (req: AuthRequest, res: Response) => {
     }
 
     await dbManager.withRetry(async (supabase) => {
+      // Validar que ningún período tenga registros asociados
+      const { data: usageData, error: usageError } = await supabase
+        .from('t_professional_practices')
+        .select('PERIOD_ID')
+        .in('PERIOD_ID', ids);
+
+      if (usageError) throw usageError;
+
+      if (usageData && usageData.length > 0) {
+        const inUseIds = [...new Set(usageData.map(p => p.PERIOD_ID))];
+        const forbiddenError = new Error(
+          `No se pueden eliminar períodos que tienen registros asociados. IDs bloqueados: ${inUseIds.join(', ')}`
+        ) as AppError;
+        forbiddenError.code = '403';
+        throw forbiddenError;
+      }
+
       const { error } = await supabase
         .from(TABLE_NAME)
         .update({ STATUS: 0 })
@@ -579,6 +586,21 @@ export const togglePeriodStatus = async (req: AuthRequest, res: Response) => {
         throw notFoundError;
       }
 
+      // Validar que no tenga registros asociados si se está desactivando
+      if (newStatus === 0) {
+        const { data: usageData } = await supabase
+          .from('t_professional_practices')
+          .select('PERIOD_ID')
+          .eq('PERIOD_ID', id)
+          .limit(1);
+
+        if (usageData && usageData.length > 0) {
+          const usageError = new Error('No se puede desactivar el período porque tiene registros asociados') as AppError;
+          usageError.code = '403';
+          throw usageError;
+        }
+      }
+
       const { error } = await supabase
         .from(TABLE_NAME)
         .update({ STATUS: newStatus })
@@ -627,7 +649,6 @@ export const deletePeriod = async (req: AuthRequest, res: Response) => {
     });
     res.status(204).send();
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Error desconocido';
-    res.status(500).json({ error: message, message: 'no hay conexion a la bd' });
+    handleDbError(res, error);
   }
 };

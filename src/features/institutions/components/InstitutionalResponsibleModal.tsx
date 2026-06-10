@@ -38,7 +38,7 @@ const InstitutionModal = lazy(() => import("./InstitutionModal"));
  * Nueva estructura: institutions es un array de objetos con institutionId y cargo
  */
 const institutionSchema = z.object({
-  institutionId: z.string().min(1, "Institución requerida"),
+  institutionId: z.string().min(1, "Empresa o Institución requerida"),
   cargo: z.string()
     .min(1, "El cargo es obligatorio")
     .max(200, "El cargo es demasiado largo")
@@ -86,7 +86,7 @@ const respSchema = z.object({
     .regex(SAFE_EMAIL_PATTERN, "Email con caracteres no permitidos")
     .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
   // institutions es obligatorio - debe tener al menos una institución con cargo
-  institutions: z.array(institutionSchema).min(1, "Debe agregar al menos una institución con su cargo"),
+  institutions: z.array(institutionSchema).min(1, "Debe agregar al menos una empresa o institución con su cargo"),
 });
 
 /**
@@ -799,12 +799,12 @@ export default function InstitutionalResponsibleModal({
 
               {/* Columna Derecha: Instituciones */}
                <div className="lg:col-span-1">
-                 <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Instituciones *</label>
+                 <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Empresas o Instituciones *</label>
                 {preselectedInstitutionId ? (
                   <div className="space-y-2">
                     <div className="px-4 py-2.5 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-lg flex items-center justify-between">
                       <p className="text-sm font-semibold text-brand-700 dark:text-brand-400">
-                        {preselectedInstitutionName || institutionOptions.find(o => o.value === preselectedInstitutionId)?.label || "Institución seleccionada"}
+                        {preselectedInstitutionName || institutionOptions.find(o => o.value === preselectedInstitutionId)?.label || "Empresa o Institución seleccionada"}
                       </p>
                     </div>
                         <Controller
@@ -868,11 +868,11 @@ export default function InstitutionalResponsibleModal({
 onChange={(val) => {
                               if (val) handleAddInstitution(val);
                             }}
-                            placeholder="Agregar institución..."
+                            placeholder="Agregar empresa o institución..."
                             disabled={!!existingResponsible}
                             
                             onAddNew={() => setIsNewInstitutionModalOpen(true)}
-                            addNewLabel="Crear nueva institución"
+                            addNewLabel="Crear nueva empresa o institución"
                           />
                           
                           {selectedInstitutions.length > 0 && (
@@ -881,7 +881,7 @@ onChange={(val) => {
                                 <div key={inst.institutionId} className={`flex items-center gap-2 p-2 rounded-lg border ${existingResponsible ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600' : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'}`}>
                                   <div className={`flex-1 min-w-0 ${existingResponsible ? 'opacity-60' : ''}`}>
                                     <p className={`text-sm font-medium truncate ${existingResponsible ? 'text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                                      {inst.institutionName || institutionOptions.find(o => o.value === inst.institutionId)?.label || "Institución"}
+                                      {inst.institutionName || institutionOptions.find(o => o.value === inst.institutionId)?.label || "Empresa o Institución"}
                                     </p>
                                   </div>
                                   <input
@@ -1095,8 +1095,8 @@ onChange={(val) => {
                 
                 addToast({
                   variant: "success",
-                  title: "Institución creada",
-                  message: `La institución "${result.name}" ha sido creada y asignada`
+                title: "Empresa o Institución creada",
+                message: `La empresa o institución "${result.name}" ha sido creada y asignada`
                 });
               }
               return result;
@@ -1105,7 +1105,7 @@ onChange={(val) => {
               addToast({
                 variant: "error",
                 title: "Error",
-                message: "No se pudo crear la institución"
+                message: "No se pudo crear la empresa o institución"
               });
             }
           }}

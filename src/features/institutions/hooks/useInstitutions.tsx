@@ -17,7 +17,7 @@ const INSTITUTION_LABELS: Record<string, string> = {
   region: "Región",
   nucleus: "Núcleo",
   extension: "Extensión",
-  institutionType: "Tipo de Institución",
+  institutionType: "Tipo de Empresa o Institución",
 };
 
 /**
@@ -65,7 +65,7 @@ export const useInstitutions = () => {
     setPage,
     setLimit,
   } = useCrud<Institution, CreateInstitutionPayload, UpdateInstitutionPayload>(institutionService, {
-    resourceName: "Institución",
+    resourceName: "Empresa o Institución",
     idField: "institutionId",
     optimistic: true,
     usePagination: true,
@@ -89,10 +89,10 @@ export const useInstitutions = () => {
 
       addToast({
         variant: "success",
-        title: "Institución Registrada",
+        title: "Empresa o Institución Registrada",
         message: (
           <>
-            <p>La institución <strong>{newInst.name}</strong> ha sido registrada exitosamente.</p>
+            <p>La empresa o institución <strong>{newInst.name}</strong> ha sido registrada exitosamente.</p>
             <RecordDetails
               data={humanNewInst as unknown as Record<string, unknown>}
               labels={INSTITUTION_LABELS}
@@ -108,7 +108,7 @@ export const useInstitutions = () => {
       addToast({
         variant: "error",
         title: "Error de Registro",
-        message: "No se pudo registrar la institución. Intente de nuevo.",
+        message: "No se pudo registrar la empresa o institución. Intente de nuevo.",
       });
       return undefined;
     }
@@ -132,7 +132,7 @@ export const useInstitutions = () => {
 
       addToast({
         variant: "success",
-        title: "Institución Actualizada",
+        title: "Empresa o Institución Actualizada",
         message: (
           <>
             <p>Los datos de <strong>{updatedInst.name}</strong> han sido actualizados exitosamente.</p>
@@ -152,7 +152,7 @@ export const useInstitutions = () => {
       addToast({
         variant: "error",
         title: "Error al actualizar",
-        message: "No se pudo actualizar la institución. Intente de nuevo.",
+        message: "No se pudo actualizar la empresa o institución. Intente de nuevo.",
       });
     }
   };
@@ -168,14 +168,14 @@ export const useInstitutions = () => {
 
       addToast({
         variant: newStatus ? "success" : "warning",
-        title: newStatus ? "Institución Restaurada" : "Institución Inactivada",
-        message: `La institución ${inst.name} ahora está ${newStatus ? "activa" : "inactiva"}.`,
+        title: newStatus ? "Empresa o Institución Restaurada" : "Empresa o Institución Inactivada",
+        message: `La empresa o institución ${inst.name} ahora está ${newStatus ? "activa" : "inactiva"}.`,
       });
     } catch (e) {
       console.error("Error toggling institution status:", e);
       const error = e as { response?: { data?: { message?: string } } };
       const errorMessage =
-        error.response?.data?.message || "No se pudo cambiar el estado de la institución.";
+        error.response?.data?.message || "No se pudo cambiar el estado de la empresa o institución.";
       addToast({
         variant: "error",
         title: "Error de validación",
@@ -201,7 +201,7 @@ export const useInstitutions = () => {
           successCount++;
         } else {
           const error = result.reason as { response?: { data?: { message?: string } } };
-          const msg = error.response?.data?.message || 'Error al inactivar institución';
+          const msg = error.response?.data?.message || 'Error al inactivar empresa o institución';
           if (!failMessages.includes(msg)) failMessages.push(msg);
         }
       }
@@ -212,7 +212,7 @@ export const useInstitutions = () => {
         addToast({
           variant: "warning",
           title: "Acción Masiva",
-          message: `${successCount} instituciones han sido inactivadas.`,
+          message: `${successCount} empresas o instituciones han sido inactivadas.`,
         });
       }
 
@@ -239,14 +239,14 @@ export const useInstitutions = () => {
       addToast({
         variant: "success",
         title: "Acción Masiva",
-        message: `${ids.length} instituciones han sido restauradas.`,
+          message: `${ids.length} empresas o instituciones han sido restauradas.`,
       });
     } catch (e) {
       console.error("Error in bulk restore:", e);
       addToast({
         variant: "error",
         title: "Error masivo",
-        message: "No se pudieron restaurar todas las instituciones seleccionadas.",
+        message: "No se pudieron restaurar todas las empresas o instituciones seleccionadas.",
       });
     }
   };

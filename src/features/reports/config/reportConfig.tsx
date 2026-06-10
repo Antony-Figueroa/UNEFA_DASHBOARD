@@ -164,8 +164,8 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
     ],
   },
   "institutions": {
-    title: "Reporte de Instituciones",
-    subtitle: "Listado De Instituciones Registradas",
+    title: "Reporte De Instituciones",
+    subtitle: "Listado De Empresas o Instituciones Registradas",
     type: "pdf",
     loadData: async () => {
       const data = await getInstitutions();
@@ -173,9 +173,9 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
     },
     pdfTemplate: (data) => <InstitutionPDF data={data as any[]} />,
     columns: [
-      { header: "RIF", accessor: "institutionRif" },
-      { header: "Nombre", accessor: "institutionName" },
-      { header: "Región", accessor: "region" },
+      { header: "RIF", accessor: "rif" },
+      { header: "Nombre", accessor: "name" },
+      { header: "Tipo", accessor: "institutionType" },
     ],
   },
   "enrollments": {

@@ -3,7 +3,7 @@
  * @description Modal para crear y editar responsables institucionales.
  */
 
-import { useEffect, useState, useCallback, lazy, Suspense } from "react";
+import { useEffect, useState, useCallback, useMemo, lazy, Suspense } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -86,9 +86,6 @@ const respSchema = z.object({
     .regex(SAFE_EMAIL_PATTERN, "Email con caracteres no permitidos")
     .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
   title: z.string()
-    .max(100, "El título es demasiado largo")
-    .regex(SAFE_TEXT_PATTERN, "Caracteres no permitidos")
-    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
     .optional()
     .or(z.literal("")),
   // institutions es obligatorio - debe tener al menos una institución con cargo
@@ -524,7 +521,7 @@ export default function InstitutionalResponsibleModal({
   useEffect(() => {
     const loadOptions = async () => {
       try {
-        const listNames = ["Nacionalidad", "PREFIJO"];
+        const listNames = ["Nacionalidad", "PREFIJO", "Título"];
         const data = await fetchMultipleLists(listNames);
         const mappedOptions: Record<string, { value: string; label: string }[]> = {};
         
@@ -569,6 +566,10 @@ export default function InstitutionalResponsibleModal({
       }
     }
   }, [isOpen, fetchMultipleLists]);
+
+  const TITULO_OPTIONS = useMemo(() => 
+    (options["Título"] || []).map(opt => ({ value: String(opt.value), label: opt.label })),
+  [options]);
 
   // Funciones para agregar nuevos valores a las listas
   const openAddValueModal = (listName: string, field: keyof RespFormData, title: string) => {
@@ -809,22 +810,29 @@ export default function InstitutionalResponsibleModal({
                   hiddenFields={["sex", "birthDate", "civilStatus", "address"]}
                 />
 
-                {/* Título institucional */}
-                <div className="mt-6">
-                  <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">
-                    Título / Cargo Institucional
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Ej: Coordinador, Director, Gerente..."
-                    className="w-full h-11 rounded-lg border border-border-medium bg-transparent px-4 text-sm text-text-primary placeholder-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 uppercase"
-                    {...register("title")}
-                    disabled={viewOnlyMode}
+                {/* Título */}
+                <div>
+                  <label className="text-sm font-medium text-text-primary dark:text-white/90">Título</label>
+                  <Controller
+                    name="title"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomSelect
+                        id="title"
+                        options={TITULO_OPTIONS}
+                        placeholder="Seleccione Título"
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        value={String(field.value || "")}
+                        disabled={viewOnlyMode}
+                        error={!!errors.title}
+                        onAddNew={() => openAddValueModal("Título", "title", "Agregar Título")}
+                        addNewLabel="Nueva opción"
+                      />
+                    )}
                   />
                   {errors.title && (
-                    <p className="mt-1 text-[11px] font-medium text-red-500">
-                      {errors.title.message as string}
-                    </p>
+                    <p className="mt-1 text-xs text-red-500">{errors.title.message}</p>
                   )}
                 </div>
               </div>

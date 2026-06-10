@@ -64,18 +64,13 @@ export default function TutorsPage() {
     useEffect(() => {
         const loadDynamicLists = async () => {
             try {
-                const listNames = ["Tipo de Practica", "Condición"];
+                const listNames = ["Condición"];
                 const data = await fetchMultipleLists(listNames);
                 
                 const mapped: Record<string, { value: string; label: string }[]> = {};
                 
                 // Fallbacks for critical lists
                 const fallbacks: Record<string, { value: string; label: string }[]> = {
-                    "Tipo de Practica": [
-                        { value: "ÚNICA", label: "ÚNICA" },
-                        { value: "HOSPITALARIA", label: "HOSPITALARIA" },
-                        { value: "COMUNITARIA", label: "COMUNITARIA" },
-                    ],
                     "Condición": [
                         { value: "ORDINARIO", label: "ORDINARIO" },
                         { value: "CONTRATADO", label: "CONTRATADO" },
@@ -145,7 +140,6 @@ export default function TutorsPage() {
     const [viewTutor, setViewTutor] = useState<TutorRowData | null>(null);
     const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
     const [pdfSearchTerm, setPdfSearchTerm] = useState("");
-    const [pdfPracticeTypeFilter, setPdfPracticeTypeFilter] = useState("");
     const [pdfCareerFilter, setPdfCareerFilter] = useState("");
     const [pdfConditionFilter, setPdfConditionFilter] = useState("");
 
@@ -169,7 +163,6 @@ export default function TutorsPage() {
      * Datos filtrados específicamente para el reporte PDF de Tutores.
      */
     const pdfFilteredData = useMemo(() => {
-        const practiceTypeSearch = pdfPracticeTypeFilter.trim().toLowerCase();
         const careerSearch = pdfCareerFilter.trim();
         const conditionSearch = pdfConditionFilter.trim().toLowerCase();
 
@@ -180,14 +173,13 @@ export default function TutorsPage() {
                     matchSearch(t.identificationNumber ?? '', pdfSearchTerm) || 
                     matchSearch(fullName, pdfSearchTerm);
                 
-                const matchesPracticeType = !practiceTypeSearch || (t.practiceTypes || []).some(pt => pt.toLowerCase().includes(practiceTypeSearch));
                 const matchesCareer = !careerSearch || (t.carreras || []).some(c => c === careerSearch);
                 const matchesCondition = !conditionSearch || (t.condition || "").toLowerCase() === conditionSearch;
                 const matchesStatus = t.status === true;
 
-                return matchesSearch && matchesPracticeType && matchesCareer && matchesCondition && matchesStatus;
+                return matchesSearch && matchesCareer && matchesCondition && matchesStatus;
             });
-    }, [tutors, pdfSearchTerm, pdfPracticeTypeFilter, pdfCareerFilter, pdfConditionFilter]);
+    }, [tutors, pdfSearchTerm, pdfCareerFilter, pdfConditionFilter]);
 
     const handleCreate = () => {
         setEditingTutor(null);
@@ -407,7 +399,6 @@ export default function TutorsPage() {
                                 onBulkDelete={handleBulkDelete}
                                 onBulkRestore={handleBulkRestore}
                                 inactiveMode={activeTab === "Inactivas"}
-                                practiceTypeOptions={dynamicLists["Tipo de Practica"] || []}
                                 careerOptions={careerOptions}
                                 careers={careers}
                                 conditionOptions={dynamicLists["Condición"] || []}
@@ -438,7 +429,7 @@ export default function TutorsPage() {
                         onClose={() => setIsPDFModalOpen(false)}
                         title="Reporte de Tutores Activos"
                         data={pdfFilteredData}
-                        template={(data) => <TutorPDF data={data} />}
+                        template={(data) => <TutorPDF data={data} careers={careers} />}
                         fileName={`reporte-tutores-activos-${new Date().toISOString().split('T')[0]}.pdf`}
                         searchTerm={pdfSearchTerm}
                         onSearchChange={setPdfSearchTerm}
@@ -455,24 +446,6 @@ export default function TutorsPage() {
                                     >
                                         <option value="">Todas las Carreras</option>
                                         {careerOptions.map((opt) => (
-                                            <option key={opt.value} value={opt.value}>
-                                                {opt.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-text-tertiary uppercase tracking-widest pl-1">
-                                        Tipo de Práctica
-                                    </label>
-                                    <select
-                                        value={pdfPracticeTypeFilter}
-                                        onChange={(e) => setPdfPracticeTypeFilter(e.target.value)}
-                                        className="w-full px-4 py-2.5 bg-bg-secondary/50 dark:bg-white/5 border border-border-light dark:border-white/10 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all"
-                                    >
-                                        <option value="">Todos los Tipos</option>
-                                        {(dynamicLists["Tipo de Practica"] || []).map((opt) => (
                                             <option key={opt.value} value={opt.value}>
                                                 {opt.label}
                                             </option>
@@ -501,15 +474,17 @@ export default function TutorsPage() {
                         )}
                         columns={[
                             { header: "Cédula", accessor: (t) => `${t.identificationPrefix}-${t.identificationNumber}` },
-                            { header: "Tutor", accessor: (t) => `${t.firstName} ${t.lastName}` },
+                            { header: "Nombre Completo", accessor: (t) => `${t.firstName} ${t.middleName || ""} ${t.lastName} ${t.secondLastName || ""}`.trim() },
                             { 
-                                header: "Carrera(s)", 
+                                header: "Contacto", 
+                                accessor: (t) => `${t.email} / ${t.phone}` 
+                            },
+                            { 
+                                header: "Título", 
                                 accessor: (t) => t.carreras
                                     .map(id => careers.find(c => String(c.careerId) === String(id))?.careerName || id)
-                                    .join(", ") 
+                                    .join(" - ") 
                             },
-                            { header: "Tipo Práctica", accessor: (t) => (t.practiceTypes || []).join(", ") },
-                            { header: "Condición", accessor: "condition" },
                         ]}
                     />
 

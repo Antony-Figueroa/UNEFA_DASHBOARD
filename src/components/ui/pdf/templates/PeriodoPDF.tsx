@@ -19,12 +19,11 @@ const PeriodoPDF: React.FC<PeriodoPDFProps> = ({ data }) => {
   return (
     <PDFLayout
       title="Reporte de Períodos Académicos"
-      subtitle="Historial y estado de los períodos de pasantías"
+      subtitle="Historial y estado de los períodos de Prácticas Profesionales"
     >
       <View style={pdfStyles.table}>
         <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
-          <Text style={[pdfStyles.tableCell, { flex: 1 }]}>Código</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Descripción</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Descripción</Text>
           <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Fecha Inicio</Text>
           <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Fecha Fin</Text>
           <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>Estado</Text>
@@ -32,8 +31,7 @@ const PeriodoPDF: React.FC<PeriodoPDFProps> = ({ data }) => {
 
         {data.map((period, index) => (
           <View key={period.periodId || index} style={pdfStyles.tableRow} wrap={false}>
-            <Text style={[pdfStyles.tableCell, { flex: 1 }]}>{period.code}</Text>
-            <Text style={[pdfStyles.tableCell, { flex: 2 }]}>{period.description}</Text>
+            <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>{period.description}</Text>
             <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>
               {PDFService.formatDate(period.startDate)}
             </Text>

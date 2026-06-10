@@ -508,7 +508,6 @@ export default function Period() {
                         </div>
                     )}
                     columns={[
-                        { header: "Código", accessor: "code" },
                         { header: "Descripción", accessor: "description" },
                         { header: "Fecha Inicio", accessor: (p) => new Date(p.startDate).toLocaleDateString("es-VE") },
                         { header: "Fecha Fin", accessor: (p) => new Date(p.endDate).toLocaleDateString("es-VE") },

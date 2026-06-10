@@ -92,7 +92,7 @@ interface CareerTableProps {
 }
 
 /** Claves por las que se puede ordenar la tabla */
-type SortKey = "careerCode" | "careerName" | "minimumGrade" | "careerAbbreviation";
+type SortKey = "careerCode" | "careerName" | "careerType" | "careerAbbreviation";
 /** Dirección del ordenamiento */
 type SortOrder = "asc" | "desc";
 
@@ -197,6 +197,7 @@ export default function CareerTable({
   onSearchChange,
 }: CareerTableProps) {
   const [practiceTypeFilter, setPracticeTypeFilter] = useState<string>("");
+  const [careerTypeFilter, setCareerTypeFilter] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [expandedRows, setExpandedRows] = useState<Set<string | number>>(new Set());
@@ -233,7 +234,9 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
           c.internshipTypeIds
             .map((t) => String(t).toUpperCase())
             .includes(String(practiceTypeFilter).toUpperCase()));
-      return matchesType;
+      const matchesCareerType =
+        careerTypeFilter === "" || c.careerType === careerTypeFilter;
+      return matchesType && matchesCareerType;
     });
 
     // Aplicar ordenamiento
@@ -254,7 +257,7 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
     });
 
     return filtered;
-  }, [data, practiceTypeFilter, sortConfig]);
+  }, [data, practiceTypeFilter, careerTypeFilter, sortConfig]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -335,6 +338,7 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
   const clearFilters = () => {
     onSearchChange?.("");
     setPracticeTypeFilter("");
+    setCareerTypeFilter("");
   };
 
   const SortIndicator = ({ column }: { column: SortKey }) => {
@@ -412,6 +416,19 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
               className="w-full h-11"
             />
           </div>
+          <div className="relative w-full sm:w-48">
+            <CustomSelect
+              options={[
+                { value: "", label: "Todas" },
+                { value: "CORTA", label: "Corta" },
+                { value: "LARGA", label: "Larga" },
+              ]}
+              value={careerTypeFilter}
+              onChange={setCareerTypeFilter}
+              placeholder="Tipo de Carrera"
+              className="w-full h-11"
+            />
+          </div>
         </div>
 
         <div className="flex items-center justify-between pt-2 border-t border-border-light dark:border-border-dark">
@@ -419,7 +436,7 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
             <div className="text-xs text-text-secondary dark:text-text-tertiary">
               Mostrando <span className="font-bold text-text-primary dark:text-text-emphasis">{filteredData.length}</span> resultados
             </div>
-            {(searchTerm || practiceTypeFilter !== "") && (
+            {(searchTerm || practiceTypeFilter !== "" || careerTypeFilter !== "") && (
               <button
                 onClick={clearFilters}
                 className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
@@ -510,7 +527,7 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
               </TableCell>
               <TableCell
                 isHeader
-                className="table-header-cell cursor-pointer group"
+                className="table-header-cell cursor-pointer group w-[180px]"
                 onClick={async () => handleSort("careerName")}
               >
                 <div className="flex items-center">
@@ -521,11 +538,11 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
               <TableCell
                 isHeader
                 className="table-header-cell cursor-pointer group"
-                onClick={async () => handleSort("minimumGrade")}
+                onClick={async () => handleSort("careerType")}
               >
                 <div className="flex items-center">
-                  Nota mínima
-                  <SortIndicator column="minimumGrade" />
+                  Tipo Carrera
+                  <SortIndicator column="careerType" />
                 </div>
               </TableCell>
               <TableCell isHeader className="table-header-cell">Semestre</TableCell>
@@ -557,11 +574,16 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
                   </TableCell>
                   <TableCell className="table-cell font-medium text-text-primary dark:text-text-emphasis">{c.careerCode}</TableCell>
                   <TableCell className="table-cell">
-                    <Badge color={getCareerColor(c.careerName)} variant="light" size="sm" shape="rounded">
-                      {c.careerName}
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-text-primary dark:text-text-emphasis uppercase tracking-wide">{c.careerAbbreviation}</span>
+                      <span className="text-[10px] text-text-tertiary truncate max-w-[140px]" title={c.careerName}>{c.careerName}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="table-cell">
+                    <Badge color={c.careerType === "CORTA" ? "warning" : "primary"} variant="light" size="sm">
+                      {c.careerType === "CORTA" ? "Corta" : "Larga"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">{formatDecimal(Number(c.minimumGrade))}</TableCell>
                   <TableCell className="table-cell">
                     <Badge color="primary" variant="light" size="sm">
                       {c.semester || "-"}
@@ -611,11 +633,12 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
                     </div>
                     <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron carreras</h3>
                     <p className="mt-1 text-xs text-text-secondary dark:text-text-tertiary">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                    {(searchTerm || practiceTypeFilter !== "") && (
+            {(searchTerm || practiceTypeFilter !== "" || careerTypeFilter !== "") && (
                       <button
                         onClick={() => {
                           onSearchChange?.("");
                           setPracticeTypeFilter("");
+                          setCareerTypeFilter("");
                         }}
                         className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
                       >
@@ -646,7 +669,8 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
                           {c.careerAbbreviation}
                         </Badge>
                       </div>
-                      <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-12 uppercase">
+                      <p className="text-[10px] text-text-tertiary uppercase tracking-wider font-semibold mb-0.5">{c.careerAbbreviation}</p>
+                      <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-12">
                         {c.careerName}
                       </h3>
                       <div className="flex items-center justify-center gap-4 mt-2">
@@ -678,8 +702,10 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
                     <div className="space-y-6">
                       <div className="grid grid-cols-3 gap-4">
                         <div className="bg-bg-secondary dark:bg-white/5 p-3 rounded-xl text-center">
-                          <p className="text-[9px] text-text-tertiary uppercase font-bold mb-1">Nota Mínima</p>
-                          <p className="text-xs font-bold dark:text-text-tertiary">{formatDecimal(Number(c.minimumGrade))}</p>
+                          <p className="text-[9px] text-text-tertiary uppercase font-bold mb-1">Tipo Carrera</p>
+                          <Badge size="sm" color={c.careerType === "CORTA" ? "warning" : "primary"} variant="light">
+                            {c.careerType === "CORTA" ? "Corta" : "Larga"}
+                          </Badge>
                         </div>
                         <div className="bg-bg-secondary dark:bg-white/5 p-3 rounded-xl text-center">
                           <p className="text-[9px] text-text-tertiary uppercase font-bold mb-1">Semestre</p>
@@ -741,11 +767,12 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
             </div>
             <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron carreras</h3>
             <p className="mt-1 text-xs text-text-secondary dark:text-text-tertiary max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-            {(searchTerm || practiceTypeFilter !== "") && (
+            {(searchTerm || practiceTypeFilter !== "" || careerTypeFilter !== "") && (
               <button
                 onClick={() => {
                   onSearchChange?.("");
                   setPracticeTypeFilter("");
+                  setCareerTypeFilter("");
                 }}
                 className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
               >

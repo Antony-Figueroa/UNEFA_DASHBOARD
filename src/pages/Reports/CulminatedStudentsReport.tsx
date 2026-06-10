@@ -17,7 +17,7 @@ export default function CulminatedStudentsReportPage() {
   const [data, setData] = useState<CulminatedStudentReportRow[]>([]);
   const [filters, setFilters] = useState<{
     periodId?: number;
-    careerId?: number;
+    careerIds?: number[];
     status?: string;
     institutionId?: number;
   }>({});
@@ -114,7 +114,7 @@ export default function CulminatedStudentsReportPage() {
         <ComponentCard title="Filtros y Resultados">
           <CulminatedStudentsFilters
             periodId={filters.periodId}
-            careerId={filters.careerId}
+            careerIds={filters.careerIds}
             status={filters.status}
             institutionId={filters.institutionId}
             periods={periods}

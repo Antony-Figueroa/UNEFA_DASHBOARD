@@ -19,7 +19,7 @@ const STUDENT_LABELS: Record<string, string> = {
   firstName: "Nombre",
   lastName: "Apellido",
   identificationNumber: "Cédula",
-  email: "Correo",
+  email: "Correo Electrónico",
   phone: "Teléfono",
   sex: "Sexo",
   birthDate: "Fecha de Nacimiento",

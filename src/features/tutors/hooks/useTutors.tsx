@@ -17,7 +17,7 @@ const TUTOR_LABELS: Record<string, string> = {
   firstName: "Nombre",
   lastName: "Apellido",
   identificationNumber: "Cédula",
-  email: "Correo",
+  email: "Correo Electrónico",
   phone: "Teléfono",
   sex: "Sexo",
   profession: "Profesión",

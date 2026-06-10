@@ -503,39 +503,49 @@ const enrollmentCreateRule = getValidationRule('enrollment', 'create');
 export const validateCreateEnrollmentPeriod = validatePeriodOperation({
   extractPeriodDirectly: async (req) => {
     const supabase = dbManager.getConnection();
-    const { identificationPrefix, identificationNumber } = req.body;
+    const { identificationPrefix, identificationNumber, period } = req.body;
 
-    if (!identificationPrefix || !identificationNumber) return undefined;
+    // Intentar 1: buscar práctica pre-inscrita del estudiante
+    if (identificationPrefix && identificationNumber) {
+      const { data: person } = await supabase
+        .from('t_persons')
+        .select('PERSON_ID')
+        .eq('identification_prefix', identificationPrefix)
+        .eq('ci', identificationNumber)
+        .maybeSingle();
 
-    // Buscar persona por CI
-    const { data: person } = await supabase
-      .from('t_persons')
-      .select('PERSON_ID')
-      .eq('identification_prefix', identificationPrefix)
-      .eq('ci', identificationNumber)
-      .maybeSingle();
+      if (person) {
+        const { data: student } = await supabase
+          .from('t_students')
+          .select('STUDENTS_ID')
+          .eq('PERSON_ID', person.PERSON_ID)
+          .maybeSingle();
 
-    if (!person) return undefined;
+        if (student) {
+          const { data: practice } = await supabase
+            .from('t_professional_practices')
+            .select('PERIOD_ID')
+            .eq('STUDENTS_ID', student.STUDENTS_ID)
+            .eq('PRACTICES_STATUS', PRACTICES_STATUS.PRE_INSCRITO)
+            .eq('STATUS', 1)
+            .maybeSingle();
 
-    // Buscar estudiante
-    const { data: student } = await supabase
-      .from('t_students')
-      .select('STUDENTS_ID')
-      .eq('PERSON_ID', person.PERSON_ID)
-      .maybeSingle();
+          if (practice?.PERIOD_ID) return practice.PERIOD_ID;
+        }
+      }
+    }
 
-    if (!student) return undefined;
+    // Intentar 2: fallback al campo period del body (selección directa del periodo)
+    if (period) {
+      const { data: p } = await supabase
+        .from('t_internships_period')
+        .select('PERIOD_ID')
+        .eq('DESCRIPTION', period)
+        .maybeSingle();
+      if (p?.PERIOD_ID) return p.PERIOD_ID;
+    }
 
-    // Buscar práctica pre-inscrita (PRACTICES_STATUS = PRE_INSCRITO)
-    const { data: practice } = await supabase
-      .from('t_professional_practices')
-      .select('PERIOD_ID')
-      .eq('STUDENTS_ID', student.STUDENTS_ID)
-      .eq('PRACTICES_STATUS', PRACTICES_STATUS.PRE_INSCRITO)
-      .eq('STATUS', 1)
-      .maybeSingle();
-
-    return practice?.PERIOD_ID;
+    return undefined;
   },
   extractDate: () => new Date().toISOString(),
   resourceName: 'inscripción',

@@ -314,9 +314,12 @@ export const generateReport = async (req: Request, res: Response) => {
 
 export const getTutorsAcademicReport = async (req: Request, res: Response) => {
   try {
-    const { periodId, careerId, page: pageQuery, limit: limitQuery } = req.query;
+    const { periodId, careerId, careerIds: careerIdsQuery, page: pageQuery, limit: limitQuery } = req.query;
     const pageNum = Math.max(0, parseInt(pageQuery as string) || 0);
     const limitNum = Math.min(Math.max(1, parseInt(limitQuery as string) || 50), 500);
+    const careerIds = careerIdsQuery
+      ? String(careerIdsQuery).split(',').map(Number).filter(id => !isNaN(id))
+      : [];
     const supabase = dbManager.getConnection();
 
     const { data: tutorPractices, error } = await supabase
@@ -390,6 +393,7 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
 
       if (periodId && practice.PERIOD_ID !== parseInt(periodId as string)) return;
       if (careerId && career?.CAREER_ID !== parseInt(careerId as string)) return;
+      if (careerIds.length > 0 && (!career || !careerIds.includes(career.CAREER_ID))) return;
 
       const tutorKey = tutor.TUTOR_ID;
 
@@ -493,9 +497,12 @@ export interface CulminatedStudentReportRow {
 
 export const getResumenPasantiasReport = async (req: Request, res: Response) => {
   try {
-    const { periodId, careerId, institutionId, extensionFilter, regionFilter, nucleusFilter, page: pageQuery, limit: limitQuery } = req.query;
+    const { periodId, careerId, careerIds: careerIdsQuery, institutionId, extensionFilter, regionFilter, nucleusFilter, page: pageQuery, limit: limitQuery } = req.query;
     const pageNum = Math.max(0, parseInt(pageQuery as string) || 0);
     const limitNum = Math.min(Math.max(1, parseInt(limitQuery as string) || 50), 500);
+    const careerIds = careerIdsQuery
+      ? String(careerIdsQuery).split(',').map(Number).filter(id => !isNaN(id))
+      : [];
     const supabase = dbManager.getConnection();
 
     // Consultamos las practicas profesionales
@@ -541,6 +548,7 @@ export const getResumenPasantiasReport = async (req: Request, res: Response) => 
 
       if (periodId && practice.PERIOD_ID !== parseInt(periodId as string)) return;
       if (careerId && career.CAREER_ID !== parseInt(careerId as string)) return;
+      if (careerIds.length > 0 && !careerIds.includes(career.CAREER_ID)) return;
 
       const key = `${institution.REGION}-${institution.NUCLEUS}-${institution.EXTENSION}-${career.CAREER_ID}-${institution.INSTITUTION_ID}`;
 
@@ -752,9 +760,12 @@ export const getCulminatedStudentsReport = async (req: Request, res: Response) =
 export const getRelacionEmpresasDemandan = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
-    const { periodId, careerId, page: pageQuery, limit: limitQuery } = req.query;
+    const { periodId, careerId, careerIds: careerIdsQuery, page: pageQuery, limit: limitQuery } = req.query;
     const pageNum = Math.max(0, parseInt(pageQuery as string) || 0);
     const limitNum = Math.min(Math.max(1, parseInt(limitQuery as string) || 50), 500);
+    const careerIds = careerIdsQuery
+      ? String(careerIdsQuery).split(',').map(Number).filter(id => !isNaN(id))
+      : [];
 
     let query = supabase
       .from('t_professional_practices')
@@ -768,6 +779,7 @@ export const getRelacionEmpresasDemandan = async (req: Request, res: Response) =
 
     if (periodId) query = query.eq('PERIOD_ID', Number(periodId));
     if (careerId) query = query.eq('CAREER_ID', Number(careerId));
+    if (careerIds.length > 0) query = query.in('CAREER_ID', careerIds);
 
     const { data: practices, error } = await query;
 
@@ -825,9 +837,12 @@ export const getRelacionEmpresasDemandan = async (req: Request, res: Response) =
 export const getDistribucionTutores = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
-    const { periodId, careerId, page: pageQuery, limit: limitQuery } = req.query;
+    const { periodId, careerId, careerIds: careerIdsQuery, page: pageQuery, limit: limitQuery } = req.query;
     const pageNum = Math.max(0, parseInt(pageQuery as string) || 0);
     const limitNum = Math.min(Math.max(1, parseInt(limitQuery as string) || 50), 500);
+    const careerIds = careerIdsQuery
+      ? String(careerIdsQuery).split(',').map(Number).filter(id => !isNaN(id))
+      : [];
 
     let query = supabase
       .from('t_professional_practices')
@@ -845,6 +860,7 @@ export const getDistribucionTutores = async (req: Request, res: Response) => {
 
     if (periodId) query = query.eq('PERIOD_ID', Number(periodId));
     if (careerId) query = query.eq('CAREER_ID', Number(careerId));
+    if (careerIds.length > 0) query = query.in('CAREER_ID', careerIds);
 
     const { data: practices, error } = await query;
 
@@ -894,9 +910,12 @@ export const getDistribucionTutores = async (req: Request, res: Response) => {
 export const getDistribucionTutoresV2 = async (req: Request, res: Response) => {
   try {
     const supabase = dbManager.getConnection();
-    const { periodId, careerId, page: pageQuery, limit: limitQuery } = req.query;
+    const { periodId, careerId, careerIds: careerIdsQuery, page: pageQuery, limit: limitQuery } = req.query;
     const pageNum = Math.max(0, parseInt(pageQuery as string) || 0);
     const limitNum = Math.min(Math.max(1, parseInt(limitQuery as string) || 50), 500);
+    const careerIds = careerIdsQuery
+      ? String(careerIdsQuery).split(',').map(Number).filter(id => !isNaN(id))
+      : [];
 
     let query = supabase
       .from('t_professional_practices')
@@ -915,6 +934,7 @@ export const getDistribucionTutoresV2 = async (req: Request, res: Response) => {
 
     if (periodId) query = query.eq('PERIOD_ID', Number(periodId));
     if (careerId) query = query.eq('CAREER_ID', Number(careerId));
+    if (careerIds.length > 0) query = query.in('CAREER_ID', careerIds);
 
     const { data: practices, error } = await query;
 

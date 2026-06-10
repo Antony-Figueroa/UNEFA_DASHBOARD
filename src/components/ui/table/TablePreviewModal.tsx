@@ -163,7 +163,7 @@ export function TablePreviewModal<T>({
                             {columns.map((col, colIdx) => (
                               <td
                                 key={colIdx}
-                                className={`px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis ${col.className || ""}`}
+                                className={`px-3 sm:px-4 py-2 sm:py-3 text-text-primary dark:text-text-emphasis uppercase ${col.className || ""}`}
                               >
                                 {typeof col.accessor === "function"
                                   ? col.accessor(row)

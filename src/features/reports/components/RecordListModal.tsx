@@ -119,7 +119,7 @@ export function RecordListModal({ isOpen, onClose, recordType, documentType, per
           <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Nombre</th>
           <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">CI</th>
           <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Carrera</th>
-          <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Email</th>
+          <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Correo Electrónico</th>
         </>
       );
     }
@@ -127,7 +127,7 @@ export function RecordListModal({ isOpen, onClose, recordType, documentType, per
       <>
         <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Nombre</th>
         <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">CI</th>
-        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Email</th>
+        <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis">Correo Electrónico</th>
         <th className="text-left px-4 py-2.5 font-semibold text-text-primary dark:text-text-emphasis hidden md:table-cell">Carreras</th>
       </>
     );
@@ -137,11 +137,11 @@ export function RecordListModal({ isOpen, onClose, recordType, documentType, per
     if (isPractice) {
       return (
         <>
-          <td className="px-4 py-3 text-text-primary">{item.studentName}</td>
-          <td className="px-4 py-3 text-text-secondary">{item.studentCi}</td>
-          <td className="px-4 py-3 text-text-secondary">{item.careerName}</td>
-          <td className="px-4 py-3 text-text-secondary hidden md:table-cell">{item.institutionName || '-'}</td>
-          <td className="px-4 py-3 text-text-secondary hidden md:table-cell">{item.period || '-'}</td>
+          <td className="px-4 py-3 text-text-primary uppercase">{item.studentName}</td>
+          <td className="px-4 py-3 text-text-secondary uppercase">{item.studentCi}</td>
+          <td className="px-4 py-3 text-text-secondary uppercase">{item.careerName}</td>
+          <td className="px-4 py-3 text-text-secondary uppercase hidden md:table-cell">{item.institutionName || '-'}</td>
+          <td className="px-4 py-3 text-text-secondary uppercase hidden md:table-cell">{item.period || '-'}</td>
           <td className="px-4 py-3 text-text-secondary hidden md:table-cell">
             <span className={`text-xs font-medium ${
               item.status === 1 ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'
@@ -155,19 +155,19 @@ export function RecordListModal({ isOpen, onClose, recordType, documentType, per
     if (isStudent) {
       return (
         <>
-          <td className="px-4 py-3 text-text-primary">{item.firstName} {item.lastName}</td>
-          <td className="px-4 py-3 text-text-secondary">{item.identificationPrefix}-{item.identificationNumber}</td>
-          <td className="px-4 py-3 text-text-secondary">{item.careerName || '-'}</td>
-          <td className="px-4 py-3 text-text-secondary hidden md:table-cell">{item.email || '-'}</td>
+          <td className="px-4 py-3 text-text-primary uppercase">{item.firstName} {item.lastName}</td>
+          <td className="px-4 py-3 text-text-secondary uppercase">{item.identificationPrefix}-{item.identificationNumber}</td>
+          <td className="px-4 py-3 text-text-secondary uppercase">{item.careerName || '-'}</td>
+          <td className="px-4 py-3 text-text-secondary uppercase hidden md:table-cell">{item.email || '-'}</td>
         </>
       );
     }
     return (
       <>
-        <td className="px-4 py-3 text-text-primary">{item.fullName}</td>
-        <td className="px-4 py-3 text-text-secondary">{item.ci}</td>
-        <td className="px-4 py-3 text-text-secondary">{item.email}</td>
-        <td className="px-4 py-3 text-text-secondary hidden md:table-cell">{item.careers || '-'}</td>
+        <td className="px-4 py-3 text-text-primary uppercase">{item.fullName}</td>
+        <td className="px-4 py-3 text-text-secondary uppercase">{item.ci}</td>
+        <td className="px-4 py-3 text-text-secondary uppercase">{item.email}</td>
+        <td className="px-4 py-3 text-text-secondary uppercase hidden md:table-cell">{item.careers || '-'}</td>
       </>
     );
   };

@@ -584,7 +584,7 @@ export default function InstitutionalResponsibleTable({
                       </div>
                       <div className="col-span-2 flex flex-col items-center">
                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">
-                          Correo
+                          Correo Electrónico
                         </p>
                         <p className="text-sm text-text-primary dark:text-text-tertiary font-medium truncate w-full max-w-62.5">
                           {item.email}

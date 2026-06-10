@@ -6,6 +6,7 @@
 import React from 'react';
 import InputField from '../../../components/form/input/InputField';
 import CustomSelect from '../../../components/form/CustomSelect';
+import MultiSelect from '../../../components/form/MultiSelect';
 import Button from '../../../components/ui/button/Button';
 import { PracticeFilters } from '../types';
 
@@ -28,6 +29,10 @@ interface EvaluationFiltersProps {
   extraFilters?: React.ReactNode;
   /** Si hay filtros activos para mostrar botón Limpiar */
   hasActiveFilters: boolean;
+  /** Manejador para cambio de carreras múltiples */
+  onCareerFilterChange?: (values: string[]) => void;
+  /** Carreras seleccionadas */
+  selectedCareerIds?: string[];
 }
 
 export const EvaluationFilters: React.FC<EvaluationFiltersProps> = ({
@@ -41,7 +46,12 @@ export const EvaluationFilters: React.FC<EvaluationFiltersProps> = ({
   practiceTypeOptions,
   extraFilters,
   hasActiveFilters,
+  onCareerFilterChange,
+  selectedCareerIds = [],
 }) => {
+  const multiCareerOptions = careerOptions.map(c => ({ value: c.value, text: c.label }));
+  const hasMultiCareer = typeof onCareerFilterChange === 'function';
+
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center mb-6">
       <div className="w-full sm:w-64">
@@ -60,12 +70,22 @@ export const EvaluationFilters: React.FC<EvaluationFiltersProps> = ({
         className="w-full sm:w-44"
       />
 
-      <CustomSelect
-        options={careerOptions}
-        value={String(filters.careerId || '')}
-        onChange={(v) => onFilterChange('careerId', v as string)}
-        className="w-full sm:w-48"
-      />
+      {hasMultiCareer ? (
+        <MultiSelect
+          label="Carrera"
+          options={multiCareerOptions}
+          value={selectedCareerIds}
+          onChange={(vals) => onCareerFilterChange?.(vals)}
+          placeholder="Todas las carreras"
+        />
+      ) : (
+        <CustomSelect
+          options={careerOptions}
+          value={String(filters.careerId || '')}
+          onChange={(v) => onFilterChange('careerId', v as string)}
+          className="w-full sm:w-48"
+        />
+      )}
 
       <CustomSelect
         options={practiceTypeOptions}

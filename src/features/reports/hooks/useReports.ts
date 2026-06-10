@@ -58,12 +58,13 @@ export function useReports() {
     careerId?: number,
     page?: number,
     limit?: number,
+    careerIds?: number[],
   ) => {
     setLoading(true);
     try {
       const config = getReportConfig(type);
       if (!config) throw new Error(`Tipo de reporte desconocido: ${type}`);
-      return await config.loadData(periodId, careerId, page, limit);
+      return await config.loadData(periodId, careerId, page, limit, careerIds);
     } catch (error: any) {
       toast.error(error?.message || 'Error al cargar datos');
       throw error;

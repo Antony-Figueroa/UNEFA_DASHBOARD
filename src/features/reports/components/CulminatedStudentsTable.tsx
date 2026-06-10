@@ -94,19 +94,19 @@ const CulminatedStudentsTable: React.FC<CulminatedStudentsTableProps> = ({
           <TableBody>
             {paginatedData.map((item, index) => (
               <TableRow key={item.id}>
-                <TableCell>{(safePage - 1) * rowsPerPage + index + 1}</TableCell>
-                <TableCell>{item.studentCi}</TableCell>
-                <TableCell className="font-medium">{item.studentName}</TableCell>
-                <TableCell>{item.careerName}</TableCell>
-                <TableCell>{item.institutionName}</TableCell>
-                <TableCell>{item.practiceType}</TableCell>
-                <TableCell>{item.tutorName}</TableCell>
-                <TableCell>{item.period}</TableCell>
-                <TableCell>{formatDate(item.startDate)}</TableCell>
-                <TableCell>{formatDate(item.endDate)}</TableCell>
-                <TableCell className="text-center">{item.totalHours}</TableCell>
-                <TableCell className="text-center">{item.grade > 0 ? item.grade.toFixed(1) : '-'}</TableCell>
-                <TableCell>{getStatusBadge(item.status)}</TableCell>
+                <TableCell className="uppercase">{(safePage - 1) * rowsPerPage + index + 1}</TableCell>
+                <TableCell className="uppercase">{item.studentCi}</TableCell>
+                <TableCell className="font-medium uppercase">{item.studentName}</TableCell>
+                <TableCell className="uppercase">{item.careerName}</TableCell>
+                <TableCell className="uppercase">{item.institutionName}</TableCell>
+                <TableCell className="uppercase">{item.practiceType}</TableCell>
+                <TableCell className="uppercase">{item.tutorName}</TableCell>
+                <TableCell className="uppercase">{item.period}</TableCell>
+                <TableCell className="uppercase">{formatDate(item.startDate)}</TableCell>
+                <TableCell className="uppercase">{formatDate(item.endDate)}</TableCell>
+                <TableCell className="text-center uppercase">{item.totalHours}</TableCell>
+                <TableCell className="text-center uppercase">{item.grade > 0 ? item.grade.toFixed(1) : '-'}</TableCell>
+                <TableCell className="uppercase">{getStatusBadge(item.status)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

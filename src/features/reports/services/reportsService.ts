@@ -137,20 +137,22 @@ export const reportsService = {
     return response.data as RecentReport[];
   },
 
-  getTutorsAcademicReport: async (periodId?: number, careerId?: number, page?: number, limit?: number) => {
+  getTutorsAcademicReport: async (periodId?: number, careerId?: number, page?: number, limit?: number, careerIds?: number[]) => {
     const params = new URLSearchParams();
     if (periodId) params.append('periodId', periodId.toString());
     if (careerId) params.append('careerId', careerId.toString());
+    if (careerIds && careerIds.length > 0) params.append('careerIds', careerIds.join(','));
     if (page !== undefined) params.append('page', page.toString());
     if (limit !== undefined) params.append('limit', limit.toString());
     const response = await apiClient.get(`/reports/tutores-academicos?${params.toString()}`);
     return response.data as TutorAcademicReportResponse;
   },
 
-  getResumenPasantiasReport: async (periodId?: number, careerId?: number, page?: number, limit?: number) => {
+  getResumenPasantiasReport: async (periodId?: number, careerId?: number, page?: number, limit?: number, careerIds?: number[]) => {
     const params = new URLSearchParams();
     if (periodId) params.append('periodId', periodId.toString());
     if (careerId) params.append('careerId', careerId.toString());
+    if (careerIds && careerIds.length > 0) params.append('careerIds', careerIds.join(','));
     if (page !== undefined) params.append('page', page.toString());
     if (limit !== undefined) params.append('limit', limit.toString());
     const response = await apiClient.get(`/reports/resumen-pasantias?${params.toString()}`);
@@ -168,7 +170,7 @@ export const reportsService = {
 
   getCulminatedStudents: async (params?: {
     periodId?: number;
-    careerId?: number;
+    careerIds?: number[];
     status?: string;
     institutionId?: number;
     page?: number;
@@ -176,7 +178,7 @@ export const reportsService = {
   }): Promise<CulminatedStudentsResponse> => {
     const queryParams = new URLSearchParams();
     if (params?.periodId) queryParams.append('periodId', params.periodId.toString());
-    if (params?.careerId) queryParams.append('careerId', params.careerId.toString());
+    if (params?.careerIds && params.careerIds.length > 0) queryParams.append('careerIds', params.careerIds.join(','));
     if (params?.status) queryParams.append('status', params.status);
     if (params?.institutionId) queryParams.append('institutionId', params.institutionId.toString());
     if (params?.page !== undefined) queryParams.append('page', params.page.toString());
@@ -216,30 +218,33 @@ export const reportsService = {
     return response.data;
   },
 
-  getRelacionEmpresas: async (periodId?: number, careerId?: number, page?: number, limit?: number) => {
+  getRelacionEmpresas: async (periodId?: number, careerId?: number, page?: number, limit?: number, careerIds?: number[]) => {
     const params = new URLSearchParams();
     if (periodId) params.append('periodId', periodId.toString());
     if (careerId) params.append('careerId', careerId.toString());
+    if (careerIds && careerIds.length > 0) params.append('careerIds', careerIds.join(','));
     if (page !== undefined) params.append('page', page.toString());
     if (limit !== undefined) params.append('limit', limit.toString());
     const response = await apiClient.get(`/reports/relacion-empresas-demandan?${params.toString()}`);
     return response.data;
   },
 
-  getDistribucionTutores: async (periodId?: number, careerId?: number, page?: number, limit?: number) => {
+  getDistribucionTutores: async (periodId?: number, careerId?: number, page?: number, limit?: number, careerIds?: number[]) => {
     const params = new URLSearchParams();
     if (periodId) params.append('periodId', periodId.toString());
     if (careerId) params.append('careerId', careerId.toString());
+    if (careerIds && careerIds.length > 0) params.append('careerIds', careerIds.join(','));
     if (page !== undefined) params.append('page', page.toString());
     if (limit !== undefined) params.append('limit', limit.toString());
     const response = await apiClient.get(`/reports/distribucion-tutores?${params.toString()}`);
     return response.data;
   },
 
-  getDistribucionTutoresV2: async (periodId?: number, careerId?: number, page?: number, limit?: number) => {
+  getDistribucionTutoresV2: async (periodId?: number, careerId?: number, page?: number, limit?: number, careerIds?: number[]) => {
     const params = new URLSearchParams();
     if (periodId) params.append('periodId', periodId.toString());
     if (careerId) params.append('careerId', careerId.toString());
+    if (careerIds && careerIds.length > 0) params.append('careerIds', careerIds.join(','));
     if (page !== undefined) params.append('page', page.toString());
     if (limit !== undefined) params.append('limit', limit.toString());
     const response = await apiClient.get(`/reports/distribucion-tutores-v2?${params.toString()}`);
@@ -251,10 +256,11 @@ export const reportsService = {
     return response.data;
   },
 
-  exportReportExcel: async (type: string, periodId?: number, careerId?: number) => {
+  exportReportExcel: async (type: string, periodId?: number, careerId?: number, careerIds?: number[]) => {
     const params = new URLSearchParams();
     if (periodId) params.append('periodId', periodId.toString());
     if (careerId) params.append('careerId', careerId.toString());
+    if (careerIds && careerIds.length > 0) params.append('careerIds', careerIds.join(','));
     const response = await apiClient.get(`/reports/export/${type}?${params.toString()}`, {
       responseType: 'blob'
     });

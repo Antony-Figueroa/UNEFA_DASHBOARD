@@ -193,8 +193,10 @@ export default function TutorModal({
     carreras: z.array(z.string()).min(1, "Debe seleccionar al menos una carrera"),
   }).superRefine((data, ctx) => {
     // Validar duplicidad de cédula
+    const currentId = editingTutor?.tutorId ?? existingTutor?.tutorId;
+    // Validar duplicidad de cédula
     const isIdDuplicate = tutors.some(
-      t => t.tutorId !== editingTutor?.tutorId && 
+      t => t.tutorId !== currentId && 
            t.identificationNumber === data.identificationNumber && 
            t.identificationPrefix === data.identificationPrefix
     );
@@ -209,7 +211,7 @@ export default function TutorModal({
 
     // Validar duplicidad de correo
     const isEmailDuplicate = tutors.some(
-      t => t.tutorId !== editingTutor?.tutorId && 
+      t => t.tutorId !== currentId && 
            t.email.toLowerCase() === data.email.toLowerCase()
     );
 
@@ -220,7 +222,7 @@ export default function TutorModal({
         path: ["email"],
       });
     }
-  }), [tutors, editingTutor]);
+  }), [tutors, editingTutor, existingTutor]);
 
   type TutorFormData = z.infer<typeof tutorSchema>;
 
@@ -909,7 +911,7 @@ export default function TutorModal({
       >
         <ModalHeader>
           <span className="text-xl font-semibold text-text-primary dark:text-white/90">
-            {editingTutor ? "Editar" : "Registrar"} Tutor {tutorType === "methodological" ? "Metodológico" : "Académico"}
+            {editingTutor || existingTutor ? "Editar" : "Registrar"} Tutor {tutorType === "methodological" ? "Metodológico" : "Académico"}
           </span>
           <p className="text-sm text-text-secondary">Complete la información del tutor {tutorType === "methodological" ? "metodológico" : "académico"}.</p>
           {isInUse && (
@@ -955,7 +957,7 @@ export default function TutorModal({
                 createNameHandler={handleNameChange}
                 onAddValue={(listName, field, title) => openAddValueModal(listName, field as any, title)}
                 viewOnlyMode={viewOnlyMode}
-                editingId={editingTutor?.tutorId ?? null}
+                editingId={editingTutor?.tutorId ?? existingTutor?.tutorId ?? null}
                 phonePrefixFieldName="phoneAreaCode"
                 age={age}
                 maxDate={maxDate ? maxDate.toISOString().split("T")[0] : undefined}
@@ -1184,7 +1186,7 @@ export default function TutorModal({
           setConfirmSaveOpen(false);
         }}
         variant="confirm"
-        {...(editingTutor ? CONFIRM_MESSAGES.update('Tutor') : CONFIRM_MESSAGES.create('Tutor'))}
+        {...(editingTutor || existingTutor ? CONFIRM_MESSAGES.update('Tutor') : CONFIRM_MESSAGES.create('Tutor'))}
       />
     )}
 

@@ -4,7 +4,10 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import Button from "../../components/ui/button/Button";
 import CustomSelect from "../../components/form/CustomSelect";
+import MultiSelect from "../../components/form/MultiSelect";
+import type { MultiSelectOption } from "../../components/form/MultiSelect";
 import { getPeriods } from "../../features/periods/services/periodService";
+import { getCareers } from "../../features/careers/services/careersService";
 import { reportsService, CareerData, PeriodData, RecentReport, TutorAcademicReportRow } from "../../features/reports/services/reportsService";
 import { TablePreviewModal } from "../../components/ui/table/TablePreviewModal";
 import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
@@ -25,6 +28,8 @@ export default function ReportsPage() {
   const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
 
   const [periodFilter, setPeriodFilter] = useState("");
+  const [careerIdsFilter, setCareerIdsFilter] = useState<number[]>([]);
+  const [careerOptions, setCareerOptions] = useState<MultiSelectOption[]>([]);
   const [availablePeriods, setAvailablePeriods] = useState<{ value: string; label: string }[]>([]);
   const [activeReportId, setActiveReportId] = useState<ReportType>("");
 
@@ -48,18 +53,26 @@ export default function ReportsPage() {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [statsRes, careerRes, periodRes, recentRes, apiPeriods] = await Promise.all([
+      const [statsRes, careerRes, periodRes, recentRes, apiPeriods, careers] = await Promise.all([
         reportsService.getStats(periodFilter),
         reportsService.getStudentsByCareer(),
         reportsService.getEnrollmentsByPeriod(),
         reportsService.getRecentReports(),
-        getPeriods()
+        getPeriods(),
+        getCareers()
       ]);
       setAvailablePeriods(
         (apiPeriods || []).map((p: any) => ({
           value: p.description,
           label: p.description
         }))
+      );
+      setCareerOptions(
+        (Array.isArray(careers) ? careers : (careers as any)?.data || [])
+          .map((c: any) => ({
+            value: String(c.careerId),
+            text: c.careerName || c.career_name || ''
+          }))
       );
       setMetrics(statsRes.metrics || []);
       setCareerData(careerRes);
@@ -77,12 +90,12 @@ export default function ReportsPage() {
     fetchDashboardData();
   }, [periodFilter]);
 
-  const loadReportPage = useCallback(async (type: string, page: number, limit = 50) => {
+  const loadReportPage = useCallback(async (type: string, page: number, limit = 50, careerIds?: number[]) => {
     const config = getReportConfig(type);
     if (!config) return;
     try {
       const periodNum = periodFilter ? parseInt(periodFilter.split('-')[0]) : undefined;
-      const result = await fetchReportData(type, periodNum, undefined, page, limit);
+      const result = await fetchReportData(type, periodNum, undefined, page, limit, careerIds);
       if (!result?.data) {
         toast.error('No se encontraron datos');
         return null;
@@ -112,8 +125,9 @@ export default function ReportsPage() {
       toast.error('Reporte no disponible');
       return;
     }
+    const effectiveCareerIds = careerIdsFilter.length > 0 ? careerIdsFilter : undefined;
     if (config.type === 'excel') {
-      const loaded = await loadReportPage(type, 0);
+      const loaded = await loadReportPage(type, 0, 50, effectiveCareerIds);
       if (!loaded) return;
       setTableData(loaded.data);
       const totalPages = loaded.meta?.total ? Math.ceil(loaded.meta.total / (loaded.meta?.limit || 50)) : 1;
@@ -122,23 +136,24 @@ export default function ReportsPage() {
       setActiveReportId(type as ReportType);
       setIsTableModalOpen(true);
     } else {
-      const result = await loadReportPage(type, 0, 9999);
+      const result = await loadReportPage(type, 0, 9999, effectiveCareerIds);
       if (!result) return;
       setPdfData(result.data);
       setPdfTemplate(() => config.pdfTemplate!);
       setIsPDFModalOpen(true);
     }
-  }, [periodFilter, loadReportPage]);
+  }, [periodFilter, loadReportPage, careerIdsFilter]);
 
   const handleTablePageChange = useCallback(async (newPage: number) => {
     const ref = activeReportConfigRef.current;
     if (!ref) return;
-    const loaded = await loadReportPage(ref.type, newPage);
+    const effectiveCareerIds = careerIdsFilter.length > 0 ? careerIdsFilter : undefined;
+    const loaded = await loadReportPage(ref.type, newPage, 50, effectiveCareerIds);
     if (!loaded) return;
     setTableData(loaded.data);
     const totalPages = loaded.meta?.total ? Math.ceil(loaded.meta.total / (loaded.meta?.limit || 50)) : 1;
     setPaginationInfo({ page: newPage, totalPages, totalRecords: loaded.meta?.total || loaded.data.length });
-  }, [loadReportPage]);
+  }, [loadReportPage, careerIdsFilter]);
 
   const handleExportExcel = useCallback(async (type: string) => {
     if (type === "relacion-individual-docente") {
@@ -148,7 +163,8 @@ export default function ReportsPage() {
     setLoadingExcelId(type);
     try {
       const periodNum = periodFilter ? parseInt(periodFilter.split('-')[0]) : undefined;
-      const result = await fetchReportData(type, periodNum, undefined, 0, 9999);
+      const effectiveCareerIds = careerIdsFilter.length > 0 ? careerIdsFilter : undefined;
+      const result = await fetchReportData(type, periodNum, undefined, 0, 9999, effectiveCareerIds);
       if (result?.data) {
         const periodLabel = periodFilter || "Todos";
         await exportExcel(type, result.data, periodLabel);
@@ -159,7 +175,7 @@ export default function ReportsPage() {
     } finally {
       setLoadingExcelId(null);
     }
-  }, [periodFilter, fetchReportData, exportExcel]);
+  }, [periodFilter, fetchReportData, exportExcel, careerIdsFilter]);
 
   const exportTableToExcel = async (data: any[], fileName: string) => {
     const config = getReportConfig(activeReportId);
@@ -200,6 +216,14 @@ export default function ReportsPage() {
               value={periodFilter}
               onChange={(e) => setPeriodFilter(e as unknown as string)}
               className="w-40"
+            />
+            <MultiSelect
+              label=""
+              options={careerOptions}
+              value={careerIdsFilter.map(String)}
+              onChange={(selected) => setCareerIdsFilter(selected.map(Number))}
+              placeholder="Todas las carreras"
+              className="w-56"
             />
             <Button variant="outline" onClick={fetchDashboardData} startIcon={
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

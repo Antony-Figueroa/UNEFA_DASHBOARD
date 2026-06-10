@@ -19,7 +19,7 @@ const USER_LABELS: Record<string, string> = {
     userCi: "Cédula",
     name: "Nombre",
     surname: "Apellido",
-    email: "Correo",
+    email: "Correo Electrónico",
     role: "Rol",
     roleName: "Rol",
     status: "Estado"

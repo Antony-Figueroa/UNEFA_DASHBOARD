@@ -279,7 +279,7 @@ export default function UserTable({
                             </TableCell>
                             <TableCell isHeader className="table-header-cell">Cédula</TableCell>
                             <TableCell isHeader className="table-header-cell">Nombres y Apellidos</TableCell>
-                            <TableCell isHeader className="table-header-cell">Correo</TableCell>
+                            <TableCell isHeader className="table-header-cell">Correo Electrónico</TableCell>
                             <TableCell isHeader className="table-header-cell">Rol</TableCell>
                             <TableCell isHeader className="table-header-cell text-right">Acciones</TableCell>
                         </TableRow>

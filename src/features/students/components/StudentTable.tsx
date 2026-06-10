@@ -680,7 +680,7 @@ export default function StudentTable({
                                     <div className="mt-4 space-y-6 animate-fadeIn border-t border-border-light dark:border-border-dark pt-6">
                                         <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
                                             <div className="col-span-2 flex flex-col items-center">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Correo</p>
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Correo Electrónico</p>
                                                 <p className="text-sm text-text-secondary dark:text-text-tertiary font-medium truncate w-full max-w-62.5">{s.email}</p>
                                             </div>
                                             <div className="col-span-2 flex flex-col items-center">

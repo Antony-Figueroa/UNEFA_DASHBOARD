@@ -27,7 +27,7 @@ import { AsyncActionButton } from "../../../components/common/AsyncActionButton"
 import { useDebounce } from "../../../hooks/useDebounce";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { InstitutionalResponsible } from "../types";
-import { cleanCedula, cleanPhone, formatPhoneDisplay, formatPhoneLocalDisplay, formatCedulaDisplay } from "../../../utils/inputFormat";
+import { formatPhoneDisplay } from "../../../utils/inputFormat";
 import { matchSearch } from "../../../utils/searchNormalizer";
 
 /**
@@ -187,6 +187,8 @@ export default function InstitutionalResponsibleTable({
   const [filters, setFilters] = useState({
     search: "",
     institution: "all",
+    dateFrom: "",
+    dateTo: "",
   });
 
   const debouncedSearch = useDebounce(filters.search, 300);
@@ -200,8 +202,11 @@ export default function InstitutionalResponsibleTable({
         matchSearch(`${item.firstName} ${item.lastName}`, debouncedSearch) ||
         matchSearch(item.email, debouncedSearch);
       const matchesInstitution = filters.institution === "all" || (item.institutions?.some(inst => inst.institutionId === filters.institution));
+      const matchesDate =
+        (!filters.dateFrom || new Date(item.registrationDate) >= new Date(filters.dateFrom)) &&
+        (!filters.dateTo || new Date(item.registrationDate) <= new Date(filters.dateTo + 'T23:59:59'));
 
-      return matchesTab && matchesSearch && matchesInstitution;
+      return matchesTab && matchesSearch && matchesInstitution && matchesDate;
     });
 
     filtered.sort((a, b) => {
@@ -220,7 +225,7 @@ export default function InstitutionalResponsibleTable({
     });
 
     return filtered;
-  }, [data, activeTab, debouncedSearch, filters.institution, sortConfig]);
+  }, [data, activeTab, debouncedSearch, filters.institution, filters.dateFrom, filters.dateTo, sortConfig]);
 
   /**
    * Generates institution options for the filter dropdown based on unique institutions in the data.
@@ -371,13 +376,34 @@ export default function InstitutionalResponsibleTable({
               </svg>
             </div>
           </div>
-          
-          {/* Espaciadores para mantener el grid de 4 columnas si es necesario, 
-              o podemos poner el botón de limpiar aquí */}
-          <div className="flex items-center">
-            {(filters.search || filters.institution !== "all") && (
+          <div>
+            <input
+              type="date"
+              value={filters.dateFrom}
+              onChange={(e) => setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))}
+              className="w-full h-11 rounded-lg border border-border-medium bg-transparent px-3 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90"
+              title="Fecha desde"
+            />
+          </div>
+          <div>
+            <input
+              type="date"
+              value={filters.dateTo}
+              onChange={(e) => setFilters((prev) => ({ ...prev, dateTo: e.target.value }))}
+              className="w-full h-11 rounded-lg border border-border-medium bg-transparent px-3 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90"
+              title="Fecha hasta"
+            />
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between pt-2 border-t border-border-light dark:border-white/5">
+          <div className="flex items-center gap-4">
+            <div className="text-xs text-text-secondary dark:text-text-tertiary">
+              Mostrando <span className="font-bold text-text-primary dark:text-white">{filteredData.length}</span> resultados
+            </div>
+            {(filters.search || filters.institution !== "all" || filters.dateFrom || filters.dateTo) && (
               <button
-                onClick={async () => setFilters({ search: "", institution: "all" })}
+                onClick={async () => setFilters({ search: "", institution: "all", dateFrom: "", dateTo: "" })}
                 className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
               >
                 <RefreshIcon className="icon-xs" />
@@ -385,8 +411,7 @@ export default function InstitutionalResponsibleTable({
               </button>
             )}
           </div>
-
-          <div className="flex items-center justify-end">
+          <div className="flex items-center">
             {selectedIds.size > 0 && onBulkAction && (
               <div className="flex items-center gap-2 animate-fadeIn">
                 <span className="hidden sm:inline text-xs font-medium text-text-secondary dark:text-text-tertiary mr-2">
@@ -415,12 +440,6 @@ export default function InstitutionalResponsibleTable({
             )}
           </div>
         </div>
-        
-        <div className="flex items-center justify-between pt-2 border-t border-border-light dark:border-white/5">
-          <div className="text-xs text-text-secondary dark:text-text-tertiary">
-            Mostrando <span className="font-bold text-text-primary dark:text-white">{filteredData.length}</span> resultados
-          </div>
-        </div>
       </div>
 
       {/* Desktop View */}
@@ -443,32 +462,25 @@ export default function InstitutionalResponsibleTable({
               </TableCell>
               <TableCell isHeader className="table-header-cell cursor-pointer" onClick={async () => handleSort("firstName")}>
                 <div className="flex items-center">
-                  NOMBRES
+                  NOMBRE COMPLETO
                   <SortIndicator column="firstName" />
-                </div>
-              </TableCell>
-              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={async () => handleSort("lastName")}>
-                <div className="flex items-center">
-                  APELLIDOS
-                  <SortIndicator column="lastName" />
-                </div>
-              </TableCell>
-              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={async () => handleSort("phone")}>
-                <div className="flex items-center">
-                  TELÉFONO
-                  <SortIndicator column="phone" />
-                </div>
-              </TableCell>
-              <TableCell isHeader className="table-header-cell cursor-pointer" onClick={async () => handleSort("email")}>
-                <div className="flex items-center">
-                  CORREO
-                  <SortIndicator column="email" />
                 </div>
               </TableCell>
               <TableCell isHeader className="table-header-cell cursor-pointer text-center" onClick={async () => handleSort("institutions")}>
                 <div className="flex items-center justify-center">
-                  EMPRESAS O INSTITUCIONES
+                  EMPRESA O INSTITUCIÓN
                   <SortIndicator column="institutions" />
+                </div>
+              </TableCell>
+              <TableCell isHeader className="table-header-cell">
+                <div className="flex items-center">
+                  CONTACTO
+                </div>
+              </TableCell>
+              <TableCell isHeader className="table-header-cell cursor-pointer text-center" onClick={async () => handleSort("registrationDate")}>
+                <div className="flex items-center justify-center">
+                  FECHA DE REGISTRO
+                  <SortIndicator column="registrationDate" />
                 </div>
               </TableCell>
               <TableCell isHeader className="table-header-cell text-right">
@@ -489,25 +501,29 @@ export default function InstitutionalResponsibleTable({
                       onChange={(checked) => toggleSelectOne(item.responsibleId, checked)}
                     />
                   </TableCell>
-                  <TableCell className="font-medium text-text-primary dark:text-white/90">
-                    {item.identificationPrefix}-{item.identificationNumber}
+                  <TableCell className="font-medium text-text-primary dark:text-white/90 whitespace-nowrap">
+                    {`${(item.identificationPrefix || 'V').replace(/-/g, '')}-${String(item.identificationNumber).replace(/-/g, '')}`}
                   </TableCell>
                   <TableCell className="text-text-secondary dark:text-text-tertiary font-semibold">
-                    {item.firstName} {item.middleName}
-                  </TableCell>
-                  <TableCell className="text-text-secondary dark:text-text-tertiary font-semibold">
-                    {item.lastName} {item.secondLastName}
-                  </TableCell>
-                  <TableCell className="text-text-secondary dark:text-text-tertiary whitespace-nowrap">
-                    {formatPhoneDisplay(item.phone)}
-                  </TableCell>
-                  <TableCell className="text-text-secondary dark:text-text-tertiary">
-                    {item.email}
+                    {[item.firstName, item.middleName, item.lastName, item.secondLastName].filter(Boolean).join(' ')}
                   </TableCell>
                   <TableCell className="text-center">
                     <Badge color="primary" variant="light" size="sm" shape="rounded">
                       {item.institutions?.map(inst => inst.institutionName).join(", ") || "Sin empresa o institución"}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="text-text-primary dark:text-white/90 text-sm">{item.email}</span>
+                      <span className="text-text-tertiary dark:text-text-secondary text-xs mt-0.5">{formatPhoneDisplay(item.phone)}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center text-text-secondary dark:text-text-tertiary whitespace-nowrap text-sm">
+                    {new Date(item.registrationDate).toLocaleDateString('es-VE', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit'
+                    })}
                   </TableCell>
                   <TableCell className="table-cell text-right">
                     <ActionButtons
@@ -523,10 +539,10 @@ export default function InstitutionalResponsibleTable({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={8} className="p-0">
+                <TableCell colSpan={7} className="p-0">
                   <EmptyState
                     title="No se encontraron responsables"
-                    description={filters.search || filters.institution !== "all"
+                    description={filters.search || filters.institution !== "all" || filters.dateFrom || filters.dateTo
                       ? "Intenta ajustar los filtros para encontrar lo que buscas."
                       : "Aún no hay responsables registrados en esta categoría."}
                   />
@@ -543,6 +559,7 @@ export default function InstitutionalResponsibleTable({
           currentData.map((item) => {
             const rowId = item.responsibleId;
             const isExpanded = expandedRows.has(rowId);
+            const fullName = [item.firstName, item.middleName, item.lastName, item.secondLastName].filter(Boolean).join(' ');
 
             return (
               <div
@@ -553,10 +570,10 @@ export default function InstitutionalResponsibleTable({
                   <div className="flex items-center justify-between w-full">
                     <div className="flex-1 text-center">
                       <h3 className="text-sm font-bold text-text-primary dark:text-white/90 leading-tight truncate px-8">
-                        {item.firstName} {item.lastName}
+                        {fullName}
                       </h3>
                       <p className="text-xs text-text-secondary mt-1 truncate">
-                        {item.identificationPrefix}-{item.identificationNumber}
+                        {`${(item.identificationPrefix || 'V').replace(/-/g, '')}-${String(item.identificationNumber).replace(/-/g, '')}`}
                       </p>
                     </div>
                     <button
@@ -574,7 +591,7 @@ export default function InstitutionalResponsibleTable({
                     <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
                       <div className="col-span-2 flex flex-col items-center">
                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">
-                          Empresas o Instituciones
+                          Empresa o Institución
                         </p>
                         <div className="flex justify-center w-full">
                           <Badge color="primary" variant="light" size="sm">
@@ -584,18 +601,25 @@ export default function InstitutionalResponsibleTable({
                       </div>
                       <div className="col-span-2 flex flex-col items-center">
                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">
-                          Correo Electrónico
+                          Contacto
                         </p>
                         <p className="text-sm text-text-primary dark:text-text-tertiary font-medium truncate w-full max-w-62.5">
                           {item.email}
                         </p>
+                        <p className="text-xs text-text-secondary dark:text-text-secondary mt-1">
+                          {formatPhoneDisplay(item.phone)}
+                        </p>
                       </div>
                       <div className="col-span-2 flex flex-col items-center">
                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">
-                          Teléfono
+                          Fecha de Registro
                         </p>
                         <p className="text-sm text-text-primary dark:text-text-tertiary font-medium">
-                          {formatPhoneDisplay(item.phone)}
+                          {new Date(item.registrationDate).toLocaleDateString('es-VE', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit'
+                          })}
                         </p>
                       </div>
                     </div>
@@ -617,7 +641,7 @@ export default function InstitutionalResponsibleTable({
         ) : (
           <EmptyState
             title="No se encontraron responsables"
-            description={filters.search || filters.institution !== "all"
+            description={filters.search || filters.institution !== "all" || filters.dateFrom || filters.dateTo
               ? "Intenta ajustar los filtros para encontrar lo que buscas."
               : "Aún no hay responsables registrados en esta categoría."}
           />

@@ -195,7 +195,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Estudiantes", path: "/students", permissions: ['students:view'] },
       { name: "Tutores", path: "/tutors", permissions: ['tutors:view'] },
-      { name: "Instituciones", path: "/institutions", permissions: ['institutions:view'] },
+      { name: "Empresas o Instituciones", path: "/institutions", permissions: ['institutions:view'] },
     ],
   },
   {

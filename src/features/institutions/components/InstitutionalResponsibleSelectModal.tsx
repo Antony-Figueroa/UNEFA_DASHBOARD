@@ -79,7 +79,7 @@ export default function InstitutionalResponsibleSelectModal({ isOpen, onClose, o
       <ModalBody>
         <div className="mb-6">
           <p className="text-sm text-text-secondary mb-4">
-            Busque un responsable registrado en otras instituciones para vincularlo a esta.
+            Busque un responsable registrado en otras empresas o instituciones para vincularlo a esta.
           </p>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -154,7 +154,7 @@ export default function InstitutionalResponsibleSelectModal({ isOpen, onClose, o
                     <div className="flex flex-col gap-1 mt-1">
                       <p className="text-xs text-text-secondary flex items-center gap-1">
                         <Building2 className="w-3 h-3 shrink-0" />
-                        {resp.institutions?.map(inst => inst.institutionName).join(", ") || "Sin institución"}
+                        {resp.institutions?.map(inst => inst.institutionName).join(", ") || "Sin empresa o institución"}
                       </p>
                       <p className="text-xs text-text-tertiary">
                         {resp.email}
@@ -192,7 +192,7 @@ export default function InstitutionalResponsibleSelectModal({ isOpen, onClose, o
                           También está vinculado a:
                           <br />
                           <span className="font-bold text-yellow-300">
-                            {resp.institutions?.map(inst => inst.institutionName).join(", ") || "otras instituciones"}
+                            {resp.institutions?.map(inst => inst.institutionName).join(", ") || "otras empresas o instituciones"}
                           </span>
                         </div>
                         <div className="opacity-0 group-hover/btn:opacity-100 transition-opacity duration-200 flex justify-end">

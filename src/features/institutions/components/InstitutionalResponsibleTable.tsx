@@ -232,7 +232,7 @@ export default function InstitutionalResponsibleTable({
         const inst = allInstitutions.find(item => item.institutionId === id);
         return { value: id, label: inst?.institutionName || "Desconocida" };
       });
-    return [{ value: "all", label: "Todas las Instituciones" }, ...uniqueInstitutions];
+    return [{ value: "all", label: "Todas las Empresas o Instituciones" }, ...uniqueInstitutions];
   }, [data]);
 
   // Paginación server-side o local
@@ -467,7 +467,7 @@ export default function InstitutionalResponsibleTable({
               </TableCell>
               <TableCell isHeader className="table-header-cell cursor-pointer text-center" onClick={async () => handleSort("institutions")}>
                 <div className="flex items-center justify-center">
-                  INSTITUCIONES
+                  EMPRESAS O INSTITUCIONES
                   <SortIndicator column="institutions" />
                 </div>
               </TableCell>
@@ -506,7 +506,7 @@ export default function InstitutionalResponsibleTable({
                   </TableCell>
                   <TableCell className="text-center">
                     <Badge color="primary" variant="light" size="sm" shape="rounded">
-                      {item.institutions?.map(inst => inst.institutionName).join(", ") || "Sin institución"}
+                      {item.institutions?.map(inst => inst.institutionName).join(", ") || "Sin empresa o institución"}
                     </Badge>
                   </TableCell>
                   <TableCell className="table-cell text-right">
@@ -574,11 +574,11 @@ export default function InstitutionalResponsibleTable({
                     <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
                       <div className="col-span-2 flex flex-col items-center">
                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">
-                          Instituciones
+                          Empresas o Instituciones
                         </p>
                         <div className="flex justify-center w-full">
                           <Badge color="primary" variant="light" size="sm">
-                            {item.institutions?.map(inst => inst.institutionName).join(", ") || "Sin institución"}
+                      {item.institutions?.map(inst => inst.institutionName).join(", ") || "Sin empresa o institución"}
                           </Badge>
                         </div>
                       </div>

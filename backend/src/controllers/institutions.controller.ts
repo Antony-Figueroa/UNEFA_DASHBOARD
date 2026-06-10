@@ -84,6 +84,7 @@ const mapDBToFrontend = (i: any) => ({
   rif: i.RIF,
   responsibleCount: i.responsibleCount || 0,
   careerIds: (i.careerIds || []).map(String),
+  careerNames: i.careerNames || [],
   isInUse: !!i.isInUse,
 });
 
@@ -126,11 +127,12 @@ export const getInstitutions = async (req: Request, res: Response) => {
 
       let respCountMap = new Map<number, number>();
       let careersMap = new Map<number, number[]>();
+      let careerNameMap = new Map<number, string>();
       let internshipTypeIdsMap = new Map<number, number[]>();
       let usage = new Set<number>();
 
       if (instIds.length > 0) {
-        const [respPivot, careerPivot, typePivot, practiceData] = await Promise.all([
+        const [respPivot, careerPivot, typePivot, practiceData, careerData] = await Promise.all([
           supabase.from('t_institution_manager_institution')
             .select('"INSTITUTION_ID"')
             .in('"INSTITUTION_ID"', instIds),
@@ -143,7 +145,10 @@ export const getInstitutions = async (req: Request, res: Response) => {
           supabase.from('t_professional_practices')
             .select('INSTITUTION_ID')
             .eq('STATUS', 1)
-            .in('INSTITUTION_ID', instIds)
+            .in('INSTITUTION_ID', instIds),
+          supabase.from('t_career')
+            .select('CAREER_ID, CAREER_NAME')
+            .eq('STATUS', true)
         ]);
 
         // Process maps
@@ -158,6 +163,10 @@ export const getInstitutions = async (req: Request, res: Response) => {
           careersMap.set(c.INSTITUTION_ID, list);
         });
 
+        (careerData.data || []).forEach((c: any) => {
+          careerNameMap.set(c.CAREER_ID, c.CAREER_NAME);
+        });
+
         (typePivot.data || []).forEach((t: any) => {
           const list = internshipTypeIdsMap.get(t.INSTITUTION_ID) || [];
           list.push(t.INTERNSHIP_TYPE_ID);
@@ -168,13 +177,20 @@ export const getInstitutions = async (req: Request, res: Response) => {
       }
 
       // 3. Combine relational data
-      const enriched = (institutions || []).map(inst => ({
-        ...inst,
-        responsibleCount: respCountMap.get(inst.INSTITUTION_ID) || 0,
-        careerIds: careersMap.get(inst.INSTITUTION_ID) || [],
-        internshipTypeIds: internshipTypeIdsMap.get(inst.INSTITUTION_ID) || [],
-        isInUse: usage.has(inst.INSTITUTION_ID)
-      }));
+      const enriched = (institutions || []).map(inst => {
+        const careerIds = careersMap.get(inst.INSTITUTION_ID) || [];
+        const careerNames = careerIds
+          .map((id: number) => careerNameMap.get(id))
+          .filter(Boolean) as string[];
+        return {
+          ...inst,
+          responsibleCount: respCountMap.get(inst.INSTITUTION_ID) || 0,
+          careerIds,
+          careerNames,
+          internshipTypeIds: internshipTypeIdsMap.get(inst.INSTITUTION_ID) || [],
+          isInUse: usage.has(inst.INSTITUTION_ID)
+        };
+      });
 
       // 4. Value list mapping (cacheable lookup data)
       let listValues: any[] = [];

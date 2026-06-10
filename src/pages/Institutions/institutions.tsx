@@ -130,7 +130,7 @@ export default function InstitutionsPage() {
     setPage: setRespPage,
   } = useInstitutionalResponsibles();
 
-  const { careers, refreshCareers } = useCareers({ autoLoad: false });
+  const { careers, refreshCareers } = useCareers({ autoLoad: true });
 
   const { activeOptions: internshipTypeOptions } = useInternshipTypes({ autoLoad: false });
 
@@ -168,6 +168,8 @@ export default function InstitutionsPage() {
 
   // Estados para búsqueda en los PDF
   const [instPdfSearchTerm, setInstPdfSearchTerm] = useState("");
+  const [instPdfTypeFilter, setInstPdfTypeFilter] = useState("");
+  const [instPdfCareerFilter, setInstPdfCareerFilter] = useState("");
   const [respPdfSearchTerm, setRespPdfSearchTerm] = useState("");
 
   const institutionOptions = useMemo(() =>
@@ -200,6 +202,12 @@ export default function InstitutionsPage() {
     return responsibles.map(formatRespToRow);
   }, [responsibles]);
 
+  const careerNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    careers.filter(c => c.status).forEach(c => map.set(String(c.careerId), c.careerName));
+    return map;
+  }, [careers]);
+
   const instPdfFilteredData = useMemo(() => {
     return (Array.isArray(institutions) ? institutions : [])
       .filter(i => i.status === true)
@@ -207,8 +215,14 @@ export default function InstitutionsPage() {
         matchSearch(i.rif, instPdfSearchTerm) ||
         matchSearch(i.name, instPdfSearchTerm) ||
         matchSearch(i.institutionType, instPdfSearchTerm)
-      );
-  }, [institutions, instPdfSearchTerm]);
+      )
+      .filter(i => !instPdfTypeFilter || i.institutionType === instPdfTypeFilter)
+      .filter(i => !instPdfCareerFilter || (i.careerIds || []).includes(instPdfCareerFilter))
+      .map(i => ({
+        ...i,
+        careerNames: (i.careerIds || []).map(id => careerNameMap.get(id)).filter(Boolean) as string[],
+      }));
+  }, [institutions, instPdfSearchTerm, instPdfTypeFilter, instPdfCareerFilter, careerNameMap]);
 
   const respPdfFilteredData = useMemo(() => {
     return (Array.isArray(responsibles) ? responsibles : [])
@@ -295,7 +309,7 @@ export default function InstitutionsPage() {
     setConfirmation({
       isOpen: true,
       title: confirmTitle,
-      message: `¿Estás seguro de que deseas ${actionVerb} la institución "${inst.name}"?`,
+      message: `¿Estás seguro de que deseas ${actionVerb} la empresa o institución "${inst.name}"?`,
       onConfirm: async () => {
         try {
           await toggleInstStatus(original);
@@ -348,7 +362,7 @@ export default function InstitutionsPage() {
     setConfirmation({
       isOpen: true,
       title: confirmTitle,
-      message: `¿Estás seguro de que deseas ${actionVerb} las ${ids.length} instituciones seleccionadas?`,
+      message: `¿Estás seguro de que deseas ${actionVerb} las ${ids.length} empresas o instituciones seleccionadas?`,
       onConfirm: async () => {
         try {
           if (isInactivating) {
@@ -398,10 +412,10 @@ export default function InstitutionsPage() {
 
   return (
     <>
-      <PageMeta title="Gestión de Instituciones" description="Administración de instituciones aliadas y responsables" />
+      <PageMeta title="Gestión de Empresas o Instituciones" description="Administración de empresas o instituciones aliadas y responsables" />
 
       <SkeletonLoader isLoading={pageLoading} skeleton={<BreadcrumbSkeleton />} id="institutions-breadcrumb">
-        <PageBreadcrumb pageTitle="Instituciones" />
+        <PageBreadcrumb pageTitle="Empresas o Instituciones" />
       </SkeletonLoader>
 
       <div className="stagger-delay">
@@ -411,12 +425,12 @@ export default function InstitutionsPage() {
                 <SkeletonLoader isLoading={pageLoading} skeleton={<TitleSkeleton />} id="institutions-title">
                     <div className="flex items-center gap-2">
                         <h2 className="text-2xl font-bold text-text-primary dark:text-white/90">
-                          {mainTab === "Instituciones" ? "Listado de Instituciones" : "Responsables Institucionales"}
+                          {mainTab === "Instituciones" ? "Listado de Empresas o Instituciones" : "Responsables Institucionales"}
                         </h2>
                     </div>
                     <p className="mt-1 text-sm text-text-secondary dark:text-text-tertiary">
                       {mainTab === "Instituciones"
-                        ? "Gestiona la información y estado de las instituciones aliadas."
+                        ? "Gestiona la información y estado de las empresas o instituciones aliadas."
                         : "Gestiona los representantes y responsables de cada institución."}
                     </p>
                 </SkeletonLoader>
@@ -435,7 +449,7 @@ export default function InstitutionsPage() {
                     Reporte
                   </Button>
                   <Button onClick={handleOpenAddModal} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
-                    {mainTab === "Instituciones" ? "Nueva Institución" : "Nuevo Responsable"}
+                    {mainTab === "Instituciones" ? "Nueva Empresa o Institución" : "Nuevo Responsable"}
                   </Button>
                 </div>
             )}
@@ -445,7 +459,7 @@ export default function InstitutionsPage() {
         <Tabs
           variant="pills"
           options={[
-            { id: "Instituciones", label: "Instituciones" },
+            { id: "Instituciones", label: "Empresas o Instituciones" },
             { id: "Responsables", label: "Responsables" },
           ]}
           activeTab={mainTab}
@@ -455,12 +469,12 @@ export default function InstitutionsPage() {
 
         {/* Contenido principal */}
         <div className="space-y-6">
-          <ComponentCard title={mainTab === "Instituciones" ? "Gestión de Instituciones" : "Gestión de Responsables"}>
+          <ComponentCard title={mainTab === "Instituciones" ? "Gestión de Empresas o Instituciones" : "Gestión de Responsables"}>
             <Tabs
               variant="underline"
               options={[
-                { id: "Activas", label: mainTab === "Instituciones" ? "Instituciones Activas" : "Responsables Activos" },
-                { id: "Inactivas", label: mainTab === "Instituciones" ? "Instituciones Inactivas" : "Responsables Inactivos" },
+                { id: "Activas", label: mainTab === "Instituciones" ? "Empresas o Instituciones Activas" : "Responsables Activos" },
+                { id: "Inactivas", label: mainTab === "Instituciones" ? "Empresas o Instituciones Inactivas" : "Responsables Inactivos" },
               ]}
               activeTab={activeTab}
               onTabChange={(id) => setActiveTab(id as "Activas" | "Inactivas")}
@@ -570,7 +584,7 @@ export default function InstitutionsPage() {
                  setConfirmation({
                    isOpen: true,
                    title: "Responsable Registrado",
-                   message: "¿Desea agregar otro responsable para la misma institución?",
+                      message: "¿Desea agregar otro responsable para la misma empresa o institución?",
                    onConfirm: () => {
                      setIsRespModalOpen(false);
                      setTimeout(() => {
@@ -675,10 +689,10 @@ export default function InstitutionsPage() {
       <PDFPreviewModal
         isOpen={isInstPDFModalOpen}
         onClose={() => setIsInstPDFModalOpen(false)}
-        title="Reporte de Instituciones Activas"
+        title="Reporte De Instituciones"
         data={instPdfFilteredData}
         template={(data) => <InstitutionPDF data={data} />}
-        fileName={`reporte-instituciones-activas-${new Date().toISOString().split('T')[0]}.pdf`}
+        fileName={`reporte-instituciones-${new Date().toISOString().split('T')[0]}.pdf`}
         searchTerm={instPdfSearchTerm}
         onSearchChange={setInstPdfSearchTerm}
         columns={[
@@ -686,6 +700,40 @@ export default function InstitutionsPage() {
           { header: "Nombre", accessor: "name" },
           { header: "Tipo", accessor: "institutionType" },
         ]}
+        renderFilters={() => (
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest pl-1">
+                Tipo de Empresa o Institución
+              </label>
+              <select
+                value={instPdfTypeFilter}
+                onChange={(e) => setInstPdfTypeFilter(e.target.value)}
+                className="w-full h-10 rounded-lg border border-border-medium bg-transparent px-3 text-xs text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 appearance-none"
+              >
+                <option value="">Todos los Tipos</option>
+                {institutionTypeOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest pl-1">
+                Carrera
+              </label>
+              <select
+                value={instPdfCareerFilter}
+                onChange={(e) => setInstPdfCareerFilter(e.target.value)}
+                className="w-full h-10 rounded-lg border border-border-medium bg-transparent px-3 text-xs text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 appearance-none"
+              >
+                <option value="">Todas las Carreras</option>
+                {careers.filter(c => c.status).map(c => (
+                  <option key={c.careerId} value={String(c.careerId)}>{c.careerName}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
       />
 
       <PDFPreviewModal
@@ -700,7 +748,7 @@ export default function InstitutionsPage() {
         columns={[
           { header: "Cédula", accessor: (r) => `${r.identificationPrefix}-${r.identificationNumber}` },
           { header: "Nombre", accessor: (r) => `${r.firstName} ${r.lastName}` },
-          { header: "Institución", accessor: (r) => r.institutions?.map(i => i.institutionName).join(", ") || "-" },
+          { header: "Empresa o Institución", accessor: (r) => r.institutions?.map(i => i.institutionName).join(", ") || "-" },
           { header: "Correo", accessor: "email" },
           { header: "Teléfono", accessor: "phone" },
         ]}

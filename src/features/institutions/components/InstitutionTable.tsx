@@ -81,7 +81,7 @@ const ActionButtons = ({
                     onClick={async () => onEdit && onEdit()}
                     icon={<EditIcon />}
                     tooltip="Editar"
-                    label={isMobile ? "Editar Institución" : undefined}
+                    label={isMobile ? "Editar Empresa o Institución" : undefined}
                     variant="primary"
                     fullWidth={isMobile}
                 />
@@ -93,8 +93,8 @@ const ActionButtons = ({
                         onToggleStatus();
                     }}
                     icon={activeTab === "Inactivas" ? <RefreshIcon /> : <TrashIcon />}
-                    tooltip={activeTab === "Inactivas" ? "Restaurar" : (isInUse ? "Esta institución está en uso y no se puede eliminar" : "Eliminar")}
-                    label={isMobile ? (activeTab === "Inactivas" ? "Restaurar Institución" : "Eliminar Institución") : undefined}
+                    tooltip={activeTab === "Inactivas" ? "Restaurar" : (isInUse ? "Esta empresa o institución está en uso y no se puede eliminar" : "Eliminar")}
+                    label={isMobile ? (activeTab === "Inactivas" ? "Restaurar Empresa o Institución" : "Eliminar Empresa o Institución") : undefined}
                     variant={activeTab === "Inactivas" ? "success" : "error"}
                     fullWidth={isMobile}
                     disabled={isInUse && activeTab === "Activas"}
@@ -262,7 +262,7 @@ export default function InstitutionTable({
   };
 
   if (status === "loading") {
-      return <div className="p-8 text-center text-text-secondary">Cargando instituciones...</div>;
+      return <div className="p-8 text-center text-text-secondary">Cargando empresas o instituciones...</div>;
   }
 
   return (
@@ -366,7 +366,7 @@ export default function InstitutionTable({
                     paged.filter(i => !i.isInUse).every(i => selectedIds.includes(i.institutionId))
                   }
                   onChange={handleSelectAll}
-                  ariaLabel="Seleccionar todas las instituciones"
+                  ariaLabel="Seleccionar todas las empresas o instituciones"
                 />
               </TableCell>
               <TableCell isHeader className="cursor-pointer group" onClick={async () => handleSort("rif")}>
@@ -376,6 +376,8 @@ export default function InstitutionTable({
                   <div className="flex items-center">Nombre <SortIndicator column="name" /></div>
               </TableCell>
               <TableCell isHeader>Teléfono</TableCell>
+              <TableCell isHeader>Carrera</TableCell>
+              <TableCell isHeader>Tipo de Práctica</TableCell>
               <TableCell isHeader className="text-right">&nbsp;</TableCell>
             </TableRow>
           </TableHeader>
@@ -388,7 +390,7 @@ export default function InstitutionTable({
                     >
                         <TableCell>
                             <Tooltip
-                                content={i.isInUse ? "Esta institución está en uso y no puede ser seleccionada para eliminar" : ""}
+                                content={i.isInUse ? "Esta empresa o institución está en uso y no puede ser seleccionada para eliminar" : ""}
                                 isDisabled={!i.isInUse}
                             >
                                 <div>
@@ -405,6 +407,14 @@ export default function InstitutionTable({
                         </TableCell>
                         <TableCell className="text-text-secondary dark:text-text-tertiary font-semibold">{i.name}</TableCell>
                         <TableCell className="text-text-secondary dark:text-text-tertiary whitespace-nowrap">{formatPhoneDisplay(i.phone)}</TableCell>
+                        <TableCell className="text-text-secondary dark:text-text-tertiary text-xs">
+                          {(i.careerNames && i.careerNames.length > 0)
+                            ? i.careerNames.join(", ")
+                            : "-"}
+                        </TableCell>
+                        <TableCell className="text-text-secondary dark:text-text-tertiary text-xs">
+                          {i.practiceTypes?.join(", ") || i.practiceType || "-"}
+                        </TableCell>
                         <TableCell className="table-cell text-right">
                             <ActionButtons
                                 onView={onView ? () => onView(i) : undefined}
@@ -418,12 +428,12 @@ export default function InstitutionTable({
                 ))
             ) : (
                 <TableRow>
-                    <TableCell colSpan={6} className="p-0">
+                    <TableCell colSpan={8} className="p-0">
                         <EmptyState
-                            title="No se encontraron instituciones"
+                            title="No se encontraron empresas o instituciones"
                             description={searchTerm
                                 ? "Intenta ajustar los filtros para encontrar lo que buscas."
-                                : "Aún no hay instituciones registradas en esta categoría."}
+                                : "Aún no hay empresas o instituciones registradas en esta categoría."}
                         />
                     </TableCell>
                 </TableRow>
@@ -469,6 +479,20 @@ export default function InstitutionTable({
                                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Tipo</p>
                                         <p className="text-sm text-text-primary dark:text-text-tertiary font-medium">{i.institutionType || "-"}</p>
                                     </div>
+                                    <div className="flex flex-col items-center">
+                                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Carrera</p>
+                                        <p className="text-sm text-text-primary dark:text-text-tertiary font-medium text-center">
+                                          {(i.careerNames && i.careerNames.length > 0)
+                                            ? i.careerNames.join(", ")
+                                            : "-"}
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Tipo de Práctica</p>
+                                        <p className="text-sm text-text-primary dark:text-text-tertiary font-medium text-center">
+                                          {i.practiceTypes?.join(", ") || i.practiceType || "-"}
+                                        </p>
+                                    </div>
                                 </div>
 
                                 <ActionButtons
@@ -486,10 +510,10 @@ export default function InstitutionTable({
             })
         ) : (
             <EmptyState
-                title="No se encontraron instituciones"
+                title="No se encontraron empresas o instituciones"
                 description={searchTerm
                     ? "Intenta ajustar los filtros para encontrar lo que buscas."
-                    : "Aún no hay instituciones registradas en esta categoría."}
+                    : "Aún no hay empresas o instituciones registradas en esta categoría."}
             />
         )}
       </div>

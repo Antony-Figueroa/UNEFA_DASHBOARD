@@ -127,7 +127,7 @@ export default function InstitutionViewModal({
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="5xl" showCloseButton>
-            <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">Detalles de Institución</ModalHeader>
+            <ModalHeader className="shrink-0 pt-8 px-6 sm:px-12">Detalles de Empresa o Institución</ModalHeader>
             <ModalBody className="overflow-y-auto custom-scrollbar grow px-6 sm:px-12 py-8">
                 <div className="space-y-12 max-w-5xl mx-auto py-2">
                     {/* Sección Información Principal */}
@@ -164,7 +164,7 @@ export default function InstitutionViewModal({
                                 <p className="text-sm font-bold text-text-primary dark:text-white/90">{institution.phone}</p>
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipo de Institución</label>
+                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipo de Empresa o Institución</label>
                                 <p className="text-sm font-bold text-text-primary dark:text-white/90">{institution.institutionType}</p>
                             </div>
                             <div>
@@ -304,7 +304,7 @@ export default function InstitutionViewModal({
             <SingleReportModal
                 isOpen={reportModalOpen}
                 onClose={() => setReportModalOpen(false)}
-                title="Ficha de Institución"
+                title="Ficha de Empresa o Institución"
                 subtitle={`${institution.name} - ${institution.rif}`}
                 data={institution}
                 template={(data) => <InstitutionIndividualPDF data={data} />}

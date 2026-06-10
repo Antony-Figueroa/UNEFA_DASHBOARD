@@ -95,7 +95,7 @@ const baseInstSchema = z.object({
   region: z.string().min(1, "Seleccione una región"),
   nucleus: z.string().min(1, "Seleccione un núcleo"),
   extension: z.string().min(1, "Seleccione una extensión"),
-  institutionType: z.string().min(1, "Seleccione un tipo de institución"),
+  institutionType: z.string().min(1, "Seleccione un tipo de empresa o institución"),
   estado: z.string().min(1, "Seleccione un estado"),
   municipio: z.string().min(1, "Seleccione un municipio"),
   parroquia: z.string().min(1, "Seleccione una parroquia"),
@@ -130,7 +130,7 @@ const createInstSchema = (existingInstitutions: Institution[], editingInst: Inst
     if (isDuplicate) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Ya existe una institución registrada con este RIF",
+        message: "Ya existe una empresa o institución registrada con este RIF",
         path: ["rifNumber"],
       });
     }
@@ -337,8 +337,8 @@ export default function InstitutionModal({
           if (rifDuplicateStatus === 'rejected') {
             setError("rifNumber", {
               type: "manual",
-              message: "Ya existe una institución registrada con este RIF"
-            });
+                                      message: "Ya existe una empresa o institución registrada con este RIF"
+                                    });
             setIsCheckingRif(false);
             return;
           }
@@ -877,9 +877,9 @@ export default function InstitutionModal({
       <Modal isOpen={isOpen} onClose={handleClose} onCloseAttempt={handleCloseAttempt} showCloseButton size="5xl" modalId={modalId}>
         <ModalHeader>
           <span className="text-xl font-semibold text-text-primary dark:text-white/90">
-            {editingInst ? "Editar Institución" : "Registrar Institución"}
+            {editingInst ? "Editar Empresa o Institución" : "Registrar Empresa o Institución"}
           </span>
-          <p className="text-sm text-text-secondary">Complete la información de la institución.</p>
+          <p className="text-sm text-text-secondary">Complete la información de la empresa o institución.</p>
         </ModalHeader>
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50 relative">
         {isLoading && editingInst && (
@@ -889,7 +889,7 @@ export default function InstitutionModal({
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              <span className="text-sm text-text-secondary font-medium">Cargando datos de la institución...</span>
+              <span className="text-sm text-text-secondary font-medium">Cargando datos de la empresa o institución...</span>
             </div>
           </div>
         )}
@@ -989,7 +989,7 @@ export default function InstitutionModal({
           <div>
             <label className="text-sm font-medium text-text-primary dark:text-white/90">Nombre *</label>
             <Input 
-              placeholder="Nombre de la institución" 
+                    placeholder="Nombre de la empresa o institución"
               className="uppercase"
               {...register("name", {
                 onChange: handleUppercaseChange
@@ -1217,7 +1217,7 @@ export default function InstitutionModal({
           </div>
 
           <div>
-            <label className="text-sm font-medium text-text-primary dark:text-white/90">Tipo Institución *</label>
+            <label className="text-sm font-medium text-text-primary dark:text-white/90">Tipo de Empresa o Institución *</label>
             <Controller
               name="institutionType"
               control={control}
@@ -1397,7 +1397,7 @@ export default function InstitutionModal({
                               setIsConfirmRemoveOpen(true);
                             }}
                             className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            aria-label="Quitar de esta institución"
+                            aria-label="Quitar de esta empresa o institución"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -1585,7 +1585,7 @@ export default function InstitutionModal({
               </AsyncButton>
             ) : (
               <AsyncButton onClick={handleSubmit(onSubmit)} loading={isLoading} disabled={!isValid}>
-                Registrar Institución
+                Registrar Empresa o Institución
               </AsyncButton>
             )}
           </>
@@ -1619,7 +1619,7 @@ export default function InstitutionModal({
               addToast({
                 variant: "error",
                 title: "Error al guardar",
-                message: "No se pudo guardar la institución. Por favor verifique los datos e intente de nuevo."
+                message: "No se pudo guardar la empresa o institución. Por favor verifique los datos e intente de nuevo."
               });
             }
           } else {
@@ -1627,7 +1627,7 @@ export default function InstitutionModal({
           }
         }}
         variant="confirm"
-        {...(editingInst ? CONFIRM_MESSAGES.update('Institución') : CONFIRM_MESSAGES.create('Institución'))}
+        {...(editingInst ? CONFIRM_MESSAGES.update('Empresa o Institución') : CONFIRM_MESSAGES.create('Empresa o Institución'))}
         isLoading={isLoading}
       />
     )}
@@ -1672,7 +1672,7 @@ export default function InstitutionModal({
       variant="error"
       title="Desvincular Responsable"
       confirmLabel="Desvincular"
-      message={`¿Estás seguro de que deseas quitar a ${responsibleToRemove?.firstName} ${responsibleToRemove?.lastName} de esta institución? Dejará de aparecer en este listado pero sus datos se mantendrán en el sistema.`}
+      message={`¿Estás seguro de que deseas quitar a ${responsibleToRemove?.firstName} ${responsibleToRemove?.lastName} de esta empresa o institución? Dejará de aparecer en este listado pero sus datos se mantendrán en el sistema.`}
       onConfirm={handleConfirmRemove}
     />
 
@@ -1691,7 +1691,7 @@ export default function InstitutionModal({
         }}
         variant="info"
         title="Agregar Responsables"
-        message="¿Deseas agregar responsables institucionales ahora? También puedes hacerlo más adelante desde la edición de la institución."
+        message="¿Deseas agregar responsables institucionales ahora? También puedes hacerlo más adelante desde la edición de la empresa o institución."
         confirmLabel="Sí, agregar responsables"
         cancelLabel="No, cerrar"
       />
@@ -1735,7 +1735,7 @@ export default function InstitutionModal({
       title="RIF ya existe"
       message={
         <div className="text-left">
-          <p className="mb-3">¿Esta institución es parte de la misma organización que las siguientes?</p>
+          <p className="mb-3">¿Esta empresa o institución es parte de la misma organización que las siguientes?</p>
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 max-h-40 overflow-y-auto">
             {rifDuplicateInstitutions.map((inst) => (
               <div key={inst.INSTITUTION_ID} className="text-sm py-1 border-b border-gray-200 dark:border-gray-700 last:border-0">
@@ -1745,7 +1745,7 @@ export default function InstitutionModal({
             ))}
           </div>
           <p className="mt-3 text-sm text-gray-600">
-            Si confirma, se generará un código interno único para esta institución.
+            Si confirma, se generará un código interno único para esta empresa o institución.
           </p>
         </div>
       }
@@ -1889,7 +1889,7 @@ export default function InstitutionModal({
         <span className="text-xl font-semibold text-text-primary dark:text-white/90">
           Historial de Responsables
         </span>
-        <p className="text-sm text-text-secondary">Responsables anteriores de la institución</p>
+        <p className="text-sm text-text-secondary">Responsables anteriores de la empresa o institución</p>
       </ModalHeader>
       <ModalBody>
         {responsibleHistory && responsibleHistory.length > 0 ? (

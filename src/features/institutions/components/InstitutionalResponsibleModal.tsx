@@ -85,6 +85,12 @@ const respSchema = z.object({
     .max(255, "El email es demasiado largo")
     .regex(SAFE_EMAIL_PATTERN, "Email con caracteres no permitidos")
     .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
+  title: z.string()
+    .max(100, "El título es demasiado largo")
+    .regex(SAFE_TEXT_PATTERN, "Caracteres no permitidos")
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+    .optional()
+    .or(z.literal("")),
   // institutions es obligatorio - debe tener al menos una institución con cargo
   institutions: z.array(institutionSchema).min(1, "Debe agregar al menos una empresa o institución con su cargo"),
 });
@@ -238,6 +244,7 @@ export default function InstitutionalResponsibleModal({
       phonePrefix: "",
       phoneNumber: "",
       email: "",
+      title: "",
       institutions: [],
     },
   });
@@ -273,6 +280,7 @@ export default function InstitutionalResponsibleModal({
     setValue("phonePrefix", phonePrefix, { shouldValidate: true, shouldDirty: true });
     setValue("phoneNumber", phoneNumber, { shouldValidate: true, shouldDirty: true });
     setValue("email", responsible.email || '', { shouldValidate: true, shouldDirty: true });
+    setValue("title", responsible.title || '', { shouldValidate: true, shouldDirty: true });
     
 // Handle institutions - map to form structure
      if (responsible.institutions && Array.isArray(responsible.institutions)) {
@@ -348,18 +356,19 @@ export default function InstitutionalResponsibleModal({
          setViewOnlyMode(false);
          clearErrors("identificationNumber");
          // Resetear los campos del formulario
-         reset({
-           identificationPrefix: "",
-           identificationNumber: "",
-           firstName: "",
-           middleName: "",
-           lastName: "",
-           secondLastName: "",
-           phonePrefix: "",
-           phoneNumber: "",
-           email: "",
-           institutions: []
-         });
+          reset({
+            identificationPrefix: "",
+            identificationNumber: "",
+            firstName: "",
+            middleName: "",
+            lastName: "",
+            secondLastName: "",
+            phonePrefix: "",
+            phoneNumber: "",
+            email: "",
+            title: "",
+            institutions: []
+          });
          setDisplayPhoneNumber("");
        }
      }
@@ -554,6 +563,7 @@ export default function InstitutionalResponsibleModal({
           phonePrefix: "",
           phoneNumber: "",
           email: "",
+          title: "",
           institutions: []
         });
       }
@@ -677,6 +687,7 @@ export default function InstitutionalResponsibleModal({
           phonePrefix: pPrefix,
           phoneNumber: pNumber,
           email: editingResp.email,
+          title: editingResp.title || "",
           institutions: formInstitutions,
         });
         setDisplayIdentificationNumber(formatCedulaDisplay(editingResp.identificationNumber, false));
@@ -692,6 +703,7 @@ export default function InstitutionalResponsibleModal({
           phonePrefix: "",
           phoneNumber: "",
           email: "",
+          title: "",
           institutions: preselectedInstitutionId ? [{ institutionId: preselectedInstitutionId, cargo: "" }] : [],
         });
         setDisplayIdentificationNumber("");
@@ -718,6 +730,7 @@ export default function InstitutionalResponsibleModal({
       phoneNumber: phoneNumber.toUpperCase(),
       phone: `${phonePrefix}-${phoneNumber}`,
       email: rest.email.toUpperCase(),
+      title: rest.title || null,
       institutions: institutions, // Array de objetos { institutionId, cargo }
       status: editingResp?.status ?? true,
     };
@@ -795,6 +808,25 @@ export default function InstitutionalResponsibleModal({
                   editingId={editingResp?.responsibleId ?? null}
                   hiddenFields={["sex", "birthDate", "civilStatus", "address"]}
                 />
+
+                {/* Título institucional */}
+                <div className="mt-6">
+                  <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">
+                    Título / Cargo Institucional
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Coordinador, Director, Gerente..."
+                    className="w-full h-11 rounded-lg border border-border-medium bg-transparent px-4 text-sm text-text-primary placeholder-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-white/90 uppercase"
+                    {...register("title")}
+                    disabled={viewOnlyMode}
+                  />
+                  {errors.title && (
+                    <p className="mt-1 text-[11px] font-medium text-red-500">
+                      {errors.title.message as string}
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Columna Derecha: Instituciones */}

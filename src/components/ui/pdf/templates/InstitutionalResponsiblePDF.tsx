@@ -28,10 +28,11 @@ export const InstitutionalResponsiblePDF: React.FC<InstitutionalResponsiblePDFPr
       <View style={pdfStyles.table}>
         <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
           <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>Cédula</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 3 }]}>Nombre Completo</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Empresa o Institución</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Nombre Completo</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Título</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Empresa o Institución</Text>
           <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Contacto</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Fecha de Registro</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.3 }]}>Fecha de Registro</Text>
         </View>
 
         {data.map((responsible, index) => (
@@ -39,10 +40,13 @@ export const InstitutionalResponsiblePDF: React.FC<InstitutionalResponsiblePDFPr
             <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>
               {formatCI(responsible.identificationPrefix, responsible.identificationNumber)}
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 3, fontWeight: "bold" }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 2.5, fontWeight: "bold" }]}>
               {formatName(responsible)}
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>
+              {responsible.title || "-"}
+            </Text>
+            <Text style={[pdfStyles.tableCell, { flex: 2 }]}>
               {responsible.institutions?.[0]?.institutionName || "No asignada"}
             </Text>
             <View style={[pdfStyles.tableCell, { flex: 2.5 }]}>
@@ -51,7 +55,7 @@ export const InstitutionalResponsiblePDF: React.FC<InstitutionalResponsiblePDFPr
                 {responsible.phone}
               </Text>
             </View>
-            <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 1.3 }]}>
               {formatDate(responsible.registrationDate)}
             </Text>
           </View>

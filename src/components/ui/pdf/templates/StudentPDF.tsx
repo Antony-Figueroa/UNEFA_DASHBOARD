@@ -8,6 +8,19 @@ interface StudentPDFProps {
   data: Student[] | StudentRowData[];
 }
 
+const formatDate = (date: Date | string | undefined): string => {
+  if (!date) return '-';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '-';
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const fullName = (s: Student | StudentRowData): string =>
+  [s.firstName, s.middleName, s.lastName, s.secondLastName].filter(Boolean).join(' ');
+
 export const StudentPDF: React.FC<StudentPDFProps> = ({ data }) => {
   return (
     <PDFLayout title="Reporte de Estudiantes" subtitle="Listado detallado de estudiantes registrados">
@@ -15,7 +28,11 @@ export const StudentPDF: React.FC<StudentPDFProps> = ({ data }) => {
         {/* Table Header */}
         <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
           <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Cédula</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 5 }]}>Nombre Completo</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 3 }]}>Nombre Completo</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1 }]}>Sexo</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Teléfono</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Correo Electrónico</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Fecha Registro</Text>
         </View>
 
         {/* Table Body */}
@@ -24,8 +41,20 @@ export const StudentPDF: React.FC<StudentPDFProps> = ({ data }) => {
             <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>
               {student.identificationPrefix}-{student.identificationNumber}
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 5 }]}>
-              {`${student.firstName} ${student.lastName}`}
+            <Text style={[pdfStyles.tableCell, { flex: 3 }]}>
+              {fullName(student)}
+            </Text>
+            <Text style={[pdfStyles.tableCell, { flex: 1 }]}>
+              {student.sex === 'FEMENINO' ? 'F' : student.sex === 'MASCULINO' ? 'M' : student.sex}
+            </Text>
+            <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>
+              {student.phone || '-'}
+            </Text>
+            <Text style={[pdfStyles.tableCell, { flex: 2 }]}>
+              {student.email || '-'}
+            </Text>
+            <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>
+              {formatDate(student.enrollmentDate)}
             </Text>
           </View>
         ))}

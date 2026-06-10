@@ -3,7 +3,17 @@ import { View, Text } from "@react-pdf/renderer";
 import PDFLayout from "../PDFLayout";
 import { pdfStyles } from "../PDFStyles";
 import { InstitutionalResponsible, InstitutionalResponsibleRowData } from "../../../../features/institutions/types";
-// import { PDFService } from "../../../../services/pdf/PDFService";
+
+const formatCI = (prefix?: string, number?: string) =>
+  `${(prefix || 'V').replace(/-/g, '')}-${String(number || '').replace(/-/g, '')}`;
+
+const formatName = (item: InstitutionalResponsible | InstitutionalResponsibleRowData) =>
+  [item.firstName, item.middleName, item.lastName, item.secondLastName].filter(Boolean).join(' ');
+
+const formatDate = (date: string | Date) => {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d instanceof Date ? d.toLocaleDateString("es-VE", { year: "numeric", month: "2-digit", day: "2-digit" }) : "-";
+};
 
 interface InstitutionalResponsiblePDFProps {
   data: InstitutionalResponsible[] | InstitutionalResponsibleRowData[];
@@ -12,26 +22,27 @@ interface InstitutionalResponsiblePDFProps {
 export const InstitutionalResponsiblePDF: React.FC<InstitutionalResponsiblePDFProps> = ({ data }) => {
   return (
     <PDFLayout
-      title="Reporte de Responsables Institucionales"
-      subtitle="Personal de contacto en las instituciones aliadas"
+      title="Reporte De Responsables Empresariales e Institucionales"
+      subtitle="Personal de contacto en las empresas e instituciones aliadas"
     >
       <View style={pdfStyles.table}>
         <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
           <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>Cédula</Text>
           <Text style={[pdfStyles.tableCell, { flex: 3 }]}>Nombre Completo</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 3 }]}>Institución</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Empresa o Institución</Text>
           <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Contacto</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Fecha de Registro</Text>
         </View>
 
         {data.map((responsible, index) => (
           <View key={responsible.responsibleId || index} style={pdfStyles.tableRow} wrap={false}>
             <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>
-              {responsible.identificationPrefix}-{responsible.identificationNumber}
+              {formatCI(responsible.identificationPrefix, responsible.identificationNumber)}
             </Text>
             <Text style={[pdfStyles.tableCell, { flex: 3, fontWeight: "bold" }]}>
-              {`${responsible.firstName} ${responsible.middleName || ""} ${responsible.lastName} ${responsible.secondLastName || ""}`.trim()}
+              {formatName(responsible)}
             </Text>
-            <Text style={[pdfStyles.tableCell, { flex: 3 }]}>
+            <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>
               {responsible.institutions?.[0]?.institutionName || "No asignada"}
             </Text>
             <View style={[pdfStyles.tableCell, { flex: 2.5 }]}>
@@ -40,6 +51,9 @@ export const InstitutionalResponsiblePDF: React.FC<InstitutionalResponsiblePDFPr
                 {responsible.phone}
               </Text>
             </View>
+            <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>
+              {formatDate(responsible.registrationDate)}
+            </Text>
           </View>
         ))}
       </View>

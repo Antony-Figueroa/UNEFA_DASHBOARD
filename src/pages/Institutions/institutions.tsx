@@ -739,18 +739,18 @@ export default function InstitutionsPage() {
       <PDFPreviewModal
         isOpen={isRespPDFModalOpen}
         onClose={() => setIsRespPDFModalOpen(false)}
-        title="Reporte de Responsables Institucionales Activos"
+        title="Reporte De Responsables Empresariales e Institucionales"
         data={respPdfFilteredData}
         template={(data) => <InstitutionalResponsiblePDF data={data} />}
         fileName={`reporte-responsables-activos-${new Date().toISOString().split('T')[0]}.pdf`}
         searchTerm={respPdfSearchTerm}
         onSearchChange={setRespPdfSearchTerm}
         columns={[
-          { header: "Cédula", accessor: (r) => `${r.identificationPrefix}-${r.identificationNumber}` },
-          { header: "Nombre", accessor: (r) => `${r.firstName} ${r.lastName}` },
+          { header: "Cédula", accessor: (r) => `${(r.identificationPrefix || 'V').replace(/-/g, '')}-${String(r.identificationNumber).replace(/-/g, '')}` },
+          { header: "Nombre Completo", accessor: (r) => [r.firstName, r.middleName, r.lastName, r.secondLastName].filter(Boolean).join(' ') },
           { header: "Empresa o Institución", accessor: (r) => r.institutions?.map(i => i.institutionName).join(", ") || "-" },
-          { header: "Correo", accessor: "email" },
-          { header: "Teléfono", accessor: "phone" },
+          { header: "Contacto", accessor: (r) => `${r.email} / ${r.phone}` },
+          { header: "Fecha de Registro", accessor: (r) => new Date(r.registrationDate).toLocaleDateString("es-VE", { year: "numeric", month: "2-digit", day: "2-digit" }) },
         ]}
       />
 

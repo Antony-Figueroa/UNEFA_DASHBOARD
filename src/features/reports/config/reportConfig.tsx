@@ -61,35 +61,35 @@ export const DOCUMENT_SECTIONS: SectionGroup[] = [
     title: "Documentos Oficiales",
     description: "Documentos PDF institucionales para estudiantes y tutores",
     reports: [
-      { id: "aceptacion-tutor", title: "Carta de Aceptación", subtitle: "Aceptación Del Tutor Académico", icon: "fileText", type: "pdf" },
-      { id: "solicitud-institucion", title: "Solicitud de Institución", subtitle: "Asignación De Institución Para PP", icon: "fileText", type: "pdf" },
-      { id: "carta-postulacion", title: "Carta de Postulación", subtitle: "Postulación Del Estudiante", icon: "fileText", type: "pdf" },
-      { id: "acta-validacion", title: "Acta de Validación", subtitle: "Validación De Prácticas Profesionales", icon: "fileText", type: "pdf" },
-      { id: "evaluacion-final", title: "Evaluación Final", subtitle: "Evaluación Final De Prácticas", icon: "fileText", type: "pdf" },
-      { id: "evaluacion-tutor-institucional", title: "Eval. Tutor Institucional", subtitle: "Evaluación Del Tutor De La Institución", icon: "fileText", type: "pdf" },
-      { id: "evaluacion-tutor-academico", title: "Eval. Tutor Académico", subtitle: "Evaluación Del Tutor Académico", icon: "fileText", type: "pdf" },
-      { id: "evaluacion-comite", title: "Eval. Comité Evaluador", subtitle: "Evaluación Del Comité Evaluador", icon: "fileText", type: "pdf" },
-      { id: "constancia-tutor-academico", title: "Const. Tutor Académico", subtitle: "Constancia De Tutor Académico", icon: "fileText", type: "pdf" },
-      { id: "constancia-tutor-institucional", title: "Const. Tutor Institucional", subtitle: "Constancia De Tutor Institucional", icon: "fileText", type: "pdf" },
+      { id: "aceptacion-tutor", title: "Carta de Aceptación", subtitle: "Aceptación del Tutor Académico", icon: "fileText", type: "pdf" },
+      { id: "solicitud-institucion", title: "Solicitud de Institución", subtitle: "Asignación de Institución para PP", icon: "fileText", type: "pdf" },
+      { id: "carta-postulacion", title: "Carta de Postulación", subtitle: "Postulación del Estudiante", icon: "fileText", type: "pdf" },
+      { id: "acta-validacion", title: "Acta de Validación", subtitle: "Validación de Prácticas Profesionales", icon: "fileText", type: "pdf" },
+      { id: "evaluacion-final", title: "Evaluación Final", subtitle: "Evaluación Final de Prácticas", icon: "fileText", type: "pdf" },
+      { id: "evaluacion-tutor-institucional", title: "Eval. Tutor Institucional", subtitle: "Evaluación del Tutor de la Institución", icon: "fileText", type: "pdf" },
+      { id: "evaluacion-tutor-academico", title: "Eval. Tutor Académico", subtitle: "Evaluación del Tutor Académico", icon: "fileText", type: "pdf" },
+      { id: "evaluacion-comite", title: "Eval. Comité Evaluador", subtitle: "Evaluación del Comité Evaluador", icon: "fileText", type: "pdf" },
+      { id: "constancia-tutor-academico", title: "Const. Tutor Académico", subtitle: "Constancia de Tutor Académico", icon: "fileText", type: "pdf" },
+      { id: "constancia-tutor-institucional", title: "Const. Tutor Institucional", subtitle: "Constancia de Tutor Institucional", icon: "fileText", type: "pdf" },
     ],
   },
   {
     title: "Prospectos",
     description: "Listas editables de estudiantes elegibles para pasantías",
     reports: [
-      { id: "prospectos", title: "Reporte de Prospectos", subtitle: "Crear Y Gestionar Listas De Prospectos Por Período", icon: "users", type: "pdf" },
+      { id: "prospectos", title: "Reporte de Prospectos", subtitle: "Crear y Gestionar Listas de Prospectos por Período", icon: "users", type: "pdf" },
     ],
   },
   {
     title: "Reportes Generales",
     description: "Reportes exportables a Excel con datos agregados",
     reports: [
-      { id: "tutores-academicos", title: "Relación de Tutores Acad.", subtitle: "ANEXO 4 - Tutores Y Estudiantes Atendidos", icon: "table", type: "excel" },
-      { id: "resumen-pasantias", title: "Resumen de Pasantías", subtitle: "Resumen General De Prácticas Profesionales", icon: "table", type: "excel" },
-      { id: "relacion-empresas", title: "Relación de Empresas", subtitle: "Instituciones Que Demandan Pasantes", icon: "spreadsheet", type: "excel" },
-      { id: "distribucion-tutores", title: "Distribución de Tutores", subtitle: "Asignación De Tutores Por Estudiante", icon: "spreadsheet", type: "excel" },
-      { id: "distribucion-tutores-v2", title: "Dist. Tutores (Detallada)", subtitle: "Distribución Con Horario Detallado", icon: "spreadsheet", type: "excel" },
-      { id: "relacion-individual-docente", title: "Relación Individual Doc.", subtitle: "Reporte Individual Por Docente", icon: "spreadsheet", type: "excel" },
+      { id: "tutores-academicos", title: "Relación de Tutores Acad.", subtitle: "ANEXO 4 - Tutores y Estudiantes Atendidos", icon: "table", type: "excel" },
+      { id: "resumen-pasantias", title: "Resumen de Pasantías", subtitle: "Resumen General de Prácticas Profesionales", icon: "table", type: "excel" },
+      { id: "relacion-empresas", title: "Relación de Empresas", subtitle: "Instituciones que Demandan Pasantes", icon: "spreadsheet", type: "excel" },
+      { id: "distribucion-tutores", title: "Distribución de Tutores", subtitle: "Asignación de Tutores por Estudiante", icon: "spreadsheet", type: "excel" },
+      { id: "distribucion-tutores-v2", title: "Dist. Tutores (Detallada)", subtitle: "Distribución con Horario Detallado", icon: "spreadsheet", type: "excel" },
+      { id: "relacion-individual-docente", title: "Relación Individual Doc.", subtitle: "Reporte Individual por Docente", icon: "spreadsheet", type: "excel" },
     ],
   },
 ];
@@ -101,7 +101,7 @@ export const DOCUMENT_SECTIONS: SectionGroup[] = [
 export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = {
   "students": {
     title: "Reporte de Estudiantes",
-    subtitle: "Listado General De Estudiantes Registrados",
+    subtitle: "Listado General de Estudiantes Registrados",
     type: "pdf",
     loadData: async () => {
       const response = await getStudents();
@@ -119,7 +119,7 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
   },
   "tutores-academicos": {
     title: "ANEXO 4 - Relación de Tutores Académicos",
-    subtitle: "Reporte De Tutores Académicos Y Estudiantes Atendidos",
+    subtitle: "Reporte de Tutores Académicos y Estudiantes Atendidos",
     type: "excel",
     loadData: async (periodId, careerId, page, limit, careerIds) => {
       const response = await reportsService.getTutorsAcademicReport(periodId, careerId, page, limit, careerIds);
@@ -145,7 +145,7 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
   },
   "resumen-pasantias": {
     title: "Resumen de Pasantías",
-    subtitle: "Reporte Resumen General De Las Prácticas Profesionales",
+    subtitle: "Reporte Resumen General de las Prácticas Profesionales",
     type: "excel",
     loadData: async (periodId, careerId, page, limit, careerIds) => {
       const response = await reportsService.getResumenPasantiasReport(periodId, careerId, page, limit, careerIds);
@@ -165,7 +165,7 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
   },
   "institutions": {
     title: "Reporte De Instituciones",
-    subtitle: "Listado De Empresas o Instituciones Registradas",
+    subtitle: "Listado de Empresas o Instituciones Registradas",
     type: "pdf",
     loadData: async () => {
       const data = await getInstitutions();
@@ -180,7 +180,7 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
   },
   "enrollments": {
     title: "Reporte de Inscripciones",
-    subtitle: "Listado De Inscripciones Activas",
+    subtitle: "Listado de Inscripciones Activas",
     type: "pdf",
     loadData: async () => {
       const data = await getEnrollments();
@@ -195,7 +195,7 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
   },
   "culminated-students": {
     title: "Estudiantes Culminados",
-    subtitle: "Estudiantes Que Han Completado Sus Prácticas Profesionales",
+    subtitle: "Estudiantes que Han Completado sus Prácticas Profesionales",
     type: "pdf",
     loadData: async (_periodId, _careerId, page, limit) => {
       const response = await reportsService.getCulminatedStudents({ page, limit });
@@ -216,7 +216,7 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
   },
   "relacion-empresas": {
     title: "Relación de Empresas",
-    subtitle: "Instituciones Que Demandan Asignación De Pasantes",
+    subtitle: "Instituciones que Demandan Asignación de Pasantes",
     type: "excel",
     loadData: async (periodId, careerId, page, limit, careerIds) => {
       const response = await reportsService.getRelacionEmpresas(periodId, careerId, page, limit, careerIds);
@@ -235,7 +235,7 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
   },
   "distribucion-tutores": {
     title: "Distribución de Tutores",
-    subtitle: "Asignación De Tutores Por Estudiante",
+    subtitle: "Asignación de Tutores por Estudiante",
     type: "excel",
     loadData: async (periodId, careerId, page, limit, careerIds) => {
       const response = await reportsService.getDistribucionTutores(periodId, careerId, page, limit, careerIds);
@@ -257,7 +257,7 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
   },
   "distribucion-tutores-v2": {
     title: "Dist. Tutores (Detallada)",
-    subtitle: "Distribución De Tutores Con Horario Detallado",
+    subtitle: "Distribución de Tutores con Horario Detallado",
     type: "excel",
     loadData: async (periodId, careerId, page, limit, careerIds) => {
       const response = await reportsService.getDistribucionTutoresV2(periodId, careerId, page, limit, careerIds);
@@ -280,7 +280,7 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
   },
   "relacion-individual-docente": {
     title: "Relación Individual del Docente",
-    subtitle: "Reporte Individual Por Docente Tutor",
+    subtitle: "Reporte Individual por Docente Tutor",
     type: "excel",
     loadData: async () => ({ data: [] }),
     columns: [

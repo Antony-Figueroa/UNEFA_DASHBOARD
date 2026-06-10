@@ -73,6 +73,7 @@ interface DBInstitutionalResponsible {
   person_id: number;
   CREATION_DATE: string;
   STATUS: number;
+  TITLE: string | null;
   t_persons: DBPersonJoin;
   institutions?: Array<{
     institutionId: string;
@@ -85,7 +86,7 @@ interface DBInstitutionalResponsible {
 // Helpers
 // ============================================================
 
-const MANAGER_COLUMNS = `MANAGER_ID, person_id, CREATION_DATE, STATUS`;
+const MANAGER_COLUMNS = `MANAGER_ID, person_id, CREATION_DATE, STATUS, TITLE`;
 const PERSON_JOIN = `t_persons!inner(person_id, ci, first_name, middle_name, last_name, second_last_name, email, phone, gender)`;
 
 const getInstitutionsForManager = async (supabase: any, managerId: number) => {
@@ -128,6 +129,7 @@ const mapDBToFrontend = (r: DBInstitutionalResponsible) => {
     secondLastName: p.second_last_name || undefined,
     phone: p.phone,
     email: p.email,
+    title: r.TITLE || undefined,
     cargo: r.institutions?.[0]?.cargo || undefined,
     institutions: r.institutions || [],
     status: r.STATUS === 1,
@@ -321,6 +323,7 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
         CREATION_DATE: new Date().toISOString(),
         INSTITUTION_ID: null,
         cargo: null,
+        TITLE: r.title || null,
       };
 
       const { data: newManager, error } = await supabase
@@ -430,6 +433,7 @@ export const updateInstitutionalResponsible = async (req: Request, res: Response
       dbData.INSTITUTION_ID = null;
 
       if (r.status !== undefined) dbData.STATUS = r.status ? 1 : 0;
+      if (r.title !== undefined) dbData.TITLE = r.title || null;
 
       const { error: updateError } = await supabase
         .from(TABLE_NAME)

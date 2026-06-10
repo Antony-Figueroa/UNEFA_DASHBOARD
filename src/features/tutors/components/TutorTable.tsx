@@ -16,21 +16,6 @@ import { formatPhoneDisplay } from "../../../utils/inputFormat";
 import { matchSearch } from "../../../utils/searchNormalizer";
 
 /**
- * Genera un color basado en el nombre de la profesión para visualización consistente.
- * 
- * @param profession - Nombre de la profesión
- * @returns Color asignado (primary, success, error, warning, info)
- */
-const getProfessionColor = (profession: string): "primary" | "success" | "error" | "warning" | "info" => {
-    const colors: ("primary" | "success" | "error" | "warning" | "info")[] = ["primary", "success", "error", "warning", "info"];
-    let hash = 0;
-    for (let i = 0; i < (profession || "").length; i++) {
-        hash = profession.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-};
-
-/**
  * Propiedades para el componente TutorTable.
  */
 interface TutorTableProps {
@@ -54,8 +39,6 @@ interface TutorTableProps {
     inactiveMode?: boolean;
     /** Pestaña activa (Activas o Inactivas) */
     activeTab?: "Activas" | "Inactivas";
-    /** Opciones para filtrar por tipo de práctica */
-    practiceTypeOptions?: { value: string; label: string }[];
     /** Opciones para filtrar por carrera */
     careerOptions?: { value: string; label: string }[];
     /** Lista completa de carreras para mapeo de nombres */
@@ -67,7 +50,7 @@ interface TutorTableProps {
 }
 
 /** Claves por las que se puede ordenar la tabla */
-type SortKey = "identificationNumber" | "firstName" | "lastName" | "email" | "practiceTypes" | "registrationDate";
+type SortKey = "identificationNumber" | "firstName" | "lastName" | "email" | "registrationDate";
 /** Orden de clasificación */
 type SortOrder = "asc" | "desc";
 
@@ -170,14 +153,12 @@ export default function TutorTable({
     onBulkRestore,
     // inactiveMode = false,
     activeTab = "Activas",
-    practiceTypeOptions = [],
     careerOptions = [],
     careers = [],
     conditionOptions = [],
     // loading = false,
 }: TutorTableProps) {
     const [searchTerm, setSearchTerm] = useState("");
-    const [practiceTypeFilter, setPracticeTypeFilter] = useState("");
     const [careerFilter, setCareerFilter] = useState("");
     const [conditionFilter, setConditionFilter] = useState("");
 
@@ -199,7 +180,6 @@ export default function TutorTable({
 
     const filteredData = useMemo(() => {
         const search = debouncedSearch.trim().toLowerCase();
-        const practiceTypeSearch = practiceTypeFilter.trim().toLowerCase();
         const careerSearch = careerFilter.trim();
         const conditionSearch = conditionFilter.trim().toLowerCase();
 
@@ -211,13 +191,12 @@ export default function TutorTable({
                 matchSearch(t.email || "", search)
             );
 
-            const matchesPracticeType = !practiceTypeSearch || (t.practiceTypes || []).some(pt => pt.toLowerCase().includes(practiceTypeSearch));
             const matchesCareer = !careerSearch || (t.carreras || []).some(c => c === careerSearch);
             const matchesCondition = !conditionSearch || (t.condition || "").toLowerCase() === conditionSearch;
 
             const matchesTab = activeTab === "Activas" ? !!t.status : !t.status;
 
-            return matchesSearch && matchesPracticeType && matchesCareer && matchesCondition && matchesTab;
+            return matchesSearch && matchesCareer && matchesCondition && matchesTab;
         });
 
         filtered.sort((a, b) => {
@@ -237,8 +216,8 @@ export default function TutorTable({
                 if (relA !== relB) return relB - relA;
             }
 
-            const valA = sortConfig.key === "practiceTypes" ? (a.practiceTypes || []).join(", ") : a[sortConfig.key];
-            const valB = sortConfig.key === "practiceTypes" ? (b.practiceTypes || []).join(", ") : b[sortConfig.key];
+            const valA = a[sortConfig.key];
+            const valB = b[sortConfig.key];
             const strA = String(valA ?? "").toLowerCase();
             const strB = String(valB ?? "").toLowerCase();
 
@@ -248,11 +227,11 @@ export default function TutorTable({
         });
 
         return filtered;
-    }, [data, debouncedSearch, practiceTypeFilter, careerFilter, conditionFilter, activeTab, sortConfig]);
+    }, [data, debouncedSearch, careerFilter, conditionFilter, activeTab, sortConfig]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [debouncedSearch, practiceTypeFilter, careerFilter, conditionFilter]);
+    }, [debouncedSearch, careerFilter, conditionFilter]);
 
     if (status === "error") {
         return (
@@ -332,7 +311,6 @@ export default function TutorTable({
 
     const clearFilters = () => {
         setSearchTerm("");
-        setPracticeTypeFilter("");
         setCareerFilter("");
         setConditionFilter("");
     };
@@ -377,27 +355,6 @@ export default function TutorTable({
                         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
-                    </div>
-
-                    {/* Filtro por Tipo de Practica */}
-                    <div className="relative">
-                        <select
-                            value={practiceTypeFilter}
-                            onChange={(e) => setPracticeTypeFilter(e.target.value)}
-                            className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-3 pr-10 text-sm text-text-primary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis appearance-none"
-                        >
-                            <option value="" className="dark:bg-bg-dark">Todos los Tipos</option>
-                            {practiceTypeOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value} className="dark:bg-bg-dark">
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                         </div>
                     </div>
@@ -450,7 +407,7 @@ export default function TutorTable({
                         <div className="text-xs text-text-secondary dark:text-text-tertiary">
                             Mostrando <span className="font-bold text-text-primary dark:text-text-emphasis">{filteredData.length}</span> resultados
                         </div>
-                        {(searchTerm || practiceTypeFilter || careerFilter || conditionFilter) && (
+                        {(searchTerm || careerFilter || conditionFilter) && (
                             <button
                                 onClick={clearFilters}
                                 className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 flex items-center gap-1 transition-colors"
@@ -525,9 +482,6 @@ export default function TutorTable({
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("email")}>
                                 <div className="flex items-center uppercase">Correo Electrónico <SortIndicator column="email" /></div>
                             </TableCell>
-                            <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("practiceTypes")}>
-                                <div className="flex items-center uppercase">Tipo de Práctica <SortIndicator column="practiceTypes" /></div>
-                            </TableCell>
                             <TableCell isHeader className="table-header-cell text-right">&nbsp;</TableCell>
                         </TableRow>
                     </TableHeader>
@@ -584,19 +538,6 @@ export default function TutorTable({
                                     <TableCell className="table-cell text-sm text-text-secondary dark:text-text-tertiary uppercase">
                                         {t.email}
                                     </TableCell>
-                                    <TableCell className="table-cell uppercase">
-                                        <div className="flex flex-wrap gap-1 max-w-xs">
-                                            {t.practiceTypes && t.practiceTypes.length > 0 ? (
-                                                t.practiceTypes.map((pt, i) => (
-                                                    <Badge key={i} color={getProfessionColor(pt)} variant="light" size="sm" shape="rounded" className="uppercase">
-                                                        {pt}
-                                                    </Badge>
-                                                ))
-                                            ) : (
-                                                <span className="text-text-tertiary">N/A</span>
-                                            )}
-                                        </div>
-                                    </TableCell>
                                     <TableCell className="table-cell text-right">
                                         <ActionButtons
                                             onView={onView ? () => onView(t) : undefined}
@@ -610,7 +551,7 @@ export default function TutorTable({
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell className="table-cell py-24 text-center" colSpan={8}>
+                                <TableCell className="table-cell py-24 text-center" colSpan={7}>
                                     <div className="flex flex-col items-center justify-center animate-fadeIn">
                                         <div className="mb-4 rounded-full bg-bg-secondary p-4 dark:bg-white/5">
                                             <svg className="h-8 w-8 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -619,7 +560,7 @@ export default function TutorTable({
                                         </div>
                                         <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron tutores</h3>
                                         <p className="mt-1 text-xs text-text-tertiary dark:text-text-tertiary">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                                        {(searchTerm || practiceTypeFilter || careerFilter || conditionFilter) && (
+                                        {(searchTerm || careerFilter || conditionFilter) && (
                                             <button
                                                 onClick={clearFilters}
                                                 className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
@@ -665,20 +606,6 @@ export default function TutorTable({
                                     <div className="mt-4 space-y-6 animate-fadeIn border-t border-border-light dark:border-border-dark pt-6">
                                         <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
                                             <div className="flex flex-col items-center uppercase">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Tipo de Práctica</p>
-                                                <div className="flex flex-wrap justify-center gap-1 uppercase">
-                                                    {t.practiceTypes && t.practiceTypes.length > 0 ? (
-                                                        t.practiceTypes.map((pt, i) => (
-                                                            <Badge key={i} color={getProfessionColor(pt)} variant="light" size="sm" className="uppercase">
-                                                                {pt}
-                                                            </Badge>
-                                                        ))
-                                                    ) : (
-                                                        <span className="text-xs text-text-tertiary font-medium">N/A</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col items-center uppercase">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Carreras</p>
                                                 <div className="flex flex-wrap justify-center items-center gap-1.5 uppercase">
                                                     {t.carreras && t.carreras.length > 0 ? (
@@ -698,7 +625,7 @@ export default function TutorTable({
                                                 </div>
                                             </div>
                                             <div className="col-span-2 flex flex-col items-center uppercase">
-                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Correo</p>
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Correo Electrónico</p>
                                                 <p className="text-sm text-text-secondary dark:text-text-secondary font-medium truncate w-full max-w-62.5 uppercase">{t.email}</p>
                                             </div>
                                             <div className="col-span-2 flex flex-col items-center">
@@ -729,7 +656,7 @@ export default function TutorTable({
                         </div>
                         <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron tutores</h3>
                         <p className="mt-1 text-xs text-text-secondary dark:text-text-tertiary max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
-                        {(searchTerm || practiceTypeFilter || careerFilter || conditionFilter) && (
+                        {(searchTerm || careerFilter || conditionFilter) && (
                             <button
                                 onClick={clearFilters}
                                 className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"

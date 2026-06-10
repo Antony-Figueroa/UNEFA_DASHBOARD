@@ -3,12 +3,20 @@ import { View, Text } from "@react-pdf/renderer";
 import PDFLayout from "../PDFLayout";
 import { pdfStyles } from "../PDFStyles";
 import { Tutor, TutorRowData } from "../../../../features/tutors/types";
+import { Career } from "../../../../features/careers/types";
 
 interface TutorPDFProps {
   data: Tutor[] | TutorRowData[];
+  careers?: Career[];
 }
 
-export const TutorPDF: React.FC<TutorPDFProps> = ({ data }) => {
+const getCareerName = (id: string, careers?: Career[]) => {
+  if (!careers) return id;
+  const career = careers.find(c => String(c.careerId) === String(id));
+  return career ? career.careerName : id;
+};
+
+export const TutorPDF: React.FC<TutorPDFProps> = ({ data, careers }) => {
   return (
     <PDFLayout
       title="Reporte de Tutores"
@@ -18,8 +26,8 @@ export const TutorPDF: React.FC<TutorPDFProps> = ({ data }) => {
         <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
           <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>Cédula</Text>
           <Text style={[pdfStyles.tableCell, { flex: 3 }]}>Nombre Completo</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Profesión / Categoría</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Correo / Teléfono</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Título</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Contacto</Text>
         </View>
 
         {data.map((tutor, index) => (
@@ -38,7 +46,7 @@ export const TutorPDF: React.FC<TutorPDFProps> = ({ data }) => {
             <View style={[pdfStyles.tableCell, { flex: 2 }]}>
               <Text>{tutor.profession}</Text>
               <Text style={{ fontSize: 8, color: "#64748B", marginTop: 2 }}>
-                {tutor.category} - {tutor.dedication}
+                {(tutor.carreras || []).map(id => getCareerName(id, careers)).join(" - ")}
               </Text>
             </View>
             <View style={[pdfStyles.tableCell, { flex: 2 }]}>

@@ -43,6 +43,8 @@ export interface Institution {
   internshipTypeId?: string;
   /** IDs of careers this institution attends (from t_institution_career) */
   careerIds?: string[];
+  /** Names of careers this institution attends (resolved from careerIds) */
+  careerNames?: string[];
 }
 
 /**

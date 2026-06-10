@@ -90,7 +90,7 @@ export default function InstitutionalResponsibleViewModal({
           <div className="space-y-4">
             <div className="flex items-center gap-2 border-b border-border-light pb-2 dark:border-white/5">
               <div className="h-2 w-2 rounded-full bg-brand-500"></div>
-              <h4 className="font-bold text-text-primary dark:text-white/90 uppercase text-xs tracking-wider">Contacto e Institución</h4>
+              <h4 className="font-bold text-text-primary dark:text-white/90 uppercase text-xs tracking-wider">Contacto y Empresa o Institución</h4>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
@@ -107,14 +107,14 @@ export default function InstitutionalResponsibleViewModal({
                 </p>
               </div>
               <div className="sm:col-span-2">
-                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Instituciones</label>
+                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Empresas o Instituciones</label>
                 {responsible.institutions && responsible.institutions.length > 0 ? (
                   <div className="space-y-2 mt-2">
                     {responsible.institutions.map((inst, index) => (
                       <div key={inst.institutionId || index} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
                         <div className="flex-1">
                           <p className="text-sm font-bold text-text-primary dark:text-white/90">
-                            {inst.institutionName || "Institución sin nombre"}
+                            {inst.institutionName || "Empresa o Institución sin nombre"}
                           </p>
                           {inst.cargo && (
                             <p className="text-xs text-text-secondary dark:text-text-tertiary mt-1">
@@ -127,7 +127,7 @@ export default function InstitutionalResponsibleViewModal({
                   </div>
                 ) : (
                   <p className="text-sm font-bold text-text-primary dark:text-white/90 uppercase">
-                    Sin institución
+                    Sin empresa o institución
                   </p>
                 )}
               </div>

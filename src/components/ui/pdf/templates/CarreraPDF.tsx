@@ -20,8 +20,7 @@ export const CarreraPDF: React.FC<CarreraPDFProps> = ({ data }) => {
           <Text style={[pdfStyles.tableCell, { flex: 1 }]}>Código</Text>
           <Text style={[pdfStyles.tableCell, { flex: 3 }]}>Nombre de la Carrera</Text>
           <Text style={[pdfStyles.tableCell, { flex: 1 }]}>Abrev.</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1 }]}>Tipo</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 1, textAlign: "center" }]}>Nota Mín.</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 1, textAlign: "center" }]}>Tipo Carrera</Text>
         </View>
 
         {data.map((career, index) => (
@@ -29,8 +28,7 @@ export const CarreraPDF: React.FC<CarreraPDFProps> = ({ data }) => {
             <Text style={[pdfStyles.tableCell, { flex: 1 }]}>{career.careerCode}</Text>
             <Text style={[pdfStyles.tableCell, { flex: 3 }]}>{career.careerName}</Text>
             <Text style={[pdfStyles.tableCell, { flex: 1 }]}>{career.careerAbbreviation}</Text>
-            <Text style={[pdfStyles.tableCell, { flex: 1 }]}>{career.careerType}</Text>
-            <Text style={[pdfStyles.tableCell, { flex: 1, textAlign: "center" }]}>{career.minimumGrade}</Text>
+            <Text style={[pdfStyles.tableCell, { flex: 1, textAlign: "center" }]}>{career.careerType === "CORTA" ? "Corta" : "Larga"}</Text>
           </View>
         ))}
       </View>

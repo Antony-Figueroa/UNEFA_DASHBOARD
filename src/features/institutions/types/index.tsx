@@ -95,6 +95,8 @@ export interface InstitutionalResponsible {
   phone: string;
   /** Contact email address */
   email: string;
+  /** Title/Título - institutional position title */
+  title?: string;
   /** Position/Cargo - now stored per institution in the institutions array */
   cargo?: string;
   /** Array of institution associations (each with its own cargo) */

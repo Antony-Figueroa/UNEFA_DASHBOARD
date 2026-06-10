@@ -234,7 +234,8 @@ CREATE TABLE IF NOT EXISTS "t_institution_manager" (
   "CREATION_DATE" TIMESTAMP NOT NULL,
   "STATUS" SMALLINT NOT NULL,
   "INSTITUTION_ID" INTEGER,
-  "cargo" VARCHAR(100)
+  "cargo" VARCHAR(100),
+  "TITLE" VARCHAR(100) DEFAULT NULL
 );
 
 -- t_institution_manager_institution (manager-institution relationship)

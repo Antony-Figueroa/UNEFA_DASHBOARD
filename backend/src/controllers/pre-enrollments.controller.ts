@@ -175,7 +175,47 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
         throw err;
       }
 
-      // 2.1. Validar que no tenga una pre-inscripción activa
+      // 2.0. Auto-inactivar pre-inscripciones vencidas (periodo de holgura terminó y no pasaron a inscripción)
+      const gracePeriodCheck = await supabase
+        .from(TABLE_NAME)
+        .select(`
+          PROFESSIONAL_PRACTICE_ID,
+          PERIOD_ID,
+          t_internships_period!inner(START_DATE, ENROLLMENT_GRACE_DAYS)
+        `)
+        .eq('STUDENTS_ID', student.STUDENTS_ID)
+        .eq('PRACTICES_STATUS', PRACTICES_STATUS.PRE_INSCRITO)
+        .eq('STATUS', 1);
+
+      if (gracePeriodCheck.error) throw gracePeriodCheck.error;
+      if (gracePeriodCheck.data && gracePeriodCheck.data.length > 0) {
+        const now = new Date();
+        const toInactivate: number[] = [];
+
+        for (const pre of gracePeriodCheck.data) {
+          const period = pre.t_internships_period as unknown as { START_DATE: string; ENROLLMENT_GRACE_DAYS?: number };
+          if (!period) continue;
+          const startDate = new Date(period.START_DATE);
+          const graceDays = period.ENROLLMENT_GRACE_DAYS ?? 21;
+          const deadline = new Date(startDate);
+          deadline.setDate(deadline.getDate() + graceDays);
+          if (now > deadline) {
+            toInactivate.push(pre.PROFESSIONAL_PRACTICE_ID);
+          }
+        }
+
+        if (toInactivate.length > 0) {
+          const { error: inactivateError } = await supabase
+            .from(TABLE_NAME)
+            .update({ STATUS: 0 })
+            .in('PROFESSIONAL_PRACTICE_ID', toInactivate);
+
+          if (inactivateError) throw inactivateError;
+          console.log(`[PreEnrollmentsController] Auto-inactivadas ${toInactivate.length} pre-inscripción(es) vencida(s) para estudiante ${fullCI}`);
+        }
+      }
+
+      // 2.1. Validar que no tenga una pre-inscripción activa (después de auto-inactivar las vencidas)
       const { data: activePreEnrollment, error: activePreError } = await supabase
         .from(TABLE_NAME)
         .select('PROFESSIONAL_PRACTICE_ID')
@@ -235,18 +275,19 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
         throw err;
       }
 
-      // 4. Validar duplicados (mismo estudiante, mismo periodo, mismo tipo de práctica)
+      // 4. Validar duplicados activos (mismo estudiante, mismo periodo, mismo tipo de práctica)
       const { data: existingEntry, error: checkError } = await supabase
         .from(TABLE_NAME)
         .select('PROFESSIONAL_PRACTICE_ID')
         .eq('STUDENTS_ID', student.STUDENTS_ID)
         .eq('PERIOD_ID', periodData.PERIOD_ID)
         .eq('INTERNSHIP_TYPE_ID', typeData.INTERNSHIP_TYPE_ID)
+        .eq('STATUS', 1)
         .maybeSingle();
 
       if (checkError) throw checkError;
       if (existingEntry) {
-        const err = new Error('Ya existe un registro para este estudiante en el mismo período y tipo de práctica.');
+        const err = new Error('Ya existe un registro activo para este estudiante en el mismo período y tipo de práctica.');
         (err as any).status = 409;
         throw err;
       }

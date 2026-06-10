@@ -32,8 +32,71 @@ const cleanOldNotifications = (): void => {
   }
 };
 
+/**
+ * Auto-inactiva pre-inscripciones cuyo período de holgura ya venció
+ * y no pasaron a inscripción.
+ */
+const autoInactivateExpiredPreEnrollments = async () => {
+  try {
+    await dbManager.withRetry(async (supabase) => {
+      // Obtener todas las pre-inscripciones activas con su período
+      const { data: preEnrollments, error } = await supabase
+        .from('t_professional_practices')
+        .select(`
+          PROFESSIONAL_PRACTICE_ID,
+          PERIOD_ID,
+          t_internships_period!inner(START_DATE, ENROLLMENT_GRACE_DAYS)
+        `)
+        .eq('PRACTICES_STATUS', 1) // PRE_INSCRITO
+        .eq('STATUS', 1);           // activo
+
+      if (error) {
+        console.error('[Scheduler] Error consultando pre-inscripciones:', error.message);
+        return;
+      }
+
+      if (!preEnrollments || preEnrollments.length === 0) return;
+
+      const now = new Date();
+      const toInactivate: number[] = [];
+
+      for (const pre of preEnrollments) {
+        const period = pre.t_internships_period as unknown as { START_DATE: string; ENROLLMENT_GRACE_DAYS?: number };
+        if (!period) continue;
+        const startDate = new Date(period.START_DATE);
+        const graceDays = period.ENROLLMENT_GRACE_DAYS ?? 21;
+        const deadline = new Date(startDate);
+        deadline.setDate(deadline.getDate() + graceDays);
+        if (now > deadline) {
+          toInactivate.push(pre.PROFESSIONAL_PRACTICE_ID);
+        }
+      }
+
+      if (toInactivate.length === 0) return;
+
+      const { error: updateError } = await supabase
+        .from('t_professional_practices')
+        .update({ STATUS: 0 })
+        .in('PROFESSIONAL_PRACTICE_ID', toInactivate);
+
+      if (updateError) {
+        console.error('[Scheduler] Error auto-inactivando pre-inscripciones:', updateError.message);
+        return;
+      }
+
+      console.log(`[Scheduler] ✓ ${toInactivate.length} pre-inscripción(es) auto-inactivada(s) por vencimiento de período de holgura`);
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Error desconocido';
+    console.error('[Scheduler] Error en auto-inactivación:', message);
+  }
+};
+
 export const runPeriodNotificationScheduler = async () => {
   try {
+    // Primero auto-inactivar pre-inscripciones vencidas
+    await autoInactivateExpiredPreEnrollments();
+
     const periods = await dbManager.withRetry(async (supabase) => {
       const { data, error } = await supabase
         .from('t_internships_period')

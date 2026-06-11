@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, lazy } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef, lazy } from "react";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,6 +11,7 @@ import CustomSelect from "../../../components/form/CustomSelect";
 import MultiSelect from "../../../components/form/MultiSelect";
 
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
+import { useAcademicConfig } from "../../academic-config/hooks/useAcademicConfig";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { getCareers } from "../../careers/services/careersService";
@@ -94,8 +95,12 @@ export default function TutorModal({
     const [existingPerson, setExistingPerson] = useState(false);
     const [viewOnlyMode, setViewOnlyMode] = useState(false);
    
-   // State for career modal
-   const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
+   // State for API-loaded data flow (SENIAT)
+   const [apiDataLoaded, setApiDataLoaded] = useState(false);
+   const apiLoadedCiRef = useRef("");
+
+    // State for career modal
+    const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
    const [editingCareer, setEditingCareer] = useState<Career | null>(null);
    const [internshipOptions, setInternshipOptions] = useState<InternshipTypeOption[]>([]);
    
@@ -103,6 +108,8 @@ export default function TutorModal({
    const [isInternshipTypeModalOpen, setIsInternshipTypeModalOpen] = useState(false);
    const [editingInternshipType, setEditingInternshipType] = useState<InternshipType | null>(null);
     const [existingInternshipTypes, setExistingInternshipTypes] = useState<InternshipType[]>([]);
+
+  const { config: academicConfig } = useAcademicConfig();
 
   const tutorSchema = useMemo(() => z.object({
     identificationPrefix: z.string().min(1, "Seleccione el tipo"),
@@ -278,6 +285,39 @@ export default function TutorModal({
     setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
     clearErrors("identificationNumber");
     
+    // Si se cambia la cédula tras una carga de API externa, limpiar el formulario
+    if (apiDataLoaded) {
+      const prefix = watch("identificationPrefix") || "V";
+      const currentCi = `${prefix}-${digitsOnly}`;
+      if (currentCi !== apiLoadedCiRef.current) {
+        setApiDataLoaded(false);
+        apiLoadedCiRef.current = "";
+        clearErrors("identificationNumber");
+        reset({
+          identificationPrefix: "",
+          identificationNumber: "",
+          firstName: "",
+          middleName: "",
+          lastName: "",
+          secondLastName: "",
+          sex: "",
+          birthDate: "",
+          address: "",
+          civilStatus: "",
+          phoneAreaCode: "",
+          phoneNumber: "",
+          email: "",
+          condition: "",
+          dedication: "",
+          category: "",
+          profession: "",
+          titulo: "",
+          carreras: [],
+        });
+        setDisplayPhoneNumber("");
+      }
+    }
+
     // Si se cambia la cédula y hay un existingTutor o existingPerson, limpiar el formulario
     if (existingTutor || existingPerson) {
       const currentStoredDigits = existingTutor
@@ -504,6 +544,8 @@ export default function TutorModal({
     try {
       const externalData = await lookupCi(fullCi);
       if (externalData) {
+        setApiDataLoaded(true);
+        apiLoadedCiRef.current = fullCi;
         setValue("firstName", externalData.primerNombre?.toUpperCase() || "");
         setValue("middleName", externalData.segundoNombre?.toUpperCase() || "");
         setValue("lastName", externalData.primerApellido?.toUpperCase() || "");
@@ -957,6 +999,7 @@ export default function TutorModal({
                 createNameHandler={handleNameChange}
                 onAddValue={(listName, field, title) => openAddValueModal(listName, field as any, title)}
                 viewOnlyMode={viewOnlyMode}
+                fieldLockOnApiLoad={apiDataLoaded && (academicConfig?.lockApiLoadedFields ?? true)}
                 editingId={editingTutor?.tutorId ?? existingTutor?.tutorId ?? null}
                 phonePrefixFieldName="phoneAreaCode"
                 age={age}

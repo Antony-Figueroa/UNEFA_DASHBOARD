@@ -144,7 +144,7 @@ export default function InstitutionTable({
       const matchesSearch = !search || matchSearch(i.rif, search) || matchSearch(i.name, search) || matchSearch(i.phone || "", search);
       const matchesInstitutionType = !institutionTypeSearch || i.institutionType === institutionTypeSearch;
       
-      const matchesTab = activeTab === "Activas" ? i.status === true : i.status === false;
+      const matchesTab = activeTab === "Activas" ? Boolean(i.status) : !Boolean(i.status);
       
       return matchesSearch && matchesInstitutionType && matchesTab;
     });

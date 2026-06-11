@@ -1087,25 +1087,11 @@ export default function EnrollmentModal({
 
               {/* Card: Empresa/Institución */}
               <div className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-border-light dark:border-white/10 shadow-sm space-y-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-600">
-                      <BuildingOfficeIcon className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-base font-bold text-text-primary dark:text-white">Empresa / Institución</h3>
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-600">
+                    <BuildingOfficeIcon className="w-5 h-5" />
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      window.dispatchEvent(new CustomEvent("enrollment:addInstitution"));
-                    }}
-                    className="shrink-0 text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20 rounded-xl font-bold text-xs px-3 py-1.5"
-                  >
-                    <PlusIcon className="w-3.5 h-3.5 mr-1" />
-                    Nueva Empresa
-                  </Button>
+                  <h3 className="text-base font-bold text-text-primary dark:text-white">Empresa / Institución</h3>
                 </div>
 
                 <div className="space-y-4">
@@ -1213,11 +1199,6 @@ export default function EnrollmentModal({
                               value={String(field.value)}
                               className="rounded-xl h-[48px]"
                               disabled={!selectedPracticeType || !careerId}
-                              onAddNew={selectedPracticeType && careerId ? () => {
-                                const evt = new CustomEvent("enrollment:addInstitution");
-                                window.dispatchEvent(evt);
-                              } : undefined}
-                              addNewLabel={selectedPracticeType && careerId && filteredInstitutions.length > 0 ? "Nueva Institución" : undefined}
                             />
                             {selectedPracticeType && selectedCareerName && filteredInstitutions.length === 0 && (
                               <p className="text-[11px] font-bold text-amber-600">

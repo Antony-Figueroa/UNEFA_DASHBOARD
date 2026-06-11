@@ -26,7 +26,7 @@ import { InternshipTypeOption } from "../../internship-types/types";
 import { Career } from "../../careers/types";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
-import { useToast } from "../../../context/toast";
+
 import * as enrollmentService from "../services/enrollmentService";
 import { useLists } from "../../lists/hooks/useLists";
 import { generateMatricula } from "../../../utils/matricula";

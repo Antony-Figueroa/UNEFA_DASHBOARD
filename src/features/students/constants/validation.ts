@@ -64,6 +64,15 @@ export const studentSchema = z.object({
   studentType: z.string().min(1, "Seleccione el tipo de estudiante"),
   militaryRank: z.string().default("NO APLICA"),
   works: z.string().min(1, "Seleccione si trabaja"),
+})
+.refine((data) => {
+  if (data.studentType === "MILITAR") {
+    return data.militaryRank && data.militaryRank !== "" && data.militaryRank !== "NO APLICA";
+  }
+  return true;
+}, {
+  message: "Debe seleccionar un rango militar",
+  path: ["militaryRank"],
 });
 
 export type StudentFormInput = z.input<typeof studentSchema>;

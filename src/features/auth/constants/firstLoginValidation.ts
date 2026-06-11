@@ -77,6 +77,27 @@ export const simplePasswordSchema = z.object({
   path: ["confirmPassword"]
 });
 
+// Schema para admin-reset: datos personales + contraseña, sin preguntas de seguridad
+export const resetPasswordSchema = z.object({
+  firstName: z.string().min(1, "El primer nombre es obligatorio").regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s']+$/, "Solo se admiten letras, espacios y apóstrofes"),
+  middleName: z.string().optional(),
+  lastName: z.string().min(1, "El primer apellido es obligatorio").regex(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s']+$/, "Solo se admiten letras, espacios y apóstrofes"),
+  secondLastName: z.string().optional(),
+  phonePrefix: z.string().min(1, "El prefijo telefónico es obligatorio"),
+  phoneNumber: z.string().length(7, "El número debe tener exactamente 7 dígitos").regex(/^\d+$/, "Solo se admiten números"),
+  email: z.string().email("Email inválido").min(1, "El email es obligatorio"),
+  newPassword: z.string()
+    .min(12, "La contraseña debe tener al menos 12 caracteres")
+    .refine(val => passwordRegex.uppercase.test(val), "Debe contener al menos una mayúscula")
+    .refine(val => passwordRegex.lowercase.test(val), "Debe contener al menos una minúscula")
+    .refine(val => passwordRegex.number.test(val), "Debe contener al menos un número")
+    .refine(val => passwordRegex.special.test(val), "Debe contener al menos un carácter especial"),
+  confirmPassword: z.string().min(1, "Debe confirmar la contraseña"),
+}).refine(data => data.newPassword === data.confirmPassword, {
+  message: "Las contraseñas no coinciden",
+  path: ["confirmPassword"]
+});
+
 export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 
 export type FirstLoginFormData = z.infer<typeof firstLoginSchema>;

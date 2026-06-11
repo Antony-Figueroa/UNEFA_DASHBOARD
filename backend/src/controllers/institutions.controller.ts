@@ -148,7 +148,7 @@ export const getInstitutions = async (req: Request, res: Response) => {
             .in('INSTITUTION_ID', instIds),
           supabase.from('t_career')
             .select('CAREER_ID, CAREER_NAME')
-            .eq('STATUS', true)
+            .eq('STATUS', 1)
         ]);
 
         // Process maps

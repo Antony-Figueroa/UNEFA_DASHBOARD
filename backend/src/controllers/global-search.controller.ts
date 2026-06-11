@@ -98,7 +98,7 @@ export const globalSearch = async (req: Request, res: Response): Promise<void> =
           SEMESTER,
           t_persons!inner(ci, first_name, last_name, email)
         `)
-        .eq('STATUS', true)
+        .eq('STATUS', 1)
         .or(buildSearchCondition(searchTerm, ['t_persons.first_name', 't_persons.last_name', 't_persons.ci', 't_persons.email']))
         .limit(limitNum);
 
@@ -125,7 +125,7 @@ export const globalSearch = async (req: Request, res: Response): Promise<void> =
           DEPARTMENT,
           t_persons!inner(ci, first_name, last_name, email)
         `)
-        .eq('STATUS', true)
+        .eq('STATUS', 1)
         .or(buildSearchCondition(searchTerm, ['t_persons.first_name', 't_persons.last_name', 't_persons.ci', 't_persons.email']))
         .limit(limitNum);
 
@@ -153,7 +153,7 @@ export const globalSearch = async (req: Request, res: Response): Promise<void> =
           PHONE,
           REGION
         `)
-        .eq('STATUS', true)
+        .eq('STATUS', 1)
         .or(buildSearchCondition(searchTerm, ['NAME', 'RIF']))
         .limit(limitNum);
 
@@ -179,7 +179,7 @@ export const globalSearch = async (req: Request, res: Response): Promise<void> =
           CAREER_CODE,
           CAREER_NAME
         `)
-        .eq('STATUS', true)
+        .eq('STATUS', 1)
         .or(buildSearchCondition(searchTerm, ['CAREER_NAME', 'CAREER_CODE']))
         .limit(limitNum);
 

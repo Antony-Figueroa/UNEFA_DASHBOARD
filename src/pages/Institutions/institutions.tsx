@@ -112,8 +112,6 @@ export default function InstitutionsPage() {
     toggleStatus: toggleInstStatus,
     bulkRemoveInstitutions,
     bulkRestoreInstitutions,
-    pagination: instPagination,
-    setPage: setInstPage,
   } = useInstitutions();
 
   const {
@@ -126,8 +124,6 @@ export default function InstitutionsPage() {
     refreshResponsibles,
     bulkRemoveResponsibles,
     bulkRestoreResponsibles,
-    pagination: respPagination,
-    setPage: setRespPage,
   } = useInstitutionalResponsibles();
 
   const { careers, refreshCareers } = useCareers({ autoLoad: true });
@@ -497,8 +493,6 @@ export default function InstitutionsPage() {
                   onBulkDelete={(ids) => handleBulkInstAction(ids, "inactivate")}
                   onBulkRestore={(ids) => handleBulkInstAction(ids, "restore")}
                   institutionTypeOptions={institutionTypeOptions}
-                  pagination={instPagination}
-                  onPageChange={setInstPage}
                 />
               ) : (
                 <InstitutionalResponsibleTable
@@ -510,8 +504,6 @@ export default function InstitutionsPage() {
                   onToggleStatus={handleToggleRespStatus}
                   onBulkAction={handleBulkRespAction}
                   isLoading={respStatus === "loading"}
-                  pagination={respPagination}
-                  onPageChange={setRespPage}
                 />
               )}
             </SkeletonLoader>

@@ -191,11 +191,11 @@ export default function InstitutionTable({
     );
   }
 
-  // Usar paginación server-side si está disponible, sino la local
+  // Usar paginación server-side si está disponible, pero siempre aplicar filtros locales
   const isServerSide = !!pagination && !!onPageChange;
   const currentPage = isServerSide ? pagination.page : localPage;
-  const totalPages = isServerSide ? pagination.totalPages : Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
-  const paged = isServerSide ? data : filteredData.slice((localPage - 1) * itemsPerPage, localPage * itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / (isServerSide ? pagination.limit : itemsPerPage)));
+  const paged = filteredData.slice((currentPage - 1) * (isServerSide ? pagination.limit : itemsPerPage), currentPage * (isServerSide ? pagination.limit : itemsPerPage));
 
   const handleSort = (key: SortKey) => {
     setSortConfig(prev => ({

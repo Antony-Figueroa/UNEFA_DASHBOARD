@@ -329,16 +329,6 @@ export default function FirstLogin() {
                 Complete los siguientes pasos para activar su cuenta en el sistema
               </p>
             </div>
-          ) : (
-            <div className="mb-8">
-              <h1 className="mb-2 text-2xl font-bold text-center text-text-emphasis dark:text-white">
-                Cambio de Contraseña
-              </h1>
-              <p className="text-sm text-center text-text-secondary dark:text-text-tertiary">
-                Un administrador reseteó su clave. Elija una nueva contraseña.
-              </p>
-            </div>
-          )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {currentStep === 1 && (

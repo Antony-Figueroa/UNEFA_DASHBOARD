@@ -61,15 +61,11 @@ export const useInstitutions = () => {
     error,
     refresh: refreshInstitutions,
     deleteItem: removeInstitution,
-    pagination,
-    setPage,
-    setLimit,
   } = useCrud<Institution, CreateInstitutionPayload, UpdateInstitutionPayload>(institutionService, {
     resourceName: "Empresa o Institución",
     idField: "institutionId",
     optimistic: true,
-    usePagination: true,
-    pageSize: 20,
+    usePagination: false,
   });
 
   /**
@@ -263,8 +259,5 @@ export const useInstitutions = () => {
     toggleStatus,
     bulkRemoveInstitutions,
     bulkRestoreInstitutions,
-    pagination,
-    setPage,
-    setLimit,
   };
 };

@@ -299,7 +299,7 @@ export const getGraceDefaults = async (): Promise<GraceDefaults> => {
  * @returns Promesa con los valores actualizados.
  */
 export const updateGraceDefaults = async (
-  data: { defaultEnrollmentGraceDays: number; defaultEvaluationGraceDays: number }
+  data: { defaultEnrollmentGraceDays?: number; defaultEvaluationGraceDays?: number; lockApiLoadedFields?: boolean }
 ): Promise<GraceDefaults> => {
   try {
     const response = await apiClient.patch<GraceDefaults>("/academic-config/defaults", data);

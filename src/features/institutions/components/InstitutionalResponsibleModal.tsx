@@ -3,7 +3,7 @@
  * @description Modal para crear y editar responsables institucionales.
  */
 
-import { useEffect, useState, useCallback, useMemo, lazy, Suspense } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef, lazy, Suspense } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -28,6 +28,7 @@ import * as listsService from "../../lists/services/listsService";
 import { NAME_PATTERN, SAFE_EMAIL_PATTERN, SAFE_TEXT_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 import { checkAvailability as checkPersonAvailability } from "../../persons/services/personService";
 import PersonFormFields from "../../persons/components/PersonFormFields";
+import { useAcademicConfig } from "../../academic-config/hooks/useAcademicConfig";
 import { lookupCi } from "../../students/services/studentsService";
 
 // Lazy load para evitar dependencia circular con InstitutionModal
@@ -173,6 +174,10 @@ export default function InstitutionalResponsibleModal({
    const [existingResponsible, setExistingResponsible] = useState<any | null>(null);
    const [existingPerson, setExistingPerson] = useState(false);
    const [viewOnlyMode, setViewOnlyMode] = useState(false);
+   // State for API-loaded data flow (SENIAT)
+   const [apiDataLoaded, setApiDataLoaded] = useState(false);
+   const apiLoadedCiRef = useRef("");
+   const { config: academicConfig } = useAcademicConfig();
 
 // Check if institutional responsible exists by CI
     const checkInstitutionalResponsibleByCi = async (ci: string) => {
@@ -341,8 +346,33 @@ export default function InstitutionalResponsibleModal({
      setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
      clearErrors("identificationNumber");
      
-     // Si se cambia la cédula y hay un existingResponsible o existingPerson, limpiar el formulario
-     if (existingResponsible || existingPerson) {
+      // Si se cambia la cédula tras una carga de API externa, limpiar el formulario
+      if (apiDataLoaded) {
+        const prefix = watch("identificationPrefix") || "V";
+        const currentCi = `${prefix}-${digitsOnly}`;
+        if (currentCi !== apiLoadedCiRef.current) {
+          setApiDataLoaded(false);
+          apiLoadedCiRef.current = "";
+          clearErrors("identificationNumber");
+           reset({
+             identificationPrefix: "",
+             identificationNumber: "",
+             firstName: "",
+             middleName: "",
+             lastName: "",
+             secondLastName: "",
+             phonePrefix: "",
+             phoneNumber: "",
+             email: "",
+             title: "",
+             institutions: []
+           });
+          setDisplayPhoneNumber("");
+        }
+      }
+
+      // Si se cambia la cédula y hay un existingResponsible o existingPerson, limpiar el formulario
+      if (existingResponsible || existingPerson) {
        const currentStoredDigits = existingResponsible
          ? existingResponsible.identificationNumber?.replace(/\D/g, '') || ''
          : '';
@@ -435,6 +465,8 @@ export default function InstitutionalResponsibleModal({
     try {
       const externalData = await lookupCi(fullCi);
       if (externalData) {
+        setApiDataLoaded(true);
+        apiLoadedCiRef.current = fullCi;
         setValue("firstName", externalData.primerNombre?.toUpperCase() || "");
         setValue("middleName", externalData.segundoNombre?.toUpperCase() || "");
         setValue("lastName", externalData.primerApellido?.toUpperCase() || "");
@@ -806,7 +838,8 @@ export default function InstitutionalResponsibleModal({
                     openAddValueModal(listName, field as any, title)
                   }
                   viewOnlyMode={!!existingResponsible}
-                  editingId={editingResp?.responsibleId ?? null}
+                  fieldLockOnApiLoad={apiDataLoaded && (academicConfig?.lockApiLoadedFields ?? true)}
+                  editingId={editingResp?.responsibleId ?? existingResponsible?.responsibleId ?? null}
                   hiddenFields={["sex", "birthDate", "civilStatus", "address"]}
                 />
 

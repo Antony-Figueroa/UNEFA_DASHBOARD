@@ -972,20 +972,6 @@ export default function EnrollmentModal({
                     </div>
                     <h3 className="text-base font-bold text-text-primary dark:text-white">Tutor Académico</h3>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      window.dispatchEvent(new CustomEvent("enrollment:addTutor", {
-                        detail: { targetField: "academicTutorId" }
-                      }));
-                    }}
-                    className="shrink-0 text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20 rounded-xl font-bold text-xs px-3 py-1.5"
-                  >
-                    <PlusIcon className="w-3.5 h-3.5 mr-1" />
-                    Nuevo Tutor
-                  </Button>
                 </div>
 
                 <div className="space-y-4">
@@ -1047,20 +1033,6 @@ export default function EnrollmentModal({
                     </div>
                     <h3 className="text-base font-bold text-text-primary dark:text-white">Tutor Metodológico</h3>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      window.dispatchEvent(new CustomEvent("enrollment:addTutor", {
-                        detail: { targetField: "methodologicalTutorId" }
-                      }));
-                    }}
-                    className="shrink-0 text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20 rounded-xl font-bold text-xs px-3 py-1.5"
-                  >
-                    <PlusIcon className="w-3.5 h-3.5 mr-1" />
-                    Nuevo Tutor
-                  </Button>
                 </div>
 
                 <div className="space-y-4">
@@ -1265,19 +1237,6 @@ export default function EnrollmentModal({
                   <div className="space-y-3 pt-2">
                     <div className="flex items-center justify-between">
                       <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Responsable Institucional *</label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          window.dispatchEvent(new CustomEvent("enrollment:addResponsible", { detail: { institutionId: selectedInstitutionId } }));
-                        }}
-                        className="shrink-0 text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20 rounded-xl font-bold text-[10px] px-2 py-1"
-                        disabled={!selectedInstitutionId}
-                      >
-                        <PlusIcon className="w-3 h-3 mr-0.5" />
-                        Nuevo
-                      </Button>
                     </div>
                     <Controller
                       name="institutionResponsibleId"

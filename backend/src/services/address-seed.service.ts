@@ -40,6 +40,9 @@ export async function seedGeographicData(): Promise<void> {
       path.resolve(__dirname, '../src/data/venezuela.json'),
       path.resolve(__dirname, '../../src/data/venezuela.json'),
       path.resolve(__dirname, '../../../src/data/venezuela.json'),
+      path.resolve(__dirname, '../../../data/venezuela.json'),
+      path.resolve(__dirname, '../assets/venezuela.json'),
+      path.resolve(__dirname, '../../assets/venezuela.json'),
     ];
 
     let raw: string;

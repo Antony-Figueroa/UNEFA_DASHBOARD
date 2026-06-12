@@ -484,7 +484,7 @@ export default function Period() {
                 <PDFPreviewModal
                     isOpen={isPDFModalOpen}
                     onClose={() => setIsPDFModalOpen(false)}
-                    title="Reporte de Periodos Académicos Activos"
+                    title="Reporte de Períodos Académicos Activos"
                     data={pdfFilteredData}
                     template={(data) => <PeriodoPDF data={data} />}
                     fileName={`reporte-periodos-activos-${new Date().toISOString().split('T')[0]}.pdf`}

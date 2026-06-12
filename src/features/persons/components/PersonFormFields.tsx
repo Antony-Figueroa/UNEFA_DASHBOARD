@@ -117,6 +117,8 @@ export interface PersonFormFieldsProps {
 
   /** Indica si el formulario está en modo solo lectura */
   viewOnlyMode?: boolean;
+  /** Bloquea campos de identidad cargados desde API (SENIAT) sin afectar viewOnlyMode */
+  fieldLockOnApiLoad?: boolean;
   /** ID del registro en edición (deshabilita edición de CI) */
   editingId?: string | number | null;
   /** Handler para editar un registro existente encontrado por CI */
@@ -166,14 +168,17 @@ export default function PersonFormFields({
   isCheckingEmail = false,
   hiddenFields = [],
   viewOnlyMode = false,
+  fieldLockOnApiLoad = false,
   editingId = null,
   onEditExisting,
   phonePrefixFieldName = "phonePrefix",
   className = "",
 }: PersonFormFieldsProps) {
-  // CI solo se deshabilita cuando hay un editingId (editar registro existente),
-  // NO por viewOnlyMode (el usuario debe poder cambiar la CI para buscar otra persona)
-  const ciDisabled = !!editingId;
+  // Los campos de identidad se deshabilitan por viewOnlyMode O fieldLockOnApiLoad
+  const fieldsDisabled = viewOnlyMode || fieldLockOnApiLoad;
+
+  // CI se deshabilita por editingId O fieldLockOnApiLoad (cuando se cargó de API externa)
+  const ciDisabled = !!editingId || fieldLockOnApiLoad;
 
   // === Helpers ===
   const getSelectOptions = (key: string) =>
@@ -353,7 +358,7 @@ export default function PersonFormFields({
           <Input
             {...nameInputProps("firstName")}
             placeholder="Primer nombre"
-            disabled={viewOnlyMode}
+            disabled={fieldsDisabled}
             error={!!errors.firstName}
             hint={errors.firstName?.message as string}
           />
@@ -365,7 +370,7 @@ export default function PersonFormFields({
           <Input
             {...nameInputProps("middleName")}
             placeholder="Segundo nombre (opcional)"
-            disabled={viewOnlyMode}
+            disabled={fieldsDisabled}
             error={!!errors.middleName}
             hint={errors.middleName?.message as string}
           />
@@ -382,7 +387,7 @@ export default function PersonFormFields({
           <Input
             {...nameInputProps("lastName")}
             placeholder="Primer apellido"
-            disabled={viewOnlyMode}
+            disabled={fieldsDisabled}
             error={!!errors.lastName}
             hint={errors.lastName?.message as string}
           />
@@ -394,7 +399,7 @@ export default function PersonFormFields({
           <Input
             {...nameInputProps("secondLastName")}
             placeholder="Segundo apellido (opcional)"
-            disabled={viewOnlyMode}
+            disabled={fieldsDisabled}
             error={!!errors.secondLastName}
             hint={errors.secondLastName?.message as string}
           />
@@ -414,7 +419,7 @@ export default function PersonFormFields({
           {...register("email")}
           type="email"
           placeholder="correo@ejemplo.com"
-          disabled={viewOnlyMode}
+          disabled={fieldsDisabled}
           autoComplete="off"
           error={!!errors.email}
           hint={
@@ -454,7 +459,7 @@ export default function PersonFormFields({
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 value={String(field.value ?? "")}
-                disabled={viewOnlyMode}
+                disabled={fieldsDisabled}
                 error={!!(errors as any)[phonePrefixFieldName]}
                 onAddNew={
                   onAddValue
@@ -480,7 +485,7 @@ export default function PersonFormFields({
               ((e) => setValue("phoneNumber", e.target.value.replace(/\D/g, ""), { shouldValidate: true }))
             }
             placeholder="123-4567"
-            disabled={viewOnlyMode}
+            disabled={fieldsDisabled}
             maxLength={8}
             error={!!errors.phoneNumber}
             hint={errors.phoneNumber?.message as string}
@@ -498,7 +503,7 @@ export default function PersonFormFields({
           <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
             Sexo <span className="text-red-500">*</span>
           </label>
-          {makeControllerSelect("sex", "Seleccionar", "Sexo", viewOnlyMode)}
+          {makeControllerSelect("sex", "Seleccionar", "Sexo", fieldsDisabled)}
           {errors.sex && (
             <p className="mt-1 text-xs text-red-500">{errors.sex.message as string}</p>
           )}
@@ -528,7 +533,7 @@ export default function PersonFormFields({
                   viewOnlyMode ? "cursor-not-allowed bg-bg-secondary opacity-50" : ""
                 }`}
                 max={maxDate || undefined}
-                disabled={viewOnlyMode}
+                disabled={fieldsDisabled}
               />
             )}
           />
@@ -540,7 +545,7 @@ export default function PersonFormFields({
           <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
             Estado Civil <span className="text-red-500">*</span>
           </label>
-          {makeControllerSelect("civilStatus", "Seleccionar", "Registro Civil", viewOnlyMode, {
+          {makeControllerSelect("civilStatus", "Seleccionar", "Registro Civil", fieldsDisabled, {
             listName: "Registro Civil",
             title: "Agregar Estado Civil",
           })}
@@ -562,7 +567,7 @@ export default function PersonFormFields({
         <Input
           {...register("address")}
           placeholder="Dirección de habitación"
-          disabled={viewOnlyMode}
+          disabled={fieldsDisabled}
           error={!!errors.address}
           hint={errors.address?.message as string}
         />

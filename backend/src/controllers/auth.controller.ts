@@ -46,6 +46,18 @@ export const login = async (req: Request, res: Response) => {
 
     if (result.requirePasswordChange) {
       console.log(`[Auth] Cambio de clave requerido para CI: ${userCi}`);
+      
+      // Setear cookie temporal (15 min) para que el flujo de cambio de clave funcione
+      if (result.tempToken) {
+        res.cookie('auth_token', result.tempToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+          maxAge: 15 * 60 * 1000, // 15 minutos
+          path: '/'
+        });
+      }
+      
       return res.json({
         requirePasswordChange: true,
         userId: result.userId,

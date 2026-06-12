@@ -279,6 +279,12 @@ export const InstitutionalResponsiblePDF: React.FC<InstitutionalResponsiblePDFPr
               <Text style={styles.infoLabel}>Institución</Text>
               <Text style={styles.infoValueHighlight}>{responsible.institutions?.[0]?.institutionName || "No asignada"}</Text>
             </View>
+            {responsible.title && (
+              <View style={styles.infoItemFull}>
+                <Text style={styles.infoLabel}>Título</Text>
+                <Text style={styles.infoValue}>{responsible.title}</Text>
+              </View>
+            )}
           </View>
         </View>
 

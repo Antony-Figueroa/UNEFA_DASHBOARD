@@ -3,7 +3,7 @@
  * @description Modal para crear y editar responsables institucionales.
  */
 
-import { useEffect, useState, useCallback, lazy, Suspense } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef, lazy, Suspense } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -28,6 +28,7 @@ import * as listsService from "../../lists/services/listsService";
 import { NAME_PATTERN, SAFE_EMAIL_PATTERN, SAFE_TEXT_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 import { checkAvailability as checkPersonAvailability } from "../../persons/services/personService";
 import PersonFormFields from "../../persons/components/PersonFormFields";
+import { useAcademicConfig } from "../../academic-config/hooks/useAcademicConfig";
 import { lookupCi } from "../../students/services/studentsService";
 
 // Lazy load para evitar dependencia circular con InstitutionModal
@@ -85,6 +86,9 @@ const respSchema = z.object({
     .max(255, "El email es demasiado largo")
     .regex(SAFE_EMAIL_PATTERN, "Email con caracteres no permitidos")
     .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
+  title: z.string()
+    .optional()
+    .or(z.literal("")),
   // institutions es obligatorio - debe tener al menos una institución con cargo
   institutions: z.array(institutionSchema).min(1, "Debe agregar al menos una empresa o institución con su cargo"),
 });
@@ -170,6 +174,10 @@ export default function InstitutionalResponsibleModal({
    const [existingResponsible, setExistingResponsible] = useState<any | null>(null);
    const [existingPerson, setExistingPerson] = useState(false);
    const [viewOnlyMode, setViewOnlyMode] = useState(false);
+   // State for API-loaded data flow (SENIAT)
+   const [apiDataLoaded, setApiDataLoaded] = useState(false);
+   const apiLoadedCiRef = useRef("");
+   const { config: academicConfig } = useAcademicConfig();
 
 // Check if institutional responsible exists by CI
     const checkInstitutionalResponsibleByCi = async (ci: string) => {
@@ -238,6 +246,7 @@ export default function InstitutionalResponsibleModal({
       phonePrefix: "",
       phoneNumber: "",
       email: "",
+      title: "",
       institutions: [],
     },
   });
@@ -273,6 +282,7 @@ export default function InstitutionalResponsibleModal({
     setValue("phonePrefix", phonePrefix, { shouldValidate: true, shouldDirty: true });
     setValue("phoneNumber", phoneNumber, { shouldValidate: true, shouldDirty: true });
     setValue("email", responsible.email || '', { shouldValidate: true, shouldDirty: true });
+    setValue("title", responsible.title || '', { shouldValidate: true, shouldDirty: true });
     
 // Handle institutions - map to form structure
      if (responsible.institutions && Array.isArray(responsible.institutions)) {
@@ -336,8 +346,33 @@ export default function InstitutionalResponsibleModal({
      setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
      clearErrors("identificationNumber");
      
-     // Si se cambia la cédula y hay un existingResponsible o existingPerson, limpiar el formulario
-     if (existingResponsible || existingPerson) {
+      // Si se cambia la cédula tras una carga de API externa, limpiar el formulario
+      if (apiDataLoaded) {
+        const prefix = watch("identificationPrefix") || "V";
+        const currentCi = `${prefix}-${digitsOnly}`;
+        if (currentCi !== apiLoadedCiRef.current) {
+          setApiDataLoaded(false);
+          apiLoadedCiRef.current = "";
+          clearErrors("identificationNumber");
+           reset({
+             identificationPrefix: "",
+             identificationNumber: "",
+             firstName: "",
+             middleName: "",
+             lastName: "",
+             secondLastName: "",
+             phonePrefix: "",
+             phoneNumber: "",
+             email: "",
+             title: "",
+             institutions: []
+           });
+          setDisplayPhoneNumber("");
+        }
+      }
+
+      // Si se cambia la cédula y hay un existingResponsible o existingPerson, limpiar el formulario
+      if (existingResponsible || existingPerson) {
        const currentStoredDigits = existingResponsible
          ? existingResponsible.identificationNumber?.replace(/\D/g, '') || ''
          : '';
@@ -348,18 +383,19 @@ export default function InstitutionalResponsibleModal({
          setViewOnlyMode(false);
          clearErrors("identificationNumber");
          // Resetear los campos del formulario
-         reset({
-           identificationPrefix: "",
-           identificationNumber: "",
-           firstName: "",
-           middleName: "",
-           lastName: "",
-           secondLastName: "",
-           phonePrefix: "",
-           phoneNumber: "",
-           email: "",
-           institutions: []
-         });
+          reset({
+            identificationPrefix: "",
+            identificationNumber: "",
+            firstName: "",
+            middleName: "",
+            lastName: "",
+            secondLastName: "",
+            phonePrefix: "",
+            phoneNumber: "",
+            email: "",
+            title: "",
+            institutions: []
+          });
          setDisplayPhoneNumber("");
        }
      }
@@ -429,6 +465,8 @@ export default function InstitutionalResponsibleModal({
     try {
       const externalData = await lookupCi(fullCi);
       if (externalData) {
+        setApiDataLoaded(true);
+        apiLoadedCiRef.current = fullCi;
         setValue("firstName", externalData.primerNombre?.toUpperCase() || "");
         setValue("middleName", externalData.segundoNombre?.toUpperCase() || "");
         setValue("lastName", externalData.primerApellido?.toUpperCase() || "");
@@ -515,7 +553,7 @@ export default function InstitutionalResponsibleModal({
   useEffect(() => {
     const loadOptions = async () => {
       try {
-        const listNames = ["Nacionalidad", "PREFIJO"];
+        const listNames = ["Nacionalidad", "PREFIJO", "Título"];
         const data = await fetchMultipleLists(listNames);
         const mappedOptions: Record<string, { value: string; label: string }[]> = {};
         
@@ -554,11 +592,16 @@ export default function InstitutionalResponsibleModal({
           phonePrefix: "",
           phoneNumber: "",
           email: "",
+          title: "",
           institutions: []
         });
       }
     }
   }, [isOpen, fetchMultipleLists]);
+
+  const TITULO_OPTIONS = useMemo(() => 
+    (options["Título"] || []).map(opt => ({ value: String(opt.value), label: opt.label })),
+  [options]);
 
   // Funciones para agregar nuevos valores a las listas
   const openAddValueModal = (listName: string, field: keyof RespFormData, title: string) => {
@@ -677,6 +720,7 @@ export default function InstitutionalResponsibleModal({
           phonePrefix: pPrefix,
           phoneNumber: pNumber,
           email: editingResp.email,
+          title: editingResp.title || "",
           institutions: formInstitutions,
         });
         setDisplayIdentificationNumber(formatCedulaDisplay(editingResp.identificationNumber, false));
@@ -692,6 +736,7 @@ export default function InstitutionalResponsibleModal({
           phonePrefix: "",
           phoneNumber: "",
           email: "",
+          title: "",
           institutions: preselectedInstitutionId ? [{ institutionId: preselectedInstitutionId, cargo: "" }] : [],
         });
         setDisplayIdentificationNumber("");
@@ -718,6 +763,7 @@ export default function InstitutionalResponsibleModal({
       phoneNumber: phoneNumber.toUpperCase(),
       phone: `${phonePrefix}-${phoneNumber}`,
       email: rest.email.toUpperCase(),
+      title: rest.title || null,
       institutions: institutions, // Array de objetos { institutionId, cargo }
       status: editingResp?.status ?? true,
     };
@@ -792,9 +838,36 @@ export default function InstitutionalResponsibleModal({
                     openAddValueModal(listName, field as any, title)
                   }
                   viewOnlyMode={!!existingResponsible}
-                  editingId={editingResp?.responsibleId ?? null}
+                  fieldLockOnApiLoad={apiDataLoaded && (academicConfig?.lockApiLoadedFields ?? true)}
+                  editingId={editingResp?.responsibleId ?? existingResponsible?.responsibleId ?? null}
                   hiddenFields={["sex", "birthDate", "civilStatus", "address"]}
                 />
+
+                {/* Título */}
+                <div>
+                  <label className="text-sm font-medium text-text-primary dark:text-white/90">Título</label>
+                  <Controller
+                    name="title"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomSelect
+                        id="title"
+                        options={TITULO_OPTIONS}
+                        placeholder="Seleccione Título"
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        value={String(field.value || "")}
+                        disabled={viewOnlyMode}
+                        error={!!errors.title}
+                        onAddNew={() => openAddValueModal("Título", "title", "Agregar Título")}
+                        addNewLabel="Nueva opción"
+                      />
+                    )}
+                  />
+                  {errors.title && (
+                    <p className="mt-1 text-xs text-red-500">{errors.title.message}</p>
+                  )}
+                </div>
               </div>
 
               {/* Columna Derecha: Instituciones */}

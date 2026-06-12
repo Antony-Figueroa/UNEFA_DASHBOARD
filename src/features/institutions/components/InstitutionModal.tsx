@@ -1836,7 +1836,7 @@ export default function InstitutionModal({
               institutions: [{ 
                 institutionId: institutionId!, 
                 institutionName: editingInst?.name || "",
-                cargo: data.cargo || "" 
+                cargo: data.institutions?.[0]?.cargo || "" 
               }]
             } as CreateInstitutionalResponsiblePayload;
             await onAddResponsible?.(newResponsible);

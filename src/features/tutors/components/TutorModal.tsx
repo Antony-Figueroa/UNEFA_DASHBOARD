@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, lazy } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef, lazy } from "react";
 import { useForm, Controller, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,6 +11,7 @@ import CustomSelect from "../../../components/form/CustomSelect";
 import MultiSelect from "../../../components/form/MultiSelect";
 
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
+import { useAcademicConfig } from "../../academic-config/hooks/useAcademicConfig";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
 import { CONFIRM_MESSAGES, SYSTEM_DIALOGS } from "../../../components/ui/dialog/DialogConfig";
 import { getCareers } from "../../careers/services/careersService";
@@ -94,8 +95,12 @@ export default function TutorModal({
     const [existingPerson, setExistingPerson] = useState(false);
     const [viewOnlyMode, setViewOnlyMode] = useState(false);
    
-   // State for career modal
-   const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
+   // State for API-loaded data flow (SENIAT)
+   const [apiDataLoaded, setApiDataLoaded] = useState(false);
+   const apiLoadedCiRef = useRef("");
+
+    // State for career modal
+    const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
    const [editingCareer, setEditingCareer] = useState<Career | null>(null);
    const [internshipOptions, setInternshipOptions] = useState<InternshipTypeOption[]>([]);
    
@@ -103,6 +108,8 @@ export default function TutorModal({
    const [isInternshipTypeModalOpen, setIsInternshipTypeModalOpen] = useState(false);
    const [editingInternshipType, setEditingInternshipType] = useState<InternshipType | null>(null);
     const [existingInternshipTypes, setExistingInternshipTypes] = useState<InternshipType[]>([]);
+
+  const { config: academicConfig } = useAcademicConfig();
 
   const tutorSchema = useMemo(() => z.object({
     identificationPrefix: z.string().min(1, "Seleccione el tipo"),
@@ -193,8 +200,10 @@ export default function TutorModal({
     carreras: z.array(z.string()).min(1, "Debe seleccionar al menos una carrera"),
   }).superRefine((data, ctx) => {
     // Validar duplicidad de cédula
+    const currentId = editingTutor?.tutorId ?? existingTutor?.tutorId;
+    // Validar duplicidad de cédula
     const isIdDuplicate = tutors.some(
-      t => t.tutorId !== editingTutor?.tutorId && 
+      t => t.tutorId !== currentId && 
            t.identificationNumber === data.identificationNumber && 
            t.identificationPrefix === data.identificationPrefix
     );
@@ -209,7 +218,7 @@ export default function TutorModal({
 
     // Validar duplicidad de correo
     const isEmailDuplicate = tutors.some(
-      t => t.tutorId !== editingTutor?.tutorId && 
+      t => t.tutorId !== currentId && 
            t.email.toLowerCase() === data.email.toLowerCase()
     );
 
@@ -220,7 +229,7 @@ export default function TutorModal({
         path: ["email"],
       });
     }
-  }), [tutors, editingTutor]);
+  }), [tutors, editingTutor, existingTutor]);
 
   type TutorFormData = z.infer<typeof tutorSchema>;
 
@@ -276,6 +285,39 @@ export default function TutorModal({
     setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
     clearErrors("identificationNumber");
     
+    // Si se cambia la cédula tras una carga de API externa, limpiar el formulario
+    if (apiDataLoaded) {
+      const prefix = watch("identificationPrefix") || "V";
+      const currentCi = `${prefix}-${digitsOnly}`;
+      if (currentCi !== apiLoadedCiRef.current) {
+        setApiDataLoaded(false);
+        apiLoadedCiRef.current = "";
+        clearErrors("identificationNumber");
+        reset({
+          identificationPrefix: "",
+          identificationNumber: "",
+          firstName: "",
+          middleName: "",
+          lastName: "",
+          secondLastName: "",
+          sex: "",
+          birthDate: "",
+          address: "",
+          civilStatus: "",
+          phoneAreaCode: "",
+          phoneNumber: "",
+          email: "",
+          condition: "",
+          dedication: "",
+          category: "",
+          profession: "",
+          titulo: "",
+          carreras: [],
+        });
+        setDisplayPhoneNumber("");
+      }
+    }
+
     // Si se cambia la cédula y hay un existingTutor o existingPerson, limpiar el formulario
     if (existingTutor || existingPerson) {
       const currentStoredDigits = existingTutor
@@ -502,6 +544,8 @@ export default function TutorModal({
     try {
       const externalData = await lookupCi(fullCi);
       if (externalData) {
+        setApiDataLoaded(true);
+        apiLoadedCiRef.current = fullCi;
         setValue("firstName", externalData.primerNombre?.toUpperCase() || "");
         setValue("middleName", externalData.segundoNombre?.toUpperCase() || "");
         setValue("lastName", externalData.primerApellido?.toUpperCase() || "");
@@ -909,7 +953,7 @@ export default function TutorModal({
       >
         <ModalHeader>
           <span className="text-xl font-semibold text-text-primary dark:text-white/90">
-            {editingTutor ? "Editar" : "Registrar"} Tutor {tutorType === "methodological" ? "Metodológico" : "Académico"}
+            {editingTutor || existingTutor ? "Editar" : "Registrar"} Tutor {tutorType === "methodological" ? "Metodológico" : "Académico"}
           </span>
           <p className="text-sm text-text-secondary">Complete la información del tutor {tutorType === "methodological" ? "metodológico" : "académico"}.</p>
           {isInUse && (
@@ -955,7 +999,8 @@ export default function TutorModal({
                 createNameHandler={handleNameChange}
                 onAddValue={(listName, field, title) => openAddValueModal(listName, field as any, title)}
                 viewOnlyMode={viewOnlyMode}
-                editingId={editingTutor?.tutorId ?? null}
+                fieldLockOnApiLoad={apiDataLoaded && (academicConfig?.lockApiLoadedFields ?? true)}
+                editingId={editingTutor?.tutorId ?? existingTutor?.tutorId ?? null}
                 phonePrefixFieldName="phoneAreaCode"
                 age={age}
                 maxDate={maxDate ? maxDate.toISOString().split("T")[0] : undefined}
@@ -1184,7 +1229,7 @@ export default function TutorModal({
           setConfirmSaveOpen(false);
         }}
         variant="confirm"
-        {...(editingTutor ? CONFIRM_MESSAGES.update('Tutor') : CONFIRM_MESSAGES.create('Tutor'))}
+        {...(editingTutor || existingTutor ? CONFIRM_MESSAGES.update('Tutor') : CONFIRM_MESSAGES.create('Tutor'))}
       />
     )}
 

@@ -115,7 +115,7 @@ export default function UserMetaCard() {
   };
 
   const initials = user
-    ? `${user.name.charAt(0)}${user.surname.charAt(0)}`.toUpperCase()
+    ? `${(user.name ?? "").charAt(0)}${(user.surname ?? "").charAt(0)}`.toUpperCase() || "?"
     : "??";
 
   return (

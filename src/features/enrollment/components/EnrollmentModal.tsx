@@ -21,20 +21,17 @@ import { Periodo } from "../../periods/types";
 import { Tutor } from "../../tutors/types";
 import { Institution } from "../../institutions/types";
 import { PreEnrollment, PreEnrollmentRowData } from "../../pre-enrollment/types";
-import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { getInternshipTypes, mapToOptions } from "../../internship-types/services/internshipTypesService";
 import { InternshipTypeOption } from "../../internship-types/types";
+import { Career } from "../../careers/types";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
-import { useToast } from "../../../context/toast";
+
 import * as enrollmentService from "../services/enrollmentService";
 import { useLists } from "../../lists/hooks/useLists";
 import { generateMatricula } from "../../../utils/matricula";
-import { isProtectedList, PROTECTED_LIST_MESSAGE } from "../../../constants/systemLists";
-import { List } from "../../lists/types";
-import * as listsService from "../../lists/services/listsService";
 import { unwrapData } from "../../../api/crudServiceFactory";
-import { formatCedulaDisplay, cleanCedula, CEDULA_MAX_LENGTH } from "../../../utils/inputFormat";
+import { formatCedulaDisplay, cleanCedula } from "../../../utils/inputFormat";
 import { UserCircleIcon, ShieldCheckIcon, DocsIcon, SearchIcon, UsersIcon, PlusIcon } from "../../../icons";
 import { cn } from "../../../utils/cn";
 import Badge from "../../../components/ui/badge/Badge";
@@ -156,15 +153,6 @@ export default function EnrollmentModal({
 
   const { responsibles } = useInstitutionalResponsibles();
   const { fetchMultipleLists } = useLists();
-  const { addToast } = useToast();
-
-  // Estado para agregar nuevos valores a las listas
-  const [isValueModalOpen, setIsValueModalOpen] = useState(false);
-  const [valueModalTitle, setValueModalTitle] = useState<string>("");
-  const [targetListName, setTargetListName] = useState<string>("");
-  const [targetField, setTargetField] = useState<keyof EnrollmentFormData | "">("");
-  const [newValueInput, setNewValueInput] = useState<string>("");
-  const [savingNewValue, setSavingNewValue] = useState(false);
 
   const NATIONALITY_OPTIONS = options["Nacionalidad"] || [
     { value: "V", label: "V" },
@@ -178,7 +166,7 @@ export default function EnrollmentModal({
     setValue,
     watch,
     reset,
-    formState: { errors, isSubmitted, isDirty, isValid },
+    formState: { errors, isDirty, isValid },
   } = useForm<EnrollmentFormData>({
     resolver: zodResolver(enrollmentSchema),
     defaultValues: {
@@ -242,83 +230,7 @@ export default function EnrollmentModal({
     }
   }, [isOpen, fetchMultipleLists]);
 
-  // Funciones para agregar nuevos valores a las listas
-  const openAddValueModal = (listName: string, field: keyof EnrollmentFormData, title: string) => {
-    if (isProtectedList(listName)) {
-      addToast({ variant: "warning", title: "Lista Protegida", message: PROTECTED_LIST_MESSAGE });
-      return;
-    }
-    setTargetListName(listName);
-    setTargetField(field);
-    setValueModalTitle(title);
-    setNewValueInput("");
-    setIsValueModalOpen(true);
-  };
 
-  const handleSaveNewValue = async () => {
-    const raw = newValueInput.trim();
-    if (!raw) return;
-    setSavingNewValue(true);
-    try {
-      let list: List | null = null;
-      try {
-        list = await listsService.getListByName(targetListName);
-      } catch (err: unknown) {
-        const status = (err as any)?.response?.status;
-        if (status === 404) {
-          const allLists = await listsService.getAllLists();
-          const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[_\s]+/g, " ").trim().toUpperCase();
-          const targetNorm = normalize(targetListName);
-          list = allLists.find(l => normalize(l.name) === targetNorm || normalize(l.name).includes(targetNorm) || targetNorm.includes(normalize(l.name))) || null;
-          if (!list) {
-            const createdList = await listsService.createList(targetListName);
-            list = createdList;
-          }
-        } else {
-          throw err;
-        }
-      }
-
-      const upper = raw.toUpperCase();
-
-      // Evitar duplicados
-      const existing = (list!.values || []).find((v: { name: any; abbreviation: any; }) => {
-        const byName = String(v.name || "").toUpperCase() === upper;
-        const byAbbr = String(v.abbreviation || "").toUpperCase() === upper;
-        return byName || byAbbr;
-      });
-
-      if (existing) {
-        const selectValue = (targetListName === "Nacionalidad" && existing.abbreviation)
-          ? String(existing.abbreviation).toUpperCase()
-          : String(existing.name).toUpperCase();
-        setValue(targetField as keyof EnrollmentFormData, selectValue, { shouldValidate: true, shouldDirty: true });
-        setIsValueModalOpen(false);
-        return;
-      }
-
-      const abbr = (targetListName === "Nacionalidad") ? upper : undefined;
-      const created = await listsService.createValue(list!.id, upper, abbr);
-      const mapped = {
-        value: (targetListName === "Nacionalidad" && created.abbreviation) ? created.abbreviation.toUpperCase() : upper,
-        label: (targetListName === "Nacionalidad" && created.abbreviation) ? created.abbreviation.toUpperCase() : upper
-      };
-
-      setOptions(prev => {
-        const next = { ...prev };
-        const arr = next[targetListName] || [];
-        next[targetListName] = [...arr, mapped];
-        return next;
-      });
-
-      setValue(targetField as keyof EnrollmentFormData, mapped.value, { shouldValidate: true, shouldDirty: true });
-      setIsValueModalOpen(false);
-    } catch (e) {
-      console.error("[EnrollmentModal] Error creando valor en lista:", e);
-    } finally {
-      setSavingNewValue(false);
-    }
-  };
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -334,7 +246,7 @@ export default function EnrollmentModal({
         ]);
         
         setPracticeOptions(mapToOptions(practiceData));
-        setCareersState(unwrapData(careerData).filter((c: any) => c.status));
+        setCareersState(unwrapData(careerData).filter((c: Career) => c.status));
         
         // Lógica de periodos (Replicada de PreEnrollmentModal)
         const currentPeriod = periodData.find(p => p.periodStatus === 2);
@@ -357,8 +269,8 @@ export default function EnrollmentModal({
           }
         }
         
-        setTutors(unwrapData(tutorData).filter(t => t.status));
-        setInstitutions(unwrapData(institutionData).filter(i => i.status));
+        setTutors(unwrapData(tutorData).filter((t: Tutor) => t.status));
+        setInstitutions(unwrapData(institutionData).filter((i: Institution) => i.status));
 
         if (!editingEntry && filteredPeriods.length > 0) {
           setValue("period", filteredPeriods[0].description);
@@ -430,7 +342,7 @@ export default function EnrollmentModal({
     const handleCareerAdded = async () => {
       try {
         const careerData = await getCareers();
-        setCareersState(unwrapData(careerData).filter((c: any) => c.status));
+        setCareersState(unwrapData(careerData).filter((c: Career) => c.status));
         console.log("[EnrollmentModal] Carrera actualizada exitosamente");
       } catch (error) {
         console.error("[EnrollmentModal] Error al recargar carreras:", error);
@@ -501,7 +413,7 @@ export default function EnrollmentModal({
         setValue("studentName", `${student.firstName} ${student.lastName}`);
         
         // Autocompletar Carrera
-        const studentCareer = unwrapData(careerData).find(c => String(c.careerId) === String(preEnrollment.careerId));
+        const studentCareer = unwrapData(careerData).find((c: Career) => String(c.careerId) === String(preEnrollment.careerId));
         if (studentCareer) {
           setValue("careerName", String(studentCareer.careerId));
         } else {
@@ -712,16 +624,7 @@ export default function EnrollmentModal({
     setPendingData(null);
   };
 
-  /**
-   * Badge component for automatically generated fields.
-   */
-  const AutoGeneratedBadge = ({ tooltip }: { tooltip: string }) => (
-    <Tooltip content={tooltip}>
-      <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-400/10 dark:text-blue-400 dark:ring-blue-400/30 uppercase tracking-widestr ml-2 cursor-help">
-        Auto
-      </span>
-    </Tooltip>
-  );
+
 
   return (
     <>
@@ -972,20 +875,6 @@ export default function EnrollmentModal({
                     </div>
                     <h3 className="text-base font-bold text-text-primary dark:text-white">Tutor Académico</h3>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      window.dispatchEvent(new CustomEvent("enrollment:addTutor", {
-                        detail: { targetField: "academicTutorId" }
-                      }));
-                    }}
-                    className="shrink-0 text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20 rounded-xl font-bold text-xs px-3 py-1.5"
-                  >
-                    <PlusIcon className="w-3.5 h-3.5 mr-1" />
-                    Nuevo Tutor
-                  </Button>
                 </div>
 
                 <div className="space-y-4">
@@ -1047,20 +936,6 @@ export default function EnrollmentModal({
                     </div>
                     <h3 className="text-base font-bold text-text-primary dark:text-white">Tutor Metodológico</h3>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      window.dispatchEvent(new CustomEvent("enrollment:addTutor", {
-                        detail: { targetField: "methodologicalTutorId" }
-                      }));
-                    }}
-                    className="shrink-0 text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20 rounded-xl font-bold text-xs px-3 py-1.5"
-                  >
-                    <PlusIcon className="w-3.5 h-3.5 mr-1" />
-                    Nuevo Tutor
-                  </Button>
                 </div>
 
                 <div className="space-y-4">
@@ -1115,25 +990,11 @@ export default function EnrollmentModal({
 
               {/* Card: Empresa/Institución */}
               <div className="bg-white dark:bg-white/5 rounded-2xl p-6 border border-border-light dark:border-white/10 shadow-sm space-y-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-600">
-                      <BuildingOfficeIcon className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-base font-bold text-text-primary dark:text-white">Empresa / Institución</h3>
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-600">
+                    <BuildingOfficeIcon className="w-5 h-5" />
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      window.dispatchEvent(new CustomEvent("enrollment:addInstitution"));
-                    }}
-                    className="shrink-0 text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20 rounded-xl font-bold text-xs px-3 py-1.5"
-                  >
-                    <PlusIcon className="w-3.5 h-3.5 mr-1" />
-                    Nueva Empresa
-                  </Button>
+                  <h3 className="text-base font-bold text-text-primary dark:text-white">Empresa / Institución</h3>
                 </div>
 
                 <div className="space-y-4">
@@ -1192,9 +1053,9 @@ export default function EnrollmentModal({
                                    return instCareerId === targetCareerId || instCareerId === careerId;
                                  });
                                  if (!matchesCareer) return false;
-                               } else if ((inst as any).careerId) {
+                               } else if (inst.careerId) {
                                  // Fallback al campo legacy/singular
-                                 const instCareerId = String((inst as any).careerId);
+                                 const instCareerId = String(inst.careerId);
                                  if (instCareerId !== targetCareerId && instCareerId !== careerId) {
                                    return false;
                                  }
@@ -1241,11 +1102,6 @@ export default function EnrollmentModal({
                               value={String(field.value)}
                               className="rounded-xl h-[48px]"
                               disabled={!selectedPracticeType || !careerId}
-                              onAddNew={selectedPracticeType && careerId ? () => {
-                                const evt = new CustomEvent("enrollment:addInstitution");
-                                window.dispatchEvent(evt);
-                              } : undefined}
-                              addNewLabel={selectedPracticeType && careerId && filteredInstitutions.length > 0 ? "Nueva Institución" : undefined}
                             />
                             {selectedPracticeType && selectedCareerName && filteredInstitutions.length === 0 && (
                               <p className="text-[11px] font-bold text-amber-600">
@@ -1265,19 +1121,6 @@ export default function EnrollmentModal({
                   <div className="space-y-3 pt-2">
                     <div className="flex items-center justify-between">
                       <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Responsable Institucional *</label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          window.dispatchEvent(new CustomEvent("enrollment:addResponsible", { detail: { institutionId: selectedInstitutionId } }));
-                        }}
-                        className="shrink-0 text-brand-600 border-brand-300 hover:bg-brand-50 dark:text-brand-400 dark:border-brand-600 dark:hover:bg-brand-900/20 rounded-xl font-bold text-[10px] px-2 py-1"
-                        disabled={!selectedInstitutionId}
-                      >
-                        <PlusIcon className="w-3 h-3 mr-0.5" />
-                        Nuevo
-                      </Button>
                     </div>
                     <Controller
                       name="institutionResponsibleId"
@@ -1360,51 +1203,7 @@ export default function EnrollmentModal({
       isLoading={isLoading}
     />
 
-    {/* Modal para agregar nueva opción a la lista */}
-    <Modal
-      isOpen={isValueModalOpen}
-      onClose={() => setIsValueModalOpen(false)}
-      size="md"
-    >
-      <ModalHeader>{valueModalTitle}</ModalHeader>
-      <ModalBody>
-        <div className="space-y-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Nuevo valor
-          </label>
-          <Input
-            value={newValueInput}
-            onChange={(e) => setNewValueInput(e.target.value)}
-            placeholder="Ingrese el nuevo valor"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && newValueInput.trim() && !savingNewValue) {
-                handleSaveNewValue();
-              }
-            }}
-            autoFocus
-          />
-          <p className="text-xs text-gray-500">
-            Presione Enter o haga clic en Guardar para agregar el valor.
-          </p>
-        </div>
-      </ModalBody>
-      <ModalFooter>
-        <Button
-          variant="outline"
-          onClick={() => setIsValueModalOpen(false)}
-          disabled={savingNewValue}
-        >
-          Cancelar
-        </Button>
-        <AsyncButton
-          onClick={handleSaveNewValue}
-          loading={savingNewValue}
-          disabled={!newValueInput.trim()}
-        >
-          Guardar
-        </AsyncButton>
-      </ModalFooter>
-    </Modal>
+
   </>
 );
 }

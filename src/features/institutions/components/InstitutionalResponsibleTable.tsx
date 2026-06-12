@@ -195,7 +195,7 @@ export default function InstitutionalResponsibleTable({
 
   const filteredData = useMemo(() => {
     const filtered = data.filter((item) => {
-      const matchesTab = activeTab === "Activas" ? item.status : !item.status;
+      const matchesTab = activeTab === "Activas" ? Boolean(item.status) : !Boolean(item.status);
       const matchesSearch =
         debouncedSearch === "" ||
         matchSearch(`${item.identificationPrefix}${item.identificationNumber}`, debouncedSearch) ||
@@ -477,6 +477,11 @@ export default function InstitutionalResponsibleTable({
                   CONTACTO
                 </div>
               </TableCell>
+              <TableCell isHeader className="table-header-cell">
+                <div className="flex items-center">
+                  TÍTULO
+                </div>
+              </TableCell>
               <TableCell isHeader className="table-header-cell cursor-pointer text-center" onClick={async () => handleSort("registrationDate")}>
                 <div className="flex items-center justify-center">
                   FECHA DE REGISTRO
@@ -518,6 +523,9 @@ export default function InstitutionalResponsibleTable({
                       <span className="text-text-tertiary dark:text-text-secondary text-xs mt-0.5">{formatPhoneDisplay(item.phone)}</span>
                     </div>
                   </TableCell>
+                  <TableCell className="text-text-secondary dark:text-text-tertiary text-sm">
+                    {item.title || "-"}
+                  </TableCell>
                   <TableCell className="text-center text-text-secondary dark:text-text-tertiary whitespace-nowrap text-sm">
                     {new Date(item.registrationDate).toLocaleDateString('es-VE', {
                       year: 'numeric',
@@ -539,7 +547,7 @@ export default function InstitutionalResponsibleTable({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="p-0">
+                <TableCell colSpan={8} className="p-0">
                   <EmptyState
                     title="No se encontraron responsables"
                     description={filters.search || filters.institution !== "all" || filters.dateFrom || filters.dateTo
@@ -610,6 +618,16 @@ export default function InstitutionalResponsibleTable({
                           {formatPhoneDisplay(item.phone)}
                         </p>
                       </div>
+                      {item.title && (
+                        <div className="col-span-2 flex flex-col items-center">
+                          <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">
+                            Título
+                          </p>
+                          <p className="text-sm text-text-primary dark:text-text-tertiary font-medium">
+                            {item.title}
+                          </p>
+                        </div>
+                      )}
                       <div className="col-span-2 flex flex-col items-center">
                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">
                           Fecha de Registro

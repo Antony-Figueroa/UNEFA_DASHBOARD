@@ -73,6 +73,7 @@ interface DBInstitutionalResponsible {
   person_id: number;
   CREATION_DATE: string;
   STATUS: number;
+  TITLE: string | null;
   t_persons: DBPersonJoin;
   institutions?: Array<{
     institutionId: string;
@@ -85,7 +86,7 @@ interface DBInstitutionalResponsible {
 // Helpers
 // ============================================================
 
-const MANAGER_COLUMNS = `MANAGER_ID, person_id, CREATION_DATE, STATUS`;
+const MANAGER_COLUMNS = `MANAGER_ID, person_id, CREATION_DATE, STATUS, TITLE`;
 const PERSON_JOIN = `t_persons!inner(person_id, ci, first_name, middle_name, last_name, second_last_name, email, phone, gender)`;
 
 const getInstitutionsForManager = async (supabase: any, managerId: number) => {
@@ -128,6 +129,7 @@ const mapDBToFrontend = (r: DBInstitutionalResponsible) => {
     secondLastName: p.second_last_name || undefined,
     phone: p.phone,
     email: p.email,
+    title: r.TITLE || undefined,
     cargo: r.institutions?.[0]?.cargo || undefined,
     institutions: r.institutions || [],
     status: r.STATUS === 1,
@@ -321,6 +323,7 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
         CREATION_DATE: new Date().toISOString(),
         INSTITUTION_ID: null,
         cargo: null,
+        TITLE: r.title || null,
       };
 
       const { data: newManager, error } = await supabase
@@ -407,29 +410,33 @@ export const updateInstitutionalResponsible = async (req: Request, res: Response
       const existingRow = existing as any;
       const personId = existingRow.person_id;
 
-      const personData = extractPersonData(r);
+      // Solo actualizar datos de persona si se enviaron campos de identificación
+      if (r.identificationPrefix !== undefined || r.identificationNumber !== undefined || r.firstName !== undefined) {
+        const personData = extractPersonData(r);
 
-      // Validar duplicados en t_persons si cambió CI
-      if (r.identificationPrefix !== undefined || r.identificationNumber !== undefined) {
-        const managerCi = personData.ci;
-        if (managerCi !== existingRow.t_persons.ci) {
-          const ciCheck = await personService.validateUniqueCi(managerCi, personId);
-          if (!ciCheck.available) {
-            const err = new Error('Ya existe un responsable con esa cédula') as AppError;
-            (err as any).status = 400;
-            throw err;
+        // Validar duplicados en t_persons si cambió CI
+        if (r.identificationPrefix !== undefined || r.identificationNumber !== undefined) {
+          const managerCi = personData.ci;
+          if (managerCi !== existingRow.t_persons.ci) {
+            const ciCheck = await personService.validateUniqueCi(managerCi, personId);
+            if (!ciCheck.available) {
+              const err = new Error('Ya existe un responsable con esa cédula') as AppError;
+              (err as any).status = 400;
+              throw err;
+            }
           }
         }
-      }
 
-      // 1. Actualizar t_persons
-      await personService.updatePerson(personId, personData, supabase);
+        // 1. Actualizar t_persons
+        await personService.updatePerson(personId, personData, supabase);
+      }
 
       // 2. Actualizar t_institution_manager
       const dbData: Record<string, unknown> = {};
       dbData.INSTITUTION_ID = null;
 
       if (r.status !== undefined) dbData.STATUS = r.status ? 1 : 0;
+      if (r.title !== undefined) dbData.TITLE = r.title || null;
 
       const { error: updateError } = await supabase
         .from(TABLE_NAME)
@@ -458,6 +465,33 @@ export const updateInstitutionalResponsible = async (req: Request, res: Response
 
           const { error: pivotError } = await supabase.from(PIVOT_TABLE).insert(pivotInserts);
           if (pivotError) throw pivotError;
+        }
+      }
+
+      // 3b. Si se envió institutionId individual (vincular a una institución sin reemplazar),
+      // agregarlo a la tabla pivote como un vínculo adicional
+      if (r.institutions === undefined && r.institutionId) {
+        const instIdNum = parseInt(r.institutionId);
+        if (!isNaN(instIdNum) && instIdNum > 0) {
+          // Verificar si ya existe el vínculo
+          const { data: existingPivot } = await supabase
+            .from(PIVOT_TABLE)
+            .select('MANAGER_ID')
+            .eq('MANAGER_ID', parseInt(id))
+            .eq('INSTITUTION_ID', instIdNum)
+            .maybeSingle();
+
+          if (!existingPivot) {
+            const { error: pivotError } = await supabase
+              .from(PIVOT_TABLE)
+              .insert({
+                MANAGER_ID: parseInt(id),
+                INSTITUTION_ID: instIdNum,
+                cargo: r.cargo ? String(r.cargo).toUpperCase() : null
+              });
+
+            if (pivotError) throw pivotError;
+          }
         }
       }
 

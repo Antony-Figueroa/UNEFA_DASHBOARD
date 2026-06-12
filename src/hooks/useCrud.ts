@@ -100,16 +100,26 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
           : undefined
       );
       
+      // Normalize status field to boolean if it exists in items
+      const normalizeData = (items: TItem[]): TItem[] => {
+        return items.map(item => {
+          if ((item as any).status !== undefined) {
+            return { ...item, status: Boolean((item as any).status) };
+          }
+          return item;
+        });
+      };
+
       if (enablePagination && result && typeof result === 'object' && 'total' in result && 'data' in result) {
         const paginated = result as PaginatedResponse<TItem>;
-        setData(paginated.data);
+        setData(normalizeData(paginated.data));
         setPagination(prev => ({
           ...prev,
           total: paginated.total,
           totalPages: Math.ceil(paginated.total / prev.limit) || 1,
         }));
       } else {
-        setData(result as TItem[]);
+        setData(normalizeData(result as TItem[]));
       }
       
       setStatus("success");
@@ -151,7 +161,10 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       const newItem = await service.create(payload);
       
       if (optimistic && newItem) {
-        setData(prev => [...prev, newItem]);
+        const normalizedNewItem = (newItem as any).status !== undefined 
+          ? { ...newItem, status: Boolean((newItem as any).status) } 
+          : newItem;
+        setData(prev => [...prev, normalizedNewItem]);
       } else {
         await refresh();
       }
@@ -197,8 +210,11 @@ export function useCrud<TItem, TCreatePayload, TUpdatePayload>(
       const updatedItem = await service.update(payload);
       
       if (optimistic && updatedItem) {
+        const normalizedUpdatedItem = (updatedItem as any).status !== undefined 
+          ? { ...updatedItem, status: Boolean((updatedItem as any).status) } 
+          : updatedItem;
         setData(prev => prev.map(item => 
-          (item as any)[idKey] === (updatedItem as any)[idKey] ? updatedItem : item
+          (item as any)[idKey] === (normalizedUpdatedItem as any)[idKey] ? normalizedUpdatedItem : item
         ));
       } else {
         await refresh();

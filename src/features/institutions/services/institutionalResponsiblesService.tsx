@@ -31,6 +31,7 @@ interface InstitutionalResponsibleDTO {
   secondLastName?: string;
   fullName: string;
   position: string;
+  title?: string;
   phone: string;
   email: string;
   cargo?: string;

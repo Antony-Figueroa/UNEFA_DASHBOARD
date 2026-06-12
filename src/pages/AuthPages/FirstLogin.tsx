@@ -12,7 +12,7 @@ import { SecurityQuestion, SecurityAnswer } from "../../features/auth/types";
 import { EyeClosedIcon, EyeIcon, ShieldCheckIcon, UserIcon, LockIcon, KeyRoundIcon, CheckCircleIcon, XCircleIcon, ChevronRightIcon } from "lucide-react";
 import CustomSelect from "../../components/form/CustomSelect";
 import { useToast } from "../../context/toast";
-import { firstLoginSchema, changePasswordSchema, simplePasswordSchema, FirstLoginFormData } from "../../features/auth/constants/firstLoginValidation";
+import { firstLoginSchema, changePasswordSchema, resetPasswordSchema, simplePasswordSchema, FirstLoginFormData } from "../../features/auth/constants/firstLoginValidation";
 import apiClient from "../../api/apiClient";
 
 const steps = [
@@ -46,7 +46,7 @@ export default function FirstLogin() {
 
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [currentStep, setCurrentStep] = useState(isFirstLogin ? 1 : 2);
+  const [currentStep, setCurrentStep] = useState(1);
   const [phonePrefixOptions, setPhonePrefixOptions] = useState<{ value: string; label: string }[]>(DEFAULT_PHONE_PREFIX_OPTIONS);
 
   useEffect(() => {
@@ -68,7 +68,7 @@ export default function FirstLogin() {
   }, []);
 
   const schema = useMemo(() => 
-    isFirstLogin ? firstLoginSchema : simplePasswordSchema,
+    isFirstLogin ? firstLoginSchema : resetPasswordSchema,
     [isFirstLogin]
   );
 
@@ -174,12 +174,20 @@ export default function FirstLogin() {
     setLoading(true);
     try {
       if (!isFirstLogin) {
-        // Solo cambio de contraseña para usuarios existentes
+        // Usuarios con reset de admin: actualizan datos personales + contraseña
+        const profileData = {
+          name: data.firstName.toUpperCase(),
+          secondName: data.middleName?.toUpperCase() || "",
+          surname: data.lastName.toUpperCase(),
+          secondSurname: data.secondLastName?.toUpperCase() || "",
+          phoneNumber: `${data.phonePrefix}${data.phoneNumber}`,
+          email: data.email.toUpperCase()
+        };
         const result = await authService.changePassword(
           userId!,
           data.newPassword,
           [], // sin preguntas de seguridad
-          undefined // sin datos de perfil
+          profileData
         );
         
         if (result.success) {
@@ -282,57 +290,48 @@ export default function FirstLogin() {
       <PageMeta title="Primer Ingreso | SIGP - UNEFA" description="Configuración de seguridad para el primer ingreso al sistema" />
       <AuthLayout>
         <div className="flex flex-col justify-center flex-1 w-full max-w-2xl mx-auto">
-          {isFirstLogin ? (
-            <div className="mb-8">
-              <div className="flex items-center justify-center mb-6">
-                <div className="flex items-center">
-                  {steps.map((step, idx) => {
-                    const Icon = step.icon;
-                    const isActive = currentStep >= step.id;
-                    const isCurrent = currentStep === step.id;
-                    return (
-                      <div key={step.id} className="flex items-center">
-                        <div 
-                          className={`
-                            flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 cursor-pointer
-                            ${isActive 
-                              ? 'border-brand-500 bg-brand-500 text-white' 
-                              : 'border-gray-300 dark:border-gray-600 text-gray-400'}
-                            ${isCurrent ? 'ring-4 ring-brand-500/20' : ''}
-                          `}
-                          onClick={() => setCurrentStep(step.id)}
-                        >
-                          {isActive ? <CheckCircleIcon className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
-                        </div>
-                        {idx < steps.length - 1 && (
-                          <div className={`w-12 h-0.5 mx-2 ${isActive ? 'bg-brand-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
-                        )}
+          <div className="mb-8">
+            <div className="flex items-center justify-center mb-6">
+              <div className="flex items-center">
+                {steps.map((step, idx) => {
+                  const Icon = step.icon;
+                  const isActive = currentStep >= step.id;
+                  const isCurrent = currentStep === step.id;
+                  const showStep = isFirstLogin || step.id < 3; // hide step 3 for !isFirstLogin
+                  if (!showStep) return null;
+                  return (
+                    <div key={step.id} className="flex items-center">
+                      <div 
+                        className={`
+                          flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 cursor-pointer
+                          ${isActive 
+                            ? 'border-brand-500 bg-brand-500 text-white' 
+                            : 'border-gray-300 dark:border-gray-600 text-gray-400'}
+                          ${isCurrent ? 'ring-4 ring-brand-500/20' : ''}
+                        `}
+                        onClick={() => setCurrentStep(step.id)}
+                      >
+                        {isActive ? <CheckCircleIcon className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
                       </div>
-                    );
-                  })}
-                </div>
+                      {idx < steps.length - 1 && (
+                        <div className={`w-12 h-0.5 mx-2 ${isActive ? 'bg-brand-500' : 'bg-gray-300 dark:border-gray-600'}`} />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              
-              <h1 className="mb-2 text-2xl font-bold text-center text-text-emphasis dark:text-white">
-                Configuración de Cuenta
-              </h1>
-              <p className="text-sm text-center text-text-secondary dark:text-text-tertiary">
+            </div>
+            
+            <h1 className="mb-2 text-2xl font-bold text-center text-text-emphasis dark:text-white">
+              Configuración de Cuenta
+            </h1>
+            <p className="text-sm text-center text-text-secondary dark:text-text-tertiary">
                 Complete los siguientes pasos para activar su cuenta en el sistema
               </p>
             </div>
-          ) : (
-            <div className="mb-8">
-              <h1 className="mb-2 text-2xl font-bold text-center text-text-emphasis dark:text-white">
-                Cambio de Contraseña
-              </h1>
-              <p className="text-sm text-center text-text-secondary dark:text-text-tertiary">
-                Un administrador reseteó su clave. Elija una nueva contraseña.
-              </p>
-            </div>
-          )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {isFirstLogin && currentStep === 1 && (
+            {currentStep === 1 && (
               <div className="p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-brand-500/10">
@@ -474,7 +473,7 @@ export default function FirstLogin() {
               </div>
             )}
 
-            {(currentStep === 2 || !isFirstLogin) && (
+            {currentStep === 2 && (
               <div className="p-6 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-brand-500/10">

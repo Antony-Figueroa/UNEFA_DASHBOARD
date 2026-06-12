@@ -128,14 +128,14 @@ export function generateAnexo4Excel(data: any[], fileName: string) {
   const tableHeaders = [
     'N°', 'REGIÓN', 'NÚCLEO', 'EXTENSIÓN', 'CARRERA', 'NOMBRE',
     'APELLIDO', 'CÉDULA', 'CONDICIÓN', 'DEDICACIÓN', 'CATEGORÍA',
-    'TELÉFONO', 'CORREO', 'ESTUDIANTES'
+    'TELÉFONO', 'CORREO ELECTRÓNICO', 'ESTUDIANTES'
   ];
   const rows = data.map(item => [
     item.nro || '', (item.region || '').toUpperCase(), (item.nucleo || '').toUpperCase(),
     (item.extension || '').toUpperCase(), (item.carrera || '').toUpperCase(),
     (item.nombreTutor || '').toUpperCase(), (item.apellidoTutor || '').toUpperCase(),
-    item.cedula || '', (item.condicion || '').toUpperCase(), (item.dedicacion || '').toUpperCase(),
-    (item.categoria || '').toUpperCase(), item.telefono || '', item.correo || '', item.cantidadEstudiantes || 0
+    (item.cedula || '').toUpperCase(), (item.condicion || '').toUpperCase(), (item.dedicacion || '').toUpperCase(),
+    (item.categoria || '').toUpperCase(), (item.telefono || '').toUpperCase(), (item.correo || '').toUpperCase(), item.cantidadEstudiantes || 0
   ]);
   const wsData = [...institutionalHeader, tableHeaders, ...rows];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -206,12 +206,12 @@ export async function generateResumenPasantiasExcel(data: any[], period: string,
   const columnsDef = [
     { col: 'A', text: 'REGIÓN', merge: true }, { col: 'B', text: 'NÚCLEO', merge: true },
     { col: 'C', text: 'EXTENSIÓN', merge: true }, { col: 'D', text: 'NOMBRE DE LA CARRERA', merge: true },
-    { col: 'E', text: 'CANTIDAD DE\nTUTORES\nACADEMICOS', merge: true },
+    { col: 'E', text: 'CANTIDAD DE\nTUTORES\nACADÉMICOS', merge: true },
     { col: 'F', text: 'CANTIDAD\nDE\nESTUDIANTES', merge: true },
-    { col: 'G', text: 'NOMBRE DE LA EMPRESA\n/ INSTITUCION', merge: false },
+    { col: 'G', text: 'NOMBRE DE LA EMPRESA\n/ INSTITUCIÓN', merge: false },
     { col: 'H', text: 'PÚBLICA', merge: false }, { col: 'I', text: 'PRIVADA', merge: false },
     { col: 'J', text: 'CANTIDAD DE\nTUTORES\nINSTITUCIONALES', merge: false },
-    { col: 'K', text: 'OBSERVACION', merge: true },
+    { col: 'K', text: 'OBSERVACIÓN', merge: true },
   ];
 
   columnsDef.forEach(def => {
@@ -249,7 +249,7 @@ export async function generateResumenPasantiasExcel(data: any[], period: string,
     tutoresInstCell.value = item.cantidadTutoresInst || 0;
     tutoresInstCell.style = { ...DATA_STYLE, font: { ...DEFAULT_FONT, size: 8, bold: true, color: { argb: 'FFFF0000' } } };
 
-    row.getCell('K').value = item.observacion || '';
+    row.getCell('K').value = (item.observacion || '').toUpperCase();
     ['A','B','C','D','E','F','G','H','I','K'].forEach(col => { row.getCell(col).style = DATA_STYLE; });
     currentRow++;
   });
@@ -284,7 +284,7 @@ export async function generateRelacionGeneralTutoresExcel(data: any[], period: s
     { col: 4, text: 'EXTENSIÓN' }, { col: 5, text: 'CARRERA' }, { col: 6, text: 'NOMBRE' },
     { col: 7, text: 'APELLIDO' }, { col: 8, text: 'CÉDULA' }, { col: 9, text: 'CONDICIÓN' },
     { col: 10, text: 'DEDICACIÓN' }, { col: 11, text: 'CATEGORÍA' }, { col: 12, text: 'TELÉFONO' },
-    { col: 13, text: 'CORREO' }, { col: 14, text: 'ESTUDIANTES' },
+    { col: 13, text: 'CORREO ELECTRÓNICO' }, { col: 14, text: 'ESTUDIANTES' },
   ]);
 
   let currentRow = 10;
@@ -294,9 +294,9 @@ export async function generateRelacionGeneralTutoresExcel(data: any[], period: s
       (item.extension || '').toUpperCase(), (item.carrera || '').toUpperCase(),
       (item.nombreTutor || item.nombre || '').toUpperCase(),
       (item.apellidoTutor || item.apellido || '').toUpperCase(),
-      item.cedula || item.cedulaTutor || '', (item.condicion || '').toUpperCase(),
+      (item.cedula || item.cedulaTutor || '').toUpperCase(), (item.condicion || '').toUpperCase(),
       (item.dedicacion || '').toUpperCase(), (item.categoria || '').toUpperCase(),
-      item.telefono || '', item.correo || item.email || '', item.cantidadEstudiantes || 0,
+      (item.telefono || '').toUpperCase(), (item.correo || item.email || '').toUpperCase(), item.cantidadEstudiantes || 0,
     ]);
     currentRow++;
   });
@@ -372,7 +372,7 @@ export async function generateRelacionEmpresasExcel(data: any[], period: string,
     applyDataCell(worksheet, currentRow, 2, (item.nucleo || '').toUpperCase());
     applyDataCell(worksheet, currentRow, 3, (item.extension || '').toUpperCase());
     applyDataCell(worksheet, currentRow, 4, (item.empresa || '').toUpperCase());
-    applyDataCell(worksheet, currentRow, 5, item.rif || '');
+    applyDataCell(worksheet, currentRow, 5, (item.rif || '').toUpperCase());
     applyDataCell(worksheet, currentRow, 6, isPublica ? 'X' : '');
     applyDataCell(worksheet, currentRow, 7, isPrivada ? 'X' : '');
     applyDataCell(worksheet, currentRow, 8, (item.carrera || '').toUpperCase());
@@ -448,7 +448,7 @@ export async function generateDistribucionTutoresExcel(data: any[], period: stri
 
   const subHeaders = [
     { col: 'D', text: 'TÍTULO' }, { col: 'E', text: 'NOMBRE' },
-    { col: 'F', text: 'CONTACTO' }, { col: 'G', text: 'EMAIL' },
+    { col: 'F', text: 'CONTACTO' }, { col: 'G', text: 'CORREO ELECTRÓNICO' },
     { col: 'H', text: 'NOMBRE' }, { col: 'I', text: 'CONTACTO' },
     { col: 'J', text: 'HORARIO' },
     { col: 'K', text: 'NOMBRE' }, { col: 'L', text: 'CONTACTO' },
@@ -465,11 +465,11 @@ export async function generateDistribucionTutoresExcel(data: any[], period: stri
       item.nro, (item.carrera || '').toUpperCase(), (item.estudiante || '').toUpperCase(),
       (item.tutorAcademico?.titulo || '').toUpperCase(),
       (item.tutorAcademico?.nombre || '').toUpperCase(),
-      item.tutorAcademico?.contacto || '', item.tutorAcademico?.email || '',
+      (item.tutorAcademico?.contacto || '').toUpperCase(), (item.tutorAcademico?.email || '').toUpperCase(),
       (item.tutorMetodologico?.nombre || '').toUpperCase(),
-      item.tutorMetodologico?.contacto || '',
+      (item.tutorMetodologico?.contacto || '').toUpperCase(),
       (item.tutorMetodologico?.horario || '').toUpperCase(),
-      (item.evaluador?.nombre || '').toUpperCase(), item.evaluador?.contacto || '',
+      (item.evaluador?.nombre || '').toUpperCase(), (item.evaluador?.contacto || '').toUpperCase(),
     ]);
     currentRow++;
   });
@@ -567,8 +567,8 @@ export async function generateRelacionIndividualDocenteExcel(data: any[], period
       item.nro, (item.region || '').toUpperCase(), (item.nucleo || '').toUpperCase(),
       (item.extension || '').toUpperCase(), (item.carrera || '').toUpperCase(),
       (item.estudiante?.nombre || '').toUpperCase(), (item.estudiante?.apellido || '').toUpperCase(),
-      item.estudiante?.ci || '', (item.estudiante?.sexo || '').toUpperCase(),
-      (item.estudiante?.tipo || '').toUpperCase(), item.estudiante?.telefono || '',
+      (item.estudiante?.ci || '').toUpperCase(), (item.estudiante?.sexo || '').toUpperCase(),
+      (item.estudiante?.tipo || '').toUpperCase(), (item.estudiante?.telefono || '').toUpperCase(),
       (item.institucion?.nombre || '').toUpperCase(),
       `${(item.tutorInstitucional?.nombre || '').toUpperCase()} ${(item.tutorInstitucional?.apellido || '').toUpperCase()}`.trim(),
       (item.direccion || '').toUpperCase(),
@@ -691,7 +691,7 @@ export async function generateDistribucionTutoresV2Excel(data: any[], period: st
 
   const subHeaders = [
     { col: 'D', text: 'TÍTULO' }, { col: 'E', text: 'NOMBRE' },
-    { col: 'F', text: 'CONTACTO' }, { col: 'G', text: 'EMAIL' },
+    { col: 'F', text: 'CONTACTO' }, { col: 'G', text: 'CORREO ELECTRÓNICO' },
     { col: 'H', text: 'NOMBRE' }, { col: 'I', text: 'CONTACTO' },
     { col: 'J', text: 'HORARIO' },
     { col: 'K', text: 'NOMBRE' }, { col: 'L', text: 'CONTACTO' },
@@ -708,12 +708,12 @@ export async function generateDistribucionTutoresV2Excel(data: any[], period: st
       item.nro, (item.carrera || '').toUpperCase(), (item.estudiante || '').toUpperCase(),
       (item.tutorAcademico?.titulo || '').toUpperCase(),
       (item.tutorAcademico?.nombre || '').toUpperCase(),
-      item.tutorAcademico?.contacto || '', item.tutorAcademico?.email || '',
+      (item.tutorAcademico?.contacto || '').toUpperCase(), (item.tutorAcademico?.email || '').toUpperCase(),
       (item.tutorMetodologico?.nombre || '').toUpperCase(),
-      item.tutorMetodologico?.contacto || '',
+      (item.tutorMetodologico?.contacto || '').toUpperCase(),
       (item.tutorMetodologico?.horario || '').toUpperCase(),
       (item.horarioMetodologicoDetallado || item.tutorMetodologico?.horarioDetallado || '').toUpperCase(),
-      (item.evaluador?.nombre || '').toUpperCase(), item.evaluador?.contacto || '',
+      (item.evaluador?.nombre || '').toUpperCase(), (item.evaluador?.contacto || '').toUpperCase(),
     ]);
     currentRow++;
   });

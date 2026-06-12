@@ -689,7 +689,7 @@ export default function InstitutionsPage() {
       <PDFPreviewModal
         isOpen={isInstPDFModalOpen}
         onClose={() => setIsInstPDFModalOpen(false)}
-        title="Reporte De Instituciones"
+        title="Reporte de Instituciones"
         data={instPdfFilteredData}
         template={(data) => <InstitutionPDF data={data} />}
         fileName={`reporte-instituciones-${new Date().toISOString().split('T')[0]}.pdf`}
@@ -739,7 +739,7 @@ export default function InstitutionsPage() {
       <PDFPreviewModal
         isOpen={isRespPDFModalOpen}
         onClose={() => setIsRespPDFModalOpen(false)}
-        title="Reporte De Responsables Empresariales e Institucionales"
+        title="Reporte de Responsables Empresariales e Institucionales"
         data={respPdfFilteredData}
         template={(data) => <InstitutionalResponsiblePDF data={data} />}
         fileName={`reporte-responsables-activos-${new Date().toISOString().split('T')[0]}.pdf`}

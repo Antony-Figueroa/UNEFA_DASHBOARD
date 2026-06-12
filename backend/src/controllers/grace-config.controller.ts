@@ -5,14 +5,14 @@ import { auditUpdate } from '../utils/audit-helpers.js';
 
 const TABLE_NAME = 't_internships_period';
 const CONFIG_TABLE = 't_academic_config';
-const AUDIT_COLUMNS = ['ENROLLMENT_GRACE_DAYS', 'EVALUATION_GRACE_DAYS'];
+const AUDIT_COLUMNS = ['ENROLLMENT_GRACE_DAYS', 'EVALUATION_GRACE_DAYS', 'LOCK_API_LOADED_FIELDS'];
 
 // GET /api/academic-config/defaults
 export const getDefaults = async (_req: Request, res: Response) => {
   try {
     const { data, error } = await dbManager.getConnection()
       .from(CONFIG_TABLE)
-      .select('DEFAULT_ENROLLMENT_GRACE_DAYS, DEFAULT_EVALUATION_GRACE_DAYS')
+      .select('DEFAULT_ENROLLMENT_GRACE_DAYS, DEFAULT_EVALUATION_GRACE_DAYS, LOCK_API_LOADED_FIELDS')
       .eq('CONFIG_ID', 1)
       .single();
 
@@ -21,11 +21,13 @@ export const getDefaults = async (_req: Request, res: Response) => {
     res.json({
       defaultEnrollmentGraceDays: data.DEFAULT_ENROLLMENT_GRACE_DAYS,
       defaultEvaluationGraceDays: data.DEFAULT_EVALUATION_GRACE_DAYS,
+      lockApiLoadedFields: data.LOCK_API_LOADED_FIELDS ?? true,
     });
   } catch (error) {
     res.json({
       defaultEnrollmentGraceDays: 21,
       defaultEvaluationGraceDays: 10,
+      lockApiLoadedFields: true,
     });
   }
 };
@@ -33,7 +35,7 @@ export const getDefaults = async (_req: Request, res: Response) => {
 // PATCH /api/academic-config/defaults
 export const updateDefaults = async (req: AuthRequest, res: Response) => {
   try {
-    const { defaultEnrollmentGraceDays, defaultEvaluationGraceDays } = req.body;
+    const { defaultEnrollmentGraceDays, defaultEvaluationGraceDays, lockApiLoadedFields } = req.body;
 
     if (defaultEnrollmentGraceDays !== undefined) {
       const val = Number(defaultEnrollmentGraceDays);
@@ -72,6 +74,9 @@ export const updateDefaults = async (req: AuthRequest, res: Response) => {
     if (defaultEvaluationGraceDays !== undefined) {
       updateData.DEFAULT_EVALUATION_GRACE_DAYS = Number(defaultEvaluationGraceDays);
     }
+    if (lockApiLoadedFields !== undefined) {
+      updateData.LOCK_API_LOADED_FIELDS = Boolean(lockApiLoadedFields);
+    }
 
     const { error } = await dbManager.getConnection()
       .from(CONFIG_TABLE)
@@ -81,7 +86,7 @@ export const updateDefaults = async (req: AuthRequest, res: Response) => {
     if (error) throw error;
 
     await auditUpdate(req, CONFIG_TABLE, oldData, updateData, [
-      'DEFAULT_ENROLLMENT_GRACE_DAYS', 'DEFAULT_EVALUATION_GRACE_DAYS',
+      'DEFAULT_ENROLLMENT_GRACE_DAYS', 'DEFAULT_EVALUATION_GRACE_DAYS', 'LOCK_API_LOADED_FIELDS',
     ]);
 
     res.json({

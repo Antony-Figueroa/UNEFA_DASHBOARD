@@ -106,6 +106,14 @@ export default function InstitutionalResponsibleViewModal({
                   {responsible.phone}
                 </p>
               </div>
+              {responsible.title && (
+                <div className="sm:col-span-2">
+                  <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Título</label>
+                  <p className="text-sm font-bold text-text-primary dark:text-white/90">
+                    {responsible.title}
+                  </p>
+                </div>
+              )}
               <div className="sm:col-span-2">
                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Empresas o Instituciones</label>
                 {responsible.institutions && responsible.institutions.length > 0 ? (

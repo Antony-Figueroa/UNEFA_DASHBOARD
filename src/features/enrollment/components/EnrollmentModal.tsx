@@ -26,6 +26,7 @@ import { InternshipTypeOption } from "../../internship-types/types";
 import { Career } from "../../careers/types";
 import { useUnsavedChanges } from "../../../hooks/useUnsavedChanges";
 import UnifiedDialog from "../../../components/ui/dialog/UnifiedDialog";
+import { AddressCoincidencePanel } from "../../address/components/AddressCoincidencePanel";
 
 import * as enrollmentService from "../services/enrollmentService";
 import { useLists } from "../../lists/hooks/useLists";
@@ -138,6 +139,7 @@ export default function EnrollmentModal({
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingData, setPendingData] = useState<EnrollmentFormData | null>(null);
+  const [studentPersonId, setStudentPersonId] = useState<string | null>(null);
 
   // State for display values with formatting
   const [displayIdentificationNumber, setDisplayIdentificationNumber] = useState("");
@@ -404,12 +406,14 @@ export default function EnrollmentModal({
       // Verificar pre-inscripción activa solo si no tiene inscripción previa
       if (!preEnrollment) {
         setPreEnrollmentError("El estudiante no posee una pre-inscripción activa. No puede proceder.");
+        setStudentPersonId(null);
         setValue("studentName", "");
         setValue("careerName", "");
         return;
       }
 
       if (student) {
+        setStudentPersonId(student.personId || null);
         setValue("studentName", `${student.firstName} ${student.lastName}`);
         
         // Autocompletar Carrera
@@ -1115,6 +1119,10 @@ export default function EnrollmentModal({
                     {errors.institutionId && (
                       <p className="text-[11px] font-bold text-error-500">{errors.institutionId.message}</p>
                     )}
+                    <AddressCoincidencePanel
+                      personId={studentPersonId}
+                      institutionId={selectedInstitutionId}
+                    />
                   </div>
 
                   {/* Responsable */}

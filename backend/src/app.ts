@@ -53,6 +53,7 @@ import knowledgeBaseRoutes from './routes/knowledge-base.routes.js';
 import personsRoutes from './routes/persons.routes.js';
 import institutionalDocumentsRoutes from './routes/institutional-documents.routes.js';
 import reportTextsRoutes from './routes/report-texts.routes.js';
+import addressRoutes from './routes/address.routes.js';
 import { getSystemConfig } from './controllers/evaluation.controller.js';
 import { subscribeToNotifications } from './services/sse.service.js';
 import { dbManager } from './lib/db-manager.js';
@@ -93,6 +94,7 @@ dbManager.connect().catch(err => {
 listsService.ensurePhonePrefixesSeeded().catch(() => {});
 usersService.ensureRolesSeeded().catch(() => {});
 emailTemplatesService.seedIfEmpty();
+import('./services/address-seed.service.js').then(m => m.seedGeographicData()).catch(() => {});
 seedKBIfEmpty();
 
 // Iniciar schedulers (SOLO en modo tradicional, NO en Vercel)
@@ -267,6 +269,7 @@ app.use('/api/security-questions', securityQuestionsRoutes);
 app.use('/api/reminder-config', reminderConfigRoutes);
 app.use('/api/email-templates', emailTemplatesRoutes);
 app.use('/api/knowledge-base', knowledgeBaseRoutes);
+app.use('/api/address', addressRoutes);
 // SSE endpoint — deshabilitado en Vercel (no compatible con serverless)
 if (isVercel) {
   app.get('/api/notifications/stream', (_req, res) => {

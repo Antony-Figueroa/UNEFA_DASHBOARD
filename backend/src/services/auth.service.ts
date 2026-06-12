@@ -236,22 +236,29 @@ export const login = async (userCi: string, password: string, ip: string, userAg
       console.warn('[Auth] No se pudieron resetear los intentos fallidos:', resetError);
     }
 
+    // Extraer role — soporta tanto Supabase (anidado) como PGlite (plano)
+    const roleId = user.t_user_roles?.[0]?.ID_ROLES ?? user.t_user_roles_ID_ROLES ?? null;
+
     // 6. Verificar si requiere cambio de clave
     if (userKey.IS_TEMPORARY || user.FORCE_PASSWORD_CHANGE) {
       const isFirstLogin = (user.LOGIN ?? 0) === 0;
+      // Generar token temporal (15 min) para que el frontend pueda llamar cambio de clave
+      const tempToken = generateToken({ 
+        userId: user.USER_ID, 
+        userCi: user.USER_CI,
+        role: roleId 
+      }, '15m');
       return { 
         success: true,
         requirePasswordChange: true,
         userId: user.USER_ID,
         isFirstLogin,
+        tempToken,
         message: isFirstLogin 
           ? 'Debe completar la configuración inicial de su cuenta'
           : 'Un administrador reseteó su clave. Debe cambiarla antes de continuar.'
       };
     }
-
-    // Extraer role — soporta tanto Supabase (anidado) como PGlite (plano)
-    const roleId = user.t_user_roles?.[0]?.ID_ROLES ?? user.t_user_roles_ID_ROLES ?? null;
 
     // 7. Generar Token
     const token = generateToken({ 
@@ -726,7 +733,8 @@ export const resetPassword = async (userId: number, newPassword: string) => {
         STATUS: 1,
         FAILED_ATTEMPTS: 0,
         LOCK_DATE: undefined,
-        FORCE_PASSWORD_CHANGE: false
+        FORCE_PASSWORD_CHANGE: false,
+        LOGIN: 1
       } as Partial<UserRow>).eq('USER_ID', userId);
     } catch {
       // Fallback si las columnas no existen

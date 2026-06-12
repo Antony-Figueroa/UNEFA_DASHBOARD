@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { checkAvailability, getStudentByCi, lookupCi } from "../services/studentsService";
@@ -27,6 +27,7 @@ import {
 } from "../constants/validation";
 import { formatCedulaDisplay, formatPhoneLocalDisplay, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS } from "../../../utils/inputFormat";
 import PersonFormFields from "../../persons/components/PersonFormFields";
+import { useAcademicConfig } from "../../academic-config/hooks/useAcademicConfig";
 
 /**
  * Propiedades del componente StudentModal.
@@ -90,6 +91,10 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   const [existingStudent, setExistingStudent] = useState<any | null>(null);
   const [existingPerson, setExistingPerson] = useState(false);
   const [viewOnlyMode, setViewOnlyMode] = useState(false);
+  // State for API-loaded data flow (SENIAT)
+  const [apiDataLoaded, setApiDataLoaded] = useState(false);
+  const apiLoadedCiRef = useRef("");
+  const { config: academicConfig } = useAcademicConfig();
 
   const {
     register,
@@ -134,6 +139,36 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
     setValue("identificationNumber", digitsOnly, { shouldValidate: true });
     clearErrors("identificationNumber");
     
+    // Si se cambia la cédula tras una carga de API externa, limpiar el formulario
+    if (apiDataLoaded) {
+      const prefix = watch("identificationPrefix") || "V";
+      const currentCi = `${prefix}-${digitsOnly}`;
+      if (currentCi !== apiLoadedCiRef.current) {
+        setApiDataLoaded(false);
+        apiLoadedCiRef.current = "";
+        clearErrors("identificationNumber");
+        reset({
+          identificationPrefix: "",
+          identificationNumber: "",
+          firstName: "",
+          middleName: "",
+          lastName: "",
+          secondLastName: "",
+          sex: "",
+          birthDate: "",
+          civilStatus: "",
+          phonePrefix: "",
+          phoneNumber: "",
+          email: "",
+          address: "",
+          studentType: "",
+          militaryRank: "",
+          works: "",
+        });
+        setDisplayPhoneNumber("");
+      }
+    }
+
     // Si se cambia la cédula y hay un existingStudent o existingPerson, limpiar el formulario
     if (existingStudent || existingPerson) {
       const currentStoredDigits = existingStudent
@@ -411,6 +446,8 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
     try {
       const externalData = await lookupCi(fullCi);
       if (externalData) {
+        setApiDataLoaded(true);
+        apiLoadedCiRef.current = fullCi;
         setValue("firstName", externalData.primerNombre?.toUpperCase() || "");
         setValue("middleName", externalData.segundoNombre?.toUpperCase() || "");
         setValue("lastName", externalData.primerApellido?.toUpperCase() || "");
@@ -847,7 +884,8 @@ useEffect(() => {
             onBlurEmail={handleEmailBlur}
             isCheckingEmail={isCheckingEmail}
             viewOnlyMode={viewOnlyMode}
-            editingId={editingStudent?.studentId ?? null}
+            fieldLockOnApiLoad={apiDataLoaded && (academicConfig?.lockApiLoadedFields ?? true)}
+            editingId={editingStudent?.studentId ?? existingStudent?.studentId ?? null}
           />
 
           {/* ============================================================ */}

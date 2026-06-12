@@ -223,7 +223,7 @@ export default function StudentsPage() {
         const columns: ExportColumn<Record<string, unknown>>[] = [
             { key: 'identificationNumber', label: 'Cédula' },
             { key: 'fullNames', label: 'Nombre Completo' },
-            { key: 'email', label: 'Correo' },
+            { key: 'email', label: 'Correo Electrónico' },
             { key: 'phone', label: 'Teléfono' },
             { key: 'careerName', label: 'Carrera' },
             { key: 'regime', label: 'Régimen' },

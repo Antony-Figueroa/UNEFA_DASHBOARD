@@ -20,6 +20,7 @@ const RESPONSIBLE_LABELS: Record<string, string> = {
   fullName: "Nombre Completo",
   phone: "Teléfono",
   email: "Correo Electrónico",
+  title: "Título",
   institutions: "Instituciones",
   cargo: "Cargo",
   status: "Estado",

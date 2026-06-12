@@ -62,6 +62,7 @@ export interface GraceConfig {
 export interface GraceDefaults {
     defaultEnrollmentGraceDays: number;
     defaultEvaluationGraceDays: number;
+    lockApiLoadedFields?: boolean;
     updatedAt?: string;
     updatedBy?: string;
 }

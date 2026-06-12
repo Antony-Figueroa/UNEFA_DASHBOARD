@@ -308,6 +308,31 @@ Free text with no structure. Parse heuristics: search for known estado/municipio
 13. **Migration**: Legacy data migration scripts
 14. **Testing**: Backend + frontend tests
 
+## Progress Log
+
+### Session 2 (2026-06-11) — DB Migrations Applied & Seed Completed
+
+**What was done:**
+- Applied `create_address_system.sql` → all 7 tables created in Supabase
+- Applied `create_address_functions.sql` → 3 RPC functions created (`get_primary_address`, `get_coincidence_stats`, `get_institution_suggestions`)
+- Seeded geographic hierarchy from `venezuela.json` → 24 estados, 321 municipios, 1,083 parroquias
+- Seeded 4 address types → PRINCIPAL, DOMICILIO, RESIDENCIA_ACTUAL, SEDE_PRACTICAS
+
+**Issues encountered & resolved:**
+1. **Column case mismatch**: Existing DB tables (`t_institution`, `t_professional_practices`, etc.) use quoted uppercase columns (`"INSTITUTION_ID"`). Added double quotes to all FK references and RPC function column references.
+2. **`execute_sql` RPC limitation**: The function commits each call in its own transaction. Individual statement splitting failed on DDL dependency chains (t_estado→t_municipio→t_parroquia). Fixed by sending entire migration file as a single `EXECUTE` call.
+3. **No Supabase CLI**: Used Node.js `tsx` runner with service_role key directly.
+4. **Seed timeout**: Default 3min timeout insufficient for 1,083 parroquias across 321 municipios. Split into two runs (18 states, then 6 remaining).
+5. **Type mismatch**: `t_address.parroquia_id` was `INT` referencing `t_parroquia.parroquia_id` (BIGINT). Fixed with `ALTER TABLE` after dropping/recreating `v_address_full` view.
+
+**Next steps:**
+- Test coincidence endpoint with real student/institution data
+- Integrate `AddressList` into InstitutionModal, StudentModal, TutorModal
+- Legacy migration scripts for existing `t_persons.address` and `INSTITUTION_ADDRESS`
+- Create address management page/routing if needed
+
+---
+
 ## Testing Strategy
 
 ### Backend

@@ -195,7 +195,7 @@ export default function InstitutionalResponsibleTable({
 
   const filteredData = useMemo(() => {
     const filtered = data.filter((item) => {
-      const matchesTab = activeTab === "Activas" ? Boolean(item.status) : !Boolean(item.status);
+      const matchesTab = activeTab === "Activas" ? item.status : !item.status;
       const matchesSearch =
         debouncedSearch === "" ||
         matchSearch(`${item.identificationPrefix}${item.identificationNumber}`, debouncedSearch) ||

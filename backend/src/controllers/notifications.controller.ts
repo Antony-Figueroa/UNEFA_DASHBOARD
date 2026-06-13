@@ -265,18 +265,19 @@ export const expressEmail = async (req: Request, res: Response): Promise<void> =
     if (allUserIds.length > 0) {
       const { data: userData, error } = await supabase
         .from('t_user')
-        .select('USER_ID, NAME, SURNAME, EMAIL')
+        .select('USER_ID, person_id, t_persons!inner(email, first_name, last_name)')
         .in('USER_ID', allUserIds)
         .eq('STATUS', 1);
 
       if (error) throw error;
 
       for (const u of userData || []) {
-        if (u.EMAIL) {
+        const person = u.t_persons;
+        if (person?.email) {
           systemRecipients.push({
             userId: u.USER_ID,
-            email: u.EMAIL,
-            name: [u.NAME, u.SURNAME].filter(Boolean).join(' ').trim() || 'Usuario',
+            email: person.email,
+            name: [person.first_name, person.last_name].filter(Boolean).join(' ').trim() || 'Usuario',
           });
         }
       }

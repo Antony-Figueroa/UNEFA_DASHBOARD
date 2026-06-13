@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { sanitizeText } from '../utils/text-utils.js';
 import * as personService from '../services/person.service.js';
 import { auditCreate, auditUpdate } from '../utils/audit-helpers.js';
 
@@ -140,10 +141,20 @@ export const createPerson = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const newPerson = await personService.createPerson(personData);
+    // Normalizar texto antes de guardar
+    const normalizedData = {
+      ...personData,
+      firstName: sanitizeText(personData.firstName) ?? personData.firstName,
+      lastName: sanitizeText(personData.lastName) ?? personData.lastName,
+      middleName: personData.middleName ? sanitizeText(personData.middleName) : personData.middleName,
+      secondLastName: personData.secondLastName ? sanitizeText(personData.secondLastName) : personData.secondLastName,
+      address: personData.address ? sanitizeText(personData.address) : personData.address,
+    };
+
+    const newPerson = await personService.createPerson(normalizedData);
 
     // Auditoría
-    await auditCreate(req, TABLE_NAME, personData, PERSON_COLUMNS_TO_AUDIT);
+    await auditCreate(req, TABLE_NAME, normalizedData, PERSON_COLUMNS_TO_AUDIT);
 
     res.status(201).json(newPerson);
   } catch (error: unknown) {
@@ -194,14 +205,24 @@ export const updatePerson = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    const updatedPerson = await personService.updatePerson(personId, personData);
+    // Normalizar texto antes de guardar
+    const normalizedData = {
+      ...personData,
+      ...(personData.firstName !== undefined ? { firstName: sanitizeText(personData.firstName) ?? personData.firstName } : {}),
+      ...(personData.lastName !== undefined ? { lastName: sanitizeText(personData.lastName) ?? personData.lastName } : {}),
+      ...(personData.middleName !== undefined ? { middleName: personData.middleName ? sanitizeText(personData.middleName) : personData.middleName } : {}),
+      ...(personData.secondLastName !== undefined ? { secondLastName: personData.secondLastName ? sanitizeText(personData.secondLastName) : personData.secondLastName } : {}),
+      ...(personData.address !== undefined ? { address: personData.address ? sanitizeText(personData.address) : personData.address } : {}),
+    };
+
+    const updatedPerson = await personService.updatePerson(personId, normalizedData);
 
     if (!updatedPerson) {
       return res.status(404).json({ message: 'Persona no encontrada' });
     }
 
     // Auditoría
-    await auditUpdate(req, TABLE_NAME, existingPerson, personData, PERSON_COLUMNS_TO_AUDIT);
+    await auditUpdate(req, TABLE_NAME, existingPerson, normalizedData, PERSON_COLUMNS_TO_AUDIT);
 
     res.json(updatedPerson);
   } catch (error: unknown) {

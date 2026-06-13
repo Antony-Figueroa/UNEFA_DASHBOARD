@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS t_address_type (
 
 CREATE TABLE IF NOT EXISTS t_address (
   address_id      BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  parroquia_id    INT NOT NULL REFERENCES t_parroquia(parroquia_id),
+  parroquia_id    BIGINT NOT NULL REFERENCES t_parroquia(parroquia_id),
   street_address  VARCHAR(300) NOT NULL,
   reference       TEXT,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -75,7 +75,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS t_person_address_one_primary_idx
 
 CREATE TABLE IF NOT EXISTS t_institution_address (
   institution_address_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  institution_id         INT NOT NULL REFERENCES t_institution(institution_id),
+  institution_id         INT NOT NULL REFERENCES t_institution("INSTITUTION_ID"),
   address_id             BIGINT NOT NULL REFERENCES t_address(address_id),
   address_type_id        BIGINT NOT NULL REFERENCES t_address_type(address_type_id),
   is_primary             BOOLEAN NOT NULL DEFAULT FALSE,

@@ -9,7 +9,8 @@
 -- Obtiene la dirección principal de una persona o institución
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION get_primary_address(
+DROP FUNCTION IF EXISTS get_primary_address(TEXT, INT);
+CREATE FUNCTION get_primary_address(
   p_entity_type TEXT,
   p_entity_id INT
 )
@@ -17,7 +18,7 @@ RETURNS TABLE (
   address_id BIGINT,
   street_address VARCHAR(300),
   reference TEXT,
-  parroquia_id INT,
+  parroquia_id BIGINT,
   parroquia_name VARCHAR(200),
   municipio_id BIGINT,
   municipio_name VARCHAR(100),
@@ -35,11 +36,11 @@ BEGIN
       a.street_address,
       a.reference,
       p.parroquia_id,
-      p.name AS parroquia_name,
+      p.name::VARCHAR(200),
       m.municipio_id,
-      m.name AS municipio_name,
+      m.name::VARCHAR(100),
       e.estado_id,
-      e.name AS estado_name
+      e.name::VARCHAR(100)
     FROM t_person_address pa
     JOIN t_address a ON a.address_id = pa.address_id
     JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
@@ -55,11 +56,11 @@ BEGIN
       a.street_address,
       a.reference,
       p.parroquia_id,
-      p.name AS parroquia_name,
+      p.name::VARCHAR(200),
       m.municipio_id,
-      m.name AS municipio_name,
+      m.name::VARCHAR(100),
       e.estado_id,
-      e.name AS estado_name
+      e.name::VARCHAR(100)
     FROM t_institution_address ia
     JOIN t_address a ON a.address_id = ia.address_id
     JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
@@ -91,8 +92,8 @@ DECLARE
 BEGIN
   SELECT COUNT(*) INTO total_enrollments
   FROM t_professional_practices pp
-  WHERE pp.INTERNSHIP_STATUS IS NOT NULL
-    AND pp.STATUS = 1;
+  WHERE pp."INTERNSHIP_STATUS" IS NOT NULL
+    AND pp."STATUS" = 1;
 
   IF total_enrollments = 0 THEN
     RETURN;
@@ -101,16 +102,16 @@ BEGIN
   RETURN QUERY
   WITH enrollment_addresses AS (
     SELECT
-      pp.PROFESSIONAL_PRACTICE_ID,
+      pp."PROFESSIONAL_PRACTICE_ID" AS practice_id,
       s.person_id AS student_person_id,
-      pp.INSTITUTION_ID
+      pp."INSTITUTION_ID" AS institution_id
     FROM t_professional_practices pp
-    JOIN t_students s ON s.STUDENTS_ID = pp.STUDENTS_ID
-    WHERE pp.INTERNSHIP_STATUS IS NOT NULL
-      AND pp.STATUS = 1
+    JOIN t_students s ON s."STUDENTS_ID" = pp."STUDENTS_ID"
+    WHERE pp."INTERNSHIP_STATUS" IS NOT NULL
+      AND pp."STATUS" = 1
   ),
   student_primary AS (
-    SELECT ea.PROFESSIONAL_PRACTICE_ID, p.parroquia_id, p.municipio_id, m.estado_id
+    SELECT ea.practice_id, p.parroquia_id, p.municipio_id, m.estado_id
     FROM enrollment_addresses ea
     JOIN t_person_address pa ON pa.person_id = ea.student_person_id AND pa.is_primary = TRUE
     JOIN t_address a ON a.address_id = pa.address_id
@@ -118,9 +119,9 @@ BEGIN
     JOIN t_municipio m ON m.municipio_id = p.municipio_id
   ),
   institution_primary AS (
-    SELECT ea.PROFESSIONAL_PRACTICE_ID, p.parroquia_id, p.municipio_id, m.estado_id
+    SELECT ea.practice_id, p.parroquia_id, p.municipio_id, m.estado_id
     FROM enrollment_addresses ea
-    JOIN t_institution_address ia ON ia.institution_id = ea.INSTITUTION_ID AND ia.is_primary = TRUE
+    JOIN t_institution_address ia ON ia.institution_id = ea.institution_id AND ia.is_primary = TRUE
     JOIN t_address a ON a.address_id = ia.address_id
     JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
     JOIN t_municipio m ON m.municipio_id = p.municipio_id
@@ -134,7 +135,7 @@ BEGIN
         ELSE 'DIFFERENT_STATE'
       END AS match_level
     FROM student_primary sp
-    JOIN institution_primary ip ON ip.PROFESSIONAL_PRACTICE_ID = sp.PROFESSIONAL_PRACTICE_ID
+    JOIN institution_primary ip ON ip.practice_id = sp.practice_id
   )
   SELECT
     lc.match_level AS level,
@@ -157,7 +158,8 @@ $$;
 -- Sugiere instituciones rankeadas por proximidad geográfica + carrera + tipo
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION get_institution_suggestions(
+DROP FUNCTION IF EXISTS get_institution_suggestions(INT, INT, INT);
+CREATE FUNCTION get_institution_suggestions(
   p_person_id INT,
   p_career_id INT,
   p_internship_type_id INT DEFAULT NULL
@@ -194,9 +196,9 @@ BEGIN
 
   RETURN QUERY
   SELECT
-    i.INSTITUTION_ID,
-    i.INSTITUTION_NAME,
-    i.INSTITUTION_ADDRESS,
+    i."INSTITUTION_ID"::INT,
+    i."INSTITUTION_NAME"::VARCHAR(255),
+    i."INSTITUTION_ADDRESS"::TEXT,
     e.name::VARCHAR(100),
     m.name::VARCHAR(100),
     CASE
@@ -204,24 +206,24 @@ BEGIN
       WHEN p.municipio_id = v_student_municipio_id THEN 5
       WHEN m.estado_id = v_student_estado_id THEN 3
       ELSE 0
-    END AS proximity_score
+    END::INT AS proximity_score
   FROM t_institution i
-  JOIN t_institution_career ic ON ic.INSTITUTION_ID = i.INSTITUTION_ID
-  JOIN t_institution_address ia ON ia.institution_id = i.INSTITUTION_ID AND ia.is_primary = TRUE
+  JOIN t_institution_career ic ON ic."INSTITUTION_ID" = i."INSTITUTION_ID"
+  JOIN t_institution_address ia ON ia.institution_id = i."INSTITUTION_ID" AND ia.is_primary = TRUE
   JOIN t_address a ON a.address_id = ia.address_id
   JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
   JOIN t_municipio m ON m.municipio_id = p.municipio_id
   JOIN t_estado e ON e.estado_id = m.estado_id
-  WHERE ic.CAREER_ID = p_career_id
-    AND i.STATUS = 1
+  WHERE ic."CAREER_ID" = p_career_id
+    AND i."STATUS" = 1
     AND (p_internship_type_id IS NULL
-      OR i.PRACTICE_TYPE = p_internship_type_id::TEXT
+      OR i."PRACTICE_TYPE" = p_internship_type_id::TEXT
       OR EXISTS (
         SELECT 1 FROM t_institution_internship_type iit
-        WHERE iit.INSTITUTION_ID = i.INSTITUTION_ID
-          AND iit.INTERNSHIP_TYPE_ID = p_internship_type_id
+        WHERE iit."INSTITUTION_ID" = i."INSTITUTION_ID"
+          AND iit."INTERNSHIP_TYPE_ID" = p_internship_type_id
       ))
-  ORDER BY proximity_score DESC, i.INSTITUTION_NAME;
+  ORDER BY proximity_score DESC, i."INSTITUTION_NAME";
 END;
 $$;
 

@@ -301,59 +301,63 @@ export const expressEmail = async (req: Request, res: Response): Promise<void> =
       return true;
     });
 
-    // 5. Enviar emails
-    const results = await Promise.all(
-      uniqueRecipients.map(r => {
-        const ctx: Record<string, string> = {
-          nombre: r.name,
-          fecha: new Date().toLocaleDateString('es-VE'),
-          email: r.email,
-        };
-        const personalizedHtml = replaceVariables(message, ctx);
-        const personalizedSubject = replaceVariables(subject, ctx);
+    console.log('[ExpressEmail] Unique recipients:', uniqueRecipients.map(r => r.email));
 
-        return sendEmail({
-          to: r.email,
-          subject: personalizedSubject,
-          html: personalizedHtml,
-        }).then(result => ({ ...result, recipientEmail: r.email }));
-      })
-    );
-
-    // 6. Crear notificaciones en DB solo para usuarios del sistema
-    if (systemRecipients.length > 0) {
-      const sentSystem = uniqueRecipients.filter(r => r.userId !== null);
-      if (sentSystem.length > 0) {
-        await notificationsUnified.createBulk({
-          userIds: sentSystem.map(r => r.userId!),
-          type: 'system',
-          title: subject,
-          message,
-        }).catch(err => console.error('[ExpressEmail] Error creating bulk notifications:', err));
-      }
-    }
-
-    // 7. Armar respuesta
-    const successful = results.filter(r => r.success);
-    const failed = results.filter(r => !r.success);
-    const errors: Array<{ recipient: string; error: string }> = [];
-
-    failed.forEach(r => {
-      errors.push({
-        recipient: r.recipientEmail,
-        error: (r as { success: false; error: string }).error || 'Error desconocido',
-      });
-    });
-
+    // 5. Responder inmediatamente
     res.json({
       success: true,
       data: {
         total: uniqueRecipients.length,
-        sent: successful.length,
-        failed: failed.length,
-        ...(errors.length > 0 && { errors }),
+        sent: uniqueRecipients.length,
+        failed: 0,
       },
     });
+
+    // 6. Enviar correos en background
+    (async () => {
+      try {
+        const results = await Promise.all(
+          uniqueRecipients.map(r => {
+            const ctx: Record<string, string> = {
+              nombre: r.name,
+              fecha: new Date().toLocaleDateString('es-VE'),
+              email: r.email,
+            };
+            const personalizedHtml = replaceVariables(message, ctx);
+            const personalizedSubject = replaceVariables(subject, ctx);
+
+            return sendEmail({
+              to: r.email,
+              subject: personalizedSubject,
+              html: personalizedHtml,
+            }).then(result => ({ ...result, recipientEmail: r.email }));
+          })
+        );
+
+        // 7. Crear notificaciones en DB solo para usuarios del sistema
+        if (systemRecipients.length > 0) {
+          const sentSystem = uniqueRecipients.filter(r => r.userId !== null);
+          if (sentSystem.length > 0) {
+            await notificationsUnified.createBulk({
+              userIds: sentSystem.map(r => r.userId!),
+              type: 'system',
+              title: subject,
+              message,
+            }).catch(err => console.error('[ExpressEmail] Error creating bulk notifications:', err));
+          }
+        }
+
+        const successful = results.filter(r => r.success);
+        const failed = results.filter(r => !r.success);
+        console.log('[ExpressEmail] Emails sent:', {
+          total: uniqueRecipients.length,
+          sent: successful.length,
+          failed: failed.length,
+        });
+      } catch (err) {
+        console.error('[ExpressEmail] Background error:', err);
+      }
+    })();
   } catch (error: any) {
     console.error('[ExpressEmail] Error:', error);
     res.status(500).json({

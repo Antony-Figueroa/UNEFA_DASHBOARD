@@ -173,3 +173,18 @@ export interface AuthActionResponse {
   /** Status message from the server */
   message: string;
 }
+
+/**
+ * Password policy rules from the server configuration.
+ */
+export interface PasswordPolicy {
+  minLength: number;
+  requireUppercase: boolean;
+  requireLowercase: boolean;
+  requireNumbers: boolean;
+  requireSpecial: boolean;
+  minUppercase: number;
+  minLowercase: number;
+  minNumbers: number;
+  minSpecial: number;
+}

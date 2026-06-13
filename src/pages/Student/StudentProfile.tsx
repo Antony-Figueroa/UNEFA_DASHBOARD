@@ -5,6 +5,8 @@ import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import studentService from '../../features/student/services/studentService';
 import type { StudentProfile } from '../../features/student/types';
 import Badge from '../../components/ui/badge/Badge';
+import { Tabs } from '../../components/ui/tabs/Tabs';
+import { useTabs } from '../../hooks/useTabs';
 import { User, Mail, Phone, Calendar } from 'lucide-react';
 
 const genderLabels: Record<string, string> = {
@@ -27,6 +29,13 @@ export default function StudentProfilePage() {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const tabsState = useTabs({ defaultTab: 'general' });
+
+  const PROFILE_TABS = [
+    { id: 'general', label: 'General' },
+    { id: 'academico', label: 'Académico' },
+    { id: 'contacto', label: 'Contacto' },
+  ];
 
   useEffect(() => {
     fetchProfile();
@@ -139,7 +148,9 @@ export default function StudentProfilePage() {
           </div>
         </ComponentCard>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Tabs options={PROFILE_TABS} {...tabsState.tabProps} variant="underline" className="mb-6" />
+
+        <div hidden={tabsState.activeTab !== 'general'}>
           <ComponentCard title="Datos Personales">
             <div className="space-y-4">
               <InfoRow label="Nombre Completo" value={profile.fullName} />
@@ -150,8 +161,10 @@ export default function StudentProfilePage() {
               <InfoRow label="Direccion" value={profile.address} />
             </div>
           </ComponentCard>
+        </div>
 
-          <ComponentCard title="Datos Academicos">
+        <div hidden={tabsState.activeTab !== 'academico'}>
+          <ComponentCard title="Datos Académicos">
             <div className="space-y-4">
               <InfoRow label="Carrera" value={profile.careerName} />
               <InfoRow label="Semestre" value={profile.semester} />
@@ -173,24 +186,26 @@ export default function StudentProfilePage() {
           </ComponentCard>
         </div>
 
-        <ComponentCard title="Contacto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-              <Mail className="w-5 h-5 text-brand-500" />
-              <div>
-                <p className="text-xs text-text-secondary">Correo Electronico</p>
-                <p className="font-medium">{profile.email}</p>
+        <div hidden={tabsState.activeTab !== 'contacto'}>
+          <ComponentCard title="Contacto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <Mail className="w-5 h-5 text-brand-500" />
+                <div>
+                  <p className="text-xs text-text-secondary">Correo Electronico</p>
+                  <p className="font-medium">{profile.email}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <Phone className="w-5 h-5 text-brand-500" />
+                <div>
+                  <p className="text-xs text-text-secondary">Telefono</p>
+                  <p className="font-medium">{profile.phone}</p>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-              <Phone className="w-5 h-5 text-brand-500" />
-              <div>
-                <p className="text-xs text-text-secondary">Telefono</p>
-                <p className="font-medium">{profile.phone}</p>
-              </div>
-            </div>
-          </div>
-        </ComponentCard>
+          </ComponentCard>
+        </div>
       </div>
     </>
   );

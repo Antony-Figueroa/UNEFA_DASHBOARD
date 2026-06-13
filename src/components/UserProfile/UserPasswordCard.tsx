@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../../context/auth";
@@ -10,7 +10,9 @@ import Label from "../form/Label";
 import * as authService from "../../features/auth/services/authService";
 import { securityQuestionsService, PresetQuestion } from "../../features/security-questions/services/securityQuestionsService";
 import { useToast } from "../../context/toast";
-import { changePasswordSchema, type ChangePasswordFormData } from "../../features/auth/constants/firstLoginValidation";
+import { type ChangePasswordFormData, buildPasswordField } from "../../features/auth/constants/firstLoginValidation";
+import { usePasswordPolicy } from "../../features/auth/hooks/usePasswordPolicy";
+import { z } from "zod";
 import UnifiedDialog from "../ui/dialog/UnifiedDialog";
 import { EyeClosedIcon, EyeIcon } from "lucide-react";
 
@@ -30,6 +32,19 @@ export default function UserPasswordCard() {
   const [questionsLoading, setQuestionsLoading] = useState(false);
   const [hasSecurityQuestions, setHasSecurityQuestions] = useState(false);
 
+  const { rules } = usePasswordPolicy();
+
+  const changePasswordSchemaDynamic = useMemo(() =>
+    z.object({
+      currentPassword: z.string().min(1, "Debe ingresar su contraseña actual"),
+      newPassword: buildPasswordField(rules),
+      confirmPassword: z.string().min(1, "Debe confirmar la contraseña"),
+    }).refine(data => data.newPassword === data.confirmPassword, {
+      message: "Las contraseñas no coinciden",
+      path: ["confirmPassword"]
+    }),
+  [rules]);
+
   const {
     register,
     handleSubmit,
@@ -37,7 +52,7 @@ export default function UserPasswordCard() {
     reset,
     formState: { errors },
   } = useForm<ChangePasswordFormData>({
-    resolver: zodResolver(changePasswordSchema),
+    resolver: zodResolver(changePasswordSchemaDynamic) as any,
     defaultValues: {
       currentPassword: "",
       newPassword: "",
@@ -82,15 +97,15 @@ export default function UserPasswordCard() {
   }, []);
 
   const passwordRequirements = [
-    { label: "12+ caracteres", met: newPasswordValue.length >= 12 },
-    { label: "Mayúscula", met: /[A-Z]/.test(newPasswordValue) },
-    { label: "Minúscula", met: /[a-z]/.test(newPasswordValue) },
-    { label: "Número", met: /[0-9]/.test(newPasswordValue) },
-    { label: "Especial", met: /[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(newPasswordValue) },
+    { label: `${rules.minLength}+ caracteres`, met: newPasswordValue.length >= rules.minLength },
+    ...(rules.requireUppercase ? [{ label: "Mayúscula", met: /[A-Z]/.test(newPasswordValue) }] : []),
+    ...(rules.requireLowercase ? [{ label: "Minúscula", met: /[a-z]/.test(newPasswordValue) }] : []),
+    ...(rules.requireNumbers ? [{ label: "Número", met: /[0-9]/.test(newPasswordValue) }] : []),
+    ...(rules.requireSpecial ? [{ label: "Especial", met: /[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(newPasswordValue) }] : []),
   ];
 
   const strength = passwordRequirements.filter(r => r.met).length;
-  const allRequirementsMet = strength === 5;
+  const allRequirementsMet = strength === passwordRequirements.length;
   const passwordsMatch = newPasswordValue === confirmPasswordValue && confirmPasswordValue.length > 0;
 
   const togglePassword = (field: "current" | "new" | "confirm") => {

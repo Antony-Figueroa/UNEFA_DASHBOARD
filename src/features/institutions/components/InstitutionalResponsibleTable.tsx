@@ -195,7 +195,7 @@ export default function InstitutionalResponsibleTable({
 
   const filteredData = useMemo(() => {
     const filtered = data.filter((item) => {
-      const matchesTab = activeTab === "Activas" ? Boolean(item.status) : !Boolean(item.status);
+      const matchesTab = activeTab === "Activas" ? item.status : !item.status;
       const matchesSearch =
         debouncedSearch === "" ||
         matchSearch(`${item.identificationPrefix}${item.identificationNumber}`, debouncedSearch) ||
@@ -243,8 +243,8 @@ export default function InstitutionalResponsibleTable({
   // Paginación server-side o local
   const isServerSide = !!pagination && !!onPageChange;
   const currentPage = isServerSide ? pagination.page : localPage;
-  const totalPages = isServerSide ? pagination.totalPages : Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
-  const currentData = isServerSide ? data : filteredData.slice((localPage - 1) * itemsPerPage, localPage * itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / (isServerSide ? pagination.limit : itemsPerPage)));
+  const currentData = filteredData.slice((currentPage - 1) * (isServerSide ? pagination.limit : itemsPerPage), currentPage * (isServerSide ? pagination.limit : itemsPerPage));
 
   if (status === "error") {
     return (

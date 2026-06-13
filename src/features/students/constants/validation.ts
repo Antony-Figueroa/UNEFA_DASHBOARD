@@ -57,10 +57,11 @@ export const studentSchema = z.object({
     .regex(SAFE_EMAIL_PATTERN, "Email con caracteres no permitidos")
     .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
   address: z.string()
-    .min(1, "La dirección es obligatoria")
     .max(500, "La dirección es demasiado larga")
     .regex(SAFE_TEXT_PATTERN, "Caracteres no permitidos")
-    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" }),
+    .refine(val => isSafeInput(val), { message: "Caracteres no permitidos" })
+    .optional()
+    .or(z.literal("")),
   studentType: z.string().min(1, "Seleccione el tipo de estudiante"),
   militaryRank: z.string().default("NO APLICA"),
   works: z.string().min(1, "Seleccione si trabaja"),

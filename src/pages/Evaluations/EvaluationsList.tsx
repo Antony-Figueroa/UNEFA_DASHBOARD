@@ -14,6 +14,8 @@ import apiClient from '../../api/apiClient';
 import toast from 'react-hot-toast';
 import { matchSearch } from '../../utils/searchNormalizer';
 import { useAuth } from '../../context/auth';
+import { Tabs } from '../../components/ui/tabs/Tabs';
+import { useTabs } from '../../hooks/useTabs';
 
 interface PracticeWithStudent {
   professionalPracticeId: number;
@@ -46,6 +48,18 @@ export default function EvaluationsPage() {
   const [selectedEvaluationId, setSelectedEvaluationId] = useState<number | null>(null);
 
   const { getPracticeStatus } = useEvaluations();
+
+  const tabsState = useTabs({ defaultTab: 'institucional' });
+
+  const EVAL_LIST_TABS = [
+    { id: 'institucional', label: 'Institucional' },
+    { id: 'academica', label: 'Académica' },
+    { id: 'comite', label: 'Comité' },
+  ];
+
+  const activeEvaluatorType: EvaluatorType = tabsState.activeTab === 'institucional' ? 'INSTITUCIONAL'
+    : tabsState.activeTab === 'academica' ? 'ACADEMICO'
+    : 'COMITE';
 
   const fetchPractices = async () => {
     try {
@@ -383,6 +397,8 @@ export default function EvaluationsPage() {
           )}
 
           <ComponentCard title="Prácticas Profesionales">
+            <Tabs options={EVAL_LIST_TABS} {...tabsState.tabProps} variant="underline" className="mb-6" />
+
             <div className="mb-4">
               <input
                 type="text"
@@ -404,13 +420,9 @@ export default function EvaluationsPage() {
                       Institución
                     </th>
                     <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Institucional ({(evalConfig.weights['INSTITUCIONAL'] * 100).toFixed(0)}%)
-                    </th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Académico ({(evalConfig.weights['ACADEMICO'] * 100).toFixed(0)}%)
-                    </th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Comité ({(evalConfig.weights['COMITE'] * 100).toFixed(0)}%)
+                      {tabsState.activeTab === 'institucional' && `Institucional (${(evalConfig.weights['INSTITUCIONAL'] * 100).toFixed(0)}%)`}
+                      {tabsState.activeTab === 'academica' && `Académico (${(evalConfig.weights['ACADEMICO'] * 100).toFixed(0)}%)`}
+                      {tabsState.activeTab === 'comite' && `Comité (${(evalConfig.weights['COMITE'] * 100).toFixed(0)}%)`}
                     </th>
                     <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
                       Nota Final
@@ -423,13 +435,13 @@ export default function EvaluationsPage() {
                 <tbody>
                   {practicesLoading ? (
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                      <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
                         Cargando prácticas...
                       </td>
                     </tr>
                   ) : filteredPractices.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                      <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
                         No se encontraron prácticas
                       </td>
                     </tr>
@@ -455,13 +467,7 @@ export default function EvaluationsPage() {
                             {practice.institutionName}
                           </td>
                           <td className="px-4 py-3 text-center">
-                            {getEvaluationButton(practice, 'INSTITUCIONAL')}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            {getEvaluationButton(practice, 'ACADEMICO')}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            {getEvaluationButton(practice, 'COMITE')}
+                            {getEvaluationButton(practice, activeEvaluatorType)}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <span className="text-lg font-bold text-brand-500">

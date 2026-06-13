@@ -4,12 +4,20 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import tutorService, { TutorProfile } from "../../features/tutor/services/tutorService";
 import Badge from "../../components/ui/badge/Badge";
+import { Tabs } from "../../components/ui/tabs/Tabs";
+import { useTabs } from "../../hooks/useTabs";
 import { User, Mail, Phone, Briefcase, Award, Calendar } from "lucide-react";
 
 export default function TutorProfilePage() {
   const [profile, setProfile] = useState<TutorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const tabsState = useTabs({ defaultTab: 'personal' });
+
+  const TUTOR_PROFILE_TABS = [
+    { id: 'personal', label: 'Personal' },
+    { id: 'profesional', label: 'Profesional' },
+  ];
 
   useEffect(() => {
     fetchProfile();
@@ -97,103 +105,109 @@ export default function TutorProfilePage() {
           </div>
 
           <div className="lg:col-span-2 space-y-6">
-            <ComponentCard title="Datos Personales">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <User className="w-5 h-5 text-blue-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-text-secondary">Cédula</p>
-                    <p className="font-medium text-text-emphasis">{profile.ci}</p>
-                  </div>
-                </div>
+            <Tabs options={TUTOR_PROFILE_TABS} {...tabsState.tabProps} variant="underline" />
 
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                    <Mail className="w-5 h-5 text-purple-500" />
+            <div hidden={tabsState.activeTab !== 'personal'}>
+              <ComponentCard title="Datos Personales">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <User className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-text-secondary">Cédula</p>
+                      <p className="font-medium text-text-emphasis">{profile.ci}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-text-secondary">Email</p>
-                    <p className="font-medium text-text-emphasis">{profile.email || "No registrado"}</p>
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <Phone className="w-5 h-5 text-green-500" />
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                      <Mail className="w-5 h-5 text-purple-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-text-secondary">Email</p>
+                      <p className="font-medium text-text-emphasis">{profile.email || "No registrado"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-text-secondary">Teléfono</p>
-                    <p className="font-medium text-text-emphasis">{profile.phone || "No registrado"}</p>
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-                    <Calendar className="w-5 h-5 text-orange-500" />
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <Phone className="w-5 h-5 text-green-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-text-secondary">Teléfono</p>
+                      <p className="font-medium text-text-emphasis">{profile.phone || "No registrado"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-text-secondary">Género</p>
-                    <p className="font-medium text-text-emphasis">{profile.gender || "No especificado"}</p>
-                  </div>
-                </div>
-              </div>
-            </ComponentCard>
 
-            <ComponentCard title="Información Profesional">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-                    <Briefcase className="w-5 h-5 text-indigo-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-text-secondary">Título</p>
-                    <p className="font-medium text-text-emphasis">{profile.profession || "No especificada"}</p>
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                      <Calendar className="w-5 h-5 text-orange-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-text-secondary">Género</p>
+                      <p className="font-medium text-text-emphasis">{profile.gender || "No especificado"}</p>
+                    </div>
                   </div>
                 </div>
+              </ComponentCard>
+            </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                    <Award className="w-5 h-5 text-purple-500" />
+            <div hidden={tabsState.activeTab !== 'profesional'}>
+              <ComponentCard title="Información Profesional">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+                      <Briefcase className="w-5 h-5 text-indigo-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-text-secondary">Título</p>
+                      <p className="font-medium text-text-emphasis">{profile.profession || "No especificada"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-text-secondary">Grado de Instrucción</p>
-                    <p className="font-medium text-text-emphasis">{profile.titulo || "No especificado"}</p>
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-teal-50 dark:bg-teal-900/20 rounded-lg">
-                    <Award className="w-5 h-5 text-teal-500" />
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                      <Award className="w-5 h-5 text-purple-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-text-secondary">Grado de Instrucción</p>
+                      <p className="font-medium text-text-emphasis">{profile.titulo || "No especificado"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-text-secondary">Categoría</p>
-                    <p className="font-medium text-text-emphasis">{profile.category || "No especificada"}</p>
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                    <Briefcase className="w-5 h-5 text-amber-500" />
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-teal-50 dark:bg-teal-900/20 rounded-lg">
+                      <Award className="w-5 h-5 text-teal-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-text-secondary">Categoría</p>
+                      <p className="font-medium text-text-emphasis">{profile.category || "No especificada"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-text-secondary">Condición</p>
-                    <p className="font-medium text-text-emphasis">{profile.condition || "No especificada"}</p>
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-rose-50 dark:bg-rose-900/20 rounded-lg">
-                    <Award className="w-5 h-5 text-rose-500" />
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                      <Briefcase className="w-5 h-5 text-amber-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-text-secondary">Condición</p>
+                      <p className="font-medium text-text-emphasis">{profile.condition || "No especificada"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-text-secondary">Dedicación</p>
-                    <p className="font-medium text-text-emphasis">{profile.dedication || "No especificada"}</p>
+
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-rose-50 dark:bg-rose-900/20 rounded-lg">
+                      <Award className="w-5 h-5 text-rose-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-text-secondary">Dedicación</p>
+                      <p className="font-medium text-text-emphasis">{profile.dedication || "No especificada"}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </ComponentCard>
+              </ComponentCard>
+            </div>
           </div>
         </div>
       </div>

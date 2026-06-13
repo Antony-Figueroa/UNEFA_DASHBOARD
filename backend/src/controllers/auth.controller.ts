@@ -587,3 +587,23 @@ export const updateLocale = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ success: false, message: 'Error del servidor' });
   }
 };
+
+export const getPasswordPolicy = async (_req: Request, res: Response) => {
+  try {
+    const config = await getConfig();
+    res.json({
+      minLength: config?.USER_LENGTH || 12,
+      requireUppercase: (config?.USER_UPPERCASE ?? 1) === 1,
+      requireLowercase: (config?.USER_LOWERCASE ?? 1) === 1,
+      requireNumbers: (config?.USER_NUMBERS ?? 1) === 1,
+      requireSpecial: (config?.USER_SPECIAL_CHARACTERS ?? 1) === 1,
+      minUppercase: config?.USER_NUM_UPPERCASE || 1,
+      minLowercase: config?.USER_NUM_LOWERCASE || 1,
+      minNumbers: config?.USER_NUM_NUMBERS || 1,
+      minSpecial: config?.USER_NUM_SPECIAL_CHARACTERS || 1,
+    });
+  } catch (error) {
+    console.error('Get Password Policy Error:', error);
+    res.status(500).json({ message: 'Error al obtener política de contraseñas' });
+  }
+};

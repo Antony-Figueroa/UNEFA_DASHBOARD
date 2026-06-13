@@ -266,7 +266,7 @@ export default function UserTable({
                 </div>
             </div>
 
-            {/* Tabla */}
+            {/* Vista de Escritorio (Tabla) */}
             <div className="hidden md:block overflow-x-auto">
                 <Table className="table-root">
                     <TableHeader className="table-header-row bg-bg-secondary dark:bg-bg-dark/50">
@@ -332,6 +332,68 @@ export default function UserTable({
                         )}
                     </TableBody>
                 </Table>
+            </div>
+
+            {/* Vista Móvil (Tarjetas) */}
+            <div className="md:hidden divide-y divide-border-light dark:divide-border-dark">
+                {data.length > 0 ? (
+                    data.map((user) => (
+                        <div key={user.id} className="p-4 bg-white dark:bg-transparent transition-colors">
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="flex-1 text-center uppercase">
+                                    <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate">
+                                        {user.name} {user.surname}
+                                    </h3>
+                                    <p className="text-xs text-text-tertiary mt-1 truncate">{user.userCi}</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-4 space-y-4 border-t border-border-light dark:border-border-dark pt-4">
+                                <div className="grid grid-cols-1 gap-y-4 text-center">
+                                    <div className="flex flex-col items-center">
+                                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1">Correo Electrónico</p>
+                                        <p className="text-sm text-text-secondary dark:text-text-secondary font-medium truncate w-full max-w-62.5 lowercase">{maskEmail(user.email)}</p>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1">Rol</p>
+                                        <Badge color={user.role === 1 ? "error" : "info"} variant="light" size="sm">
+                                            {rolesMap[user.role] || "USUARIO"}
+                                        </Badge>
+                                    </div>
+                                </div>
+
+                                <ActionButtons
+                                    status={user.status}
+                                    onEdit={() => onEdit?.(user)}
+                                    onViewDetail={() => onViewDetail?.(user)}
+                                    onToggleStatus={() => onToggleStatus?.(user)}
+                                    onResetPassword={() => onResetPassword?.(user)}
+                                    userId={user.id}
+                                    currentUserId={currentUserId}
+                                    isMobile
+                                />
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <div className="py-16 text-center animate-fadeIn">
+                        <div className="inline-flex mb-4 rounded-full bg-bg-secondary p-4 dark:bg-white/5">
+                            <svg className="h-8 w-8 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis">No se encontraron usuarios</h3>
+                        <p className="mt-1 text-xs text-text-secondary dark:text-text-tertiary max-w-50 mx-auto">Intenta ajustar los filtros para encontrar lo que buscas.</p>
+                        {(filters.ci || filters.name || filters.surname || filters.role) && (
+                            <button
+                                onClick={onClearFilters}
+                                className="mt-4 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                            >
+                                Ver todos los usuarios
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Paginación */}

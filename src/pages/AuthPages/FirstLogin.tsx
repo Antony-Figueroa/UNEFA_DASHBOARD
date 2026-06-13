@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { useForm, Controller, useFieldArray } from "react-hook-form";
+import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import PageMeta from "../../components/common/PageMeta";
 import AuthLayout from "./AuthPageLayout";
@@ -12,7 +13,8 @@ import { SecurityQuestion, SecurityAnswer } from "../../features/auth/types";
 import { EyeClosedIcon, EyeIcon, ShieldCheckIcon, UserIcon, LockIcon, KeyRoundIcon, CheckCircleIcon, XCircleIcon, ChevronRightIcon } from "lucide-react";
 import CustomSelect from "../../components/form/CustomSelect";
 import { useToast } from "../../context/toast";
-import { firstLoginSchema, changePasswordSchema, resetPasswordSchema, simplePasswordSchema, FirstLoginFormData } from "../../features/auth/constants/firstLoginValidation";
+import { firstLoginSchema, changePasswordSchema, resetPasswordSchema, simplePasswordSchema, FirstLoginFormData, buildPasswordField } from "../../features/auth/constants/firstLoginValidation";
+import { usePasswordPolicy } from "../../features/auth/hooks/usePasswordPolicy";
 import apiClient from "../../api/apiClient";
 
 const steps = [
@@ -43,6 +45,7 @@ export default function FirstLogin() {
   const [loading, setLoading] = useState(false);
   const [presetQuestions, setPresetQuestions] = useState<SecurityQuestion[]>([]);
   const isFirstLogin = location.state?.isFirstLogin !== false; // default true
+  const { rules } = usePasswordPolicy();
 
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -67,10 +70,16 @@ export default function FirstLogin() {
     fetchPhonePrefixes();
   }, []);
 
-  const schema = useMemo(() => 
-    isFirstLogin ? firstLoginSchema : resetPasswordSchema,
-    [isFirstLogin]
-  );
+  const schema = useMemo(() => {
+    const base = isFirstLogin ? firstLoginSchema : resetPasswordSchema;
+    return z.object({
+      ...base.shape,
+      newPassword: buildPasswordField(rules)
+    }).refine((data: any) => data.newPassword === data.confirmPassword, {
+      message: "Las contraseñas no coinciden",
+      path: ["confirmPassword"]
+    });
+  }, [isFirstLogin, rules]);
 
   const {
     register,
@@ -112,28 +121,32 @@ export default function FirstLogin() {
   const securityQuestions = watch("securityQuestions");
   const acceptTerms = watch("acceptTerms");
 
-  const getPasswordStrength = (password: string) => {
-    let strength = 0;
-    if (password.length >= 12) strength += 1;
-    if (/[A-Z]/.test(password)) strength += 1;
-    if (/[a-z]/.test(password)) strength += 1;
-    if (/[0-9]/.test(password)) strength += 1;
-    if (/[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(password)) strength += 1;
-    return strength;
-  };
+  const totalChecks = 1 + [rules.requireUppercase, rules.requireLowercase, rules.requireNumbers, rules.requireSpecial].filter(Boolean).length;
 
-  const strength = useMemo(() => getPasswordStrength(newPassword), [newPassword]);
-  const strengthColor = strength <= 2 ? "bg-red-500" : strength <= 4 ? "bg-yellow-500" : "bg-green-500";
-  const strengthText = strength <= 2 ? "Débil" : strength <= 4 ? "Media" : "Fuerte";
-  const strengthPercent = (strength / 5) * 100;
+  const getPasswordStrength = useCallback((password: string) => {
+    let strength = 0;
+    const checks = [
+      password.length >= rules.minLength,
+      !rules.requireUppercase || /[A-Z]/.test(password),
+      !rules.requireLowercase || /[a-z]/.test(password),
+      !rules.requireNumbers || /[0-9]/.test(password),
+      !rules.requireSpecial || /[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(password),
+    ];
+    return checks.filter(Boolean).length;
+  }, [rules]);
+
+  const strength = useMemo(() => getPasswordStrength(newPassword), [newPassword, getPasswordStrength]);
+  const strengthColor = strength <= 2 ? "bg-red-500" : strength < totalChecks ? "bg-yellow-500" : "bg-green-500";
+  const strengthText = strength <= 2 ? "Débil" : strength < totalChecks ? "Media" : "Fuerte";
+  const strengthPercent = (strength / totalChecks) * 100;
 
   const passwordRequirements = useMemo(() => [
-    { met: newPassword.length >= 12, text: "Mínimo 12 caracteres" },
-    { met: /[A-Z]/.test(newPassword), text: "Una mayúscula" },
-    { met: /[a-z]/.test(newPassword), text: "Una minúscula" },
-    { met: /[0-9]/.test(newPassword), text: "Un número" },
-    { met: /[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(newPassword), text: "Un carácter especial" }
-  ], [newPassword]);
+    { met: newPassword.length >= rules.minLength, text: `Mínimo ${rules.minLength} caracteres` },
+    ...(rules.requireUppercase ? [{ met: /[A-Z]/.test(newPassword), text: "Una mayúscula" }] : []),
+    ...(rules.requireLowercase ? [{ met: /[a-z]/.test(newPassword), text: "Una minúscula" }] : []),
+    ...(rules.requireNumbers ? [{ met: /[0-9]/.test(newPassword), text: "Un número" }] : []),
+    ...(rules.requireSpecial ? [{ met: /[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(newPassword), text: "Un carácter especial" }] : []),
+  ], [newPassword, rules]);
 
   const passwordsMatch = confirmPassword.length > 0 && newPassword === confirmPassword;
 

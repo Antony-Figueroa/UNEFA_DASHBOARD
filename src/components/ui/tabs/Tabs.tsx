@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '../../../utils/cn';
 
 /**
@@ -24,7 +24,7 @@ interface TabsProps {
   /** Callback fired when a tab is clicked. */
   onTabChange: (id: string) => void;
   /** Visual variant of the tabs. Defaults to 'underline'. */
-  variant?: 'pills' | 'underline';
+  variant?: 'pills' | 'underline' | 'modal';
   /** Additional CSS classes for the container. */
   className?: string;
 }
@@ -49,18 +49,63 @@ export const Tabs: React.FC<TabsProps> = ({
   variant = 'underline',
   className = "",
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const container = containerRef.current;
+
+    const updateIndicator = () => {
+      const activeButton = container.querySelector(`[data-tab-id="${activeTab}"]`) as HTMLElement | null;
+      if (activeButton) {
+        const { offsetLeft, offsetWidth } = activeButton;
+        setIndicatorStyle({ left: offsetLeft, width: offsetWidth });
+      }
+    };
+
+    updateIndicator();
+
+    const observer = new ResizeObserver(updateIndicator);
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, [activeTab, options]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    const currentIndex = options.findIndex(t => t.id === activeTab);
+    let nextIndex: number;
+
+    switch (e.key) {
+      case 'ArrowLeft':
+        e.preventDefault();
+        nextIndex = currentIndex <= 0 ? options.length - 1 : currentIndex - 1;
+        onTabChange(options[nextIndex].id);
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        nextIndex = currentIndex >= options.length - 1 ? 0 : currentIndex + 1;
+        onTabChange(options[nextIndex].id);
+        break;
+    }
+  };
+
   if (variant === 'pills') {
     return (
       <div 
+        ref={containerRef}
         className={cn("flex flex-wrap gap-2 sm:gap-4", className)} 
         role="tablist"
+        aria-orientation="horizontal"
         aria-label="Tabs de navegación"
+        onKeyDown={handleKeyDown}
       >
         {options.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
+              data-tab-id={tab.id}
               role="tab"
               aria-selected={isActive}
               aria-controls={`panel-${tab.id}`}
@@ -90,20 +135,26 @@ export const Tabs: React.FC<TabsProps> = ({
     );
   }
 
+  const isModal = variant === 'modal';
+
   return (
     <div 
+      ref={containerRef}
       className={cn(
-        "flex border-b border-border-light dark:border-border-dark overflow-x-auto scrollbar-hide", 
+        "flex border-b border-border-light dark:border-border-dark overflow-x-auto scrollbar-hide relative", 
         className
-      )} 
+      )}
       role="tablist"
+      aria-orientation="horizontal"
       aria-label="Tabs de navegación"
+      onKeyDown={handleKeyDown}
     >
       {options.map((tab) => {
         const isActive = activeTab === tab.id;
         return (
           <button
             key={tab.id}
+            data-tab-id={tab.id}
             role="tab"
             aria-selected={isActive}
             aria-controls={`panel-${tab.id}`}
@@ -111,11 +162,14 @@ export const Tabs: React.FC<TabsProps> = ({
             tabIndex={isActive ? 0 : -1}
             onClick={() => onTabChange(tab.id)}
             className={cn(
-              "pb-3 px-4 text-sm font-medium transition-colors relative whitespace-nowrap min-w-max",
+              isModal
+                ? "py-2 px-3 text-xs font-medium transition-colors relative whitespace-nowrap min-w-max text-ellipsis overflow-hidden"
+                : "pb-3 px-4 text-sm font-medium transition-colors relative whitespace-nowrap min-w-max",
               isActive 
                 ? "text-brand-500" 
                 : "text-text-tertiary hover:text-text-primary dark:hover:text-text-emphasis"
             )}
+            title={isModal ? tab.label : undefined}
           >
             {tab.label}
             {tab.count !== undefined && (
@@ -123,15 +177,14 @@ export const Tabs: React.FC<TabsProps> = ({
                 {tab.count}
               </span>
             )}
-            {isActive && (
-              <div 
-                className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" 
-                aria-hidden="true"
-              />
-            )}
           </button>
         );
       })}
+      <div
+        className="absolute bottom-0 h-0.5 bg-brand-500 transition-all duration-300 ease-in-out"
+        style={{ left: `${indicatorStyle.left}px`, width: `${indicatorStyle.width}px` }}
+        aria-hidden="true"
+      />
     </div>
   );
 };

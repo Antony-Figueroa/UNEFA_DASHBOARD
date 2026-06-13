@@ -21,6 +21,7 @@ router.post('/verify-answers-reset', authController.verifySecurityAnswersAndRese
 router.post('/reset-password', authController.resetPassword);
 router.post('/request-recovery', authController.requestPasswordReset);
 router.post('/reset-with-token', authController.resetPasswordWithToken);
+router.get('/password-policy', authController.getPasswordPolicy);
 router.post('/logout', authController.logout);
 
 router.post('/avatar', authenticateToken, authController.uploadAvatar);

@@ -4,7 +4,7 @@
  * Orquestra los componentes del feature, delegando toda la lógica al hook.
  */
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import ComponentCard from '../../components/common/ComponentCard';
@@ -22,6 +22,8 @@ import { EvaluationCell } from '../../features/evaluations-culmination/component
 import { StatsCardsGrid } from '../../features/evaluations-culmination/components/StatsCards';
 import { EvaluationFilters } from '../../features/evaluations-culmination/components/EvaluationFilters';
 import { useEvaluationsCulmination } from '../../features/evaluations-culmination/hooks/useEvaluationsCulmination';
+import { Tabs } from '../../components/ui/tabs/Tabs';
+import { useTabs } from '../../hooks/useTabs';
 import type { EvaluatorType } from '../../features/evaluations/types';
 import type { PracticeWithEvaluations } from '../../features/evaluations-culmination/types';
 import {
@@ -31,8 +33,7 @@ import {
 } from '../../features/evaluations-culmination/types';
 
 // ─── Tabs ─────────────────────────────────────────────────
-type TabType = 'evaluations' | 'results' | 'culmination';
-const TABS: { id: TabType; label: string }[] = [
+const EVAL_TABS = [
   { id: 'evaluations', label: 'Evaluaciones' },
   { id: 'results', label: 'Resultados' },
   { id: 'culmination', label: 'Culminación' },
@@ -85,7 +86,7 @@ const getCulminationBadge = (status: string) => {
 // ─── Page Component ───────────────────────────────────────
 export default function EvaluationsAndCulminationPage() {
   const hook = useEvaluationsCulmination();
-  const [activeTab, setActiveTab] = useState<TabType>('evaluations');
+  const tabsState = useTabs({ defaultTab: 'evaluations' });
 
   // Opciones para filtros (derivadas del meta del hook)
   const periodOptions = useMemo(() => [
@@ -452,7 +453,7 @@ export default function EvaluationsAndCulminationPage() {
   // ─── Tab content switch ─────────────────────────────────
   const renderTabContent = () => {
     if (hook.loading) {
-      return <TableSkeleton columns={activeTab === 'evaluations' ? 9 : activeTab === 'results' ? 6 : 7} rows={10} />;
+      return <TableSkeleton columns={tabsState.activeTab === 'evaluations' ? 9 : tabsState.activeTab === 'results' ? 6 : 7} rows={10} />;
     }
 
     if (hook.filteredPractices.length === 0) {
@@ -464,7 +465,7 @@ export default function EvaluationsAndCulminationPage() {
       );
     }
 
-    switch (activeTab) {
+    switch (tabsState.activeTab) {
       case 'evaluations': return renderEvaluationsTab();
       case 'results': return renderResultsTab();
       case 'culmination': return renderCulminationTab();
@@ -498,29 +499,11 @@ export default function EvaluationsAndCulminationPage() {
         </div>
 
         {/* Tabs */}
-        <div className="border-b border-border-default dark:border-border-dark">
-          <nav className="-mb-px flex space-x-8">
-            {TABS.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors
-                  ${activeTab === tab.id
-                    ? 'border-brand-500 text-brand-600 dark:text-brand-400'
-                    : 'border-transparent text-text-secondary hover:text-text-primary hover:border-gray-300 dark:text-text-tertiary dark:hover:text-white'
-                  }
-                `}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
+        <Tabs options={EVAL_TABS} {...tabsState.tabProps} variant="underline" className="mb-6" />
 
         {/* Filtros y contenido */}
         <ComponentCard title="Listado de Prácticas">
-          {activeTab !== 'culmination' && (
+          {tabsState.activeTab !== 'culmination' && (
             <EvaluationFilters
               searchTerm={hook.searchTerm}
               onSearchChange={(v) => { hook.setSearchTerm(v); hook.setCurrentPage(1); }}

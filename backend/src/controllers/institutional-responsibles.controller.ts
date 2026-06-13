@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { cacheManager } from '../lib/cache-manager.js';
 import * as personService from '../services/person.service.js';
+import { sanitizeText } from '../utils/text-utils.js';
 
 const TABLE_NAME = 't_institution_manager';
 const PIVOT_TABLE = 't_institution_manager_institution';
@@ -140,11 +141,11 @@ const mapDBToFrontend = (r: DBInstitutionalResponsible) => {
 function extractPersonData(body: any) {
   return {
     ci: `${body.identificationPrefix || 'V'}-${body.identificationNumber}`,
-    firstName: String(body.firstName || '').toUpperCase(),
-    middleName: body.middleName ? String(body.middleName).toUpperCase() : null,
-    lastName: String(body.lastName || '').toUpperCase(),
-    secondLastName: body.secondLastName ? String(body.secondLastName).toUpperCase() : null,
-    email: String(body.email || '').toUpperCase(),
+    firstName: sanitizeText(body.firstName) ?? '',
+    middleName: sanitizeText(body.middleName),
+    lastName: sanitizeText(body.lastName) ?? '',
+    secondLastName: sanitizeText(body.secondLastName),
+    email: body.email || '',
     phone: body.phone || null,
   };
 }
@@ -342,7 +343,7 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
         const pivotInserts = validInstitutions.map((inst: any) => ({
           MANAGER_ID: newManager.MANAGER_ID,
           INSTITUTION_ID: parseInt(inst.institutionId),
-          cargo: inst.cargo ? String(inst.cargo).toUpperCase() : null
+          cargo: sanitizeText(inst.cargo)
         }));
 
         const { error: pivotError } = await supabase
@@ -450,7 +451,7 @@ export const updateInstitutionalResponsible = async (req: Request, res: Response
         const newInstitutions = (r.institutions as Array<{ institutionId: string; cargo: string }>)
           .map(inst => ({
             institutionId: parseInt(inst.institutionId),
-            cargo: inst.cargo ? String(inst.cargo).toUpperCase() : ''
+            cargo: sanitizeText(inst.cargo) ?? ''
           }))
           .filter(inst => !isNaN(inst.institutionId) && inst.institutionId > 0);
 
@@ -487,10 +488,10 @@ export const updateInstitutionalResponsible = async (req: Request, res: Response
               .insert({
                 MANAGER_ID: parseInt(id),
                 INSTITUTION_ID: instIdNum,
-                cargo: r.cargo ? String(r.cargo).toUpperCase() : null
-              });
+              cargo: sanitizeText(r.cargo)
+            });
 
-            if (pivotError) throw pivotError;
+      if (pivotError) throw pivotError;
           }
         }
       }

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { permissionService } from '../services/permission.service.js';
+import { sanitizeText } from '../utils/text-utils.js';
 
 export interface RoleResponse {
   id: number;
@@ -244,7 +245,7 @@ export const createRole = async (req: Request, res: Response) => {
       .from('t_roles')
       .insert({
         ID_ROLS: newRoleId,
-        NAME: name.trim().toUpperCase(),
+        NAME: sanitizeText(name) ?? name.trim().toUpperCase(),
         DESCRIPTION: description?.trim() || null,
         STATUS: 1,
         IS_SYSTEM: false,
@@ -285,7 +286,7 @@ export const createRole = async (req: Request, res: Response) => {
       message: 'Rol creado exitosamente',
       data: {
         id: newRoleId,
-        name: name.trim().toUpperCase(),
+        name: sanitizeText(name) ?? name.trim().toUpperCase(),
         description: description?.trim() || '',
         userCount: 0,
         permissions: (permissionIds || []).map(String),

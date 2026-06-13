@@ -1,5 +1,33 @@
 import * as z from "zod";
 
+export interface PasswordRules {
+  minLength: number;
+  requireUppercase: boolean;
+  requireLowercase: boolean;
+  requireNumbers: boolean;
+  requireSpecial: boolean;
+}
+
+export function buildPasswordField(rules: PasswordRules): z.ZodString {
+  let schema = z.string()
+    .min(rules.minLength, `La contraseña debe tener al menos ${rules.minLength} caracteres`);
+  
+  if (rules.requireUppercase) {
+    schema = schema.refine(val => /[A-Z]/.test(val), "Debe contener al menos una mayúscula");
+  }
+  if (rules.requireLowercase) {
+    schema = schema.refine(val => /[a-z]/.test(val), "Debe contener al menos una minúscula");
+  }
+  if (rules.requireNumbers) {
+    schema = schema.refine(val => /[0-9]/.test(val), "Debe contener al menos un número");
+  }
+  if (rules.requireSpecial) {
+    schema = schema.refine(val => /[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(val), "Debe contener al menos un carácter especial");
+  }
+  
+  return schema;
+}
+
 const passwordRegex = {
   uppercase: /[A-Z]/,
   lowercase: /[a-z]/,

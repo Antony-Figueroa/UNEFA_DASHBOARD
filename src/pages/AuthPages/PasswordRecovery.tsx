@@ -8,6 +8,7 @@ import * as authService from "../../features/auth/services/authService";
 import { EyeClosedIcon, EyeIcon } from "lucide-react";
 import { useToast } from "../../context/toast";
 import { formatCedulaDisplay, cleanCedula } from "../../utils/inputFormat";
+import { usePasswordPolicy } from "../../features/auth/hooks/usePasswordPolicy";
 
 interface ApiError {
   response?: {
@@ -45,12 +46,15 @@ export default function PasswordRecovery() {
   const [securityQuestions, setSecurityQuestions] = useState<SecurityQuestion[]>([]);
   const [securityAnswers, setSecurityAnswers] = useState<Record<number, string>>({});
   const [maskedEmail, setMaskedEmail] = useState("");
+  const { rules } = usePasswordPolicy();
 
   const isPasswordStrong = (pass: string) => {
-    return pass.length >= 12 && 
-           /[A-Z]/.test(pass) && 
-           /[a-z]/.test(pass) && 
-           /\d/.test(pass);
+    if (pass.length < rules.minLength) return false;
+    if (rules.requireUppercase && !/[A-Z]/.test(pass)) return false;
+    if (rules.requireLowercase && !/[a-z]/.test(pass)) return false;
+    if (rules.requireNumbers && !/[0-9]/.test(pass)) return false;
+    if (rules.requireSpecial && !/[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(pass)) return false;
+    return true;
   };
 
   const handleCiChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -254,32 +258,37 @@ export default function PasswordRecovery() {
   const inputClass = "w-full px-4 py-3.5 text-base text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200";
   const labelClass = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2";
 
-  const renderPasswordStrength = (password: string) => (
-    <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Requisitos de seguridad:</p>
-      <div className="grid grid-cols-2 gap-1.5">
-        {[
-          { test: password.length >= 12, text: "12+ caracteres" },
-          { test: /[A-Z]/.test(password), text: "Mayúscula" },
-          { test: /[a-z]/.test(password), text: "Minúscula" },
-          { test: /[0-9]/.test(password), text: "Un número" },
-        ].map((req, i) => (
-          <div key={i} className="flex items-center gap-1.5">
-            <div className={`size-3.5 rounded-full flex items-center justify-center ${req.test ? 'bg-green-100 dark:bg-green-500/20' : 'bg-gray-200 dark:bg-gray-700'}`}>
-              {req.test && (
-                <svg className="size-2.5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              )}
+  const renderPasswordStrength = (password: string) => {
+    const requirements = [
+      { test: password.length >= rules.minLength, text: `${rules.minLength}+ caracteres` },
+      ...(rules.requireUppercase ? [{ test: /[A-Z]/.test(password), text: "Mayúscula" }] : []),
+      ...(rules.requireLowercase ? [{ test: /[a-z]/.test(password), text: "Minúscula" }] : []),
+      ...(rules.requireNumbers ? [{ test: /[0-9]/.test(password), text: "Un número" }] : []),
+      ...(rules.requireSpecial ? [{ test: /[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(password), text: "Carácter especial" }] : []),
+    ];
+  
+    return (
+      <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Requisitos de seguridad:</p>
+        <div className="grid grid-cols-2 gap-1.5">
+          {requirements.map((req, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <div className={`size-3.5 rounded-full flex items-center justify-center ${req.test ? 'bg-green-100 dark:bg-green-500/20' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                {req.test && (
+                  <svg className="size-2.5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </div>
+              <span className={`text-xs ${req.test ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                {req.text}
+              </span>
             </div>
-            <span className={`text-xs ${req.test ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`}>
-              {req.text}
-            </span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <>
@@ -369,7 +378,7 @@ export default function PasswordRecovery() {
                   <input
                     id="newPassword"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Mínimo 12 caracteres"
+                    placeholder={`Mínimo ${rules.minLength} caracteres`}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required
@@ -599,7 +608,7 @@ export default function PasswordRecovery() {
                   <input
                     id="newPasswordQuestions"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Mínimo 12 caracteres"
+                    placeholder={`Mínimo ${rules.minLength} caracteres`}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     required

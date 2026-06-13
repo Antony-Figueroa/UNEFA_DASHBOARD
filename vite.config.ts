@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
+import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 
 // https://vite.dev/config/
@@ -17,6 +18,47 @@ export default defineConfig(() => {
       svgr(),
       nodePolyfills({
         include: ["buffer", "process", "util", "stream"],
+      }),
+      VitePWA({
+        registerType: "autoUpdate",
+        includeAssets: ["favicon.png", "logo-nuevo.png"],
+        manifest: {
+          name: "UNEFA Dashboard",
+          short_name: "UNEFA",
+          description: "Sistema de Gestión Académica",
+          theme_color: "#1e40af",
+          background_color: "#f8fafc",
+          display: "standalone",
+          icons: [
+            {
+              src: "pwa-192x192.png",
+              sizes: "192x192",
+              type: "image/png",
+              purpose: "any maskable",
+            },
+            {
+              src: "pwa-512x512.png",
+              sizes: "512x512",
+              type: "image/png",
+              purpose: "any maskable",
+            },
+          ],
+        },
+        workbox: {
+          globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+          maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB (react-pdf.browser.js is ~2.2 MB)
+          runtimeCaching: [
+            {
+              urlPattern: /^https?:\/\/.*\/api\/.*/i,
+              handler: "NetworkOnly",
+              options: {
+                precacheFallback: {
+                  fallbackURL: "/",
+                },
+              },
+            },
+          ],
+        },
       }),
     ],
     build: {

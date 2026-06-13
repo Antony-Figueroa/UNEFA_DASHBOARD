@@ -28,7 +28,7 @@ export const InstitutionalResponsiblePDF: React.FC<InstitutionalResponsiblePDFPr
       <View style={pdfStyles.table}>
         <View style={[pdfStyles.tableRow, pdfStyles.tableHeader]}>
           <Text style={[pdfStyles.tableCell, { flex: 1.2 }]}>Cédula</Text>
-          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Nombre Completo</Text>
+          <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Nombres y Apellidos</Text>
           <Text style={[pdfStyles.tableCell, { flex: 1.5 }]}>Título</Text>
           <Text style={[pdfStyles.tableCell, { flex: 2 }]}>Empresa o Institución</Text>
           <Text style={[pdfStyles.tableCell, { flex: 2.5 }]}>Contacto</Text>

@@ -17,6 +17,7 @@ import {
   ActiveSession,
   NotificationPreference,
   AvatarResponse,
+  PasswordPolicy,
 } from "../types";
 
 /**
@@ -247,6 +248,11 @@ export const updateLocale = async (locale: string): Promise<{ success: boolean; 
   return response.data;
 };
 
+export const getPasswordPolicy = async (): Promise<PasswordPolicy> => {
+  const response = await apiClient.get<PasswordPolicy>('/auth/password-policy');
+  return response.data;
+};
+
 export const authService = {
   login,
   getMe,
@@ -270,6 +276,7 @@ export const authService = {
   saveNotificationPrefs,
   deactivateAccount,
   updateLocale,
+  getPasswordPolicy,
   validateToken: async (_token: string): Promise<AuthUser> => {
     // Si ya hay un token en el storage, getMe usará el interceptor para validarlo
     const response = await getMe();

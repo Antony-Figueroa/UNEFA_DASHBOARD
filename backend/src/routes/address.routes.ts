@@ -9,6 +9,8 @@ import {
   getAddressCoincidence,
   getAddressStats,
   getInstitutionSuggestions,
+  getGeoOptions,
+  getAddressTypes,
 } from '../controllers/address.controller.js';
 import { authenticateToken, requirePermission } from '../middlewares/auth.middleware.js';
 
@@ -23,5 +25,7 @@ router.patch('/:id/primary', authenticateToken, requirePermission('institutions:
 router.get('/coincidence', authenticateToken, getAddressCoincidence);
 router.get('/stats', authenticateToken, requirePermission('dashboard:view'), getAddressStats);
 router.get('/suggestions', authenticateToken, getInstitutionSuggestions);
+router.get('/geo-options', authenticateToken, getGeoOptions);
+router.get('/address-types', authenticateToken, getAddressTypes);
 
 export default router;

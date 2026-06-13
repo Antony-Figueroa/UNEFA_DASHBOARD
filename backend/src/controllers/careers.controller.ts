@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as careersService from '../services/careers.service.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { sanitizeText } from '../utils/text-utils.js';
 import { auditCreate, auditUpdate, auditDelete, auditStatusChange } from '../utils/audit-helpers.js';
 import { sendNotificationByRole } from '../services/sse.service.js';
 
@@ -90,7 +91,7 @@ export const createCareer = async (req: AuthRequest, res: Response) => {
       try {
         await auditCreate(req, 't_career', {
           ...req.body,
-          CAREER_NAME: String(careerName).toUpperCase()
+          CAREER_NAME: sanitizeText(careerName) ?? ''
         }, ['CAREER_NAME', 'CAREER_CODE', 'CAREER_ABBREVIATION', 'MINIMUM_GRADE', 'CAREER_TYPE']);
       } catch (auditError) {
         console.error('[Audit] Error auditing career creation:', auditError);

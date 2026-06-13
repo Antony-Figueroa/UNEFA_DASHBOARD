@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { sanitizeText } from '../utils/text-utils.js';
 import { auditCreate, auditUpdate, auditDelete, auditStatusChange } from '../utils/audit-helpers.js';
 import * as personService from '../services/person.service.js';
 
@@ -139,10 +140,10 @@ const maritalFromDb: Record<string, string> = { 'S': 'SOLTERO', 'C': 'CASADO', '
 function extractPersonData(body: any) {
   const data: Record<string, unknown> = {
     ci: `${body.identificationPrefix || 'V'}-${body.identificationNumber}`,
-    firstName: body.firstName,
-    middleName: body.middleName || null,
-    lastName: body.lastName,
-    secondLastName: body.secondLastName || null,
+    firstName: sanitizeText(body.firstName) ?? '',
+    middleName: sanitizeText(body.middleName),
+    lastName: sanitizeText(body.lastName) ?? '',
+    secondLastName: sanitizeText(body.secondLastName),
     gender: body.sex || null,
     maritalStatus: body.civilStatus ? (maritalToDb[body.civilStatus.toUpperCase()] || null) : null,
     phone: body.phone || null,
@@ -152,18 +153,18 @@ function extractPersonData(body: any) {
   // Solo incluir birthDate y address cuando tienen valor real
   // Evita que null/undefined sobrescriba datos existentes en updatePerson
   if (body.birthDate) data.birthDate = body.birthDate;
-  if (body.address) data.address = body.address;
+  if (body.address) data.address = sanitizeText(body.address);
 
   return data as any;
 }
 
 function extractTutorData(body: any) {
   return {
-    PROFESSION: body.profession,
-    CONDITION: body.condition,
-    DEDICATION: body.dedication,
-    CATEGORY: body.category,
-    TITULO: body.titulo || null,
+    PROFESSION: sanitizeText(body.profession) ?? '',
+    CONDITION: sanitizeText(body.condition) ?? '',
+    DEDICATION: sanitizeText(body.dedication) ?? '',
+    CATEGORY: sanitizeText(body.category) ?? '',
+    TITULO: sanitizeText(body.titulo),
     STATUS: body.status !== undefined ? (body.status ? 1 : 0) : 1,
   };
 }

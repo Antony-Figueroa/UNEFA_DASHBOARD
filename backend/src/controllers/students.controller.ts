@@ -3,6 +3,7 @@ import { dbManager } from '../lib/db-manager.js';
 import { cacheManager } from '../lib/cache-manager.js';
 import { supabase } from '../lib/supabase.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { sanitizeText } from '../utils/text-utils.js';
 import { auditCreate, auditUpdate, auditDelete, auditStatusChange } from '../utils/audit-helpers.js';
 import * as personService from '../services/person.service.js';
 import { lookupCedula } from '../services/cedula-api.service.js';
@@ -137,16 +138,16 @@ const typeFromDb: Record<string, string> = { 'CIV': 'CIVIL', 'MIL': 'MILITAR' };
 function extractPersonData(body: any) {
   return {
     ci: `${body.identificationPrefix || 'V'}-${body.identificationNumber}`,
-    firstName: body.firstName,
-    middleName: body.middleName || null,
-    lastName: body.lastName,
-    secondLastName: body.secondLastName || null,
+    firstName: sanitizeText(body.firstName) ?? '',
+    middleName: sanitizeText(body.middleName),
+    lastName: sanitizeText(body.lastName) ?? '',
+    secondLastName: sanitizeText(body.secondLastName),
     gender: genderToDb[body.sex?.toUpperCase()] || 'O',
     birthdate: body.birthDate || null,
     maritalStatus: maritalToDb[body.civilStatus?.toUpperCase()] || 'S',
     phone: body.phone || null,
     email: body.email,
-    address: body.address || null,
+    address: sanitizeText(body.address),
   };
 }
 
@@ -952,16 +953,16 @@ export const importStudents = async (req: Request, res: Response) => {
         const ci = `${studentData.identificationPrefix || 'V'}-${studentData.identificationNumber}`;
         const personRecord = await personService.findOrCreatePerson({
           ci,
-          firstName: studentData.firstName,
-          middleName: studentData.middleName || null,
-          lastName: studentData.lastName,
-          secondLastName: studentData.secondLastName || null,
+          firstName: sanitizeText(studentData.firstName) ?? '',
+          middleName: sanitizeText(studentData.middleName),
+          lastName: sanitizeText(studentData.lastName) ?? '',
+          secondLastName: sanitizeText(studentData.secondLastName),
           gender: genderToDb[studentData.sex?.toUpperCase()] || 'O',
           birthDate: studentData.birthDate || null,
           maritalStatus: maritalToDb[studentData.civilStatus?.toUpperCase()] || 'S',
           phone: studentData.phone || null,
           email: studentData.email || null,
-          address: studentData.address || null,
+          address: sanitizeText(studentData.address),
         });
 
         // 2. Crear estudiante

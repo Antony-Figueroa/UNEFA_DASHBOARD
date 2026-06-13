@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import * as usersService from '../services/users.service.js';
 import * as personService from '../services/person.service.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { sanitizeText } from '../utils/text-utils.js';
 import { dbManager } from '../lib/db-manager.js';
 import * as authService from '../services/auth.service.js';
 import { sendUserCreationEmail, sendPasswordResetEmail } from '../utils/email.utils.js';
@@ -93,11 +94,18 @@ export const createUser = async (req: AuthRequest, res: Response) => {
     const adminId = req.user?.userId;
     const userData = req.body;
     
+    // Normalizar texto antes de guardar
+    const normalizedData = {
+      ...userData,
+      name: sanitizeText(userData.name) ?? userData.name,
+      surname: sanitizeText(userData.surname) ?? userData.surname,
+    };
+    
     // Generar clave temporal aleatoria (8 caracteres)
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
     const tempPass = Array.from({ length: 8 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
     
-    const newUser = await usersService.createUser(userData, tempPass);
+    const newUser = await usersService.createUser(normalizedData, tempPass);
     
     // Registrar auditoría de creación
     await dbManager.withRetry(async (supabase) => {

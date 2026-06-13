@@ -312,10 +312,10 @@ export const getAddressStats = async (req: Request, res: Response) => {
     const { data: enrollmentGeo, error: geoError } = await supabase
       .from('t_professional_practices')
       .select(`
-        students_id,
-        institution_id,
+        STUDENTS_ID,
+        INSTITUTION_ID,
         t_students!inner ( person_id ),
-        t_institution!inner ( institution_id )
+        t_institution!inner ( INSTITUTION_ID )
       `);
 
     if (geoError) throw geoError;

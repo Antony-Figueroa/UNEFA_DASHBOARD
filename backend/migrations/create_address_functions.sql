@@ -9,7 +9,8 @@
 -- Obtiene la dirección principal de una persona o institución
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION get_primary_address(
+DROP FUNCTION IF EXISTS get_primary_address(TEXT, INT);
+CREATE FUNCTION get_primary_address(
   p_entity_type TEXT,
   p_entity_id INT
 )
@@ -17,7 +18,7 @@ RETURNS TABLE (
   address_id BIGINT,
   street_address VARCHAR(300),
   reference TEXT,
-  parroquia_id INT,
+  parroquia_id BIGINT,
   parroquia_name VARCHAR(200),
   municipio_id BIGINT,
   municipio_name VARCHAR(100),
@@ -35,11 +36,11 @@ BEGIN
       a.street_address,
       a.reference,
       p.parroquia_id,
-      p.name AS parroquia_name,
+      p.name::VARCHAR(200),
       m.municipio_id,
-      m.name AS municipio_name,
+      m.name::VARCHAR(100),
       e.estado_id,
-      e.name AS estado_name
+      e.name::VARCHAR(100)
     FROM t_person_address pa
     JOIN t_address a ON a.address_id = pa.address_id
     JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
@@ -55,11 +56,11 @@ BEGIN
       a.street_address,
       a.reference,
       p.parroquia_id,
-      p.name AS parroquia_name,
+      p.name::VARCHAR(200),
       m.municipio_id,
-      m.name AS municipio_name,
+      m.name::VARCHAR(100),
       e.estado_id,
-      e.name AS estado_name
+      e.name::VARCHAR(100)
     FROM t_institution_address ia
     JOIN t_address a ON a.address_id = ia.address_id
     JOIN t_parroquia p ON p.parroquia_id = a.parroquia_id
@@ -157,7 +158,8 @@ $$;
 -- Sugiere instituciones rankeadas por proximidad geográfica + carrera + tipo
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION get_institution_suggestions(
+DROP FUNCTION IF EXISTS get_institution_suggestions(INT, INT, INT);
+CREATE FUNCTION get_institution_suggestions(
   p_person_id INT,
   p_career_id INT,
   p_internship_type_id INT DEFAULT NULL
@@ -194,9 +196,9 @@ BEGIN
 
   RETURN QUERY
   SELECT
-    i."INSTITUTION_ID",
-    i."INSTITUTION_NAME",
-    i."INSTITUTION_ADDRESS",
+    i."INSTITUTION_ID"::INT,
+    i."INSTITUTION_NAME"::VARCHAR(255),
+    i."INSTITUTION_ADDRESS"::TEXT,
     e.name::VARCHAR(100),
     m.name::VARCHAR(100),
     CASE
@@ -204,7 +206,7 @@ BEGIN
       WHEN p.municipio_id = v_student_municipio_id THEN 5
       WHEN m.estado_id = v_student_estado_id THEN 3
       ELSE 0
-    END AS proximity_score
+    END::INT AS proximity_score
   FROM t_institution i
   JOIN t_institution_career ic ON ic."INSTITUTION_ID" = i."INSTITUTION_ID"
   JOIN t_institution_address ia ON ia.institution_id = i."INSTITUTION_ID" AND ia.is_primary = TRUE

@@ -157,7 +157,7 @@ export const updateAddress = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const supabase = dbManager.getClient();
-    const { parroquia_id, street_address, reference } = req.body;
+    const { parroquia_id, street_address, reference, address_type_id, entity_type, entity_id } = req.body;
 
     const { error } = await supabase
       .from('t_address')
@@ -165,6 +165,19 @@ export const updateAddress = async (req: Request, res: Response) => {
       .eq('address_id', id);
 
     if (error) throw error;
+
+    if (address_type_id && entity_type && entity_id) {
+      const bridgeTable = entity_type === 'person' ? 't_person_address' : 't_institution_address';
+      const entityKey = entity_type === 'person' ? 'person_id' : 'institution_id';
+      const { error: bridgeError } = await supabase
+        .from(bridgeTable)
+        .update({ address_type_id })
+        .eq('address_id', id)
+        .eq(entityKey, entity_id);
+
+      if (bridgeError) throw bridgeError;
+    }
+
     res.json({ message: 'Dirección actualizada exitosamente' });
   } catch (error) {
     handleDbError(res, error);
@@ -186,6 +199,21 @@ export const deleteAddress = async (req: Request, res: Response) => {
       .eq(entity_type === 'person' ? 'person_id' : 'institution_id', entity_id);
 
     if (bridgeError) throw bridgeError;
+
+    // Cleanup orphaned t_address row if no bridges reference it
+    const { count: personCount } = await supabase
+      .from('t_person_address')
+      .select('*', { count: 'exact', head: true })
+      .eq('address_id', id);
+
+    const { count: instCount } = await supabase
+      .from('t_institution_address')
+      .select('*', { count: 'exact', head: true })
+      .eq('address_id', id);
+
+    if ((personCount ?? 0) === 0 && (instCount ?? 0) === 0) {
+      await supabase.from('t_address').delete().eq('address_id', id);
+    }
 
     res.json({ message: 'Dirección eliminada exitosamente' });
   } catch (error) {
@@ -331,6 +359,51 @@ export const getAddressStats = async (req: Request, res: Response) => {
         total: enrollmentGeo?.length || 0,
       },
     });
+  } catch (error) {
+    handleDbError(res, error);
+  }
+};
+
+// ─── Geographic Options (for cascading selects) ───
+
+export const getGeoOptions = async (_req: Request, res: Response) => {
+  try {
+    const supabase = dbManager.getClient();
+
+    const { data: estados, error: eError } = await supabase
+      .from('t_estado')
+      .select(`
+        estado_id,
+        name,
+        t_municipio (
+          municipio_id,
+          name,
+          t_parroquia (
+            parroquia_id,
+            name
+          )
+        )
+      `)
+      .order('estado_id', { ascending: true });
+
+    if (eError) throw eError;
+
+    res.json(estados || []);
+  } catch (error) {
+    handleDbError(res, error);
+  }
+};
+
+export const getAddressTypes = async (_req: Request, res: Response) => {
+  try {
+    const supabase = dbManager.getClient();
+    const { data, error } = await supabase
+      .from('t_address_type')
+      .select('*')
+      .order('address_type_id', { ascending: true });
+
+    if (error) throw error;
+    res.json(data || []);
   } catch (error) {
     handleDbError(res, error);
   }

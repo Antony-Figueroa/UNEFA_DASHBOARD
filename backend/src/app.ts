@@ -154,22 +154,32 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
+// SSE endpoint — registrar antes de CORS para que EventSource funcione
+// EventSource no puede enviar headers personalizados, el CORS middleware bloquearía
+if (isVercel) {
+  app.get('/api/notifications/stream', (_req, res) => {
+    res.status(501).json({
+      message: 'SSE no disponible en serverless. Use polling o un servicio externo como Supabase Realtime.',
+      alternative: '/api/notifications?limit=20&offset=0'
+    });
+  });
+} else {
+  app.get('/api/notifications/stream', subscribeToNotifications);
+}
+
 app.use(cors({
   origin: (origin, callback) => {
-    // permitir requests sin origin (herramientas como curl, servidores-side)
     if (!origin) return callback(null, true);
     
     const isAllowed = allowedOrigins.some(allowed => 
       allowed.replace(/\/$/, '') === origin.replace(/\/$/, '')
     );
 
-    // Permitir si está en la lista, si es de render, o si es una preview de vercel
     if (isAllowed || origin.endsWith('.onrender.com') || origin.endsWith('.vercel.app')) {
       return callback(null, true);
     }
     
     console.warn(`[CORS] Rejected origin: ${origin}`);
-    // No devolvemos error, simplemente decimos que no está permitido
     return callback(null, false);
   },
   credentials: true
@@ -270,17 +280,6 @@ app.use('/api/reminder-config', reminderConfigRoutes);
 app.use('/api/email-templates', emailTemplatesRoutes);
 app.use('/api/knowledge-base', knowledgeBaseRoutes);
 app.use('/api/address', addressRoutes);
-// SSE endpoint — deshabilitado en Vercel (no compatible con serverless)
-if (isVercel) {
-  app.get('/api/notifications/stream', (_req, res) => {
-    res.status(501).json({
-      message: 'SSE no disponible en serverless. Use polling o un servicio externo como Supabase Realtime.',
-      alternative: '/api/notifications?limit=20&offset=0'
-    });
-  });
-} else {
-  app.get('/api/notifications/stream', subscribeToNotifications);
-}
 
 // Servir archivos estáticos del frontend (Vite build)
 // Intentar encontrar la carpeta dist en lugares comunes

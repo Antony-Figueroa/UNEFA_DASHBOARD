@@ -28,6 +28,11 @@ import {
 import { formatCedulaDisplay, formatPhoneLocalDisplay, CEDULA_MAX_LENGTH, CEDULA_MAX_DIGITS } from "../../../utils/inputFormat";
 import PersonFormFields from "../../persons/components/PersonFormFields";
 import { useAcademicConfig } from "../../academic-config/hooks/useAcademicConfig";
+import AddressList from "../../address/components/AddressList";
+import GeographicAddressFields from "../../address/components/GeographicAddressFields";
+import { addressService } from "../../address/services/addressService";
+import type { GeoOptionsItem } from "../../address/types";
+import type { GeographicAddressValue } from "../../address/components/GeographicAddressFields";
 
 /**
  * Propiedades del componente StudentModal.
@@ -95,6 +100,10 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   const [apiDataLoaded, setApiDataLoaded] = useState(false);
   const apiLoadedCiRef = useRef("");
   const { config: academicConfig } = useAcademicConfig();
+  const [geoOptions, setGeoOptions] = useState<GeoOptionsItem[]>([]);
+  const [inlineAddress, setInlineAddress] = useState<GeographicAddressValue>({
+    parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 3, isPrimary: true,
+  });
 
   const {
     register,
@@ -562,8 +571,18 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
       }
     };
 
+    const loadGeoOptions = async () => {
+      try {
+        const response = await addressService.getGeoOptions();
+        setGeoOptions(response.data);
+      } catch (error) {
+        console.error("Error loading geo options:", error);
+      }
+    };
+
     if (isOpen) {
       loadOptions();
+      loadGeoOptions();
     }
   }, [isOpen, fetchMultipleLists, dynamicLists]);
 
@@ -806,7 +825,7 @@ useEffect(() => {
         civilStatus: validatedData.civilStatus.toUpperCase() as Student["civilStatus"],
         phone: `${validatedData.phonePrefix}${validatedData.phoneNumber}`,
         email: validatedData.email.toUpperCase(),
-        address: validatedData.address.toUpperCase(),
+        address: validatedData.address?.toUpperCase() || "",
         studentType: validatedData.studentType.toUpperCase() as Student["studentType"],
         militaryRank: validatedData.militaryRank.toUpperCase(),
         works: validatedData.works.toUpperCase() as Student["works"],
@@ -887,7 +906,18 @@ useEffect(() => {
             fieldLockOnApiLoad={apiDataLoaded && (academicConfig?.lockApiLoadedFields ?? true)}
             editingId={editingStudent?.studentId ?? existingStudent?.studentId ?? null}
           />
-
+          
+          {/* Sección de Dirección */}
+          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+            <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Dirección de Residencia</h3>
+            <GeographicAddressFields
+              geoOptions={geoOptions}
+              value={inlineAddress}
+              onChange={setInlineAddress}
+              showReference
+            />
+          </div>
+          
           {/* ============================================================ */}
           {/* Campos específicos de Estudiante */}
           {/* ============================================================ */}
@@ -985,6 +1015,15 @@ useEffect(() => {
                 </p>
               )}
             </div>
+          </div>
+
+          {/* Direcciones Estructuradas */}
+          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+            <AddressList
+              entityType="person"
+              entityId={editingStudent?.personId ? Number(editingStudent.personId) : existingStudent?.personId ? Number(existingStudent.personId) : null}
+              geoOptions={geoOptions}
+            />
           </div>
         </form>
       </ModalBody>
@@ -1144,6 +1183,22 @@ useEffect(() => {
         onConfirm={async () => {
           if (pendingSave) {
             await onSave(pendingSave);
+          }
+          // Crear dirección estructurada en edición
+          if (editingStudent?.personId && inlineAddress.parroquiaId && inlineAddress.streetAddress) {
+            try {
+              await addressService.createAddress({
+                entityType: 'person',
+                entityId: Number(editingStudent.personId),
+                addressTypeId: inlineAddress.addressTypeId || 3,
+                parroquiaId: inlineAddress.parroquiaId,
+                streetAddress: inlineAddress.streetAddress,
+                reference: inlineAddress.reference,
+                isPrimary: inlineAddress.isPrimary,
+              });
+            } catch (addrErr) {
+              console.error('[StudentModal] Error creating address:', addrErr);
+            }
           }
           setConfirmSaveOpen(false);
         }}

@@ -245,94 +245,7 @@ export default function PersonFormFields({
 
   // === Render ===
   return (
-    <div className={`space-y-5 ${className}`}>
-      {/* ============================================================ */}
-      {/* CI / Identificación */}
-      {/* ============================================================ */}
-      {!isHidden("identificationNumber") && (
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
-        {/* Prefijo */}
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Prefijo <span className="text-red-500">*</span>
-          </label>
-          <Controller
-            name="identificationPrefix"
-            control={control}
-            render={({ field }) => (
-              <CustomSelect
-                id="identificationPrefix"
-                options={
-                  (options["Nacionalidad"] || PREFIX_OPTIONS).map((o) => ({
-                    value: String(o.value),
-                    label: o.label,
-                  }))
-                }
-                placeholder="V"
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                value={String(field.value || "V")}
-                disabled={ciDisabled}
-                error={!!errors.identificationPrefix}
-              />
-            )}
-          />
-          {errors.identificationPrefix && (
-            <p className="mt-1 text-xs text-red-500">{errors.identificationPrefix.message as string}</p>
-          )}
-        </div>
-
-        {/* Número de cédula */}
-        <div className="md:col-span-3">
-          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Número de Cédula <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <Input
-              value={displayIdentificationNumber}
-              onChange={onIdentificationNumberChange}
-              onBlur={onBlurCi}
-              placeholder="V-12.345.678"
-              disabled={ciDisabled}
-              maxLength={CEDULA_MAX_LENGTH}
-              autoComplete="off"
-              className="tracking-widest"
-              error={!!errors.identificationNumber}
-              hint={
-                errors.identificationNumber?.message as string
-                || (isCheckingCi ? "Verificando disponibilidad..."
-                : isLookingUpCi ? "Consultando SENIAT..."
-                : undefined)
-              }
-            />
-            {/* Botón Verificar disponibilidad en BD */}
-            {onCheckCi && !ciDisabled && (
-              <button
-                type="button"
-                onClick={onCheckCi}
-                disabled={isCheckingCi}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400"
-              >
-                {isCheckingCi ? "..." : "Verificar"}
-              </button>
-            )}
-            {/* Botón Buscar en SENIAT — consulta API externa solo cuando el usuario lo pulsa */}
-            {onCiLookup && !ciDisabled && (
-              <button
-                type="button"
-                onClick={onCiLookup}
-                disabled={isLookingUpCi}
-                title="Buscar datos en SENIAT / CNE"
-                className="absolute right-14 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400 transition-colors disabled:opacity-50"
-              >
-                <Search className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-      )}
-
+    <div className={`space-y-6 ${className}`}>
       {/* Alerta de persona existente */}
       {existingPerson && (
         <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 dark:border-yellow-600 dark:bg-yellow-900/20">
@@ -356,232 +269,327 @@ export default function PersonFormFields({
       )}
 
       {/* ============================================================ */}
-      {/* Nombres y Apellidos */}
+      {/* Identidad */}
       {/* ============================================================ */}
-      {!isHidden("firstName") && (
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Primer Nombre <span className="text-red-500">*</span>
-          </label>
-          <Input
-            {...nameInputProps("firstName")}
-            placeholder="Primer nombre"
-            disabled={isFieldDisabled("firstName")}
-            error={!!errors.firstName}
-            hint={errors.firstName?.message as string}
-          />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Segundo Nombre
-          </label>
-          <Input
-            {...nameInputProps("middleName")}
-            placeholder="Segundo nombre (opcional)"
-            disabled={isFieldDisabled("middleName")}
-            error={!!errors.middleName}
-            hint={errors.middleName?.message as string}
-          />
-        </div>
-      </div>
-      )}
+      <fieldset className="border border-border-light dark:border-border-dark rounded-lg p-4">
+        <legend className="text-sm font-medium text-text-secondary px-2">Identidad</legend>
+        {!isHidden("identificationNumber") && (
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
+          {/* Prefijo */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Prefijo <span className="text-red-500">*</span>
+            </label>
+            <Controller
+              name="identificationPrefix"
+              control={control}
+              render={({ field }) => (
+                <CustomSelect
+                  id="identificationPrefix"
+                  options={
+                    (options["Nacionalidad"] || PREFIX_OPTIONS).map((o) => ({
+                      value: String(o.value),
+                      label: o.label,
+                    }))
+                  }
+                  placeholder="V"
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  value={String(field.value || "V")}
+                  disabled={ciDisabled}
+                  error={!!errors.identificationPrefix}
+                />
+              )}
+            />
+            {errors.identificationPrefix && (
+              <p className="mt-1 text-xs text-red-500">{errors.identificationPrefix.message as string}</p>
+            )}
+          </div>
 
-      {!isHidden("lastName") && (
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Primer Apellido <span className="text-red-500">*</span>
-          </label>
-          <Input
-            {...nameInputProps("lastName")}
-            placeholder="Primer apellido"
-            disabled={isFieldDisabled("lastName")}
-            error={!!errors.lastName}
-            hint={errors.lastName?.message as string}
-          />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Segundo Apellido
-          </label>
-          <Input
-            {...nameInputProps("secondLastName")}
-            placeholder="Segundo apellido (opcional)"
-            disabled={isFieldDisabled("secondLastName")}
-            error={!!errors.secondLastName}
-            hint={errors.secondLastName?.message as string}
-          />
-        </div>
-      </div>
-      )}
-
-      {/* ============================================================ */}
-      {/* Email */}
-      {/* ============================================================ */}
-      {!isHidden("email") && (
-      <div>
-        <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-          Correo Electrónico <span className="text-red-500">*</span>
-        </label>
-        <Input
-          {...register("email")}
-          type="email"
-          placeholder="correo@ejemplo.com"
-          disabled={viewOnlyMode}
-          autoComplete="off"
-          error={!!errors.email}
-          hint={
-            isCheckingEmail
-              ? "Verificando disponibilidad..."
-              : (errors.email?.message as string)
-          }
-          onChange={(e) => {
-            const upper = e.target.value.toUpperCase();
-            setValue("email", upper, { shouldValidate: true, shouldDirty: true });
-          }}
-          onBlur={(e) => {
-            register("email").onBlur(e);
-            onBlurEmail?.(e);
-          }}
-        />
-      </div>
-      )}
-
-      {/* ============================================================ */}
-      {/* Teléfono */}
-      {/* ============================================================ */}
-      {!isHidden("phoneNumber") && (
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Prefijo Tel. <span className="text-red-500">*</span>
-          </label>
-          <Controller
-            name={phonePrefixFieldName}
-            control={control}
-            render={({ field }) => (
-              <CustomSelect
-                id={phonePrefixFieldName}
-                options={getSelectOptions("PREFIJO")}
-                placeholder="0412"
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                value={String(field.value ?? "")}
-                disabled={viewOnlyMode}
-                error={!!(errors as any)[phonePrefixFieldName]}
-                onAddNew={
-                  onAddValue
-                    ? () => onAddValue("PREFIJO", phonePrefixFieldName, "Agregar Prefijo Telefónico")
-                    : undefined
+          {/* Número de cédula */}
+          <div className="md:col-span-3">
+            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Número de Cédula <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <Input
+                value={displayIdentificationNumber}
+                onChange={onIdentificationNumberChange}
+                onBlur={onBlurCi}
+                placeholder="V-12.345.678"
+                disabled={ciDisabled}
+                maxLength={CEDULA_MAX_LENGTH}
+                autoComplete="off"
+                className="tracking-widest"
+                error={!!errors.identificationNumber}
+                hint={
+                  errors.identificationNumber?.message as string
+                  || (isCheckingCi ? "Verificando disponibilidad..."
+                  : isLookingUpCi ? "Consultando SENIAT..."
+                  : undefined)
                 }
-                addNewLabel={onAddValue ? "Nueva opción" : undefined}
               />
-            )}
-          />
-          {(errors as any)[phonePrefixFieldName] && (
-            <p className="mt-1 text-xs text-red-500">{(errors as any)[phonePrefixFieldName].message as string}</p>
-          )}
+              {/* Botón Verificar disponibilidad en BD */}
+              {onCheckCi && !ciDisabled && (
+                <button
+                  type="button"
+                  onClick={onCheckCi}
+                  disabled={isCheckingCi}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400"
+                >
+                  {isCheckingCi ? "..." : "Verificar"}
+                </button>
+              )}
+              {/* Botón Buscar en SENIAT — consulta API externa solo cuando el usuario lo pulsa */}
+              {onCiLookup && !ciDisabled && (
+                <button
+                  type="button"
+                  onClick={onCiLookup}
+                  disabled={isLookingUpCi}
+                  title="Buscar datos en SENIAT / CNE"
+                  className="absolute right-14 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-brand-600 dark:text-gray-500 dark:hover:text-brand-400 transition-colors disabled:opacity-50"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="md:col-span-3">
+        )}
+
+        {/* Nombres y Apellidos */}
+        {!isHidden("firstName") && (
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 mt-5">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Primer Nombre <span className="text-red-500">*</span>
+            </label>
+            <Input
+              {...nameInputProps("firstName")}
+              placeholder="Primer nombre"
+              disabled={isFieldDisabled("firstName")}
+              error={!!errors.firstName}
+              hint={errors.firstName?.message as string}
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Segundo Nombre
+            </label>
+            <Input
+              {...nameInputProps("middleName")}
+              placeholder="Segundo nombre (opcional)"
+              disabled={isFieldDisabled("middleName")}
+              error={!!errors.middleName}
+              hint={errors.middleName?.message as string}
+            />
+          </div>
+        </div>
+        )}
+
+        {!isHidden("lastName") && (
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 mt-5">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Primer Apellido <span className="text-red-500">*</span>
+            </label>
+            <Input
+              {...nameInputProps("lastName")}
+              placeholder="Primer apellido"
+              disabled={isFieldDisabled("lastName")}
+              error={!!errors.lastName}
+              hint={errors.lastName?.message as string}
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Segundo Apellido
+            </label>
+            <Input
+              {...nameInputProps("secondLastName")}
+              placeholder="Segundo apellido (opcional)"
+              disabled={isFieldDisabled("secondLastName")}
+              error={!!errors.secondLastName}
+              hint={errors.secondLastName?.message as string}
+            />
+          </div>
+        </div>
+        )}
+
+        {/* Email */}
+        {!isHidden("email") && (
+        <div className="mt-5">
           <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Número de Teléfono <span className="text-red-500">*</span>
+            Correo Electrónico <span className="text-red-500">*</span>
           </label>
           <Input
-            value={displayPhoneNumber ?? watch("phoneNumber") ?? ""}
-            onChange={
-              onPhoneNumberChange ||
-              ((e) => setValue("phoneNumber", e.target.value.replace(/\D/g, ""), { shouldValidate: true }))
-            }
-            placeholder="123-4567"
+            {...register("email")}
+            type="email"
+            placeholder="correo@ejemplo.com"
             disabled={viewOnlyMode}
-            maxLength={8}
-            error={!!errors.phoneNumber}
-            hint={errors.phoneNumber?.message as string}
+            autoComplete="off"
+            error={!!errors.email}
+            hint={
+              isCheckingEmail
+                ? "Verificando disponibilidad..."
+                : (errors.email?.message as string)
+            }
+            onChange={(e) => {
+              const upper = e.target.value.toUpperCase();
+              setValue("email", upper, { shouldValidate: true, shouldDirty: true });
+            }}
+            onBlur={(e) => {
+              register("email").onBlur(e);
+              onBlurEmail?.(e);
+            }}
           />
         </div>
-      </div>
-      )}
+        )}
+      </fieldset>
 
       {/* ============================================================ */}
-      {/* Sexo + Fecha Nacimiento + Estado Civil */}
+      {/* Contacto */}
       {/* ============================================================ */}
-      {!isHidden("sex", "birthDate", "civilStatus") && (
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Sexo <span className="text-red-500">*</span>
-          </label>
-          {makeControllerSelect("sex", "Seleccionar", "Sexo", viewOnlyMode)}
-          {errors.sex && (
-            <p className="mt-1 text-xs text-red-500">{errors.sex.message as string}</p>
-          )}
-        </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Fecha de Nacimiento{" "}
-            {age !== null && age !== undefined && (
-              <span className="text-brand-500 ml-1">({age} años)</span>
+      <fieldset className="border border-border-light dark:border-border-dark rounded-lg p-4">
+        <legend className="text-sm font-medium text-text-secondary px-2">Contacto</legend>
+        {!isHidden("phoneNumber") && (
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-4">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Prefijo Tel. <span className="text-red-500">*</span>
+            </label>
+            <Controller
+              name={phonePrefixFieldName}
+              control={control}
+              render={({ field }) => (
+                <CustomSelect
+                  id={phonePrefixFieldName}
+                  options={getSelectOptions("PREFIJO")}
+                  placeholder="0412"
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  value={String(field.value ?? "")}
+                  disabled={viewOnlyMode}
+                  error={!!(errors as any)[phonePrefixFieldName]}
+                  onAddNew={
+                    onAddValue
+                      ? () => onAddValue("PREFIJO", phonePrefixFieldName, "Agregar Prefijo Telefónico")
+                      : undefined
+                  }
+                  addNewLabel={onAddValue ? "Nueva opción" : undefined}
+                />
+              )}
+            />
+            {(errors as any)[phonePrefixFieldName] && (
+              <p className="mt-1 text-xs text-red-500">{(errors as any)[phonePrefixFieldName].message as string}</p>
             )}
-          </label>
-          <Controller
-            name="birthDate"
-            control={control}
-            render={({ field }) => (
-              <input
-                type="date"
-                id="birthDate"
-                value={field.value || ""}
-                onChange={(e) => field.onChange(e.target.value)}
-                onBlur={field.onBlur}
-                className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm transition-all ${
-                  errors.birthDate
-                    ? "border-error-500 focus:border-error-500 text-error-500"
-                    : "border-border-medium focus:border-brand-300 focus:ring-brand-500/10 text-text-primary"
-                } dark:bg-bg-dark dark:text-text-emphasis dark:border-border-dark dark:focus:border-brand-800 ${
-                  viewOnlyMode ? "cursor-not-allowed bg-bg-secondary opacity-50" : ""
-                }`}
-                max={maxDate || undefined}
-                disabled={viewOnlyMode}
-              />
+          </div>
+          <div className="md:col-span-3">
+            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Número de Teléfono <span className="text-red-500">*</span>
+            </label>
+            <Input
+              value={displayPhoneNumber ?? watch("phoneNumber") ?? ""}
+              onChange={
+                onPhoneNumberChange ||
+                ((e) => setValue("phoneNumber", e.target.value.replace(/\D/g, ""), { shouldValidate: true }))
+              }
+              placeholder="123-4567"
+              disabled={viewOnlyMode}
+              maxLength={8}
+              error={!!errors.phoneNumber}
+              hint={errors.phoneNumber?.message as string}
+            />
+          </div>
+        </div>
+        )}
+      </fieldset>
+
+      {/* ============================================================ */}
+      {/* Personal */}
+      {/* ============================================================ */}
+      <fieldset className="border border-border-light dark:border-border-dark rounded-lg p-4">
+        <legend className="text-sm font-medium text-text-secondary px-2">Personal</legend>
+        {!isHidden("sex", "birthDate", "civilStatus") && (
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Sexo <span className="text-red-500">*</span>
+            </label>
+            {makeControllerSelect("sex", "Seleccionar", "Sexo", viewOnlyMode)}
+            {errors.sex && (
+              <p className="mt-1 text-xs text-red-500">{errors.sex.message as string}</p>
             )}
-          />
-          {errors.birthDate && (
-            <p className="mt-1 text-xs text-red-500">{errors.birthDate.message as string}</p>
-          )}
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Fecha de Nacimiento{" "}
+              {age !== null && age !== undefined && (
+                <span className="text-brand-500 ml-1">({age} años)</span>
+              )}
+            </label>
+            <Controller
+              name="birthDate"
+              control={control}
+              render={({ field }) => (
+                <input
+                  type="date"
+                  id="birthDate"
+                  value={field.value || ""}
+                  onChange={(e) => field.onChange(e.target.value)}
+                  onBlur={field.onBlur}
+                  className={`h-11 w-full rounded-lg border bg-transparent px-4 py-2.5 text-sm transition-all ${
+                    errors.birthDate
+                      ? "border-error-500 focus:border-error-500 text-error-500"
+                      : "border-border-medium focus:border-brand-300 focus:ring-brand-500/10 text-text-primary"
+                  } dark:bg-bg-dark dark:text-text-emphasis dark:border-border-dark dark:focus:border-brand-800 ${
+                    viewOnlyMode ? "cursor-not-allowed bg-bg-secondary opacity-50" : ""
+                  }`}
+                  max={maxDate || undefined}
+                  disabled={viewOnlyMode}
+                />
+              )}
+            />
+            {errors.birthDate && (
+              <p className="mt-1 text-xs text-red-500">{errors.birthDate.message as string}</p>
+            )}
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Estado Civil <span className="text-red-500">*</span>
+            </label>
+            {makeControllerSelect("civilStatus", "Seleccionar", "Registro Civil", viewOnlyMode, {
+              listName: "Registro Civil",
+              title: "Agregar Estado Civil",
+            })}
+            {errors.civilStatus && (
+              <p className="mt-1 text-xs text-red-500">{errors.civilStatus.message as string}</p>
+            )}
+          </div>
         </div>
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Estado Civil <span className="text-red-500">*</span>
-          </label>
-          {makeControllerSelect("civilStatus", "Seleccionar", "Registro Civil", viewOnlyMode, {
-            listName: "Registro Civil",
-            title: "Agregar Estado Civil",
-          })}
-          {errors.civilStatus && (
-            <p className="mt-1 text-xs text-red-500">{errors.civilStatus.message as string}</p>
-          )}
-        </div>
-      </div>
-      )}
+        )}
+      </fieldset>
 
       {/* ============================================================ */}
       {/* Dirección */}
       {/* ============================================================ */}
-      {!isHidden("address") && (
-      <div>
-        <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-          Dirección de Residencia <span className="text-red-500">*</span>
-        </label>
-        <Input
-          {...register("address")}
-          placeholder="Dirección de habitación"
-          disabled={viewOnlyMode}
-          error={!!errors.address}
-          hint={errors.address?.message as string}
-        />
-      </div>
-      )}
+      <fieldset className="border border-border-light dark:border-border-dark rounded-lg p-4">
+        <legend className="text-sm font-medium text-text-secondary px-2">Dirección</legend>
+        {!isHidden("address") && (
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+            Dirección de Residencia <span className="text-red-500">*</span>
+          </label>
+          <Input
+            {...register("address")}
+            placeholder="Dirección de habitación"
+            disabled={viewOnlyMode}
+            error={!!errors.address}
+            hint={errors.address?.message as string}
+          />
+        </div>
+        )}
+      </fieldset>
     </div>
   );
 }

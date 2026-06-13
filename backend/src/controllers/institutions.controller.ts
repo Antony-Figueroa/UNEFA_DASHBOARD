@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { cacheManager } from '../lib/cache-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { sanitizeText } from '../utils/text-utils.js';
 import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-helpers.js';
 
 const TABLE_NAME = 't_institution';
@@ -388,13 +389,13 @@ export const createInstitution = async (req: AuthRequest, res: Response) => {
     const institutionCode = await generateInstitutionCode(normalizedRif);
     
     const dbData: Record<string, any> = {
-      INSTITUTION_NAME: i.name,
-      INSTITUTION_ADDRESS: i.fiscalAddress,
+      INSTITUTION_NAME: sanitizeText(i.name) ?? '',
+      INSTITUTION_ADDRESS: sanitizeText(i.fiscalAddress),
       INSTITUTION_CONTACT: i.phone,
-      REGION: i.region,
-      NUCLEUS: i.nucleus,
-      EXTENSION: i.extension,
-      INSTITUTION_TYPE: i.institutionType,
+      REGION: sanitizeText(i.region),
+      NUCLEUS: sanitizeText(i.nucleus),
+      EXTENSION: sanitizeText(i.extension),
+      INSTITUTION_TYPE: sanitizeText(i.institutionType),
       PRACTICE_TYPE: i.internshipTypeId || i.practiceType || '1', // Manejar ambos nombres por compatibilidad
       STATUS: i.status ? 1 : 0,
       RIF: normalizedRif,
@@ -478,13 +479,13 @@ export const updateInstitution = async (req: AuthRequest, res: Response) => {
     const i = req.body;
     const dbData: Partial<DBInstitution> = {};
     
-    if (i.name !== undefined) dbData.INSTITUTION_NAME = i.name;
-    if (i.fiscalAddress !== undefined) dbData.INSTITUTION_ADDRESS = i.fiscalAddress;
+    if (i.name !== undefined) dbData.INSTITUTION_NAME = sanitizeText(i.name) ?? '';
+    if (i.fiscalAddress !== undefined) dbData.INSTITUTION_ADDRESS = sanitizeText(i.fiscalAddress);
     if (i.phone !== undefined) dbData.INSTITUTION_CONTACT = i.phone;
-    if (i.region !== undefined) dbData.REGION = i.region;
-    if (i.nucleus !== undefined) dbData.NUCLEUS = i.nucleus;
-    if (i.extension !== undefined) dbData.EXTENSION = i.extension;
-    if (i.institutionType !== undefined) dbData.INSTITUTION_TYPE = i.institutionType;
+    if (i.region !== undefined) dbData.REGION = sanitizeText(i.region);
+    if (i.nucleus !== undefined) dbData.NUCLEUS = sanitizeText(i.nucleus);
+    if (i.extension !== undefined) dbData.EXTENSION = sanitizeText(i.extension);
+    if (i.institutionType !== undefined) dbData.INSTITUTION_TYPE = sanitizeText(i.institutionType);
     if (i.practiceType !== undefined) dbData.PRACTICE_TYPE = i.practiceType;
     if (i.internshipTypeId !== undefined) dbData.PRACTICE_TYPE = i.internshipTypeId;
     if (i.status !== undefined) dbData.STATUS = i.status ? 1 : 0;

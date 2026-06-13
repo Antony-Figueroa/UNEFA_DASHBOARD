@@ -8,7 +8,6 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
-import TextArea from "../../../components/form/input/TextArea";
 import CustomSelect from "../../../components/form/CustomSelect";
 import MultiSelect from "../../../components/form/MultiSelect";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
@@ -30,8 +29,12 @@ import { DropdownItem } from "../../../components/ui/dropdown/DropdownItem";
 import { useToast } from "../../../context/toast";
 import { cleanCedula, cleanPhone, cleanRif, formatRifDisplay, RIF_MAX_LENGTH, RIF_INPUT_CLASS, PHONE_LOCAL_MAX_LENGTH, formatPhoneLocalDisplay, PHONE_INPUT_CLASS } from "../../../utils/inputFormat";
 import { getInstitutionByRif, checkRifExists } from "../services/institutionsService";
-import venezuelaData from "../../../data/venezuela.json";
 import { NAME_PATTERN, isSafeInput } from "../../../utils/inputValidation";
+import AddressList from "../../address/components/AddressList";
+import GeographicAddressFields from "../../address/components/GeographicAddressFields";
+import { addressService } from "../../address/services/addressService";
+import type { GeoOptionsItem } from "../../address/types";
+import type { GeographicAddressValue } from "../../address/components/GeographicAddressFields";
 
 // Lazy load para evitar dependencia circular con CareerModal
 const CareerModal = lazy(() => import("../../careers/components/CareerModal"));
@@ -96,10 +99,6 @@ const baseInstSchema = z.object({
   nucleus: z.string().min(1, "Seleccione un núcleo"),
   extension: z.string().min(1, "Seleccione una extensión"),
   institutionType: z.string().min(1, "Seleccione un tipo de empresa o institución"),
-  estado: z.string().min(1, "Seleccione un estado"),
-  municipio: z.string().min(1, "Seleccione un municipio"),
-  parroquia: z.string().min(1, "Seleccione una parroquia"),
-  direccion: z.string().min(1, "La dirección es obligatoria").max(300, "La dirección no puede exceder 300 caracteres"),
   internshipTypeId: z.string().min(1, "Seleccione el tipo de práctica"),
   careerIds: z.array(z.string()).min(1, "Seleccione al menos una carrera"),
 });
@@ -208,6 +207,7 @@ export default function InstitutionModal({
       setNewlyAddedResponsibles([]);
       setRifDuplicateStatus(null);
       setSavedFormData(null);
+      setInlineAddress({ parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 4, isPrimary: true });
     }
   }, [isOpen]);
 
@@ -270,39 +270,11 @@ export default function InstitutionModal({
   const [existingInstitution, setExistingInstitution] = useState<any | null>(null);
   const [viewOnlyMode, setViewOnlyMode] = useState(false);
 
-  // State for cascaded location selects (Venezuela data)
-  const [selectedMunicipio, setSelectedMunicipio] = useState<string>("");
-  const [, setSelectedParroquia] = useState<string>("");
-
-  // Filter for Estado Portuguesa
-  const portuguesaData = venezuelaData.find((e: any) => e.estado === "Portuguesa");
-  
-  // Options for Estado (only Portuguesa)
-  const ESTADO_OPTIONS = [
-    { value: "PORTUGUESA", label: "PORTUGUESA" }
-  ];
-  
-  // Options for Municipio based on selected estado
-  const MUNICIPIO_OPTIONS = useMemo(() => {
-    if (!portuguesaData?.municipios) return [];
-    return portuguesaData.municipios.map((m: any) => ({
-      value: m.municipio.toUpperCase(),
-      label: m.municipio.toUpperCase()
-    }));
-  }, [portuguesaData]);
-  
-  // Options for Parroquia based on selected municipio
-  const PARROQUIA_OPTIONS = useMemo(() => {
-    if (!portuguesaData?.municipios || !selectedMunicipio) return [];
-    const municipio = portuguesaData.municipios.find((m: any) => 
-      m.municipio.toUpperCase() === selectedMunicipio
-    );
-    if (!municipio?.parroquias) return [];
-    return municipio.parroquias.map((p: string) => ({
-      value: p.toUpperCase(),
-      label: p.toUpperCase()
-    }));
-  }, [portuguesaData, selectedMunicipio]);
+  // State for structured address management
+  const [geoOptions, setGeoOptions] = useState<GeoOptionsItem[]>([]);
+  const [inlineAddress, setInlineAddress] = useState<GeographicAddressValue>({
+    parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 4, isPrimary: true,
+  });
 
   // Handle RIF number input change with formatting and auto-verify
   const handleRifNumberChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -400,10 +372,6 @@ export default function InstitutionModal({
       nucleus: "",
       extension: "",
       institutionType: "",
-      estado: "",
-      municipio: "",
-      parroquia: "",
-      direccion: "",
       internshipTypeId: "",
       careerIds: [],
     },
@@ -453,8 +421,18 @@ export default function InstitutionModal({
       }
     };
 
+    const loadGeoOptions = async () => {
+      try {
+        const response = await addressService.getGeoOptions();
+        setGeoOptions(response.data);
+      } catch (error) {
+        console.error("Error loading geo options:", error);
+      }
+    };
+
     if (isOpen) {
       loadOptions();
+      loadGeoOptions();
     }
   }, [isOpen, fetchMultipleLists]);
 
@@ -536,10 +514,6 @@ export default function InstitutionModal({
       const rifParts = editingInst.rif ? editingInst.rif.split("-") : ["", ""];
       const [phoneP, phoneN] = editingInst.phone ? editingInst.phone.split("-") : ["", ""];
 
-      let parsedEstado = "PORTUGUESA";
-      let parsedMunicipio = "";
-      let parsedParroquia = "";
-      let parsedDireccion = editingInst.fiscalAddress || "";
       let parsedRegion = editingInst.region;
       let parsedNucleo = editingInst.nucleus;
       let parsedExtension = editingInst.extension;
@@ -552,19 +526,9 @@ export default function InstitutionModal({
           parsedNucleo = parts[1];
           parsedExtension = parts[2];
           parsedTipoEmpresa = parts[3];
-          parsedEstado = parts[4];
-          parsedMunicipio = parts[5];
-          parsedParroquia = parts[6];
-          parsedDireccion = parts.slice(7).join(", ");
-        } else if (parts.length >= 4) {
-          parsedEstado = parts[0];
-          parsedMunicipio = parts[1];
-          parsedParroquia = parts[2];
-          parsedDireccion = parts.slice(3).join(", ");
         }
       }
 
-      // Determinar el tipo de práctica - soporta internshipTypeId, internshipTypeIds, o practiceType
       const internshipTypeId = editingInst.internshipTypeId 
         ? String(editingInst.internshipTypeId) 
         : (editingInst.internshipTypeIds && editingInst.internshipTypeIds.length > 0 
@@ -581,10 +545,6 @@ export default function InstitutionModal({
         nucleus: parsedNucleo?.toUpperCase() || "",
         extension: parsedExtension?.toUpperCase() || "",
         institutionType: parsedTipoEmpresa?.toUpperCase() || "",
-        estado: parsedEstado?.toUpperCase(),
-        municipio: parsedMunicipio?.toUpperCase(),
-        parroquia: parsedParroquia?.toUpperCase(),
-        direccion: parsedDireccion,
         internshipTypeId: internshipTypeId,
         careerIds: editingInst.careerIds || [],
       });
@@ -773,10 +733,7 @@ export default function InstitutionModal({
           nucleus: parsedNucleo?.toUpperCase() || "",
           extension: parsedExtension?.toUpperCase() || "",
           institutionType: parsedTipoEmpresa?.toUpperCase() || "",
-          estado: parsedEstado?.toUpperCase(),
-          municipio: parsedMunicipio?.toUpperCase(),
-          parroquia: parsedParroquia?.toUpperCase(),
-          direccion: parsedDireccion,
+          // Legacy address fields removed — use structured address system
           // Soportar ambos: internshipTypeId (singular), internshipTypeIds (array), o practiceType (de tabla principal)
           internshipTypeId: editingInst.internshipTypeId 
             ? String(editingInst.internshipTypeId) 
@@ -790,9 +747,6 @@ export default function InstitutionModal({
         setDisplayRifNumber(formattedRif);
         setDisplayPhoneNumber(formattedPhone);
         
-        if (parsedMunicipio) setSelectedMunicipio(parsedMunicipio.toUpperCase());
-        if (parsedParroquia) setSelectedParroquia(parsedParroquia.toUpperCase());
-
         // Marcar como inicializado después de permitir que los valores se asienten
         setTimeout(() => setIsInitialized(true), 200);
       } else {
@@ -811,17 +765,11 @@ export default function InstitutionModal({
           nucleus: "",
           extension: "",
           institutionType: "",
-          estado: "",
-          municipio: "",
-          parroquia: "",
-          direccion: "",
           internshipTypeId: "",
           careerIds: [],
         });
         setDisplayRifNumber("");
         setDisplayPhoneNumber("");
-        setSelectedMunicipio("");
-        setSelectedParroquia("");
         setIsInitialized(true);
       }
     } else {
@@ -830,8 +778,7 @@ export default function InstitutionModal({
   }, [editingInst, isOpen, reset, optionsTipoPractica, careerOptions, internshipTypeOptions]);
 
   const onSubmit = (data: InstFormData) => {
-    // El formato de guardado ahora incluye todos los metadatos para asegurar compatibilidad en la edición
-    const fiscalAddress = `${data.region}, ${data.nucleus}, ${data.extension}, ${data.institutionType}, ${data.estado}, ${data.municipio}, ${data.parroquia}, ${data.direccion}`;
+    const fiscalAddress = `${data.region}, ${data.nucleus}, ${data.extension}, ${data.institutionType}`;
 
     const commonData = {
       rif: `${data.rifPrefix}-${data.rifNumber}`.toUpperCase(),
@@ -865,7 +812,7 @@ export default function InstitutionModal({
   /**
    * Helper to convert input value to uppercase.
    */
-  const handleUppercaseChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleUppercaseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const start = e.target.selectionStart;
     const end = e.target.selectionEnd;
     e.target.value = e.target.value.toUpperCase();
@@ -999,106 +946,29 @@ export default function InstitutionModal({
               disabled={isFormDisabled || !!editingInst}
             />
           </div>
-          
-          {/* Sección de Dirección Fiscal */}
+
+          {/* Sección de Dirección */}
           <div className="md:col-span-2">
             <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Dirección Fiscal
-              </h3>
-               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Estado *</label>
-                  <Controller
-                    name="estado"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomSelect
-                        id="estado"
-                        options={ESTADO_OPTIONS}
-                        onChange={(val) => {
-                          field.onChange(val);
-                          setSelectedMunicipio("");
-                          setSelectedParroquia("");
-                          setValue("municipio", "", { shouldValidate: true });
-                          setValue("parroquia", "", { shouldValidate: true });
-                        }}
-                        value={field.value}
-                        placeholder="Seleccione Estado"
-                        error={!!errors.estado}
-                        disabled={isFormDisabled}
-                      />
-                    )}
-                  />
-                  {errors.estado && <p className="mt-1 text-xs text-red-500">{errors.estado.message}</p>}
-                </div>
-                
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Municipio *</label>
-                  <Controller
-                    name="municipio"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomSelect
-                        id="municipio"
-                        options={MUNICIPIO_OPTIONS}
-                        onChange={(val) => {
-                          field.onChange(val);
-                          setSelectedMunicipio(val);
-                          setSelectedParroquia("");
-                          setValue("parroquia", "", { shouldValidate: true });
-                        }}
-                        value={field.value}
-                        placeholder="Seleccione Municipio"
-                        error={!!errors.municipio}
-                        disabled={isFormDisabled}
-                      />
-                    )}
-                  />
-                  {errors.municipio && <p className="mt-1 text-xs text-red-500">{errors.municipio.message}</p>}
-                </div>
-                
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Parroquia *</label>
-                  <Controller
-                    name="parroquia"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomSelect
-                        id="parroquia"
-                        options={PARROQUIA_OPTIONS}
-                        onChange={(val) => {
-                          field.onChange(val);
-                          setSelectedParroquia(val);
-                        }}
-                        value={field.value}
-                        placeholder="Seleccione Parroquia"
-                        error={!!errors.parroquia}
-                        disabled={isFormDisabled}
-                      />
-                    )}
-                  />
-                  {errors.parroquia && <p className="mt-1 text-xs text-red-500">{errors.parroquia.message}</p>}
-                </div>
-                
-                <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Dirección *</label>
-                  <TextArea
-                    placeholder="Ingrese la dirección completa (calle, número de casa, sector, etc.)"
-                    className="uppercase"
-                    {...register("direccion", { onChange: handleUppercaseChange })}
-                    error={!!errors.direccion}
-                    rows={2}
-                    disabled={isFormDisabled}
-                  />
-                  {errors.direccion && <p className="mt-1 text-xs text-red-500">{errors.direccion.message}</p>}
-                </div>
-              </div>
+              <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Dirección</h3>
+              <GeographicAddressFields
+                geoOptions={geoOptions}
+                value={inlineAddress}
+                onChange={setInlineAddress}
+                disabled={isFormDisabled}
+                showReference
+              />
+            </div>
+          </div>
+
+          {/* Sección de Direcciones Estructuradas */}
+          <div className="md:col-span-2">
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+              <AddressList
+                entityType="institution"
+                entityId={editingInst?.institutionId ? Number(editingInst.institutionId) : null}
+                geoOptions={geoOptions}
+              />
             </div>
           </div>
           
@@ -1597,19 +1467,37 @@ export default function InstitutionModal({
       <UnifiedDialog
         isOpen={confirmSaveOpen}
         onClose={() => setConfirmSaveOpen(false)}
-        onConfirm={async () => {
+         onConfirm={async () => {
           if (pendingSave) {
             try {
               const result = await onSave(pendingSave);
-              
-              // Si es nueva institución y se guardó exitosamente, preguntar si quiere agregar responsables
+              const savedId = !editingInst && result && typeof result === 'object' && 'institutionId' in (result as any)
+                ? (result as any).institutionId
+                : editingInst?.institutionId;
+
+              // Crear dirección estructurada si hay datos válidos
+              if (savedId && inlineAddress.parroquiaId && inlineAddress.streetAddress) {
+                try {
+                  await addressService.createAddress({
+                    entityType: 'institution',
+                    entityId: Number(savedId),
+                    addressTypeId: inlineAddress.addressTypeId || 4,
+                    parroquiaId: inlineAddress.parroquiaId,
+                    streetAddress: inlineAddress.streetAddress,
+                    reference: inlineAddress.reference,
+                    isPrimary: inlineAddress.isPrimary,
+                  });
+                } catch (addrErr) {
+                  console.error('[InstitutionModal] Error creating address:', addrErr);
+                  addToast({ variant: 'warning', title: 'Dirección no guardada', message: 'La institución se guardó, pero hubo un error al crear la dirección.' });
+                }
+              }
+
+              // Si es nueva institución, preguntar si quiere agregar responsables
               if (!editingInst && result && typeof result === 'object' && 'institutionId' in (result as any)) {
                 setPendingInstitutionId((result as any).institutionId);
                 setConfirmSaveOpen(false);
-                // Mostrar pregunta para agregar responsables
-                setTimeout(() => {
-                  setAskAddResponsiblesOpen(true);
-                }, 100);
+                setTimeout(() => setAskAddResponsiblesOpen(true), 100);
                 return;
               }
               setConfirmSaveOpen(false);

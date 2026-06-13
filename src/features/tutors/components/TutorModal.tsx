@@ -33,6 +33,11 @@ import { getTutorByCi } from "../services/tutorsService";
 import { checkAvailability as checkPersonAvailability } from "../../persons/services/personService";
 import { lookupCi } from "../../students/services/studentsService";
 import { NAME_PATTERN, SAFE_EMAIL_PATTERN, isSafeInput } from "../../../utils/inputValidation";
+import AddressList from "../../address/components/AddressList";
+import GeographicAddressFields from "../../address/components/GeographicAddressFields";
+import { addressService } from "../../address/services/addressService";
+import type { GeographicAddressValue } from "../../address/components/GeographicAddressFields";
+import type { GeoOptionsItem } from "../../address/types";
 
 /**
  * Props for the TutorModal component.
@@ -96,8 +101,12 @@ export default function TutorModal({
     const [viewOnlyMode, setViewOnlyMode] = useState(false);
    
    // State for API-loaded data flow (SENIAT)
-   const [apiDataLoaded, setApiDataLoaded] = useState(false);
-   const apiLoadedCiRef = useRef("");
+    const [apiDataLoaded, setApiDataLoaded] = useState(false);
+    const apiLoadedCiRef = useRef("");
+    const [geoOptions, setGeoOptions] = useState<GeoOptionsItem[]>([]);
+    const [inlineAddress, setInlineAddress] = useState<GeographicAddressValue>({
+      parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 3, isPrimary: true,
+    });
 
     // State for career modal
     const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
@@ -708,8 +717,18 @@ export default function TutorModal({
       }
     };
 
+    const loadGeoOptions = async () => {
+      try {
+        const response = await addressService.getGeoOptions();
+        setGeoOptions(response.data);
+      } catch (error) {
+        console.error("Error loading geo options:", error);
+      }
+    };
+
     if (isOpen) {
       loadOptions();
+      loadGeoOptions();
     }
   }, [isOpen, fetchMultipleLists]);
 
@@ -1006,6 +1025,17 @@ export default function TutorModal({
                 maxDate={maxDate ? maxDate.toISOString().split("T")[0] : undefined}
               />
 
+              {/* Sección de Dirección */}
+              <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Dirección de Residencia</h3>
+                <GeographicAddressFields
+                  geoOptions={geoOptions}
+                  value={inlineAddress}
+                  onChange={setInlineAddress}
+                  showReference
+                />
+              </div>
+
               {/* Sub-grid: Campos específicos del tutor */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Condición */}
@@ -1159,7 +1189,15 @@ export default function TutorModal({
               />
             </div> {/* Cierra Columna Izquierda */}
            </div>
-        </form>
+            {/* Direcciones Estructuradas */}
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+              <AddressList
+                entityType="person"
+                entityId={editingTutor?.personId ? Number(editingTutor.personId) : existingTutor?.personId ? Number(existingTutor.personId) : null}
+                geoOptions={geoOptions}
+              />
+            </div>
+         </form>
       </ModalBody>
 
       <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
@@ -1222,9 +1260,25 @@ export default function TutorModal({
       <UnifiedDialog
         isOpen={confirmSaveOpen}
         onClose={() => setConfirmSaveOpen(false)}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (pendingSave) {
-            onSave(pendingSave);
+            await onSave(pendingSave);
+          }
+          const personId = editingTutor?.personId ?? existingTutor?.personId ?? null;
+          if (personId && inlineAddress.parroquiaId && inlineAddress.streetAddress) {
+            try {
+              await addressService.createAddress({
+                entityType: 'person',
+                entityId: Number(personId),
+                addressTypeId: inlineAddress.addressTypeId || 3,
+                parroquiaId: inlineAddress.parroquiaId,
+                streetAddress: inlineAddress.streetAddress,
+                reference: inlineAddress.reference,
+                isPrimary: inlineAddress.isPrimary,
+              });
+            } catch (addrErr) {
+              console.error('[TutorModal] Error creating address:', addrErr);
+            }
           }
           setConfirmSaveOpen(false);
         }}

@@ -74,6 +74,7 @@ export interface UpdateAddressPayload {
   parroquiaId?: number;
   streetAddress?: string;
   reference?: string;
+  addressTypeId?: number;
 }
 
 export interface CoincidenceResult {
@@ -97,4 +98,21 @@ export interface AddressSuggestion {
   estado: string;
   municipio: string;
   proximityScore: number;
+}
+
+export interface GeoParroquia {
+  parroquia_id: number;
+  name: string;
+}
+
+export interface GeoMunicipio {
+  municipio_id: number;
+  name: string;
+  t_parroquia: GeoParroquia[];
+}
+
+export interface GeoOptionsItem {
+  estado_id: number;
+  name: string;
+  t_municipio: GeoMunicipio[];
 }

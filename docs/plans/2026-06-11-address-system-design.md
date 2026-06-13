@@ -333,6 +333,58 @@ Free text with no structure. Parse heuristics: search for known estado/municipio
 
 ---
 
+### Session 3 (2026-06-13) — Frontend Integration & Bug Fixes
+
+**What was done:**
+- Built `GeographicAddressFields` — inline cascading selects (estado→municipio→parroquia) for inline address entry
+- Built `AddressCard`, `AddressForm`, `AddressList` — modal-based multi-address management
+- Built `AddressCoincidencePanel` — geographic match display in `EnrollmentModal`
+- Integrated `AddressList` + `GeographicAddressFields` into `InstitutionModal`, `StudentModal`, `TutorModal`
+- Removed legacy free-text address fields (`estado`/`municipio`/`parroquia`/`direccion`) from `InstitutionModal`
+- Made student address optional in zod schema
+- Created `GeographicAddressFields` as reusable controlled component (value/onChange pattern)
+- Legacy migration script: 47 addresses converted (8 institutions, 39 persons). 21 persons with junk data skipped. Idempotent with dedup guard.
+- Created `GET /api/address/address-types` endpoint (replaces hardcoded type options)
+- Backend CRUD endpoints (+ coincidence, suggestions, stats, geo-options)
+- Frontend `useAddresses` hook (CRUD with auto-refetch) + `useAddressCoincidence` hook
+
+**Bugs fixed this session:**
+1. **Snake_case/camelCase mismatch (read path)**: Supabase returns `address_type` but frontend types use `addressType`. Added `camelizeKeys` transform in both `useAddresses` and `useAddressCoincidence` hooks.
+2. **Nested geography not flattened**: Supabase query returns nested `parroquia:municipio:estado` objects but `Address` interface expects flat strings. Added `flattenAddress` to unwrap hierarchy.
+3. **Snake_case/camelCase mismatch (write path)**: `addressService` sent camelCase JSON body but backend expects snake_case. Added `snakeify` transform in service.
+4. **SSE CORS blocked**: `EventSource` for notifications blocked by CORS middleware (can't send custom headers). Moved SSE route before `app.use(cors(...))` in `app.ts`.
+5. **Address type undefined crash**: Fixed by `camelizeKeys` + null guard in `AddressCard` (`addressType?.name ?? 'Sin tipo'`).
+6. **Missing key prop**: `institutionAddressId` was `undefined` for person data. Fixed by `getAddrId(addr, entityType)` helper in `AddressList`.
+7. **`setPrimary` silently no-op**: Passed `addressTypeId: 0` (invalid). Fixed by accepting `addressTypeId` from caller and passing real value.
+8. **Hard delete orphans**: `deleteAddress` only deleted bridge row, leaving orphaned `t_address` rows. Added cleanup check — deletes `t_address` if no bridges reference it.
+9. **`addressTypeId` not updateable**: `updateAddress` only allowed `parroquia_id/street_address/reference`. Added `address_type_id` support in controller + frontend payload.
+
+**Issues remaining:**
+- `getAddressStats` query uses implicit joins on quoted uppercase columns — may be fragile (resolved: FKs verified)
+- No automated tests
+
+**Build status:** `npm run build` + backend `tsc` — **0 errors**.
+
+---
+
+### Session 4 (2026-06-13) — Final Fixes & Cleanup
+
+**What was done:**
+- Fixed `AddressList` entity-type-aware ID selection: `getAddrId(addr, entityType)` helper replaces hardcoded `institutionAddressId` for all callbacks (key, delete, edit, setPrimary)
+- Fixed `useAddresses` state type: `AddressRow` union type (`InstitutionAddress | PersonAddress`) instead of `InstitutionAddress[]` — prevents type lying
+- Added orphan cleanup on `deleteAddress`: after deleting bridge row, checks if any other bridge references `t_address` — if none, deletes from `t_address`
+- Added `addressTypeId` to `updateAddress` controller + frontend payload: users can now change address type after creation
+- Verified `getAddressStats` query: FKs exist, columns correct, query not fragile — no fix needed
+- Verified `get_coincidence_stats` RPC: properly defined with quoted uppercase column references
+- Built `AddressBadge.tsx` — reusable colored badge per type code (PRINCIPAL=yellow, DOMICILIO=blue, RESIDENCIA_ACTUAL=purple, SEDE_PRACTICAS=green). Integrated into `AddressCard` replacing inline `<span>`
+
+**Build status:** `npm run build` + backend `tsc` — **0 errors**.
+
+**Remaining (non-blocking, polish):**
+- Automated tests
+
+---
+
 ## Testing Strategy
 
 ### Backend

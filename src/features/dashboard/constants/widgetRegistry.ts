@@ -159,6 +159,18 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     }),
   },
 
+  'geo-coincidence': {
+    key: 'geo-coincidence',
+    displayName: 'Coincidencia Geográfica',
+    description: 'Distribución de coincidencias geográficas estudiante-institución en inscripciones',
+    icon: 'map-pin',
+    size: 'sm',
+    module: 'general',
+    allowedRoles: [1, 2],
+    component: lazy(() => import('../components/GeoCoincidenceWidget')),
+    getProps: () => ({}),
+  },
+
   'pending-requests': {
     key: 'pending-requests',
     displayName: 'Solicitudes Pendientes',

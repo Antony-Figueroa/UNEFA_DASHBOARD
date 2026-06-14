@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { sanitizeText } from '../utils/text-utils.js';
 
 interface MulterRequest extends Request {
   file?: Express.Multer.File;
@@ -146,7 +147,7 @@ export const uploadDocument = async (req: AuthRequest, res: Response) => {
       .insert({
         STUDENT_ID: student.STUDENTS_ID,
         DOCUMENT_TYPE: documentType,
-        TITLE: title,
+        TITLE: sanitizeText(title) ?? '',
         DESCRIPTION: description || null,
         FILE_NAME: file.originalname,
         FILE_PATH: storageData.path,

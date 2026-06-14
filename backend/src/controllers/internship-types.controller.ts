@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
+import { sanitizeText } from '../utils/text-utils.js';
 
 const TABLE_NAME = 't_internship_type';
 
@@ -101,7 +102,7 @@ export const createInternshipType = async (req: Request, res: Response) => {
       const { data, error } = await supabase
         .from(TABLE_NAME)
         .insert([{
-          NAME,
+          NAME: sanitizeText(NAME) ?? '',
           PRIORITY: Number(PRIORITY) || 0,
           STATUS: STATUS || 1,
           CREATION_DATE: new Date().toISOString()
@@ -126,7 +127,7 @@ export const updateInternshipType = async (req: Request, res: Response) => {
       const { data, error } = await supabase
         .from(TABLE_NAME)
         .update({
-          NAME,
+          NAME: sanitizeText(NAME) ?? '',
           PRIORITY: Number(PRIORITY),
           STATUS
         })

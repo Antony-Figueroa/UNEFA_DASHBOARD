@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
+import { sanitizeText } from '../utils/text-utils.js';
 
 const TABLE_NAME = 't_activity_logs';
 
@@ -168,7 +169,7 @@ export const createActivityLog = async (req: AuthRequest, res: Response) => {
         ACTIVITY_DATE: activityDate,
         WEEK_NUMBER: weekNumber,
         HOURS_WORKED: hoursWorked,
-        ACTIVITY_TYPE: activityType,
+        ACTIVITY_TYPE: sanitizeText(activityType) ?? '',
         ACTIVITY_DESCRIPTION: activityDescription,
         TASKS_COMPLETED: tasksCompleted,
         CHALLENGES: challenges,
@@ -212,7 +213,7 @@ export const updateActivityLog = async (req: Request, res: Response) => {
         ACTIVITY_DATE: activityDate,
         WEEK_NUMBER: weekNumber,
         HOURS_WORKED: hoursWorked,
-        ACTIVITY_TYPE: activityType,
+        ACTIVITY_TYPE: sanitizeText(activityType) ?? '',
         ACTIVITY_DESCRIPTION: activityDescription,
         TASKS_COMPLETED: tasksCompleted,
         CHALLENGES: challenges,

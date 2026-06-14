@@ -347,7 +347,7 @@ const NavBar: React.FC = () => {
       <div
         role="tablist"
         className="flex items-center h-10 overflow-x-auto no-scrollbar scroll-smooth
-          bg-gray-50/80 dark:bg-bg-dark/90
+          bg-gray-50 dark:bg-bg-dark
           border-b border-border-light/50 dark:border-border-dark/50"
       >
         {tabs.map((tab, idx) => (

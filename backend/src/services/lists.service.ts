@@ -704,6 +704,10 @@ export const toggleValueStatus = async (valueId: string, status: boolean): Promi
  * @param idOrName ID numérico o nombre de la lista (case-insensitive)
  */
 export const getListByName = async (idOrName: string): Promise<AppList> => {
+  const cacheKey = `${CACHE_PREFIX}byName:${idOrName.toUpperCase()}`;
+  const cached = cacheManager.get<AppList>(cacheKey);
+  if (cached) return cached;
+
   const data = await dbManager.withRetry(async (supabase) => {
     // Buscar por ID o nombre (case-insensitive)
     const list = await findListByIdentifier(supabase, idOrName);
@@ -736,6 +740,7 @@ export const getListByName = async (idOrName: string): Promise<AppList> => {
     } as AppList;
   }, 'getListByName');
 
+  cacheManager.set(cacheKey, data, CACHE_TTL);
   return data;
 };
 

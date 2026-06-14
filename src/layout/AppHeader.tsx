@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSidebar } from "../context/sidebar";
 import { useAuth } from "../context/auth";
 import { useCommandPalette } from "../components/command-palette/CommandPaletteContext";

@@ -237,9 +237,6 @@ export const requestPasswordReset = async (req: Request, res: Response) => {
     }
 
     const result = await authService.requestPasswordResetByCi(userCi, ip, userAgent);
-    if (!result.success) {
-      return res.status(result.status || 400).json(result);
-    }
     res.json(result);
   } catch (error) {
     handleAuthError(res, error);

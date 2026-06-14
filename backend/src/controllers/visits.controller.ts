@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { dbManager } from "../lib/db-manager.js";
 import { sanitizeText } from "../utils/text-utils.js";
+import { getPersonField, getPersonFullName } from "../utils/person-utils.js";
 
 export interface VisitRecord {
   VISIT_ID: number;
@@ -50,12 +51,10 @@ const mapVisitToFrontend = (v: VisitWithDetails) => ({
   visitId: v.VISIT_ID,
   practiceId: v.PROFESSIONAL_PRACTICE_ID,
   tutorId: v.TUTOR_ID,
-  tutorName: v.t_persons ? `${v.t_persons.first_name} ${v.t_persons.last_name}` : '',
-  tutorCi: v.t_persons?.ci || '',
-  studentName: v.t_professional_practices?.t_persons
-    ? `${v.t_professional_practices.t_persons.first_name} ${v.t_professional_practices.t_persons.last_name}`
-    : '',
-  studentCi: v.t_professional_practices?.t_persons?.ci || '',
+  tutorName: getPersonFullName(v.t_persons),
+  tutorCi: getPersonField(v.t_persons, 'ci') || '',
+  studentName: getPersonFullName(v.t_professional_practices?.t_persons),
+  studentCi: getPersonField(v.t_professional_practices?.t_persons, 'ci') || '',
   institutionName: v.t_professional_practices?.t_institution?.INSTITUTION_NAME || '',
   visitDate: v.VISIT_DATE,
   visitType: v.VISIT_TYPE,

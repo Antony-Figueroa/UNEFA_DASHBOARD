@@ -3,3 +3,6 @@ export * from '../lib/cache-manager.js';
 
 // Re-export de utilidades de fechas para zona horaria de Venezuela
 export * from './date.utils.js';
+
+// Re-export de utilidades de personas para joins de Supabase
+export * from './person-utils.js';

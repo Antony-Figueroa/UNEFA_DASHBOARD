@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { supabase } from "../lib/supabase.js";
 import { notificationsUnified } from "../services/notifications-unified.service.js";
 import { sendEmail } from "../utils/email.utils.js";
+import { getPersonField, getPersonFullName } from "../utils/person-utils.js";
 
 // Mapeo de nombres de rol a IDs de la tabla t_user_roles
 const ROLE_NAME_TO_ID: Record<string, number> = {
@@ -272,12 +273,12 @@ export const expressEmail = async (req: Request, res: Response): Promise<void> =
       if (error) throw error;
 
       for (const u of userData || []) {
-        const person = u.t_persons?.[0];
-        if (person?.email) {
+        const email = getPersonField(u.t_persons, 'email');
+        if (email) {
           systemRecipients.push({
             userId: u.USER_ID,
-            email: person.email,
-            name: [person.first_name, person.last_name].filter(Boolean).join(' ').trim() || 'Usuario',
+            email,
+            name: getPersonFullName(u.t_persons) || 'Usuario',
           });
         }
       }

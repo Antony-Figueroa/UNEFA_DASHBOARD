@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { dbManager } from '../lib/db-manager.js';
 import { sanitizeText } from '../utils/text-utils.js';
+import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
 
 const TABLE_NAME = 't_activity_logs';
 
@@ -79,10 +80,8 @@ export const getActivityLogs = async (req: AuthRequest, res: Response) => {
 
     const logs = (data || []).map((log: any) => ({
       ...log,
-      studentName: log.t_persons 
-        ? `${log.t_persons.first_name} ${log.t_persons.last_name}`
-        : 'Sin estudiante',
-      studentCi: log.t_persons?.ci || '',
+      studentName: getPersonFullName(log.t_persons) || 'Sin estudiante',
+      studentCi: getPersonField(log.t_persons, 'ci') || '',
       practiceStartDate: log.t_professional_practices?.START_DATE,
       practiceEndDate: log.t_professional_practices?.END_DATE
     }));
@@ -128,10 +127,8 @@ export const getActivityLogById = async (req: Request, res: Response) => {
       success: true, 
       data: {
         ...data,
-        studentName: data.t_persons 
-          ? `${data.t_persons.first_name} ${data.t_persons.last_name}`
-          : 'Sin estudiante',
-        studentCi: data.t_persons?.ci || ''
+        studentName: getPersonFullName(data.t_persons) || 'Sin estudiante',
+        studentCi: getPersonField(data.t_persons, 'ci') || ''
       }
     });
   } catch (error) {

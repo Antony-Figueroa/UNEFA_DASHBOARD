@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
+import { sanitizeText } from '../utils/text-utils.js';
 
 const LISTS_TABLE = 't_prospect_lists';
 const ITEMS_TABLE = 't_prospect_list_items';
@@ -172,7 +173,7 @@ export const createList = async (req: Request, res: Response) => {
       const { data, error } = await supabase
         .from(LISTS_TABLE)
         .insert([{
-          NAME: name.trim(),
+          NAME: sanitizeText(name) ?? '',
           DESCRIPTION: description || null,
           PERIOD_ID: periodId,
           CREATED_BY: createdBy || null

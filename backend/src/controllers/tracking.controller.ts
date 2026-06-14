@@ -388,9 +388,11 @@ export const getTrackingById = async (req: Request, res: Response) => {
         t_professional_practices_tutor (
           TUTOR_ID,
           TUTOR_TYPE,
-          t_persons!inner(
-            first_name,
-            last_name
+          t_tutors!inner(
+            NAME,
+            SURNAME,
+            SECOND_NAME,
+            SECOND_SURNAME
           )
         )
       `)
@@ -427,7 +429,7 @@ export const getTrackingById = async (req: Request, res: Response) => {
         if (t.TUTOR_ID) {
           assignedTutors.push({
             tutorId: t.TUTOR_ID,
-            tutorName: `${t.t_persons?.first_name || ""} ${t.t_persons?.last_name || ""}`.trim(),
+            tutorName: `${t.t_tutors?.NAME || ""} ${t.t_tutors?.SURNAME || ""}`.trim(),
             tutorType: t.TUTOR_TYPE === 'METODOLOGICO' || t.TUTOR_TYPE === 'METODOLÓGICO' ? 'METODOLOGICO' : 'ACADEMICO'
           });
         }

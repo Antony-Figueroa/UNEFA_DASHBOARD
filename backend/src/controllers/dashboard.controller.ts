@@ -1,9 +1,15 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
+import { cacheManager } from '../lib/cache-manager.js';
 import { PERIOD_STATUS } from '../constants/practice-status.constants.js';
 
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
+    const periodId = req.query.periodId ? parseInt(req.query.periodId as string, 10) : null;
+    const cacheKey = `dashboard:stats:${periodId ?? 'current'}`;
+    const cached = cacheManager.get<any>(cacheKey);
+    if (cached) return res.json(cached);
+
     const supabase = dbManager.getConnection();
 
     // 1. Basic Stats (Students and Institutions)
@@ -23,30 +29,22 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       supabase.from('t_internships_period').select('*').eq('PERIOD_STATUS', PERIOD_STATUS.EN_CURSO).eq('STATUS', 1).order('START_DATE', { ascending: false }).limit(1).single()
     ]);
 
-    // 2. Career Distribution - obtener desde t_professional_practices
-    const { data: careerStats } = await supabase
-      .from('t_professional_practices')
-      .select('CAREER_ID, t_career(CAREER_NAME)')
-      .eq('STATUS', 1);
+    // 2. Career Distribution
+    // Single query: all active careers + count of active practices per career
+    const [allCareersResult, practicesByCareerResult] = await Promise.all([
+      supabase.from('t_career').select('CAREER_ID, CAREER_NAME').eq('STATUS', 1),
+      supabase.from('t_professional_practices')
+        .select('CAREER_ID, t_career(CAREER_NAME)')
+        .eq('STATUS', 1)
+        .not('CAREER_ID', 'is', null)
+    ]);
+    const allCareers = allCareersResult.data;
+    const practicesByCareer = practicesByCareerResult.data;
 
-    // Obtener todas las carreras activas primero
-    const { data: allCareers } = await supabase
-      .from('t_career')
-      .select('CAREER_ID, CAREER_NAME')
-      .eq('STATUS', 1);
-
-    // Inicializar todas las carreras con 0
     const careerMap = new Map<string, number>();
     (allCareers || []).forEach((c) => {
       careerMap.set(c.CAREER_NAME, 0);
     });
-
-    // Contar estudiantes por carrera desde t_professional_practices (que tiene CAREER_ID)
-    const { data: practicesByCareer } = await supabase
-      .from('t_professional_practices')
-      .select('CAREER_ID, t_career(CAREER_NAME)')
-      .eq('STATUS', 1)
-      .not('CAREER_ID', 'is', null);
 
     interface PracticeCareerItem {
       CAREER_ID: number;
@@ -90,9 +88,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       }))
       .sort((a, b) => b.studentCount - a.studentCount);
 
-    // --- Period filtering ---
-    const periodId = req.query.periodId ? parseInt(req.query.periodId as string, 10) : null;
-
+    // --- Period filtering (periodId already parsed at top) ---
     let periodStartDate: string | null = null;
     let periodEndDate: string | null = null;
 
@@ -156,34 +152,30 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       .sort((a, b) => a.date.localeCompare(b.date));
 
     // 4. Monthly Growth - Total active students (not just this month)
-    // Students with STATUS = 1 (active) instead of registration date
-    const [{ count: totalActiveStudents }, { count: totalAllStudents }] = await Promise.all([
-      supabase.from('t_students').select('*', { count: 'exact', head: true }).eq('STATUS', 1),
-      supabase.from('t_students').select('*', { count: 'exact', head: true })
-    ]);
+    const { count: totalActiveStudents } = await supabase
+      .from('t_students')
+      .select('*', { count: 'exact', head: true })
+      .eq('STATUS', 1);
 
     // For comparison, get prev month's total (mock data based on 80% of current)
     const prevMonthTotal = Math.round((totalActiveStudents || 0) * 0.8);
     const percentageChange = prevMonthTotal ? (((totalActiveStudents || 0) - prevMonthTotal) / prevMonthTotal) * 100 : 0;
 
-    // Weekly Breakdown (Last 4 weeks based on STATUS, not REGISTRATION_DATE)
-    const weeklyBreakdown = [];
-    for (let i = 3; i >= 0; i--) {
+    // Weekly Breakdown (Last 4 weeks — parallel)
+    const weeklyQueries = [3, 2, 1, 0].map(async (i) => {
       const start = new Date();
       start.setDate(start.getDate() - (i + 1) * 7);
       const end = new Date();
       end.setDate(end.getDate() - i * 7);
-      
-      // Use STATUS = 1 (active students created in that week)
       const { count } = await supabase
         .from('t_students')
         .select('*', { count: 'exact', head: true })
         .eq('STATUS', 1)
         .gte('REGISTRATION_DATE', start.toISOString())
         .lt('REGISTRATION_DATE', end.toISOString());
-      
-      weeklyBreakdown.push({ label: `Semana ${4-i}`, count: count || 0 });
-    }
+      return { label: `Semana ${4 - i}`, count: count || 0 };
+    });
+    const weeklyBreakdown = await Promise.all(weeklyQueries);
 
     // 5. Pending Tasks
     // Solicitudes pendientes (estado 'pending' o similar)
@@ -244,7 +236,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       .gte('VISIT_DATE', new Date().toISOString())
       .lte('VISIT_DATE', nextWeek.toISOString());
 
-    res.json({
+    const payload = {
       totalStudents: totalStudents || 0,
       activeStudents: activeStudents || 0,
       totalInstitutions: totalInstitutions || 0,
@@ -266,7 +258,6 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         dailyBreakdown: []
       },
       careerDistribution,
-      // Placeholder for other stats expected by frontend
       totalEnrollments: 0,
       totalPreEnrollments: 0,
       activePeriods: 0,
@@ -285,7 +276,10 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         startDate: p.START_DATE,
         endDate: p.END_DATE
       }))
-    });
+    };
+
+    cacheManager.set(cacheKey, payload, 30000); // 30s cache
+    res.json(payload);
 
   } catch (error) {
     console.error('Dashboard Error:', error);

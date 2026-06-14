@@ -53,10 +53,8 @@ const mapRecord = (career: Record<string, unknown>): Career => {
 
 export const getCareers = async () => {
   const cacheKey = `${CACHE_PREFIX}list`;
-  // Temporalmente deshabilitar caché para debug
-  // const cached = cacheManager.get(cacheKey);
-  // if (cached) return cached;
-  cacheManager.delete(cacheKey);
+  const cached = cacheManager.get<Career[]>(cacheKey);
+  if (cached) return cached;
 
   const transformed = await dbManager.withRetry(async (supabase) => {
     // 1. Obtener carreras básicas

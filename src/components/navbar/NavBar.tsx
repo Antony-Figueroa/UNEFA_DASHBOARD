@@ -215,19 +215,28 @@ const TabItem: React.FC<TabItemProps> = ({
 
       {/* Close / Pin button */}
       {tab.pinned ? (
-        <button
+        <span
+          role="button"
+          tabIndex={0}
           onClick={(e) => {
             e.stopPropagation();
             onPinToggle();
           }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              e.stopPropagation();
+              onPinToggle();
+            }
+          }}
           className="size-4 shrink-0 flex items-center justify-center
             rounded hover:bg-gray-200 dark:hover:bg-gray-700
-            transition-all duration-150"
+            transition-all duration-150 cursor-pointer"
           title="Desfijar pestaña"
           aria-label="Desfijar pestaña"
         >
           <Pin className="size-3 text-brand-500" />
-        </button>
+        </span>
       ) : (
         <span
           role="button"

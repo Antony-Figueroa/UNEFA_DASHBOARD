@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import * as authService from '../services/auth.service.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { validatePassword } from '../utils/security.utils.js';
+import { decodeToken } from '../utils/auth.utils.js';
 import { getConfig } from '../services/config.service.js';
 import { dbManager } from '../lib/db-manager.js';
 import { auditCreate, auditUpdate } from '../utils/audit-helpers.js';
@@ -310,17 +311,26 @@ export const resetPasswordWithToken = async (req: Request, res: Response) => {
 
 export const logout = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
-    const userCi = req.user?.userCi;
     const ip = req.ip || '';
     const userAgent = req.headers['user-agent'] || '';
     const token = req.cookies?.auth_token;
 
-    if (userId && userCi) {
-      await authService.logAuthAction(userId, userCi, 'LOGOUT', ip, userAgent, 'Cierre de sesión manual');
-      if (token) {
-        authService.revokeToken(token, userId, userCi);
+    // Intentar obtener userId del middleware (si está autenticado) o decodificar
+    // el token aunque esté expirado (para revocar en DB igual)
+    let userId = req.user?.userId;
+    let userCi = req.user?.userCi;
+
+    if (!userId && token) {
+      const decoded = decodeToken(token) as { userId?: number; userCi?: string } | null;
+      if (decoded?.userId) {
+        userId = decoded.userId;
+        userCi = decoded.userCi;
       }
+    }
+
+    if (userId && userCi && token) {
+      authService.revokeToken(token, userId, userCi);
+      await authService.logAuthAction(userId, userCi, 'LOGOUT', ip, userAgent, 'Cierre de sesión manual');
     }
 
     res.clearCookie('auth_token');

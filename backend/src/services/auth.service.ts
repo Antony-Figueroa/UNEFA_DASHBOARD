@@ -120,7 +120,7 @@ export const login = async (userCi: string, password: string, ip: string, userAg
 
     if (userError || !user) {
       await logAuthAction(null, userCi, 'LOGIN_FAILED', ip, userAgent, 'Usuario no encontrado');
-      return { success: false, status: 401, message: 'Las credenciales ingresadas no son válidas. Por favor, verifique su número de cédula.' };
+      return { success: false, status: 401, message: 'Credenciales inválidas.' };
     }
 
     // 2. Verificar si está bloqueado
@@ -133,7 +133,7 @@ export const login = async (userCi: string, password: string, ip: string, userAg
         return { 
           success: false, 
           status: 403, 
-          message: `Cuenta bloqueada temporalmente por seguridad. Intente de nuevo en ${minutes} minutos.` 
+          message: 'Cuenta bloqueada temporalmente. Intente más tarde.' 
         };
       } else {
         // Desbloquear automáticamente si ya pasó el tiempo
@@ -143,7 +143,7 @@ export const login = async (userCi: string, password: string, ip: string, userAg
       }
     } else if (user.STATUS === 0) {
       await logAuthAction(user.USER_ID, userCi, 'LOGIN_FAILED', ip, userAgent, 'Cuenta bloqueada');
-      return { success: false, status: 403, message: 'Cuenta bloqueada temporalmente. Contacte al administrador.' };
+      return { success: false, status: 403, message: 'Cuenta bloqueada temporalmente. Intente más tarde.' };
     }
 
     // 3. Obtener la clave actual activa
@@ -193,11 +193,10 @@ export const login = async (userCi: string, password: string, ip: string, userAg
           
           sendSecurityAlert(user.EMAIL, user.NAME, 'ACCOUNT_LOCKED', ip).catch(console.error);
 
-          const daysText = BLOCKING_DAYS === 1 ? '1 día' : `${BLOCKING_DAYS} días`;
           return { 
             success: false, 
             status: 403, 
-            message: `Cuenta bloqueada por demasiados intentos fallidos. Intente de nuevo en ${daysText}.` 
+            message: 'Cuenta bloqueada por demasiados intentos fallidos. Intente más tarde.' 
           };
         } else {
           if ('FAILED_ATTEMPTS' in user) {
@@ -212,8 +211,7 @@ export const login = async (userCi: string, password: string, ip: string, userAg
           return { 
             success: false, 
             status: 401, 
-            message: `Contraseña incorrecta. Le quedan ${attemptsRemaining} intentos antes de que su cuenta sea bloqueada.`,
-            attemptsRemaining
+            message: 'Credenciales inválidas.'
           };
         }
       } catch (updateError) {
@@ -495,68 +493,35 @@ export const changePassword = async (
  * Solicita la recuperación de contraseña por email
  */
 export const requestPasswordReset = async (email: string, ip: string, userAgent: string) => {
-  return await dbManager.withRetry(async (supabase) => {
-    // 1. Buscar usuario por email
-    const { data: user, error: userError } = await supabase
-      .from('t_user')
-      .select('USER_ID, NAME, EMAIL, USER_CI, STATUS')
-      .eq('EMAIL', email)
-      .single();
+  // Siempre responder con el mismo mensaje para evitar user enumeration
+  try {
+    await dbManager.withRetry(async (supabase) => {
+      const { data: user } = await supabase
+        .from('t_user')
+        .select('USER_ID, NAME, EMAIL, USER_CI, STATUS')
+        .eq('EMAIL', email)
+        .single();
 
-    if (userError || !user) {
-      return { 
-        success: false, 
-        status: 404,
-        message: 'El correo electrónico no se encuentra registrado en el sistema.' 
-      };
-    }
+      if (user && user.STATUS !== 0) {
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-    // 2. Verificar si el usuario está bloqueado/inactivo
-    if (user.STATUS === 0) {
-      return { 
-        success: false, 
-        status: 403,
-        message: 'Esta cuenta se encuentra bloqueada o inactiva. Por favor, contacte al administrador.' 
-      };
-    }
+        await supabase.from('t_recovery_tokens').insert({
+          USER_ID: user.USER_ID,
+          TOKEN: token,
+          EXPIRATION_DATE: expiry,
+          STATUS: 1
+        }).catch(() => {});
 
-    // 3. Generar token único (no JWT para que sea opaco y se guarde en DB)
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 horas
+        await logAuthAction(user.USER_ID, user.USER_CI, 'PASSWORD_RESET_REQUESTED', ip, userAgent, 'Solicitud de restablecimiento de contraseña vía email').catch(() => {});
+        sendPasswordRecoveryEmail(user.EMAIL, user.NAME, token).catch(() => {});
+      }
+    });
+  } catch {
+    // Silently ignore — same generic response either way
+  }
 
-    // 3. Guardar token en t_recovery_tokens
-    const { error: tokenError } = await supabase
-      .from('t_recovery_tokens')
-      .insert({
-        USER_ID: user.USER_ID,
-        TOKEN: token,
-        EXPIRATION_DATE: expiry,
-        STATUS: 1 // 1: Activo
-      });
-
-    if (tokenError) {
-      console.error('[Auth] Error al guardar token de recuperación:', tokenError);
-      throw new Error('Error al procesar la solicitud de recuperación.');
-    }
-
-    // 4. Registrar auditoría
-    await logAuthAction(user.USER_ID, user.USER_CI, 'PASSWORD_RESET_REQUESTED', ip, userAgent, 'Solicitud de restablecimiento de contraseña vía email');
-
-    // 5. Enviar email
-    const emailResult = await sendPasswordRecoveryEmail(user.EMAIL, user.NAME, token);
-
-    if (!emailResult.success) {
-      console.error(`[Auth] Error sending recovery email to ${user.EMAIL}: ${emailResult.error}`);
-      // El token se creó pero el email falló — informamos al usuario
-      return {
-        success: true,
-        warning: true,
-        message: 'No se pudo enviar el correo electrónico. Intentalo más tarde o contactá al administrador.',
-      };
-    }
-
-    return { success: true, message: 'Instrucciones enviadas al correo electrónico.' };
-  });
+  return { success: true, message: 'Si el correo está registrado, recibirás las instrucciones para restablecer tu contraseña.' };
 };
 
 /**
@@ -606,49 +571,10 @@ export const resetPasswordWithToken = async (token: string, newPassword: string,
   });
 };
 
-export const getSecurityQuestions = async (userCi: string) => {
-  return await dbManager.withRetry(async (supabase) => {
-    const { data: user, error: userError } = await supabase
-      .from('t_user')
-      .select('USER_ID')
-      .eq('USER_CI', userCi)
-      .single();
-
-    if (userError || !user) {
-      return { success: false, message: 'Usuario no encontrado' };
-    }
-
-    interface SecurityQuestionResult {
-      PRESET_QUESTION_ID: number | null;
-      CUSTOM_QUESTION: string | null;
-      t_preset_questions: { DESCRIPTION: string } | { DESCRIPTION: string }[] | null;
-    }
-
-    const { data, error: qError } = await supabase
-      .from('t_security_questions')
-      .select('PRESET_QUESTION_ID, CUSTOM_QUESTION, t_preset_questions(DESCRIPTION)')
-      .eq('USER_ID', user.USER_ID);
-
-    const questions = data as unknown as SecurityQuestionResult[] | null;
-
-    if (qError || !questions || questions.length === 0) {
-      return { success: false, message: 'El usuario no tiene preguntas de seguridad configuradas' };
-    }
-
-    return { 
-      success: true, 
-      userId: user.USER_ID,
-      questions: questions.map(q => ({
-        id: q.PRESET_QUESTION_ID || 0,
-        isCustom: !q.PRESET_QUESTION_ID,
-        customQuestion: q.CUSTOM_QUESTION || undefined,
-        description: q.PRESET_QUESTION_ID 
-          ? (Array.isArray(q.t_preset_questions) 
-            ? q.t_preset_questions[0]?.DESCRIPTION 
-            : q.t_preset_questions?.DESCRIPTION || '')
-          : q.CUSTOM_QUESTION || ''
-      }))
-    };
+export const getSecurityQuestions = async (_userCi: string) => {
+  return await dbManager.withRetry(async (_supabase) => {
+    // Respuesta genérica idéntica para evitar user enumeration
+    return { success: true, message: 'Si la cédula está registrada, recibirás las instrucciones en tu correo electrónico.' };
   });
 };
 
@@ -926,128 +852,95 @@ export const getAllAuthLogs = async (limit: number = 100, offset: number = 0, us
  * Solicita recuperación de contraseña por cédula
  */
 export const requestPasswordResetByCi = async (userCi: string, ip: string, userAgent: string) => {
-  return await dbManager.withRetry(async (supabase) => {
-    const { data: user, error: userError } = await supabase
-      .from('t_user')
-      .select('USER_ID, NAME, EMAIL, USER_CI, STATUS')
-      .eq('USER_CI', userCi)
-      .single();
+  // Respuesta genérica idéntica independientemente de si el CI existe
+  try {
+    return await dbManager.withRetry(async (supabase) => {
+      const { data: user } = await supabase
+        .from('t_user')
+        .select('USER_ID, NAME, EMAIL, USER_CI, STATUS')
+        .eq('USER_CI', userCi)
+        .single();
 
-    if (userError || !user) {
-      return { 
-        success: false, 
-        status: 404,
-        message: 'La cédula no se encuentra registrada en el sistema.' 
-      };
-    }
+      if (user && user.STATUS !== 0 && user.EMAIL) {
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-    if (user.STATUS === 0) {
-      return { 
-        success: false, 
-        status: 403,
-        message: 'Esta cuenta se encuentra bloqueada o inactiva. Por favor, contacte al administrador.' 
-      };
-    }
+        await supabase.from('t_recovery_tokens').insert({
+          USER_ID: user.USER_ID,
+          TOKEN: token,
+          EXPIRATION_DATE: expiry,
+          STATUS: 1
+        }).catch(() => {});
 
-    if (!user.EMAIL) {
-      return {
-        success: false,
-        status: 400,
-        message: 'Tu cuenta no tiene un correo electrónico registrado. Comunicate con un administrador para recuperar tu contraseña.'
-      };
-    }
+        await logAuthAction(user.USER_ID, user.USER_CI, 'PASSWORD_RESET_REQUESTED', ip, userAgent, 'Solicitud de restablecimiento de contraseña').catch(() => {});
+        sendPasswordRecoveryEmail(user.EMAIL, user.NAME, token).catch(() => {});
+      }
 
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-
-    const { error: tokenError } = await supabase
-      .from('t_recovery_tokens')
-      .insert({
-        USER_ID: user.USER_ID,
-        TOKEN: token,
-        EXPIRATION_DATE: expiry,
-        STATUS: 1
-      });
-
-    if (tokenError) {
-      console.error('[Auth] Error al guardar token de recuperación:', tokenError);
-      throw new Error('Error al procesar la solicitud de recuperación.');
-    }
-
-    await logAuthAction(user.USER_ID, user.USER_CI, 'PASSWORD_RESET_REQUESTED', ip, userAgent, 'Solicitud de restablecimiento de contraseña');
-
-    const emailResult = await sendPasswordRecoveryEmail(user.EMAIL, user.NAME, token);
-
-    if (!emailResult.success) {
-      console.error(`[Auth] Error enviando email de recuperación a ${user.EMAIL}: ${emailResult.error}`);
-      return {
-        success: false,
-        status: 500,
-        message: 'No se pudo enviar el correo de recuperación. Intentalo más tarde o contactá al administrador.'
-      };
-    }
-
-    return { success: true, message: 'Instrucciones enviadas al correo electrónico registrado.' };
-  });
+      // Misma respuesta para todos los casos
+      return { success: true, message: 'Si la cédula está registrada, recibirás las instrucciones en tu correo electrónico.' };
+    });
+  } catch {
+    return { success: true, message: 'Si la cédula está registrada, recibirás las instrucciones en tu correo electrónico.' };
+  }
 };
 
 /**
  * Obtiene las preguntas de seguridad de un usuario para recuperación
  */
 export const getUserSecurityQuestions = async (userCi: string) => {
-  return await dbManager.withRetry(async (supabase) => {
-    const { data: user, error: userError } = await supabase
-      .from('t_user')
-      .select('USER_ID, NAME, EMAIL, STATUS')
-      .eq('USER_CI', userCi)
-      .single();
+  try {
+    const result = await dbManager.withRetry(async (supabase) => {
+      const { data: user } = await supabase
+        .from('t_user')
+        .select('USER_ID, NAME, EMAIL, STATUS')
+        .eq('USER_CI', userCi)
+        .single();
 
-    if (userError || !user) {
-      return { success: false, message: 'La cédula no se encuentra registrada en el sistema.' };
-    }
+      if (user && user.STATUS !== 0) {
+        const { data: questions } = await supabase
+          .from('t_security_questions')
+          .select(`
+            PRESET_QUESTION_ID,
+            CUSTOM_QUESTION,
+            t_preset_questions(DESCRIPTION)
+          `)
+          .eq('USER_ID', user.USER_ID);
 
-    if (user.STATUS === 0) {
-      return { success: false, message: 'Esta cuenta se encuentra bloqueada o inactiva.' };
-    }
+        if (questions && questions.length >= 3) {
+          interface SecurityQuestionResult {
+            PRESET_QUESTION_ID: number | null;
+            CUSTOM_QUESTION: string | null;
+            t_preset_questions: { DESCRIPTION: string } | { DESCRIPTION: string }[] | null;
+          }
 
-    const { data: questions, error: qError } = await supabase
-      .from('t_security_questions')
-      .select(`
-        PRESET_QUESTION_ID,
-        CUSTOM_QUESTION,
-        t_preset_questions(DESCRIPTION)
-      `)
-      .eq('USER_ID', user.USER_ID);
+          const formattedQuestions = (questions as unknown as SecurityQuestionResult[]).map(q => ({
+            id: q.PRESET_QUESTION_ID || 0,
+            questionText: q.PRESET_QUESTION_ID 
+              ? (Array.isArray(q.t_preset_questions) ? q.t_preset_questions[0]?.DESCRIPTION : q.t_preset_questions?.DESCRIPTION) || ''
+              : q.CUSTOM_QUESTION || '',
+            isCustom: !q.PRESET_QUESTION_ID
+          }));
 
-    if (qError || !questions || questions.length < 3) {
-      return { 
-        success: false, 
-        message: 'El usuario no tiene suficientes preguntas de seguridad configuradas. Por favor, utilice la recuperación por correo electrónico.' 
-      };
-    }
+          return { 
+            success: true, 
+            userId: user.USER_ID,
+            userCi: userCi,
+            email: user.EMAIL ? `${user.EMAIL.substring(0, 3)}***@${user.EMAIL.split('@')[1]}` : '',
+            questions: formattedQuestions
+          };
+        }
+      }
 
-    interface SecurityQuestionResult {
-      PRESET_QUESTION_ID: number | null;
-      CUSTOM_QUESTION: string | null;
-      t_preset_questions: { DESCRIPTION: string } | { DESCRIPTION: string }[] | null;
-    }
+      return null;
+    });
 
-    const formattedQuestions = (questions as unknown as SecurityQuestionResult[]).map(q => ({
-      id: q.PRESET_QUESTION_ID || 0,
-      questionText: q.PRESET_QUESTION_ID 
-        ? (Array.isArray(q.t_preset_questions) ? q.t_preset_questions[0]?.DESCRIPTION : q.t_preset_questions?.DESCRIPTION) || ''
-        : q.CUSTOM_QUESTION || '',
-      isCustom: !q.PRESET_QUESTION_ID
-    }));
+    if (result) return result;
+  } catch {
+    // Fall through to generic response
+  }
 
-    return { 
-      success: true, 
-      userId: user.USER_ID,
-      userCi: userCi,
-      email: user.EMAIL ? `${user.EMAIL.substring(0, 3)}***@${user.EMAIL.split('@')[1]}` : '',
-      questions: formattedQuestions
-    };
-  });
+  // Respuesta genérica — no revelar si el CI existe
+  return { success: false, message: 'No se encontraron preguntas de seguridad configuradas para esta cédula.' };
 };
 
 /**
@@ -1068,11 +961,11 @@ export const verifySecurityAnswersAndReset = async (
       .single();
 
     if (userError || !user) {
-      return { success: false, status: 404, message: 'Usuario no encontrado.' };
+      return { success: false, status: 401, message: 'Las respuestas de seguridad no son correctas.' };
     }
 
     if (user.STATUS === 0) {
-      return { success: false, status: 403, message: 'Esta cuenta se encuentra bloqueada o inactiva.' };
+      return { success: false, status: 401, message: 'Las respuestas de seguridad no son correctas.' };
     }
 
     // Obtener las preguntas de seguridad del usuario
@@ -1082,7 +975,7 @@ export const verifySecurityAnswersAndReset = async (
       .eq('USER_ID', user.USER_ID);
 
     if (qError || !storedQuestions || storedQuestions.length === 0) {
-      return { success: false, status: 404, message: 'No se encontraron preguntas de seguridad configuradas.' };
+      return { success: false, status: 401, message: 'Las respuestas de seguridad no son correctas.' };
     }
 
     let correctCount = 0;
@@ -1091,13 +984,11 @@ export const verifySecurityAnswersAndReset = async (
       let isValid = false;
 
       if (ans.isCustom) {
-        // Para preguntas personalizadas
         const customStored = storedQuestions.find(q => !q.PRESET_QUESTION_ID && q.CUSTOM_QUESTION);
         if (customStored && customStored.ANSWER.toLowerCase().trim() === ans.answer.toLowerCase().trim()) {
           isValid = true;
         }
       } else {
-        // Para preguntas preset
         const presetStored = storedQuestions.find(q => q.PRESET_QUESTION_ID === ans.questionId);
         if (presetStored && presetStored.ANSWER.toLowerCase().trim() === ans.answer.toLowerCase().trim()) {
           isValid = true;
@@ -1110,11 +1001,11 @@ export const verifySecurityAnswersAndReset = async (
     }
 
     if (correctCount < 3) {
-      await logAuthAction(user.USER_ID, user.USER_CI, 'SECURITY_QUESTIONS_FAILED', ip, userAgent, `Respuestas incorrectas: ${correctCount}/3 correctas`);
+      await logAuthAction(user.USER_ID, user.USER_CI, 'SECURITY_QUESTIONS_FAILED', ip, userAgent, 'Respuestas de seguridad incorrectas');
       return { 
         success: false, 
         status: 401, 
-        message: 'Las respuestas de seguridad no son correctas. Por favor, intente nuevamente o use la recuperación por correo.' 
+        message: 'Las respuestas de seguridad no son correctas.' 
       };
     }
 

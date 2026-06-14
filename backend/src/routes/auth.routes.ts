@@ -17,11 +17,11 @@ router.get('/security-questions/:userCi', authController.getSecurityQuestions);
 router.get('/recovery-questions/:userCi', authController.getUserSecurityQuestions);
 router.get('/preset-questions', authController.getPresetQuestions);
 router.post('/verify-questions', authController.verifySecurityQuestions);
-router.post('/verify-answers-reset', authController.verifySecurityAnswersAndReset);
+router.post('/verify-answers-reset', rateLimit(5, 15 * 60 * 1000), authController.verifySecurityAnswersAndReset);
 router.post('/reset-password', authController.resetPassword);
 router.post('/request-recovery', authController.requestPasswordReset);
 router.post('/reset-with-token', authController.resetPasswordWithToken);
-router.get('/password-policy', authController.getPasswordPolicy);
+router.get('/password-policy', rateLimit(10, 60 * 1000), authController.getPasswordPolicy);
 router.post('/logout', authController.logout);
 
 router.post('/avatar', authenticateToken, authController.uploadAvatar);

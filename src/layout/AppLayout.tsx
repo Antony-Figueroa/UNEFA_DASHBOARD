@@ -13,7 +13,7 @@ import { TabProvider } from "../context/TabContext";
 import NavBar from "../components/navbar/NavBar";
 import { useTabs } from "../context/tab";
 import { resolveComponent, preloadRoutes } from "./routeComponents";
-import PageLoader from "../components/ui/loader";
+import { Loader } from "../components/ui/loader";
 
 /**
  * Memoized wrapper for a single tab's content.
@@ -43,7 +43,7 @@ const TabContent = memo(function TabContent({
       className={`h-full transition-opacity duration-100 ${isActive ? "opacity-100" : "opacity-0 invisible absolute inset-0 overflow-hidden"}`}
     >
       {isMounted && (
-        <Suspense fallback={<PageLoader />}>
+        <Suspense fallback={<div className="flex items-center justify-center size-full"><Loader /></div>}>
           <Component />
         </Suspense>
       )}

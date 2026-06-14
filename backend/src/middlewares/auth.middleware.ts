@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken, decodeToken } from '../utils/auth.utils.js';
 import * as authService from '../services/auth.service.js';
+import { dbManager } from '../lib/db-manager.js';
 import { permissionService } from '../services/permission.service.js';
 
 export interface UserPayload {
@@ -22,7 +23,7 @@ export const ROLES = {
 
 const expiredTokensLogged = new Set<string>();
 
-export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const token = req.cookies?.auth_token;
   const ip = req.ip || '';
   const userAgent = req.headers['user-agent'] || '';
@@ -31,11 +32,13 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     return res.status(401).json({ message: 'Sesión no iniciada' });
   }
 
+  // 1. Verificar blacklist en memoria (rápido, evita DB call innecesaria)
   const { revoked, data } = authService.isTokenRevoked(token);
   if (revoked) {
     return res.status(403).json({ message: 'Sesión cerrada', code: 'SESSION_REVOKED' });
   }
 
+  // 2. Verificar validez del JWT
   const payload = verifyToken(token);
   if (!payload) {
     const decoded = decodeToken(token) as { userId?: number; userCi?: string } | null;
@@ -47,6 +50,29 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
       }
     }
     return res.status(401).json({ message: 'Sesión expirada', code: 'SESSION_EXPIRED' });
+  }
+
+  // 3. Verificar sesión en DB (persistente entre reinicios, timeout absoluto 24h)
+  try {
+    const supabase = dbManager.getClient();
+    const dbCheck = await authService.verifySessionInDB(supabase, token);
+    if (!dbCheck.valid) {
+      if (dbCheck.reason === 'SESSION_NOT_FOUND') {
+        // Sesión no encontrada en DB — posible reinicio del servidor con token anterior
+        // No bloqueamos, permitimos continuar pero registramos
+        console.warn(`[Auth] Token sin sesión en DB (posible reinicio) para userId=${(payload as any).userId}`);
+      } else {
+        return res.status(403).json({
+          message: dbCheck.reason === 'SESSION_MAX_AGE_EXCEEDED'
+            ? 'Sesión expirada por límite de tiempo máximo'
+            : 'Sesión cerrada',
+          code: dbCheck.reason
+        });
+      }
+    }
+  } catch (err) {
+    console.error('[Auth] Error verificando sesión en DB:', err);
+    // Fallback: permitir si DB falla, no bloquear al usuario por un error de infraestructura
   }
 
   req.user = payload as unknown as UserPayload;

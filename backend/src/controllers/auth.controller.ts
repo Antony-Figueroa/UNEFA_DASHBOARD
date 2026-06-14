@@ -3,6 +3,7 @@ import * as authService from '../services/auth.service.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { validatePassword } from '../utils/security.utils.js';
 import { getConfig } from '../services/config.service.js';
+import { dbManager } from '../lib/db-manager.js';
 import { auditCreate, auditUpdate } from '../utils/audit-helpers.js';
 import { nowStringVenezuela } from '../utils/date.utils.js';
 
@@ -325,6 +326,7 @@ export const logout = async (req: AuthRequest, res: Response) => {
     res.clearCookie('auth_token');
     res.json({ success: true, message: 'Sesión cerrada correctamente' });
   } catch (error) {
+    console.error('[Auth] Error en logout:', error);
     res.clearCookie('auth_token');
     res.json({ success: true, message: 'Sesión cerrada' });
   }
@@ -335,14 +337,43 @@ export const refreshSession = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.userId;
     const userCi = req.user?.userCi;
     const role = req.user?.role;
+    const token = req.cookies?.auth_token;
+    const ip = req.ip || '';
+    const userAgent = req.headers['user-agent'] || '';
 
-    if (!userId || !userCi || role === undefined) {
+    if (!userId || !userCi || role === undefined || !token) {
       return res.status(401).json({ success: false, message: 'Sesión no válida' });
+    }
+
+    // Verificar timeout absoluto de sesión en DB (24h)
+    try {
+      const supabase = dbManager.getClient();
+      const dbCheck = await authService.verifySessionInDB(supabase, token);
+      if (!dbCheck.valid) {
+        return res.status(403).json({
+          success: false,
+          message: dbCheck.reason === 'SESSION_MAX_AGE_EXCEEDED'
+            ? 'La sesión ha expirado por tiempo máximo. Debe iniciar sesión nuevamente.'
+            : 'La sesión ha sido cerrada.',
+          code: dbCheck.reason
+        });
+      }
+    } catch (dbErr) {
+      console.error('[Auth] Error en verificación DB durante refresh:', dbErr);
+      // No bloquear por error de DB, permitir cooldown del JWT
     }
 
     const sessionMinutes = await getSessionMinutes();
     const newToken = authService.generateRefreshToken({ userId, userCi, role }, `${sessionMinutes}m`);
     const maxAge = sessionMinutes * 60 * 1000;
+
+    // Actualizar LAST_ACTIVITY en DB y registrar nuevo token
+    try {
+      const supabase = dbManager.getClient();
+      await authService.upsertSession(supabase, userId, newToken, ip, userAgent);
+    } catch (dbErr) {
+      console.error('[Auth] Error actualizando sesión en DB durante refresh:', dbErr);
+    }
 
     res.cookie('auth_token', newToken, {
       httpOnly: true,
@@ -493,8 +524,9 @@ export const getActiveSessions = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ success: false, message: 'Sesión no válida' });
 
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
-    const result = await authService.getActiveSessions(userId);
+    const token = req.cookies?.auth_token;
+    const tokenHash = token ? authService.hashToken(token) : undefined;
+    const result = await authService.getActiveSessions(userId, tokenHash);
     res.json(result);
   } catch (error) {
     console.error('[Auth] getActiveSessions error:', error);

@@ -22,25 +22,43 @@ const isProd = import.meta.env.PROD;
 const baseURL = import.meta.env.VITE_API_URL || (isProd ? "/api" : "http://localhost:3000/api");
 
 /**
+ * Lock de refresh para evitar requests concurrentes al renovar la sesión.
+ * Cuando múltiples requests reciben 401 al mismo tiempo (ej. al volver de background),
+ * solo una hace el refresh; las demás esperan la misma promesa.
+ */
+let refreshPromise: Promise<boolean> | null = null;
+
+/**
  * Intenta renovar la sesión automáticamente antes de fallar con 401
  */
 const tryRefreshSession = async (): Promise<boolean> => {
-  try {
-    const response = await axios.post(
-      `${baseURL}/auth/refresh`,
-      {},
-      { withCredentials: true }
-    );
-    
-    if (response.data?.success) {
-      sessionStorage.setItem('auth_last_refresh', Date.now().toString());
-      console.log('[API] Sesión renovada automáticamente');
-      return true;
-    }
-    return false;
-  } catch {
-    return false;
+  // Si ya hay un refresh en curso, esperar ese mismo en vez de disparar otro
+  if (refreshPromise) {
+    return refreshPromise;
   }
+
+  refreshPromise = (async () => {
+    try {
+      const response = await axios.post(
+        `${baseURL}/auth/refresh`,
+        {},
+        { withCredentials: true }
+      );
+
+      if (response.data?.success) {
+        sessionStorage.setItem('auth_last_refresh', Date.now().toString());
+        console.log('[API] Sesión renovada automáticamente');
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
 };
 
 /**
@@ -97,20 +115,13 @@ apiClient.interceptors.response.use(
       // Marcar que ya intentamos refresh para evitar loop infinito
       config._retry = true;
       
-      // Verificar si el token fue renovado recientemente
-      const lastRefresh = sessionStorage.getItem('auth_last_refresh');
-      const timeSinceLastRefresh = lastRefresh ? Date.now() - parseInt(lastRefresh) : Infinity;
-      const wasRecentlyRefreshed = timeSinceLastRefresh < 60000;
+      console.log('[API] Token expirado, intentando renovar sesión...');
+      const refreshed = await tryRefreshSession();
       
-      if (!wasRecentlyRefreshed) {
-        console.log('[API] Token expirado, intentando renovar sesión...');
-        const refreshed = await tryRefreshSession();
-        
-        if (refreshed) {
-          // Repetir la petición original con el nuevo token
-          console.log('[API] Sesión renovada, repitiendo petición:', config.url);
-          return apiClient(config);
-        }
+      if (refreshed) {
+        // Repetir la petición original con el nuevo token
+        console.log('[API] Sesión renovada, repitiendo petición:', config.url);
+        return apiClient(config);
       }
       
       // Si no se pudo renovar, notificar expiración

@@ -4,6 +4,7 @@ import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { sanitizeText } from '../utils/text-utils.js';
 import { auditCreate, auditUpdate, auditDelete } from '../utils/audit-helpers.js';
 import { notifyEvaluationCreated } from '../services/notification.service.js';
+import { getPersonField } from '../utils/person-utils.js';
 import { evaluationConfig } from '../config/evaluation.config.js';
 
 interface EvaluationCriteria {
@@ -311,10 +312,9 @@ export const createEvaluation = async (req: AuthRequest, res: Response) => {
         .eq('PROFESSIONAL_PRACTICE_ID', data.professionalPracticeId)
         .single();
 
-      const student = (practice as any)?.t_persons;
-      const studentName = student 
-        ? `${student.first_name || ''} ${student.last_name || ''}`.trim() 
-        : 'Estudiante';
+      const sFirst = getPersonField((practice as any)?.t_persons, 'first_name') || '';
+      const sLast = getPersonField((practice as any)?.t_persons, 'last_name') || '';
+      const studentName = (sFirst || sLast) ? `${sFirst} ${sLast}`.trim() : 'Estudiante';
 
       await auditCreate(req, 't_evaluation', {
         EVALUATION_ID: evaluationId,
@@ -672,16 +672,17 @@ export const getPracticeTutorInfo = async (req: AuthRequest, res: Response) => {
         return res.json({ success: true, data: null });
       }
 
-      const fullName = [(manager as any).t_persons?.first_name, (manager as any).t_persons?.middle_name, (manager as any).t_persons?.last_name, (manager as any).t_persons?.second_last_name]
-        .filter(Boolean)
-        .join(' ')
-        .trim();
+      const mFirst = getPersonField((manager as any).t_persons, 'first_name') || '';
+      const mMiddle = getPersonField((manager as any).t_persons, 'middle_name') || '';
+      const mLast = getPersonField((manager as any).t_persons, 'last_name') || '';
+      const mSecondLast = getPersonField((manager as any).t_persons, 'second_last_name') || '';
+      const fullName = [mFirst, mMiddle, mLast, mSecondLast].filter(Boolean).join(' ').trim();
 
       return res.json({
         success: true,
         data: {
           name: fullName,
-          ci: (manager as any).t_persons?.ci
+          ci: getPersonField((manager as any).t_persons, 'ci')
         }
       });
     }
@@ -701,17 +702,17 @@ export const getPracticeTutorInfo = async (req: AuthRequest, res: Response) => {
       return res.json({ success: true, data: null });
     }
 
-    const tutor = (tutorAssignment as any).t_persons;
-    const fullName = [tutor?.first_name, tutor?.middle_name, tutor?.last_name, tutor?.second_last_name]
-      .filter(Boolean)
-      .join(' ')
-      .trim();
+    const tFirst = getPersonField((tutorAssignment as any).t_persons, 'first_name') || '';
+    const tMiddle = getPersonField((tutorAssignment as any).t_persons, 'middle_name') || '';
+    const tLast = getPersonField((tutorAssignment as any).t_persons, 'last_name') || '';
+    const tSecondLast = getPersonField((tutorAssignment as any).t_persons, 'second_last_name') || '';
+    const fullName = [tFirst, tMiddle, tLast, tSecondLast].filter(Boolean).join(' ').trim();
 
     res.json({
       success: true,
       data: {
         name: fullName,
-        ci: tutor?.ci
+        ci: getPersonField((tutorAssignment as any).t_persons, 'ci')
       }
     });
 

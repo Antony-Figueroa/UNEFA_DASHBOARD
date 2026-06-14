@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
+import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
 
 interface PeriodInfo {
   PERIOD_ID: number;
@@ -264,7 +265,7 @@ export const getRecentReports = async (req: Request, res: Response) => {
         date: log.CREATED_AT,
         type: typeMap[log.ACTION] || 'Otro',
         status: 'completed',
-        user: log.t_user?.t_persons ? `${log.t_user.t_persons.first_name} ${log.t_user.t_persons.last_name}`.trim() : 'Sistema'
+        user: getPersonFullName(log.t_user?.t_persons) || 'Sistema'
       };
     }) || [];
 
@@ -402,16 +403,16 @@ export const getTutorsAcademicReport = async (req: Request, res: Response) => {
       } else {
         tutorMap.set(tutorKey, {
           tutor: {
-            name: tutor.t_persons?.first_name || '',
-            secondName: tutor.t_persons?.middle_name || '',
-            surname: tutor.t_persons?.last_name || '',
-            secondSurname: tutor.t_persons?.second_last_name || '',
-            ci: tutor.t_persons?.ci,
+            name: getPersonField(tutor.t_persons, 'first_name') || '',
+            secondName: getPersonField(tutor.t_persons, 'middle_name') || '',
+            surname: getPersonField(tutor.t_persons, 'last_name') || '',
+            secondSurname: getPersonField(tutor.t_persons, 'second_last_name') || '',
+            ci: getPersonField(tutor.t_persons, 'ci'),
             condition: tutor.CONDITION,
             dedication: tutor.DEDICATION,
             category: tutor.CATEGORY,
-            phone: tutor.t_persons?.phone || '',
-            email: tutor.t_persons?.email
+            phone: getPersonField(tutor.t_persons, 'phone') || '',
+            email: getPersonField(tutor.t_persons, 'email')
           },
           career: career?.CAREER_NAME || '',
           region: getRegionName(institution?.REGION),
@@ -720,16 +721,27 @@ export const getCulminatedStudentsReport = async (req: Request, res: Response) =
     const paginatedPractices = filteredPractices.slice(pageNum * limitNum, (pageNum + 1) * limitNum);
     const reportData: CulminatedStudentReportRow[] = paginatedPractices.map((p: any) => {
       const tutor = p.t_professional_practices_tutor?.[0]?.t_tutors;
-      const student = p.t_persons;
+      
+      const sFirst = getPersonField(p.t_persons, 'first_name') || '';
+      const sMiddle = getPersonField(p.t_persons, 'middle_name') || '';
+      const sLast = getPersonField(p.t_persons, 'last_name') || '';
+      const sSecondLast = getPersonField(p.t_persons, 'second_last_name') || '';
+      const studentName = [sFirst, sMiddle, sLast, sSecondLast].filter(Boolean).join(' ').trim();
+
+      const tFirst = getPersonField(tutor?.t_persons, 'first_name') || '';
+      const tMiddle = getPersonField(tutor?.t_persons, 'middle_name') || '';
+      const tLast = getPersonField(tutor?.t_persons, 'last_name') || '';
+      const tSecondLast = getPersonField(tutor?.t_persons, 'second_last_name') || '';
+      const tutorName = [tFirst, tMiddle, tLast, tSecondLast].filter(Boolean).join(' ').trim();
       
       return {
         id: p.PROFESSIONAL_PRACTICE_ID,
-        studentCi: student?.ci || '',
-        studentName: `${student?.first_name || ''} ${student?.middle_name || ''} ${student?.last_name || ''} ${student?.second_last_name || ''}`.trim().replace(/\s+/g, ' '),
+        studentCi: getPersonField(p.t_persons, 'ci') || '',
+        studentName,
         careerName: p.t_career?.CAREER_NAME || '',
         institutionName: p.t_institution?.INSTITUTION_NAME || '',
         practiceType: p.t_internship_type?.NAME || '',
-        tutorName: tutor?.t_persons ? `${tutor.t_persons.first_name || ''} ${tutor.t_persons.middle_name || ''} ${tutor.t_persons.last_name || ''} ${tutor.t_persons.second_last_name || ''}`.trim().replace(/\s+/g, ' ') : '',
+        tutorName,
         period: p.t_internships_period?.DESCRIPTION || '',
         startDate: p.START_DATE || '',
         endDate: p.END_DATE || '',

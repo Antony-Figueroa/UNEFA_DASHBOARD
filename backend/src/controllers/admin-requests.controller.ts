@@ -4,6 +4,7 @@ import { AuthRequest } from '../middlewares/auth.middleware.js';
 import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-helpers.js';
 import { notifyRequestCreated, notifyTutorAssigned } from '../services/notification.service.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
+import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
 
 interface AdminRequest {
   id: number;
@@ -66,9 +67,9 @@ export const getAllRequests = async (req: AuthRequest, res: Response) => {
     let requests: AdminRequest[] = (data || []).map((r: any) => ({
       id: r.REQUEST_ID,
       studentId: r.STUDENT_ID,
-      studentCi: r.t_persons?.ci || '',
-      studentName: `${r.t_persons?.first_name || ''} ${r.t_persons?.last_name || ''}`.trim(),
-      studentEmail: r.t_persons?.email || '',
+      studentCi: getPersonField(r.t_persons, 'ci') || '',
+      studentName: getPersonFullName(r.t_persons),
+      studentEmail: getPersonField(r.t_persons, 'email') || '',
       typeId: r.REQUEST_TYPE_ID,
       typeName: r.t_request_types?.NAME || '',
       subject: r.SUBJECT,
@@ -92,7 +93,7 @@ export const getAllRequests = async (req: AuthRequest, res: Response) => {
         .select('USER_ID, t_persons!inner(first_name, last_name)')
         .in('USER_ID', [...new Set(processedByUserIds)]);
 
-      const userMap = new Map<number, string>((users || []).map((u: any) => [u.USER_ID, `${u.t_persons?.first_name || ''} ${u.t_persons?.last_name || ''}`.trim()]));
+      const userMap = new Map<number, string>((users || []).map((u: any) => [u.USER_ID, getPersonFullName(u.t_persons)]));
 
       requests = requests.map(r => {
         const requestData = data?.find((d: any) => d.REQUEST_ID === r.id);
@@ -343,11 +344,9 @@ export const updateRequestStatus = async (req: AuthRequest, res: Response) => {
         if (tutor && studentData) {
           const tutorUser = (tutor as any).t_user;
           const tutorUserId = tutorUser?.USER_ID;
-          const tPersons = (tutorUser?.t_persons as any) || {};
-          const sPersons = (studentData as any).t_persons || {};
           await notifyTutorAssigned(
-            `${tPersons?.first_name || ''} ${tPersons?.last_name || ''}`.trim(),
-            `${sPersons?.first_name || ''} ${sPersons?.last_name || ''}`.trim(),
+            getPersonFullName((tutorUser as any)?.t_persons),
+            getPersonFullName((studentData as any).t_persons),
             practiceData?.PROFESSIONAL_PRACTICE_ID || 0,
             tutorUserId
           );

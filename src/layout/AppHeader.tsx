@@ -40,8 +40,9 @@ const AppHeader: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    document.documentElement.style.setProperty("--header-height", `${headerHeight}px`);
-    document.documentElement.style.setProperty("--header-spacing", `0px`);
+    if (headerHeight > 0) {
+      document.documentElement.style.setProperty("--header-height", `${headerHeight}px`);
+    }
   }, [headerHeight]);
 
   const handleToggle = () => {

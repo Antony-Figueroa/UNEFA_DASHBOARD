@@ -22,7 +22,7 @@ router.post('/reset-password', rateLimit(5, 60 * 1000), authController.resetPass
 router.post('/request-recovery', rateLimit(3, 60 * 1000), authController.requestPasswordReset);
 router.post('/reset-with-token', rateLimit(5, 60 * 1000), authController.resetPasswordWithToken);
 router.get('/password-policy', rateLimit(10, 60 * 1000), authController.getPasswordPolicy);
-router.post('/logout', authenticateToken, authController.logout);
+router.post('/logout', authController.logout);
 
 router.post('/avatar', authenticateToken, authController.uploadAvatar);
 router.delete('/avatar', authenticateToken, authController.deleteAvatar);

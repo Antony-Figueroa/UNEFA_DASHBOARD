@@ -84,8 +84,8 @@ describe('Students API', () => {
       expectStudentShape(res.body);
 
       const student = res.body;
-      expect(student.firstName).toBe(data.firstName);
-      expect(student.lastName).toBe(data.lastName);
+      expect(student.firstName).toBe(data.firstName.toUpperCase());
+      expect(student.lastName).toBe(data.lastName.toUpperCase());
       expect(student.email).toBe(data.email);
       expect(student.identificationPrefix).toBe(data.identificationPrefix);
       expect(student.identificationNumber).toBe(data.identificationNumber);
@@ -169,7 +169,7 @@ describe('Students API', () => {
       expect(searchRes.status).toBe(200);
       expect(searchRes.body.data.length).toBeGreaterThanOrEqual(1);
       expect(searchRes.body.data.some(
-        (s: Record<string, unknown>) => s.firstName === uniqueName
+        (s: Record<string, unknown>) => s.firstName === uniqueName.toUpperCase()
       )).toBe(true);
 
       // Limpiar

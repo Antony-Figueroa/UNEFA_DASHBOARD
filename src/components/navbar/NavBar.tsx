@@ -101,7 +101,7 @@ const NavBar: React.FC = () => {
   return (
     <div
       role="tablist"
-      className="sticky top-[calc(var(--banner-height,0px)+64px)] z-30 flex items-center h-10 overflow-x-auto no-scrollbar scroll-smooth
+      className="sticky top-[calc(var(--banner-height,0px)+var(--header-height,64px))] z-30 flex items-center h-10 overflow-x-auto no-scrollbar scroll-smooth
         bg-gray-50/80 dark:bg-bg-dark/90
         border-b border-border-light/50 dark:border-border-dark/50"
     >

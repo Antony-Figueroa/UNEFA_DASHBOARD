@@ -131,7 +131,7 @@ app.use(helmet({
         "https://fonts.gstatic.com",
         "https://*"
       ],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "blob:"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "blob:"],
       workerSrc: ["'self'", "blob:"],
       childSrc: ["'self'", "blob:"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
@@ -169,7 +169,7 @@ if (isVercel) {
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
+    if (!origin) return callback(null, false);
     
     const isAllowed = allowedOrigins.some(allowed => 
       allowed.replace(/\/$/, '') === origin.replace(/\/$/, '')
@@ -330,8 +330,7 @@ app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: 
   void _next; // Satisfy linter for unused required parameter
   console.error('[Error Handler]', err);
   res.status(err.status || 500).json({
-    error: err.message || 'Internal Server Error',
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    error: err.message || 'Internal Server Error'
   });
 });
 

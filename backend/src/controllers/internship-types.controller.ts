@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
+import { cacheManager } from '../lib/cache-manager.js';
 import { sanitizeText } from '../utils/text-utils.js';
 
 const TABLE_NAME = 't_internship_type';
+const CACHE_TTL = 3600000; // 1h — datos de referencia
 
 type InternshipTypeRecord = {
   INTERNSHIP_TYPE_ID: number;
@@ -37,6 +39,10 @@ const handleDbError = (res: Response, error: unknown) => {
 };
 
 export const getAllInternshipTypes = async (req: Request, res: Response) => {
+  const cacheKey = 'internshipTypes:all';
+  const cached = cacheManager.get<any[]>(cacheKey);
+  if (cached) return res.json(cached);
+
   try {
     const data = await dbManager.withRetry(async (supabase) => {
       const { data, error } = await supabase
@@ -51,6 +57,7 @@ export const getAllInternshipTypes = async (req: Request, res: Response) => {
         ABBREVIATION: v.ABBREVIATION || ''
       }));
     });
+    cacheManager.set(cacheKey, data, CACHE_TTL);
     res.json(data);
   } catch (error: unknown) {
     handleDbError(res, error);
@@ -113,6 +120,7 @@ export const createInternshipType = async (req: Request, res: Response) => {
       if (error) throw error;
       return { ...data, ABBREVIATION: ABBREVIATION || '' };
     });
+    cacheManager.deleteByPrefix('internshipTypes');
     res.status(201).json(data);
   } catch (error) {
     handleDbError(res, error);
@@ -138,6 +146,7 @@ export const updateInternshipType = async (req: Request, res: Response) => {
       if (error) throw error;
       return { ...data, ABBREVIATION: ABBREVIATION || '' };
     });
+    cacheManager.deleteByPrefix('internshipTypes');
     res.json(data);
   } catch (error) {
     handleDbError(res, error);
@@ -155,6 +164,7 @@ export const deleteInternshipType = async (req: Request, res: Response) => {
 
       if (error) throw error;
     });
+    cacheManager.deleteByPrefix('internshipTypes');
     res.status(204).send();
   } catch (error) {
     handleDbError(res, error);
@@ -182,7 +192,8 @@ export const toggleInternshipTypeStatus = async (req: Request, res: Response) =>
 
       if (error) throw error;
     });
-    res.json({ message: 'Status updated' });
+    cacheManager.deleteByPrefix('internshipTypes');
+    res.status(204).send();
   } catch (error) {
     handleDbError(res, error);
   }

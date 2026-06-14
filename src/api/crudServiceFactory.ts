@@ -8,6 +8,10 @@
  */
 
 import apiClient from "./apiClient";
+import { dedupeRequest, invalidateCache } from "./requestCache";
+
+/** Prefijo usado para invalidar cache por endpoint */
+const crudCachePrefix = (endpoint: string) => `crud:${endpoint}:`;
 
 /**
  * Configuración para la creación de un servicio CRUD.
@@ -80,23 +84,26 @@ export function createCrudService<TItem, TCreatePayload, TUpdatePayload, TApiDTO
 
   return {
     getAll: async (params?: GetAllParams) => {
-      const response = await apiClient.get<any>(endpoint, { params });
+      const cacheKey = `${crudCachePrefix(endpoint)}list:${JSON.stringify(params || {})}`;
+      return dedupeRequest(cacheKey, async () => {
+        const response = await apiClient.get<any>(endpoint, { params });
 
-      // Backward compatibility: si no hay params, mantener comportamiento anterior
-      if (!params) {
-        const data = Array.isArray(response.data) ? response.data : response.data?.data || response.data;
-        return Array.isArray(data) ? data.map(mapFromApi) : data;
-      }
+        // Backward compatibility: si no hay params, mantener comportamiento anterior
+        if (!params) {
+          const data = Array.isArray(response.data) ? response.data : response.data?.data || response.data;
+          return Array.isArray(data) ? data.map(mapFromApi) : data;
+        }
 
-      // Respuesta paginada: { data: [], total, limit, offset }
-      const rawData = response.data?.data || response.data || [];
-      const items = Array.isArray(rawData) ? rawData.map(mapFromApi) : [];
-      return {
-        data: items,
-        total: response.data?.total ?? items.length,
-        limit: response.data?.limit ?? params.limit ?? 20,
-        offset: response.data?.offset ?? params.offset ?? 0,
-      };
+        // Respuesta paginada: { data: [], total, limit, offset }
+        const rawData = response.data?.data || response.data || [];
+        const items = Array.isArray(rawData) ? rawData.map(mapFromApi) : [];
+        return {
+          data: items,
+          total: response.data?.total ?? items.length,
+          limit: response.data?.limit ?? params.limit ?? 20,
+          offset: response.data?.offset ?? params.offset ?? 0,
+        };
+      });
     },
 
     getById: async (id: string | number) => {
@@ -107,6 +114,7 @@ export function createCrudService<TItem, TCreatePayload, TUpdatePayload, TApiDTO
     create: async (data: TCreatePayload) => {
       const payload = config.mapToApi ? config.mapToApi(data) : data;
       const response = await apiClient.post<TApiDTO>(endpoint, payload);
+      invalidateCache(crudCachePrefix(endpoint));
       return mapFromApi(response.data);
     },
 
@@ -121,23 +129,28 @@ export function createCrudService<TItem, TCreatePayload, TUpdatePayload, TApiDTO
       
       const payload = config.mapToApi ? config.mapToApi(data) : data;
       const response = await apiClient.put<TApiDTO>(`${endpoint}/${id}`, payload);
+      invalidateCache(crudCachePrefix(endpoint));
       return mapFromApi(response.data);
     },
 
     delete: async (id: string | number) => {
       await apiClient.delete(`${endpoint}/${id}`);
+      invalidateCache(crudCachePrefix(endpoint));
     },
 
     toggleStatus: async (id: string | number, status: boolean) => {
       await apiClient.patch(`${endpoint}/${id}/status`, { status });
+      invalidateCache(crudCachePrefix(endpoint));
     },
     
     bulkDelete: async (ids: (string | number)[]) => {
       await apiClient.post(`${endpoint}/bulk-delete`, { ids });
+      invalidateCache(crudCachePrefix(endpoint));
     },
     
     bulkRestore: async (ids: (string | number)[]) => {
       await apiClient.post(`${endpoint}/bulk-restore`, { ids });
+      invalidateCache(crudCachePrefix(endpoint));
     }
   };
 }

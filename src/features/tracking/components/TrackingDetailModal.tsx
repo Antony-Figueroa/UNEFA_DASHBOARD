@@ -11,6 +11,7 @@ import { ModalSectionHeader } from "../../../components/ui/modal/ModalSectionHea
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import Badge from "../../../components/ui/badge/Badge";
+import { toTitleCase } from "../../../utils/textFormat";
 import { Tracking } from "../types";
 import { Visit } from "../../visits/types";
 import { visitsService } from "../../visits/services/visitsService";
@@ -202,7 +203,7 @@ export default function TrackingDetailModal({
                       Título del Informe
                     </label>
                     <p className="text-sm font-semibold text-text-primary dark:text-white/90">
-                      {tracking.reportTitle}
+                      {toTitleCase(tracking.reportTitle)}
                     </p>
                   </div>
                   <div>

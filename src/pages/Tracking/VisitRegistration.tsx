@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Tabs } from "../../components/ui/tabs/Tabs";
+import { useTabs } from "../../hooks/useTabs";
 import { useParams, useNavigate } from 'react-router';
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -44,7 +46,7 @@ export default function VisitRegistration() {
   });
   const [practiceInfo, setPracticeInfo] = useState<TrackingDetailDTO | null>(null);
   const [loadingPractice, setLoadingPractice] = useState(false);
-  const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
+  const tabsState = useTabs({ defaultTab: 'active' });
   const [statsKey, setStatsKey] = useState(0);
   const [restoreDialog, setRestoreDialog] = useState<{ isOpen: boolean; visitId: number | null }>({
     isOpen: false,
@@ -55,8 +57,8 @@ export default function VisitRegistration() {
 
   // Filtrar visitas según la pestaña activa (mismo patrón que Periods)
   const tableData = useMemo(() => visits
-    .filter(v => v.status === (activeTab === 'active')),
-  [visits, activeTab]);
+    .filter(v => v.status === (tabsState.activeTab === 'active')),
+  [visits, tabsState.activeTab]);
 
   // Paginación cliente-side
   const totalPages = useMemo(() => Math.max(1, Math.ceil(tableData.length / itemsPerPage)), [tableData.length, itemsPerPage]);
@@ -68,7 +70,7 @@ export default function VisitRegistration() {
   // Resetear a página 1 cuando cambia el tab
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab]);
+  }, [tabsState.activeTab]);
 
   useEffect(() => {
     if (id) {
@@ -252,24 +254,16 @@ export default function VisitRegistration() {
         </div>
       )}
 
-      <ComponentCard title={activeTab === 'active' ? "Historial de Visitas" : "Visitas Inactivas"}>
-        {/* Tabs estilo underline (mismo patrón que Periods) */}
-        <div className="mb-6 flex border-b border-border-light dark:border-white/5">
-          <button
-            onClick={() => setActiveTab('active')}
-            className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === 'active' ? "text-brand-500" : "text-text-secondary hover:text-text-primary"}`}
-          >
-            Activas
-            {activeTab === 'active' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-          </button>
-          <button
-            onClick={() => setActiveTab('inactive')}
-            className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === 'inactive' ? "text-brand-500" : "text-text-secondary hover:text-text-primary"}`}
-          >
-            Inactivas
-            {activeTab === 'inactive' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-          </button>
-        </div>
+      <ComponentCard title={tabsState.activeTab === 'active' ? "Historial de Visitas" : "Visitas Inactivas"}>
+        <Tabs
+          options={[
+            { id: 'active', label: 'Activas' },
+            { id: 'inactive', label: 'Inactivas' },
+          ]}
+          {...tabsState.tabProps}
+          variant="underline"
+          className="mb-6"
+        />
 
         {loading ? (
           <div className="space-y-3 animate-pulse">
@@ -320,7 +314,7 @@ export default function VisitRegistration() {
                           variant="primary"
                         />
 
-                        {activeTab === 'inactive' ? (
+                        {tabsState.activeTab === 'inactive' ? (
                           /* SI está inactivo: solo botón Restaurar */
                           <AsyncActionButton
                             onClick={async () => setRestoreDialog({ isOpen: true, visitId: visit.visitId })}
@@ -362,9 +356,9 @@ export default function VisitRegistration() {
           </div>
         ) : (
           <EmptyState
-            title={activeTab === 'active' ? "No hay visitas activas" : "No hay visitas inactivas"}
-            description={activeTab === 'active' ? "Comienza registrando la primera visita de seguimiento" : "Las visitas inactivas aparecerán aquí"}
-            action={activeTab === 'active' ? <Button onClick={() => handleOpenModal()}>Registrar Visita</Button> : undefined}
+            title={tabsState.activeTab === 'active' ? "No hay visitas activas" : "No hay visitas inactivas"}
+            description={tabsState.activeTab === 'active' ? "Comienza registrando la primera visita de seguimiento" : "Las visitas inactivas aparecerán aquí"}
+            action={tabsState.activeTab === 'active' ? <Button onClick={() => handleOpenModal()}>Registrar Visita</Button> : undefined}
           />
         )}
       </ComponentCard>

@@ -133,7 +133,6 @@ class NotificationsUnifiedService {
 
   /**
    * Envía notificaciones a usuarios según su rol.
-   * CORREGIDO: ahora filtra correctamente por rol usando t_user_roles.
    */
   async sendToRole(params: {
     role: string;
@@ -154,14 +153,38 @@ class NotificationsUnifiedService {
         if (error) throw error;
         userIds = (users || []).map((u: any) => u.USER_ID);
       } else {
+        // 1. Get role ID from t_roles by NAME
+        const { data: role, error: roleError } = await supabase
+          .from('t_roles')
+          .select('ID_ROLS')
+          .eq('NAME', params.role.toUpperCase())
+          .eq('STATUS', 1)
+          .maybeSingle();
+
+        if (roleError) throw roleError;
+        if (!role) return null;
+
+        // 2. Get active users assigned to that role via t_user_roles
         const { data: roleUsers, error } = await supabase
           .from('t_user_roles')
-          .select('ur_USER_ID')
-          .eq('ur_ROLE_NAME', params.role.toUpperCase())
-          .eq('ur_STATUS', 1);
+          .select('ID_USER')
+          .eq('ID_ROLES', role.ID_ROLS);
 
         if (error) throw error;
-        userIds = (roleUsers || []).map((u: any) => u.ur_USER_ID);
+        userIds = (roleUsers || []).map((u: any) => u.ID_USER);
+
+        // 3. Filter only active users
+        if (userIds.length > 0) {
+          const { data: activeUsers } = await supabase
+            .from('t_user')
+            .select('USER_ID')
+            .eq('STATUS', 1)
+            .in('USER_ID', userIds);
+
+          if (activeUsers) {
+            userIds = activeUsers.map((u: any) => u.USER_ID);
+          }
+        }
       }
 
       if (userIds.length === 0) return null;

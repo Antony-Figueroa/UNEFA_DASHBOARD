@@ -15,6 +15,7 @@ import Checkbox from "../../../components/form/input/Checkbox";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { useDebounce } from "../../../hooks/useDebounce";
 import { formatPhoneDisplay } from "../../../utils/inputFormat";
+import { toTitleCase } from "../../../utils/textFormat";
 import { matchSearch } from "../../../utils/searchNormalizer";
 
 interface PaginationInfo {
@@ -405,15 +406,15 @@ export default function InstitutionTable({
                         <TableCell className="font-medium text-text-primary dark:text-white/90">
                             {i.rif}
                         </TableCell>
-                        <TableCell className="text-text-secondary dark:text-text-tertiary font-semibold">{i.name}</TableCell>
+                        <TableCell className="text-text-secondary dark:text-text-tertiary font-semibold">{toTitleCase(i.name)}</TableCell>
                         <TableCell className="text-text-secondary dark:text-text-tertiary whitespace-nowrap">{formatPhoneDisplay(i.phone)}</TableCell>
                         <TableCell className="text-text-secondary dark:text-text-tertiary text-xs">
                           {(i.careerNames && i.careerNames.length > 0)
-                            ? i.careerNames.join(", ")
+                            ? i.careerNames.map(toTitleCase).join(", ")
                             : "-"}
                         </TableCell>
                         <TableCell className="text-text-secondary dark:text-text-tertiary text-xs">
-                          {i.practiceTypes?.join(", ") || i.practiceType || "-"}
+                                          {(i.practiceTypes ? i.practiceTypes.map(toTitleCase).join(", ") : (i.practiceType ? toTitleCase(i.practiceType) : "-"))}
                         </TableCell>
                         <TableCell className="table-cell text-right">
                             <ActionButtons
@@ -454,7 +455,7 @@ export default function InstitutionTable({
                             <div className="flex items-center justify-between w-full">
                                 <div className="flex-1 text-center">
                                     <h3 className="text-sm font-bold text-text-primary dark:text-white/90 leading-tight truncate px-8">
-                                        {i.name}
+                                        {toTitleCase(i.name)}
                                     </h3>
                                     <p className="text-xs text-text-secondary mt-1 truncate">{i.rif}</p>
                                 </div>
@@ -477,20 +478,20 @@ export default function InstitutionTable({
                                     </div>
                                     <div className="flex flex-col items-center">
                                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Tipo</p>
-                                        <p className="text-sm text-text-primary dark:text-text-tertiary font-medium">{i.institutionType || "-"}</p>
+                                        <p className="text-sm text-text-primary dark:text-text-tertiary font-medium">{toTitleCase(i.institutionType) || "-"}</p>
                                     </div>
                                     <div className="flex flex-col items-center">
                                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Carrera</p>
                                         <p className="text-sm text-text-primary dark:text-text-tertiary font-medium text-center">
                                           {(i.careerNames && i.careerNames.length > 0)
-                                            ? i.careerNames.join(", ")
+                                            ? i.careerNames.map(toTitleCase).join(", ")
                                             : "-"}
                                         </p>
                                     </div>
                                     <div className="flex flex-col items-center">
                                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-secondary mb-1.5">Tipo de Práctica</p>
                                         <p className="text-sm text-text-primary dark:text-text-tertiary font-medium text-center">
-                                          {i.practiceTypes?.join(", ") || i.practiceType || "-"}
+                          {(i.practiceTypes ? i.practiceTypes.map(toTitleCase).join(", ") : (i.practiceType ? toTitleCase(i.practiceType) : "-"))}
                                         </p>
                                     </div>
                                 </div>

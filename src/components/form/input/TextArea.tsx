@@ -79,8 +79,6 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextareaProps>(
      * Manejador de cambios que integra el auto-redimensionado.
      */
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const input = e.currentTarget;
-      input.value = input.value.toUpperCase();
       if (autoResize) {
         adjustHeight();
       }
@@ -99,7 +97,7 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           disabled={disabled}
           className={cn(
             // Clases base
-            "w-full rounded-lg border px-4 py-2.5 text-sm shadow-theme-xs transition-all duration-200 ease-in-out uppercase",
+            "w-full rounded-lg border px-4 py-2.5 text-sm shadow-theme-xs transition-all duration-200 ease-in-out",
             "focus:outline-hidden focus:ring-3",
             autoResize ? "resize-none overflow-hidden" : "resize-y",
 

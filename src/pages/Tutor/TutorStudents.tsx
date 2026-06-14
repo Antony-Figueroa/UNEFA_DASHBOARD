@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { useTabs } from "../../context/tab";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import tutorService, { TutorStudent } from "../../features/tutor/services/tutorService";
@@ -26,6 +27,7 @@ const statusLabels: Record<string, string> = {
 
 export default function TutorStudents() {
   const navigate = useNavigate();
+  const { openTab } = useTabs();
   const [students, setStudents] = useState<TutorStudent[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<TutorStudent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -202,21 +204,21 @@ export default function TutorStudents() {
                           {student.status === 'active' && (
                             <>
                               <button
-                                onClick={() => navigate(`/visit-registration/${student.enrollmentId}`)}
+                                onClick={() => openTab(`/visit-registration/${student.enrollmentId}`, `Visita #${student.enrollmentId}`)}
                                 className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                 title="Registro de Visitas"
                               >
                                 <Calendar className="w-4 h-4 text-blue-500" />
                               </button>
                               <button
-                                onClick={() => navigate(`/activity-logs/${student.enrollmentId}`)}
+                                onClick={() => openTab(`/activity-logs/${student.enrollmentId}`, `Actividades #${student.enrollmentId}`)}
                                 className="p-2 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
                                 title="Registro de Actividades"
                               >
                                 <FileText className="w-4 h-4 text-orange-500" />
                               </button>
                               <button
-                                onClick={() => navigate(`/tutor/evaluations/${student.enrollmentId}`)}
+                                onClick={() => openTab(`/tutor/evaluations/${student.enrollmentId}`, `Evaluación #${student.enrollmentId}`)}
                                 className="p-2 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
                                 title="Cargar Evaluación"
                               >

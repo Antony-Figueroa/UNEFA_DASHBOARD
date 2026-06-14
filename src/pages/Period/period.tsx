@@ -9,6 +9,8 @@ import { useState, useMemo, useEffect } from "react";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
+import { Tabs } from "../../components/ui/tabs/Tabs";
+import { useTabs } from "../../hooks/useTabs";
 import PeriodTable from "../../features/periods/components/PeriodTable";
 import CustomSelect from "../../components/form/CustomSelect";
 import { PlusCircleIcon } from "../../icons/actions";
@@ -79,7 +81,7 @@ export default function Period() {
     const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
     const [pdfSearchTerm, setPdfSearchTerm] = useState("");
     const [pdfStatusFilter, setPdfStatusFilter] = useState<string>("");
-    const [activeTab, setActiveTab] = useState<'active' | 'inactive'>('active');
+    const tabsState = useTabs({ defaultTab: 'active' });
 
     // Opciones para el filtro de estado en el PDF
     const statusOptions = useMemo(() => [
@@ -340,7 +342,7 @@ export default function Period() {
 
     // Memoizamos los datos formateados para la tabla para evitar recálculos innecesarios.
     const tableData = useMemo(() => periodos
-        .filter(p => p.status === (activeTab === 'active')) // Filtra según la pestaña activa
+        .filter(p => p.status === (tabsState.activeTab === 'active')) // Filtra según la pestaña activa
         .map(p => {
             let progress = null;
             let daysPassed = 0;
@@ -369,7 +371,7 @@ export default function Period() {
                 daysRemaining: Math.max(0, daysRemaining),
                 weeksRemaining: Math.max(0, weeksRemaining),
             };
-        }), [periodos, activeTab]);
+        }), [periodos, tabsState.activeTab]);
 
     return (
         <ErrorBoundary
@@ -427,29 +429,21 @@ export default function Period() {
                     </div>
 
                     <div className="space-y-6">
-                        <ComponentCard title={activeTab === 'active' ? "Períodos Activos" : "Períodos Inactivos"}>
-                            {/* Tabs Minimalistas */}
-                            <div className="mb-6 flex border-b border-border-light dark:border-white/5">
-                                <button
-                                    onClick={() => setActiveTab('active')}
-                                    className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === 'active' ? "text-brand-500" : "text-text-secondary hover:text-text-primary"}`}
-                                >
-                                    Activos
-                                    {activeTab === 'active' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('inactive')}
-                                    className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === 'inactive' ? "text-brand-500" : "text-text-secondary hover:text-text-primary"}`}
-                                >
-                                    Inactivos
-                                    {activeTab === 'inactive' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-                                </button>
-                            </div>
+                        <ComponentCard title={tabsState.activeTab === 'active' ? "Períodos Activos" : "Períodos Inactivos"}>
+                            <Tabs
+                                options={[
+                                    { id: 'active', label: 'Activos' },
+                                    { id: 'inactive', label: 'Inactivos' },
+                                ]}
+                                {...tabsState.tabProps}
+                                variant="underline"
+                                className="mb-6"
+                            />
 
                             <div className="animate-fadeIn">
                                 <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="periods-table">
                                 <PeriodTable
-                                        key={activeTab}
+                                        key={tabsState.activeTab}
                                         data={tableData}
                                         status={status}
                                         error={error}

@@ -14,6 +14,7 @@ import { Career } from "../../careers/types";
 import { CrudStatus } from "../../../hooks/useCrud";
 import { formatPhoneDisplay } from "../../../utils/inputFormat";
 import { matchSearch } from "../../../utils/searchNormalizer";
+import { toTitleCase } from "../../../utils/textFormat";
 
 /**
  * Propiedades para el componente TutorTable.
@@ -510,16 +511,16 @@ export default function TutorTable({
                                         {t.identificationPrefix}-{t.identificationNumber}
                                     </TableCell>
                                     <TableCell className="table-cell">
-                                        <span className="text-sm font-medium text-text-secondary dark:text-text-secondary uppercase">
-                                            {t.firstName} {t.middleName || ""} {t.lastName} {t.secondLastName || ""}
+                                        <span className="text-sm font-medium text-text-secondary dark:text-text-secondary">
+                                            {toTitleCase(t.firstName)} {toTitleCase(t.middleName) || ""} {toTitleCase(t.lastName)} {toTitleCase(t.secondLastName) || ""}
                                         </span>
                                     </TableCell>
                                     <TableCell className="table-cell">
                                         <div className="flex flex-wrap items-center gap-1.5 max-w-xs">
                                             {t.carreras && t.carreras.length > 0 ? (
                                                 <>
-                                                    <Badge color="info" variant="light" size="sm" className="uppercase truncate max-w-80">
-                                                        {getCareerName(t.carreras[0])}
+                                                    <Badge color="info" variant="light" size="sm" className="truncate max-w-80">
+                                                        {toTitleCase(getCareerName(t.carreras[0]))}
                                                     </Badge>
                                                     {t.carreras.length > 1 && (
                                                         <Badge color="primary" variant="light" size="sm" className="font-bold">
@@ -586,9 +587,9 @@ export default function TutorTable({
                             <div key={rowId} className="relative p-4 bg-white dark:bg-transparent transition-colors overflow-hidden">
                                 <div className="flex flex-col items-center gap-2">
                                     <div className="flex items-center justify-between w-full">
-                                        <div className="flex-1 text-center uppercase">
-                                            <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8 uppercase">
-                                                {t.firstName} {t.middleName || ""} {t.lastName} {t.secondLastName || ""}
+                                        <div className="flex-1 text-center">
+                                            <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8">
+                                                {toTitleCase(t.firstName)} {toTitleCase(t.middleName) || ""} {toTitleCase(t.lastName)} {toTitleCase(t.secondLastName) || ""}
                                             </h3>
                                             <p className="text-xs text-text-tertiary mt-1 truncate uppercase">{t.identificationPrefix}-{t.identificationNumber}</p>
                                         </div>
@@ -610,8 +611,8 @@ export default function TutorTable({
                                                 <div className="flex flex-wrap justify-center items-center gap-1.5 uppercase">
                                                     {t.carreras && t.carreras.length > 0 ? (
                                                         <>
-                                                            <Badge color="info" variant="light" size="sm" className="uppercase truncate 20">
-                                                                {getCareerName(t.carreras[0])}
+                                                            <Badge color="info" variant="light" size="sm" className="truncate 20">
+                                                                {toTitleCase(getCareerName(t.carreras[0]))}
                                                             </Badge>
                                                             {t.carreras.length > 1 && (
                                                                 <Badge color="primary" variant="light" size="sm" className="font-bold">

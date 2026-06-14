@@ -189,12 +189,12 @@ export default function FirstLogin() {
       if (!isFirstLogin) {
         // Usuarios con reset de admin: actualizan datos personales + contraseña
         const profileData = {
-          name: data.firstName.toUpperCase(),
-          secondName: data.middleName?.toUpperCase() || "",
-          surname: data.lastName.toUpperCase(),
-          secondSurname: data.secondLastName?.toUpperCase() || "",
+          name: data.firstName,
+          secondName: data.middleName || "",
+          surname: data.lastName,
+          secondSurname: data.secondLastName || "",
           phoneNumber: `${data.phonePrefix}${data.phoneNumber}`,
-          email: data.email.toUpperCase()
+          email: data.email
         };
         const result = await authService.changePassword(
           userId!,
@@ -221,12 +221,12 @@ export default function FirstLogin() {
       }
 
       const profileData = {
-        name: data.firstName.toUpperCase(),
-        secondName: data.middleName?.toUpperCase() || "",
-        surname: data.lastName.toUpperCase(),
-        secondSurname: data.secondLastName?.toUpperCase() || "",
+        name: data.firstName,
+        secondName: data.middleName || "",
+        surname: data.lastName,
+        secondSurname: data.secondLastName || "",
         phoneNumber: `${data.phonePrefix}${data.phoneNumber}`,
-        email: data.email.toUpperCase()
+        email: data.email
       };
 
       const formattedQuestions: SecurityAnswer[] = data.securityQuestions

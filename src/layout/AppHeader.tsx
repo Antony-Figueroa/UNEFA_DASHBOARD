@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useSidebar } from "../context/sidebar";
 import { useAuth } from "../context/auth";
 import { useCommandPalette } from "../components/command-palette/CommandPaletteContext";
@@ -26,24 +26,23 @@ const AppHeader: React.FC = () => {
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
-  useEffect(() => {
-    const handleResize = () => {
+  useLayoutEffect(() => {
+    const syncHeight = () => {
       if (headerRef.current) {
-        setHeaderHeight(headerRef.current.offsetHeight);
+        const h = headerRef.current.offsetHeight;
+        if (h > 0) {
+          setHeaderHeight(h);
+          document.documentElement.style.setProperty("--header-height", `${h}px`);
+        }
       }
     };
 
-    window.addEventListener("resize", handleResize);
-    handleResize();
+    // Measure and set BEFORE browser paints — NavBar's sticky top depends on it
+    syncHeight();
 
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener("resize", syncHeight);
+    return () => window.removeEventListener("resize", syncHeight);
   }, []);
-
-  useEffect(() => {
-    if (headerHeight > 0) {
-      document.documentElement.style.setProperty("--header-height", `${headerHeight}px`);
-    }
-  }, [headerHeight]);
 
   const handleToggle = () => {
     if (window.innerWidth >= 1024) {

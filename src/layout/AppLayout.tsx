@@ -12,7 +12,7 @@ import { PageTitleProvider } from "../hooks/usePageTitle";
 import { TabProvider } from "../context/TabContext";
 import NavBar from "../components/navbar/NavBar";
 import { useTabs } from "../context/tab";
-import { resolveComponent } from "./routeComponents";
+import { resolveComponent, preloadRoutes } from "./routeComponents";
 import PageLoader from "../components/ui/loader";
 
 /**
@@ -109,6 +109,11 @@ const LayoutContent = () => {
   const { isExpanded, isMobileOpen } = useSidebar();
   const [isDesktop, setIsDesktop] = useState(true);
   useSessionTimeout();
+
+  // Preload all lazy route chunks after the initial paint
+  useEffect(() => {
+    preloadRoutes();
+  }, []);
 
   useEffect(() => {
     const checkScreenSize = () => {

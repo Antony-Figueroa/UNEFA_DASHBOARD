@@ -6,6 +6,10 @@
   html {
     font-size: 90%;
   }
+
+  :root {
+    --header-height: 64px;
+  }
 }
 
 @custom-variant dark (&:is(.dark *));

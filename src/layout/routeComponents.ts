@@ -1,101 +1,133 @@
 import { lazy } from "react";
 
-/**
- * Static route-to-component map.
- *
- * Every protected route path inside AppLayout is mapped to its lazy-loaded
- * page component. This map is used by {@link resolveComponent} to render the
- * correct component for each tab.
- */
+// ─── Helper: create lazy component + store import thunk ───────────────────
+
+type ImportThunk = () => Promise<{ default: React.ComponentType<any> }>;
+
+const ALL_IMPORTS: ImportThunk[] = [];
+
+function lazyPreload(imp: ImportThunk): React.LazyExoticComponent<React.ComponentType<any>> {
+  ALL_IMPORTS.push(imp);
+  return lazy(imp);
+}
+
+// ─── Static route map ────────────────────────────────────────────────────
+
 export const routeComponents: Record<
   string,
   React.LazyExoticComponent<React.ComponentType<any>>
 > = {
-  "/dashboard": lazy(() => import("../pages/Dashboard/Home")),
-  "/students": lazy(() => import("../pages/Students/students")),
-  "/tutors": lazy(() => import("../pages/Tutors/tutors")),
-  "/institutions": lazy(() => import("../pages/Institutions/institutions")),
-  "/period": lazy(() => import("../pages/Period/period")),
-  "/careers": lazy(() => import("../pages/Careers/careers")),
-  "/pre-enrollment": lazy(() => import("../pages/PreEnrollment/PreEnrollment")),
-  "/enrollment": lazy(() => import("../pages/Enrollment/Enrollment")),
-  "/tracking": lazy(() => import("../pages/Tracking/Tracking")),
-  "/evaluations": lazy(() => import("../pages/EvaluationsAndCulmination/EvaluationsAndCulmination")),
-  "/reports": lazy(() => import("../pages/Reports/Reports")),
-  "/reports/culminated-students": lazy(() => import("../pages/Reports/CulminatedStudentsReport")),
-  "/manuals": lazy(() => import("../pages/Manuals/Manuals")),
-  "/profile": lazy(() => import("../pages/UserProfiles")),
-  "/calendar": lazy(() => import("../pages/Calendar")),
-  "/ai-assistant": lazy(() => import("../pages/AIAssistant/AIAssistant")),
-  "/admin/requests": lazy(() => import("../pages/Admin/AdminRequests")),
-  "/notifications": lazy(() => import("../pages/Notifications/NotificationsPage")),
-  "/configure/users": lazy(() => import("../pages/Config/UserManagementPage")),
-  "/configure/lists": lazy(() => import("../pages/Config/ListsConfiguration")),
-  "/configure/auditoria": lazy(() => import("../features/activity-logs/pages/AuditoriaPage")),
-  "/configure/roles": lazy(() => import("../pages/Config/RolesPermissions")),
-  "/configure/settings": lazy(() => import("../pages/Config/SystemSettings")),
-  "/configure/maintenance": lazy(() => import("../pages/Config/Maintenance")),
-  "/configure/backups": lazy(() => import("../pages/Config/Backups")),
-  "/configure/landing": lazy(() => import("../pages/Config/LandingConfigPage")),
-  "/configure/reminders": lazy(() => import("../pages/Admin/Reminders/ReminderConfigPage")),
-  "/dashboard/configure": lazy(() => import("../pages/Dashboard/Configurator")),
-  "/tutor": lazy(() => import("../pages/Tutor/TutorDashboard")),
-  "/tutor/students": lazy(() => import("../pages/Tutor/TutorStudents")),
-  "/tutor/tracking": lazy(() => import("../pages/Tutor/TutorTracking")),
-  "/tutor/grades": lazy(() => import("../pages/Tutor/TutorGrades")),
-  "/tutor/reports": lazy(() => import("../pages/Tutor/TutorReports")),
-  "/tutor/profile": lazy(() => import("../pages/Tutor/TutorProfile")),
-  "/student": lazy(() => import("../pages/Student/StudentDashboard")),
-  "/student/requests": lazy(() => import("../pages/Student/StudentRequests")),
-  "/student/profile": lazy(() => import("../pages/Student/StudentProfile")),
-  "/student/documents": lazy(() => import("../pages/Student/StudentDocuments")),
-  "/student/evaluations": lazy(() => import("../pages/Student/StudentEvaluations")),
-  "/form-elements": lazy(() => import("../pages/Forms/FormElements")),
-  "/basic-tables": lazy(() => import("../pages/Tables/BasicTables")),
-  "/alerts": lazy(() => import("../pages/UiElements/Alerts")),
-  "/avatars": lazy(() => import("../pages/UiElements/Avatars")),
-  "/badge": lazy(() => import("../pages/UiElements/Badges")),
-  "/buttons": lazy(() => import("../pages/UiElements/Buttons")),
-  "/images": lazy(() => import("../pages/UiElements/Images")),
-  "/videos": lazy(() => import("../pages/UiElements/Videos")),
-  "/line-chart": lazy(() => import("../pages/Charts/LineChart")),
-  "/bar-chart": lazy(() => import("../pages/Charts/BarChart")),
-  "/blank": lazy(() => import("../pages/Blank")),
-  "/crud-example": lazy(() => import("../pages/Management/CrudExample")),
+  "/dashboard": lazyPreload(() => import("../pages/Dashboard/Home")),
+  "/students": lazyPreload(() => import("../pages/Students/students")),
+  "/tutors": lazyPreload(() => import("../pages/Tutors/tutors")),
+  "/institutions": lazyPreload(() => import("../pages/Institutions/institutions")),
+  "/period": lazyPreload(() => import("../pages/Period/period")),
+  "/careers": lazyPreload(() => import("../pages/Careers/careers")),
+  "/pre-enrollment": lazyPreload(() => import("../pages/PreEnrollment/PreEnrollment")),
+  "/enrollment": lazyPreload(() => import("../pages/Enrollment/Enrollment")),
+  "/tracking": lazyPreload(() => import("../pages/Tracking/Tracking")),
+  "/evaluations": lazyPreload(() => import("../pages/EvaluationsAndCulmination/EvaluationsAndCulmination")),
+  "/reports": lazyPreload(() => import("../pages/Reports/Reports")),
+  "/reports/culminated-students": lazyPreload(() => import("../pages/Reports/CulminatedStudentsReport")),
+  "/manuals": lazyPreload(() => import("../pages/Manuals/Manuals")),
+  "/profile": lazyPreload(() => import("../pages/UserProfiles")),
+  "/calendar": lazyPreload(() => import("../pages/Calendar")),
+  "/ai-assistant": lazyPreload(() => import("../pages/AIAssistant/AIAssistant")),
+  "/admin/requests": lazyPreload(() => import("../pages/Admin/AdminRequests")),
+  "/notifications": lazyPreload(() => import("../pages/Notifications/NotificationsPage")),
+  "/configure/users": lazyPreload(() => import("../pages/Config/UserManagementPage")),
+  "/configure/lists": lazyPreload(() => import("../pages/Config/ListsConfiguration")),
+  "/configure/auditoria": lazyPreload(() => import("../features/activity-logs/pages/AuditoriaPage")),
+  "/configure/roles": lazyPreload(() => import("../pages/Config/RolesPermissions")),
+  "/configure/settings": lazyPreload(() => import("../pages/Config/SystemSettings")),
+  "/configure/maintenance": lazyPreload(() => import("../pages/Config/Maintenance")),
+  "/configure/backups": lazyPreload(() => import("../pages/Config/Backups")),
+  "/configure/landing": lazyPreload(() => import("../pages/Config/LandingConfigPage")),
+  "/configure/reminders": lazyPreload(() => import("../pages/Admin/Reminders/ReminderConfigPage")),
+  "/dashboard/configure": lazyPreload(() => import("../pages/Dashboard/Configurator")),
+  "/tutor": lazyPreload(() => import("../pages/Tutor/TutorDashboard")),
+  "/tutor/students": lazyPreload(() => import("../pages/Tutor/TutorStudents")),
+  "/tutor/tracking": lazyPreload(() => import("../pages/Tutor/TutorTracking")),
+  "/tutor/grades": lazyPreload(() => import("../pages/Tutor/TutorGrades")),
+  "/tutor/reports": lazyPreload(() => import("../pages/Tutor/TutorReports")),
+  "/tutor/profile": lazyPreload(() => import("../pages/Tutor/TutorProfile")),
+  "/student": lazyPreload(() => import("../pages/Student/StudentDashboard")),
+  "/student/requests": lazyPreload(() => import("../pages/Student/StudentRequests")),
+  "/student/profile": lazyPreload(() => import("../pages/Student/StudentProfile")),
+  "/student/documents": lazyPreload(() => import("../pages/Student/StudentDocuments")),
+  "/student/evaluations": lazyPreload(() => import("../pages/Student/StudentEvaluations")),
+  "/form-elements": lazyPreload(() => import("../pages/Forms/FormElements")),
+  "/basic-tables": lazyPreload(() => import("../pages/Tables/BasicTables")),
+  "/alerts": lazyPreload(() => import("../pages/UiElements/Alerts")),
+  "/avatars": lazyPreload(() => import("../pages/UiElements/Avatars")),
+  "/badge": lazyPreload(() => import("../pages/UiElements/Badges")),
+  "/buttons": lazyPreload(() => import("../pages/UiElements/Buttons")),
+  "/images": lazyPreload(() => import("../pages/UiElements/Images")),
+  "/videos": lazyPreload(() => import("../pages/UiElements/Videos")),
+  "/line-chart": lazyPreload(() => import("../pages/Charts/LineChart")),
+  "/bar-chart": lazyPreload(() => import("../pages/Charts/BarChart")),
+  "/blank": lazyPreload(() => import("../pages/Blank")),
+  "/crud-example": lazyPreload(() => import("../pages/Management/CrudExample")),
 };
 
-/**
- * Dynamic route patterns — routes with URL parameters (e.g. /visit-registration/:id).
- *
- * Each entry has a regex `pattern` that matches the actual URL, a `key` that
- * describes the parameter names, and the lazy `component` to render.
- */
-export const dynamicRoutePatterns: Array<{
+// ─── Dynamic route patterns ──────────────────────────────────────────────
+
+export interface DynamicRoutePattern {
   pattern: RegExp;
   key: string;
   component: React.LazyExoticComponent<React.ComponentType<any>>;
-}> = [
+}
+
+export const dynamicRoutePatterns: DynamicRoutePattern[] = [
   {
     pattern: /^\/visit-registration\/(\d+)$/,
     key: "/visit-registration/:id",
-    component: lazy(() => import("../pages/Tracking/VisitRegistration")),
+    component: lazyPreload(() => import("../pages/Tracking/VisitRegistration")),
   },
   {
     pattern: /^\/activity-logs\/(\d+)$/,
     key: "/activity-logs/:practiceId",
-    component: lazy(() => import("../pages/ActivityLogs/ActivityLogPage")),
+    component: lazyPreload(() => import("../pages/ActivityLogs/ActivityLogPage")),
   },
   {
     pattern: /^\/tutor\/evaluations\/(\d+)$/,
     key: "/tutor/evaluations/:enrollmentId",
-    component: lazy(() => import("../pages/Tutor/Evaluations/TutorEvaluation")),
+    component: lazyPreload(() => import("../pages/Tutor/Evaluations/TutorEvaluation")),
   },
   {
     pattern: /^\/student\/activity-logs\/(\d+)$/,
     key: "/student/activity-logs/:practiceId",
-    component: lazy(() => import("../pages/Student/StudentActivityLogs")),
+    component: lazyPreload(() => import("../pages/Student/StudentActivityLogs")),
   },
 ];
+
+/**
+ * Trigger the dynamic import for every registered route so that
+ * React.lazy() finds them cached on first use.
+ *
+ * Call this once after the user is authenticated and the app has
+ * painted. Uses requestIdleCallback (or setTimeout) to avoid
+ * competing with the critical initial render.
+ *
+ * React.lazy() deduplicates import() promises — calling import()
+ * here BEFORE the lazy component renders means the lazy() wrapper
+ * reuses the same cached module.
+ */
+export function preloadRoutes(): void {
+  const doPreload = () => {
+    for (const imp of ALL_IMPORTS) {
+      imp().catch(() => {
+        /* preload failures are non-critical */
+      });
+    }
+  };
+
+  if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+    requestIdleCallback(doPreload, { timeout: 3000 });
+  } else {
+    setTimeout(doPreload, 2000);
+  }
+}
 
 /**
  * Resolve a route path to its lazy component and any extracted URL parameters.

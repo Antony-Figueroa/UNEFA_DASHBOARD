@@ -88,9 +88,8 @@ export default function NotificationDropdown() {
       <Dropdown
         isOpen={isOpen}
         onClose={closeDropdown}
-        className="fixed left-4 right-4 sm:absolute sm:left-auto sm:right-0 mt-2 w-auto sm:w-80 md:w-96 max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-280px-2rem)] lg:max-w-lg xl:w-96 h-auto max-h-[70vh] sm:max-h-[480px] flex flex-col rounded-2xl border border-border-light bg-white dark:border-border-dark dark:bg-bg-dark shadow-lg dark:shadow-xl transition-colors duration-300 z-50"
+        className="fixed left-4 right-4 sm:absolute sm:left-auto sm:right-0 mt-2 w-auto sm:w-80 md:w-96 max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-280px-2rem)] lg:max-w-lg xl:w-96 h-auto max-h-[70vh] sm:max-h-[480px] flex flex-col rounded-2xl border border-border-light bg-white dark:border-border-dark dark:bg-bg-dark shadow-lg dark:shadow-xl transition-colors duration-300 z-50 overflow-hidden"
       >
-        <div className="flex flex-col h-full overflow-hidden">
         {/* Header */}
         <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-bg-secondary/50 dark:bg-white/5 border-b border-border-light dark:border-border-dark">
           <div className="flex items-center gap-2">
@@ -127,7 +126,7 @@ export default function NotificationDropdown() {
         </div>
         
         {/* Lista de notificaciones */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
+        <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0 max-h-[calc(70vh-120px)] sm:max-h-[360px]">
           {loading && notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-text-secondary">
               <div className="w-8 h-8 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin mb-3"></div>
@@ -258,7 +257,6 @@ export default function NotificationDropdown() {
             </svg>
             Ver todas las notificaciones
           </button>
-        </div>
         </div>
       </Dropdown>
     </div>

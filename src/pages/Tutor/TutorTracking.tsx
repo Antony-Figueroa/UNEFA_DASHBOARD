@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { useTabs } from "../../context/tab";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
@@ -28,6 +29,7 @@ const statusLabels: Record<string, string> = {
 
 export default function TutorTracking() {
   const navigate = useNavigate();
+  const { openTab } = useTabs();
   const [students, setStudents] = useState<TutorStudent[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<TutorStudent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -183,14 +185,14 @@ export default function TutorTracking() {
                             <Eye className="w-4 h-4 text-text-secondary" />
                           </button>
                           <button
-                            onClick={() => navigate(`/visit-registration/${student.enrollmentId}`)}
+                            onClick={() => openTab(`/visit-registration/${student.enrollmentId}`, `Visita #${student.enrollmentId}`)}
                             className="p-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                             title="Registro de Visitas"
                           >
                             <Calendar className="w-4 h-4 text-blue-500" />
                           </button>
                           <button
-                            onClick={() => navigate(`/activity-logs/${student.enrollmentId}`)}
+                            onClick={() => openTab(`/activity-logs/${student.enrollmentId}`, `Actividades #${student.enrollmentId}`)}
                             className="p-2 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
                             title="Registro de Actividades"
                           >
@@ -271,7 +273,7 @@ export default function TutorTracking() {
                 <Button
                   variant="primary"
                   onClick={() => {
-                    navigate(`/visit-registration/${selectedStudent.enrollmentId}`);
+                    openTab(`/visit-registration/${selectedStudent.enrollmentId}`, `Visita #${selectedStudent.enrollmentId}`);
                     setSelectedStudent(null);
                   }}
                   startIcon={<Calendar className="w-4 h-4" />}
@@ -281,7 +283,7 @@ export default function TutorTracking() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    navigate(`/activity-logs/${selectedStudent.enrollmentId}`);
+                    openTab(`/activity-logs/${selectedStudent.enrollmentId}`, `Actividades #${selectedStudent.enrollmentId}`);
                     setSelectedStudent(null);
                   }}
                   startIcon={<FileText className="w-4 h-4" />}

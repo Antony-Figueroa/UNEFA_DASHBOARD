@@ -10,6 +10,8 @@ import { useNavigate, useLocation } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
+import { Tabs } from "../../components/ui/tabs/Tabs";
+import { useTabs } from "../../hooks/useTabs";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
@@ -28,6 +30,7 @@ import { formatDateTime } from "../../utils/date";
 import { useLists } from "../../features/lists/hooks/useLists";
 import { useCareers } from "../../features/careers/hooks/useCareers";
 import { matchSearch } from "../../utils/searchNormalizer";
+import { toTitleCase } from "../../utils/textFormat";
 
 /**
  * Transforma un objeto de tipo Tutor (dominio) a TutorRowData (vista).
@@ -79,10 +82,10 @@ export default function TutorsPage() {
 
                 listNames.forEach(name => {
                     if (data[name] && data[name].length > 0) {
-                        mapped[name] = data[name].map(v => ({
-                            value: v.name.toUpperCase(),
-                            label: v.name.toUpperCase()
-                        }));
+                mapped[name] = data[name].map(v => ({
+                    value: v.name.toUpperCase(),
+                    label: toTitleCase(v.name)
+                }));
                     } else {
                         mapped[name] = fallbacks[name] || [];
                     }
@@ -131,10 +134,10 @@ export default function TutorsPage() {
     const { careers } = useCareers();
 
     const careerOptions = useMemo(() =>
-        careers.map(c => ({ value: String(c.careerId), label: c.careerName.toUpperCase() })),
+        careers.map(c => ({ value: String(c.careerId), label: toTitleCase(c.careerName) })),
         [careers]);
 
-    const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
+    const tabsState = useTabs({ defaultTab: 'Activas' });
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTutor, setEditingTutor] = useState<Tutor | null>(null);
     const [viewTutor, setViewTutor] = useState<TutorRowData | null>(null);
@@ -155,9 +158,9 @@ export default function TutorsPage() {
     const [confirmation, setConfirmation] = useState<ConfirmationInfo | null>(null);
 
     const filtered = useMemo(() => {
-        const byStatus = tutors.filter((t) => (activeTab === "Activas" ? t.status : !t.status));
+        const byStatus = tutors.filter((t) => (tabsState.activeTab === "Activas" ? t.status : !t.status));
         return byStatus.map(formatTutorToRow);
-    }, [tutors, activeTab]);
+    }, [tutors, tabsState.activeTab]);
 
     /**
      * Datos filtrados específicamente para el reporte PDF de Tutores.
@@ -369,36 +372,29 @@ export default function TutorsPage() {
                 </div>
 
                 <div className="space-y-6">
-                    <ComponentCard title={activeTab === "Activas" ? "Tutores Activos" : "Tutores Inactivos"}>
-                        <div className="mb-6 flex border-b border-border-light dark:border-white/5">
-                            <button
-                                onClick={() => setActiveTab("Activas")}
-                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Activas" ? "text-brand-500" : "text-text-secondary hover:text-text-primary"}`}
-                            >
-                                Activos
-                                {activeTab === "Activas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-                            </button>
-                            <button
-                                onClick={() => setActiveTab("Inactivas")}
-                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Inactivas" ? "text-brand-500" : "text-text-secondary hover:text-text-primary"}`}
-                            >
-                                Inactivos
-                                {activeTab === "Inactivas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-                            </button>
-                        </div>
+                    <ComponentCard title={tabsState.activeTab === "Activas" ? "Tutores Activos" : "Tutores Inactivos"}>
+                        <Tabs
+                            options={[
+                                { id: 'Activas', label: 'Activos' },
+                                { id: 'Inactivas', label: 'Inactivos' },
+                            ]}
+                            {...tabsState.tabProps}
+                            variant="underline"
+                            className="mb-6"
+                        />
 
                         <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="tutors-table">
                             <TutorTable
                                 data={filtered}
                                 status={status}
                                 error={error}
-                                activeTab={activeTab}
+                                activeTab={tabsState.activeTab as "Activas" | "Inactivas"}
                                 onEdit={handleEdit}
                                 onToggleStatus={handleToggleStatus}
                                 onView={setViewTutor}
                                 onBulkDelete={handleBulkDelete}
                                 onBulkRestore={handleBulkRestore}
-                                inactiveMode={activeTab === "Inactivas"}
+                                inactiveMode={tabsState.activeTab === "Inactivas"}
                                 careerOptions={careerOptions}
                                 careers={careers}
                                 conditionOptions={dynamicLists["Condición"] || []}
@@ -474,7 +470,7 @@ export default function TutorsPage() {
                         )}
                         columns={[
                             { header: "Cédula", accessor: (t) => `${t.identificationPrefix}-${t.identificationNumber}` },
-                            { header: "Nombre Completo", accessor: (t) => `${t.firstName} ${t.middleName || ""} ${t.lastName} ${t.secondLastName || ""}`.trim() },
+                            { header: "Nombre Completo", accessor: (t) => `${toTitleCase(t.firstName)} ${toTitleCase(t.middleName) || ""} ${toTitleCase(t.lastName)} ${toTitleCase(t.secondLastName) || ""}`.trim() },
                             { 
                                 header: "Contacto", 
                                 accessor: (t) => `${t.email} / ${t.phone}` 
@@ -482,7 +478,7 @@ export default function TutorsPage() {
                             { 
                                 header: "Título", 
                                 accessor: (t) => t.carreras
-                                    .map(id => careers.find(c => String(c.careerId) === String(id))?.careerName || id)
+                                    .map(id => toTitleCase(careers.find(c => String(c.careerId) === String(id))?.careerName || id))
                                     .join(" - ") 
                             },
                         ]}

@@ -570,26 +570,7 @@ export default function PersonFormFields({
         )}
       </fieldset>
 
-      {/* ============================================================ */}
-      {/* Dirección */}
-      {/* ============================================================ */}
-      <fieldset className="border border-border-light dark:border-border-dark rounded-lg p-4">
-        <legend className="text-sm font-medium text-text-secondary px-2">Dirección</legend>
-        {!isHidden("address") && (
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Dirección de Residencia <span className="text-red-500">*</span>
-          </label>
-          <Input
-            {...register("address")}
-            placeholder="Dirección de habitación"
-            disabled={viewOnlyMode}
-            error={!!errors.address}
-            hint={errors.address?.message as string}
-          />
-        </div>
-        )}
-      </fieldset>
+
     </div>
   );
 }

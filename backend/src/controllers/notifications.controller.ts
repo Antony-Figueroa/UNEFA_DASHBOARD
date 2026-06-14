@@ -272,7 +272,7 @@ export const expressEmail = async (req: Request, res: Response): Promise<void> =
       if (error) throw error;
 
       for (const u of userData || []) {
-        const person = u.t_persons;
+        const person = u.t_persons?.[0];
         if (person?.email) {
           systemRecipients.push({
             userId: u.USER_ID,

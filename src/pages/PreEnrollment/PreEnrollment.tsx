@@ -4,10 +4,12 @@
  */
 
 import { useMemo, useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
+import { Tabs } from "../../components/ui/tabs/Tabs";
+import { useTabs } from "../../hooks/useTabs";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
@@ -27,6 +29,7 @@ import { usePeriods } from "../../features/periods/hooks/usePeriods";
 import { getInternshipTypes, mapToOptions } from "../../features/internship-types/services/internshipTypesService";
 import { PreEnrollment, PreEnrollmentRowData, CreatePreEnrollmentPayload, UpdatePreEnrollmentPayload } from "../../features/pre-enrollment/types";
 import { formatDateTime } from "../../utils/date";
+import { toTitleCase } from "../../utils/textFormat";
 
 /**
  * Formatea un objeto PreEnrollment a PreEnrollmentRowData para su visualización en tablas.
@@ -69,7 +72,7 @@ export default function PreEnrollmentPage() {
         if (periodos.length > 0) {
             const mappedPeriods = periodos.map(p => ({
                 value: p.description.toUpperCase(),
-                label: p.description.toUpperCase()
+                label: toTitleCase(p.description)
             }));
             setPeriodOptions(mappedPeriods);
         }
@@ -82,7 +85,7 @@ export default function PreEnrollmentPage() {
                 const practiceData = await getInternshipTypes();
                 const mappedPractice = mapToOptions(practiceData).map(opt => ({
                     value: opt.value,
-                    label: opt.label,
+                    label: toTitleCase(opt.label),
                     id: opt.id
                 }));
 
@@ -91,16 +94,16 @@ export default function PreEnrollmentPage() {
                 } else {
                     // Fallback si no hay datos en la BD
                     setPracticeTypeOptions([
-                        { value: "ORDINARIA", label: "ORDINARIA" },
-                        { value: "ESPECIAL", label: "ESPECIAL" },
+                        { value: "ORDINARIA", label: toTitleCase("ORDINARIA") },
+                        { value: "ESPECIAL", label: toTitleCase("ESPECIAL") },
                     ]);
                 }
             } catch (error) {
                 console.error("Error loading filter options:", error);
                 // Fallback en caso de error
                 setPracticeTypeOptions([
-                    { value: "ORDINARIA", label: "ORDINARIA" },
-                    { value: "ESPECIAL", label: "ESPECIAL" },
+                    { value: "ORDINARIA", label: toTitleCase("ORDINARIA") },
+                    { value: "ESPECIAL", label: toTitleCase("ESPECIAL") },
                 ]);
             }
         };
@@ -145,7 +148,7 @@ export default function PreEnrollmentPage() {
     const [dynamicLists, setDynamicLists] = useState<Record<string, ListValue[]>>({});
 
     const careerOptions = useMemo(() => 
-        careers.map(c => ({ value: String(c.careerId), label: c.careerName.toUpperCase() })),
+        careers.map(c => ({ value: String(c.careerId), label: toTitleCase(c.careerName) })),
         [careers]);
 
     useEffect(() => {

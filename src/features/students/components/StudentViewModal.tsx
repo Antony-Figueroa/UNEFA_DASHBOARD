@@ -11,6 +11,7 @@ import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { StudentRowData } from "../types";
 import { SingleReportModal } from "../../../components/ui/pdf/SingleReportModal";
 import { StudentIndividualPDF } from "../../../components/ui/pdf/templates/individual";
+import { toTitleCase } from "../../../utils/textFormat";
 
 /**
  * Propiedades del componente StudentViewModal.
@@ -63,19 +64,19 @@ export default function StudentViewModal({
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Primer Nombre</label>
-                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{student.firstName}</p>
+                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{toTitleCase(student.firstName)}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Segundo Nombre</label>
-                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{student.middleName || "-"}</p>
+                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{toTitleCase(student.middleName) || "-"}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Primer Apellido</label>
-                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{student.lastName}</p>
+                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{toTitleCase(student.lastName)}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Segundo Apellido</label>
-                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{student.secondLastName || "-"}</p>
+                                <p className="text-sm font-semibold text-text-primary dark:text-white/90">{toTitleCase(student.secondLastName) || "-"}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Cédula / ID</label>
@@ -83,11 +84,11 @@ export default function StudentViewModal({
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Sexo</label>
-                                <p className="text-sm text-text-primary dark:text-white/90">{student.sex}</p>
+                                <p className="text-sm text-text-primary dark:text-white/90">{toTitleCase(student.sex)}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Estado Civil</label>
-                                <p className="text-sm text-text-primary dark:text-white/90">{student.civilStatus}</p>
+                                <p className="text-sm text-text-primary dark:text-white/90">{toTitleCase(student.civilStatus)}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Fecha de Nacimiento</label>
@@ -103,7 +104,7 @@ export default function StudentViewModal({
                             </div>
                             <div className="col-span-full">
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Dirección de Habitación</label>
-                                <p className="text-sm text-text-primary dark:text-white/90">{student.address || "-"}</p>
+                                <p className="text-sm text-text-primary dark:text-white/90">{toTitleCase(student.address) || "-"}</p>
                             </div>
                         </div>
                     </div>
@@ -117,11 +118,11 @@ export default function StudentViewModal({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Tipo / Rango</label>
-                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{student.studentType} - {student.militaryRank}</p>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{toTitleCase(student.studentType)} - {toTitleCase(student.militaryRank)}</p>
                             </div>
                             <div>
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">¿Trabaja?</label>
-                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{student.works}</p>
+                                <p className="text-sm font-bold text-text-primary dark:text-white/90">{toTitleCase(student.works)}</p>
                             </div>
                         </div>
                     </div>
@@ -168,7 +169,7 @@ export default function StudentViewModal({
                 isOpen={reportModalOpen}
                 onClose={() => setReportModalOpen(false)}
                 title="Ficha de Estudiante"
-                subtitle={`${student.firstName} ${student.lastName} - ${student.identificationPrefix}-${student.identificationNumber}`}
+                subtitle={`${toTitleCase(student.firstName)} ${toTitleCase(student.lastName)} - ${student.identificationPrefix}-${student.identificationNumber}`}
                 data={student}
                 template={(data) => <StudentIndividualPDF data={data} />}
                 fileName={`estudiante_${student.identificationNumber}`}

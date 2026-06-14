@@ -5,6 +5,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { useTabs } from "../../context/tab";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import PageMeta from "../../components/common/PageMeta";
@@ -19,6 +20,7 @@ import { Tracking, TrackingRowData, UpdateTrackingPayload, TRANSFER_OPTIONS } fr
 import ErrorBoundary from "../../components/common/ErrorBoundary";
 import TrackingStatsChart from "../../features/tracking/components/TrackingStatsChart";
 import { getTrackingStats, TrackingStats } from "../../features/tracking/services/trackingService";
+import { toTitleCase } from "../../utils/textFormat";
 
 /**
  * Página de Seguimiento (Tracking).
@@ -31,6 +33,7 @@ import { getTrackingStats, TrackingStats } from "../../features/tracking/service
 export default function TrackingPage() {
     const { fetchMultipleLists } = useLists();
     const navigate = useNavigate();
+    const { openTab } = useTabs();
     const [lists, setLists] = useState<Record<string, { value: string; label: string }[]>>({});
     const [stats, setStats] = useState<TrackingStats | null>(null);
     const [statsLoading, setStatsLoading] = useState(true);
@@ -94,7 +97,7 @@ export default function TrackingPage() {
                     setLists({
                         'Traslado': data['Traslado'].map(v => ({
                             value: v.name.toLowerCase(),
-                            label: v.name.charAt(0).toUpperCase() + v.name.slice(1).toLowerCase()
+                            label: toTitleCase(v.name)
                         }))
                     });
                 }
@@ -247,8 +250,8 @@ export default function TrackingPage() {
                                         onView={handleOpenViewModal}
                                         onDelete={handleDelete}
                                         onRestore={handleRestore}
-                                        onVisitRegistration={(item) => navigate(`/visit-registration/${item.trackingId}`)}
-                                        onActivityLogs={(item) => navigate(`/activity-logs/${item.trackingId}`)}
+                                        onVisitRegistration={(item) => openTab(`/visit-registration/${item.trackingId}`, `Visita #${item.trackingId}`)}
+                                        onActivityLogs={(item) => openTab(`/activity-logs/${item.trackingId}`, `Actividades #${item.trackingId}`)}
                                         transferOptions={lists['Traslado'] || TRANSFER_OPTIONS}
                                     />
                                 </SkeletonLoader>

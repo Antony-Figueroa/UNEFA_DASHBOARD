@@ -10,6 +10,8 @@ import { useNavigate, useLocation } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
+import { Tabs } from "../../components/ui/tabs/Tabs";
+import { useTabs } from "../../hooks/useTabs";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
@@ -130,7 +132,7 @@ export default function StudentsPage() {
     const { careers, addCareer } = useCareers();
     const { activeOptions: activeInternshipOptions, fetchAll: fetchInternshipTypes } = useInternshipTypes();
 
-    const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
+    const tabsState = useTabs({ defaultTab: 'Activas' });
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -156,7 +158,7 @@ export default function StudentsPage() {
     const filtered = useMemo(() => {
         if (!Array.isArray(students)) return [];
 
-        let result = students.filter((s) => (activeTab === "Activas" ? !!s.status : !s.status));
+        let result = students.filter((s) => (tabsState.activeTab === "Activas" ? !!s.status : !s.status));
 
         if (dateRangeFilter && dateRangeFilter.start && dateRangeFilter.end) {
             const startDate = new Date(dateRangeFilter.start);
@@ -172,7 +174,7 @@ export default function StudentsPage() {
         }
 
         return result.map(formatStudentToRow);
-    }, [students, activeTab, dateRangeFilter]);
+    }, [students, tabsState.activeTab, dateRangeFilter]);
 
     /**
      * Datos filtrados específicamente para el reporte PDF de Estudiantes.
@@ -436,33 +438,23 @@ export default function StudentsPage() {
                 {/* Contenido principal */}
                 <div className="space-y-6">
                     {/* Tabla de Estudiantes */}
-                    <ComponentCard title={activeTab === "Activas" ? "Estudiantes Activos" : "Estudiantes Inactivos"}>
-                        <div className="mb-6 flex border-b border-border-light dark:border-border-dark">
-                            <button
-                                onClick={() => setActiveTab("Activas")}
-                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Activas" ? "text-brand-500" : "text-text-secondary hover:text-text-emphasis"
-                                    }`}
-                            >
-                                Activos
-                                {activeTab === "Activas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-                            </button>
-                            <button
-                                onClick={() => setActiveTab("Inactivas")}
-                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Inactivas" ? "text-brand-500" : "text-text-secondary hover:text-text-emphasis"
-                                    }`}
-                            >
-                                Inactivos
-                                {activeTab === "Inactivas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-                            </button>
-                        </div>
-
+                    <ComponentCard title={tabsState.activeTab === "Activas" ? "Estudiantes Activos" : "Estudiantes Inactivos"}>
+                        <Tabs
+                            options={[
+                                { id: 'Activas', label: 'Activos' },
+                                { id: 'Inactivas', label: 'Inactivos' },
+                            ]}
+                            {...tabsState.tabProps}
+                            variant="underline"
+                            className="mb-6"
+                        />
 
                         <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="students-table">
                             <StudentTable
                                 data={filtered}
                                 status={status}
                                 error={error}
-                                activeTab={activeTab}
+                                activeTab={tabsState.activeTab as "Activas" | "Inactivas"}
                                 onEdit={handleEdit}
                                 onToggleStatus={handleToggleStatus}
                                 onExportToPreEnrollment={handleExportToPreEnrollment}
@@ -471,7 +463,7 @@ export default function StudentsPage() {
                                 onBulkRestore={handleBulkRestore}
                                 selectedIds={selectedIds}
                                 onSelectionChange={setSelectedIds}
-                                inactiveMode={activeTab === "Inactivas"}
+                                inactiveMode={tabsState.activeTab === "Inactivas"}
                                 loading={loadingAction}
                             />
                         </SkeletonLoader>

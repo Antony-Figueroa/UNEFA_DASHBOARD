@@ -37,6 +37,7 @@ import {
 import { CareerRowData } from "../types";
 import { InternshipTypeOption } from "../../internship-types/types";
 import { CrudStatus } from "../../../hooks/useCrud";
+import { toTitleCase } from "../../../utils/textFormat";
 import Checkbox from "../../../components/form/input/Checkbox";
 import Badge from "../../../components/ui/badge/Badge";
 import CareerCards from "./CareerCards";
@@ -576,7 +577,7 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
                   <TableCell className="table-cell">
                     <div className="flex flex-col">
                       <span className="text-xs font-bold text-text-primary dark:text-text-emphasis uppercase tracking-wide">{c.careerAbbreviation}</span>
-                      <span className="text-[10px] text-text-tertiary truncate max-w-[140px]" title={c.careerName}>{c.careerName}</span>
+                      <span className="text-[10px] text-text-tertiary truncate max-w-[140px]" title={toTitleCase(c.careerName)}>{toTitleCase(c.careerName)}</span>
                     </div>
                   </TableCell>
                   <TableCell className="table-cell">
@@ -671,7 +672,7 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
                       </div>
                       <p className="text-[10px] text-text-tertiary uppercase tracking-wider font-semibold mb-0.5">{c.careerAbbreviation}</p>
                       <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-12">
-                        {c.careerName}
+                        {toTitleCase(c.careerName)}
                       </h3>
                       <div className="flex items-center justify-center gap-4 mt-2">
                         <div className="text-[11px] text-text-secondary dark:text-text-tertiary">
@@ -680,7 +681,7 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
                         </div>
                         <div className="text-[11px] text-text-secondary dark:text-text-tertiary">
                           <span className="block font-medium uppercase tracking-wider opacity-60">Tipo</span>
-                          {c.careerType || "-"}
+                          {toTitleCase(c.careerType) || "-"}
                         </div>
                       </div>
                     </div>

@@ -4,6 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Input from "../../../components/form/input/InputField";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
+import { Tabs } from "../../../components/ui/tabs/Tabs";
+import { useTabs } from "../../../hooks/useTabs";
 import { Tutor, CreateTutorPayload, UpdateTutorPayload } from "../types";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
@@ -96,6 +98,7 @@ export default function TutorModal({
     const [isCheckingCi, setIsCheckingCi] = useState(false);
     const [isLookingUpCi, setIsLookingUpCi] = useState(false);
     const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+    const tabsState = useTabs({ defaultTab: 'datos-personales' });
     const [existingTutor, setExistingTutor] = useState<any | null>(null);
     const [existingPerson, setExistingPerson] = useState(false);
     const [viewOnlyMode, setViewOnlyMode] = useState(false);
@@ -995,9 +998,19 @@ export default function TutorModal({
               </span>
             </div>
           )}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Columna Izquierda: PersonFormFields + Campos Tutor */}
-            <div className="lg:col-span-3 space-y-6">
+          <Tabs
+            options={[
+              { id: 'datos-personales', label: 'Datos Personales' },
+              { id: 'laboral', label: 'Laboral' },
+              { id: 'asignaciones', label: 'Asignaciones' },
+            ]}
+            {...tabsState.tabProps}
+            variant="modal"
+            className="mb-6"
+          />
+
+          <div className="space-y-6">
+              <div hidden={tabsState.activeTab !== 'datos-personales'} role="tabpanel">
               <PersonFormFields
                 control={control}
                 register={register}
@@ -1035,7 +1048,9 @@ export default function TutorModal({
                   showReference
                 />
               </div>
+              </div>
 
+              <div hidden={tabsState.activeTab !== 'laboral'} role="tabpanel">
               {/* Sub-grid: Campos específicos del tutor */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Condición */}
@@ -1168,7 +1183,9 @@ export default function TutorModal({
                   )}
                 </div>
               </div>
+              </div>
 
+              <div hidden={tabsState.activeTab !== 'asignaciones'} role="tabpanel">
               {/* Carreras que Atiende - full width abajo */}
               <Controller
                 name="carreras"
@@ -1187,8 +1204,8 @@ export default function TutorModal({
                   />
                 )}
               />
-            </div> {/* Cierra Columna Izquierda */}
-           </div>
+            </div>
+            </div>
             {/* Direcciones Estructuradas */}
             <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
               <AddressList

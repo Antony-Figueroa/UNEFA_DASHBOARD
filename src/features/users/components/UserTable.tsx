@@ -12,6 +12,7 @@ import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import Badge from "../../../components/ui/badge/Badge";
 import { maskEmail } from "../../../utils/maskData";
 import { AuthUser } from "../../../context/auth";
+import { toTitleCase } from "../../../utils/textFormat";
 
 /**
  * Propiedades para el componente UserTable.
@@ -303,11 +304,11 @@ export default function UserTable({
                                         </Tooltip>
                                     </TableCell>
                                     <TableCell className="table-cell font-medium uppercase">{user.userCi}</TableCell>
-                                    <TableCell className="table-cell uppercase">{user.name} {user.surname}</TableCell>
+                                    <TableCell className="table-cell">{toTitleCase(user.name)} {toTitleCase(user.surname)}</TableCell>
                                     <TableCell className="table-cell lowercase">{maskEmail(user.email)}</TableCell>
                                     <TableCell className="table-cell">
                                     <Badge color={user.role === 1 ? "error" : "info"} variant="light" size="sm">
-                                            {rolesMap[user.role] || "USUARIO"}
+                                            {toTitleCase(rolesMap[user.role]) || "Usuario"}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="table-cell text-right">
@@ -340,9 +341,9 @@ export default function UserTable({
                     data.map((user) => (
                         <div key={user.id} className="p-4 bg-white dark:bg-transparent transition-colors">
                             <div className="flex flex-col items-center gap-2">
-                                <div className="flex-1 text-center uppercase">
+                                <div className="flex-1 text-center">
                                     <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate">
-                                        {user.name} {user.surname}
+                                        {toTitleCase(user.name)} {toTitleCase(user.surname)}
                                     </h3>
                                     <p className="text-xs text-text-tertiary mt-1 truncate">{user.userCi}</p>
                                 </div>
@@ -357,7 +358,7 @@ export default function UserTable({
                                     <div className="flex flex-col items-center">
                                         <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1">Rol</p>
                                         <Badge color={user.role === 1 ? "error" : "info"} variant="light" size="sm">
-                                            {rolesMap[user.role] || "USUARIO"}
+                                            {toTitleCase(rolesMap[user.role]) || "Usuario"}
                                         </Badge>
                                     </div>
                                 </div>

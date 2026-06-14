@@ -143,8 +143,10 @@ const LayoutContent = () => {
         }}
       >
         <DatabaseStatusBanner />
-        <AppHeader />
-        <NavBar />
+        <div className="sticky top-[var(--banner-height,0px)] z-40">
+          <AppHeader />
+          <NavBar />
+        </div>
         <main className="flex-1 mx-auto w-full max-w-(--breakpoint-1xl) p-4 pt-8 md:p-6 md:pt-10">
           <KeepAliveOutlet />
         </main>

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { DatabaseManager } from "../lib/db-manager.js";
+import { sanitizeText } from "../utils/text-utils.js";
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 
 interface DBProfessionalPractice {
@@ -184,7 +185,7 @@ export const updateTracking = async (req: Request, res: Response) => {
 
     // No actualizamos el STATUS - solo actualizamos los datos del seguimiento
     const updateData = {
-      REPORT_TITLE: reportTitle,
+      REPORT_TITLE: sanitizeText(reportTitle) ?? '',
       TRANSFER: transfer ? 1 : 0,
       TOUR: route,
       OBSERVATION: observations

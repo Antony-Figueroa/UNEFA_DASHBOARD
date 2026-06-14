@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { sanitizeText } from '../utils/text-utils.js';
 import { auditCreate, auditUpdate, auditDelete } from '../utils/audit-helpers.js';
 import { notifyEvaluationCreated } from '../services/notification.service.js';
 import { evaluationConfig } from '../config/evaluation.config.js';
@@ -273,7 +274,7 @@ export const createEvaluation = async (req: AuthRequest, res: Response) => {
         EVALUATOR_TYPE: data.evaluatorType,
         COMITE_MEMBER_INDEX: data.evaluatorType === 'COMITE' ? data.comiteMemberIndex : null,
         EVALUATOR_ID: data.evaluatorId || null,
-        EVALUATOR_NAME: data.evaluatorName,
+        EVALUATOR_NAME: sanitizeText(data.evaluatorName) ?? '',
         EVALUATOR_CI: data.evaluatorCi || null,
         TOTAL_SCORE: totalScore,
         OBSERVATIONS: data.observations || null,
@@ -373,7 +374,7 @@ export const updateEvaluation = async (req: AuthRequest, res: Response) => {
     const { error: updateError } = await supabase
       .from('t_evaluation')
       .update({
-        EVALUATOR_NAME: evaluatorName,
+        EVALUATOR_NAME: sanitizeText(evaluatorName) ?? '',
         EVALUATOR_CI: evaluatorCi,
         OBSERVATIONS: observations,
         TOTAL_SCORE: totalScore

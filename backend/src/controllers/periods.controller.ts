@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { AuthRequest } from '../middlewares/auth.middleware.js';
+import { sanitizeText } from '../utils/text-utils.js';
 import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-helpers.js';
 import { periodNotificationService } from '../services/period-notification.service.js';
 import { PERIOD_STATUS } from '../constants/practice-status.constants.js';
@@ -210,7 +211,7 @@ export const createPeriod = async (req: AuthRequest, res: Response) => {
     }
 
     const dbData = {
-      DESCRIPTION: description,
+      DESCRIPTION: sanitizeText(description) ?? '',
       START_DATE: formatToDate(startDate),
       END_DATE: formatToDate(endDate),
       PERIOD_STATUS: String(periodStatus || PERIOD_STATUS.PENDIENTE),
@@ -350,7 +351,7 @@ export const updatePeriod = async (req: AuthRequest, res: Response) => {
       }
 
       const updatePayload: Record<string, unknown> = {};
-      if (description !== undefined) updatePayload.DESCRIPTION = description;
+      if (description !== undefined) updatePayload.DESCRIPTION = sanitizeText(description) ?? '';
       if (startDate !== undefined) updatePayload.START_DATE = formatToDate(startDate);
       if (endDate !== undefined) updatePayload.END_DATE = formatToDate(endDate);
       if (periodStatus !== undefined) {

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
+import { sanitizeText } from '../utils/text-utils.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 
 const TABLE_NAME = 't_professional_practices';
@@ -353,9 +354,9 @@ export const createPreEnrollment = async (req: Request, res: Response) => {
           INTERNSHIP_STATUS: 1, 
           INTERNSHIP_TYPE_ID: typeData.INTERNSHIP_TYPE_ID,
           CAREER_ID: careerIdNumber,
-          SEMESTER: semester || '',
-          SECTION: section || '',
-          REGIME: regime || ''
+          SEMESTER: sanitizeText(semester) ?? '',
+          SECTION: sanitizeText(section) ?? '',
+          REGIME: sanitizeText(regime) ?? ''
         }])
         .select(`
           *,

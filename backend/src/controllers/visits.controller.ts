@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { dbManager } from "../lib/db-manager.js";
+import { sanitizeText } from "../utils/text-utils.js";
 
 export interface VisitRecord {
   VISIT_ID: number;
@@ -362,8 +363,8 @@ export const createVisit = async (req: Request, res: Response) => {
         PROFESSIONAL_PRACTICE_ID: practiceId,
         TUTOR_ID: tutorId,
         VISIT_DATE: visitDate || new Date().toISOString(),
-        VISIT_TYPE: visitType || 'PRESENCIAL',
-        VISIT_CASE: visitCase || 'SEGUIMIENTO_REGULAR',
+        VISIT_TYPE: sanitizeText(visitType) ?? 'PRESENCIAL',
+        VISIT_CASE: sanitizeText(visitCase) ?? 'SEGUIMIENTO_REGULAR',
         HOURS_WORKED: hoursWorked || 0,
         ACTIVITIES_PERFORMED: activitiesPerformed || '',
         OBSERVATIONS: observations || '',
@@ -461,8 +462,8 @@ export const updateVisit = async (req: Request, res: Response) => {
     };
 
     if (visitDate) updateData.VISIT_DATE = visitDate;
-    if (visitType) updateData.VISIT_TYPE = visitType;
-    if (visitCase) updateData.VISIT_CASE = visitCase;
+    if (visitType) updateData.VISIT_TYPE = sanitizeText(visitType);
+    if (visitCase) updateData.VISIT_CASE = sanitizeText(visitCase);
     if (hoursWorked !== undefined) updateData.HOURS_WORKED = hoursWorked;
     if (activitiesPerformed !== undefined) updateData.ACTIVITIES_PERFORMED = activitiesPerformed;
     if (observations !== undefined) updateData.OBSERVATIONS = observations;

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSidebar } from "../context/sidebar";
 import { useAuth } from "../context/auth";
 import { useCommandPalette } from "../components/command-palette/CommandPaletteContext";
@@ -26,22 +26,16 @@ const AppHeader: React.FC = () => {
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
-  useLayoutEffect(() => {
-    const syncHeight = () => {
+  useEffect(() => {
+    const handleResize = () => {
       if (headerRef.current) {
-        const h = headerRef.current.offsetHeight;
-        if (h > 0) {
-          setHeaderHeight(h);
-          document.documentElement.style.setProperty("--header-height", `${h}px`);
-        }
+        setHeaderHeight(headerRef.current.offsetHeight);
       }
     };
 
-    // Measure and set BEFORE browser paints — NavBar's sticky top depends on it
-    syncHeight();
-
-    window.addEventListener("resize", syncHeight);
-    return () => window.removeEventListener("resize", syncHeight);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const handleToggle = () => {
@@ -75,9 +69,8 @@ const AppHeader: React.FC = () => {
   return (
     <header
       ref={headerRef}
-      className="sticky flex w-full bg-white border-b border-border-light/50 z-40 dark:border-white/5 dark:bg-bg-dark"
+      className="flex w-full bg-white border-b border-border-light/50 dark:border-white/5 dark:bg-bg-dark"
       style={{
-        top: 'var(--banner-height, 0px)',
         marginBottom: 'var(--header-spacing)',
         maxHeight: isHeaderTooTall ? '30vh' : 'none',
         overflowY: isHeaderTooTall ? 'auto' : 'visible'

@@ -84,9 +84,15 @@ const trySimulation = (opts: { to: string; subject: string; html: string; text?:
  * Prioridad: Gmail SMTP → Resend → Simulación en consola.
  */
 export const sendEmail = async (options: { to: string; subject: string; html: string; text?: string }): Promise<SendResult> => {
+  // 1. Gmail SMTP (si está configurado)
   const gmailResult = await tryGmail(options);
   if (gmailResult !== null) return gmailResult;
 
+  // 2. Resend API (fallback para serverless/producción)
+  const resendResult = await tryResend(options);
+  if (resendResult !== null) return resendResult;
+
+  // 3. Último recurso: simulación en consola
   return trySimulation(options);
 };
 

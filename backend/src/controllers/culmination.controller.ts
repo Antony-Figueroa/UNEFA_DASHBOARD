@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
+import { getPersonField } from '../utils/person-utils.js';
 
 export interface CulminationRecord {
   id: string;
@@ -92,13 +93,14 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
     });
 
     let records: CulminationRecord[] = practices.map((p: any) => {
-      const student = p.t_persons;
       const career = p.t_career;
       const trackingData = hoursMap.get(p.PROFESSIONAL_PRACTICE_ID) || { total: 0, lastDate: '' };
       
-      const studentName = student 
-        ? `${student.first_name || ''} ${student.middle_name || ''} ${student.last_name || ''} ${student.second_last_name || ''}`.trim().replace(/\s+/g, ' ')
-        : '';
+      const first = getPersonField(p.t_persons, 'first_name') || '';
+      const middle = getPersonField(p.t_persons, 'middle_name') || '';
+      const last = getPersonField(p.t_persons, 'last_name') || '';
+      const secondLast = getPersonField(p.t_persons, 'second_last_name') || '';
+      const studentName = [first, middle, last, secondLast].filter(Boolean).join(' ').trim();
 
       let recordStatus: 'pending' | 'approved' | 'certified' = 'pending';
       if (p.EVALUATION_STATUS === 'completed' && p.GRADE && p.GRADE > 0) {
@@ -109,7 +111,7 @@ export const getCulminationRecords = async (req: Request, res: Response) => {
 
       return {
         id: String(p.PROFESSIONAL_PRACTICE_ID),
-        studentCi: student?.ci || '',
+        studentCi: getPersonField(p.t_persons, 'ci') || '',
         studentName,
         careerName: career?.CAREER_NAME || '',
         institutionName: p.t_institution?.INSTITUTION_NAME || '',
@@ -230,10 +232,11 @@ export const generateCertificate = async (req: Request, res: Response) => {
       return;
     }
 
-    const student = (practice as any).t_persons;
-    const studentName = student 
-      ? `${student.first_name || ''} ${student.middle_name || ''} ${student.last_name || ''} ${student.second_last_name || ''}`.trim().replace(/\s+/g, ' ')
-      : '';
+    const first = getPersonField((practice as any).t_persons, 'first_name') || '';
+    const middle = getPersonField((practice as any).t_persons, 'middle_name') || '';
+    const last = getPersonField((practice as any).t_persons, 'last_name') || '';
+    const secondLast = getPersonField((practice as any).t_persons, 'second_last_name') || '';
+    const studentName = [first, middle, last, secondLast].filter(Boolean).join(' ').trim();
 
     const year = new Date().getFullYear();
     const random = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
@@ -245,7 +248,7 @@ export const generateCertificate = async (req: Request, res: Response) => {
       certificate: {
         number: certificateNumber,
         studentName,
-        studentCi: student?.ci || '',
+        studentCi: getPersonField((practice as any).t_persons, 'ci') || '',
         career: (practice as any).t_career?.CAREER_NAME || '',
         institution: (practice as any).t_institution?.INSTITUTION_NAME || '',
         period: (practice as any).t_internships_period?.DESCRIPTION || '',

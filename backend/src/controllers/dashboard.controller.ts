@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { cacheManager } from '../lib/cache-manager.js';
 import { PERIOD_STATUS } from '../constants/practice-status.constants.js';
+import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
 
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
@@ -139,9 +140,9 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         const entry = regMap.get(date)!;
         entry.count += 1;
         entry.students.push({
-          firstName: s.t_persons?.first_name || '',
-          lastName: s.t_persons?.last_name || '',
-          idNumber: s.t_persons?.ci || ''
+          firstName: getPersonField(s.t_persons, 'first_name') || '',
+          lastName: getPersonField(s.t_persons, 'last_name') || '',
+          idNumber: getPersonField(s.t_persons, 'ci') || ''
         });
       }
     });
@@ -199,7 +200,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const tutorMap = new Map<string, number>();
     (tutorStats || []).forEach((t: any) => {
       const tutorInfo = Array.isArray(t.t_tutors) ? t.t_tutors[0] : t.t_tutors;
-      const name = tutorInfo?.t_persons ? `${tutorInfo.t_persons.first_name} ${tutorInfo.t_persons.last_name}` : 'Sin asignar';
+      const name = getPersonFullName(tutorInfo?.t_persons) || 'Sin asignar';
       tutorMap.set(name, (tutorMap.get(name) || 0) + 1);
     });
 

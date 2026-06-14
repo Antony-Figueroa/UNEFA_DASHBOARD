@@ -6,6 +6,7 @@
 
 import { Request, Response } from 'express';
 import { supabase } from '../lib/supabase.js';
+import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
 
 interface SearchResult {
   students: Array<{
@@ -107,9 +108,9 @@ export const globalSearch = async (req: Request, res: Response): Promise<void> =
       } else if (students) {
         results.students = students.map((s: any) => ({
           id: String(s.STUDENTS_ID),
-          name: `${s.t_persons?.first_name || ''} ${s.t_persons?.last_name || ''}`.trim(),
-          ci: s.t_persons?.ci || '',
-          email: s.t_persons?.email || '',
+          name: getPersonFullName(s.t_persons),
+          ci: getPersonField(s.t_persons, 'ci') || '',
+          email: getPersonField(s.t_persons, 'email') || '',
           careerName: s.t_career?.CAREER_NAME,
           semester: s.SEMESTER
         }));
@@ -134,9 +135,9 @@ export const globalSearch = async (req: Request, res: Response): Promise<void> =
       } else if (tutors) {
         results.tutors = tutors.map((t: any) => ({
           id: String(t.TUTOR_ID),
-          name: `${t.t_persons?.first_name || ''} ${t.t_persons?.last_name || ''}`.trim(),
-          ci: t.t_persons?.ci || '',
-          email: t.t_persons?.email || '',
+          name: getPersonFullName(t.t_persons),
+          ci: getPersonField(t.t_persons, 'ci') || '',
+          email: getPersonField(t.t_persons, 'email') || '',
           department: t.DEPARTMENT
         }));
       }

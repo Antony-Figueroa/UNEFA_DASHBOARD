@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { sanitizeText } from '../utils/text-utils.js';
+import { getPersonField } from '../utils/person-utils.js';
 
 const LISTS_TABLE = 't_prospect_lists';
 const ITEMS_TABLE = 't_prospect_list_items';
@@ -596,20 +597,21 @@ export const getEligibleStudents = async (req: Request, res: Response) => {
 
       // Step 4: Map response data
       const mappedData = (students || []).map((s: any) => {
-        const ciParts = s.t_persons?.ci?.split('-') || ['', ''];
+        const rawCi = getPersonField(s.t_persons, 'ci') || '';
+        const ciParts = rawCi.split('-') || ['', ''];
         const career = careerMap[s.STUDENTS_ID] || null;
 
         const studentData: Record<string, unknown> = {
           studentsId: s.STUDENTS_ID,
-          studentCi: s.t_persons?.ci || '',
+          studentCi: rawCi,
           identificationPrefix: ciParts[0] || 'V',
           identificationNumber: ciParts[1] || s.STUDENTS_CI || '',
-          firstName: s.t_persons?.first_name || s.NAME || '',
-          middleName: s.t_persons?.middle_name || s.SECOND_NAME || '',
-          lastName: s.t_persons?.last_name || s.SURNAME || '',
-          secondLastName: s.t_persons?.second_last_name || s.SECOND_SURNAME || '',
-          email: s.t_persons?.email || s.EMAIL || '',
-          phone: s.t_persons?.phone || s.CONTACT_PHONE || ''
+          firstName: getPersonField(s.t_persons, 'first_name') || s.NAME || '',
+          middleName: getPersonField(s.t_persons, 'middle_name') || s.SECOND_NAME || '',
+          lastName: getPersonField(s.t_persons, 'last_name') || s.SURNAME || '',
+          secondLastName: getPersonField(s.t_persons, 'second_last_name') || s.SECOND_SURNAME || '',
+          email: getPersonField(s.t_persons, 'email') || s.EMAIL || '',
+          phone: getPersonField(s.t_persons, 'phone') || s.CONTACT_PHONE || ''
         };
 
         if (career) {

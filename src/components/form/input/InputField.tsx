@@ -51,16 +51,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
        },
        ref
      ) => {
-    // No aplicar mayúsculas si es un campo de contraseña (isPassword=true) o si el tipo es password
-    const shouldUppercase = !isPassword && type !== "password";
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const input = e.currentTarget;
-      if (shouldUppercase) {
-        const start = input.selectionStart;
-        const end = input.selectionEnd;
-        input.value = input.value.toUpperCase();
-        if (start !== null && end !== null) input.setSelectionRange(start, end);
-      }
       if (onChange) onChange(e);
     };
     return (
@@ -78,7 +69,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
             disabled={disabled}
             className={cn(
               // Clases base
-              `h-11 w-full rounded-lg border appearance-none text-sm shadow-theme-xs transition-all duration-200 ${shouldUppercase ? 'uppercase' : ''}`,
+              `h-11 w-full rounded-lg border appearance-none text-sm shadow-theme-xs transition-all duration-200`,
               "placeholder:text-text-tertiary focus:outline-hidden focus:ring-3",
               "dark:bg-bg-dark dark:text-text-emphasis",
               

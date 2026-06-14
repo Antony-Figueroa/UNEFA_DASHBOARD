@@ -272,13 +272,13 @@ describe('Students API', () => {
     it('debería actualizar nombre y apellido (200)', async () => {
       const res = await agent.put(`/api/students/${studentId}`).send({
         ...buildTestStudentData(),
-        firstName: 'Actualizado',
+        firstName: 'ACTUALIZADO',
         lastName: 'Correctamente',
       });
 
       expect(res.status).toBe(200);
       expectStudentShape(res.body);
-      expect(res.body.firstName).toBe('Actualizado');
+      expect(res.body.firstName).toBe('ACTUALIZADO');
       expect(res.body.lastName).toBe('Correctamente');
     });
 

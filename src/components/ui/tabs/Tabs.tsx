@@ -105,6 +105,7 @@ export const Tabs: React.FC<TabsProps> = ({
           return (
             <button
               key={tab.id}
+              type="button"
               data-tab-id={tab.id}
               role="tab"
               aria-selected={isActive}
@@ -154,6 +155,7 @@ export const Tabs: React.FC<TabsProps> = ({
         return (
           <button
             key={tab.id}
+            type="button"
             data-tab-id={tab.id}
             role="tab"
             aria-selected={isActive}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useMemo, useRef } from "react";
-import { Link, useLocation } from "react-router";
+import { useLocation } from "react-router";
 import { createPortal } from "react-dom";
+import { useTabs } from "../context/tab";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/auth";
 import { usePermissions } from "../features/permissions/hooks/usePermissions";
@@ -54,6 +55,7 @@ type PopupMenuProps = {
   onEnter: () => void;
   onLeave: () => void;
   onNavigate: () => void;
+  openTab: (path: string, name: string) => void;
 };
 
 const popupVariants = {
@@ -97,7 +99,7 @@ const itemVariants = {
   })
 };
 
-const PopupMenu: React.FC<PopupMenuProps> = ({ isOpen, position, title, items, isActive, onEnter, onLeave, onNavigate }) => {
+const PopupMenu: React.FC<PopupMenuProps> = ({ isOpen, position, title, items, isActive, onEnter, onLeave, onNavigate, openTab }) => {
   return createPortal(
     <AnimatePresence mode="wait">
       {isOpen && (
@@ -135,10 +137,12 @@ const PopupMenu: React.FC<PopupMenuProps> = ({ isOpen, position, title, items, i
                   initial="hidden"
                   animate="visible"
                 >
-                  <Link
-                    to={subItem.path}
-                    onClick={onNavigate}
-                    className={`flex items-center gap-2 px-4 py-2 text-theme-sm transition-all duration-200 ${isActive(subItem.path)
+                  <button
+                    onClick={() => {
+                      openTab(subItem.path, subItem.name);
+                      onNavigate();
+                    }}
+                    className={`w-full text-left flex items-center gap-2 px-4 py-2 text-theme-sm transition-all duration-200 ${isActive(subItem.path)
                         ? "text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/30"
                         : "text-text-secondary hover:text-text-primary hover:bg-gray-50 dark:text-text-tertiary dark:hover:text-white dark:hover:bg-white/3"
                       }`}
@@ -149,7 +153,7 @@ const PopupMenu: React.FC<PopupMenuProps> = ({ isOpen, position, title, items, i
                       transition={{ type: "spring", stiffness: 500 }}
                     />
                     <span className="truncate">{subItem.name}</span>
-                  </Link>
+                  </button>
                 </motion.li>
               ))}
             </ul>
@@ -244,6 +248,7 @@ const AppSidebar: React.FC = () => {
   const { user } = useAuth();
   const { hasAnyPermission } = usePermissions();
   const location = useLocation();
+  const { openTab } = useTabs();
 
   const [openSubmenus, setOpenSubmenus] = useState<Set<string>>(new Set());
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -393,13 +398,15 @@ const AppSidebar: React.FC = () => {
               {ButtonContent}
             </button>
           ) : (
-            <Link
-              to={nav.path!}
-              onClick={() => setIsMobileOpen(false)}
+            <button
+              onClick={() => {
+                openTab(nav.path!, nav.name);
+                setIsMobileOpen(false);
+              }}
               className={buttonClassName}
             >
               {ButtonContent}
-            </Link>
+            </button>
           )}
 
           <PopupMenu
@@ -414,6 +421,7 @@ const AppSidebar: React.FC = () => {
               setHoveredItem(null);
               setIsMobileOpen(false);
             }}
+            openTab={openTab}
           />
         </div>
       );
@@ -458,10 +466,12 @@ const AppSidebar: React.FC = () => {
                 }
                 return (
                   <li key={subItem.name}>
-                    <Link
-                      to={subItem.path!}
-                      onClick={() => setIsMobileOpen(false)}
-                      className={`group/sub relative flex items-center gap-2 px-3 py-2 text-theme-sm rounded-lg transition-all duration-200 ${subItem.path && isActive(subItem.path)
+                    <button
+                      onClick={() => {
+                        openTab(subItem.path!, subItem.name);
+                        setIsMobileOpen(false);
+                      }}
+                      className={`group/sub relative w-full text-left flex items-center gap-2 px-3 py-2 text-theme-sm rounded-lg transition-all duration-200 ${subItem.path && isActive(subItem.path)
                           ? "text-brand-600 bg-brand-50 dark:text-brand-400 dark:bg-brand-900/20"
                           : "text-text-secondary hover:text-text-primary hover:bg-gray-50 dark:text-text-tertiary dark:hover:text-white dark:hover:bg-white/3"
                         }`}
@@ -469,7 +479,7 @@ const AppSidebar: React.FC = () => {
                       <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all duration-200 ${subItem.path && isActive(subItem.path) ? "bg-brand-500 scale-125" : "bg-text-tertiary/40 group-hover/sub:bg-brand-400"}`} />
                       <span className="truncate">{subItem.name}</span>
                       {subItem.new && <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-brand-500 text-white">NUEVO</span>}
-                    </Link>
+                    </button>
                   </li>
                 );
               })}
@@ -480,9 +490,11 @@ const AppSidebar: React.FC = () => {
     }
 
     return (
-      <Link
-        to={nav.path!}
-        onClick={() => setIsMobileOpen(false)}
+      <button
+        onClick={() => {
+          openTab(nav.path!, nav.name);
+          setIsMobileOpen(false);
+        }}
         className={`${buttonBaseClass} ${isDirectActive
           ? "bg-brand-500 text-white shadow-lg shadow-brand-500/20"
           : "text-text-secondary hover:bg-gray-50/70 hover:text-text-primary dark:text-text-tertiary dark:hover:bg-white/3 dark:hover:text-white"
@@ -493,7 +505,7 @@ const AppSidebar: React.FC = () => {
         </span>
         <span className="flex-1 text-left truncate">{nav.name}</span>
         {nav.badge && <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-warning-500 text-white">{nav.badge}</span>}
-      </Link>
+      </button>
     );
   };
 
@@ -510,7 +522,10 @@ const AppSidebar: React.FC = () => {
         style={{ width: sidebarWidth, height: '100vh', top: 0, zIndex: isMobileOpen ? 50 : 30 }}
       >
         <div className={`py-5 flex items-center border-b border-border-light/30 dark:border-white/5 ${isCollapsed ? "justify-center px-0" : "px-4"}`}>
-          <Link to="/dashboard" className="flex items-center gap-3 group">
+          <button
+            onClick={() => openTab("/dashboard", "Inicio")}
+            className="flex items-center gap-3 group"
+          >
             <div className="relative shrink-0">
               <img src="/logo-nuevo.png" alt="UNEFA" className="size-9 object-contain transition-transform duration-300 group-hover:scale-105" />
               <div className="absolute -inset-1 bg-brand-500/10 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -521,7 +536,7 @@ const AppSidebar: React.FC = () => {
                 <span className="text-[10px] font-medium uppercase tracking-wider text-text-tertiary">Dashboard</span>
               </div>
             )}
-          </Link>
+          </button>
         </div>
 
         <div className="flex-1 flex flex-col px-3 overflow-y-auto no-scrollbar py-4">

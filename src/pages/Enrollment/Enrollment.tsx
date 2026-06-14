@@ -8,6 +8,8 @@ import { useLocation, useNavigate } from "react-router";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
+import { Tabs } from "../../components/ui/tabs/Tabs";
+import { useTabs } from "../../hooks/useTabs";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
@@ -38,6 +40,7 @@ import { PreEnrollmentRowData } from "../../features/pre-enrollment/types";
 import { formatDateTime } from "../../utils/date";
 import { matchSearch } from "../../utils/searchNormalizer";
 import CareerModal from "../../features/careers/components/CareerModal";
+import { toTitleCase } from "../../utils/textFormat";
 
 /**
  * Normalizes an enrollment object for display in the table.
@@ -88,7 +91,7 @@ export default function EnrollmentPage() {
         if (periodos.length > 0) {
             const mappedPeriods = periodos.map(p => ({
                 value: p.description.toUpperCase(),
-                label: p.description.toUpperCase()
+                label: toTitleCase(p.description)
             }));
             setPeriodOptions(mappedPeriods);
 
@@ -106,7 +109,7 @@ export default function EnrollmentPage() {
                 const practiceData = await getInternshipTypes();
                 const mappedPractice = mapToOptions(practiceData).map(opt => ({
                     value: opt.value,
-                    label: opt.label,
+                    label: toTitleCase(opt.label),
                     id: opt.id
                 }));
 
@@ -114,15 +117,15 @@ export default function EnrollmentPage() {
                     setPracticeTypeOptions(mappedPractice);
                 } else {
                     setPracticeTypeOptions([
-                        { value: "ORDINARIA", label: "ORDINARIA" },
-                        { value: "ESPECIAL", label: "ESPECIAL" },
+                        { value: "ORDINARIA", label: toTitleCase("ORDINARIA") },
+                        { value: "ESPECIAL", label: toTitleCase("ESPECIAL") },
                     ]);
                 }
             } catch (error) {
                 console.error("Error loading filter options:", error);
                 setPracticeTypeOptions([
-                    { value: "ORDINARIA", label: "ORDINARIA" },
-                    { value: "ESPECIAL", label: "ESPECIAL" },
+                    { value: "ORDINARIA", label: toTitleCase("ORDINARIA") },
+                    { value: "ESPECIAL", label: toTitleCase("ESPECIAL") },
                 ]);
             }
         };
@@ -155,12 +158,12 @@ export default function EnrollmentPage() {
     const careerOptions = useMemo(() => 
         careers.filter(c => c.status).map(c => ({ 
             value: String(c.careerId), 
-            text: c.careerName,
+            text: toTitleCase(c.careerName),
             internshipPriorities: c.internshipTypeIds || []
         })),
     [careers]);
 
-    const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
+    const tabsState = useTabs({ defaultTab: 'Activas' });
     const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
     const [pdfSearchTerm, setPdfSearchTerm] = useState("");
     const [isPreEnrollmentModalOpen, setIsPreEnrollmentModalOpen] = useState(false);
@@ -378,30 +381,23 @@ export default function EnrollmentPage() {
 
 
                 <div className="space-y-6">
-                    <ComponentCard title={activeTab === "Activas" ? "Inscripciones Activas" : "Inscripciones Inactivas"}>
-                        <div className="mb-6 flex border-b border-border-light dark:border-border-dark">
-                            <button
-                                onClick={() => setActiveTab("Activas")}
-                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Activas" ? "text-brand-500" : "text-text-secondary hover:text-text-primary dark:hover:text-white"}`}
-                            >
-                                Activas
-                                {activeTab === "Activas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-                            </button>
-                            <button
-                                onClick={() => setActiveTab("Inactivas")}
-                                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Inactivas" ? "text-brand-500" : "text-text-secondary hover:text-text-primary dark:hover:text-white"}`}
-                            >
-                                Inactivas
-                                {activeTab === "Inactivas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-                            </button>
-                        </div>
+                    <ComponentCard title={tabsState.activeTab === "Activas" ? "Inscripciones Activas" : "Inscripciones Inactivas"}>
+                        <Tabs
+                            options={[
+                                { id: 'Activas', label: 'Activas' },
+                                { id: 'Inactivas', label: 'Inactivas' },
+                            ]}
+                            {...tabsState.tabProps}
+                            variant="underline"
+                            className="mb-6"
+                        />
 
                         <SkeletonLoader isLoading={pageLoading || status === "loading"} skeleton={<TablePageSkeleton rows={5} />} id="enrollment-table">
                             <EnrollmentTable
                                 data={filtered}
                                 status={status}
                                 error={null}
-                                activeTab={activeTab}
+                                activeTab={tabsState.activeTab as "Activas" | "Inactivas"}
                                 onEdit={handleEdit}
                                 onToggleStatus={handleToggleStatus}
                                 onView={setViewItem}
@@ -526,10 +522,10 @@ export default function EnrollmentPage() {
                         )}
                         columns={[
                             { header: "Cédula", accessor: "identificationNumber" },
-                            { header: "Estudiante", accessor: "studentName" },
-                            { header: "Carrera", accessor: "careerName" },
-                            { header: "Período", accessor: "period" },
-                            { header: "Tipo Práctica", accessor: "practiceType" },
+                            { header: "Estudiante", accessor: (r: any) => toTitleCase(r.studentName) },
+                            { header: "Carrera", accessor: (r: any) => toTitleCase(r.careerName) },
+                            { header: "Período", accessor: (r: any) => toTitleCase(r.period) },
+                            { header: "Tipo Práctica", accessor: (r: any) => toTitleCase(r.practiceType) },
                         ]}
                     />
 
@@ -624,7 +620,7 @@ export default function EnrollmentPage() {
                             }
                         }}
                         editingResp={null}
-                        institutionOptions={institutions.map(i => ({ value: i.institutionId, label: i.name }))}
+                        institutionOptions={institutions.map(i => ({ value: i.institutionId, label: toTitleCase(i.name) }))}
                         isLoading={responsibleLoading}
                         preselectedInstitutionId={preselectedInstitutionId}
                         modalId="enrollment-responsible"

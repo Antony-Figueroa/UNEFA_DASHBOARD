@@ -17,6 +17,7 @@ import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { Tabs } from "../../components/ui/tabs/Tabs";
+import { useTabs } from "../../hooks/useTabs";
 import { PlusCircleIcon } from "../../icons/actions";
 import { DownloadIcon } from "../../icons";
 
@@ -122,7 +123,7 @@ export default function CareersPage() {
   const [mainTab, setMainTab] = useState<"Carreras" | "Tipos de Prácticas">("Carreras");
 
   /** @state {('Activas'|'Inactivas')} activeTab - Controla qué conjunto de datos se muestra en la tabla. */
-  const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
+  const tabsState = useTabs({ defaultTab: 'Activas' });
 
   // Estados para Carreras
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -164,9 +165,9 @@ export default function CareersPage() {
    * Se recalcula solo cuando cambian las carreras filtradas por búsqueda o la pestaña activa.
    */
   const filtered = useMemo(() => {
-    const byStatus = filteredCareers.filter((c) => (activeTab === "Activas" ? c.status : !c.status));
+    const byStatus = filteredCareers.filter((c) => (tabsState.activeTab === "Activas" ? c.status : !c.status));
     return byStatus.map(formatCareerToRow);
-  }, [filteredCareers, activeTab]);
+  }, [filteredCareers, tabsState.activeTab]);
 
   /**
    * Datos filtrados específicamente para el reporte PDF.
@@ -576,25 +577,16 @@ export default function CareersPage() {
 
         {/* Contenido principal */}
         <div className="space-y-6">
-          <ComponentCard title={activeTab === "Activas" ? `${mainTab} Activos` : `${mainTab} Inactivos`}>
-            <div className="mb-6 flex border-b border-border-light dark:border-white/5">
-              <button
-                onClick={() => setActiveTab("Activas")}
-                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Activas" ? "text-brand-500" : "text-text-secondary hover:text-text-primary"
-                  }`}
-              >
-                Activos
-                {activeTab === "Activas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-              </button>
-              <button
-                onClick={() => setActiveTab("Inactivas")}
-                className={`pb-3 px-4 text-sm font-medium transition-colors relative ${activeTab === "Inactivas" ? "text-brand-500" : "text-text-secondary hover:text-text-primary"
-                  }`}
-              >
-                Inactivos
-                {activeTab === "Inactivas" && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-500 animate-slideInLeft" />}
-              </button>
-            </div>
+          <ComponentCard title={tabsState.activeTab === "Activas" ? `${mainTab} Activos` : `${mainTab} Inactivos`}>
+            <Tabs
+              options={[
+                { id: 'Activas', label: 'Activos' },
+                { id: 'Inactivas', label: 'Inactivos' },
+              ]}
+              {...tabsState.tabProps}
+              variant="underline"
+              className="mb-6"
+            />
 
             <SkeletonLoader isLoading={pageLoading || (mainTab === "Carreras" ? status === "loading" : loadingTypes)} skeleton={<TablePageSkeleton rows={5} />} id="careers-table">
                 {mainTab === "Carreras" ? (
@@ -602,7 +594,7 @@ export default function CareersPage() {
                     data={filtered}
                     status={status}
                     error={error}
-                    activeTab={activeTab}
+                    activeTab={tabsState.activeTab as "Activas" | "Inactivas"}
                     practiceOptions={activeInternshipOptions}
                     searchTerm={searchTerm}
                     onSearchChange={setSearchTerm}
@@ -612,7 +604,7 @@ export default function CareersPage() {
                     onView={setViewCareer}
                     onBulkDelete={handleBulkDelete}
                     onBulkRestore={handleBulkRestore}
-                    inactiveMode={activeTab === "Inactivas"}
+                    inactiveMode={tabsState.activeTab === "Inactivas"}
                     loading={loadingAction}
                   />
                 ) : (
@@ -621,13 +613,13 @@ export default function CareersPage() {
                   careers={careers}
                   status={loadingTypes ? "loading" : "success"}
                   error={null}
-                  activeTab={activeTab}
+                  activeTab={tabsState.activeTab as "Activas" | "Inactivas"}
                   onEdit={handleEditType}
                   onToggleStatus={handleToggleTypeStatus}
                   onView={setViewType}
                   onBulkDelete={handleBulkDeleteTypes}
                   onBulkRestore={handleBulkRestoreTypes}
-                  inactiveMode={activeTab === "Inactivas"}
+                  inactiveMode={tabsState.activeTab === "Inactivas"}
                 />
               )}
             </SkeletonLoader>

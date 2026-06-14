@@ -11,6 +11,8 @@ import Input from "../../../components/form/input/InputField";
 import CustomSelect from "../../../components/form/CustomSelect";
 import MultiSelect from "../../../components/form/MultiSelect";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
+import { Tabs } from "../../../components/ui/tabs/Tabs";
+import { useTabs } from "../../../hooks/useTabs";
 import { Institution, CreateInstitutionPayload, UpdateInstitutionPayload, InstitutionalResponsible, CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload } from "../types";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
@@ -264,6 +266,9 @@ export default function InstitutionModal({
   // State for display values with formatting
   const [displayRifNumber, setDisplayRifNumber] = useState("");
   const [displayPhoneNumber, setDisplayPhoneNumber] = useState("");
+
+  // State for tabs in the form
+  const tabsState = useTabs({ defaultTab: 'datos-generales' });
 
   // State for duplicate detection
   const [isCheckingRif, setIsCheckingRif] = useState(false);
@@ -849,6 +854,19 @@ export default function InstitutionModal({
               </p>
             </div>
           )}
+          
+          <Tabs
+            options={[
+              { id: 'datos-generales', label: 'Datos Generales' },
+              { id: 'direccion-fiscal', label: 'Dirección Fiscal' },
+              { id: 'configuracion', label: 'Configuración' },
+            ]}
+            {...tabsState.tabProps}
+            variant="modal"
+            className="mb-6 md:col-span-2"
+          />
+
+          <div hidden={tabsState.activeTab !== 'datos-generales'} role="tabpanel" className="contents">
           <div>
             <label className="text-sm font-medium text-text-primary dark:text-white/90">RIF *</label>
             <div className="flex gap-2">
@@ -947,31 +965,6 @@ export default function InstitutionModal({
             />
           </div>
 
-          {/* Sección de Dirección */}
-          <div className="md:col-span-2">
-            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-              <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Dirección</h3>
-              <GeographicAddressFields
-                geoOptions={geoOptions}
-                value={inlineAddress}
-                onChange={setInlineAddress}
-                disabled={isFormDisabled}
-                showReference
-              />
-            </div>
-          </div>
-
-          {/* Sección de Direcciones Estructuradas */}
-          <div className="md:col-span-2">
-            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-              <AddressList
-                entityType="institution"
-                entityId={editingInst?.institutionId ? Number(editingInst.institutionId) : null}
-                geoOptions={geoOptions}
-              />
-            </div>
-          </div>
-          
           <div>
             <label className="text-sm font-medium text-text-primary dark:text-white/90">Teléfono *</label>
             <div className="flex gap-2">
@@ -1014,6 +1007,37 @@ export default function InstitutionModal({
             )}
           </div>
 
+          </div>
+
+          <div hidden={tabsState.activeTab !== 'direccion-fiscal'} role="tabpanel" className="contents">
+          {/* Sección de Dirección */}
+          <div className="md:col-span-2">
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+              <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Dirección</h3>
+              <GeographicAddressFields
+                geoOptions={geoOptions}
+                value={inlineAddress}
+                onChange={setInlineAddress}
+                disabled={isFormDisabled}
+                showReference
+              />
+            </div>
+          </div>
+
+          </div>
+
+          <div hidden={tabsState.activeTab !== 'configuracion'} role="tabpanel" className="contents">
+          {/* Sección de Direcciones Estructuradas */}
+          <div className="md:col-span-2">
+            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+              <AddressList
+                entityType="institution"
+                entityId={editingInst?.institutionId ? Number(editingInst.institutionId) : null}
+                geoOptions={geoOptions}
+              />
+            </div>
+          </div>
+          
           <div>
             <label className="text-sm font-medium text-text-primary dark:text-white/90">Región *</label>
             <Controller
@@ -1416,6 +1440,7 @@ export default function InstitutionModal({
               </div>
             </div>
           )}
+          </div>
           
           {/* Botón oculto para permitir submit con Enter */}
           <button type="submit" className="hidden" />

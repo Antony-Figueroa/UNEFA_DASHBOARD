@@ -12,6 +12,7 @@ import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { CrudStatus } from "../../../hooks/useCrud";
 import { formatPhoneDisplay } from "../../../utils/inputFormat";
 import { matchSearch } from "../../../utils/searchNormalizer";
+import { toTitleCase } from "../../../utils/textFormat";
 
 /**
  * Propiedades del componente StudentTable.
@@ -601,8 +602,8 @@ export default function StudentTable({
                                     <TableCell className="table-cell font-medium text-text-primary dark:text-text-emphasis">
                                         {s.identificationPrefix}-{s.identificationNumber}
                                     </TableCell>
-                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary font-semibold uppercase">
-                                        {s.fullNames}
+                                    <TableCell className="table-cell text-text-secondary dark:text-text-tertiary font-semibold">
+                                        {toTitleCase(s.fullNames)}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary whitespace-nowrap">{formatPhoneDisplay(s.phone)}</TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">{s.email}</TableCell>
@@ -662,7 +663,7 @@ export default function StudentTable({
                                     <div className="flex items-center justify-between w-full">
                                         <div className="flex-1 text-center">
                                             <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8">
-                                                {s.fullNames}
+                                                {toTitleCase(s.fullNames)}
                                             </h3>
                                             <p className="text-xs text-text-secondary dark:text-text-tertiary mt-1 truncate">{s.identificationPrefix}-{s.identificationNumber}</p>
                                         </div>

@@ -4,6 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { checkAvailability, getStudentByCi, lookupCi } from "../services/studentsService";
 import Input from "../../../components/form/input/InputField";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
+import { Tabs } from "../../../components/ui/tabs/Tabs";
+import { useTabs } from "../../../hooks/useTabs";
 import { 
   CreateStudentPayload,
   UpdateStudentPayload,
@@ -92,6 +94,9 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
   const [displayIdentificationNumber, setDisplayIdentificationNumber] = useState("");
   const [displayPhoneNumber, setDisplayPhoneNumber] = useState("");
   
+  // State for tabs in the form
+  const tabsState = useTabs({ defaultTab: 'datos-personales' });
+
   // State for existing record (when duplicate is found)
   const [existingStudent, setExistingStudent] = useState<any | null>(null);
   const [existingPerson, setExistingPerson] = useState(false);
@@ -457,12 +462,12 @@ const [options, setOptions] = useState<Record<string, { value: string; label: st
       if (externalData) {
         setApiDataLoaded(true);
         apiLoadedCiRef.current = fullCi;
-        setValue("firstName", externalData.primerNombre?.toUpperCase() || "");
-        setValue("middleName", externalData.segundoNombre?.toUpperCase() || "");
-        setValue("lastName", externalData.primerApellido?.toUpperCase() || "");
-        setValue("secondLastName", externalData.segundoApellido?.toUpperCase() || "");
+        setValue("firstName", externalData.primerNombre || "");
+        setValue("middleName", externalData.segundoNombre || "");
+        setValue("lastName", externalData.primerApellido || "");
+        setValue("secondLastName", externalData.segundoApellido || "");
         if (externalData.nacionalidad) {
-          setValue("identificationPrefix", externalData.nacionalidad.toUpperCase());
+          setValue("identificationPrefix", externalData.nacionalidad);
         }
         addToast({
           variant: "success",
@@ -747,22 +752,22 @@ useEffect(() => {
         }
         
         reset({
-          identificationPrefix: (editingStudent.identificationPrefix || "V").toUpperCase(),
+          identificationPrefix: editingStudent.identificationPrefix || "V",
           identificationNumber: editingStudent.identificationNumber || "",
-          firstName: (editingStudent.firstName || "").toUpperCase(),
-          middleName: (editingStudent.middleName || "").toUpperCase(),
-          lastName: (editingStudent.lastName || "").toUpperCase(),
-          secondLastName: (editingStudent.secondLastName || "").toUpperCase(),
-          sex: (editingStudent.sex || "").toUpperCase(),
+          firstName: editingStudent.firstName || "",
+          middleName: editingStudent.middleName || "",
+          lastName: editingStudent.lastName || "",
+          secondLastName: editingStudent.secondLastName || "",
+          sex: editingStudent.sex || "",
           birthDate: editingStudent.birthDate || "",
-          civilStatus: (editingStudent.civilStatus || "").toUpperCase(),
+          civilStatus: editingStudent.civilStatus || "",
           phonePrefix: phonePrefix,
           phoneNumber: phoneNumber,
-          email: (editingStudent.email || "").toUpperCase(),
-          address: (editingStudent.address || "").toUpperCase(),
-          studentType: (editingStudent.studentType || "").toUpperCase(),
-          militaryRank: (editingStudent.militaryRank || "").toUpperCase(),
-          works: (editingStudent.works || "").toUpperCase(),
+          email: editingStudent.email || "",
+          address: editingStudent.address || "",
+          studentType: editingStudent.studentType || "",
+          militaryRank: editingStudent.militaryRank || "",
+          works: editingStudent.works || "",
         });
         setDisplayIdentificationNumber(formatCedulaDisplay(editingStudent.identificationNumber, false));
         setDisplayPhoneNumber(formatPhoneLocalDisplay(phoneNumber));
@@ -814,21 +819,21 @@ useEffect(() => {
     try {
       const validatedData = data as StudentFormOutput;
       const studentData: CreateStudentPayload = {
-        identificationPrefix: validatedData.identificationPrefix.toUpperCase() as Student["identificationPrefix"],
+        identificationPrefix: validatedData.identificationPrefix as Student["identificationPrefix"],
         identificationNumber: validatedData.identificationNumber,
-        firstName: validatedData.firstName.toUpperCase(),
-        middleName: validatedData.middleName?.toUpperCase() || "",
-        lastName: validatedData.lastName.toUpperCase(),
-        secondLastName: validatedData.secondLastName?.toUpperCase() || "",
-        sex: validatedData.sex.toUpperCase() as Student["sex"],
+        firstName: validatedData.firstName,
+        middleName: validatedData.middleName || "",
+        lastName: validatedData.lastName,
+        secondLastName: validatedData.secondLastName || "",
+        sex: validatedData.sex as Student["sex"],
         birthDate: validatedData.birthDate,
-        civilStatus: validatedData.civilStatus.toUpperCase() as Student["civilStatus"],
+        civilStatus: validatedData.civilStatus as Student["civilStatus"],
         phone: `${validatedData.phonePrefix}${validatedData.phoneNumber}`,
-        email: validatedData.email.toUpperCase(),
-        address: validatedData.address?.toUpperCase() || "",
-        studentType: validatedData.studentType.toUpperCase() as Student["studentType"],
-        militaryRank: validatedData.militaryRank.toUpperCase(),
-        works: validatedData.works.toUpperCase() as Student["works"],
+        email: validatedData.email,
+        address: validatedData.address || "",
+        studentType: validatedData.studentType as Student["studentType"],
+        militaryRank: validatedData.militaryRank,
+        works: validatedData.works as Student["works"],
       };
       if (editingStudent) {
         setPendingSave({ ...(studentData as any), studentId: editingStudent.studentId } as UpdateStudentPayload);
@@ -878,6 +883,18 @@ useEffect(() => {
               </span>
             </div>
           )}
+          
+          <Tabs
+            options={[
+              { id: 'datos-personales', label: 'Datos Personales' },
+              { id: 'academico', label: 'Académico' },
+            ]}
+            {...tabsState.tabProps}
+            variant="modal"
+            className="mb-6"
+          />
+
+          <div hidden={tabsState.activeTab !== 'datos-personales'} role="tabpanel">
           {/* ============================================================ */}
           {/* Campos compartidos de Persona (usando PersonFormFields) */}
           {/* ============================================================ */}
@@ -917,7 +934,9 @@ useEffect(() => {
               showReference
             />
           </div>
+          </div>
           
+          <div hidden={tabsState.activeTab !== 'academico'} role="tabpanel">
           {/* ============================================================ */}
           {/* Campos específicos de Estudiante */}
           {/* ============================================================ */}
@@ -1024,6 +1043,7 @@ useEffect(() => {
               entityId={editingStudent?.personId ? Number(editingStudent.personId) : existingStudent?.personId ? Number(existingStudent.personId) : null}
               geoOptions={geoOptions}
             />
+          </div>
           </div>
         </form>
       </ModalBody>

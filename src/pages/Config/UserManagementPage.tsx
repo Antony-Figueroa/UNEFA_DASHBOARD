@@ -18,6 +18,7 @@ import { resetUserPassword } from "../../features/users/services/userService";
 import UserDetailModal from "../../features/users/components/UserDetailModal";
 import UnifiedDialog from "../../components/ui/dialog/UnifiedDialog";
 import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
+import { toTitleCase } from "../../utils/textFormat";
 
 /**
  * Página de Gestión de Usuarios.
@@ -98,13 +99,13 @@ const UserManagementPage = () => {
             .filter(r => r.status === 'active')
             .map(r => ({
               value: r.id.toString(),
-              label: r.name.toUpperCase()
+              label: toTitleCase(r.name)
             }));
           setRolesOptions(options);
           
           const newMap: Record<number, string> = {};
           response.data.forEach(r => {
-            newMap[r.id] = r.name.toUpperCase();
+            newMap[r.id] = toTitleCase(r.name);
           });
           
           if (Object.keys(newMap).length > 0) {

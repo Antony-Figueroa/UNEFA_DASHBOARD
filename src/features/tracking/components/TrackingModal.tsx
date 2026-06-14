@@ -179,11 +179,11 @@ export default function TrackingModal({ isOpen, onClose, onSave, tracking, isLoa
             const payload: UpdateTrackingPayload = {
                 trackingId: tracking!.trackingId,
                 studentIdNumber: data.studentIdNumber,
-                studentName: (data.studentName || "").toUpperCase(),
-                reportTitle: (data.reportTitle || "").toUpperCase(),
+                studentName: data.studentName || "",
+                reportTitle: data.reportTitle || "",
                 transfer: data.transfer === 'true',
-                route: (data.route || "").toUpperCase(),
-                observations: (data.observations || '').toUpperCase(),
+                route: data.route || "",
+                observations: data.observations || '',
             };
             
             await onSave(payload);

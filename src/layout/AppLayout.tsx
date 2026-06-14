@@ -1,7 +1,7 @@
 import { SidebarProvider } from "../context/SidebarContext";
 import { useSidebar } from "../context/sidebar";
 import { Navigate } from "react-router";
-import { useState, useEffect, Suspense, useRef, memo } from "react";
+import { useState, useEffect, useLayoutEffect, Suspense, useRef, memo } from "react";
 import AppHeader from "./AppHeader";
 import Backdrop from "./Backdrop";
 import AppSidebar from "./AppSidebar";
@@ -64,18 +64,51 @@ const TabContent = memo(function TabContent({
 const KeepAliveOutlet = () => {
   const { tabs, activeTabId } = useTabs();
   const mountedTabsRef = useRef<Set<string>>(new Set());
-  // Track synced URL to avoid redundant history.replaceState calls
   const lastSyncedPathRef = useRef<string>("");
 
-  // Lazy-mount: mount tab ONLY when first activated (not when created)
-  // Use a layout effect so it runs BEFORE the browser paints
+  // ── Scroll position per tab ──────────────────────────────────────────
+  // Saves window.scrollY when leaving a tab, restores it when returning
+  const scrollPositionsRef = useRef<Record<string, number>>({});
+
+  // ── Lazy-mount ────────────────────────────────────────────────────────
+  // Run BEFORE prevActiveTabRef is updated, so we can grab the old tab's scroll
   const prevActiveTabRef = useRef<string | null>(null);
   if (activeTabId && activeTabId !== prevActiveTabRef.current) {
+    // Save current tab's scroll position BEFORE mounting the new one
+    if (prevActiveTabRef.current) {
+      scrollPositionsRef.current[prevActiveTabRef.current] = window.scrollY;
+    }
     mountedTabsRef.current.add(activeTabId);
     prevActiveTabRef.current = activeTabId;
   }
 
-  // Sync URL via history.replaceState to avoid React Router re-renders
+  // ── Restore scroll for the newly active tab BEFORE the browser paints ─
+  const lastRestoredTabRef = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    // Disable browser's built-in scroll restoration once
+    if (history.scrollRestoration !== "manual") {
+      history.scrollRestoration = "manual";
+    }
+
+    // Clean up scroll positions for closed tabs
+    const activeIds = new Set(tabs.map((t) => t.id));
+    for (const id of Object.keys(scrollPositionsRef.current)) {
+      if (!activeIds.has(id)) {
+        delete scrollPositionsRef.current[id];
+      }
+    }
+
+    // Restore scroll position for the tab we just switched to
+    if (activeTabId && lastRestoredTabRef.current !== activeTabId) {
+      const saved = scrollPositionsRef.current[activeTabId];
+      if (saved !== undefined) {
+        window.scrollTo(0, saved);
+      }
+      lastRestoredTabRef.current = activeTabId;
+    }
+  });
+
+  // ── Sync URL via history.replaceState ─────────────────────────────────
   useEffect(() => {
     const activeTab = tabs.find((t) => t.id === activeTabId);
     if (activeTab && window.location.pathname !== activeTab.path) {

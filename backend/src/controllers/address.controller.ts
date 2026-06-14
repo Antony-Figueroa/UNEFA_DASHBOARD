@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
+import { cacheManager } from '../lib/cache-manager.js';
+
+const CACHE_TTL = 86400000; // 24h — datos geográficos estáticos
 
 interface AppError extends Error {
   code?: string;
@@ -367,6 +370,10 @@ export const getAddressStats = async (req: Request, res: Response) => {
 // ─── Geographic Options (for cascading selects) ───
 
 export const getGeoOptions = async (_req: Request, res: Response) => {
+  const cacheKey = 'address:geoOptions';
+  const cached = cacheManager.get<any[]>(cacheKey);
+  if (cached) return res.json(cached);
+
   try {
     const supabase = dbManager.getClient();
 
@@ -388,6 +395,7 @@ export const getGeoOptions = async (_req: Request, res: Response) => {
 
     if (eError) throw eError;
 
+    cacheManager.set(cacheKey, estados || [], CACHE_TTL);
     res.json(estados || []);
   } catch (error) {
     handleDbError(res, error);
@@ -395,6 +403,10 @@ export const getGeoOptions = async (_req: Request, res: Response) => {
 };
 
 export const getAddressTypes = async (_req: Request, res: Response) => {
+  const cacheKey = 'address:types';
+  const cached = cacheManager.get<any[]>(cacheKey);
+  if (cached) return res.json(cached);
+
   try {
     const supabase = dbManager.getClient();
     const { data, error } = await supabase
@@ -403,6 +415,7 @@ export const getAddressTypes = async (_req: Request, res: Response) => {
       .order('address_type_id', { ascending: true });
 
     if (error) throw error;
+    cacheManager.set(cacheKey, data || [], CACHE_TTL);
     res.json(data || []);
   } catch (error) {
     handleDbError(res, error);

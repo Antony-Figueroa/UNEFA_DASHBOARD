@@ -1,5 +1,16 @@
 import { dbManager } from '../lib/db-manager.js';
 
+/**
+ * Cache en memoria para getConfig() con TTL de 30s.
+ * Evita una query a Supabase en cada login y refresh.
+ */
+let cachedConfig: { data: SystemConfig | null; expiry: number } | null = null;
+const CONFIG_CACHE_TTL = 30_000; // 30s
+
+export const invalidateConfigCache = (): void => {
+  cachedConfig = null;
+};
+
 export interface SystemConfig {
   CONFIG_ID: number;
   RECOVERY_EMAIL: number;
@@ -35,6 +46,11 @@ export interface SystemConfig {
 }
 
 export const getConfig = async (): Promise<SystemConfig | null> => {
+  // Cache warm? Devolver sin tocar DB
+  if (cachedConfig && Date.now() < cachedConfig.expiry) {
+    return cachedConfig.data;
+  }
+
   const supabase = dbManager.getConnection();
   const { data, error } = await supabase
     .from('t_config')
@@ -47,10 +63,13 @@ export const getConfig = async (): Promise<SystemConfig | null> => {
   // y getSessionMinutes() fallaría a default 60.
   if (error) {
     console.error('[ConfigService] Error getting config:', error);
+    cachedConfig = { data: null, expiry: Date.now() + CONFIG_CACHE_TTL };
     return null;
   }
 
-  return data as unknown as SystemConfig;
+  const result = data as unknown as SystemConfig;
+  cachedConfig = { data: result, expiry: Date.now() + CONFIG_CACHE_TTL };
+  return result;
 };
 
 export const updateConfig = async (updates: Partial<SystemConfig>): Promise<SystemConfig | null> => {
@@ -67,6 +86,9 @@ export const updateConfig = async (updates: Partial<SystemConfig>): Promise<Syst
     console.error('[ConfigService] Error updating config:', error);
     return null;
   }
+
+  // Invalidar cache porque la config cambió
+  invalidateConfigCache();
 
   return data as unknown as SystemConfig;
 };

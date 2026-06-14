@@ -20,6 +20,14 @@ export const revokeToken = (token: string, userId: number, userCi: string) => {
   const decoded = verifyJWT(token) as { exp?: number } | null;
   const expiresAt = decoded?.exp ? decoded.exp * 1000 : Date.now() + 3600000;
   tokenBlacklist.set(hash, { userId, userCi, expiresAt });
+
+  // También marcar en DB para persistencia post-reinicio
+  dbManager.withRetry(async (supabase) => {
+    await supabase
+      .from('t_user_sessions')
+      .update({ STATUS: 0 })
+      .eq('TOKEN_HASH', hash);
+  }).catch(() => {});
 };
 
 export const isTokenRevoked = (token: string): { revoked: boolean; data?: { userId: number; userCi: string } } => {
@@ -105,6 +113,111 @@ const getDeviceFingerprint = (userAgent: string): string => {
     : ua.includes('iphone') || ua.includes('ipad') ? 'ios'
     : 'unknown';
   return `${browser}-${os}`;
+};
+
+// ─── Session Tracking (DB-backed) ───
+
+const MAX_SESSION_HOURS = 24; // Timeout absoluto: 24h desde creación de sesión
+
+/**
+ * Calcula el SHA-256 hash de un token para usar como identificador de sesión.
+ */
+export const hashToken = (token: string): string => {
+  return crypto.createHash('sha256').update(token).digest('hex');
+};
+
+/**
+ * Busca o crea un registro de sesión en DB para el token dado.
+ * Se llama en login y en refresh para mantener LAST_ACTIVITY actualizado.
+ */
+export const upsertSession = async (
+  supabase: any,
+  userId: number,
+  token: string,
+  ip: string,
+  userAgent: string
+): Promise<void> => {
+  const tokenHash = hashToken(token);
+  const deviceInfo = getDeviceFingerprint(userAgent);
+
+  const { data: existing } = await supabase
+    .from('t_user_sessions')
+    .select('ID')
+    .eq('TOKEN_HASH', tokenHash)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase
+      .from('t_user_sessions')
+      .update({ LAST_ACTIVITY: nowStringVenezuela(), IP_ADDRESS: ip })
+      .eq('ID', existing.ID);
+  } else {
+    await supabase
+      .from('t_user_sessions')
+      .insert({
+        USER_ID: userId,
+        TOKEN_HASH: tokenHash,
+        DEVICE_INFO: deviceInfo,
+        IP_ADDRESS: ip,
+        LAST_ACTIVITY: nowStringVenezuela(),
+        STATUS: 1
+      });
+  }
+};
+
+/**
+ * Verifica si una sesión sigue activa en DB y no ha superado el timeout absoluto.
+ */
+export const verifySessionInDB = async (
+  supabase: any,
+  token: string
+): Promise<{ valid: boolean; reason?: string }> => {
+  const tokenHash = hashToken(token);
+
+  const { data: session } = await supabase
+    .from('t_user_sessions')
+    .select('STATUS, CREATED_AT')
+    .eq('TOKEN_HASH', tokenHash)
+    .maybeSingle();
+
+  if (!session) {
+    return { valid: false, reason: 'SESSION_NOT_FOUND' };
+  }
+
+  if (session.STATUS !== 1) {
+    return { valid: false, reason: 'SESSION_REVOKED' };
+  }
+
+  // Timeout absoluto: si la sesión se creó hace más de 24h, expirar
+  const createdAt = new Date(session.CREATED_AT).getTime();
+  const maxAge = MAX_SESSION_HOURS * 60 * 60 * 1000;
+  if (Date.now() - createdAt > maxAge) {
+    await supabase
+      .from('t_user_sessions')
+      .update({ STATUS: 0 })
+      .eq('TOKEN_HASH', tokenHash);
+    return { valid: false, reason: 'SESSION_MAX_AGE_EXCEEDED' };
+  }
+
+  return { valid: true };
+};
+
+/**
+ * Marca todas las sesiones de un usuario como inactivas en DB.
+ * Excluye opcionalmente un token (para no matar la sesión actual).
+ */
+export const invalidateUserSessions = async (supabase: any, userId: number, excludeTokenHash?: string): Promise<void> => {
+  let query = supabase
+    .from('t_user_sessions')
+    .update({ STATUS: 0 })
+    .eq('USER_ID', userId)
+    .eq('STATUS', 1);
+
+  if (excludeTokenHash) {
+    query = query.neq('TOKEN_HASH', excludeTokenHash);
+  }
+
+  await query;
 };
 
 export const login = async (userCi: string, password: string, ip: string, userAgent: string, jwtExpiresIn?: string) => {
@@ -264,6 +377,9 @@ export const login = async (userCi: string, password: string, ip: string, userAg
       userCi: user.USER_CI,
       role: roleId 
     }, jwtExpiresIn);
+
+    // 7b. Registrar sesión en DB (para persistencia post-reinicio + timeout absoluto)
+    await upsertSession(supabase, user.USER_ID, token, ip, userAgent);
 
     await logAuthAction(user.USER_ID, userCi, 'LOGIN_SUCCESS', ip, userAgent, 'Inicio de sesión exitoso');
 
@@ -485,6 +601,9 @@ export const changePassword = async (
       }
     }
 
+    // 7. Invalidar todas las sesiones existentes para forzar re-login con la nueva clave
+    await invalidateUserSessions(supabase, userId);
+
     return { success: true, message: 'Contraseña actualizada correctamente' };
   });
 };
@@ -669,6 +788,13 @@ export const resetPassword = async (userId: number, newPassword: string) => {
         FAILED_ATTEMPTS: 0,
         FORCE_PASSWORD_CHANGE: false
       }).eq('USER_ID', userId);
+    }
+
+    // Invalidar todas las sesiones del usuario
+    try {
+      await invalidateUserSessions(supabase, userId);
+    } catch {
+      // Non-critical, no bloquear el reset
     }
 
     return { success: true, message: 'Contraseña restablecida correctamente' };
@@ -1079,7 +1205,7 @@ export const deleteAvatar = async (userId: number) => {
 
 // ─── Session Management ───
 
-export const getActiveSessions = async (userId: number) => {
+export const getActiveSessions = async (userId: number, currentTokenHash?: string) => {
   return await dbManager.withRetry(async (supabase) => {
     const { data, error } = await supabase
       .from('t_user_sessions')
@@ -1102,7 +1228,7 @@ export const getActiveSessions = async (userId: number) => {
         deviceName,
         ipAddress: s.IP_ADDRESS || '',
         lastActivity: s.LAST_ACTIVITY,
-        isCurrent: false,
+        isCurrent: currentTokenHash ? s.TOKEN_HASH === currentTokenHash : false,
         createdAt: s.CREATED_AT
       };
     });

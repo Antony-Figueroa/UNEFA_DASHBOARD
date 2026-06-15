@@ -5,7 +5,7 @@
  */
 
 import { PreEnrollment, CreatePreEnrollmentPayload, UpdatePreEnrollmentPayload } from "../types";
-import { preEnrollmentService } from "../services/preEnrollmentService";
+import { preEnrollmentService, batchCreate, BatchPreEnrollRequest, BatchResult } from "../services/preEnrollmentService";
 import { useToast } from "../../../context/toast";
 import { RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
 import { useCrud } from "../../../hooks/useCrud";
@@ -172,6 +172,52 @@ export const usePreEnrollment = () => {
     }
   };
 
+  /**
+   * Pre-inscribe múltiples estudiantes en lote.
+   * 
+   * @param request - Datos comunes + lista de estudiantes a pre-inscribir.
+   * @returns Resultado del batch con contadores y detalles.
+   */
+  const batchAddPreEnrollment = async (request: BatchPreEnrollRequest): Promise<BatchResult> => {
+    try {
+      const result = await batchCreate(request);
+
+      if (result.created > 0) {
+        addToast({
+          variant: "success",
+          title: "Pre-Inscripción por Lote",
+          message: (
+            <div className="space-y-1">
+              <p><strong>{result.created}</strong> estudiante(s) pre-inscrito(s) exitosamente.</p>
+              {result.failed > 0 && (
+                <p className="text-warning-600"><strong>{result.failed}</strong> estudiante(s) con errores.</p>
+              )}
+            </div>
+          ),
+        });
+      } else {
+        addToast({
+          variant: "error",
+          title: "Error en Lote",
+          message: "No se pudo pre-inscribir ningún estudiante. Revise los errores.",
+        });
+      }
+
+      return result;
+    } catch (error: any) {
+      if (!error.response || error.response.status >= 500) {
+        console.error("[usePreEnrollment] Error crítico en batch:", error);
+      }
+      const backendMessage = error.response?.data?.message || "Error al procesar la pre-inscripción por lote.";
+      addToast({
+        variant: "error",
+        title: "Error de Lote",
+        message: backendMessage,
+      });
+      throw error;
+    }
+  };
+
   return {
     preEnrollments,
     status,
@@ -181,6 +227,7 @@ export const usePreEnrollment = () => {
     editPreEnrollment,
     toggleStatus,
     bulkToggleStatus,
+    batchAddPreEnrollment,
     refreshPreEnrollments,
   };
 };

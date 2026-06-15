@@ -23,6 +23,9 @@ import StudentTable from "../../features/students/components/StudentTable";
 import StudentModal from "../../features/students/components/StudentModal";
 import StudentViewModal from "../../features/students/components/StudentViewModal";
 import ImportStudentsModal from "../../features/students/components/ImportStudentsModal";
+import BatchPreEnrollModal from "../../features/pre-enrollment/components/BatchPreEnrollModal";
+import { usePreEnrollment } from "../../features/pre-enrollment/hooks/usePreEnrollment";
+import { BatchPreEnrollRequest } from "../../features/pre-enrollment/services/preEnrollmentService";
 import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
 import { StudentPDF } from "../../components/ui/pdf/templates/StudentPDF";
 import UnifiedReportModal from "../../components/common/UnifiedReportModal";
@@ -111,6 +114,8 @@ export default function StudentsPage() {
         refreshStudents,
     } = useStudents();
 
+    const { batchAddPreEnrollment } = usePreEnrollment();
+
     // Event listener for opening edit modal from StudentModal
     useEffect(() => {
         const handleOpenEditStudent = (e: Event) => {
@@ -139,6 +144,8 @@ export default function StudentsPage() {
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [viewStudent, setViewStudent] = useState<StudentRowData | null>(null);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+    const [batchStudentIds, setBatchStudentIds] = useState<string[]>([]);
     const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
     const [pdfSearchTerm, setPdfSearchTerm] = useState("");
     const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
@@ -375,6 +382,25 @@ export default function StudentsPage() {
      * 
      * @param student - Estudiante a exportar.
      */
+    /**
+     * Abre el modal de pre-inscripción por lote con los IDs seleccionados.
+     */
+    const handleBatchPreEnroll = (ids: string[]) => {
+        setBatchStudentIds(ids);
+        setIsBatchModalOpen(true);
+    };
+
+    /**
+     * Ejecuta la pre-inscripción por lote.
+     */
+    const handleBatchSubmit = async (request: BatchPreEnrollRequest) => {
+        const result = await batchAddPreEnrollment(request);
+        if (result) {
+            setSelectedIds([]);
+        }
+        return result;
+    };
+
     const handleExportToPreEnrollment = (student: StudentRowData) => {
         setConfirmation({
             isOpen: true,
@@ -461,6 +487,7 @@ export default function StudentsPage() {
                                 onView={setViewStudent}
                                 onBulkDelete={handleBulkDelete}
                                 onBulkRestore={handleBulkRestore}
+                                onBatchPreEnroll={handleBatchPreEnroll}
                                 selectedIds={selectedIds}
                                 onSelectionChange={setSelectedIds}
                                 inactiveMode={tabsState.activeTab === "Inactivas"}
@@ -509,6 +536,16 @@ export default function StudentsPage() {
                         onClose={() => setViewStudent(null)}
                         onEdit={handleEdit}
                         student={viewStudent}
+                    />
+
+                    <BatchPreEnrollModal
+                        isOpen={isBatchModalOpen}
+                        onClose={() => setIsBatchModalOpen(false)}
+                        students={filtered.filter(s => batchStudentIds.includes(s.studentId)) as unknown as Student[]}
+                        onBatchPreEnroll={handleBatchSubmit}
+                        onComplete={() => {
+                            refreshStudents();
+                        }}
                     />
 
                     <ImportStudentsModal

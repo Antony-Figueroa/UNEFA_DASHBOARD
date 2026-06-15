@@ -53,6 +53,52 @@ export const getCompletedPracticeTypes = async (
   return response.data.typeIds;
 };
 
+/**
+ * Tipos para pre-inscripción por lote.
+ */
+
+/** Item de estudiante para batch */
+export interface BatchStudentItem {
+  identificationPrefix: string;
+  identificationNumber: string;
+}
+
+/** Cuerpo de la solicitud de batch */
+export interface BatchPreEnrollRequest {
+  students: BatchStudentItem[];
+  period: string;
+  practiceType: string;
+  careerId: string;
+  semester: string;
+  section: string;
+  regime: string;
+}
+
+/** Resultado individual del batch */
+export interface BatchResultItem {
+  ci: string;
+  status: 'created' | 'failed';
+  message: string;
+}
+
+/** Resultado completo del batch */
+export interface BatchResult {
+  created: number;
+  failed: number;
+  results: BatchResultItem[];
+}
+
+/**
+ * Crea pre-inscripciones en lote para múltiples estudiantes.
+ * 
+ * @param payload - Datos comunes + lista de estudiantes.
+ * @returns Resultado del batch con contadores y detalles por estudiante.
+ */
+export const batchCreate = async (payload: BatchPreEnrollRequest): Promise<BatchResult> => {
+  const response = await apiClient.post<BatchResult>('/pre-enrollments/batch', payload);
+  return response.data;
+};
+
 // Exportaciones individuales para mantener compatibilidad
 export const getPreEnrollments = preEnrollmentService.getAll;
 export const createPreEnrollment = preEnrollmentService.create;

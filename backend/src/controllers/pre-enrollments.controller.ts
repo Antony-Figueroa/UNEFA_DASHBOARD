@@ -531,3 +531,252 @@ export const deletePreEnrollment = async (req: Request, res: Response) => {
     handleDbError(res, error);
   }
 };
+
+/**
+ * Batch pre-enroll multiple students at once.
+ * Validates each student independently and returns per-item results.
+ * Common academic fields are applied to all students.
+ * 
+ * Request body:
+ * {
+ *   students: [{ identificationPrefix, identificationNumber }],
+ *   period, practiceType, careerId, semester, section, regime
+ * }
+ */
+export const batchCreatePreEnrollment = async (req: Request, res: Response) => {
+  try {
+    const {
+      students,
+      period,
+      practiceType,
+      careerId,
+      semester,
+      section,
+      regime
+    } = req.body;
+
+    if (!students || !Array.isArray(students) || students.length === 0) {
+      res.status(400).json({ message: 'Debe proporcionar al menos un estudiante' });
+      return;
+    }
+
+    if (!period || !practiceType) {
+      res.status(400).json({ message: 'Período y tipo de práctica son obligatorios' });
+      return;
+    }
+
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    const result = await dbManager.withRetry(async (supabase) => {
+      // 1. Resolve common fields
+      const { data: periodData, error: periodError } = await supabase
+        .from('t_internships_period')
+        .select('PERIOD_ID, START_DATE, END_DATE')
+        .eq('DESCRIPTION', period)
+        .maybeSingle();
+
+      if (periodError) throw periodError;
+      if (!periodData) {
+        const err = new Error(`Período "${period}" no encontrado.`);
+        (err as any).status = 400;
+        throw err;
+      }
+
+      const { data: typeData, error: typeError } = await supabase
+        .from('t_internship_type')
+        .select('INTERNSHIP_TYPE_ID')
+        .eq('NAME', practiceType)
+        .maybeSingle();
+
+      if (typeError) throw typeError;
+      if (!typeData) {
+        const err = new Error(`Tipo de práctica "${practiceType}" no encontrado.`);
+        (err as any).status = 400;
+        throw err;
+      }
+
+      // Resolve career
+      let careerIdNumber: number | null = null;
+      if (careerId) {
+        const { data: careerData } = await supabase
+          .from('t_career')
+          .select('CAREER_ID, MINIMUM_GRADE')
+          .eq('CAREER_ID', careerId)
+          .maybeSingle();
+        if (careerData) {
+          careerIdNumber = careerData.CAREER_ID;
+        }
+      }
+
+      const results: Array<{ ci: string; status: string; message: string }> = [];
+      const validRecords: any[] = [];
+
+      // 2. Validate each student
+      for (const student of students) {
+        const { identificationPrefix, identificationNumber } = student;
+
+        if (!identificationPrefix || !identificationNumber) {
+          results.push({
+            ci: `${identificationPrefix || ''}-${identificationNumber || ''}`,
+            status: 'failed',
+            message: 'Prefijo y número de identificación obligatorios'
+          });
+          continue;
+        }
+
+        const fullCI = `${identificationPrefix}-${identificationNumber}`;
+
+        try {
+          // a. Find person
+          const { data: person, error: personError } = await supabase
+            .from('t_persons')
+            .select('person_id')
+            .eq('ci', fullCI)
+            .maybeSingle();
+
+          if (personError) throw personError;
+          if (!person) {
+            results.push({ ci: fullCI, status: 'failed', message: 'Persona no encontrada en el sistema' });
+            continue;
+          }
+
+          // b. Find student
+          const { data: studentRecord, error: studentError } = await supabase
+            .from('t_students')
+            .select('STUDENTS_ID, person_id')
+            .eq('person_id', person.person_id)
+            .maybeSingle();
+
+          if (studentError) throw studentError;
+          if (!studentRecord) {
+            results.push({ ci: fullCI, status: 'failed', message: 'Estudiante no encontrado' });
+            continue;
+          }
+
+          // c. Check active pre-enrollment
+          const { data: activePre } = await supabase
+            .from(TABLE_NAME)
+            .select('PROFESSIONAL_PRACTICE_ID')
+            .eq('STUDENTS_ID', studentRecord.STUDENTS_ID)
+            .eq('PRACTICES_STATUS', PRACTICES_STATUS.PRE_INSCRITO)
+            .eq('STATUS', 1)
+            .maybeSingle();
+
+          if (activePre) {
+            results.push({ ci: fullCI, status: 'failed', message: 'El estudiante ya posee una pre-inscripción activa' });
+            continue;
+          }
+
+          // d. Check active enrollment
+          const { data: activeEnr } = await supabase
+            .from(TABLE_NAME)
+            .select('PROFESSIONAL_PRACTICE_ID')
+            .eq('STUDENTS_ID', studentRecord.STUDENTS_ID)
+            .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO)
+            .eq('STATUS', 1)
+            .maybeSingle();
+
+          if (activeEnr) {
+            results.push({ ci: fullCI, status: 'failed', message: 'El estudiante ya posee una inscripción activa' });
+            continue;
+          }
+
+          // e. Check completed + approved same career
+          if (careerIdNumber) {
+            const { data: completedRecord } = await supabase
+              .from(TABLE_NAME)
+              .select('PROFESSIONAL_PRACTICE_ID, GRADE, EVALUATION_STATUS')
+              .eq('STUDENTS_ID', studentRecord.STUDENTS_ID)
+              .eq('CAREER_ID', careerIdNumber)
+              .eq('PRACTICES_STATUS', PRACTICES_STATUS.CULMINADO)
+              .eq('STATUS', 1)
+              .maybeSingle();
+
+            if (completedRecord) {
+              const grade = completedRecord.GRADE || 0;
+              const evalCompleted = completedRecord.EVALUATION_STATUS === 'completed';
+              
+              if (grade > 0 && evalCompleted) {
+                results.push({
+                  ci: fullCI,
+                  status: 'failed',
+                  message: 'El estudiante ya completó y aprobó esta carrera. No puede reinscribirse en la misma carrera.'
+                });
+                continue;
+              }
+            }
+          }
+
+          // f. Check duplicate (same student + period + practice type)
+          const { data: duplicate } = await supabase
+            .from(TABLE_NAME)
+            .select('PROFESSIONAL_PRACTICE_ID')
+            .eq('STUDENTS_ID', studentRecord.STUDENTS_ID)
+            .eq('PERIOD_ID', periodData.PERIOD_ID)
+            .eq('INTERNSHIP_TYPE_ID', typeData.INTERNSHIP_TYPE_ID)
+            .eq('STATUS', 1)
+            .maybeSingle();
+
+          if (duplicate) {
+            results.push({
+              ci: fullCI,
+              status: 'failed',
+              message: 'Ya existe un registro activo para este estudiante en el mismo período y tipo de práctica'
+            });
+            continue;
+          }
+
+          // Valid — add to insert batch
+          validRecords.push({
+            START_DATE: periodData.START_DATE,
+            END_DATE: periodData.END_DATE,
+            REPORT_TITLE: 'PENDIENTE',
+            REGISTRATION_DATE: now,
+            CREATION_DATE: now,
+            GRADE: 0,
+            PRACTICES_STATUS: PRACTICES_STATUS.PRE_INSCRITO,
+            TRANSFER: 0,
+            TOUR: '',
+            PERIOD_ID: periodData.PERIOD_ID,
+            INSTITUTION_ID: null,
+            STUDENTS_ID: studentRecord.STUDENTS_ID,
+            student_person_id: studentRecord.person_id,
+            STATUS: 1,
+            MANAGER_ID: null,
+            OBSERVATION: '',
+            ENROLLMENT: 'PENDIENTE',
+            INTERNSHIP_STATUS: 1,
+            INTERNSHIP_TYPE_ID: typeData.INTERNSHIP_TYPE_ID,
+            CAREER_ID: careerIdNumber,
+            SEMESTER: sanitizeText(semester) ?? '',
+            SECTION: sanitizeText(section) ?? '',
+            REGIME: sanitizeText(regime) ?? ''
+          });
+
+          results.push({ ci: fullCI, status: 'created', message: 'Pre-inscripción creada exitosamente' });
+        } catch (err) {
+          const errMsg = (err as Error).message || 'Error inesperado';
+          results.push({ ci: fullCI, status: 'failed', message: errMsg });
+        }
+      }
+
+      // 3. Bulk insert valid records
+      if (validRecords.length > 0) {
+        const { error: insertError } = await supabase
+          .from(TABLE_NAME)
+          .insert(validRecords);
+
+        if (insertError) throw insertError;
+      }
+
+      const created = results.filter(r => r.status === 'created').length;
+      const failed = results.filter(r => r.status === 'failed').length;
+
+      return { created, failed, results };
+    });
+
+    res.status(201).json(result);
+  } catch (error) {
+    handleDbError(res, error);
+  }
+};

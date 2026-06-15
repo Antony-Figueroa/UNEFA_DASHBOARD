@@ -56,6 +56,10 @@ export interface Student {
   status: boolean;
   /** Indica si el estudiante tiene registros relacionados en otros módulos */
   isInUse?: boolean;
+  /** Indica si el estudiante tiene una pre-inscripción activa */
+  hasActivePreEnrollment?: boolean;
+  /** Estado actual de práctica profesional (null si no tiene, 0=Retirado, 1=Pre-inscrito, 2=Inscrito, 3=Culminado) */
+  currentPracticeStatus?: number | null;
   /** Referencia a la persona unificada en t_persons */
   personId?: string;
 }

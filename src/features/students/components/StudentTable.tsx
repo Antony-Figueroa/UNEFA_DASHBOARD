@@ -4,15 +4,36 @@ import { AsyncActionButton } from "../../../components/common/AsyncActionButton"
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
+import { PlusIcon } from "../../../icons";
 import { StudentRowData } from "../types";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { useDebounce } from "../../../hooks/useDebounce";
 
+import Badge from "../../../components/ui/badge/Badge";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
 import { CrudStatus } from "../../../hooks/useCrud";
 import { formatPhoneDisplay } from "../../../utils/inputFormat";
 import { matchSearch } from "../../../utils/searchNormalizer";
 import { toTitleCase } from "../../../utils/textFormat";
+
+/**
+ * Mapea el status numérico a color y etiqueta para el badge.
+ */
+const STATUS_CONFIG: Record<number, { color: "success" | "info" | "warning" | "error" | "light"; label: string }> = {
+  0: { color: "error", label: "Retirado" },
+  1: { color: "warning", label: "Pre-inscrito" },
+  2: { color: "info", label: "Inscrito" },
+  3: { color: "success", label: "Culminado" },
+};
+
+/** Badge que muestra el estado de práctica profesional del estudiante. */
+const StatusBadge = ({ status }: { status: number | null }) => {
+  if (status === null || status === undefined) {
+    return <Badge color="light" size="sm">Sin registro</Badge>;
+  }
+  const config = STATUS_CONFIG[status] ?? { color: "light" as const, label: "Desconocido" };
+  return <Badge color={config.color} size="sm">{config.label}</Badge>;
+};
 
 /**
  * Propiedades del componente StudentTable.
@@ -34,6 +55,8 @@ interface StudentTableProps {
     onView?: (student: StudentRowData) => void;
     /** Función llamada para eliminar múltiples estudiantes en bloque */
     onBulkDelete?: (ids: string[]) => void;
+    /** Función llamada para pre-inscribir en lote */
+    onBatchPreEnroll?: (ids: string[]) => void;
     /** Función llamada para restaurar múltiples estudiantes en bloque */
     onBulkRestore?: (ids: string[]) => void;
     /** IDs de los estudiantes seleccionados (controlado externamente) */
@@ -209,6 +232,7 @@ export default function StudentTable({
     onView,
     onBulkDelete,
     onBulkRestore,
+    onBatchPreEnroll,
     selectedIds: controlledSelectedIds,
     onSelectionChange,
     inactiveMode = false,
@@ -345,9 +369,9 @@ export default function StudentTable({
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
-            // Solo seleccionar IDs de estudiantes que no estén en uso
+            // Solo seleccionar IDs de estudiantes que no estén en uso ni pre-inscritos
             const selectableIds = paged
-                .filter((s) => !s.isInUse)
+                .filter((s) => !s.isInUse && !s.hasActivePreEnrollment)
                 .map((s) => s.studentId)
                 .filter(Boolean) as string[];
             setSelectedIds(selectableIds);
@@ -358,7 +382,7 @@ export default function StudentTable({
 
     const handleSelectRow = (id: string, checked: boolean) => {
         const student = paged.find(s => s.studentId === id);
-        if (student?.isInUse) return; // No permitir seleccionar si está en uso
+        if (student?.isInUse || student?.hasActivePreEnrollment) return; // No permitir seleccionar si está en uso o ya pre-inscrito
 
         if (checked) {
             setSelectedIds((prev) => [...prev, id]);
@@ -518,19 +542,32 @@ export default function StudentTable({
                                     {selectedIds.length} seleccionados
                                 </span>
                                 {activeTab === "Activas" ? (
-                                    <Tooltip 
-                                        content={paged.filter(s => selectedIds.includes(s.studentId)).some(s => s.isInUse) ? "Algunos estudiantes seleccionados están en uso y no pueden ser eliminados" : "Eliminar seleccionados"}
-                                        isDisabled={!paged.filter(s => selectedIds.includes(s.studentId)).some(s => s.isInUse)}
-                                    >
-                                        <Button
-                                            variant="error"
-                                            size="sm"
-                                            onClick={async () => onBulkDelete?.(selectedIds)}
-                                            disabled={paged.filter(s => selectedIds.includes(s.studentId)).some(s => s.isInUse)}
+                                    <>
+                                        {onBatchPreEnroll && (
+                                            <AsyncButton
+                                                variant="primary"
+                                                size="sm"
+                                                onClick={async () => onBatchPreEnroll(selectedIds)}
+                                                className="gap-1.5"
+                                            >
+                                                <PlusIcon className="icon-sm" />
+                                                Preinscribir en Lote
+                                            </AsyncButton>
+                                        )}
+                                        <Tooltip 
+                                            content={paged.filter(s => selectedIds.includes(s.studentId)).some(s => s.isInUse) ? "Algunos estudiantes seleccionados están en uso y no pueden ser eliminados" : "Eliminar seleccionados"}
+                                            isDisabled={!paged.filter(s => selectedIds.includes(s.studentId)).some(s => s.isInUse)}
                                         >
-                                            Eliminar
-                                        </Button>
-                                    </Tooltip>
+                                            <Button
+                                                variant="error"
+                                                size="sm"
+                                                onClick={async () => onBulkDelete?.(selectedIds)}
+                                                disabled={paged.filter(s => selectedIds.includes(s.studentId)).some(s => s.isInUse)}
+                                            >
+                                                Eliminar
+                                            </Button>
+                                        </Tooltip>
+                                    </>
                                 ) : (
                                     <AsyncButton variant="success" size="sm" onClick={async () => onBulkRestore?.(selectedIds)}>
                                         Restaurar
@@ -572,6 +609,7 @@ export default function StudentTable({
                                 <div className="flex items-center">Nombres y Apellidos <SortIndicator column="fullNames" /></div>
                             </TableCell>
                             <TableCell isHeader className="table-header-cell">Teléfono</TableCell>
+                            <TableCell isHeader className="table-header-cell">Estatus</TableCell>
                             <TableCell isHeader className="table-header-cell cursor-pointer group" onClick={async () => handleSort("email")}>
                                 <div className="flex items-center">Correo Electrónico <SortIndicator column="email" /></div>
                             </TableCell>
@@ -587,14 +625,14 @@ export default function StudentTable({
                                 >
                                     <TableCell className="table-cell">
                                         <Tooltip 
-                                            content={s.isInUse ? "Este estudiante tiene registros relacionados y no puede ser seleccionado para eliminar" : ""}
-                                            isDisabled={!s.isInUse}
+                                            content={s.isInUse ? "Este estudiante tiene registros relacionados y no puede ser seleccionado" : s.hasActivePreEnrollment ? "Este estudiante ya tiene una pre-inscripción activa" : ""}
+                                            isDisabled={!s.isInUse && !s.hasActivePreEnrollment}
                                         >
                                             <div className="flex items-center justify-center">
                                                 <Checkbox
                                                     checked={selectedIds.includes(s.studentId)}
                                                     onChange={(checked) => handleSelectRow(s.studentId, checked)}
-                                                    disabled={s.isInUse}
+                                                    disabled={s.isInUse || s.hasActivePreEnrollment}
                                                 />
                                             </div>
                                         </Tooltip>
@@ -606,6 +644,9 @@ export default function StudentTable({
                                         {toTitleCase(s.fullNames)}
                                     </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary whitespace-nowrap">{formatPhoneDisplay(s.phone)}</TableCell>
+                                    <TableCell className="table-cell">
+                                        <StatusBadge status={s.currentPracticeStatus ?? null} />
+                                    </TableCell>
                                     <TableCell className="table-cell text-text-secondary dark:text-text-tertiary">{s.email}</TableCell>
                                     <TableCell className="table-cell text-right relative">
                                         <ActionButtons
@@ -626,7 +667,7 @@ export default function StudentTable({
                             ))
                         ) : (
                             <TableRow>
-                                    <TableCell className="table-cell py-24 text-center" colSpan={6}>
+                                    <TableCell className="table-cell py-24 text-center" colSpan={7}>
                                     <div className="flex flex-col items-center justify-center animate-fadeIn">
                                         <div className="mb-4 rounded-full bg-bg-secondary p-4 dark:bg-white/5">
                                             <svg className="h-8 w-8 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -665,6 +706,9 @@ export default function StudentTable({
                                             <h3 className="text-sm font-bold text-text-primary dark:text-text-emphasis leading-tight truncate px-8">
                                                 {toTitleCase(s.fullNames)}
                                             </h3>
+                                            <div className="flex justify-center mt-1.5">
+                                                <StatusBadge status={s.currentPracticeStatus ?? null} />
+                                            </div>
                                             <p className="text-xs text-text-secondary dark:text-text-tertiary mt-1 truncate">{s.identificationPrefix}-{s.identificationNumber}</p>
                                         </div>
                                         <button
@@ -680,6 +724,10 @@ export default function StudentTable({
                                 {isExpanded && (
                                     <div className="mt-4 space-y-6 animate-fadeIn border-t border-border-light dark:border-border-dark pt-6">
                                         <div className="grid grid-cols-2 gap-y-6 gap-x-4 text-center">
+                                            <div className="col-span-2 flex flex-col items-center">
+                                                <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Estatus</p>
+                                                <StatusBadge status={s.currentPracticeStatus ?? null} />
+                                            </div>
                                             <div className="col-span-2 flex flex-col items-center">
                                                 <p className="text-[10px] uppercase tracking-wider font-bold text-text-tertiary dark:text-text-tertiary mb-1.5">Correo Electrónico</p>
                                                 <p className="text-sm text-text-secondary dark:text-text-tertiary font-medium truncate w-full max-w-62.5">{s.email}</p>

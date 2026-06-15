@@ -264,8 +264,8 @@ export default function UserMetaCard() {
           <ModalFooter>
             <div className="flex w-full justify-end gap-3">
               <Button variant="outline" onClick={handleCloseAttempt} disabled={saving} className="px-6">Cancelar</Button>
-              <Button type="submit" disabled={saving || !isDirty} className="px-6 min-w-30">
-                {saving ? "Guardando..." : "Guardar Cambios"}
+              <Button type="submit" disabled={saving || !isDirty} loading={saving} loadingText="Guardando..." className="px-6 min-w-30">
+                Guardar Cambios
               </Button>
             </div>
           </ModalFooter>

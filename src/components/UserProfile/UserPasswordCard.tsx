@@ -436,11 +436,13 @@ export default function UserPasswordCard() {
 
           <ModalFooter className="pt-2!">
             <Button variant="outline" onClick={handleClose} disabled={loading}>Cancelar</Button>
-            <Button 
+            <Button
               type="submit"
               disabled={loading || !allRequirementsMet}
+              loading={loading}
+              loadingText="Guardando..."
             >
-              {loading ? "Guardando..." : "Guardar"}
+              Guardar
             </Button>
           </ModalFooter>
         </form>

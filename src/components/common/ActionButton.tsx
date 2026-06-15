@@ -20,6 +20,8 @@ interface ActionButtonProps {
   className?: string;
   /** Whether the button is disabled. */
   disabled?: boolean;
+  /** Indicates if the button is in a loading state. */
+  loading?: boolean;
   /** Explicit aria-label if different from the tooltip. */
   "aria-label"?: string;
   /** If true, the button will take full width of its container. */
@@ -49,6 +51,7 @@ export const ActionButton = React.forwardRef<HTMLButtonElement, ActionButtonProp
       variant = "primary",
       className = "",
       disabled = false,
+      loading = false,
       "aria-label": ariaLabel,
       fullWidth = false,
     },
@@ -83,13 +86,41 @@ export const ActionButton = React.forwardRef<HTMLButtonElement, ActionButtonProp
         : "text-blue-500 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-500/10 bg-[#f5f5f5] dark:bg-white/5",
     };
 
+    const isDisabled = disabled || loading;
     const sizeClasses = label || fullWidth ? "w-full min-h-12 px-4 py-3 gap-2 text-xs font-bold" : "w-10 h-10";
+
+    const renderContent = () => {
+      if (loading) {
+        return (
+          <svg
+            className="h-4 w-4 animate-spin text-current shrink-0"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            role="img"
+            aria-label="Cargando"
+          >
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+        );
+      }
+
+      return (
+        <>
+          {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<{ className?: string }>, {
+            className: `icon-sm ${(icon.props as { className?: string }).className || ""}`,
+          }) : icon}
+          {label && <span>{label}</span>}
+        </>
+      );
+    };
 
     const buttonElement = (
       <button
         ref={ref}
         onClick={onClick}
-        disabled={disabled}
+        disabled={isDisabled}
         className={cn(
           "inline-flex items-center justify-center rounded-xl transition-all border disabled:opacity-50 disabled:cursor-not-allowed active:scale-95",
           variantClasses[resolvedVariant],
@@ -97,11 +128,9 @@ export const ActionButton = React.forwardRef<HTMLButtonElement, ActionButtonProp
           className
         )}
         aria-label={ariaLabel || label || tooltip}
+        aria-busy={loading}
       >
-        {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<{ className?: string }>, {
-          className: `icon-sm ${(icon.props as { className?: string }).className || ""}`,
-        }) : icon}
-        {label && <span>{label}</span>}
+        {renderContent()}
       </button>
     );
 

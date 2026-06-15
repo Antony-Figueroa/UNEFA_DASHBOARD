@@ -27,6 +27,7 @@ export type ReportType =
   | "distribucion-tutores"
   | "distribucion-tutores-v2"
   | "relacion-individual-docente"
+  | "proyeccion-pasantias"
   | "";
 
 export interface ReportConfigEntry {
@@ -90,6 +91,7 @@ export const DOCUMENT_SECTIONS: SectionGroup[] = [
       { id: "distribucion-tutores", title: "Distribución de Tutores", subtitle: "Asignación de Tutores por Estudiante", icon: "spreadsheet", type: "excel" },
       { id: "distribucion-tutores-v2", title: "Dist. Tutores (Detallada)", subtitle: "Distribución con Horario Detallado", icon: "spreadsheet", type: "excel" },
       { id: "relacion-individual-docente", title: "Relación Individual Doc.", subtitle: "Reporte Individual por Docente", icon: "spreadsheet", type: "excel" },
+      { id: "proyeccion-pasantias", title: "Proyección de Pasantías", subtitle: "Proyección Prospectiva de Pasantías por Período Académico", icon: "table", type: "excel" },
     ],
   },
 ];
@@ -276,6 +278,18 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
       { header: "Horario Det.", accessor: (r: any) => r.tutorMetodologico?.horarioDetallado || '' },
       { header: "Nombre Eval", accessor: (r: any) => r.evaluador?.nombre || '' },
       { header: "Contacto Eval", accessor: (r: any) => r.evaluador?.contacto || '' },
+    ],
+  },
+  "proyeccion-pasantias": {
+    title: "Proyección de Pasantías",
+    subtitle: "Proyección Prospectiva de Pasantías por Período Académico",
+    type: "excel",
+    loadData: async () => ({ data: [] }),
+    columns: [
+      { header: "Núcleo", accessor: "name" },
+      { header: "Región", accessor: "region" },
+      { header: "Carreras Cortas", accessor: "shortCareers" },
+      { header: "Carreras Largas", accessor: "longCareers" },
     ],
   },
   "relacion-individual-docente": {

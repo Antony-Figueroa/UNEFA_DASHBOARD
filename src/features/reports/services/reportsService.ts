@@ -256,6 +256,21 @@ export const reportsService = {
     return response.data;
   },
 
+  getProyeccionByPeriod: async (periodId: number) => {
+    const response = await apiClient.get(`/api/proyeccion?periodId=${periodId}`);
+    return response.data;
+  },
+
+  getProyeccionStructure: async (periodId: number) => {
+    const response = await apiClient.get(`/api/proyeccion/structure?periodId=${periodId}`);
+    return response.data;
+  },
+
+  saveProyeccionBatch: async (periodId: number, items: { nucleusId: number; careerId: number; estudiantesProyectados: number }[]) => {
+    const response = await apiClient.put('/api/proyeccion/batch', { periodId, items });
+    return response.data;
+  },
+
   exportReportExcel: async (type: string, periodId?: number, careerId?: number, careerIds?: number[]) => {
     const params = new URLSearchParams();
     if (periodId) params.append('periodId', periodId.toString());

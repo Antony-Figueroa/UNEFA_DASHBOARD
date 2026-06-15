@@ -677,16 +677,16 @@ export async function generateProyeccionExcel(data: any, period: string, fileNam
   cRow.getCell(1).font = { ...DEFAULT_FONT, size: 8, bold: true };
   cRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
 
-  // Header row 9 (merged)
+  // Header row 9 (CARRERAS colspan 4) + row 10 sub-headers
   const row9 = worksheet.getRow(9);
   const row10 = worksheet.getRow(10);
   row9.height = 20;
-  row10.height = 35;
+  row10.height = 40;
 
-  // Merged headers: Region, Nucleo, Extension span 9-10; Carreras Cortas + Cant/Proy span 9; Carreras Largas + Cant/Proy span 9
   worksheet.mergeCells('A9:A10');
   worksheet.mergeCells('B9:B10');
   worksheet.mergeCells('C9:C10');
+  worksheet.mergeCells('D9:G9');
 
   const headerCols = [
     { col: 'A', text: 'REGIÓN' }, { col: 'B', text: 'NÚCLEO' }, { col: 'C', text: 'EXTENSIÓN' },
@@ -698,22 +698,16 @@ export async function generateProyeccionExcel(data: any, period: string, fileNam
     row10.getCell(col).style = HEADER_STYLE;
   });
 
-  const cortasCell = row9.getCell('D');
-  cortasCell.value = 'CARRERAS CORTAS';
-  cortasCell.style = HEADER_STYLE;
-  row9.getCell('E').style = HEADER_STYLE;
+  const carrerasCell = row9.getCell('D');
+  carrerasCell.value = 'CARRERAS';
+  carrerasCell.style = HEADER_STYLE;
+  for (let c = 5; c <= 7; c++) row9.getCell(c).style = HEADER_STYLE;
 
-  const largasCell = row9.getCell('F');
-  largasCell.value = 'CARRERAS LARGAS';
-  largasCell.style = HEADER_STYLE;
-  row9.getCell('G').style = HEADER_STYLE;
-
-  // Sub-headers row 10
   const subHeaders = [
-    { col: 'D', text: 'NOMBRE DE LA CARRERA' },
-    { col: 'E', text: 'CANT. PROY.' },
-    { col: 'F', text: 'NOMBRE DE LA CARRERA' },
-    { col: 'G', text: 'CANT. PROY.' },
+    { col: 'D', text: 'REGISTRE NOMBRE DE LAS CARRERAS CORTAS' },
+    { col: 'E', text: `CANTIDAD DE ESTUDIANTES PROYECTADOS A PASANTÍAS ${periodDesc}` },
+    { col: 'F', text: 'REGISTRE NOMBRE DE LAS CARRERAS LARGAS' },
+    { col: 'G', text: `CANTIDAD DE ESTUDIANTES PROYECTADOS A PASANTÍAS ${periodDesc}` },
   ];
   subHeaders.forEach(({ col, text }) => {
     const cell = row10.getCell(col);
@@ -786,18 +780,6 @@ export async function generateProyeccionExcel(data: any, period: string, fileNam
     }
 
     // Subtotals for this nucleus
-    const subTotalRow = currentRow;
-
-    // Merge D-G for SUB-TOTALES label
-    worksheet.mergeCells(`D${subTotalRow}:G${subTotalRow}`);
-    const subLabelCell = worksheet.getCell(subTotalRow, 4);
-    subLabelCell.value = 'SUB-TOTALES';
-    subLabelCell.style = {
-      ...DATA_STYLE,
-      font: { ...DEFAULT_FONT, bold: true, size: 8 },
-      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } },
-    };
-
     const totalShort = shortCareers.length;
     const totalShortEst = shortCareers.reduce((sum: number, c: any) => sum + (c.proyectados || 0), 0);
     const totalLong = longCareers.length;
@@ -805,46 +787,61 @@ export async function generateProyeccionExcel(data: any, period: string, fileNam
     const totalCareers = totalShort + totalLong;
     const totalStudents = totalShortEst + totalLongEst;
 
-    // Subtotal rows
-    const subRows = [
-      { label: 'Cant. Carreras Cortas:', value: totalShort },
-      { label: 'Estudiantes Carreras Cortas:', value: totalShortEst },
-      { label: 'Cant. Carreras Largas:', value: totalLong },
-      { label: 'Estudiantes Carreras Largas:', value: totalLongEst },
-      { label: 'TOTAL CARRERAS DEL NÚCLEO:', value: totalCareers },
-      { label: 'TOTAL DE ESTUDIANTES PASANTES:', value: totalStudents },
-    ];
+    const subStyle = {
+      ...DATA_STYLE,
+      font: { ...DEFAULT_FONT, bold: true, size: 8 },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } },
+    };
 
-    subRows.forEach((sr, sIdx) => {
-      const srRow = currentRow + sIdx;
-      worksheet.mergeCells(`A${srRow}:D${srRow}`);
-      const labelCell = worksheet.getCell(srRow, 1);
-      labelCell.value = sr.label;
-      labelCell.style = {
-        ...DATA_STYLE,
-        font: { ...DEFAULT_FONT, bold: true, size: 8 },
-        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } },
-        alignment: { horizontal: 'right', vertical: 'middle' },
-      };
+    // 1. SUB-TOTALES
+    const subRow = currentRow;
+    worksheet.mergeCells(`A${subRow}:C${subRow}`);
+    const label1 = worksheet.getCell(subRow, 1);
+    label1.value = 'SUB-TOTALES';
+    label1.style = { ...subStyle, alignment: { horizontal: 'right', vertical: 'middle' } };
+    const vals1 = [totalShort, totalShortEst, totalLong, totalLongEst];
+    for (let c = 0; c < 4; c++) {
+      const cell = worksheet.getCell(subRow, 4 + c);
+      cell.value = vals1[c];
+      cell.style = subStyle;
+    }
+    currentRow++;
 
-      const valCell = worksheet.getCell(srRow, 5);
-      valCell.value = sr.value;
-      valCell.style = {
-        ...DATA_STYLE,
-        font: { ...DEFAULT_FONT, bold: true, size: 8, color: { argb: 'FFFF0000' } },
-        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } },
-      };
-    });
+    // 2. TOTAL CARRERAS DEL NÚCLEO
+    const totalCarrRow = currentRow;
+    worksheet.mergeCells(`A${totalCarrRow}:C${totalCarrRow}`);
+    const label2 = worksheet.getCell(totalCarrRow, 1);
+    label2.value = 'TOTAL CARRERAS DEL NÚCLEO';
+    label2.style = { ...subStyle, alignment: { horizontal: 'right', vertical: 'middle' } };
+    for (let c = 0; c < 4; c++) {
+      const cell = worksheet.getCell(totalCarrRow, 4 + c);
+      cell.value = c === 0 ? totalCareers : '';
+      cell.style = subStyle;
+    }
+    currentRow++;
 
-    currentRow += subRows.length + 1; // +1 for blank row between nuclei
+    // 3. TOTAL DE ESTUDIANTES PASANTES DEL NÚCLEO PROYECTADOS PARA EL PERÍODO
+    const totalEstRow = currentRow;
+    worksheet.mergeCells(`A${totalEstRow}:C${totalEstRow}`);
+    const label3 = worksheet.getCell(totalEstRow, 1);
+    label3.value = `TOTAL DE ESTUDIANTES PASANTES DEL NÚCLEO PROYECTADOS PARA EL ${periodDesc}`;
+    label3.style = { ...subStyle, alignment: { horizontal: 'right', vertical: 'middle' } };
+    for (let c = 0; c < 4; c++) {
+      const cell = worksheet.getCell(totalEstRow, 4 + c);
+      cell.value = c === 0 ? totalStudents : '';
+      cell.style = subStyle;
+    }
+    currentRow++;
+
+    currentRow++; // blank row between nuclei
   });
 
-  // Nota al pie: nombre de la región
+  // Nota al pie: nombre de la región (esquina inferior izquierda)
   const noteRow = currentRow;
   worksheet.mergeCells(`A${noteRow}:${lastCol(totalCols)}${noteRow}`);
   const noteCell = worksheet.getCell(noteRow, 1);
   const regionNames = [...new Set(nuclei.map((n: any) => n.region))].filter(Boolean);
-  noteCell.value = `Nota: ${regionNames.join(', ')}`;
+  noteCell.value = regionNames.join(', ');
   noteCell.font = { ...DEFAULT_FONT, size: 8, italic: true };
   noteCell.alignment = { horizontal: 'left', vertical: 'middle' };
 

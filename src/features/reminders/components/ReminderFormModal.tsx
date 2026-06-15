@@ -682,9 +682,11 @@ export const ReminderFormModal = ({
             variant="primary"
             onClick={handleSave}
             disabled={saving || !isValid}
+            loading={saving}
+            loadingText="Guardando..."
             className="w-full sm:w-auto min-h-11"
           >
-            {saving ? 'Guardando...' : editingRule ? 'Guardar cambios' : 'Crear recordatorio'}
+            {editingRule ? 'Guardar cambios' : 'Crear recordatorio'}
           </Button>
         </div>
       </ModalFooter>

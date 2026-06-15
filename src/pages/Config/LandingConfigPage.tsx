@@ -292,8 +292,10 @@ const LandingConfigPage: React.FC = () => {
                 variant="primary"
                 onClick={handleSaveHero}
                 disabled={saving}
+                loading={saving}
+                loadingText="Guardando..."
               >
-                {saving ? 'Guardando...' : 'Guardar Hero'}
+                Guardar Hero
               </Button>
             </div>
           </div>
@@ -353,8 +355,10 @@ const LandingConfigPage: React.FC = () => {
               variant="primary"
               onClick={handleSaveMissionVision}
               disabled={saving}
+              loading={saving}
+              loadingText="Guardando..."
             >
-              {saving ? 'Guardando...' : 'Guardar Misión/Visión'}
+              Guardar Misión/Visión
             </Button>
           </div>
         </div>
@@ -450,8 +454,10 @@ const LandingConfigPage: React.FC = () => {
                 variant="primary"
                 onClick={handleSaveCareers}
                 disabled={saving}
+                loading={saving}
+                loadingText="Guardando..."
               >
-                {saving ? 'Guardando...' : 'Guardar Carreras'}
+                Guardar Carreras
               </Button>
             </div>
           </div>
@@ -513,8 +519,10 @@ const LandingConfigPage: React.FC = () => {
                 variant="primary"
                 onClick={handleSaveFAQs}
                 disabled={saving}
+                loading={saving}
+                loadingText="Guardando..."
               >
-                {saving ? 'Guardando...' : 'Guardar FAQs'}
+                Guardar FAQs
               </Button>
             </div>
           </div>

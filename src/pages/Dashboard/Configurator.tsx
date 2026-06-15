@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import ComponentCard from '../../components/common/ComponentCard';
 import Button from '../../components/ui/button/Button';
 import toast from 'react-hot-toast';
+import { useDragAndDrop } from '@formkit/drag-and-drop/react';
 import {
   WIDGET_REGISTRY,
   getWidgetsByRole,
@@ -30,7 +31,7 @@ const ROLES = [
 // ─── Iconos inline ───────────────────────────────────────────────────────────
 
 const DragHandle = () => (
-  <svg className="size-5 text-gray-400 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+  <svg className="drag-handle-config size-5 text-gray-400 shrink-0 cursor-grab active:cursor-grabbing" fill="currentColor" viewBox="0 0 24 24">
     <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zM8 11h2v2H8v-2zm6 0h2v2h-2v-2zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
   </svg>
 );
@@ -101,11 +102,20 @@ const SIZE_LABELS: Record<WidgetSize, { label: string; cols: string }> = {
 
 export default function DashboardConfigurator() {
   const [selectedRoleId, setSelectedRoleId] = useState<number>(1);
-  const [widgets, setWidgets] = useState<DashboardWidget[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const dragOverIndex = useRef<number | null>(null);
+
+  // ── FormKit Drag & Drop ────────────────────────────────────────────────────
+  // dndWidgets is the single source of truth — FormKit keeps display order
+
+  const [parentRef, dndWidgets, setDndWidgets] = useDragAndDrop<HTMLDivElement, DashboardWidget>(
+    [],
+    {
+      dragHandle: '.drag-handle-config',
+      draggingClass: 'opacity-50 shadow-lg ring-2 ring-blue-400 scale-[1.02]',
+      dropZoneClass: 'ring-2 ring-blue-300 dark:ring-blue-500',
+    },
+  );
 
   // ── Carga ──────────────────────────────────────────────────────────────────
 
@@ -113,27 +123,25 @@ export default function DashboardConfigurator() {
     setLoading(true);
     try {
       const layout = await dashboardLayoutService.getByRole(roleId);
-      setWidgets(layout.widgets ?? []);
+      setDndWidgets(layout.widgets ?? []);
     } catch {
-      setWidgets([]);
+      setDndWidgets([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setDndWidgets]);
 
   useEffect(() => {
     loadLayout(selectedRoleId);
   }, [selectedRoleId, loadLayout]);
 
   const availableWidgets = getWidgetsByRole(selectedRoleId)
-    .filter(def => !widgets.some(w => w.key === def.key));
-
-  const activeWidgets = [...widgets].sort((a, b) => a.order - b.order);
+    .filter(def => !dndWidgets.some(w => w.key === def.key));
 
   // ── CRUD ───────────────────────────────────────────────────────────────────
 
   const addWidget = (key: string) => {
-    setWidgets(prev => {
+    setDndWidgets(prev => {
       if (prev.some(w => w.key === key)) return prev;
       const maxOrder = prev.reduce((max, w) => Math.max(max, w.order), -1);
       return [...prev, { key, order: maxOrder + 1, visible: true }];
@@ -141,61 +149,25 @@ export default function DashboardConfigurator() {
   };
 
   const removeWidget = (key: string) => {
-    setWidgets(prev => prev.filter(w => w.key !== key));
+    setDndWidgets(prev => prev.filter(w => w.key !== key));
   };
 
   const toggleVisibility = (key: string) => {
-    setWidgets(prev =>
+    setDndWidgets(prev =>
       prev.map(w => w.key === key ? { ...w, visible: !w.visible } : w)
     );
   };
 
   const updateWidgetSize = (key: string, size: WidgetSize | undefined) => {
-    setWidgets(prev =>
+    setDndWidgets(prev =>
       prev.map(w => w.key === key ? { ...w, size } : w)
     );
   };
 
   const updateWidgetColor = (key: string, color: string | undefined) => {
-    setWidgets(prev =>
+    setDndWidgets(prev =>
       prev.map(w => w.key === key ? { ...w, color } : w)
     );
-  };
-
-  // ── Drag & Drop ────────────────────────────────────────────────────────────
-
-  const handleDragStart = (index: number) => {
-    setDragIndex(index);
-    dragOverIndex.current = null;
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    dragOverIndex.current = index;
-  };
-
-  const handleDrop = () => {
-    if (dragIndex === null || dragOverIndex.current === null) return;
-    if (dragIndex === dragOverIndex.current) {
-      setDragIndex(null);
-      dragOverIndex.current = null;
-      return;
-    }
-
-    setWidgets(prev => {
-      const sorted = [...prev].sort((a, b) => a.order - b.order);
-      const [moved] = sorted.splice(dragIndex, 1);
-      sorted.splice(dragOverIndex.current!, 0, moved);
-      return sorted.map((w, i) => ({ ...w, order: i }));
-    });
-
-    setDragIndex(null);
-    dragOverIndex.current = null;
-  };
-
-  const handleDragEnd = () => {
-    setDragIndex(null);
-    dragOverIndex.current = null;
   };
 
   // ── Persistir ──────────────────────────────────────────────────────────────
@@ -203,7 +175,8 @@ export default function DashboardConfigurator() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await dashboardLayoutService.save(selectedRoleId, widgets);
+      const normalized = dndWidgets.map((w, i) => ({ ...w, order: i }));
+      await dashboardLayoutService.save(selectedRoleId, normalized);
       toast.success('Layout del dashboard guardado exitosamente');
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Error al guardar el layout');
@@ -216,7 +189,7 @@ export default function DashboardConfigurator() {
     try {
       toast.loading('Restableciendo...');
       const layout = await dashboardLayoutService.reset(selectedRoleId);
-      setWidgets(layout.widgets ?? []);
+      setDndWidgets(layout.widgets ?? []);
       toast.dismiss();
       toast.success('Layout restablecido a valores por defecto');
     } catch {
@@ -252,8 +225,8 @@ export default function DashboardConfigurator() {
             <Button variant="outline" onClick={handleReset} disabled={loading || saving} size="sm">
               Restablecer
             </Button>
-            <Button variant="primary" onClick={handleSave} disabled={loading || saving} size="sm">
-              {saving ? 'Guardando...' : 'Guardar Layout'}
+            <Button variant="primary" onClick={handleSave} disabled={loading || saving} size="sm" loading={saving} loadingText="Guardando...">
+              Guardar Layout
             </Button>
           </div>
         </div>
@@ -314,8 +287,8 @@ export default function DashboardConfigurator() {
                 }
                 desc="Arrastrá para reordenar · Usá color y tamaño para personalizar"
               >
-                <div className="space-y-2">
-                  {activeWidgets.length === 0 ? (
+                <div ref={parentRef} className="space-y-2">
+                  {dndWidgets.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700">
                       <p className="text-sm font-medium text-gray-400 dark:text-gray-500">
                         No hay widgets activos
@@ -326,12 +299,10 @@ export default function DashboardConfigurator() {
                     </div>
                   ) : (
                     <AnimatePresence>
-                      {activeWidgets.map((widget, index) => {
+                      {dndWidgets.map((widget) => {
                         const def = WIDGET_REGISTRY[widget.key];
                         if (!def) return null;
 
-                        const isDragging = dragIndex === index;
-                        const isOver = dragOverIndex.current === index && dragIndex !== index;
                         const accent = widget.color ?? '#054F94';
 
                         return (
@@ -344,21 +315,14 @@ export default function DashboardConfigurator() {
                             transition={{ duration: 0.2 }}
                           >
                             <div
-                              draggable
-                              onDragStart={() => handleDragStart(index)}
-                              onDragOver={(e) => handleDragOver(e, index)}
-                              onDrop={handleDrop}
-                              onDragEnd={handleDragEnd}
                               className={`
                                 relative rounded-xl border bg-white shadow-sm
-                                dark:bg-gray-900 cursor-grab active:cursor-grabbing
+                                dark:bg-gray-900
                                 transition-all duration-150 overflow-hidden
                                 ${widget.visible
                                   ? 'border-border-light dark:border-border-dark'
                                   : 'border-dashed border-gray-300 dark:border-gray-600'
                                 }
-                                ${isDragging ? 'opacity-50 shadow-lg ring-2 ring-blue-400 scale-[1.02]' : ''}
-                                ${isOver ? 'ring-2 ring-blue-300 dark:ring-blue-500' : ''}
                               `}
                               style={{
                                 borderLeftColor: accent,
@@ -489,17 +453,17 @@ export default function DashboardConfigurator() {
             </div>
 
             {/* ═══ Preview ═══ */}
-            {activeWidgets.length > 0 && (
+            {dndWidgets.length > 0 && (
               <ComponentCard
                 title="Vista Previa del Layout"
                 headerAction={
                   <span className="text-xs text-gray-400 dark:text-gray-500">
-                    {activeWidgets.filter(w => w.visible).length} widgets visibles
+                    {dndWidgets.filter(w => w.visible).length} widgets visibles
                   </span>
                 }
               >
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-                  {activeWidgets
+                  {dndWidgets
                     .filter(w => w.visible)
                     .map(widget => {
                       const def = WIDGET_REGISTRY[widget.key];

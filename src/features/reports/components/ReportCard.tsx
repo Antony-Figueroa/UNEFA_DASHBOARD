@@ -51,9 +51,11 @@ export function ReportCard({ id, title, subtitle, icon, type, loading, onView, o
           size="sm"
           onClick={onView}
           disabled={loading}
+          loading={loading}
+          loadingText="Cargando..."
           className="flex-1 text-xs"
         >
-          {loading ? 'Cargando...' : 'Ver'}
+          Ver
         </Button>
         {onExportExcel && (
           <Button

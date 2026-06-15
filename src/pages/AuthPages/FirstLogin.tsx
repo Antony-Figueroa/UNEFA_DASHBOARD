@@ -607,10 +607,11 @@ export default function FirstLogin() {
                     <Button 
                       type="submit"
                       loading={loading}
+                      loadingText="Guardando..."
                       disabled={loading || !isValid}
                       className="flex items-center gap-2"
                     >
-                      {loading ? 'Guardando...' : 'Cambiar Contraseña'} <CheckCircleIcon className="w-4 h-4" />
+                      Cambiar Contraseña <CheckCircleIcon className="w-4 h-4" />
                     </Button>
                   )}
                 </div>
@@ -793,16 +794,11 @@ export default function FirstLogin() {
                   <Button 
                     type="submit" 
                     disabled={loading || !isValid || !acceptTerms}
+                    loading={loading}
+                    loadingText="Guardando..."
                     className="min-w-[200px]"
                   >
-                    {loading ? (
-                      <span className="flex items-center gap-2">
-                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Guardando...
-                      </span>
-                    ) : (
-                      "Finalizar Configuración"
-                    )}
+                    Finalizar Configuración
                   </Button>
                 </div>
               </>

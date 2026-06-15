@@ -331,8 +331,8 @@ export default function TutorEvaluation() {
         <Button variant="outline" onClick={() => navigate("/tutor/students")}>
           Cancelar
         </Button>
-        <Button onClick={handleSubmit} disabled={saving || criteria.length === 0}>
-          {saving ? "Guardando..." : existingEvaluation ? "Actualizar Evaluación" : "Guardar Evaluación"}
+        <Button onClick={handleSubmit} disabled={saving || criteria.length === 0} loading={saving} loadingText="Guardando...">
+          {existingEvaluation ? "Actualizar Evaluación" : "Guardar Evaluación"}
         </Button>
       </div>
     </>

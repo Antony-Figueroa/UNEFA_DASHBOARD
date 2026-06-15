@@ -8,6 +8,7 @@ import {
   generateDistribucionTutoresExcel,
   generateRelacionIndividualDocenteExcel,
   generateDistribucionTutoresV2Excel,
+  generateProyeccionExcel,
 } from '../../../utils/unefaExcelReports';
 
 export function useReports() {
@@ -39,6 +40,9 @@ export function useReports() {
           break;
         case 'relacion-individual-docente':
           await generateRelacionIndividualDocenteExcel(data, period, extra || '', fileName);
+          break;
+        case 'proyeccion-pasantias':
+          await generateProyeccionExcel(data, period, fileName);
           break;
         default:
           toast.error('Tipo de reporte no soportado');

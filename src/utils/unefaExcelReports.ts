@@ -633,6 +633,229 @@ export async function generateSimpleExcel(
   }
 }
 
+/**
+ * Generates the Proyección Prospectiva de Pasantías Excel report.
+ * Formato: membrete 6 filas, título, código Form-002-2019,
+ * tabla con REGIÓN | NÚCLEO | EXTENSIÓN | CARRERAS CORTAS | CANT. PROY. | CARRERAS LARGAS | CANT. PROY.
+ * Rowspan para REGIÓN, NÚCLEO, EXTENSIÓN. Subtotales por núcleo.
+ */
+export async function generateProyeccionExcel(data: any, period: string, fileName: string) {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Proyeccion Pasantias');
+  const totalCols = 7;
+
+  worksheet.columns = [
+    { key: 'region', width: 18 }, { key: 'nucleo', width: 20 },
+    { key: 'extension', width: 20 }, { key: 'carrerasCortas', width: 30 },
+    { key: 'cantCortas', width: 14 }, { key: 'carrerasLargas', width: 30 },
+    { key: 'cantLargas', width: 14 },
+  ];
+
+  // Membrete institucional (6 filas)
+  applyInstitutionalHeader(worksheet, totalCols);
+
+  // Título
+  const titleRow = 7;
+  worksheet.mergeCells(`A${titleRow}:${lastCol(totalCols)}${titleRow}`);
+  const tRow = worksheet.getRow(titleRow);
+  tRow.height = 30;
+  const periodDesc = data.periodDescription || period;
+  tRow.getCell(1).value = {
+    richText: [
+      { text: 'PROYECCIÓN PROSPECTIVA DE LAS PASANTÍAS PARA EL PERÍODO ACADÉMICO ', font: { ...DEFAULT_FONT, size: 11, bold: true } },
+      { text: periodDesc, font: { ...DEFAULT_FONT, size: 11, bold: true, color: { argb: 'FFFF0000' } } }
+    ]
+  };
+  tRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Código de formulario
+  const codeRow = 8;
+  worksheet.mergeCells(`A${codeRow}:${lastCol(totalCols)}${codeRow}`);
+  const cRow = worksheet.getRow(codeRow);
+  cRow.height = 20;
+  cRow.getCell(1).value = 'Código: Form-002-2019 CPA-VAC_JP';
+  cRow.getCell(1).font = { ...DEFAULT_FONT, size: 8, bold: true };
+  cRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
+
+  // Header row 9 (merged)
+  const row9 = worksheet.getRow(9);
+  const row10 = worksheet.getRow(10);
+  row9.height = 20;
+  row10.height = 35;
+
+  // Merged headers: Region, Nucleo, Extension span 9-10; Carreras Cortas + Cant/Proy span 9; Carreras Largas + Cant/Proy span 9
+  worksheet.mergeCells('A9:A10');
+  worksheet.mergeCells('B9:B10');
+  worksheet.mergeCells('C9:C10');
+
+  const headerCols = [
+    { col: 'A', text: 'REGIÓN' }, { col: 'B', text: 'NÚCLEO' }, { col: 'C', text: 'EXTENSIÓN' },
+  ];
+  headerCols.forEach(({ col, text }) => {
+    const cell = row9.getCell(col);
+    cell.value = text;
+    cell.style = HEADER_STYLE;
+    row10.getCell(col).style = HEADER_STYLE;
+  });
+
+  const cortasCell = row9.getCell('D');
+  cortasCell.value = 'CARRERAS CORTAS';
+  cortasCell.style = HEADER_STYLE;
+  row9.getCell('E').style = HEADER_STYLE;
+
+  const largasCell = row9.getCell('F');
+  largasCell.value = 'CARRERAS LARGAS';
+  largasCell.style = HEADER_STYLE;
+  row9.getCell('G').style = HEADER_STYLE;
+
+  // Sub-headers row 10
+  const subHeaders = [
+    { col: 'D', text: 'NOMBRE DE LA CARRERA' },
+    { col: 'E', text: 'CANT. PROY.' },
+    { col: 'F', text: 'NOMBRE DE LA CARRERA' },
+    { col: 'G', text: 'CANT. PROY.' },
+  ];
+  subHeaders.forEach(({ col, text }) => {
+    const cell = row10.getCell(col);
+    cell.value = text;
+    cell.style = HEADER_STYLE;
+  });
+
+  // Data rows
+  let currentRow = 11;
+  const nuclei = data.nuclei || [];
+
+  nuclei.forEach((nucleus: any, nIdx: number) => {
+    const shortCareers = nucleus.shortCareers || [];
+    const longCareers = nucleus.longCareers || [];
+    const maxRows = Math.max(shortCareers.length, longCareers.length, 1);
+
+    const startRow = currentRow;
+
+    for (let i = 0; i < maxRows; i++) {
+      const row = worksheet.getRow(currentRow);
+      row.height = 25;
+      const actualRow = currentRow;
+
+      // Region, Nucleo, Extension on first row of group
+      if (i === 0) {
+        worksheet.mergeCells(`A${actualRow}:A${actualRow + maxRows - 1}`);
+        const regionCell = row.getCell('A');
+        regionCell.value = (nucleus.region || '').toUpperCase();
+        regionCell.style = DATA_STYLE;
+        for (let r = 1; r < maxRows; r++) {
+          worksheet.getRow(actualRow + r).getCell('A').style = DATA_STYLE;
+        }
+
+        worksheet.mergeCells(`B${actualRow}:B${actualRow + maxRows - 1}`);
+        const nucleoCell = row.getCell('B');
+        nucleoCell.value = (nucleus.name || '').toUpperCase();
+        nucleoCell.style = DATA_STYLE;
+        for (let r = 1; r < maxRows; r++) {
+          worksheet.getRow(actualRow + r).getCell('B').style = DATA_STYLE;
+        }
+
+        worksheet.mergeCells(`C${actualRow}:C${actualRow + maxRows - 1}`);
+        const extCell = row.getCell('C');
+        extCell.value = (nucleus.extension || '').toUpperCase();
+        extCell.style = DATA_STYLE;
+        for (let r = 1; r < maxRows; r++) {
+          worksheet.getRow(actualRow + r).getCell('C').style = DATA_STYLE;
+        }
+      }
+
+      // Short career column
+      if (i < shortCareers.length) {
+        applyDataCell(worksheet, currentRow, 4, (shortCareers[i].careerName || '').toUpperCase());
+        applyDataCell(worksheet, currentRow, 5, shortCareers[i].proyectados ?? 0);
+      } else {
+        applyDataCell(worksheet, currentRow, 4, '');
+        applyDataCell(worksheet, currentRow, 5, '');
+      }
+
+      // Long career column
+      if (i < longCareers.length) {
+        applyDataCell(worksheet, currentRow, 6, (longCareers[i].careerName || '').toUpperCase());
+        applyDataCell(worksheet, currentRow, 7, longCareers[i].proyectados ?? 0);
+      } else {
+        applyDataCell(worksheet, currentRow, 6, '');
+        applyDataCell(worksheet, currentRow, 7, '');
+      }
+
+      currentRow++;
+    }
+
+    // Subtotals for this nucleus
+    const subTotalRow = currentRow;
+
+    // Merge D-G for SUB-TOTALES label
+    worksheet.mergeCells(`D${subTotalRow}:G${subTotalRow}`);
+    const subLabelCell = worksheet.getCell(subTotalRow, 4);
+    subLabelCell.value = 'SUB-TOTALES';
+    subLabelCell.style = {
+      ...DATA_STYLE,
+      font: { ...DEFAULT_FONT, bold: true, size: 8 },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } },
+    };
+
+    const totalShort = shortCareers.length;
+    const totalShortEst = shortCareers.reduce((sum: number, c: any) => sum + (c.proyectados || 0), 0);
+    const totalLong = longCareers.length;
+    const totalLongEst = longCareers.reduce((sum: number, c: any) => sum + (c.proyectados || 0), 0);
+    const totalCareers = totalShort + totalLong;
+    const totalStudents = totalShortEst + totalLongEst;
+
+    // Subtotal rows
+    const subRows = [
+      { label: 'Cant. Carreras Cortas:', value: totalShort },
+      { label: 'Estudiantes Carreras Cortas:', value: totalShortEst },
+      { label: 'Cant. Carreras Largas:', value: totalLong },
+      { label: 'Estudiantes Carreras Largas:', value: totalLongEst },
+      { label: 'TOTAL CARRERAS DEL NÚCLEO:', value: totalCareers },
+      { label: 'TOTAL DE ESTUDIANTES PASANTES:', value: totalStudents },
+    ];
+
+    subRows.forEach((sr, sIdx) => {
+      const srRow = currentRow + sIdx;
+      worksheet.mergeCells(`A${srRow}:D${srRow}`);
+      const labelCell = worksheet.getCell(srRow, 1);
+      labelCell.value = sr.label;
+      labelCell.style = {
+        ...DATA_STYLE,
+        font: { ...DEFAULT_FONT, bold: true, size: 8 },
+        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } },
+        alignment: { horizontal: 'right', vertical: 'middle' },
+      };
+
+      const valCell = worksheet.getCell(srRow, 5);
+      valCell.value = sr.value;
+      valCell.style = {
+        ...DATA_STYLE,
+        font: { ...DEFAULT_FONT, bold: true, size: 8, color: { argb: 'FFFF0000' } },
+        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } },
+      };
+    });
+
+    currentRow += subRows.length + 1; // +1 for blank row between nuclei
+  });
+
+  // Nota al pie: nombre de la región
+  const noteRow = currentRow;
+  worksheet.mergeCells(`A${noteRow}:${lastCol(totalCols)}${noteRow}`);
+  const noteCell = worksheet.getCell(noteRow, 1);
+  const regionNames = [...new Set(nuclei.map((n: any) => n.region))].filter(Boolean);
+  noteCell.value = `Nota: ${regionNames.join(', ')}`;
+  noteCell.font = { ...DEFAULT_FONT, size: 8, italic: true };
+  noteCell.alignment = { horizontal: 'left', vertical: 'middle' };
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  if (typeof window !== 'undefined') {
+    const { saveAs } = await import('file-saver');
+    saveAs(blob, `${fileName}.xlsx`);
+  }
+}
+
 export async function generateDistribucionTutoresV2Excel(data: any[], period: string, fileName: string) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Distribucion Tutores V2');

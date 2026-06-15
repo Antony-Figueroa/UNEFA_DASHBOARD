@@ -54,6 +54,9 @@ import personsRoutes from './routes/persons.routes.js';
 import institutionalDocumentsRoutes from './routes/institutional-documents.routes.js';
 import reportTextsRoutes from './routes/report-texts.routes.js';
 import addressRoutes from './routes/address.routes.js';
+import systemInstitutionRoutes from './routes/system-institution.routes.js';
+import systemNucleusRoutes from './routes/system-nucleus.routes.js';
+import proyeccionRoutes from './routes/proyeccion.routes.js';
 import { getSystemConfig } from './controllers/evaluation.controller.js';
 import { subscribeToNotifications } from './services/sse.service.js';
 import { dbManager } from './lib/db-manager.js';
@@ -280,6 +283,9 @@ app.use('/api/reminder-config', reminderConfigRoutes);
 app.use('/api/email-templates', emailTemplatesRoutes);
 app.use('/api/knowledge-base', knowledgeBaseRoutes);
 app.use('/api/address', addressRoutes);
+app.use('/api/system-institution', systemInstitutionRoutes);
+app.use('/api/system-nucleus', systemNucleusRoutes);
+app.use('/api/proyeccion', proyeccionRoutes);
 
 // Servir archivos estáticos del frontend (Vite build)
 // Intentar encontrar la carpeta dist en lugares comunes

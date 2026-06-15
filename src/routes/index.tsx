@@ -23,6 +23,8 @@ const Maintenance = lazy(() => import("../pages/Config/Maintenance"));
 const Backups = lazy(() => import("../pages/Config/Backups"));
 const LandingConfigPage = lazy(() => import("../pages/Config/LandingConfigPage"));
 const ReminderConfigPage = lazy(() => import("../pages/Admin/Reminders/ReminderConfigPage"));
+const InstitutionConfig = lazy(() => import("../pages/Config/InstitutionConfig"));
+const NucleiManager = lazy(() => import("../pages/Config/NucleiManager"));
 
 const DashboardConfigurator = lazy(() => import("../pages/Dashboard/Configurator"));
 const NotificationsPage = lazy(() => import("../pages/Notifications/NotificationsPage"));
@@ -370,6 +372,22 @@ export const AppRoutes = () => {
               element={
                 <ProtectedRoute requiredPermissions={['config:view']}>
                   <LandingConfigPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/configure/institucion"
+              element={
+                <ProtectedRoute requiredPermissions={['config:view']}>
+                  <InstitutionConfig />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/configure/nucleos"
+              element={
+                <ProtectedRoute requiredPermissions={['config:view']}>
+                  <NucleiManager />
                 </ProtectedRoute>
               }
             />

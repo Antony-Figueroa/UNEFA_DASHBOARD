@@ -226,8 +226,10 @@ export default function SignUpForm() {
                     size="md"
                     type="submit"
                     disabled={loading || !isChecked}
+                    loading={loading}
+                    loadingText="Registrando..."
                   >
-                    {loading ? "Registrando..." : "Registrarse"}
+                    Registrarse
                   </Button>
                 </div>
               </div>

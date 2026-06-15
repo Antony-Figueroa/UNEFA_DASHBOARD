@@ -133,9 +133,10 @@ export const RestoreDialog: React.FC<RestoreDialogProps> = ({
           onClick={handleNext}
           className={`flex-1 ${step === 'confirm' ? 'bg-red-600 hover:bg-red-700' : ''}`}
           loading={isLoading || verifying}
+          loadingText={verifying ? "Verificando..." : isLoading ? "Restaurando..." : undefined}
           disabled={(step === 'password' && !password.trim()) || isLoading || verifying}
         >
-          {verifying ? 'Verificando...' : step === 'password' ? 'Verificar' : 'RESTAURAR'}
+          {step === 'password' ? 'Verificar' : 'RESTAURAR'}
         </Button>
       </ModalFooter>
     </Modal>

@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useCallback } from "react";
 import { X, Pin, GripVertical } from "lucide-react";
 import { useTabs, type Tab } from "../../context/tab";
+import { useDragAndDrop } from "@formkit/drag-and-drop/react";
 
 // ─── Context Menu ────────────────────────────────────────────────────────────
 
@@ -103,10 +104,6 @@ interface TabItemProps {
   onClose: () => void;
   onPinToggle: () => void;
   onContextMenu: (e: React.MouseEvent, tabId: string, pinned: boolean) => void;
-  onDragStart: (index: number) => void;
-  onDragOver: (e: React.DragEvent, index: number) => void;
-  onDragEnd: () => void;
-  onDrop: (index: number) => void;
 }
 
 const TabItem: React.FC<TabItemProps> = ({
@@ -117,13 +114,8 @@ const TabItem: React.FC<TabItemProps> = ({
   onClose,
   onPinToggle,
   onContextMenu,
-  onDragStart,
-  onDragOver,
-  onDragEnd,
-  onDrop,
 }) => {
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [dragOver, setDragOver] = useState(false);
 
   // Scroll active tab into view
   useEffect(() => {
@@ -139,30 +131,6 @@ const TabItem: React.FC<TabItemProps> = ({
     }
   };
 
-  const handleDragStart = (e: React.DragEvent) => {
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", String(index));
-    onDragStart(index);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setDragOver(true);
-    onDragOver(e, index);
-  };
-
-  const handleDragLeave = () => setDragOver(false);
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const fromIdx = parseInt(e.dataTransfer.getData("text/plain"), 10);
-    if (!isNaN(fromIdx) && fromIdx !== index) {
-      onDrop(index);
-    }
-  };
-
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     onContextMenu(e, tab.id, tab.pinned);
@@ -173,21 +141,14 @@ const TabItem: React.FC<TabItemProps> = ({
       ref={buttonRef}
       role="tab"
       aria-selected={isActive}
-      draggable
       onMouseDown={handleMouseDown}
       onClick={onActivate}
       onContextMenu={handleContextMenu}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      onDragEnd={onDragEnd}
       className={`
         group/tab relative flex items-center gap-1 px-2.5 py-1.5
         text-sm whitespace-nowrap shrink-0 min-w-[72px] max-w-[200px]
         border-r border-border-light/30 dark:border-white/10
         transition-colors duration-150 cursor-default select-none
-        ${dragOver ? "border-l-2 border-l-brand-400" : ""}
         ${
           isActive
             ? "bg-white dark:bg-gray-800 text-text-primary shadow-xs z-10"
@@ -196,7 +157,7 @@ const TabItem: React.FC<TabItemProps> = ({
       `}
     >
       {/* Drag handle */}
-      <GripVertical className="size-3 shrink-0 opacity-0 group-hover/tab:opacity-30 text-text-tertiary transition-opacity" />
+      <GripVertical className="tab-drag-handle size-3 shrink-0 opacity-0 group-hover/tab:opacity-30 text-text-tertiary transition-opacity cursor-grab active:cursor-grabbing" />
 
       {/* Active indicator — 2px brand-colored top border */}
       {isActive && (
@@ -264,7 +225,7 @@ const TabItem: React.FC<TabItemProps> = ({
 
 const NavBar: React.FC = () => {
   const {
-    tabs,
+    tabs: contextTabs,
     activeTabId,
     activateTab,
     closeTab,
@@ -275,27 +236,46 @@ const NavBar: React.FC = () => {
   } = useTabs();
 
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(INITIAL_MENU);
-  const dragIndexRef = useRef<number | null>(null);
 
-  // ── Drag & drop ────────────────────────────────────────────────────────
+  // ── FormKit Drag & Drop ────────────────────────────────────────────────
 
-  const handleDragStart = useCallback((index: number) => {
-    dragIndexRef.current = index;
-  }, []);
-
-  const handleDrop = useCallback(
-    (toIndex: number) => {
-      if (dragIndexRef.current !== null && dragIndexRef.current !== toIndex) {
-        reorderTabs(dragIndexRef.current, toIndex);
-      }
-      dragIndexRef.current = null;
+  const [parentRef, dndTabs, setDndTabs] = useDragAndDrop<HTMLDivElement, Tab>(
+    contextTabs,
+    {
+      dragHandle: ".tab-drag-handle",
+      draggingClass: "opacity-50 ring-2 ring-brand-400 scale-[1.02] shadow-lg z-20",
+      dropZoneClass: "border-l-2 border-l-brand-400",
     },
-    [reorderTabs],
   );
 
-  const handleDragEnd = useCallback(() => {
-    dragIndexRef.current = null;
-  }, []);
+  // Sync context → FormKit when tabs added/closed externally
+  const isDndOrigin = useRef(false);
+
+  useLayoutEffect(() => {
+    if (!isDndOrigin.current) {
+      setDndTabs(contextTabs);
+    }
+    isDndOrigin.current = false;
+  }, [contextTabs]);
+
+  // Sync FormKit → context when DnD reorders
+  useEffect(() => {
+    const contextIds = contextTabs.map((t) => t.id).join(",");
+    const dndIds = dndTabs.map((t) => t.id).join(",");
+
+    if (contextIds !== dndIds && dndTabs.length === contextTabs.length && dndTabs.length > 0) {
+      isDndOrigin.current = true;
+
+      const diffIdx = dndTabs.findIndex((t, i) => t.id !== contextTabs[i]?.id);
+      if (diffIdx > -1) {
+        const movedId = dndTabs[diffIdx].id;
+        const fromIdx = contextTabs.findIndex((t) => t.id === movedId);
+        if (fromIdx > -1 && fromIdx !== diffIdx) {
+          reorderTabs(fromIdx, diffIdx);
+        }
+      }
+    }
+  }, [dndTabs, contextTabs, reorderTabs]);
 
   // ── Context menu ───────────────────────────────────────────────────────
 
@@ -340,17 +320,18 @@ const NavBar: React.FC = () => {
 
   // ── Render ─────────────────────────────────────────────────────────────
 
-  if (tabs.length === 0) return null;
+  if (contextTabs.length === 0) return null;
 
   return (
     <>
       <div
+        ref={parentRef}
         role="tablist"
         className="flex items-center h-10 overflow-x-auto no-scrollbar scroll-smooth
           bg-gray-50 dark:bg-bg-dark
           border-b border-border-light/50 dark:border-border-dark/50"
       >
-        {tabs.map((tab, idx) => (
+        {dndTabs.map((tab, idx) => (
           <TabItem
             key={tab.id}
             tab={tab}
@@ -360,10 +341,6 @@ const NavBar: React.FC = () => {
             onClose={() => closeTab(tab.id)}
             onPinToggle={() => pinTab(tab.id)}
             onContextMenu={openContextMenu}
-            onDragStart={handleDragStart}
-            onDragOver={() => {}} // required for drop zone detection
-            onDragEnd={handleDragEnd}
-            onDrop={handleDrop}
           />
         ))}
       </div>

@@ -257,8 +257,8 @@ export default function TutorGrades() {
           <Button variant="outline" onClick={() => setSelectedStudent(null)}>
             Cancelar
           </Button>
-          <Button variant="primary" onClick={handleSaveGrade} disabled={saving}>
-            {saving ? "Guardando..." : "Guardar Nota"}
+          <Button variant="primary" onClick={handleSaveGrade} disabled={saving} loading={saving} loadingText="Guardando...">
+            Guardar Nota
           </Button>
         </ModalFooter>
       </Modal>

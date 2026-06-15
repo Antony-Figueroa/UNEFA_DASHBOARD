@@ -590,8 +590,8 @@ export default function RolesPermissionsPage() {
               <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleSaveRole} disabled={saving || !hasChanges}>
-                {saving ? "Guardando..." : "Guardar Cambios"}
+              <Button onClick={handleSaveRole} disabled={saving || !hasChanges} loading={saving} loadingText="Guardando...">
+                Guardar Cambios
               </Button>
             </div>
           </div>
@@ -767,8 +767,8 @@ export default function RolesPermissionsPage() {
               <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleCreateRole} disabled={saving || !createForm.name.trim()}>
-                {saving ? "Creando..." : "Crear Rol"}
+              <Button onClick={handleCreateRole} disabled={saving || !createForm.name.trim()} loading={saving} loadingText="Creando...">
+                Crear Rol
               </Button>
             </div>
           </div>

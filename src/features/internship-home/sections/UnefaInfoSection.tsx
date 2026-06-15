@@ -125,15 +125,12 @@ const UnefaInfoSection: React.FC = () => {
               size="sm"
               onClick={() => loadInfo(true)}
               disabled={isLoading}
+              loading={isLoading}
+              loadingText="Actualizando..."
               className="flex items-center gap-2 min-w-3 justify-center mt-3"
             >
-              <motion.div
-                animate={isLoading ? { rotate: 360 } : { rotate: 0 }}
-                transition={isLoading ? { repeat: Infinity, duration: 1, ease: "linear" } : { duration: 0.3 }}
-              >
-                <RefreshIcon className="w-4 h-4" />
-              </motion.div>
-              {isLoading ? "Actualizando..." : "Nueva información"}
+              <RefreshIcon className="w-4 h-4" />
+              Nueva información
             </Button>
           </div>
 

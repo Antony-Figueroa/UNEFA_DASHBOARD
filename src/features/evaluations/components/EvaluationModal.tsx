@@ -246,7 +246,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
     ? `Editar ${EVALUATOR_TYPE_LABELS[evaluatorType]}`
     : `Nueva ${EVALUATOR_TYPE_LABELS[evaluatorType]}`;
 
-  const submitLabel = loading ? 'Guardando...' : isEditing ? 'Actualizar Evaluación' : 'Guardar Evaluación';
+  const submitLabel = isEditing ? 'Actualizar Evaluación' : 'Guardar Evaluación';
 
   return (
     <Modal
@@ -426,6 +426,8 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
             <Button
               type="submit"
               disabled={loading || criteriaLoaded.length === 0}
+              loading={loading}
+              loadingText="Guardando..."
             >
               {submitLabel}
             </Button>

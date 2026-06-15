@@ -296,8 +296,10 @@ export default function StudentDocuments() {
             variant="primary" 
             onClick={handleUpload}
             disabled={uploading || !selectedFile || !formData.documentType || !formData.title}
+            loading={uploading}
+            loadingText="Subiendo..."
           >
-            {uploading ? 'Subiendo...' : 'Subir'}
+            Subir
           </Button>
         </ModalFooter>
       </Modal>

@@ -383,8 +383,8 @@ const TemplateManager = () => {
           <Button variant="outline" onClick={handleCloseAttempt} disabled={saving}>
             Cancelar
           </Button>
-          <Button variant="primary" onClick={handleSave} disabled={saving}>
-            {saving ? 'Guardando...' : editing ? 'Guardar cambios' : 'Crear plantilla'}
+          <Button variant="primary" onClick={handleSave} disabled={saving} loading={saving} loadingText="Guardando...">
+            {editing ? 'Guardar cambios' : 'Crear plantilla'}
           </Button>
         </ModalFooter>
       </Modal>

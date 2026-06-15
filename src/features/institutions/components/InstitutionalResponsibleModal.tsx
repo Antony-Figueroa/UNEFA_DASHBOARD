@@ -8,6 +8,8 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Modal, ModalBody, ModalFooter, ModalHeader } from "../../../components/ui/modal";
+import { Tabs } from "../../../components/ui/tabs/Tabs";
+import { useTabs } from "../../../hooks/useTabs";
 import { useInstitutions } from "../hooks/useInstitutions";
 import { getResponsibleByCi } from "../services/institutionalResponsiblesService";
 import { CreateInstitutionalResponsiblePayload, UpdateInstitutionalResponsiblePayload, InstitutionalResponsible, CreateInstitutionPayload } from "../types";
@@ -178,6 +180,7 @@ export default function InstitutionalResponsibleModal({
    const [apiDataLoaded, setApiDataLoaded] = useState(false);
    const apiLoadedCiRef = useRef("");
    const { config: academicConfig } = useAcademicConfig();
+   const tabsState = useTabs({ defaultTab: "datos-personales" });
 
 // Check if institutional responsible exists by CI
     const checkInstitutionalResponsibleByCi = async (ci: string) => {
@@ -814,9 +817,19 @@ export default function InstitutionalResponsibleModal({
                </div>
              )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Columna Izquierda: Datos Personales (via PersonFormFields compartido) */}
-              <div className="lg:col-span-2">
+            <Tabs
+              options={[
+                { id: "datos-personales", label: "Datos Personales" },
+                { id: "instituciones", label: "Instituciones y Cargo" }
+              ]}
+              {...tabsState.tabProps}
+              variant="modal"
+              className="mb-6"
+            />
+
+            <div className="space-y-6">
+              {/* Tab 1: Datos Personales */}
+              <div hidden={tabsState.activeTab !== "datos-personales"} role="tabpanel">
                 <PersonFormFields
                   control={control}
                   register={register}
@@ -844,7 +857,7 @@ export default function InstitutionalResponsibleModal({
                 />
 
                 {/* Título */}
-                <div>
+                <div className="mt-6">
                   <label className="text-sm font-medium text-text-primary dark:text-white/90">Título</label>
                   <Controller
                     name="title"
@@ -870,8 +883,8 @@ export default function InstitutionalResponsibleModal({
                 </div>
               </div>
 
-              {/* Columna Derecha: Instituciones */}
-               <div className="lg:col-span-1">
+              {/* Tab 2: Instituciones */}
+              <div hidden={tabsState.activeTab !== "instituciones"} role="tabpanel">
                  <label className="mb-2 block text-text-secondary dark:text-white/90 font-bold text-xs uppercase tracking-wider">Empresas o Instituciones *</label>
                 {preselectedInstitutionId ? (
                   <div className="space-y-2">

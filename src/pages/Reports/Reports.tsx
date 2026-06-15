@@ -14,6 +14,7 @@ import { PDFPreviewModal } from "../../components/ui/pdf/PDFPreviewModal";
 import { ReportList } from "../../features/reports/components/ReportList";
 import { DocumentReportModal } from "../../features/reports/components/DocumentReportModal";
 import { ProspectListModal } from "../../features/prospectos/components/ProspectListModal";
+import { ProyeccionModal } from "./ProyeccionModal";
 import { useReports } from "../../features/reports/hooks/useReports";
 import { getReportConfig, DOCUMENT_SECTIONS, ReportType } from "../../features/reports/config/reportConfig";
 import { generateSimpleExcel } from "../../utils/unefaExcelReports";
@@ -44,6 +45,7 @@ export default function ReportsPage() {
   const [pdfSearchTerm, setPdfSearchTerm] = useState("");
   const [loadingExcelId, setLoadingExcelId] = useState<string | null>(null);
   const [isProspectosModalOpen, setIsProspectosModalOpen] = useState(false);
+  const [isProyeccionModalOpen, setIsProyeccionModalOpen] = useState(false);
 
   const [paginationInfo, setPaginationInfo] = useState<{ page: number; totalPages: number; totalRecords: number } | null>(null);
   const activeReportConfigRef = useRef<{ type: string; periodNum?: number } | null>(null);
@@ -111,6 +113,10 @@ export default function ReportsPage() {
   const handleViewReport = useCallback(async (type: string) => {
     if (type === "prospectos") {
       setIsProspectosModalOpen(true);
+      return;
+    }
+    if (type === "proyeccion-pasantias") {
+      setIsProyeccionModalOpen(true);
       return;
     }
     // Documentos oficiales → DocumentReportModal
@@ -419,6 +425,11 @@ export default function ReportsPage() {
         <ProspectListModal
           isOpen={isProspectosModalOpen}
           onClose={() => setIsProspectosModalOpen(false)}
+        />
+
+        <ProyeccionModal
+          isOpen={isProyeccionModalOpen}
+          onClose={() => setIsProyeccionModalOpen(false)}
         />
       </div>
     </>

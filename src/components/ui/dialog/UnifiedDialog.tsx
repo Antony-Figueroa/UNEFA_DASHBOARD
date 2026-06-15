@@ -186,6 +186,7 @@ export const UnifiedDialog: React.FC<UnifiedDialogProps> = ({
                 colors.button
               )}
               loading={showLoading}
+              loadingText={confirmLabel}
             >
               {confirmLabel || "Confirmar"}
             </Button>

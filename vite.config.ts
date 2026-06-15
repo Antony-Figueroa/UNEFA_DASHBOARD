@@ -23,8 +23,8 @@ export default defineConfig(() => {
         registerType: "autoUpdate",
         includeAssets: ["favicon.png", "logo-nuevo.png"],
         manifest: {
-          name: "UNEFA Dashboard",
-          short_name: "UNEFA",
+          name: "SIGP UNEFA",
+          short_name: "SIGP",
           description: "Sistema de Gestión Académica",
           theme_color: "#1e40af",
           background_color: "#f8fafc",

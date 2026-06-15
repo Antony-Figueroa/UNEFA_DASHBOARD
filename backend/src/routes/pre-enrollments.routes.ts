@@ -11,6 +11,7 @@ const router = Router();
 router.get('/', requirePermission('enrollments:view'), preEnrollmentsController.getPreEnrollments);
 router.get('/types-by-student', requirePermission('enrollments:view'), preEnrollmentsController.getTypesByStudent);
 router.post('/', requirePermission('enrollments:create'), validateCreatePreEnrollmentPeriod, preEnrollmentsController.createPreEnrollment);
+router.post('/batch', requirePermission('enrollments:create'), validateCreatePreEnrollmentPeriod, preEnrollmentsController.batchCreatePreEnrollment);
 router.put('/:id', requirePermission('enrollments:edit'), validateUpdatePreEnrollmentPeriod, preEnrollmentsController.updatePreEnrollment);
 router.delete('/:id', requirePermission('enrollments:delete'), preEnrollmentsController.deletePreEnrollment);
 

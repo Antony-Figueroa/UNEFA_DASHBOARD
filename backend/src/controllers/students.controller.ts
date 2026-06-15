@@ -183,7 +183,11 @@ const mapDBToFrontend = (s: DBStudent) => {
     works: s.EMPLOYMENT === "SI" ? "SI" : "NO",
     enrollmentDate: s.REGISTRATION_DATE,
     status: s.STATUS === 1,
-    isInUse: (Array.isArray(s.t_professional_practices) && s.t_professional_practices.length > 0)
+    isInUse: (Array.isArray(s.t_professional_practices) && s.t_professional_practices.length > 0),
+    hasActivePreEnrollment: (Array.isArray(s.t_professional_practices) && s.t_professional_practices.some(p => p.PRACTICES_STATUS === PRACTICES_STATUS.PRE_INSCRITO)),
+    currentPracticeStatus: (Array.isArray(s.t_professional_practices) && s.t_professional_practices.length > 0)
+      ? Math.max(...s.t_professional_practices.map(p => p.PRACTICES_STATUS))
+      : null
   };
 };
 

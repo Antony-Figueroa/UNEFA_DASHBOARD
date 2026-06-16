@@ -154,23 +154,25 @@ export default function PeriodModal({
         }
 
         // Para nuevos periodos, no permitir fechas pasadas respecto a hoy
-        if (!periodo && calculatedMinDate < today) {
-            calculatedMinDate = today;
-        }
-
-        // RESTRICCIÓN CRÍTICA: La fecha mínima no puede ser inferior al inicio del año seleccionado
-        // EXCEPCIÓN: Si estamos editando un periodo que ya empieza antes de ese año, permitimos su fecha original
-        if (minYearDate && calculatedMinDate < minYearDate) {
-            if (periodo && periodo.startDate < minYearDate) {
-                // Si la fecha del periodo es aún menor que calculatedMinDate, usamos la del periodo
-                return periodo.startDate < calculatedMinDate ? periodo.startDate : calculatedMinDate;
+        if (calculatedMinDate !== undefined) {
+            if (!periodo && calculatedMinDate < today) {
+                calculatedMinDate = today;
             }
-            return minYearDate;
-        }
 
-        // Si estamos editando, asegurarnos de que la fecha mínima no sea mayor a la fecha actual del periodo
-        if (periodo && periodo.startDate < calculatedMinDate) {
-            return periodo.startDate;
+            // RESTRICCIÓN CRÍTICA: La fecha mínima no puede ser inferior al inicio del año seleccionado
+            // EXCEPCIÓN: Si estamos editando un periodo que ya empieza antes de ese año, permitimos su fecha original
+            if (minYearDate && calculatedMinDate < minYearDate) {
+                if (periodo && periodo.startDate < minYearDate) {
+                    // Si la fecha del periodo es aún menor que calculatedMinDate, usamos la del periodo
+                    return periodo.startDate < calculatedMinDate ? periodo.startDate : calculatedMinDate;
+                }
+                return minYearDate;
+            }
+
+            // Si estamos editando, asegurarnos de que la fecha mínima no sea mayor a la fecha actual del periodo
+            if (periodo && periodo.startDate < calculatedMinDate) {
+                return periodo.startDate;
+            }
         }
 
         return calculatedMinDate;

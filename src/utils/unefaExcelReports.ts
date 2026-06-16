@@ -790,7 +790,7 @@ export async function generateProyeccionExcel(data: any, period: string, fileNam
     const subStyle = {
       ...DATA_STYLE,
       font: { ...DEFAULT_FONT, bold: true, size: 8 },
-      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } },
+      fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFF2F2F2' } },
     };
 
     // 1. SUB-TOTALES

@@ -281,7 +281,7 @@ export default function DashboardConfigurator() {
                   <span>
                     Widgets Activos
                     <span className="ml-2 text-sm font-normal text-gray-500">
-                      ({activeWidgets.length})
+                      ({dndWidgets.length})
                     </span>
                   </span>
                 }

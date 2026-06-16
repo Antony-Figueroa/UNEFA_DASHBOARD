@@ -21,14 +21,13 @@ export const getPeriodSchema = (existingPeriods: Periodo[], currentPeriodId?: st
     endDate: z.date({
         message: 'La fecha de fin es obligatoria.',
     }),
-    enrollmentGraceDays: z.number().int().min(0, "Mínimo 0 días").max(365, "Máximo 365 días"),
-    evaluationGraceDays: z.number().int().min(0, "Mínimo 0 días").max(365, "Máximo 365 días"),
 }).superRefine((data, ctx) => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     
     // El periodo no puede empezar en una fecha que ya pasó (solo para nuevos periodos)
-    if (!isEditing && data.startDate < now) {
+    // Si no hay periodos registrados (carga inicial), se permite fecha retroactiva
+    if (!isEditing && existingPeriods.length > 0 && data.startDate < now) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: "La fecha de inicio no puede ser una fecha pasada.",

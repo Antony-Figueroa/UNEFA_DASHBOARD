@@ -26,9 +26,9 @@ export interface Periodo {
     /** Indica si el periodo está siendo utilizado por otros registros */
     isInUse?: boolean;
     /** Días de holgura para inscripciones */
-    enrollmentGraceDays: number;
+    enrollmentGraceDays?: number;
     /** Días de holgura para evaluaciones */
-    evaluationGraceDays: number;
+    evaluationGraceDays?: number;
     /** Fecha límite extendida para inscripciones (calculada) */
     graceEndDate?: string;
     /** Fecha límite extendida para evaluaciones (calculada) */

@@ -48,6 +48,7 @@ const StudentDocuments = lazy(() => import("../pages/Student/StudentDocuments"))
 const StudentEvaluations = lazy(() => import("../pages/Student/StudentEvaluations"));
 
 const AdminRequests = lazy(() => import("../pages/Admin/AdminRequests"));
+const AcademicConfigPage = lazy(() => import("../features/academic-config/pages/AcademicConfigPage"));
 
 const EvaluationsList = lazy(() => import("../pages/Evaluations/EvaluationsList"));
 const EvaluationsAndCulmination = lazy(() => import("../pages/EvaluationsAndCulmination/EvaluationsAndCulmination"));
@@ -396,6 +397,14 @@ export const AppRoutes = () => {
               element={
                 <ProtectedRoute requiredPermissions={['config:view']}>
                   <ReminderConfigPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/configure/academic"
+              element={
+                <ProtectedRoute requiredPermissions={['academic-config:edit']}>
+                  <AcademicConfigPage />
                 </ProtectedRoute>
               }
             />

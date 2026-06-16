@@ -360,13 +360,18 @@ export const refreshSession = async (req: AuthRequest, res: Response) => {
       const supabase = dbManager.getClient();
       const dbCheck = await authService.verifySessionInDB(supabase, token);
       if (!dbCheck.valid) {
-        return res.status(403).json({
-          success: false,
-          message: dbCheck.reason === 'SESSION_MAX_AGE_EXCEEDED'
-            ? 'La sesión ha expirado por tiempo máximo. Debe iniciar sesión nuevamente.'
-            : 'La sesión ha sido cerrada.',
-          code: dbCheck.reason
-        });
+        // SESSION_NOT_FOUND: posible reinicio del servidor, permitir refresh para recrear sesión
+        if (dbCheck.reason === 'SESSION_NOT_FOUND') {
+          console.warn(`[Auth] Token sin sesión en DB durante refresh (posible reinicio) para userId=${userId}`);
+        } else {
+          return res.status(403).json({
+            success: false,
+            message: dbCheck.reason === 'SESSION_MAX_AGE_EXCEEDED'
+              ? 'La sesión ha expirado por tiempo máximo. Debe iniciar sesión nuevamente.'
+              : 'La sesión ha sido cerrada.',
+            code: dbCheck.reason
+          });
+        }
       }
     } catch (dbErr) {
       console.error('[Auth] Error en verificación DB durante refresh:', dbErr);

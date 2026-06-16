@@ -53,10 +53,11 @@ export function ProyeccionModal({ isOpen, onClose }: ProyeccionModalProps) {
         }));
         setPeriods(periodOptions);
 
-        const careerData = (Array.isArray(careerList) ? careerList : (careerList as Career)?.data || []).map((c: Career) => ({
+        const careers = Array.isArray(careerList) ? careerList : (careerList as any)?.data || [];
+        const careerData = careers.map((c: Career) => ({
           careerId: c.careerId,
-          careerName: c.careerName || c.career_name,
-          careerType: c.careerType || c.career_type
+          careerName: c.careerName,
+          careerType: c.careerType
         }));
         setCareers(careerData);
       } catch (error) {

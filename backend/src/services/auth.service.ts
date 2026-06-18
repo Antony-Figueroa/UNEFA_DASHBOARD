@@ -324,7 +324,7 @@ export const login = async (userCi: string, password: string, ip: string, userAg
           return { 
             success: false, 
             status: 401, 
-            message: 'Credenciales inválidas.'
+            message: `Credenciales inválidas. Intentos restantes: ${attemptsRemaining}.` 
           };
         }
       } catch (updateError) {

@@ -37,7 +37,7 @@ export default function ExportFormatModal({ isOpen, onClose, onExport, entityLab
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <ModalHeader title={`Exportar ${entityLabel || 'datos'}`} onClose={onClose} />
+      <ModalHeader className="pb-0"><h2 className="text-lg font-bold">Exportar {entityLabel || 'datos'}</h2></ModalHeader>
       <ModalBody>
         <div className="space-y-3 py-2">
           {formatInfo.map(f => (

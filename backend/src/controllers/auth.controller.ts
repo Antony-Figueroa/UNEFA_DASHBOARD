@@ -71,13 +71,16 @@ export const login = async (req: Request, res: Response) => {
     if (result.token) {
       console.log(`[Auth] Generando cookie de sesión para CI: ${userCi}`);
       
-      const maxAge = sessionMinutes * 60 * 1000;
+      // Ponytail: cookie dura 24h para que refresh funcione aunque JWT expire.
+      // La seguridad real está en JWT expiry (KEY_LEGTH, default 60min) +
+      // DB session max age (MAX_SESSION_HOURS, 24h en auth.service.ts).
+      const cookieMaxAge = 24 * 60 * 60 * 1000;
       
       res.cookie('auth_token', result.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        maxAge,
+        maxAge: cookieMaxAge,
         path: '/'
       });
     }
@@ -390,11 +393,13 @@ export const refreshSession = async (req: AuthRequest, res: Response) => {
       console.error('[Auth] Error actualizando sesión en DB durante refresh:', dbErr);
     }
 
+    // Ponytail: misma regla que en login — cookie 24h para que refresh funcione
+    const cookieMaxAge = 24 * 60 * 60 * 1000;
     res.cookie('auth_token', newToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge,
+      maxAge: cookieMaxAge,
       path: '/'
     });
 

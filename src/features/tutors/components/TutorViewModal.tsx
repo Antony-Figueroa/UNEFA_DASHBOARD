@@ -5,6 +5,9 @@
  */
 
 import { useState, useEffect } from "react";
+import AddressList from "../../address/components/AddressList";
+import { addressService } from "../../address/services/addressService";
+import type { GeoOptionsItem } from "../../address/types";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
@@ -57,6 +60,7 @@ export default function TutorViewModal({
     const [careers, setCareers] = useState<Career[]>([]);
     const [reportModalOpen, setReportModalOpen] = useState(false);
     const [constancyModalOpen, setConstancyModalOpen] = useState(false);
+    const [geoOptions, setGeoOptions] = useState<GeoOptionsItem[]>([]);
 
     // Estados para campos editables de la constancia
     const [decanaName, setDecanaName] = useState("MARBELYS DEL VALLE RIVERO");
@@ -76,6 +80,7 @@ export default function TutorViewModal({
     useEffect(() => {
         if (isOpen) {
             getCareers().then(data => setCareers(unwrapData(data))).catch(console.error);
+            addressService.getGeoOptions().then(res => setGeoOptions(res.data)).catch(console.error);
         }
     }, [isOpen]);
 
@@ -125,6 +130,21 @@ export default function TutorViewModal({
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Email</label>
                                 <p className="text-sm text-text-primary dark:text-white/90 break-all uppercase">{tutor.email}</p>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Sección de Dirección */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 border-b border-border-light pb-2 dark:border-white/5">
+                            <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                            <h4 className="font-bold text-text-primary dark:text-white/90 uppercase text-xs tracking-wider">Dirección de Residencia</h4>
+                        </div>
+                        <div className="col-span-full">
+                            <AddressList 
+                                entityType="person"
+                                entityId={Number(tutor.personId)}
+                                geoOptions={geoOptions}
+                            />
                         </div>
                     </div>
 

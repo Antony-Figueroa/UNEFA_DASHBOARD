@@ -5,6 +5,9 @@
  */
 
 import { useState, useRef, useEffect } from "react";
+import AddressList from "../../address/components/AddressList";
+import { addressService } from "../../address/services/addressService";
+import type { GeoOptionsItem } from "../../address/types";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
@@ -51,6 +54,7 @@ export default function InstitutionViewModal({
     const [reportModalOpen, setReportModalOpen] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const [geoOptions, setGeoOptions] = useState<GeoOptionsItem[]>([]);
 
     // Cerrar dropdown al hacer clic fuera
     useEffect(() => {
@@ -62,6 +66,12 @@ export default function InstitutionViewModal({
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        if (isOpen) {
+            addressService.getGeoOptions().then(res => setGeoOptions(res.data)).catch(console.error);
+        }
+    }, [isOpen]);
 
     if (!institution) return null;
 
@@ -147,7 +157,11 @@ export default function InstitutionViewModal({
                             </div>
                             <div className="sm:col-span-3">
                                 <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Dirección Fiscal</label>
-                                <p className="text-sm text-text-primary dark:text-white/90">{institution.fiscalAddress}</p>
+                                <AddressList 
+                                    entityType="institution"
+                                    entityId={Number(institution.institutionId)}
+                                    geoOptions={geoOptions}
+                                />
                             </div>
                         </div>
                     </div>

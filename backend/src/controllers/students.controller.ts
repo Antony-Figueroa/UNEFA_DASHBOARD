@@ -1052,3 +1052,33 @@ export const exportStudents = async (req: Request, res: Response) => {
     handleDbError(res, error);
   }
 };
+
+// ============================================================
+// FULL EXPORT (JSON con todas las relaciones)
+// ============================================================
+
+export const exportFullStudents = async (req: Request, res: Response) => {
+  try {
+    const format = (req.query.format as string) || 'json';
+    const svc = await import('../services/export.service.js');
+
+    if (format === 'sql') {
+      const sql = await svc.exportStudentsSql();
+      res.setHeader('Content-Type', 'application/sql');
+      res.setHeader('Content-Disposition', `attachment; filename="estudiantes-${new Date().toISOString().split('T')[0]}.sql"`);
+      return res.send(sql);
+    }
+    if (format === 'csv') {
+      const csv = await svc.exportStudentsCsv();
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="estudiantes-${new Date().toISOString().split('T')[0]}.csv"`);
+      return res.send(csv);
+    }
+
+    const data = await svc.exportStudents();
+    res.json(data);
+  } catch (error: unknown) {
+    console.error('[exportFullStudents] Error:', error);
+    handleDbError(res, error);
+  }
+};

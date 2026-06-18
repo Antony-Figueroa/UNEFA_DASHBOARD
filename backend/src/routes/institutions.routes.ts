@@ -10,13 +10,15 @@ import {
   toggleInstitutionStatus,
   getInstitutionStats,
   getInstitutionCareers,
-  updateInstitutionCareers
+  updateInstitutionCareers,
+  exportFullInstitutions
 } from '../controllers/institutions.controller.js';
 import { authenticateToken, requirePermission } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
 router.get('/', authenticateToken, requirePermission('institutions:view'), getInstitutions);
+router.get('/export', authenticateToken, requirePermission('institutions:view'), exportFullInstitutions);
 router.get('/stats', authenticateToken, requirePermission('institutions:view'), getInstitutionStats);
 router.get('/by-rif/:rif', authenticateToken, getInstitutionByRif);
 router.get('/check-rif/:rif', authenticateToken, checkRifExists);

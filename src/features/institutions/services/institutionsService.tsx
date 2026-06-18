@@ -58,6 +58,39 @@ export const deleteInstitution = institutionService.delete;
 export const toggleInstitutionStatus = institutionService.toggleStatus!;
 
 /**
+ * Descarga instituciones en el formato seleccionado.
+ * @param format - 'json', 'sql', o 'csv'
+ */
+export const exportFullInstitutions = async (format: 'json' | 'sql' | 'csv' = 'json'): Promise<void> => {
+  try {
+    const response = await apiClient.get(`/institutions/export`, {
+      params: { format },
+      responseType: 'blob',
+    });
+
+    const blob = response.data as Blob;
+    const ext = format === 'json' ? 'json' : format === 'sql' ? 'sql' : 'csv';
+    const stamp = new Date().toISOString().split('T')[0];
+
+    if (format === 'json') {
+      const text = await blob.text();
+      const pretty = JSON.stringify(JSON.parse(text), null, 2);
+      const jsonBlob = new Blob([pretty], { type: 'application/json' });
+      const url = URL.createObjectURL(jsonBlob);
+      const a = document.createElement('a'); a.href = url; a.download = `instituciones-${stamp}.json`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `instituciones-${stamp}.${ext}`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+  } catch (error) {
+    console.error('[institutionsService] Error al exportar instituciones:', error);
+    throw error;
+  }
+};
+
+/**
  * Obtiene una institución por su RIF.
  * @param rif - RIF de la institución (formato: J-123456789)
  */

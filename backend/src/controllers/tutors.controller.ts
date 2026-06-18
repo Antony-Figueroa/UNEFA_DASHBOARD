@@ -678,3 +678,33 @@ export const getTutorByCi = async (req: Request, res: Response) => {
     handleDbError(res, error);
   }
 };
+
+// ============================================================
+// FULL EXPORT (JSON con todas las relaciones)
+// ============================================================
+
+export const exportFullTutors = async (req: Request, res: Response) => {
+  try {
+    const format = (req.query.format as string) || 'json';
+    const svc = await import('../services/export.service.js');
+
+    if (format === 'sql') {
+      const sql = await svc.exportTutorsSql();
+      res.setHeader('Content-Type', 'application/sql');
+      res.setHeader('Content-Disposition', `attachment; filename="tutores-${new Date().toISOString().split('T')[0]}.sql"`);
+      return res.send(sql);
+    }
+    if (format === 'csv') {
+      const csv = await svc.exportTutorsCsv();
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="tutores-${new Date().toISOString().split('T')[0]}.csv"`);
+      return res.send(csv);
+    }
+
+    const data = await svc.exportTutors();
+    res.json(data);
+  } catch (error: unknown) {
+    console.error('[exportFullTutors] Error:', error);
+    handleDbError(res, error);
+  }
+};

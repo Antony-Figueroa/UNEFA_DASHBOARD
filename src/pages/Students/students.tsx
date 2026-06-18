@@ -18,7 +18,7 @@ import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
 import { FileText, Download } from "lucide-react";
-import { DownloadIcon } from "../../icons";
+import { ArrowUpIcon } from "../../icons";
 import StudentTable from "../../features/students/components/StudentTable";
 import StudentModal from "../../features/students/components/StudentModal";
 import StudentViewModal from "../../features/students/components/StudentViewModal";
@@ -44,6 +44,8 @@ import { ListValue } from "../../features/lists/types";
 import { formatDateTime } from "../../utils/date";
 import { exportToExcel, ExportColumn } from "../../utils/excel";
 import { matchSearch } from "../../utils/searchNormalizer";
+import ExportFormatModal, { ExportFormat } from "../../components/common/ExportFormatModal";
+import { exportFullStudents } from "../../features/students/services/studentsService";
 
 /**
  * Transforma un objeto de tipo Student (dominio) a StudentRowData (vista).
@@ -144,6 +146,7 @@ export default function StudentsPage() {
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [viewStudent, setViewStudent] = useState<StudentRowData | null>(null);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
     const [batchStudentIds, setBatchStudentIds] = useState<string[]>([]);
     const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
@@ -455,6 +458,13 @@ export default function StudentsPage() {
                             >
                                 Importar
                             </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsExportModalOpen(true)}
+                                startIcon={<ArrowUpIcon className="h-5 w-5" />}
+                            >
+                                Exportación
+                            </Button>
                             <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
                                 Nuevo Estudiante
                             </Button>
@@ -546,6 +556,13 @@ export default function StudentsPage() {
                         onComplete={() => {
                             refreshStudents();
                         }}
+                    />
+
+                    <ExportFormatModal
+                        isOpen={isExportModalOpen}
+                        onClose={() => setIsExportModalOpen(false)}
+                        onExport={(format: ExportFormat) => exportFullStudents(format)}
+                        entityLabel="estudiantes"
                     />
 
                     <ImportStudentsModal

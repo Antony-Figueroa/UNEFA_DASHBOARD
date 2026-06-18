@@ -287,6 +287,49 @@ export const downloadTemplate = async (): Promise<Blob> => {
   }
 };
 
+/**
+ * Descarga estudiantes en el formato seleccionado.
+ * @param format - 'json' (completo con relaciones), 'sql' (INSERTs), 'csv' (plano)
+ */
+export const exportFullStudents = async (format: 'json' | 'sql' | 'csv' = 'json'): Promise<void> => {
+  try {
+    const response = await apiClient.get(`${API_URL}/export/full`, {
+      params: { format },
+      responseType: 'blob',
+    });
+
+    const blob = response.data as Blob;
+    const ext = format === 'json' ? 'json' : format === 'sql' ? 'sql' : 'csv';
+
+    if (format === 'json') {
+      const text = await blob.text();
+      const pretty = JSON.stringify(JSON.parse(text), null, 2);
+      const jsonBlob = new Blob([pretty], { type: 'application/json' });
+      downloadBlob(jsonBlob, `estudiantes-${dateStamp()}.json`);
+    } else {
+      downloadBlob(blob, `estudiantes-${dateStamp()}.${ext}`);
+    }
+  } catch (error) {
+    console.error('[studentsService] Error al exportar estudiantes:', error);
+    throw error;
+  }
+};
+
+function dateStamp(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export const importStudents = async (data: Record<string, unknown>[]): Promise<ImportResult> => {
   try {
     const response = await apiClient.post(`${API_URL}/import`, { students: data });

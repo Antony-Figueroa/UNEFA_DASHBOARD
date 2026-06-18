@@ -17,7 +17,7 @@ import { DialogVariant } from "../../components/ui/dialog/DialogConfig";
 import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { PlusCircleIcon } from "../../icons/actions";
-import { DownloadIcon } from "../../icons";
+import { ArrowUpIcon, DownloadIcon } from "../../icons";
 
 import TutorTable from "../../features/tutors/components/TutorTable";
 import TutorModal from "../../features/tutors/components/TutorModal";
@@ -31,6 +31,8 @@ import { useLists } from "../../features/lists/hooks/useLists";
 import { useCareers } from "../../features/careers/hooks/useCareers";
 import { matchSearch } from "../../utils/searchNormalizer";
 import { toTitleCase } from "../../utils/textFormat";
+import ExportFormatModal, { ExportFormat } from "../../components/common/ExportFormatModal";
+import { exportFullTutors } from "../../features/tutors/services/tutorsService";
 
 /**
  * Transforma un objeto de tipo Tutor (dominio) a TutorRowData (vista).
@@ -141,6 +143,7 @@ export default function TutorsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTutor, setEditingTutor] = useState<Tutor | null>(null);
     const [viewTutor, setViewTutor] = useState<TutorRowData | null>(null);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isPDFModalOpen, setIsPDFModalOpen] = useState(false);
     const [pdfSearchTerm, setPdfSearchTerm] = useState("");
     const [pdfCareerFilter, setPdfCareerFilter] = useState("");
@@ -364,6 +367,13 @@ export default function TutorsPage() {
                             >
                                 Reporte
                             </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsExportModalOpen(true)}
+                                startIcon={<ArrowUpIcon className="h-5 w-5" />}
+                            >
+                                Exportación
+                            </Button>
                             <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
                                 Nuevo Tutor
                             </Button>
@@ -418,6 +428,13 @@ export default function TutorsPage() {
                         onClose={() => setViewTutor(null)}
                         onEdit={handleEdit}
                         tutor={viewTutor}
+                    />
+
+                    <ExportFormatModal
+                        isOpen={isExportModalOpen}
+                        onClose={() => setIsExportModalOpen(false)}
+                        onExport={(format: ExportFormat) => exportFullTutors(format)}
+                        entityLabel="tutores"
                     />
 
                     <PDFPreviewModal

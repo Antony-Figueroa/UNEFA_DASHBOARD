@@ -13,7 +13,8 @@ import {
   lookupStudentCi,
   changeStudentRegistration,
   importStudents,
-  exportStudents
+  exportStudents,
+  exportFullStudents
 } from '../controllers/students.controller.js';
 import { validateImport, executeImport, getTemplate } from '../controllers/students-import.controller.js';
 import { authenticateToken, requirePermission } from '../middlewares/auth.middleware.js';
@@ -46,6 +47,7 @@ router.get('/check-availability', authenticateToken, checkIdAvailability);
 router.get('/by-ci/:ci', authenticateToken, getStudentByCi);
 router.get('/lookup-ci/:ci', authenticateToken, lookupStudentCi);
 router.get('/export', authenticateToken, requirePermission('students:view'), exportStudents);
+router.get('/export/full', authenticateToken, requirePermission('students:view'), exportFullStudents);
 router.get('/import/template', authenticateToken, requirePermission('students:create'), getTemplate);
 router.get('/:id', authenticateToken, requirePermission('students:view'), getStudentById);
 router.post('/', authenticateToken, requirePermission('students:create'), createStudent);

@@ -16,7 +16,7 @@ import Button from "../../components/ui/button/Button";
 import { SkeletonLoader, TitleSkeleton, BreadcrumbSkeleton, TablePageSkeleton } from "../../components/ui/skeleton";
 import { Tabs } from "../../components/ui/tabs/Tabs";
 import { PlusCircleIcon } from "../../icons/actions";
-import { DownloadIcon } from "../../icons";
+import { ArrowUpIcon, DownloadIcon } from "../../icons";
 import InstitutionTable from "../../features/institutions/components/InstitutionTable";
 import InstitutionModal from "../../features/institutions/components/InstitutionModal";
 import InstitutionViewModal from "../../features/institutions/components/InstitutionViewModal";
@@ -45,6 +45,8 @@ import { formatDateTime } from "../../utils/date";
 import { matchSearch } from "../../utils/searchNormalizer";
 
 import { useLists } from "../../features/lists/hooks/useLists";
+import ExportFormatModal, { ExportFormat } from "../../components/common/ExportFormatModal";
+import { exportFullInstitutions } from "../../features/institutions/services/institutionsService";
 
 const formatInstToRow = (i: Institution): InstitutionRowData => ({
   ...i,
@@ -152,6 +154,7 @@ export default function InstitutionsPage() {
   const [isSelectRespModalOpen, setIsSelectRespModalOpen] = useState(false);
   const [editingResp, setEditingResp] = useState<InstitutionalResponsible | null>(null);
   const [viewResp, setViewResp] = useState<InstitutionalResponsibleRowData | null>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isInstPDFModalOpen, setIsInstPDFModalOpen] = useState(false);
   const [isRespPDFModalOpen, setIsRespPDFModalOpen] = useState(false);
 
@@ -444,6 +447,13 @@ export default function InstitutionsPage() {
                   >
                     Reporte
                   </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsExportModalOpen(true)}
+                    startIcon={<ArrowUpIcon className="h-5 w-5" />}
+                  >
+                    Exportación
+                  </Button>
                   <Button onClick={handleOpenAddModal} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
                     {mainTab === "Instituciones" ? "Nueva Empresa o Institución" : "Nuevo Responsable"}
                   </Button>
@@ -676,6 +686,13 @@ export default function InstitutionsPage() {
             console.error("Error linking existing responsible:", error);
           }
         }}
+      />
+
+      <ExportFormatModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        onExport={(format: ExportFormat) => exportFullInstitutions(format)}
+        entityLabel="instituciones"
       />
 
       <PDFPreviewModal

@@ -5,13 +5,15 @@ import {
   updateTutor, 
   deleteTutor, 
   toggleTutorStatus,
-  getTutorByCi
+  getTutorByCi,
+  exportFullTutors
 } from '../controllers/tutors.controller.js';
 import { requirePermission } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
 router.get('/', requirePermission('tutors:view'), getTutors);
+router.get('/export', requirePermission('tutors:view'), exportFullTutors);
 router.get('/by-ci/:ci', requirePermission('tutors:view'), getTutorByCi);
 router.post('/', requirePermission('tutors:create'), createTutor);
 router.put('/:id', requirePermission('tutors:edit'), updateTutor);

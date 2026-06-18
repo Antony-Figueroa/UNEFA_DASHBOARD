@@ -8,9 +8,10 @@
 
 **UNEFA Dashboard** es un sistema de gestión académica completo diseñado para universidades.
 
-- **Tipo**: Full-stack Web Application (Admin Dashboard)
+- **Tipo**: Full-stack Web Application (Admin Dashboard) + Desktop App (Electron)
 - **Versión**: 2.2.0
 - **Core Value**: Arquitectura robusta y escalable para gestión académica integral
+- **SIGP**: Sistema de Información para la Gestión de Pasantías
 - **Language**: Global Spanish (es)
 - **Licencia**: MIT
 
@@ -18,41 +19,60 @@
 
 ## 2. Tech Stack
 
-
 ### Frontend (`/`)
 
-- **Framework**: React 19 + Vite 6
-- **Lenguaje**: TypeScript 5.7.2 (strict mode)
-- **Styling**: Tailwind CSS v4 + Variables CSS Semánticas
-- **State/Logic**: React Hooks (Custom), Context API (Global)
-- **Routing**: React Router 7 (lazy loading)
-- **Forms**: React Hook Form + Zod
-- **HTTP Client**: Axios (con interceptores)
-- **UI Libs**: ApexCharts, FullCalendar, Framer Motion, React Hot Toast, Lucide React
-- **PDF**: @react-pdf/renderer
-
-
-
-
+| Categoría | Tecnología |
+|-----------|-----------|
+| **Framework** | React 19 + Vite 6 |
+| **Lenguaje** | TypeScript 5.7.2 (strict mode) |
+| **Styling** | Tailwind CSS v4 + Variables CSS Semánticas |
+| **Routing** | React Router 7 (lazy loading, 40+ routes) |
+| **Forms/Validation** | React Hook Form + Zod 4 |
+| **HTTP Client** | Axios (interceptores con auto-refresh, retry exponencial) |
+| **Charts** | ApexCharts + react-apexcharts, react-jvectormap |
+| **Calendar** | FullCalendar (daygrid, timegrid, list, interaction) |
+| **Animation** | Framer Motion 12 + Motion |
+| **Maps** | MapLibre GL (mapas base CartoDB, OSM, ArcGIS) |
+| **UI Icons** | Lucide React, React Icons |
+| **UI Components** | Flatpickr, Swiper 11, react-dropzone, react-dnd, react-markdown + remark-gfm |
+| **Notifications** | React Hot Toast |
+| **3D/Particles** | tsParticles + OGL |
+| **PDF** | @react-pdf/renderer |
+| **PWA** | vite-plugin-pwa (service worker, offline manifest) |
+| **Analytics** | @vercel/analytics |
+| **Desktop** | Electron 42 + electron-builder (NSIS installer) |
+| **Testing** | Vitest + @testing-library/react, Playwright E2E |
+| **Storybook** | Storybook 8 (addon-essentials, interactions, test) |
 
 ### Backend (`/backend`)
 
-- **Runtime**: Node.js >= 18.x
-- **Framework**: Express.js 4.22
-- **Language**: TypeScript
-- **Auth**: JWT + Bcryptjs
-- **Database Client**: Supabase JS (PostgreSQL)
-- **Security**: Helmet, CORS
-
-
-
+| Categoría | Tecnología |
+|-----------|-----------|
+| **Runtime** | Node.js >= 18.x |
+| **Framework** | Express.js 4.22 |
+| **Language** | TypeScript 5.7 |
+| **Auth** | JWT + Bcryptjs + cookie-parser (sesiones vía cookies httpOnly) |
+| **DB Client** | Supabase JS (PostgreSQL) + Prisma ORM |
+| **DB Adapter** | DatabaseManager singleton: cloud (Supabase) + offline (PGlite WASM) |
+| **Security** | Helmet (CSP estricto), CORS dinámico |
+| **Email** | Resend + Nodemailer |
+| **AI** | Google Gemini (primary), Groq (fallback), OpenRouter |
+| **External APIs** | Cédula API (validación de identidad venezolana) |
+| **File Upload** | Multer |
+| **Excel** | exceljs + xlsx (import/export) |
+| **Testing** | Vitest + Supertest |
 
 ### Infrastructure
 
-- **Database**: Supabase (PostgreSQL managed)
-- **Containerization**: Docker + Docker Compose
-- **Deployment**: Vercel (Frontend), Railway/Render (Backend)
-- **Analytics**: Vercel Analytics
+| Categoría | Tecnología |
+|-----------|-----------|
+| **Database** | Supabase (PostgreSQL managed) |
+| **Frontend Host** | Vercel (SPA + API proxy a Render) |
+| **Backend Host** | Render (Node.js web service) |
+| **Container** | Docker + Docker Compose (multi-stage, Node 20 Alpine) |
+| **Desktop** | Electron 42 + PGlite (PostgreSQL WASM local) |
+| **CI/CD** | GitHub Actions |
+| **PWA** | Service Worker con runtime caching, auto-update |
 
 
 
@@ -60,75 +80,94 @@
 
 ## 3. Architecture
 
-- **Runtime**: Node.js >= 18.x
-- **Framework**: Express.js 4.22
-- **Language**: TypeScript
-- **Auth**: JWT + Bcryptjs
-- **Database Client**: Supabase JS (PostgreSQL)
-- **Security**: Helmet, CORS
-
 ```text
+Flujo de datos:
 1. UI Components → Eventos del usuario
-2. Pages → Orchestación de features
+2. Pages → Orquestación de features
 3. Hooks (features/*/hooks) → Estado y lógica de negocio
 4. Services (features/*/services) → Comunicación con API
 5. Backend Routes (backend/src/routes) → Recepción de requests
 6. Controllers (backend/src/controllers) → Ejecución de lógica
-7. DB Layer → Interacción con Supabase
+7. DB Layer → DatabaseManager (cloud: Supabase | offline: PGlite WASM)
+
+Modo Desktop (Electron):
+- PGliteAdapter reemplaza a SupabaseClient localmente
+- SyncService sincroniza datos Supabase → PGlite al iniciar
+- Los controllers no cambian: usan dbManager.getConnection()
 ```
 
 ### Directory Structure Key
 
 src/
-├── features/          # Self-contained modules (24 features)
-│   ├── auth/
-│   ├── periods/
-│   ├── careers/
-│   ├── students/
-│   ├── tutors/
-│   ├── institutions/
-│   ├── enrollment/
-│   ├── pre-enrollment/
-│   ├── tracking/
-│   ├── evaluations/
+├── features/          # Self-contained modules (41 features)
+│   ├── academic-config/
 │   ├── activity-logs/
-│   ├── documents/
-│   ├── student-requests/
-│   ├── notifications/
-│   ├── theme/
-│   ├── users/
+│   ├── address/
+│   ├── ai-assistant/
+│   ├── auth/
+│   ├── backup/
+│   ├── careers/
+│   ├── config/
+│   ├── culmination/
 │   ├── dashboard/
-│   ├── tutor/
-│   ├── student/
+│   ├── documents/
+│   ├── enrollment/
+│   ├── evaluations/
+│   ├── evaluations-culmination/
+│   ├── institutions/
 │   ├── internship-home/
 │   ├── internship-types/
+│   ├── landing-config/
 │   ├── lists/
-│   ├── backups/
-│   └── types/
+│   ├── manuals/
+│   ├── notifications/
+│   ├── periods/
+│   ├── permissions/
+│   ├── persons/
+│   ├── pre-enrollment/
+│   ├── prospectos/
+│   ├── reminders/
+│   ├── reports/
+│   ├── roles/
+│   ├── security-questions/
+│   ├── student/
+│   ├── student-detail/
+│   ├── student-requests/
+│   ├── students/
+│   ├── tracking/
+│   ├── tutor/
+│   ├── tutors/
+│   ├── types/
+│   ├── users/
+│   └── visits/
 │
 ├── api/               # Centralized Axios instance + factories
-├── components/        # Shared components (UI, Form, Common, Theme)
+├── components/        # Shared components (UI, Form, Common, Theme, auth, charts, etc.)
 ├── layout/            # Main layout shell (Sidebar, Header)
-├── pages/             # 40+ route pages
-├── routes/            # Route definitions (lazy loaded)
-├── context/           # Global contexts (Auth, Theme, etc.)
-├── hooks/             # 9 shared hooks
+├── pages/             # 33 route pages (lazy loaded)
+├── routes/            # Route definitions (lazy loaded, 40+ routes)
+├── context/           # 6 Global contexts (Auth, Theme, Sidebar, Tab, Toast, DbStatus)
+├── hooks/             # 16 shared hooks
 └── theme/             # Brand colors system (8 palettes)
 
 backend/src/
-├── controllers/       # 20 controllers (business logic)
-├── routes/            # 20 route files (endpoints)
-├── middlewares/       # Auth, validation, error handling
-├── services/          # Email, SSE, external integrations
-├── migrations/        # SQL migrations
-└── lib/               # Supabase client, utilities
+├── controllers/       # 49 controllers (business logic)
+├── routes/            # 51 route files (endpoints)
+├── middlewares/       # Auth, validation, error handling, rate-limit
+├── services/          # 43 services (email, AI, sync, SSE, schedulers, RAG, etc.)
+├── migrations/        # 22 SQL migrations
+├── lib/               # Database adapters, cache, performance middleware
+├── config/            # System configuration
+├── interfaces/        # TypeScript interfaces
+├── models/            # Data models
+└── utils/             # Utility functions
 ```
 
 ---
 
 ## 4. Features Map
 
-### Sistema de Módulos (24 Features)
+### Sistema de Módulos (41 Features)
 
 | Feature | Descripción | Endpoints | Componentes Clave |
 | --------- | ------------- | ----------- | ------------------- |
@@ -156,6 +195,24 @@ backend/src/
 | **lists** | Configuración de listas | `/api/lists` | ListConfig |
 | **backups** | Respaldos de BD | `/api/backups` | BackupList, BackupCreate |
 | **types** | Tipos compartidos | - | TypeScript definitions |
+| **academic-config** | Config. académica (días gracia) | `/api/academic-config` | GraceConfigForm |
+| **address** | Datos geográficos (estados/municipios) | `/api/address` | AddressSelector |
+| **ai-assistant** | Asistente IA (Gemini/Groq) | `/api/ai` | ChatInterface, AIButton |
+| **config** | Configuración del sistema | `/api/config` | SystemSettings |
+| **culmination** | Culminación de pasantías | `/api/culmination` | CulminationForm |
+| **evaluations-culmination** | Vista unificada eval+culminación | - | EvaluationsAndCulmination |
+| **landing-config** | Config. landing page pública | `/api/landing-config` | LandingConfigurator |
+| **manuals** | Manuales y documentos institucionales | `/api/manuals` | ManualsList |
+| **permissions** | Permisos del sistema | `/api/permissions` | PermissionsMatrix |
+| **persons** | Personas (registro unificado) | `/api/persons` | PersonForm |
+| **prospectos** | Prospectos/postulantes | `/api/prospects` | ProspectTable |
+| **reminders** | Recordatorios automáticos | `/api/reminder-config` | ReminderConfigPage |
+| **reports** | Reportes exportables (Excel/PDF) | `/api/reports` | ReportsPage |
+| **roles** | Roles de usuario | `/api/roles` | RolesPermissions |
+| **security-questions** | Preguntas de seguridad | `/api/security-questions` | SecurityQuestionsForm |
+| **student-detail** | Detalle de estudiante | - | StudentDetailView |
+| **visits** | Visitas de seguimiento | `/api/visits` | VisitForm |
+| **config** | Configuración del sistema | `/api/dashboard-config` | DashboardConfigurator |
 
 
 ### Estructura de un Feature (Patrón Estándar)
@@ -385,6 +442,8 @@ const addPeriod = async (data: PeriodData) => {
 
 ## 7. Important Files & Directories
 
+| Path | Description |
+| ------ | ------------- |
 | Path | Description |
 | ------ | ------------- |
 | [`src/api/apiClient.ts`](file:///c:/Users/Server%20Admin/Documents/GitHub/UNEFA_DASHBOARD/src/api/apiClient.ts) | Cliente Axios con interceptores (auth, retries, errors) |
@@ -636,7 +695,11 @@ docker-compose logs -f [service] # View logs
 - **Supabase Docs**: https://supabase.com/docs
 - **React Hook Form**: https://react-hook-form.com/
 - **Zod**: https://zod.dev/
-
----
-
-**💡 Para análisis arquitectónico completo, ver [analisis_arquitectonico.md](file:///C:/Users/Server%20Admin/.gemini/antigravity/brain/dfdf19b2-b679-41e5-8b88-5807eeb8b79c/analisis_arquitectonico.md)**
+- **Electron**: https://www.electronjs.org/docs
+- **PGlite**: https://pglite.dev/
+- **Framer Motion**: https://motion.dev/
+- **MapLibre GL**: https://maplibre.org/
+- **Playwright**: https://playwright.dev/
+- **Storybook**: https://storybook.js.org/
+- **Render**: https://render.com/docs
+- **Vercel**: https://vercel.com/docs**

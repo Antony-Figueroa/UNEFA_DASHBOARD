@@ -832,3 +832,33 @@ export const updateInstitutionCareers = async (req: AuthRequest, res: Response) 
 function ArrayOfCareers(careers: unknown): boolean {
   return Array.isArray(careers) && careers.every(c => typeof c === 'number' || typeof c === 'string');
 }
+
+// ============================================================
+// FULL EXPORT (JSON con todas las relaciones)
+// ============================================================
+
+export const exportFullInstitutions = async (req: Request, res: Response) => {
+  try {
+    const format = (req.query.format as string) || 'json';
+    const svc = await import('../services/export.service.js');
+
+    if (format === 'sql') {
+      const sql = await svc.exportInstitutionsSql();
+      res.setHeader('Content-Type', 'application/sql');
+      res.setHeader('Content-Disposition', `attachment; filename="instituciones-${new Date().toISOString().split('T')[0]}.sql"`);
+      return res.send(sql);
+    }
+    if (format === 'csv') {
+      const csv = await svc.exportInstitutionsCsv();
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="instituciones-${new Date().toISOString().split('T')[0]}.csv"`);
+      return res.send(csv);
+    }
+
+    const data = await svc.exportInstitutions();
+    res.json(data);
+  } catch (error: unknown) {
+    console.error('[exportFullInstitutions] Error:', error);
+    handleDbError(res, error);
+  }
+};

@@ -412,6 +412,7 @@ export const refreshSession = async (req: AuthRequest, res: Response) => {
 
 export const changePassword = async (req: Request, res: Response) => {
   const { userId, newPassword, securityQuestions, profileData, currentPassword } = req.body;
+  const token = req.cookies?.auth_token;
 
   if (!userId || !newPassword) {
     return res.status(400).json({ message: 'ID de usuario y nueva contraseña son requeridos' });
@@ -420,6 +421,11 @@ export const changePassword = async (req: Request, res: Response) => {
   const passwordValidation = await validatePassword(newPassword);
   if (!passwordValidation.isValid) {
     return res.status(400).json({ message: passwordValidation.message });
+  }
+
+  // Si no es primer login (no hay profileData), exigir contraseña actual
+  if (!currentPassword && !profileData) {
+    return res.status(400).json({ success: false, message: 'Debe proporcionar su contraseña actual' });
   }
 
   if (currentPassword) {
@@ -431,6 +437,13 @@ export const changePassword = async (req: Request, res: Response) => {
 
   try {
     const result = await authService.changePassword(userId, newPassword, securityQuestions, profileData);
+
+    // Revocar el token actual en blacklist (cubre tokens que no estén en t_user_sessions)
+    if (result.success && token) {
+      const decoded = decodeToken(token) as { userCi?: string } | null;
+      authService.revokeToken(token, userId, decoded?.userCi || '');
+    }
+
     res.json(result);
   } catch (error) {
     handleAuthError(res, error);

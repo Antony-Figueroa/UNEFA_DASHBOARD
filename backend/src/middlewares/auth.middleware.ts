@@ -23,6 +23,36 @@ export const ROLES = {
 
 const expiredTokensLogged = new Set<string>();
 
+/**
+ * Middleware específico para /auth/refresh.
+ * A diferencia de authenticateToken, NO rechaza tokens EXPIRADOS.
+ * Solo verifica: cookie existe, no está revocada, se puede decodificar.
+ * Esto permite renovar el JWT aunque haya expirado (rompe el deadlock
+ * donde necesitás token válido para refrescar pero el token expiró).
+ */
+export const refreshAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const token = req.cookies?.auth_token;
+
+  if (!token) {
+    return res.status(401).json({ message: 'Sesión no iniciada' });
+  }
+
+  // Verificar blacklist
+  const { revoked } = authService.isTokenRevoked(token);
+  if (revoked) {
+    return res.status(403).json({ message: 'Sesión cerrada', code: 'SESSION_REVOKED' });
+  }
+
+  // Decodificar SIN verificar expiración (clave: acepta tokens expirados)
+  const decoded = decodeToken(token) as { userId?: number; userCi?: string; role?: number } | null;
+  if (!decoded?.userId || !decoded?.userCi) {
+    return res.status(401).json({ message: 'Token inválido' });
+  }
+
+  req.user = decoded as UserPayload;
+  next();
+};
+
 export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const token = req.cookies?.auth_token;
   const ip = req.ip || '';

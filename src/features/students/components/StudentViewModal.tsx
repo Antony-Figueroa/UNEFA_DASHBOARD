@@ -4,7 +4,7 @@
  * Mantiene la consistencia visual con el estándar del sistema.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
@@ -12,6 +12,9 @@ import { StudentRowData } from "../types";
 import { SingleReportModal } from "../../../components/ui/pdf/SingleReportModal";
 import { StudentIndividualPDF } from "../../../components/ui/pdf/templates/individual";
 import { toTitleCase } from "../../../utils/textFormat";
+import AddressList from "../../address/components/AddressList";
+import { addressService } from "../../address/services/addressService";
+import type { GeoOptionsItem } from "../../address/types";
 
 /**
  * Propiedades del componente StudentViewModal.
@@ -47,6 +50,13 @@ export default function StudentViewModal({
     student,
 }: StudentViewModalProps) {
     const [reportModalOpen, setReportModalOpen] = useState(false);
+    const [geoOptions, setGeoOptions] = useState<GeoOptionsItem[]>([]);
+
+    useEffect(() => {
+        if (isOpen) {
+            addressService.getGeoOptions().then(res => setGeoOptions(res.data)).catch(console.error);
+        }
+    }, [isOpen]);
 
     if (!student) return null;
 
@@ -103,8 +113,11 @@ export default function StudentViewModal({
                                 <p className="text-sm text-text-primary dark:text-white/90 break-all">{student.email}</p>
                             </div>
                             <div className="col-span-full">
-                                <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest block mb-1">Dirección de Habitación</label>
-                                <p className="text-sm text-text-primary dark:text-white/90">{toTitleCase(student.address) || "-"}</p>
+                                <AddressList 
+                                    entityType="person"
+                                    entityId={Number(student.personId)}
+                                    geoOptions={geoOptions}
+                                />
                             </div>
                         </div>
                     </div>

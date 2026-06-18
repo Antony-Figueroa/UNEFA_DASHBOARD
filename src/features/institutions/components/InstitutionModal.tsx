@@ -401,7 +401,6 @@ export default function InstitutionModal({
           "Nucleo",
           "Extensión",
           "Tipo de empresa",
-          "ESTADOS_VENEZUELA",
           "TIPO DE PRACTICA"
         ];
         const data = await fetchMultipleLists(listNames);

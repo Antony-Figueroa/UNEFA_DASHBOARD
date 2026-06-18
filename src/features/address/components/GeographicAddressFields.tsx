@@ -111,7 +111,11 @@ export default function GeographicAddressFields({
     if (!estado) return [];
     const municipio = estado.t_municipio.find(m => m.municipio_id === selectedMunicipioId);
     if (!municipio) return [];
-    return municipio.t_parroquia.map(p => ({ value: String(p.parroquia_id), label: p.name }));
+    
+    // Ponytail: parche temporal hasta corregir la BD (Agua Blanca no pertenece a Araure)
+    return municipio.t_parroquia
+      .filter(p => !(municipio.name === 'Araure' && p.name === 'Agua Blanca'))
+      .map(p => ({ value: String(p.parroquia_id), label: p.name }));
   }, [geoOptions, selectedEstadoId, selectedMunicipioId]);
 
   const handleStreetChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -199,6 +203,7 @@ export default function GeographicAddressFields({
         <div>
           <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{parroquiaLabel}</label>
           <CustomSelect
+            key={`parroquia-select-${selectedMunicipioId}`}
             options={parroquiaOptions}
             value={selectedParroquiaId ? String(selectedParroquiaId) : ''}
             onChange={handleParroquiaChange}

@@ -58,3 +58,6 @@ openspec/
 
 # Backend build output
 backend/dist/
+
+# Database backup dumps
+backups/

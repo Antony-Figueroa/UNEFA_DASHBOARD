@@ -1,3 +1,4 @@
+import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase.js';
 
 // ─── Mappers (duplicated from students.controller to avoid circular dep) ───
@@ -681,6 +682,84 @@ export async function exportInstitutionsSql(): Promise<string> {
 
   sql += sqlFooter();
   return sql;
+}
+
+// ─── EXPORT: Students XLSX (import-compatible) ───
+
+export async function exportStudentsXlsx(): Promise<Buffer> {
+  const json = await exportStudents();
+
+  // Cache de carreras: careerId -> name
+  const careerIds = new Set<number>();
+  json.data.forEach((s: any) => {
+    (s.practices || []).forEach((p: any) => {
+      if (p.CAREER_ID) careerIds.add(p.CAREER_ID);
+    });
+  });
+
+  const careerMap = new Map<number, string>();
+  if (careerIds.size > 0) {
+    const { data: careers } = await supabase
+      .from('t_career')
+      .select('CAREER_ID, CAREER_NAME')
+      .in('CAREER_ID', [...careerIds]);
+    (careers || []).forEach((c: any) => careerMap.set(c.CAREER_ID, c.CAREER_NAME));
+  }
+
+  const headers = [
+    'PREFIJO_CI', 'CEDULA', 'PRIMER_NOMBRE', 'SEGUNDO_NOMBRE', 'APELLIDO', 'SEGUNDO_APELLIDO',
+    'SEXO', 'FECHA_NACIMIENTO', 'ESTADO_CIVIL', 'PREFIJO_TELEFONO', 'TELEFONO',
+    'CORREO', 'DIRECCION', 'CARRERA', 'REGIMEN', 'SEMESTRE', 'SECCION',
+    'TIPO_ESTUDIANTE', 'RANGO_MILITAR', 'TRABAJA'
+  ];
+
+  const rows: string[][] = json.data.map((s: any) => {
+    const practices = (s.practices || []);
+    const latest = practices.length > 0
+      ? practices.reduce((a: any, b: any) =>
+          new Date(a.START_DATE || 0) > new Date(b.START_DATE || 0) ? a : b
+        )
+      : null;
+
+    const careerName = latest?.CAREER_ID ? (careerMap.get(latest.CAREER_ID) || '') : '';
+    const phoneParts = (s.phone || '').split('-');
+
+    return [
+      s.identificationPrefix,
+      s.identificationNumber,
+      s.firstName,
+      s.middleName || '',
+      s.lastName,
+      s.secondLastName || '',
+      s.gender,
+      s.birthdate || '',
+      s.maritalStatus,
+      phoneParts[0] || '',
+      phoneParts[1] || '',
+      s.email,
+      s.address || '',
+      careerName,
+      latest?.REGIME || '',
+      latest?.SEMESTER || '',
+      latest?.SECTION || '',
+      s.studentType,
+      s.militaryRank || '',
+      s.employment === 'SI' ? 'SI' : 'NO',
+    ];
+  });
+
+  const workbook = XLSX.utils.book_new();
+  const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+  sheet['!cols'] = [
+    { wch: 10 }, { wch: 12 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 18 },
+    { wch: 10 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 10 },
+    { wch: 30 }, { wch: 40 }, { wch: 20 }, { wch: 10 }, { wch: 8 }, { wch: 6 },
+    { wch: 14 }, { wch: 14 }, { wch: 6 }
+  ];
+
+  XLSX.utils.book_append_sheet(workbook, sheet, 'Importar');
+  return Buffer.from(XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }));
 }
 
 // ─── EXPORT: Students CSV ───

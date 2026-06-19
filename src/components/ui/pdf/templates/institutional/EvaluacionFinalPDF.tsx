@@ -62,15 +62,17 @@ interface Props {
   textos: Record<string, string>;
 }
 
+const weightToPercent = (w: number) => Math.round(w * 100);
+
 function calcProp(parcial: number, weight: number): string {
-  return ((parcial * weight) / 100).toFixed(1);
+  return ((parcial * weightToPercent(weight)) / 100).toFixed(1);
 }
 
 function calcTotal(evaluaciones: Props['data']['evaluaciones']): string {
   let total = 0;
-  if (evaluaciones.tutorInstitucional) total += (evaluaciones.tutorInstitucional.parcial * 40) / 100;
-  if (evaluaciones.tutorAcademico) total += (evaluaciones.tutorAcademico.parcial * 30) / 100;
-  if (evaluaciones.comiteEvaluador) total += (evaluaciones.comiteEvaluador.parcial * 30) / 100;
+  if (evaluaciones.tutorInstitucional) total += (evaluaciones.tutorInstitucional.parcial * weightToPercent(evaluaciones.tutorInstitucional.weight)) / 100;
+  if (evaluaciones.tutorAcademico) total += (evaluaciones.tutorAcademico.parcial * weightToPercent(evaluaciones.tutorAcademico.weight)) / 100;
+  if (evaluaciones.comiteEvaluador) total += (evaluaciones.comiteEvaluador.parcial * weightToPercent(evaluaciones.comiteEvaluador.weight)) / 100;
   return total.toFixed(1);
 }
 
@@ -133,27 +135,27 @@ export function EvaluacionFinalPDF({ data, textos }: Props) {
             {evaluaciones.tutorInstitucional && (
               <View style={styles.tableRow}>
                 <Text style={styles.tdDesc}>A. Por parte del Tutor(a) Institucional</Text>
-                <Text style={styles.tdWeight}>40%</Text>
+                <Text style={styles.tdWeight}>{weightToPercent(evaluaciones.tutorInstitucional.weight)}%</Text>
                 <Text style={styles.tdParcial}>{evaluaciones.tutorInstitucional.parcial}</Text>
-                <Text style={styles.tdProp}>{calcProp(evaluaciones.tutorInstitucional.parcial, 40)}</Text>
+                <Text style={styles.tdProp}>{calcProp(evaluaciones.tutorInstitucional.parcial, evaluaciones.tutorInstitucional.weight)}</Text>
               </View>
             )}
 
             {evaluaciones.tutorAcademico && (
               <View style={styles.tableRow}>
                 <Text style={styles.tdDesc}>B. Por parte del Tutor(a) Académico</Text>
-                <Text style={styles.tdWeight}>30%</Text>
+                <Text style={styles.tdWeight}>{weightToPercent(evaluaciones.tutorAcademico.weight)}%</Text>
                 <Text style={styles.tdParcial}>{evaluaciones.tutorAcademico.parcial}</Text>
-                <Text style={styles.tdProp}>{calcProp(evaluaciones.tutorAcademico.parcial, 30)}</Text>
+                <Text style={styles.tdProp}>{calcProp(evaluaciones.tutorAcademico.parcial, evaluaciones.tutorAcademico.weight)}</Text>
               </View>
             )}
 
             {evaluaciones.comiteEvaluador && (
               <View style={styles.tableRow}>
                 <Text style={styles.tdDesc}>C. Por parte del Comité Evaluador</Text>
-                <Text style={styles.tdWeight}>30%</Text>
+                <Text style={styles.tdWeight}>{weightToPercent(evaluaciones.comiteEvaluador.weight)}%</Text>
                 <Text style={styles.tdParcial}>{evaluaciones.comiteEvaluador.parcial}</Text>
-                <Text style={styles.tdProp}>{calcProp(evaluaciones.comiteEvaluador.parcial, 30)}</Text>
+                <Text style={styles.tdProp}>{calcProp(evaluaciones.comiteEvaluador.parcial, evaluaciones.comiteEvaluador.weight)}</Text>
               </View>
             )}
 

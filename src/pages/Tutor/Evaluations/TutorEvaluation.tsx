@@ -118,7 +118,7 @@ export default function TutorEvaluation() {
   };
 
   const calculateAverage = () => {
-    if (criteria.length === 0) return "0.00";
+    if (criteria.length === 0) return "0.0";
     const scores = criteria.map(c => itemScores[c.criteriaId] ?? midpoint);
     const sum = scores.reduce((a, b) => a + b, 0);
     const rawAvg = sum / scores.length;

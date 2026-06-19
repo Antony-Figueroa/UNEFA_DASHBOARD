@@ -1074,6 +1074,12 @@ export const exportFullStudents = async (req: Request, res: Response) => {
       res.setHeader('Content-Disposition', `attachment; filename="estudiantes-${new Date().toISOString().split('T')[0]}.csv"`);
       return res.send(csv);
     }
+    if (format === 'xlsx') {
+      const buffer = await svc.exportStudentsXlsx();
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="estudiantes-${new Date().toISOString().split('T')[0]}.xlsx"`);
+      return res.send(buffer);
+    }
 
     const data = await svc.exportStudents();
     res.json(data);

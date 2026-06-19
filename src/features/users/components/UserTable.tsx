@@ -81,6 +81,7 @@ interface ActionButtonsProps {
     isMobile?: boolean;
     userId?: number;
     currentUserId?: number;
+    disableAll?: boolean;
 }
 
 /**
@@ -95,6 +96,7 @@ const ActionButtons = ({
     isMobile = false,
     userId,
     currentUserId,
+    disableAll = false,
 }: ActionButtonsProps) => {
     const isCurrentUser = userId === currentUserId;
     const containerClasses = isMobile 
@@ -111,6 +113,7 @@ const ActionButtons = ({
                     label={isMobile ? "Editar Usuario" : undefined}
                     variant="primary"
                     fullWidth={isMobile}
+                    disabled={disableAll}
                 />
             )}
             {onViewDetail && (
@@ -121,6 +124,7 @@ const ActionButtons = ({
                     label={isMobile ? "Ver Detalle" : undefined}
                     variant="info"
                     fullWidth={isMobile}
+                    disabled={disableAll}
                 />
             )}
             {onResetPassword && status === 1 && (
@@ -131,12 +135,13 @@ const ActionButtons = ({
                     label={isMobile ? "Resetear Clave" : undefined}
                     variant="warning"
                     fullWidth={isMobile}
+                    disabled={disableAll}
                 />
             )}
             {onToggleStatus && (
                 <AsyncActionButton
                     onClick={async () => { if (!isCurrentUser) await onToggleStatus(); }}
-                    disabled={isCurrentUser}
+                    disabled={disableAll || isCurrentUser}
                     icon={status === 1 ? <TrashIcon /> : <RefreshIcon />}
                     tooltip={isCurrentUser ? "No puedes desactivarte a ti mismo" : (status === 1 ? "Desactivar usuario" : "Activar usuario")}
                     label={isMobile ? (status === 1 ? "Desactivar Usuario" : "Activar Usuario") : undefined}
@@ -320,6 +325,7 @@ export default function UserTable({
                                             onResetPassword={() => onResetPassword?.(user)}
                                             userId={user.id}
                                             currentUserId={currentUserId}
+                                            disableAll={selectedIds.length > 0}
                                         />
                                     </TableCell>
                                 </TableRow>
@@ -372,6 +378,7 @@ export default function UserTable({
                                     userId={user.id}
                                     currentUserId={currentUserId}
                                     isMobile
+                                    disableAll={selectedIds.length > 0}
                                 />
                             </div>
                         </div>

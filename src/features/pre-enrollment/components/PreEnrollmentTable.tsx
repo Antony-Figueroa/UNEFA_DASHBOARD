@@ -61,6 +61,8 @@ interface PreEnrollmentTableProps {
   practiceTypeOptions?: FilterOption[];
   /** Opciones para filtrar por carrera */
   careerOptions?: FilterOption[];
+  /** Callback que notifica si hay filas seleccionadas (para bloquear botonera externa) */
+  onSelectionChange?: (selecting: boolean) => void;
 }
 
 type SortKey = "identificationNumber" | "studentName" | "period" | "preEnrollmentDate" | "enrollmentCode";
@@ -73,6 +75,7 @@ interface ActionButtonsProps {
     onExportToEnrollment?: () => void;
     status: boolean;
     isMobile?: boolean;
+    disableAll?: boolean;
 }
 
 const ActionButtons = ({
@@ -82,6 +85,7 @@ const ActionButtons = ({
     onExportToEnrollment,
     status,
     isMobile = false,
+    disableAll = false,
 }: ActionButtonsProps) => {
     const containerClasses = isMobile 
         ? "flex flex-col gap-3 pt-2" 
@@ -116,6 +120,7 @@ const ActionButtons = ({
                     label={isMobile ? "Ver Detalles" : undefined}
                     variant="primary"
                     fullWidth={isMobile}
+                    disabled={disableAll}
                 />
             )}
             {onEdit && (
@@ -126,6 +131,7 @@ const ActionButtons = ({
                     label={isMobile ? "Editar Pre-inscripción" : undefined}
                     variant="primary"
                     fullWidth={isMobile}
+                    disabled={disableAll}
                 />
             )}
             {onExportToEnrollment && (
@@ -136,6 +142,7 @@ const ActionButtons = ({
                     label={isMobile ? "Exportar a Inscripción" : undefined}
                     variant="info"
                     fullWidth={isMobile}
+                    disabled={disableAll}
                 />
             )}
             {onToggleStatus && (
@@ -146,6 +153,7 @@ const ActionButtons = ({
                     label={isMobile ? (status ? "Eliminar Pre-inscripción" : "Restaurar Pre-inscripción") : undefined}
                     variant={status ? "error" : "success"}
                     fullWidth={isMobile}
+                    disabled={disableAll}
                 />
             )}
         </div>
@@ -167,6 +175,7 @@ export default function PreEnrollmentTable({
     periodOptions = [],
     practiceTypeOptions = [],
     careerOptions = [],
+    onSelectionChange,
 }: PreEnrollmentTableProps) {
     const { careers: allCareers } = useCareers();
     const [searchTerm, setSearchTerm] = useState("");
@@ -199,6 +208,11 @@ export default function PreEnrollmentTable({
     });
 
     const debouncedSearch = useDebounce(searchTerm, 300);
+
+    // Notificar a la página cuando hay selección activa (para bloquear botonera)
+    useEffect(() => {
+        onSelectionChange?.(selectedIds.length > 0);
+    }, [selectedIds, onSelectionChange]);
 
     useEffect(() => {
         setSelectedIds([]);
@@ -600,6 +614,7 @@ export default function PreEnrollmentTable({
                                             onToggleStatus={onToggleStatus ? () => onToggleStatus(s) : undefined}
                                             onExportToEnrollment={activeTab === "Activas" && onExportToEnrollment ? () => onExportToEnrollment(s) : undefined}
                                             status={s.status}
+                                            disableAll={selectedIds.length > 0}
                                         />
                                     </TableCell>
                                 </TableRow>
@@ -689,6 +704,7 @@ export default function PreEnrollmentTable({
                                             onExportToEnrollment={activeTab === "Activas" && onExportToEnrollment ? () => onExportToEnrollment(s) : undefined}
                                             status={s.status}
                                             isMobile={true}
+                                            disableAll={selectedIds.length > 0}
                                         />
                                     </div>
                                 )}

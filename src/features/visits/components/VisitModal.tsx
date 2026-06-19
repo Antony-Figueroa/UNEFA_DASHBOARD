@@ -121,6 +121,12 @@ export default function VisitModal({
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [pendingData, setPendingData] = useState<VisitFormData | null>(null);
   const [displayHours, setDisplayHours] = useState('');
+  const formatHoursDisplay = (hours: number): string => {
+    if (hours <= 0) return '';
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return m === 0 ? `${h}h` : `${h}h ${m}m`;
+  };
   const { addToast } = useToast();
 
   const isEditing = !!visit && mode === 'edit';
@@ -724,7 +730,7 @@ export default function VisitModal({
                   id="hoursWorked"
                   type="text"
                   inputMode="decimal"
-                  maxLength={2}
+                   maxLength={4}
                   value={displayHours}
                   placeholder="0.0"
                   error={!!errors.hoursWorked}
@@ -747,22 +753,39 @@ export default function VisitModal({
                       ? finalValue.replace(/(\.\d{2})\d*/, '$1')
                       : finalValue;
 
-                    setDisplayHours(limited);
-
-                    // Actualizar el valor en el formulario
+                    // No permitir más de 24
                     const numValue = limited === '' ? 0 : parseFloat(limited);
+                    if (numValue > 24) {
+                      setDisplayHours('24');
+                      setValue('hoursWorked', 24, { shouldValidate: true, shouldDirty: true });
+                      return;
+                    }
+
+                    setDisplayHours(limited);
                     setValue('hoursWorked', numValue, { shouldValidate: true, shouldDirty: true });
                   }}
                   onBlur={() => {
                     // Formatear al perder el foco
                     const num = parseFloat(displayHours);
                     if (!isNaN(num) && num > 0) {
-                      setDisplayHours(num.toFixed(1));
-                      setValue('hoursWorked', num, { shouldValidate: true });
+                      const clamped = Math.min(num, 24);
+                      setDisplayHours(clamped.toFixed(1));
+                      setValue('hoursWorked', clamped, { shouldValidate: true });
                     }
                   }}
                   className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
+                {(() => {
+                  const num = parseFloat(displayHours);
+                  if (isNaN(num) || num <= 0) return null;
+                  const formatted = formatHoursDisplay(num);
+                  if (!formatted) return null;
+                  return (
+                    <div className="mt-1.5 text-xs text-text-secondary dark:text-white/60">
+                      {num.toFixed(1)} → {formatted}
+                    </div>
+                  );
+                })()}
                 {typeof hoursAccumulated === 'number' && hoursAccumulated > 0 && (
                   <div className="mt-1.5 flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20">
                     <svg className="w-3.5 h-3.5 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

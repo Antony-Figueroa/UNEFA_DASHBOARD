@@ -125,6 +125,9 @@ export default function CareersPage() {
   /** @state {('Activas'|'Inactivas')} activeTab - Controla qué conjunto de datos se muestra en la tabla. */
   const tabsState = useTabs({ defaultTab: 'Activas' });
 
+  // Estado para saber si hay filas seleccionadas en la tabla (bloquea botonera)
+  const [isSelecting, setIsSelecting] = useState(false);
+
   // Estados para Carreras
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCareer, setEditingCareer] = useState<Career | null>(null);
@@ -550,12 +553,13 @@ export default function CareersPage() {
                 <Button
                   variant="outline"
                   onClick={() => setIsPDFModalOpen(true)}
+                  disabled={isSelecting}
                   startIcon={<DownloadIcon className="h-5 w-5" />}
                 >
                   Reporte
                 </Button>
               )}
-              <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
+              <Button onClick={handleCreate} disabled={isSelecting} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
                 {mainTab === "Carreras" ? "Nueva Carrera" : "Nuevo Tipo"}
               </Button>
             </div>
@@ -606,6 +610,7 @@ export default function CareersPage() {
                     onBulkRestore={handleBulkRestore}
                     inactiveMode={tabsState.activeTab === "Inactivas"}
                     loading={loadingAction}
+                    onSelectionChange={setIsSelecting}
                   />
                 ) : (
                 <InternshipTypeTable
@@ -620,6 +625,7 @@ export default function CareersPage() {
                   onBulkDelete={handleBulkDeleteTypes}
                   onBulkRestore={handleBulkRestoreTypes}
                   inactiveMode={tabsState.activeTab === "Inactivas"}
+                  onSelectionChange={setIsSelecting}
                 />
               )}
             </SkeletonLoader>

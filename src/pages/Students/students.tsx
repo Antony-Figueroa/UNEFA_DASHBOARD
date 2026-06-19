@@ -447,6 +447,7 @@ export default function StudentsPage() {
                             <Button
                                 variant="outline"
                                 onClick={() => setIsPDFModalOpen(true)}
+                                disabled={selectedIds.length > 0}
                                 startIcon={<FileText className="h-5 w-5" />}
                             >
                                 Reporte
@@ -454,6 +455,7 @@ export default function StudentsPage() {
                             <Button
                                 variant="outline"
                                 onClick={() => setIsImportModalOpen(true)}
+                                disabled={selectedIds.length > 0}
                                 startIcon={<Download className="h-5 w-5" />}
                             >
                                 Importar
@@ -461,11 +463,12 @@ export default function StudentsPage() {
                             <Button
                                 variant="outline"
                                 onClick={() => setIsExportModalOpen(true)}
+                                disabled={selectedIds.length > 0}
                                 startIcon={<ArrowUpIcon className="h-5 w-5" />}
                             >
                                 Exportación
                             </Button>
-                            <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
+                            <Button onClick={handleCreate} disabled={selectedIds.length > 0} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
                                 Nuevo Estudiante
                             </Button>
                         </div>

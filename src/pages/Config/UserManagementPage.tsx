@@ -326,6 +326,7 @@ const UserManagementPage = () => {
               )}
               <Button 
                 onClick={handleOpenCreateModal} 
+                disabled={selectedIds.length > 0}
                 startIcon={<PlusCircleIcon className="h-5 w-5" />}
               >
                 Nuevo Usuario

@@ -52,6 +52,7 @@ interface ActionButtonsProps {
     isMobile?: boolean;
     isDisabled?: boolean;
     disabledTooltip?: string;
+    disableAll?: boolean;
 }
 
 /**
@@ -70,6 +71,7 @@ const ActionButtons = ({
     isMobile = false,
     isDisabled = false,
     disabledTooltip = "",
+    disableAll = false,
 }: ActionButtonsProps) => {
     const currentPeriodStatus = getSafePeriodStatus(periodo);
     const hasStatus = !!periodo.periodStatus;
@@ -90,6 +92,7 @@ const ActionButtons = ({
                     label={isMobile ? "Ver Detalles" : undefined}
                     variant="primary"
                     fullWidth={isMobile}
+                    disabled={disableAll}
                 />
             )}
             
@@ -102,6 +105,7 @@ const ActionButtons = ({
                     label={isMobile ? "Restaurar Período" : undefined}
                     variant="success"
                     fullWidth={isMobile}
+                    disabled={disableAll}
                 />
             )}
             
@@ -116,6 +120,7 @@ const ActionButtons = ({
                             label={isMobile ? (currentPeriodStatus === 2 ? "Editar Fecha Fin" : "Editar Período") : undefined}
                             variant="primary"
                             fullWidth={isMobile}
+                            disabled={disableAll}
                         />
                     )}
                     {hasStatus && currentPeriodStatus === 1 && canActivate && periodo.status && onActivate && (
@@ -126,6 +131,7 @@ const ActionButtons = ({
                             label={isMobile ? "Activar Período" : undefined}
                             variant="success"
                             fullWidth={isMobile}
+                            disabled={disableAll}
                         />
                     )}
                     {hasStatus && currentPeriodStatus === 2 && onCulminate && (
@@ -136,6 +142,7 @@ const ActionButtons = ({
                             label={isMobile ? "Culminar Período" : undefined}
                             variant="success"
                             fullWidth={isMobile}
+                            disabled={disableAll}
                         />
                     )}
                     {hasStatus && currentPeriodStatus === 1 && onDelete && (
@@ -146,7 +153,7 @@ const ActionButtons = ({
                             label={isMobile ? "Eliminar Período" : undefined}
                             variant="error"
                             fullWidth={isMobile}
-                            disabled={isDisabled}
+                            disabled={disableAll || isDisabled}
                         />
                     )}
                 </>
@@ -188,6 +195,8 @@ interface PeriodTableProps {
     activeTab?: string;
     /** Indica si hay carga externa */
     externalLoading?: boolean;
+    /** Callback que notifica si hay filas seleccionadas (para bloquear botonera externa) */
+    onSelectionChange?: (selecting: boolean) => void;
 }
 
 /**
@@ -208,6 +217,7 @@ const PeriodTable = ({
     onView,
     onBulkDelete,
     onBulkRestore,
+    onSelectionChange,
     externalLoading = false,
 }: PeriodTableProps) => {
     // ============================================
@@ -223,6 +233,11 @@ const PeriodTable = ({
     const [inUseIds, setInUseIds] = useState<Set<string>>(new Set());
     const [viewMode, setViewMode] = useState<"timeline" | "table">("table");
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+    // Notificar a la página cuando hay selección activa (para bloquear botonera)
+    useEffect(() => {
+        onSelectionChange?.(selectedIds.size > 0);
+    }, [selectedIds, onSelectionChange]);
 
     // IDs elegibles para operaciones bulk (eliminar o restaurar)
     const eligibleForBulkIds = useMemo(() => {
@@ -798,6 +813,7 @@ const PeriodTable = ({
                                                 canActivate={canActivate}
                                                 isDisabled={inUseIds.has(periodo.periodId)}
                                                 disabledTooltip={disabledTooltip}
+                                                disableAll={selectedIds.size > 0}
                                             />
                                         </TableCell>
                                     </TableRow>
@@ -892,6 +908,7 @@ const PeriodTable = ({
                                             isMobile={true}
                                             isDisabled={inUseIds.has(periodo.periodId)}
                                             disabledTooltip={disabledTooltip}
+                                            disableAll={selectedIds.size > 0}
                                         />
                                     )}
                                 </div>

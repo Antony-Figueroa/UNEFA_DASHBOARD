@@ -289,9 +289,9 @@ export const downloadTemplate = async (): Promise<Blob> => {
 
 /**
  * Descarga estudiantes en el formato seleccionado.
- * @param format - 'json' (completo con relaciones), 'sql' (INSERTs), 'csv' (plano)
+ * @param format - 'json' (completo con relaciones), 'sql' (INSERTs), 'csv' (plano), 'xlsx' (importable)
  */
-export const exportFullStudents = async (format: 'json' | 'sql' | 'csv' = 'json'): Promise<void> => {
+export const exportFullStudents = async (format: 'json' | 'sql' | 'csv' | 'xlsx' = 'json'): Promise<void> => {
   try {
     const response = await apiClient.get(`${API_URL}/export/full`, {
       params: { format },
@@ -299,7 +299,8 @@ export const exportFullStudents = async (format: 'json' | 'sql' | 'csv' = 'json'
     });
 
     const blob = response.data as Blob;
-    const ext = format === 'json' ? 'json' : format === 'sql' ? 'sql' : 'csv';
+    const extMap: Record<string, string> = { json: 'json', sql: 'sql', csv: 'csv', xlsx: 'xlsx' };
+    const ext = extMap[format] || 'json';
 
     if (format === 'json') {
       const text = await blob.text();

@@ -3,7 +3,7 @@ import Button from "../ui/button/Button";
 import { ArrowUpIcon } from "../../icons";
 import { useState } from "react";
 
-export type ExportFormat = 'json' | 'sql' | 'csv';
+export type ExportFormat = 'json' | 'sql' | 'csv' | 'xlsx';
 
 interface ExportFormatModalProps {
   isOpen: boolean;
@@ -18,6 +18,7 @@ const formatInfo: { value: ExportFormat; label: string; desc: string }[] = [
   { value: 'json', label: 'JSON', desc: 'Datos completos con todas las relaciones anidadas. Ideal para editar y recargar.' },
   { value: 'sql', label: 'SQL', desc: 'Sentencias INSERT por tabla. Listo para ejecutar directamente en la base de datos.' },
   { value: 'csv', label: 'CSV', desc: 'Datos planos en tabla. Compatible con Excel y hojas de cálculo.' },
+  { value: 'xlsx', label: 'Excel (importable)', desc: 'Formato compatible con la importación de estudiantes. Exporta, edita, e importa de vuelta.' },
 ];
 
 export default function ExportFormatModal({ isOpen, onClose, onExport, entityLabel }: ExportFormatModalProps) {

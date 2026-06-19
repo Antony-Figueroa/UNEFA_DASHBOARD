@@ -47,14 +47,14 @@ export type EvaluationConfig = typeof evaluationConfig;
 export const scaleToDisplay = (rawAverage: number): number => {
   const { min, max, displayScale } = evaluationConfig.score;
   const clamped = Math.max(min, Math.min(max, rawAverage));
-  return parseFloat(((clamped / max) * displayScale).toFixed(2));
+  return parseFloat(((clamped / max) * displayScale).toFixed(1));
 };
 
 /** Helper: convierte un puntaje individual raw a su equivalente en display scale */
 export const scoreToDisplay = (score: number): number => {
   const { min, max, displayScale } = evaluationConfig.score;
   const clamped = Math.max(min, Math.min(max, score));
-  return parseFloat(((clamped / max) * displayScale).toFixed(2));
+  return parseFloat(((clamped / max) * displayScale).toFixed(1));
 };
 
 /** Helper: calcula la nota final ponderada a partir de los scores por tipo */
@@ -68,7 +68,7 @@ export const calculateWeightedGrade = (
       finalGrade += scores[type] * weight;
     }
   }
-  return parseFloat(finalGrade.toFixed(2));
+  return parseFloat(finalGrade.toFixed(1));
 };
 
 export default evaluationConfig;

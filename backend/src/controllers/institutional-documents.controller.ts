@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { supabase } from '../lib/supabase.js';
+import { evaluationConfig } from '../config/evaluation.config.js';
 
 function getFullName(row: any): string {
   const parts = [row.NAME || '', row.SECOND_NAME || '', row.SURNAME || '', row.SECOND_SURNAME || ''];
@@ -307,9 +308,9 @@ export const getDataEvaluacionFinal = async (req: Request, res: Response) => {
           grade: practice.GRADE || 0,
         },
         evaluaciones: {
-          tutorInstitucional: evalInst ? { parcial: evalInst.totalScore || 0, weight: 40 } : null,
-          tutorAcademico: evalAcad ? { parcial: evalAcad.totalScore || 0, weight: 30 } : null,
-          comiteEvaluador: evalComite ? { parcial: evalComite.totalScore || 0, weight: 30 } : null,
+          tutorInstitucional: evalInst ? { parcial: evalInst.totalScore || 0, weight: evaluationConfig.weights.INSTITUCIONAL } : null,
+          tutorAcademico: evalAcad ? { parcial: evalAcad.totalScore || 0, weight: evaluationConfig.weights.ACADEMICO } : null,
+          comiteEvaluador: evalComite ? { parcial: evalComite.totalScore || 0, weight: evaluationConfig.weights.COMITE } : null,
           notaFinal: practice.GRADE || 0,
         },
       },

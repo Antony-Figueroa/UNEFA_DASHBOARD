@@ -6,8 +6,9 @@
 import { useMemo, useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
+import { SelectionBar } from "../../../components/common/SelectionBar";
+import { SearchInput } from "../../../components/common/SearchInput";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { EmptyState } from "../../../components/ui/table/EmptyState";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon, ChevronDownIcon, ChevronUpIcon } from "../../../icons/actions";
 import { Institution } from "../types";
@@ -51,6 +52,7 @@ interface ActionButtonsProps {
     activeTab: "Activas" | "Inactivas";
     isMobile?: boolean;
     isInUse?: boolean;
+    disableAll?: boolean;
 }
 
 const ActionButtons = ({
@@ -60,6 +62,7 @@ const ActionButtons = ({
     activeTab,
     isMobile = false,
     isInUse = false,
+    disableAll = false,
 }: ActionButtonsProps) => {
     const containerClasses = isMobile 
         ? "flex flex-col gap-3 pt-2" 
@@ -75,6 +78,7 @@ const ActionButtons = ({
                     label={isMobile ? "Ver Detalles" : undefined}
                     variant="primary"
                     fullWidth={isMobile}
+                    disabled={disableAll}
                 />
             )}
             {onEdit && activeTab === "Activas" && (
@@ -85,6 +89,7 @@ const ActionButtons = ({
                     label={isMobile ? "Editar Empresa o Institución" : undefined}
                     variant="primary"
                     fullWidth={isMobile}
+                    disabled={disableAll}
                 />
             )}
             {onToggleStatus && (
@@ -98,7 +103,7 @@ const ActionButtons = ({
                     label={isMobile ? (activeTab === "Inactivas" ? "Restaurar Empresa o Institución" : "Eliminar Empresa o Institución") : undefined}
                     variant={activeTab === "Inactivas" ? "success" : "error"}
                     fullWidth={isMobile}
-                    disabled={isInUse && activeTab === "Activas"}
+                    disabled={disableAll || (isInUse && activeTab === "Activas")}
                 />
             )}
         </div>
@@ -270,21 +275,12 @@ export default function InstitutionTable({
     <div className="table-container">
       <div className="p-4 border-b border-border-light dark:border-white/5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {/* Unified Search */}
-            <div className="relative">
-                <input
-                    type="text"
-                    placeholder="Buscar por RIF, nombre o teléfono"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full h-11 rounded-lg border border-border-medium bg-transparent px-4 py-2.5 pl-10 text-sm text-text-primary placeholder:text-text-tertiary outline-none focus:border-brand-300 focus:ring-4 focus:ring-brand-500/10 dark:border-border-dark dark:text-text-emphasis"
-                />
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
-            </div>
+            <SearchInput
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder="Buscar por RIF, nombre o teléfono"
+              className="h-11"
+            />
 
             {/* Filtro por Carrera */}
             {/* Filtro por Tipo de Institución */}
@@ -334,22 +330,14 @@ export default function InstitutionTable({
                     </Button>
                 )}
 
-                {selectedIds.length > 0 && (
-                    <div className="flex items-center gap-2 animate-fadeIn">
-                        <span className="hidden sm:inline text-xs font-medium text-text-secondary dark:text-text-tertiary mr-2">
-                            {selectedIds.length} seleccionados
-                        </span>
-                        {activeTab === "Activas" ? (
-                            <Button variant="error" size="sm" onClick={async () => onBulkDelete?.(selectedIds)}>
-                                Eliminar
-                            </Button>
-                        ) : (
-                            <AsyncButton variant="success" size="sm" onClick={async () => onBulkRestore?.(selectedIds)}>
-                                Restaurar
-                            </AsyncButton>
-                        )}
-                    </div>
-                )}
+                <SelectionBar
+                  count={selectedIds.length}
+                  actions={activeTab === "Activas" ? [
+                    { label: "Eliminar", variant: "error", onClick: () => onBulkDelete?.(selectedIds) },
+                  ] : [
+                    { label: "Restaurar", variant: "success", onClick: () => onBulkRestore?.(selectedIds) },
+                  ]}
+                />
             </div>
         </div>
     </div>
@@ -423,6 +411,7 @@ export default function InstitutionTable({
                                 onToggleStatus={onToggleStatus ? () => onToggleStatus(i) : undefined}
                                 activeTab={activeTab}
                                 isInUse={i.isInUse}
+                                disableAll={selectedIds.length > 0}
                             />
                         </TableCell>
                     </TableRow>
@@ -503,6 +492,7 @@ export default function InstitutionTable({
                                     activeTab={activeTab}
                                     isMobile={true}
                                     isInUse={i.isInUse}
+                                    disableAll={selectedIds.length > 0}
                                 />
                             </div>
                         )}

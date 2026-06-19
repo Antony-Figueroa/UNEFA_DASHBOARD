@@ -2,7 +2,8 @@ import { useMemo, useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import Checkbox from "../../../components/form/input/Checkbox";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
-import Button from "../../../components/ui/button/Button";
+import { SelectionBar } from "../../../components/common/SelectionBar";
+import { SearchInput } from "../../../components/common/SearchInput";
 import type { CrudColumn, CrudFilterConfig, CrudFilterState, CrudActionConfig, CrudRowAction } from "../types";
 import { TrashIcon, RefreshIcon, EditIcon, EyeIcon } from "../../../icons/actions";
 import { matchSearch } from "../../../utils/searchNormalizer";
@@ -325,38 +326,15 @@ export function CrudTable<TItem extends { id: string }>({
         </div>
 
         {anySelected && actions.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            <span className="flex flex-wrap
-             mr-2 text-sm font-medium text-text-secondary dark:text-text-tertiary">
-              {selectedIds.length}  seleccionados
-            </span>
-            {actions.map((action) => {
-              const isDanger = action.variant === "danger";
-              const isPrimary = action.variant === "primary";
-              const icon =
-                action.id.toLowerCase().includes("delete") ||
-                  action.label.toLowerCase().includes("eliminar") ? (
-                  <TrashIcon className="h-4 w-4" />
-                ) : action.id.toLowerCase().includes("restore") ||
-                  action.label.toLowerCase().includes("restaurar") ? (
-                  <RefreshIcon className="h-4 w-4" />
-                ) : null;
-
-              const bulkVariant = isDanger ? "error" : isPrimary ? "primary" : "outline";
-
-              return (
-                <Button
-                  key={action.id}
-                  variant={bulkVariant as "error" | "primary" | "outline"}
-                  size="sm"
-                  onClick={async () => action.onAction(items.filter((i) => selectedIds.includes(i.id)))}
-                  startIcon={icon}
-                >
-                  {action.label}
-                </Button>
-              );
-            })}
-          </div>
+          <SelectionBar
+            count={selectedIds.length}
+            hideCountOnMobile={false}
+            actions={actions.map((action) => ({
+              label: action.label,
+              variant: action.variant === "danger" ? "error" : action.variant === "primary" ? "primary" : "warning",
+              onClick: () => action.onAction(items.filter((i) => selectedIds.includes(i.id))),
+            }))}
+          />
         )}
       </div>
 

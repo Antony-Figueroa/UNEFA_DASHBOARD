@@ -22,9 +22,10 @@ import { useMemo, useState, useEffect } from "react";
 import { useDbStatus } from "../../../context/db-status";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
-import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
+import { SelectionBar } from "../../../components/common/SelectionBar";
+import { SearchInput } from "../../../components/common/SearchInput";
 import { Tooltip } from "../../../components/ui/tooltip/Tooltip";
+import Button from "../../../components/ui/button/Button";
 import CustomSelect from "../../../components/form/CustomSelect";
 import {
   EditIcon,
@@ -90,6 +91,8 @@ interface CareerTableProps {
   searchTerm?: string;
   /** Función para notificar cambios en el buscador al componente padre */
   onSearchChange?: (term: string) => void;
+  /** Callback que notifica si hay filas seleccionadas (para bloquear botonera externa) */
+  onSelectionChange?: (selecting: boolean) => void;
 }
 
 /** Claves por las que se puede ordenar la tabla */
@@ -115,6 +118,7 @@ interface ActionButtonsProps {
   isMobile?: boolean;
   isDisabled?: boolean;
   disabledTooltip?: string;
+  disableAll?: boolean;
 }
 
 const ActionButtons = ({
@@ -127,6 +131,7 @@ const ActionButtons = ({
   isMobile = false,
   isDisabled = false,
   disabledTooltip = "",
+  disableAll = false,
 }: ActionButtonsProps) => {
   const containerClasses = isMobile 
     ? "flex flex-col gap-3 pt-2" 
@@ -142,6 +147,7 @@ const ActionButtons = ({
           label={isMobile ? "Ver Detalles" : undefined}
           variant="primary"
           fullWidth={isMobile}
+          disabled={disableAll}
         />
       )}
 
@@ -153,6 +159,7 @@ const ActionButtons = ({
           label={isMobile ? "Editar Carrera" : undefined}
           variant="primary"
           fullWidth={isMobile}
+          disabled={disableAll}
         />
       )}
 
@@ -164,7 +171,7 @@ const ActionButtons = ({
           label={isMobile ? (inactiveMode ? "Restaurar" : "Eliminar") : undefined}
           variant={inactiveMode ? "success" : "error"}
           fullWidth={isMobile}
-          disabled={isDisabled && !inactiveMode}
+          disabled={disableAll || (isDisabled && !inactiveMode)}
         />
       )}
       {onDelete && activeTab === "Activas" && !onToggleStatus && (
@@ -175,7 +182,7 @@ const ActionButtons = ({
           label={isMobile ? "Eliminar Carrera" : undefined}
           variant="error"
           fullWidth={isMobile}
-          disabled={isDisabled}
+          disabled={disableAll || isDisabled}
         />
       )}
     </div>
@@ -196,6 +203,7 @@ export default function CareerTable({
   practiceOptions = [],
   searchTerm = "",
   onSearchChange,
+  onSelectionChange,
 }: CareerTableProps) {
   const [practiceTypeFilter, setPracticeTypeFilter] = useState<string>("");
   const [careerTypeFilter, setCareerTypeFilter] = useState<string>("");
@@ -219,6 +227,11 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
     key: "careerName",
     order: "asc",
   });
+
+  // Notificar a la página cuando hay selección activa (para bloquear botonera)
+  useEffect(() => {
+    onSelectionChange?.(selectedIds.length > 0);
+  }, [selectedIds, onSelectionChange]);
 
   // Resetear selección cuando cambia la pestaña o los datos filtrados
   useEffect(() => {
@@ -388,20 +401,11 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
 </div>
 
         <div className="flex flex-col sm:flex-row items-center gap-4">
-          <div className="relative flex-1 max-w-md">
-            <input
-              type="text"
-              placeholder="Buscar por nombre o código de carrera"
-              value={searchTerm}
-              onChange={(e) => onSearchChange?.(e.target.value)}
-              className="w-full h-11 rounded-lg border border-border-medium bg-transparent pl-10 pr-4 text-sm text-text-primary placeholder:text-text-tertiary focus:border-brand-500 focus:outline-none dark:border-border-dark dark:bg-bg-dark dark:text-text-emphasis dark:placeholder:text-text-tertiary"
-            />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-              </svg>
-            </span>
-          </div>
+          <SearchInput
+            value={searchTerm}
+            onChange={(v) => onSearchChange?.(v)}
+            placeholder="Buscar por nombre o código de carrera"
+          />
           <div className="relative w-full sm:w-64">
             <CustomSelect
               options={[
@@ -465,37 +469,20 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
               </Button>
             )}
 
-            {/* Acciones Masivas */}
-            {selectedIds.length > 0 && (
-              <div className="flex items-center gap-2 animate-fadeIn">
-                <span className="hidden sm:inline text-xs font-medium text-text-secondary dark:text-text-tertiary mr-2">
-                  {selectedIds.length} seleccionados
-                </span>
-                {activeTab === "Activas" ? (
-                  <Tooltip 
-                    content={selectedIds.some(id => inUseIds.has(id)) ? "Algunas de las carreras seleccionadas están en uso y no pueden ser eliminadas" : "Eliminar seleccionados"}
-                    isDisabled={selectedIds.some(id => inUseIds.has(id))}
-                  >
-                    <Button
-                      variant="error"
-                      size="sm"
-                      onClick={async () => onBulkDelete?.(selectedIds)}
-                      disabled={selectedIds.some(id => inUseIds.has(id))}
-                    >
-                      Eliminar
-                    </Button>
-                  </Tooltip>
-                ) : (
-                  <AsyncButton
-                    variant="success"
-                    size="sm"
-                    onClick={async () => onBulkRestore?.(selectedIds)}
-                  >
-                    Restaurar
-                  </AsyncButton>
-                )}
-              </div>
-            )}
+            <SelectionBar
+              count={selectedIds.length}
+              actions={activeTab === "Activas" ? [
+                {
+                  label: "Eliminar",
+                  variant: "error",
+                  onClick: () => onBulkDelete?.(selectedIds),
+                  disabled: selectedIds.some(id => inUseIds.has(id)),
+                  tooltip: "Algunas de las carreras seleccionadas están en uso y no pueden ser eliminadas",
+                },
+              ] : [
+                { label: "Restaurar", variant: "success", onClick: () => onBulkRestore?.(selectedIds) },
+              ]}
+            />
           </div>
         </div>
 </div>
@@ -619,6 +606,7 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
                       activeTab={activeTab}
                       isDisabled={inUseIds.has(c.careerId)}
                       disabledTooltip="Esta carrera está en uso y no puede ser eliminada"
+                      disableAll={selectedIds.length > 0}
                     />
                   </TableCell>
                 </TableRow>
@@ -752,6 +740,7 @@ const [inUseIds, setInUseIds] = useState<Set<string | number>>(new Set());
                         isMobile={true}
                         isDisabled={inUseIds.has(c.careerId)}
                         disabledTooltip="Esta carrera está en uso y no puede ser eliminada"
+                        disableAll={selectedIds.length > 0}
                       />
                     </div>
                   </div>

@@ -16,8 +16,9 @@ import { useMemo, useState, useEffect } from "react";
 import { useDbStatus } from "../../../context/db-status";
 import { Table, TableBody, TableCell, TableHeader, TableRow, Pagination } from "../../../components/ui/table";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
+import { SelectionBar } from "../../../components/common/SelectionBar";
+import { SearchInput } from "../../../components/common/SearchInput";
 import Button from "../../../components/ui/button/Button";
-import AsyncButton from "../../../components/ui/button/AsyncButton";
 import { EditIcon, TrashIcon, RefreshIcon, EyeIcon } from "../../../icons/actions";
 import { InternshipType } from "../types";
 import { Career } from "../../careers/types";
@@ -54,6 +55,8 @@ interface InternshipTypeTableProps {
   activeTab?: "Activas" | "Inactivas";
   /** Estado global de carga */
   loading?: boolean;
+  /** Callback que notifica si hay filas seleccionadas (para bloquear botonera externa) */
+  onSelectionChange?: (selecting: boolean) => void;
 }
 
 /** Claves permitidas para el ordenamiento de la tabla */
@@ -77,6 +80,7 @@ export default function InternshipTypeTable({
   onBulkRestore,
   inactiveMode = false,
   activeTab = "Activas",
+  onSelectionChange,
 }: InternshipTypeTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -108,6 +112,11 @@ export default function InternshipTypeTable({
   const hasLinkedCareers = (typeId: number) => {
     return careers.some(c => c.internshipTypeIds?.includes(String(typeId)));
   };
+
+  // Notificar a la página cuando hay selección activa (para bloquear botonera)
+  useEffect(() => {
+    onSelectionChange?.(selectedIds.length > 0);
+  }, [selectedIds, onSelectionChange]);
 
   /**
    * Limpia la selección de filas al cambiar entre las pestañas de Activas/Inactivas.
@@ -201,34 +210,21 @@ export default function InternshipTypeTable({
 
   return (
     <div className="space-y-4">
-      {/* Barra de herramientas: Búsqueda y Acciones en bloque */}
+      {/* Barra de herramientas */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-md">
-          <input
-            type="text"
-            placeholder="Buscar tipo de práctica..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-lg border border-border-light bg-white py-2 pl-4 pr-10 text-sm outline-none transition-all focus:border-brand-500 dark:border-white/10 dark:bg-bg-dark dark:text-white"
-          />
-        </div>
-
-        {selectedIds.length > 0 && (
-          <div className="flex items-center gap-2 animate-fadeIn">
-            <span className="text-sm text-text-secondary dark:text-text-tertiary">
-              {selectedIds.length} seleccionados
-            </span>
-            {inactiveMode ? (
-              <AsyncButton variant="success" size="sm" onClick={() => onBulkRestore?.(selectedIds)}>
-                Restaurar
-              </AsyncButton>
-            ) : (
-              <Button variant="error" size="sm" onClick={() => onBulkDelete?.(selectedIds)}>
-                Eliminar
-              </Button>
-            )}
-          </div>
-        )}
+        <SearchInput
+          value={searchTerm}
+          onChange={setSearchTerm}
+          placeholder="Buscar tipo de práctica..."
+        />
+        <SelectionBar
+          count={selectedIds.length}
+          actions={inactiveMode ? [
+            { label: "Restaurar", variant: "success", onClick: () => onBulkRestore?.(selectedIds) },
+          ] : [
+            { label: "Eliminar", variant: "error", onClick: () => onBulkDelete?.(selectedIds) },
+          ]}
+        />
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border-light bg-white dark:border-white/5 dark:bg-bg-dark shadow-sm">

@@ -1,493 +1,802 @@
 # 🗄️ Modelo Entidad-Relación — UNEFA Dashboard
 
-> **Diagramas del modelo de datos** explicados para la exposición
-> Las tablas reales tienen el prefijo `t_` (ej: `t_students`). Acá usamos nombres legibles.
+> **Diagrama de clases UML** del modelo de datos
+> Nombres reales de tablas (`t_*`) y columnas, tipos PostgreSQL, relaciones explícitas con FK.
 
 ---
 
-## 📊 Mapa General de Datos
-
-El sistema tiene **69 tablas** en total. Este diagrama muestra las ~25 entidades principales organizadas por dominio funcional.
+## 1. Diagrama General (Vista de Alto Nivel)
 
 ```mermaid
-erDiagram
-
-    %% ====================================================================
-    %% DOMINIO: SEGURIDAD Y ACCESO  (🔵 Azul)
-    %% ====================================================================
-
-    Personas ||--o| Usuarios : "es"
-    Personas ||--o| Estudiantes : "es"
-    Personas ||--o| Tutores : "es"
-    Personas ||--o| Representantes : "es"
-
-    Usuarios ||--o{ Roles_Usuario : "tiene"
-    Roles ||--o{ Roles_Usuario : "asignado a"
-    Roles ||--o{ Roles_Permisos : "tiene"
-    Permisos ||--o{ Roles_Permisos : "asignado a"
-
-    Usuarios ||--o{ Notificaciones : "recibe"
-    Usuarios ||--o{ Historial_Auth : "genera"
-    Usuarios ||--o{ Sesiones : "inicia"
-
-    %% ====================================================================
-    %% DOMINIO: ACADÉMICO  (🟢 Verde)
-    %% ====================================================================
-
-    Carreras ||--o{ Estudiantes : "cursa"
-    Carreras ||--o{ Pasantias : "requiere"
-    Carreras ||--o{ Carreras_TipoPasantia : "tiene"
-    Tipos_Pasantia ||--o{ Carreras_TipoPasantia : "pertenece a"
-
-    Periodos ||--o{ Pasantias : "se realiza en"
-
-    %% ====================================================================
-    %% DOMINIO: INSTITUCIONES  (🟠 Naranja)
-    %% ====================================================================
-
-    Instituciones ||--o{ Pasantias : "recibe practicantes"
-    Instituciones ||--o{ Representantes : "tiene"
-    Representantes ||--o{ Pasantias : "supervisa"
-
-    %% ====================================================================
-    %% DOMINIO: PASANTÍAS (CORAZÓN DEL SISTEMA)  (🔴 Rojo)
-    %% ====================================================================
-
-    Estudiantes ||--o{ Pasantias : "realiza"
-    Estudiantes ||--o{ Documentos : "tiene"
-    Estudiantes ||--o{ Solicitudes : "solicita"
-
-    Pasantias ||--o{ Pasantias_Tutor : "tiene tutores"
-    Tutores ||--o{ Pasantias_Tutor : "asignado a"
-    Pasantias ||--o{ Bitacora : "registra actividades"
-    Pasantias ||--o{ Evaluaciones : "es evaluado"
-    Pasantias ||--o{ Visitas_Seguimiento : "recibe visitas"
-    Pasantias ||--o{ Visitas : "tiene visitas"
-
-    Evaluaciones ||--o{ Evaluacion_Detalle : "compuesta por"
-    Criterios_Evaluacion ||--o{ Evaluacion_Detalle : "evaluado con"
-```
-
----
-
-## 1. 🔵 Dominio: Seguridad y Acceso
-
-Son las tablas que controlan **quién entra al sistema** y **qué puede hacer**.
-
-```mermaid
-erDiagram
-
-    Personas {
-        int persona_id PK
-        string ci "Cédula (única)"
-        string primer_nombre
-        string primer_apellido
-        string email
-        string telefono
-        int status "1=activo, 0=inactivo"
+classDiagram
+    class t_persons {
+        <<table>>
+    }
+    class t_user {
+        <<table>>
+    }
+    class t_students {
+        <<table>>
+    }
+    class t_tutors {
+        <<table>>
+    }
+    class t_career {
+        <<table>>
+    }
+    class t_internship_type {
+        <<table>>
+    }
+    class t_internships_period {
+        <<table>>
+    }
+    class t_institution {
+        <<table>>
+    }
+    class t_institution_manager {
+        <<table>>
+    }
+    class t_professional_practices {
+        <<table>>
+    }
+    class t_evaluation {
+        <<table>>
+    }
+    class t_evaluation_criteria {
+        <<table>>
+    }
+    class t_evaluation_detail {
+        <<table>>
+    }
+    class t_practice_visits {
+        <<table>>
+    }
+    class t_activity_logs {
+        <<table>>
+    }
+    class t_notifications {
+        <<table>>
     }
 
-    Usuarios {
-        int usuario_id PK
-        int persona_id FK
-        string username
-        string password_hash "Encriptado con bcrypt"
-        int status
-    }
-
-    Roles {
-        int rol_id PK
-        string nombre "Admin, Coordinador, Tutor, Estudiante"
-        string descripcion
-    }
-
-    Roles_Usuario {
-        int usuario_id FK
-        int rol_id FK
-    }
-
-    Permisos {
-        int permiso_id PK
-        string nombre "ej: ver_estudiantes, crear_periodos"
-    }
-
-    Roles_Permisos {
-        int rol_id FK
-        int permiso_id FK
-    }
-
-    Notificaciones {
-        int notificacion_id PK
-        int usuario_id FK
-        string tipo "pre_enrollment, tracking, reminder..."
-        string titulo
-        string mensaje
-        bool leida
-    }
-
-    Sesiones {
-        int sesion_id PK
-        int usuario_id FK
-        timestamp inicio
-        int status
-    }
-
-    Historial_Auth {
-        int historial_id PK
-        int usuario_id FK
-        string accion "login, logout, fallo"
-        string direccion_ip
-        timestamp creado_en
-    }
-
-    Personas ||--o| Usuarios : "una persona\npuede ser usuario"
-    Usuarios ||--o{ Roles_Usuario : "tiene roles"
-    Roles ||--o{ Roles_Usuario : "asignado a usuarios"
-    Roles ||--o{ Roles_Permisos : "tiene permisos"
-    Permisos ||--o{ Roles_Permisos : "asignado a roles"
-    Usuarios ||--o{ Notificaciones : "recibe"
-    Usuarios ||--o{ Historial_Auth : "genera registros"
-    Usuarios ||--o{ Sesiones : "inicia sesión"
-```
-
-### ¿Cómo se relacionan?
-
-**Analogía universitaria:**
-- **Personas** es el registro civil de la universidad: todas las personas que tienen relación con la institución
-- **Usuarios** son los que tienen carnet para entrar al sistema digital
-- **Roles** definen si sos estudiante, profesor, coordinador o admin
-- **Permisos** son autorizaciones específicas: "María tiene rol Coordinadora, y como coordinadora puede ver estudiantes, crear periodos, pero no borrar backups"
-- **Notificaciones** son los avisos que le llegan a cada usuario
-- **Historial_Auth** registra cada vez que alguien entra o intenta entrar (como el libro de visitas de la prefectura)
-
-> 💡 **Para la expo:** Mostrá que UNA persona puede tener varios roles (un profesor que también es tutor), y que los permisos no se asignan a cada usuario uno por uno — se asignan al ROL, y el usuario hereda los permisos de su rol.
-
----
-
-## 2. 🟢 Dominio: Académico
-
-Carreras, periodos y tipos de pasantía — la **estructura académica** de la universidad.
-
-```mermaid
-erDiagram
-
-    Carreras {
-        int carrera_id PK
-        string nombre "Ingeniería de Sistemas"
-        string codigo "ING-SIS (único)"
-        int status
-    }
-
-    Tipos_Pasantia {
-        int tipo_id PK
-        string nombre "Pasantía Corta, Larga, Industrial"
-        string descripcion
-    }
-
-    Carreras_TipoPasantia {
-        int id PK
-        int carrera_id FK
-        int tipo_id FK
-    }
-
-    Periodos {
-        int periodo_id PK
-        string nombre "2026-I"
-        date inicio
-        date fin
-        int status
-    }
-
-    Carreras ||--o{ Carreras_TipoPasantia : "puede tener\nvarios tipos"
-    Tipos_Pasantia ||--o{ Carreras_TipoPasantia : "aplica a\nvarias carreras"
-```
-
-### ¿Cómo se relacionan?
-
-**Analogía:** Cada carrera (Ing. Sistemas, Administración) puede tener varios tipos de pasantía (corta, larga, industrial). Es como un catálogo: cada carrera elige qué tipos de pasantía ofrece. La tabla `Carreras_TipoPasantia` es la "lista de opciones" que conecta ambas.
-
-Los **Periodos** definen las ventanas de tiempo (2026-I, 2026-II) en las que se realizan las pasantías.
-
----
-
-## 3. 🟠 Dominio: Instituciones
-
-Las **empresas y organizaciones** donde los estudiantes hacen sus pasantías.
-
-```mermaid
-erDiagram
-
-    Instituciones {
-        int institucion_id PK
-        string nombre "PDVSA, Mercantil..."
-        string rif "J-12345678-0 (único)"
-        string direccion
-        string telefono
-        string email
-        int status
-    }
-
-    Representantes {
-        int representante_id PK
-        int institucion_id FK
-        string nombre
-        string cargo "Gerente de RRHH"
-        string ci "Cédula (única)"
-        string telefono
-        string email
-    }
-
-    Instituciones ||--o{ Representantes : "tiene"
-```
-
-### ¿Cómo se relacionan?
-
-**Analogía:** Cada institución (empresa) tiene uno o varios representantes. El representante es la persona que firma los convenios, recibe a los pasantes y coordina con la universidad. Una institución SIN representante no puede recibir pasantes.
-
-> 💡 **Para la expo:** Preguntá "¿En sus pasantías, quién los recibía en la empresa?" — Ese es el representante. Y la empresa es la institución.
-
----
-
-## 4. 🔴 Dominio: Pasantías — El Corazón del Sistema
-
-Este es el **núcleo** de todo el sistema. Todo gira alrededor de las pasantías.
-
-### 4.1. Estudiantes y su relación con pasantías
-
-```mermaid
-erDiagram
-
-    Estudiantes {
-        int estudiante_id PK
-        int persona_id FK
-        int carrera_id FK
-        string cedula "Cédula (única)"
-        date fecha_inscripcion
-        int status "1=activo, 0=egresado"
-    }
-
-    Documentos {
-        int documento_id PK
-        int estudiante_id FK
-        string tipo "carta_aval, curriculum, informe"
-        string archivo_nombre "informe_final.pdf"
-        string estado "pendiente, aprobado, rechazado"
-    }
-
-    Solicitudes {
-        int solicitud_id PK
-        int estudiante_id FK
-        string tipo "reasignacion_tutor, cambio_institucion"
-        string estado "pendiente, procesado"
-        json datos_adicionales
-    }
-
-    Estudiantes ||--o{ Documentos : "sube"
-    Estudiantes ||--o{ Solicitudes : "hace"
-```
-
-### 4.2. Pasantías — La tabla central
-
-```mermaid
-erDiagram
-
-    Pasantias {
-        int pasantia_id PK
-        int estudiante_id FK "¿Quién?"
-        int carrera_id FK "¿Qué carrera?"
-        int periodo_id FK "¿Cuándo?"
-        int institucion_id FK "¿Dónde?"
-        int representante_id FK "¿Quién recibe?"
-        int tipo_pasantia_id FK "¿Corta o larga?"
-        date fecha_registro
-        string estado "activa, culminada, cancelada"
-    }
-
-    Tutores {
-        int tutor_id PK
-        int persona_id FK
-        string cedula "Cédula (única)"
-        string especialidad
-        int status
-    }
-
-    Pasantias_Tutor {
-        int id PK
-        int pasantia_id FK
-        int tutor_id FK
-    }
-
-    Bitacora {
-        int bitacora_id PK
-        int pasantia_id FK
-        int estudiante_id FK
-        date fecha_actividad
-        string descripcion "Actividades realizadas"
-        string observaciones
-    }
-
-    Pasantias ||--o{ Pasantias_Tutor : "tiene tutores"
-    Tutores ||--o{ Pasantias_Tutor : "asignado a"
-
-    Pasantias ||--o{ Bitacora : "registra\nactividades diarias"
-```
-
-### 4.3. Evaluaciones y Visitas
-
-```mermaid
-erDiagram
-
-    Evaluaciones {
-        int evaluacion_id PK
-        int pasantia_id FK
-        string tipo_evaluador "tutor_empresa, tutor_academico"
-        decimal puntaje_total
-        int status
-    }
-
-    Criterios_Evaluacion {
-        int criterio_id PK
-        string nombre "Responsabilidad, Calidad de trabajo..."
-        string aplica_para "tutor_empresa, tutor_academico"
-        int puntaje_maximo
-    }
-
-    Evaluacion_Detalle {
-        int detalle_id PK
-        int evaluacion_id FK
-        int criterio_id FK
-        int puntaje "Del 1 al 10"
-    }
-
-    Visitas_Seguimiento {
-        int visita_id PK
-        int pasantia_id FK
-        int tutor_id FK
-        date fecha_visita
-        string tipo "PRESENCIAL, VIRTUAL"
-        decimal horas_trabajadas
-        string actividades_realizadas
-        string observaciones
-        string estado "pendiente, realizada"
-    }
-
-    Visitas {
-        int visita_id PK
-        int pasantia_id FK
-        int tutor_id FK
-        date fecha_visita
-        string actividad_solicitada
-        string actividad_realizada
-        int status
-    }
-
-    Evaluaciones ||--o{ Evaluacion_Detalle : "compuesta por\nvarios criterios"
-    Criterios_Evaluacion ||--o{ Evaluacion_Detalle : "evaluado con"
-    Pasantias ||--o{ Evaluaciones : "tiene"
-    Pasantias ||--o{ Visitas_Seguimiento : "recibe visitas\nde seguimiento"
-    Pasantias ||--o{ Visitas : "tiene visitas\nde campo"
-```
-
-### ¿Cómo se relaciona todo?
-
-```mermaid
-flowchart TB
-    classDef student fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1
-    classDef core fill:#FFCDD2,stroke:#D32F2F,stroke-width:3px,color:#B71C1C
-    classDef tutor fill:#BBDEFB,stroke:#1976D2,stroke-width:2px,color:#0D47A1
-    classDef eval fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,color:#E65100
-    classDef inst fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,color:#1B5E20
-
-    A["🧑 Estudiante<br/>cursa una carrera"] --> B["🎯 Pasantía<br/><b>TABLA CENTRAL</b>"]
-    C["🏢 Institución<br/>donde trabaja"] --> B
-    D["👨‍🏫 Tutor<br/>asignado"] --> B
-    E["📅 Periodo<br/>en que se realiza"] --> B
-    B --> F["📋 Bitácora<br/>actividades diarias"]
-    B --> G["⭐ Evaluaciones<br/>notas del tutor"]
-    B --> H["👁️ Visitas<br/>seguimiento"]
-    B --> I["📄 Documentos<br/>informes, cartas"]
-    B --> J["📨 Solicitudes<br/>reasignaciones, etc."]
-
-    class A student
-    class B core
-    class D tutor
-    class G,H eval
-    class C inst
-```
-
-### El viaje completo de una pasantía:
-
-```
-1. Un ESTUDIANTE está cursando una CARRERA
-         ↓
-2. Llega el PERIODO de pasantías
-         ↓
-3. El estudiante busca una INSTITUCIÓN (empresa)
-         ↓
-4. La institución asigna un REPRESENTANTE que lo recibe
-         ↓
-5. Se REGISTRA la PASANTÍA (tabla central)
-         ↓
-6. Se asigna un TUTOR académico (pueden ser varios)
-         ↓
-7. Durante la pasantía:
-   ├── El estudiante registra BITÁCORA (actividades diarias)
-   ├── El tutor hace VISITAS de seguimiento
-   ├── Se suben DOCUMENTOS (informes, cartas)
-   └── El estudiante puede hacer SOLICITUDES (cambios)
-         ↓
-8. Al finalizar: EVALUACIÓN
-   ├── Evalúa el tutor de la empresa
-   ├── Evalúa el tutor académico
-   └── Cada evaluación tiene CRITERIOS con puntajes
-         ↓
-9. La pasantía se MARCA como culminada ✅
-```
-
-> 💡 **Para la expo:** Este flujo es perfecto para contarlo como una historia. El público sigue naturalmente: estudiante → busca empresa → hace pasantía → lo evalúan. Es la vida real de cualquier pasante universitario.
-
----
-
-## 5. 📋 Tablas de Soporte (Sistema y Configuración)
-
-Además de las tablas principales, el sistema tiene tablas de **soporte técnico**:
-
-| Tabla | ¿Qué guarda? | Analogía |
-|-------|-------------|----------|
-| `t_config` | Configuración general del sistema | El manual de normas de la universidad |
-| `t_academic_config` | Días de gracia, validaciones de periodo | El calendario académico |
-| `t_landing_config` | Contenido de la página principal (landing) | La cartelera de la entrada |
-| `t_backups` | Historial de respaldos de la base de datos | Las copias de seguridad del archivo |
-| `t_list` / `t_value_list` | Listas desplegables (tipos, categorías) | Los formularios con opciones pre-cargadas |
-| `t_change_log` | Registro de cambios en datos importantes | El libro de actas: quién cambió qué y cuándo |
-| `t_chat_sessions` | Conversaciones del asistente IA | El historial del chatbot |
-| `t_prospect_lists` / `t_prospect_list_items` | Listas de prospectos (postulantes) | La lista de aspirantes a ingresar |
-| `t_system_institution` | Datos de la universidad (UNEFA) | La información institucional |
-
----
-
-## 🎯 Resumen: El Sistema en 3 Tablas Clave
-
-Si tenés que explicar el modelo de datos en 3 minutos, mostrá estas 3 tablas:
-
-```mermaid
-flowchart TB
-    classDef persons fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1
-    classDef practices fill:#FFCDD2,stroke:#D32F2F,stroke-width:3px,color:#B71C1C
-    classDef users fill:#BBDEFB,stroke:#1976D2,stroke-width:2px,color:#0D47A1
-
-    A["👤 PERSONAS<br/><b>Registro civil digital</b><br/>Todos: estudiantes, tutores,<br/>coordinadores, admins"]
-    B["🎯 PASANTÍAS<br/><b>El corazón del sistema</b><br/>Conecta estudiante + empresa<br/>+ tutor + periodo + evaluación"]
-    C["🗄️ USUARIOS + ROLES<br/><b>¿Quién entra y qué hace?</b><br/>Seguridad y permisos<br/>Carnet digital + roles"]
-
-    A --> B
-    A --> C
-
-    class A persons
-    class B practices
-    class C users
+    t_persons "1" --> "0..1" t_user : person_id
+    t_persons "1" --> "0..1" t_students : person_id
+    t_persons "1" --> "0..1" t_tutors : person_id
+    t_career "1" --> "0..*" t_students : CAREER_ID
+    t_career "1" --> "0..*" t_professional_practices : CAREER_ID
+    t_internships_period "1" --> "0..*" t_professional_practices : PERIOD_ID
+    t_internship_type "1" --> "0..*" t_professional_practices : INTERNSHIP_TYPE_ID
+    t_institution "1" --> "0..*" t_professional_practices : INSTITUTION_ID
+    t_institution "1" --> "0..*" t_institution_manager : INSTITUTION_ID
+    t_institution_manager "1" --> "0..*" t_professional_practices : MANAGER_ID
+    t_students "1" --> "0..*" t_professional_practices : STUDENTS_ID
+    t_professional_practices "1" --> "0..*" t_evaluation : PROFESSIONAL_PRACTICE_ID
+    t_professional_practices "1" --> "0..*" t_practice_visits : PROFESSIONAL_PRACTICE_ID
+    t_professional_practices "1" --> "0..*" t_activity_logs : PROFESSIONAL_PRACTICE_ID
+    t_evaluation "1" --> "0..*" t_evaluation_detail : EVALUATION_ID
+    t_evaluation_criteria "1" --> "0..*" t_evaluation_detail : CRITERIA_ID
+    t_user "1" --> "0..*" t_notifications : USER_ID
+    t_user "1" --> "0..*" t_evaluation : REGISTERED_BY
 ```
 
 ---
 
-> **📝 Nota:** Los nombres de tablas reales usan el prefijo `t_` y mayúsculas (ej: `t_professional_practices`). Acá se simplificaron para hacerlos más legibles. El sistema tiene 69 tablas en total; este documento cubre las ~25 entidades principales.
+## 2. 🔵 Dominio: Personas, Usuarios y Seguridad
+
+### 2.1. t_persons — Registro Unificado de Personas
+
+Tabla base: toda persona física en el sistema (estudiantes, tutores, usuarios, representantes).
+
+```mermaid
+classDiagram
+    class t_persons {
+        <<table>>
+        +int person_id PK
+        +string ci
+        +string first_name
+        +string last_name
+        +string email
+        +string phone
+        +int status
+        +timestamp created_at
+        +timestamp updated_at
+        +int version
+    }
+```
+
+### 2.2. t_user — Usuarios del Sistema
+
+```mermaid
+classDiagram
+    class t_user {
+        <<table>>
+        +int USER_ID PK
+        +int person_id FK "→ t_persons.person_id"
+        +string USER_CI UK
+        +string NAME
+        +string SURNAME
+        +string EMAIL
+        +string PASSWORD
+        +int STATUS
+        +timestamp CREATION_DATE
+    }
+
+    class t_roles {
+        <<table>>
+        +int ID_ROLS PK
+        +string NAME UK
+        +string DESCRIPTION
+        +int STATUS
+    }
+
+    class t_user_roles {
+        <<table>>
+        +int ID_USER PK, FK "→ t_user.USER_ID"
+        +int ID_ROLES PK, FK "→ t_roles.ID_ROLS"
+    }
+
+    class t_permissions {
+        <<table>>
+        +int PERMISSIONS_ID PK
+        +string NAME UK
+        +string DESCRIPTION
+        +int STATUS
+    }
+
+    class t_roles_permissions {
+        <<table>>
+        +int ROLES_ID PK, FK "→ t_roles.ID_ROLS"
+        +int PERMISSIONS_ID PK, FK "→ t_permissions.PERMISSIONS_ID"
+    }
+
+    t_user "1" --> "0..1" t_persons : person_id
+    t_user "1" --> "0..*" t_user_roles : USER_ID
+    t_roles "1" --> "0..*" t_user_roles : ID_ROLS
+    t_roles "1" --> "0..*" t_roles_permissions : ID_ROLS
+    t_permissions "1" --> "0..*" t_roles_permissions : PERMISSIONS_ID
+```
+
+### 2.3. Sesiones, Autenticación y Notificaciones
+
+```mermaid
+classDiagram
+    class t_session {
+        <<table>>
+        +int SESSION_ID PK
+        +int USER_ID PK, FK "→ t_user.USER_ID"
+        +timestamp LOGIN_TIME
+        +int STATUS
+    }
+
+    class t_session_history {
+        <<table>>
+        +int SESSION_HISTORY_ID PK
+        +int SESSION_ID PK, FK "→ t_session.SESSION_ID"
+        +int USER_ID PK, FK "→ t_session.USER_ID"
+        +timestamp LOGIN_TIME
+        +timestamp LOGOUT_TIME
+        +int STATUS
+    }
+
+    class t_session_attempts {
+        <<table>>
+        +int ATTEMPT_ID PK
+        +int USER_ID PK, FK "→ t_user.USER_ID"
+        +timestamp ATTEMPT_TIME
+        +int ACTION "1=login, 2=logout, 3=failed"
+        +int STATUS
+    }
+
+    class t_auth_log {
+        <<table>>
+        +int ID PK
+        +int USER_ID FK "→ t_user.USER_ID"
+        +string USER_CI
+        +string ACTION
+        +string IP_ADDRESS
+        +text USER_AGENT
+        +text DETAILS
+        +timestamptz CREATED_AT
+    }
+
+    class t_recovery_tokens {
+        <<table>>
+        +int TOKEN_ID PK
+        +int USER_ID FK "→ t_user.USER_ID"
+        +string TOKEN
+        +timestamp EXPIRATION_DATE
+        +int STATUS
+    }
+
+    class t_password_history {
+        <<table>>
+        +int HISTORY_ID PK
+        +int USER_ID FK "→ t_user.USER_ID"
+        +text KEY "password hash"
+        +timestamp CREATION_DATE
+    }
+
+    class t_notifications {
+        <<table>>
+        +int NOTIFICATION_ID PK
+        +int USER_ID FK "→ t_user.USER_ID"
+        +varchar TYPE
+        +varchar TITLE
+        +text MESSAGE
+        +bool READ
+        +timestamp READ_AT
+        +jsonb DATA
+        +timestamp CREATED_AT
+    }
+
+    class t_user_theme {
+        <<table>>
+        +int USER_THEME_ID PK
+        +int USER_ID FK, UK "→ t_user.USER_ID"
+        +varchar BRAND_COLOR
+        +timestamp CREATION_DATE
+        +int STATUS
+    }
+
+    t_user "1" --> "0..*" t_session : USER_ID
+    t_session "1" --> "0..*" t_session_history : SESSION_ID + USER_ID
+    t_user "1" --> "0..*" t_session_attempts : USER_ID
+    t_user "1" --> "0..*" t_auth_log : USER_ID
+    t_user "1" --> "0..*" t_recovery_tokens : USER_ID
+    t_user "1" --> "0..*" t_password_history : USER_ID
+    t_user "1" --> "0..*" t_notifications : USER_ID
+    t_user "1" --> "0..1" t_user_theme : USER_ID
+```
+
+### 2.4. Preguntas de Seguridad
+
+```mermaid
+classDiagram
+    class t_preset_questions {
+        <<table>>
+        +int PRESET_QUESTION_ID PK
+        +string QUESTION_TEXT
+        +int STATUS
+    }
+
+    class t_user_questions {
+        <<table>>
+        +int USER_QUESTION_ID PK
+        +int USER_ID FK "→ t_user.USER_ID"
+        +varchar QUESTION_TYPE "'PRESET' | 'CUSTOM'"
+        +int PRESET_QUESTION_ID FK "→ t_preset_questions.PRESET_QUESTION_ID"
+        +varchar CUSTOM_QUESTION
+        +varchar ANSWER
+        +smallint ORDER_NUM
+        +timestamp CREATED_AT
+        +int STATUS
+    }
+
+    class t_security_questions {
+        <<table>>
+        +int SECURITY_QUESTIONS_ID PK
+        +int USER_ID FK "→ t_user.USER_ID"
+        +int PRESET_QUESTION_ID FK "→ t_preset_questions.PRESET_QUESTION_ID"
+        +text ANSWER
+        +text CUSTOM_QUESTION
+    }
+
+    t_user "1" --> "0..*" t_user_questions : USER_ID
+    t_user "1" --> "0..*" t_security_questions : USER_ID
+    t_preset_questions "1" --> "0..*" t_user_questions : PRESET_QUESTION_ID
+    t_preset_questions "1" --> "0..*" t_security_questions : PRESET_QUESTION_ID
+```
+
+---
+
+## 3. 🟢 Dominio: Académico
+
+```mermaid
+classDiagram
+    class t_career {
+        <<table>>
+        +int CAREER_ID PK
+        +string CAREER_NAME
+        +string CAREER_CODE UK
+        +int STATUS
+    }
+
+    class t_internship_type {
+        <<table>>
+        +int INTERNSHIP_TYPE_ID PK
+        +string NAME
+        +string DESCRIPTION
+        +int STATUS
+    }
+
+    class t_career_internship_type {
+        <<table>>
+        +int ID_CAREER_INTERNSHIP_TYPE_ID PK
+        +int CAREER_ID FK "→ t_career.CAREER_ID"
+        +int INTERNSHIP_TYPE_ID FK "→ t_internship_type.INTERNSHIP_TYPE_ID"
+    }
+
+    class t_internships_period {
+        <<table>>
+        +int PERIOD_ID PK
+        +string PERIOD_NAME
+        +date START_DATE
+        +date END_DATE
+        +int STATUS
+    }
+
+    class t_academic_config {
+        <<table>>
+        +int CONFIG_ID PK
+        +int GRACE_DAYS
+        +int GRACE_DAYS_ENABLED
+        +timestamp UPDATED_AT
+        +int UPDATED_BY
+    }
+
+    t_career "1" --> "0..*" t_career_internship_type : CAREER_ID
+    t_internship_type "1" --> "0..*" t_career_internship_type : INTERNSHIP_TYPE_ID
+```
+
+---
+
+## 4. 🟠 Dominio: Instituciones
+
+```mermaid
+classDiagram
+    class t_institution {
+        <<table>>
+        +int INSTITUTION_ID PK
+        +string INSTITUTION_NAME
+        +string RIF UK
+        +string ADDRESS
+        +string PHONE
+        +string EMAIL
+        +string INSTITUTION_CODE
+        +int STATUS
+        +timestamp CREATED_AT
+    }
+
+    class t_institution_manager {
+        <<table>>
+        +int MANAGER_ID PK
+        +int INSTITUTION_ID FK "→ t_institution.INSTITUTION_ID"
+        +string MANAGER_NAME
+        +string MANAGER_CI UK
+        +string MANAGER_POSITION
+        +string PHONE
+        +string EMAIL
+        +int STATUS
+    }
+
+    class t_institution_career {
+        <<table>>
+        +int INSTITUTION_CAREER_ID PK
+        +int INSTITUTION_ID FK "→ t_institution.INSTITUTION_ID"
+        +int CAREER_ID FK "→ t_career.CAREER_ID"
+    }
+
+    class t_institution_internship_type {
+        <<table>>
+        +int INSTITUTION_INTERNSHIP_TYPE_ID PK
+        +int INSTITUTION_ID FK "→ t_institution.INSTITUTION_ID"
+        +int INTERNSHIP_TYPE_ID FK "→ t_internship_type.INTERNSHIP_TYPE_ID"
+    }
+
+    class t_institution_manager_institution {
+        <<table>>
+        +int INSTITUTION_MANAGER_INSTITUTION_ID PK
+        +int MANAGER_ID FK "→ t_institution_manager.MANAGER_ID"
+        +int INSTITUTION_ID FK "→ t_institution.INSTITUTION_ID"
+    }
+
+    class t_institution_address {
+        <<table>>
+        +int institution_address_id PK
+        +int INSTITUTION_ID FK "→ t_institution.INSTITUTION_ID"
+        +int address_id FK "→ t_address.address_id"
+        +bool is_primary
+    }
+
+    t_institution "1" --> "0..*" t_institution_manager : INSTITUTION_ID
+    t_institution "1" --> "0..*" t_institution_career : INSTITUTION_ID
+    t_career "1" --> "0..*" t_institution_career : CAREER_ID
+    t_institution "1" --> "0..*" t_institution_internship_type : INSTITUTION_ID
+    t_internship_type "1" --> "0..*" t_institution_internship_type : INTERNSHIP_TYPE_ID
+    t_institution_manager "1" --> "0..*" t_institution_manager_institution : MANAGER_ID
+    t_institution "1" --> "0..*" t_institution_manager_institution : INSTITUTION_ID
+```
+
+---
+
+## 5. 🔴 Dominio: Pasantías — El Corazón del Sistema
+
+### 5.1. Estudiantes y Tutores
+
+```mermaid
+classDiagram
+    class t_students {
+        <<table>>
+        +int STUDENTS_ID PK
+        +int person_id FK "→ t_persons.person_id"
+        +int CAREER_ID FK "→ t_career.CAREER_ID"
+        +string STUDENTS_CI UK
+        +string NAME
+        +string SURNAME
+        +string EMAIL
+        +string PHONE
+        +string ADDRESS
+        +date BIRTH_DATE
+        +date ENROLLMENT_DATE
+        +int STATUS
+        +timestamp CREATION_DATE
+    }
+
+    class t_tutors {
+        <<table>>
+        +int TUTOR_ID PK
+        +int person_id FK "→ t_persons.person_id"
+        +string TUTOR_CI UK
+        +string NAME
+        +string SURNAME
+        +string SPECIALTY
+        +string PHONE
+        +string EMAIL
+        +int STATUS
+    }
+
+    class t_tutor_career {
+        <<table>>
+        +int TUTOR_CAREER_ID PK
+        +int TUTOR_ID FK "→ t_tutors.TUTOR_ID"
+        +int CAREER_ID FK "→ t_career.CAREER_ID"
+    }
+
+    class t_coordinadores {
+        <<table>>
+        +int COORDINADOR_ID PK
+        +varchar TIPO "'ACADEMICO' | 'PASANTIA'"
+        +int CAREER_ID FK "→ t_career.CAREER_ID"
+        +string NAME
+        +string SURNAME
+        +string CI
+        +string CARGO
+        +int STATUS
+    }
+
+    t_persons "1" --> "0..1" t_students : person_id
+    t_persons "1" --> "0..1" t_tutors : person_id
+    t_career "1" --> "0..*" t_students : CAREER_ID
+    t_tutors "1" --> "0..*" t_tutor_career : TUTOR_ID
+    t_career "1" --> "0..*" t_tutor_career : CAREER_ID
+    t_career "1" --> "0..*" t_coordinadores : CAREER_ID
+```
+
+### 5.2. Tabla Central — t_professional_practices
+
+```mermaid
+classDiagram
+    class t_professional_practices {
+        <<table>>
+        +int PROFESSIONAL_PRACTICE_ID PK
+        +int STUDENTS_ID FK "→ t_students.STUDENTS_ID"
+        +int CAREER_ID FK "→ t_career.CAREER_ID"
+        +int PERIOD_ID FK "→ t_internships_period.PERIOD_ID"
+        +int INSTITUTION_ID FK "→ t_institution.INSTITUTION_ID"
+        +int MANAGER_ID FK "→ t_institution_manager.MANAGER_ID"
+        +int INTERNSHIP_TYPE_ID FK "→ t_internship_type.INTERNSHIP_TYPE_ID"
+        +date REGISTRATION_DATE
+        +date START_DATE
+        +date END_DATE
+        +varchar STATUS "'active' | 'completed' | 'cancelled'"
+        +timestamp CREATED_AT
+        +timestamp UPDATED_AT
+    }
+
+    class t_professional_practices_tutor {
+        <<table>>
+        +int PROFESSIONAL_PRACTICES_TUTOR_ID PK
+        +int PROFESSIONAL_PRACTICE_ID FK "→ t_professional_practices.PROFESSIONAL_PRACTICE_ID"
+        +int TUTOR_ID FK "→ t_tutors.TUTOR_ID"
+    }
+
+    t_professional_practices "1" --> "0..*" t_professional_practices_tutor : PROFESSIONAL_PRACTICE_ID
+    t_tutors "1" --> "0..*" t_professional_practices_tutor : TUTOR_ID
+    t_students "1" --> "0..*" t_professional_practices : STUDENTS_ID
+    t_career "1" --> "0..*" t_professional_practices : CAREER_ID
+    t_internships_period "1" --> "0..*" t_professional_practices : PERIOD_ID
+    t_institution "1" --> "0..*" t_professional_practices : INSTITUTION_ID
+    t_institution_manager "1" --> "0..*" t_professional_practices : MANAGER_ID
+    t_internship_type "1" --> "0..*" t_professional_practices : INTERNSHIP_TYPE_ID
+```
+
+### 5.3. Evaluaciones
+
+```mermaid
+classDiagram
+    class t_evaluation {
+        <<table>>
+        +int EVALUATION_ID PK
+        +int PROFESSIONAL_PRACTICE_ID FK "→ t_professional_practices.PROFESSIONAL_PRACTICE_ID"
+        +varchar EVALUATOR_TYPE "'TUTOR_ACADEMICO' | 'TUTOR_EMPRESA'"
+        +int REGISTERED_BY FK "→ t_user.USER_ID"
+        +decimal TOTAL_SCORE
+        +int STATUS
+    }
+
+    class t_evaluation_criteria {
+        <<table>>
+        +int CRITERIA_ID PK
+        +string NAME
+        +varchar EVALUATOR_TYPE
+        +int MAX_SCORE
+        +int ITEM_NUMBER
+        +int STATUS
+    }
+
+    class t_evaluation_detail {
+        <<table>>
+        +int DETAIL_ID PK
+        +int EVALUATION_ID FK "→ t_evaluation.EVALUATION_ID"
+        +int CRITERIA_ID FK "→ t_evaluation_criteria.CRITERIA_ID"
+        +int ITEM_NUMBER
+        +decimal SCORE "CHECK 1..10"
+        +int STATUS
+    }
+
+    t_professional_practices "1" --> "0..*" t_evaluation : PROFESSIONAL_PRACTICE_ID
+    t_evaluation "1" --> "0..*" t_evaluation_detail : EVALUATION_ID
+    t_evaluation_criteria "1" --> "0..*" t_evaluation_detail : CRITERIA_ID
+    t_user "1" --> "0..*" t_evaluation : REGISTERED_BY
+```
+
+### 5.4. Visitas de Seguimiento
+
+```mermaid
+classDiagram
+    class t_practice_visits {
+        <<table>>
+        +int VISIT_ID PK
+        +int PROFESSIONAL_PRACTICE_ID FK "→ t_professional_practices.PROFESSIONAL_PRACTICE_ID"
+        +int TUTOR_ID FK "→ t_tutors.TUTOR_ID"
+        +timestamp VISIT_DATE
+        +varchar VISIT_TYPE "'PRESENCIAL' | 'VIRTUAL'"
+        +decimal HOURS_WORKED
+        +text ACTIVITIES_PERFORMED
+        +text OBSERVATIONS
+        +text RECOMMENDATIONS
+        +varchar VISIT_CASE
+        +int STATUS
+        +timestamp CREATED_AT
+        +int CREATED_BY FK "→ t_user.USER_ID"
+    }
+
+    class t_visit {
+        <<table>>
+        +int VISIT_ID PK
+        +int PROFESSIONAL_PRACTICE_ID FK "→ t_professional_practices.PROFESSIONAL_PRACTICE_ID"
+        +int TUTOR_ID FK "→ t_tutors.TUTOR_ID"
+        +date VISIT_DATE
+        +varchar NOTE
+        +varchar REQUESTED_ACTIVITY
+        +varchar CARRIED_ACTIVITY
+        +int STATUS
+    }
+
+    t_professional_practices "1" --> "0..*" t_practice_visits : PROFESSIONAL_PRACTICE_ID
+    t_tutors "1" --> "0..*" t_practice_visits : TUTOR_ID
+    t_professional_practices "1" --> "0..*" t_visit : PROFESSIONAL_PRACTICE_ID
+    t_tutors "1" --> "0..*" t_visit : TUTOR_ID
+```
+
+### 5.5. Bitácora, Documentos y Solicitudes
+
+```mermaid
+classDiagram
+    class t_activity_logs {
+        <<table>>
+        +int ACTIVITY_LOG_ID PK
+        +int PROFESSIONAL_PRACTICE_ID FK "→ t_professional_practices.PROFESSIONAL_PRACTICE_ID"
+        +int STUDENT_ID FK "→ t_students.STUDENTS_ID"
+        +timestamp ACTIVITY_DATE
+        +text DESCRIPTION
+        +text OBSERVATIONS
+        +int STATUS
+        +timestamp CREATED_AT
+        +int CREATED_BY "t_user.USER_ID"
+    }
+
+    class t_student_documents {
+        <<table>>
+        +int DOCUMENT_ID PK
+        +int STUDENT_ID FK "→ t_students.STUDENTS_ID"
+        +int student_person_id FK "→ t_persons.person_id"
+        +varchar DOCUMENT_TYPE "'carta_aval' | 'curriculum' | 'informe' | ..."
+        +varchar TITLE
+        +text DESCRIPTION
+        +varchar FILE_NAME
+        +varchar FILE_PATH
+        +int FILE_SIZE
+        +varchar FILE_TYPE
+        +varchar STATUS "'pending' | 'approved' | 'rejected'"
+        +text REJECTION_REASON
+        +timestamp UPLOADED_AT
+        +timestamp REVIEWED_AT
+        +int REVIEWED_BY FK "→ t_user.USER_ID"
+    }
+
+    class t_student_requests {
+        <<table>>
+        +int REQUEST_ID PK
+        +int STUDENT_ID FK "→ t_students.STUDENTS_ID"
+        +int student_person_id FK "→ t_persons.person_id"
+        +int REQUEST_TYPE_ID FK "→ t_request_types.REQUEST_TYPE_ID"
+        +varchar SUBJECT
+        +text DESCRIPTION
+        +varchar STATUS "'pending' | 'processed'"
+        +text RESPONSE
+        +int PROCESSED_BY
+        +timestamp PROCESSED_AT
+        +jsonb REASSIGNMENT_DATA
+        +smallint IS_REASSIGNMENT
+        +int PREVIOUS_TUTOR_ID
+        +int PREVIOUS_INSTITUTION_ID
+        +int PREVIOUS_CAREER_ID
+        +timestamp CREATION_DATE
+    }
+
+    class t_request_types {
+        <<table>>
+        +int REQUEST_TYPE_ID PK
+        +string NAME
+        +varchar CATEGORY
+        +int STATUS
+    }
+
+    t_professional_practices "1" --> "0..*" t_activity_logs : PROFESSIONAL_PRACTICE_ID
+    t_students "1" --> "0..*" t_student_documents : STUDENT_ID
+    t_students "1" --> "0..*" t_student_requests : STUDENT_ID
+    t_request_types "1" --> "0..*" t_student_requests : REQUEST_TYPE_ID
+```
+
+---
+
+## 6. 📋 Tablas de Soporte
+
+```mermaid
+classDiagram
+    class t_config {
+        <<table>>
+        +int CONFIG_ID PK
+        +varchar CONFIG_KEY UK
+        +text CONFIG_VALUE
+        +int STATUS
+    }
+
+    class t_landing_config {
+        <<table>>
+        +int config_id PK
+        +varchar config_key UK
+        +text config_value
+        +varchar section
+        +int sort_order
+    }
+
+    class t_backups {
+        <<table>>
+        +uuid id PK
+        +varchar name
+        +text description
+        +varchar file_name
+        +text[] tables
+        +jsonb data
+        +int created_by FK "→ t_user.USER_ID"
+        +timestamptz created_at
+    }
+
+    class t_chat_sessions {
+        <<table>>
+        +uuid SESSION_ID PK
+        +int USER_ID FK "→ t_user.USER_ID"
+        +varchar TITLE
+        +jsonb MESSAGES
+        +timestamp CREATED_AT
+        +timestamp UPDATED_AT
+        +int STATUS
+    }
+
+    class t_system_institution {
+        <<table>>
+        +int system_institution_id PK
+        +varchar legal_name
+        +varchar commercial_name
+        +varchar acronym
+        +varchar rif
+        +varchar phone
+        +varchar email
+        +varchar website
+        +varchar logo_url
+        +varchar resolution_number
+        +date foundation_date
+        +smallint status
+    }
+
+    class t_address {
+        <<table>>
+        +int address_id PK
+        +int parroquia_id FK
+        +varchar street_address
+        +text reference
+        +varchar full_address
+        +uuid uuid UK
+        +timestamp created_at
+        +timestamp updated_at
+        +int version
+    }
+
+    class t_prospect_lists {
+        <<table>>
+        +int LIST_ID PK
+        +string NAME
+        +text DESCRIPTION
+        +int PERIOD_ID FK "→ t_internships_period.PERIOD_ID"
+        +int STATUS
+        +int CREATED_BY FK "→ t_user.USER_ID"
+    }
+
+    class t_prospect_list_items {
+        <<table>>
+        +int ITEM_ID PK
+        +int LIST_ID FK "→ t_prospect_lists.LIST_ID"
+        +int STUDENTS_ID FK "→ t_students.STUDENTS_ID"
+        +bool ENROLLED
+        +text NOTES
+        +int ADDED_BY FK "→ t_user.USER_ID"
+    }
+
+    class t_email_templates {
+        <<table>>
+        +int template_id PK
+        +varchar name UK
+        +varchar subject
+        +text body_html
+        +text[] variables
+        +int status
+    }
+
+    class t_knowledge_base {
+        <<table>>
+        +int id PK
+        +text question
+        +text answer
+        +varchar category
+        +int status
+    }
+
+    t_user "1" --> "0..*" t_backups : created_by
+    t_user "1" --> "0..*" t_chat_sessions : USER_ID
+    t_user "1" --> "0..*" t_prospect_lists : CREATED_BY
+    t_prospect_lists "1" --> "0..*" t_prospect_list_items : LIST_ID
+    t_students "1" --> "0..*" t_prospect_list_items : STUDENTS_ID
+    t_internships_period "1" --> "0..*" t_prospect_lists : PERIOD_ID
+```
+
+---
+
+## 7. 📐 Resumen de Cardinalidades
+
+| Relación | Tipo | Significado |
+|----------|------|-------------|
+| `1 → 0..1` | Uno a cero/uno | Una persona PUEDE ser usuario (pero no es obligatorio) |
+| `1 → 0..*` | Uno a muchos | Una carrera TIENE muchos estudiantes (puede tener 0) |
+| `1 → 1..*` | Uno a muchos (obligatorio) | Una evaluación TIENE al menos un detalle |
+| `* → *` | Muchos a muchos | Roles ↔ Permisos (resuelto con tabla intermedia) |
+
+**Reglas de oro del modelo:**
+1. **t_persons** es la raíz — todo el mundo es primero una persona
+2. **t_professional_practices** es la tabla más conectada (8 FK salientes)
+3. Las relaciones muchos-a-muchos se resuelven con tablas intermedias (ej: `t_user_roles`, `t_roles_permissions`, `t_professional_practices_tutor`)
+4. Los IDs son siempre `SERIAL` (autoincrementales) salvo excepciones como `uuid` en backups y chat
+
+---
+
+> **📝 Nota:** Las tablas reales tienen columnas adicionales de auditoría (`MODIF_USER_ID`, `MODIF_USER_DATE`, `ELIM_USER_ID`, `ELIM_USER_DATE`, `REST_USER_ID`, `REST_USER_DATE`) que se omitieron en estos diagramas por claridad. Se incluyeron todas las columnas de negocio relevantes.

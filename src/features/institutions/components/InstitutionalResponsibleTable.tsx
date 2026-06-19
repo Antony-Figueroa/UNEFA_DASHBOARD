@@ -22,7 +22,7 @@ import {
   EyeIcon,
 } from "../../../icons/actions";
 import Badge from "../../../components/ui/badge/Badge";
-import Button from "../../../components/ui/button/Button";
+import { SelectionBar } from "../../../components/common/SelectionBar";
 import { AsyncActionButton } from "../../../components/common/AsyncActionButton";
 import { useDebounce } from "../../../hooks/useDebounce";
 import Checkbox from "../../../components/form/input/Checkbox";
@@ -412,32 +412,28 @@ export default function InstitutionalResponsibleTable({
             )}
           </div>
           <div className="flex items-center">
-            {selectedIds.size > 0 && onBulkAction && (
-              <div className="flex items-center gap-2 animate-fadeIn">
-                <span className="hidden sm:inline text-xs font-medium text-text-secondary dark:text-text-tertiary mr-2">
-                  {selectedIds.size} seleccionados
-                </span>
-                <Button
-                  variant={activeTab === "Activas" ? "outline" : "primary"}
-                  size="sm"
-                  className="min-h-12"
-                  onClick={() => {
-                    onBulkAction(Array.from(selectedIds), activeTab === "Activas" ? "inactivate" : "restore");
+            <SelectionBar
+              count={selectedIds.size}
+              actions={activeTab === "Activas" ? [
+                {
+                  label: "Eliminar",
+                  variant: "error",
+                  onClick: () => {
+                    onBulkAction?.(Array.from(selectedIds), "inactivate");
                     setSelectedIds(new Set());
-                  }}
-                >
-                  {activeTab === "Activas" ? (
-                    <span className="flex items-center gap-2">
-                      <TrashIcon className="icon-sm" /> Eliminar
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <RefreshIcon className="icon-sm" /> Restaurar
-                    </span>
-                  )}
-                </Button>
-              </div>
-            )}
+                  },
+                },
+              ] : [
+                {
+                  label: "Restaurar",
+                  variant: "success",
+                  onClick: () => {
+                    onBulkAction?.(Array.from(selectedIds), "restore");
+                    setSelectedIds(new Set());
+                  },
+                },
+              ]}
+            />
           </div>
         </div>
       </div>

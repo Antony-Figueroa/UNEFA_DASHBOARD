@@ -140,6 +140,7 @@ export default function PreEnrollmentPage() {
     const { careers } = useCareers();
     const { fetchMultipleLists } = useLists();
 
+    const [isSelecting, setIsSelecting] = useState(false);
     const [activeTab, setActiveTab] = useState<"Activas" | "Inactivas">("Activas");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingEntry, setEditingEntry] = useState<PreEnrollment | null>(null);
@@ -366,7 +367,7 @@ export default function PreEnrollmentPage() {
 
                     {!pageLoading && (
                         <div className="flex items-center gap-3">
-                            <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
+                            <Button onClick={handleCreate} disabled={isSelecting} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
                                 Nueva Pre-Inscripción
                             </Button>
                         </div>
@@ -409,6 +410,7 @@ export default function PreEnrollmentPage() {
                                 loading={loadingAction}
                                 periodOptions={periodOptions}
                                 practiceTypeOptions={practiceTypeOptions}
+                                onSelectionChange={setIsSelecting}
                             />
                         </SkeletonLoader>
                     </ComponentCard>

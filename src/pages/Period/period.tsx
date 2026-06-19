@@ -71,6 +71,9 @@ export default function Period() {
     } = usePeriods();
 
 
+    // Estado para saber si hay filas seleccionadas en la tabla (bloquea botonera)
+    const [isSelecting, setIsSelecting] = useState(false);
+
     // Estado para controlar la visibilidad y contenido de los modales.
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPeriodo, setEditingPeriodo] = useState<Periodo | null>(null);
@@ -415,12 +418,13 @@ export default function Period() {
                                 <Button
                                     variant="outline"
                                     onClick={() => setIsPDFModalOpen(true)}
+                                    disabled={isSelecting}
                                     className="sm:w-auto"
                                 >
                                     <DownloadIcon className="w-5 h-5" />
                                     <span className="ml-2">Reporte</span>
                                 </Button>
-                                <Button onClick={handleOpenCreateModal} className="sm:w-auto">
+                                <Button onClick={handleOpenCreateModal} disabled={isSelecting} className="sm:w-auto">
                                     <PlusCircleIcon className="w-5 h-5" />
                                     <span className="ml-2">Nuevo Período</span>
                                 </Button>
@@ -455,6 +459,7 @@ export default function Period() {
                                         onRestore={handleRestore}
                                         onBulkDelete={handleBulkDelete}
                                         onBulkRestore={handleBulkRestore}
+                                        onSelectionChange={setIsSelecting}
                                         externalLoading={loadingAction}
                                     />
                                 </SkeletonLoader>

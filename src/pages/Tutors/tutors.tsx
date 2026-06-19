@@ -140,6 +140,7 @@ export default function TutorsPage() {
         [careers]);
 
     const tabsState = useTabs({ defaultTab: 'Activas' });
+    const [isSelecting, setIsSelecting] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTutor, setEditingTutor] = useState<Tutor | null>(null);
     const [viewTutor, setViewTutor] = useState<TutorRowData | null>(null);
@@ -370,11 +371,12 @@ export default function TutorsPage() {
                             <Button
                                 variant="outline"
                                 onClick={() => setIsExportModalOpen(true)}
+                                disabled={isSelecting}
                                 startIcon={<ArrowUpIcon className="h-5 w-5" />}
                             >
                                 Exportación
                             </Button>
-                            <Button onClick={handleCreate} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
+                            <Button onClick={handleCreate} disabled={isSelecting} startIcon={<PlusCircleIcon className="h-5 w-5" />}>
                                 Nuevo Tutor
                             </Button>
                         </div>
@@ -409,6 +411,7 @@ export default function TutorsPage() {
                                 careers={careers}
                                 conditionOptions={dynamicLists["Condición"] || []}
                                 loading={loadingAction}
+                                onSelectionChange={setIsSelecting}
                             />
                         </SkeletonLoader>
                     </ComponentCard>

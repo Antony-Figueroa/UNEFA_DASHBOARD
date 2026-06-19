@@ -105,6 +105,8 @@ interface ActionButtonsProps {
     isExportDisabled?: boolean;
     /** Tooltip para exportación deshabilitada */
     exportDisabledTooltip?: string;
+    /** Deshabilita todas las acciones (cuando hay selección múltiple activa) */
+    disableAll?: boolean;
 }
 
 /**
@@ -145,6 +147,7 @@ const ActionButtons = ({
     disabledTooltip = "",
     isExportDisabled = false,
     exportDisabledTooltip = "",
+    disableAll = false,
 }: ActionButtonsProps) => {
     const containerClasses = isMobile 
         ? "flex flex-col gap-3 pt-2" 
@@ -160,6 +163,7 @@ const ActionButtons = ({
                     label={isMobile ? "Ver Detalles" : undefined}
                     variant="primary"
                     fullWidth={isMobile}
+                    disabled={disableAll}
                 />
             )}
             {onEdit && activeTab === "Activas" && (
@@ -170,6 +174,7 @@ const ActionButtons = ({
                     label={isMobile ? "Editar Estudiante" : undefined}
                     variant="primary"
                     fullWidth={isMobile}
+                    disabled={disableAll}
                 />
             )}
             {onToggleStatus && (inactiveMode || status === false) && (
@@ -180,6 +185,7 @@ const ActionButtons = ({
                     label={isMobile ? (inactiveMode ? "Restaurar Estudiante" : "Activar Estudiante") : undefined}
                     variant="success"
                     fullWidth={isMobile}
+                    disabled={disableAll}
                 />
             )}
             {onToggleStatus && activeTab === "Activas" && (
@@ -190,7 +196,7 @@ const ActionButtons = ({
                     label={isMobile ? "Eliminar Estudiante" : undefined}
                     variant="error"
                     fullWidth={isMobile}
-                    disabled={isDisabled}
+                    disabled={disableAll || isDisabled}
                 />
             )}
             {onExportToPreEnrollment && activeTab === "Activas" && (
@@ -201,7 +207,7 @@ const ActionButtons = ({
                     label={isMobile ? "Exportar a Pre-Inscripción" : undefined}
                     variant="info"
                     fullWidth={isMobile}
-                    disabled={isExportDisabled}
+                    disabled={disableAll || isExportDisabled}
                 />
             )}
         </div>
@@ -661,6 +667,7 @@ export default function StudentTable({
                                             disabledTooltip="Este estudiante tiene registros relacionados y no puede ser eliminado"
                                             isExportDisabled={s.isInUse}
                                             exportDisabledTooltip="El estudiante ya tiene un registro en prácticas profesionales"
+                                            disableAll={selectedIds.length > 0}
                                         />
                                     </TableCell>
                                 </TableRow>
@@ -751,6 +758,7 @@ export default function StudentTable({
                                             disabledTooltip="Este estudiante tiene registros relacionados y no puede ser eliminado"
                                             isExportDisabled={s.isInUse}
                                             exportDisabledTooltip="El estudiante ya tiene un registro en prácticas profesionales"
+                                            disableAll={selectedIds.length > 0}
                                         />
                                     </div>
                                 )}

@@ -5,6 +5,7 @@ import { sanitizeText } from '../utils/text-utils.js';
 import { auditCreate, auditUpdate, auditStatusChange } from '../utils/audit-helpers.js';
 import { periodNotificationService } from '../services/period-notification.service.js';
 import { PERIOD_STATUS } from '../constants/practice-status.constants.js';
+import { isFeatureEnabled, getTypeDatesByPeriod } from '../services/period-type-dates.service.js';
 
 const TABLE_NAME = 't_internships_period';
 
@@ -174,7 +175,14 @@ export const getPeriodById = async (req: Request, res: Response) => {
       }
       return data as Period;
     });
-    res.json(data);
+
+    // Include typeDates when feature flag is on (task 2.3)
+    if (isFeatureEnabled()) {
+      const typeDates = await getTypeDatesByPeriod(parseInt(id, 10));
+      res.json({ ...data, typeDates });
+    } else {
+      res.json(data);
+    }
   } catch (error: unknown) {
     handleDbError(res, error);
   }

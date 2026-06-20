@@ -271,11 +271,12 @@ export const reportsService = {
     return response.data;
   },
 
-  exportReportExcel: async (type: string, periodId?: number, careerId?: number, careerIds?: number[]) => {
+  exportReportExcel: async (type: string, periodId?: number, careerId?: number, careerIds?: number[], tutorId?: number) => {
     const params = new URLSearchParams();
     if (periodId) params.append('periodId', periodId.toString());
     if (careerId) params.append('careerId', careerId.toString());
     if (careerIds && careerIds.length > 0) params.append('careerIds', careerIds.join(','));
+    if (tutorId) params.append('tutorId', tutorId.toString());
     const response = await apiClient.get(`/reports/export/${type}?${params.toString()}`, {
       responseType: 'blob'
     });

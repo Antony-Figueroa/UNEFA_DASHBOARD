@@ -16,10 +16,12 @@ import { DocumentReportModal } from "../../features/reports/components/DocumentR
 import { ProspectListModal } from "../../features/prospectos/components/ProspectListModal";
 import { ProyeccionModal } from "./ProyeccionModal";
 import { useReports } from "../../features/reports/hooks/useReports";
-import { getReportConfig, DOCUMENT_SECTIONS, ReportType } from "../../features/reports/config/reportConfig";
+import { getReportConfig, DOCUMENT_SECTIONS, ReportType, setCurrentTutorId, currentTutorId } from "../../features/reports/config/reportConfig";
 import { generateSimpleExcel } from "../../utils/unefaExcelReports";
 import toast from "react-hot-toast";
 import { DocumentProps } from "@react-pdf/renderer";
+import { SearchableInput } from "../../features/reports/components/SearchableInput";
+import type { TutorSearchResult } from "../../features/reports/services/reportsService";
 
 export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,23 @@ export default function ReportsPage() {
   const [paginationInfo, setPaginationInfo] = useState<{ page: number; totalPages: number; totalRecords: number } | null>(null);
   const activeReportConfigRef = useRef<{ type: string; periodNum?: number } | null>(null);
 
+  // State for tutor selection (relacion-individual-docente)
+  const [showTutorSelector, setShowTutorSelector] = useState(false);
+  const [pendingExportType, setPendingExportType] = useState<string | null>(null);
+
   const { fetchData: fetchReportData, exportExcel } = useReports();
+
+  /** Descarga un blob como archivo */
+  const downloadBlob = useCallback((blob: Blob, filename: string) => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }, []);
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -161,27 +179,51 @@ export default function ReportsPage() {
     setPaginationInfo({ page: newPage, totalPages, totalRecords: loaded.meta?.total || loaded.data.length });
   }, [loadReportPage, careerIdsFilter]);
 
-  const handleExportExcel = useCallback(async (type: string) => {
+  const handleExportExcel = useCallback(async (type: string, preSelectedTutorId?: number) => {
+    // Para relacion-individual-docente, necesitamos un tutorId
     if (type === "relacion-individual-docente") {
-      toast("Seleccione un tutor desde la sección de tutores", { icon: "ℹ️" });
-      return;
+      const tutorId = preSelectedTutorId || currentTutorId;
+      if (!tutorId) {
+        setPendingExportType(type);
+        setShowTutorSelector(true);
+        return;
+      }
     }
+
     setLoadingExcelId(type);
     try {
       const periodNum = periodFilter ? parseInt(periodFilter.split('-')[0]) : undefined;
       const effectiveCareerIds = careerIdsFilter.length > 0 ? careerIdsFilter : undefined;
-      const result = await fetchReportData(type, periodNum, undefined, 0, 9999, effectiveCareerIds);
-      if (result?.data) {
-        const periodLabel = periodFilter || "Todos";
-        await exportExcel(type, result.data, periodLabel);
-      }
-    } catch (error) {
+      const label = periodFilter || "Todos";
+      const safeLabel = label.replace(/\s+/g, '_');
+      const dateStr = new Date().toISOString().split('T')[0];
+      const filename = `${type}_${safeLabel}_${dateStr}.xlsx`;
+
+      // Llamada directa al backend — reemplaza la generación client-side
+      const tutorId = type === "relacion-individual-docente"
+        ? (preSelectedTutorId || currentTutorId)
+        : undefined;
+      const blob = await reportsService.exportReportExcel(type, periodNum, undefined, effectiveCareerIds, tutorId);
+      downloadBlob(blob, filename);
+      toast.success('Reporte exportado exitosamente');
+    } catch (error: any) {
       console.error(`[Reports] Error exporting ${type}:`, error);
-      toast.error('Error al exportar el reporte');
+      const message = error?.response?.data?.message || 'Error al exportar el reporte';
+      toast.error(message);
     } finally {
       setLoadingExcelId(null);
     }
-  }, [periodFilter, fetchReportData, exportExcel, careerIdsFilter]);
+  }, [periodFilter, downloadBlob, careerIdsFilter]);
+
+  const handleTutorSelect = useCallback((tutor: TutorSearchResult) => {
+    setCurrentTutorId(tutor.tutorId);
+    setShowTutorSelector(false);
+    const exportType = pendingExportType;
+    setPendingExportType(null);
+    if (exportType) {
+      handleExportExcel(exportType, tutor.tutorId);
+    }
+  }, [pendingExportType, handleExportExcel]);
 
   const exportTableToExcel = async (data: any[], fileName: string) => {
     const config = getReportConfig(activeReportId);
@@ -240,6 +282,43 @@ export default function ReportsPage() {
             </Button>
           </div>
         </div>
+
+        {/* Tutor selector for relacion-individual-docente export */}
+        {showTutorSelector && (
+          <div className="rounded-xl border border-border-default dark:border-border-dark bg-bg-surface dark:bg-bg-dark-surface p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-text-primary dark:text-text-emphasis">
+                Seleccionar Tutor para Relación Individual
+              </h3>
+              <button
+                onClick={() => { setShowTutorSelector(false); setPendingExportType(null); }}
+                className="text-text-tertiary hover:text-text-primary transition-colors"
+                aria-label="Cerrar"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <SearchableInput<TutorSearchResult>
+              placeholder="Buscar tutor por nombre o cédula..."
+              search={reportsService.searchTutors}
+              renderItem={(item) => (
+                <div>
+                  <p className="text-sm font-medium text-text-primary dark:text-text-emphasis">
+                    {item.fullName}
+                  </p>
+                  <p className="text-xs text-text-tertiary">
+                    CI: {item.ci} | Email: {item.email} | {item.careers}
+                  </p>
+                </div>
+              )}
+              onSelect={handleTutorSelect}
+              getKey={(item) => String(item.tutorId)}
+              minChars={2}
+            />
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {loading ? (

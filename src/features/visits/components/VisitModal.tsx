@@ -63,6 +63,20 @@ const visitSchema = z.object({
   }
 ).refine(
   (data) => {
+    const d = new Date(data.visitDate);
+    const hour = d.getHours();
+    // Horario razonable: 6:00 a 22:00
+    if (hour < 6 || hour >= 22) return false;
+    // No domingos
+    if (d.getDay() === 0) return false;
+    return true;
+  },
+  {
+    message: 'La visita debe ser en horario laboral (lunes a sábado, 6:00 a 22:00)',
+    path: ['visitDate']
+  }
+).refine(
+  (data) => {
     // Validación: observaciones requeridas para casos de problemas
     // Esta validación se hace en el onSubmitForm en lugar del schema
     // porque visitCase ahora es dinámico y depende de las listas

@@ -49,6 +49,12 @@ export function AceptacionTutorPDF({ data, textos }: Props) {
           <Text style={styles.firmaRol}>C.I.: {data.tutor ? formatCI(data.tutor.ci) : 'N/A'}</Text>
           <Text style={styles.firmaRol}>Teléfono: {data.tutor?.telefono || ''}</Text>
         </View>
+        <View style={styles.firmaContainer}>
+          <Text style={styles.firmaLine}>___________________________________</Text>
+          <Text style={styles.firmaNombre}>MSc. Marbelys del Valle Rivero</Text>
+          <Text style={styles.firmaRol}>Decana del Núcleo Portuguesa</Text>
+          <Text style={styles.firmaRol}>Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022</Text>
+        </View>
       </Page>
     </Document>
   );

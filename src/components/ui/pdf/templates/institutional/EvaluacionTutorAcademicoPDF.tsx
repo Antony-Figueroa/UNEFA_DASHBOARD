@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
-import { formatNombreCompleto, formatCI } from '@/features/reports/utils/reportFormatters';
+import { formatNombreCompleto, formatCI, formatFecha } from '@/features/reports/utils/reportFormatters';
 import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
 
 const styles = StyleSheet.create({
@@ -26,19 +26,27 @@ interface Props {
   data: {
     estudiante: { ci: string; primerNombre: string; segundoNombre?: string; primerApellido: string; segundoApellido?: string };
     carrera: { nombre: string };
-    tutorAcademico: { titulo: string | null; primerNombre: string; segundoNombre?: string; primerApellido: string; segundoApellido?: string } | null;
-    periodo: { description: string } | null;
+    tutorAcademico: { ci: string; titulo: string | null; primerNombre: string; segundoNombre?: string; primerApellido: string; segundoApellido?: string } | null;
+    periodo: { description: string; startDate: string; endDate: string } | null;
     evaluacion: { totalScore: number; observations: string; criterios: Criterio[] } | null;
   };
   textos: Record<string, string>;
 }
 
 export function EvaluacionTutorAcademicoPDF({ data, textos }: Props) {
+  const tutorAcadName = data.tutorAcademico
+    ? formatNombreCompleto(data.tutorAcademico)
+    : 'No asignado';
+
   const cuerpo = renderDocumentText(textos.encabezado || '', {
     estudianteNombreCompleto: formatNombreCompleto(data.estudiante),
     estudianteCi: formatCI(data.estudiante.ci),
     carrera: data.carrera.nombre,
     periodo: data.periodo?.description || '',
+    tutorAcademicoNombre: tutorAcadName,
+    tutorAcademicoCi: data.tutorAcademico ? formatCI(data.tutorAcademico.ci) : '',
+    fechaInicio: data.periodo ? formatFecha(data.periodo.startDate) : '',
+    fechaFin: data.periodo ? formatFecha(data.periodo.endDate) : '',
   });
 
   return (

@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
-import { formatNombreCompleto, safeString } from '@/features/reports/utils/reportFormatters';
+import { formatNombreCompleto, formatCI, formatFecha, safeString } from '@/features/reports/utils/reportFormatters';
 import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
 
 const styles = StyleSheet.create({
@@ -27,22 +27,33 @@ interface Criterio {
 
 interface Props {
   data: {
-    estudiante: { primerNombre: string; segundoNombre?: string; primerApellido: string; segundoApellido?: string };
+    estudiante: { ci: string; primerNombre: string; segundoNombre?: string; primerApellido: string; segundoApellido?: string };
     carrera: { nombre: string };
     institucion: { nombre: string } | null;
     department: string | null;
-    tutorInstitucional: { titulo: string | null; primerNombre: string; segundoNombre?: string; primerApellido: string; segundoApellido?: string } | null;
+    periodo: { description: string; startDate: string; endDate: string } | null;
+    tutorInstitucional: { ci: string; titulo: string | null; primerNombre: string; segundoNombre?: string; primerApellido: string; segundoApellido?: string } | null;
     evaluacion: { totalScore: number; observations: string; criterios: Criterio[] } | null;
   };
   textos: Record<string, string>;
 }
 
 export function EvaluacionTutorInstitucionalPDF({ data, textos }: Props) {
+  const tutorInstName = data.tutorInstitucional
+    ? formatNombreCompleto(data.tutorInstitucional)
+    : 'No asignado';
+
   const cuerpo = renderDocumentText(textos.encabezado || '', {
     estudianteNombreCompleto: formatNombreCompleto(data.estudiante),
+    estudianteCi: formatCI(data.estudiante.ci),
     carrera: data.carrera.nombre,
     departamento: safeString(data.department, 'No especificado'),
     institucionNombre: data.institucion?.nombre || 'No asignada',
+    periodo: data.periodo?.description || '',
+    tutorInstitucionalNombre: tutorInstName,
+    tutorInstitucionalCi: data.tutorInstitucional ? formatCI(data.tutorInstitucional.ci) : '',
+    fechaInicio: data.periodo ? formatFecha(data.periodo.startDate) : '',
+    fechaFin: data.periodo ? formatFecha(data.periodo.endDate) : '',
   });
 
   return (

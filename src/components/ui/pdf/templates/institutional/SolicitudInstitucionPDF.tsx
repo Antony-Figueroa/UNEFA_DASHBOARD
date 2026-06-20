@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
-import { formatNombreCompleto, formatCI, formatFechaLapso } from '@/features/reports/utils/reportFormatters';
+import { formatNombreCompleto, formatCI, formatFecha } from '@/features/reports/utils/reportFormatters';
 import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
 
 const styles = StyleSheet.create({
@@ -31,8 +31,8 @@ export function SolicitudInstitucionPDF({ data, textos }: Props) {
     estudianteCi: formatCI(data.estudiante.ci),
     carrera: data.carrera.nombre,
     institucionNombre: data.institucion?.nombre || 'No asignada',
-    lapsoInicio: data.periodo ? formatFechaLapso(data.periodo.startDate, data.periodo.endDate) : '',
-    lapsoFin: '',
+    lapsoInicio: data.periodo ? formatFecha(data.periodo.startDate) : '',
+    lapsoFin: data.periodo ? formatFecha(data.periodo.endDate) : '',
   });
   const firma = textos.firma || '';
 

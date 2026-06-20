@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Periodo, CreatePeriodPayload, UpdatePeriodPayload } from '../types';
+import { Periodo, CreatePeriodPayload, UpdatePeriodPayload, PeriodTypeDate } from '../types';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '../../../components/ui/modal';
 import FlatpickrDatePicker from '../../../components/form/FlatpickrDatePicker';
 import Button from '../../../components/ui/button/Button';
@@ -16,6 +16,9 @@ import { getPeriodSchema, PeriodFormData, getLapsoValue } from '../utils/periodV
 import { useUnsavedChanges } from '../../../hooks/useUnsavedChanges';
 import UnifiedDialog from '../../../components/ui/dialog/UnifiedDialog';
 import { SYSTEM_DIALOGS } from '../../../components/ui/dialog/DialogConfig';
+import apiClient from '../../../api/apiClient';
+import { motion, AnimatePresence } from 'framer-motion';
+import { AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 
 
 /**
@@ -34,6 +37,8 @@ interface PeriodModalProps {
     isLoading?: boolean;
     /** Lista de periodos existentes para validaciones de solapamiento y secuencia */
     existingPeriods: Periodo[];
+    /** Función para guardar fechas personalizadas por tipo de pasantía */
+    onSaveTypeDates?: (periodId: number, typeDates: Omit<PeriodTypeDate, 'id' | 'createdAt' | 'updatedAt'>[]) => Promise<void>;
 }
 
 /**
@@ -50,7 +55,8 @@ export default function PeriodModal({
     onSave, 
     periodo, 
     isLoading = false, 
-    existingPeriods 
+    existingPeriods,
+    onSaveTypeDates
 }: PeriodModalProps) {
     const { register, handleSubmit, formState: { errors, isDirty, isValid }, control, reset, watch, setValue } = useForm<PeriodFormData>({
         resolver: zodResolver(getPeriodSchema(existingPeriods, periodo?.periodId || undefined, !!periodo)),
@@ -89,6 +95,66 @@ export default function PeriodModal({
 
     // Ref para evitar que los efectos de sincronización interfieran con la inicialización
     const isInitializing = useRef(false);
+
+    // --- Type Dates Accordion State ---
+    const [accordionOpen, setAccordionOpen] = useState(false);
+    const [internshipTypes, setInternshipTypes] = useState<Array<{ id: number; name: string }>>([]);
+    const [typeDatesState, setTypeDatesState] = useState<Record<number, { startDate: string | null; endDate: string | null }>>({});
+    const [coverageWarnings, setCoverageWarnings] = useState<string[]>([]);
+    const [editingTypeDates, setEditingTypeDates] = useState(false);
+
+    // Flatpickr onChange altInput returns d/m/Y. Convert to Y-m-d for storage so value sync setDate(Y-m-d) works.
+    const toYmd = (str: string): string => {
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+            const [d, m, y] = str.split('/');
+            return `${y}-${m}-${d}`;
+        }
+        return str;
+    };
+
+    // Fetch internship types and initialize type dates
+    useEffect(() => {
+        if (!isOpen) {
+            setInternshipTypes([]);
+            setTypeDatesState({});
+            setCoverageWarnings([]);
+            setAccordionOpen(false);
+            setEditingTypeDates(false);
+            return;
+        }
+
+        const fetchTypes = async () => {
+            try {
+                const response = await apiClient.get<Array<{ INTERNSHIP_TYPE_ID?: number; id?: number; NAME?: string; name?: string }>>('/internship-types');
+                const types = response.data.map(dto => ({
+                    id: dto.INTERNSHIP_TYPE_ID ?? dto.id ?? 0,
+                    name: dto.NAME ?? dto.name ?? '',
+                })).filter(t => t.id > 0);
+                setInternshipTypes(types);
+
+                // Initialize type dates from existing periodo data
+                const initial: Record<number, { startDate: string | null; endDate: string | null }> = {};
+                if (periodo?.typeDates && periodo.typeDates.length > 0) {
+                    for (const td of periodo.typeDates) {
+                        initial[td.internshipTypeId] = {
+                            startDate: td.startDate ?? null,
+                            endDate: td.endDate ?? null,
+                        };
+                    }
+                }
+                setTypeDatesState(initial);
+
+                // Determine coverage warnings: types NOT in initial (no custom dates)
+                const coveredTypeIds = new Set(types.filter(t => initial[t.id] !== undefined).map(t => t.id));
+                const uncovered = types.filter(t => !coveredTypeIds.has(t.id));
+                setCoverageWarnings(uncovered.map(t => t.name));
+            } catch (error) {
+                console.error('[PeriodModal] Error al cargar tipos de pasantía:', error);
+            }
+        };
+
+        fetchTypes();
+    }, [isOpen, periodo]);
 
     /**
      * Calcula los rangos de fechas de los periodos existentes para deshabilitarlos en el calendario.
@@ -391,7 +457,7 @@ export default function PeriodModal({
         setShowConfirmDialog(true);
     };
 
-    const handleConfirmSave = () => {
+    const handleConfirmSave = async () => {
         if (!pendingData) return;
         const data = pendingData;
         
@@ -405,6 +471,39 @@ export default function PeriodModal({
             }
 
             if (periodo) {
+                // --- Validate type dates within parent period range ---
+                const typeNameMap = new Map(internshipTypes.map(t => [t.id, t.name]));
+                const typeDatesEntries = Object.entries(typeDatesState);
+                for (const [typeIdStr, dates] of typeDatesEntries) {
+                    const typeName = typeNameMap.get(parseInt(typeIdStr)) || `Tipo #${typeIdStr}`;
+                    
+                    // Parse Y-m-d strings to local-noon dates for consistent comparison
+                    const parseYmd = (str: string): Date => {
+                        const [y, m, d] = str.split('-').map(Number);
+                        return new Date(y, m - 1, d, 12, 0, 0);
+                    };
+
+                    if (dates.startDate) {
+                        const start = parseYmd(dates.startDate);
+                        if (start.getTime() < periodo.startDate.getTime()) {
+                            throw new Error(`${typeName}: la fecha de inicio es anterior al inicio del periodo`);
+                        }
+                    }
+                    if (dates.endDate) {
+                        const end = parseYmd(dates.endDate);
+                        if (end.getTime() > periodo.endDate.getTime()) {
+                            throw new Error(`${typeName}: la fecha de fin es posterior al fin del periodo`);
+                        }
+                    }
+                    if (dates.startDate && dates.endDate) {
+                        const start = parseYmd(dates.startDate);
+                        const end = parseYmd(dates.endDate);
+                        if (start.getTime() > end.getTime()) {
+                            throw new Error(`${typeName}: la fecha de inicio no puede ser posterior a la fecha de fin`);
+                        }
+                    }
+                }
+
                 const updatePayload: UpdatePeriodPayload = {
                     periodId: periodo.periodId,
                     code: newDescription,
@@ -414,7 +513,20 @@ export default function PeriodModal({
                     periodStatus: periodo.periodStatus,
                     status: periodo.status,
                 };
-                onSave(updatePayload);
+                await onSave(updatePayload);
+                
+                // Save type dates after period update
+                if (onSaveTypeDates && typeDatesEntries.length > 0) {
+                    await onSaveTypeDates(
+                        parseInt(periodo.periodId),
+                        typeDatesEntries.map(([typeId, dates]) => ({
+                            periodId: parseInt(periodo.periodId),
+                            internshipTypeId: parseInt(typeId),
+                            startDate: dates.startDate,
+                            endDate: dates.endDate,
+                        }))
+                    );
+                }
             } else {
                 const createPayload: CreatePeriodPayload = {
                     code: newDescription,
@@ -424,7 +536,10 @@ export default function PeriodModal({
                     periodStatus: 1, // Pendiente por defecto
                     status: true,
                 };
-                onSave(createPayload);
+                await onSave(createPayload);
+                
+                // Type dates for new periods are handled after creation (periodId known)
+                // The parent should call onSaveTypeDates after the period is created
             }
         } catch (error) {
             console.error("[PeriodModal] Error al procesar el envío del formulario:", error);
@@ -601,6 +716,114 @@ export default function PeriodModal({
                             </div>
                         </div>
                     </div>
+
+                    {/* Accordion: Fechas por tipo */}
+                    {internshipTypes.length > 0 && (
+                        <div className="mt-6 border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
+                            <button
+                                type="button"
+                                onClick={() => setAccordionOpen(!accordionOpen)}
+                                className="w-full flex items-center justify-between px-4 py-3 bg-bg-secondary/30 dark:bg-white/5 hover:bg-bg-secondary/50 dark:hover:bg-white/10 transition-colors text-left"
+                            >
+                                <span className="text-sm font-medium text-text-primary dark:text-white/90">
+                                    Fechas por tipo
+                                </span>
+                                {accordionOpen ? (
+                                    <ChevronUp className="w-4 h-4 text-text-secondary" />
+                                ) : (
+                                    <ChevronDown className="w-4 h-4 text-text-secondary" />
+                                )}
+                            </button>
+                            <AnimatePresence initial={false}>
+                                {accordionOpen && (
+                                    <motion.div
+                                        key="type-dates-accordion"
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="overflow-hidden"
+                                    >
+                                        <div className="px-4 pb-4 pt-2 space-y-4">
+                                            {internshipTypes.map((type) => {
+                                                const td = typeDatesState[type.id];
+                                                return (
+                                                    <div key={type.id} className="p-3 rounded-lg bg-bg-secondary/20 dark:bg-white/5 border border-border-light dark:border-border-dark">
+                                                        <p className="text-xs font-semibold text-text-primary dark:text-white/90 uppercase tracking-wider mb-2">
+                                                            {type.name}
+                                                        </p>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                            <div>
+                                                                <label className="text-[11px] font-medium text-text-tertiary mb-1 block">
+                                                                    Fecha de Inicio
+                                                                </label>
+                                                                <FlatpickrDatePicker
+                                                                    value={td?.startDate ?? ''}
+                                                                    onChange={(dateStr) => {
+                                                                        setTypeDatesState(prev => ({
+                                                                            ...prev,
+                                                                            [type.id]: {
+                                                                                ...prev[type.id],
+                                                                                startDate: toYmd(dateStr) || null,
+                                                                                endDate: prev[type.id]?.endDate ?? null,
+                                                                            },
+                                                                        }));
+                                                                    }}
+                                                                    options={{
+                                                                        minDate: periodo?.startDate ? new Date(periodo.startDate.getTime() - 86400000) : undefined,
+                                                                        maxDate: periodo?.endDate ? new Date(periodo.endDate.getTime() + 86400000) : undefined,
+                                                                    }}
+                                                                    placeholder="dd/mm/aaaa"
+                                                                />
+                                                             </div>
+                                                             <div>
+                                                                 <label className="text-[11px] font-medium text-text-tertiary mb-1 block">
+                                                                     Fecha de Fin
+                                                                 </label>
+                                                                <FlatpickrDatePicker
+                                                                    value={td?.endDate ?? ''}
+                                                                    onChange={(dateStr) => {
+                                                                        setTypeDatesState(prev => ({
+                                                                            ...prev,
+                                                                            [type.id]: {
+                                                                                ...prev[type.id],
+                                                                                startDate: prev[type.id]?.startDate ?? null,
+                                                                                endDate: toYmd(dateStr) || null,
+                                                                            },
+                                                                        }));
+                                                                    }}
+                                                                     options={{
+                                                                        minDate: periodo?.startDate ? new Date(periodo.startDate.getTime() - 86400000) : undefined,
+                                                                        maxDate: periodo?.endDate ? new Date(periodo.endDate.getTime() + 86400000) : undefined,
+                                                                    }}
+                                                                    placeholder="dd/mm/aaaa"
+                                                                 />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+
+                                            {/* Coverage warning */}
+                                            {coverageWarnings.length > 0 && (
+                                                <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                                                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                                                    <div>
+                                                        <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                                                            Tipos sin fechas personalizadas
+                                                        </p>
+                                                        <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5">
+                                                            {coverageWarnings.join(', ')} — se usarán las fechas del periodo padre.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    )}
 
                 </form>
             </ModalBody>

@@ -296,31 +296,31 @@ export default function VisitModal({
   }, [isOpen, fetchMultipleLists]);
 
   // Construir opciones de tutores para el selector
-  // SOLO muestra los tutores asignados a la práctica (assignedTutors)
-  // Muestra el tipo (ACADÉMICO/METODOLÓGICO) + conteo de visitas
+  // Muestra TODOS los tutores disponibles; los asignados a la práctica se marcan y van primero.
+  // Si ninguno de los tutores asignados puede asistir, se puede seleccionar otro.
   useEffect(() => {
-    // Si hay tutores asignados, filtrar SOLO esos; si no, mostrar todos (fallback)
-    const tutorIds = assignedTutors && assignedTutors.length > 0
-      ? new Set(assignedTutors.map(a => String(a.tutorId)))
-      : null;
-
-    // Mapa rápido de tutorId -> tutorType
+    const assignedIds = new Set((assignedTutors || []).map(a => String(a.tutorId)));
     const tutorTypeMap = new Map<string, string>();
-    if (assignedTutors) {
-      assignedTutors.forEach(a => tutorTypeMap.set(String(a.tutorId), a.tutorType));
-    }
+    (assignedTutors || []).forEach(a => tutorTypeMap.set(String(a.tutorId), a.tutorType));
 
     const options = tutors
-      .filter(t => !tutorIds || tutorIds.has(String(t.tutorId)))
       .map(t => {
+        const isAssigned = assignedIds.has(String(t.tutorId));
         const visitCount = practiceTutorVisitCounts?.find(tc => String(tc.tutorId) === String(t.tutorId))?.visitCount || 0;
         const countLabel = visitCount > 0 ? ` (${visitCount} visita${visitCount !== 1 ? 's' : ''})` : '';
         const tutorType = tutorTypeMap.get(String(t.tutorId));
         const typeLabel = tutorType ? (tutorTypeLabelMap[tutorType] || tutorType) : '';
+        const assignedTag = isAssigned ? ' ★ ASIGNADO' : '';
         return {
           value: String(t.tutorId),
-          label: `${t.firstName} ${t.lastName} [${typeLabel}]${countLabel}`
+          label: `${t.firstName} ${t.lastName} [${typeLabel}]${assignedTag}${countLabel}`,
+          isAssigned
         };
+      })
+      // Asignados primero, luego alfabético
+      .sort((a, b) => {
+        if (a.isAssigned !== b.isAssigned) return a.isAssigned ? -1 : 1;
+        return a.label.localeCompare(b.label);
       });
     setTutorOptions(options);
   }, [tutors, practiceTutorVisitCounts, assignedTutors, tutorTypeLabelMap]);

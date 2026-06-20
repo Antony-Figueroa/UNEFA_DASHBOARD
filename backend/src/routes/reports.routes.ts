@@ -12,6 +12,7 @@ import {
   getDistribucionTutores,
   getDistribucionTutoresV2,
   getRelacionIndividualDocente,
+  exportReportExcel,
 } from '../controllers/reports.controller.js';
 import { requirePermission } from '../middlewares/auth.middleware.js';
 
@@ -28,6 +29,7 @@ router.get('/relacion-empresas-demandan', requirePermission('reports:view'), get
 router.get('/distribucion-tutores', requirePermission('reports:view'), getDistribucionTutores);
 router.get('/distribucion-tutores-v2', requirePermission('reports:view'), getDistribucionTutoresV2);
 router.get('/relacion-individual-docente/:tutorId', requirePermission('reports:view'), getRelacionIndividualDocente);
+router.get('/export/:type', requirePermission('reports:export'), exportReportExcel);
 router.post('/generate', requirePermission('reports:export'), generateReport);
 
 export default router;

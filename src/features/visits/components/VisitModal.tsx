@@ -295,35 +295,36 @@ export default function VisitModal({
     }
   }, [isOpen, fetchMultipleLists]);
 
+  // Estado para alternar entre tutores asignados y todos los tutores (suplente)
+  const [showAllTutors, setShowAllTutors] = useState(false);
+
   // Construir opciones de tutores para el selector
-  // Muestra TODOS los tutores disponibles; los asignados a la práctica se marcan y van primero.
-  // Si ninguno de los tutores asignados puede asistir, se puede seleccionar otro.
+  // Por defecto solo los asignados; si se activa suplente, muestra todos
   useEffect(() => {
     const assignedIds = new Set((assignedTutors || []).map(a => String(a.tutorId)));
     const tutorTypeMap = new Map<string, string>();
     (assignedTutors || []).forEach(a => tutorTypeMap.set(String(a.tutorId), a.tutorType));
 
-    const options = tutors
+    const options = (showAllTutors ? tutors : tutors.filter(t => assignedIds.has(String(t.tutorId))))
       .map(t => {
         const isAssigned = assignedIds.has(String(t.tutorId));
         const visitCount = practiceTutorVisitCounts?.find(tc => String(tc.tutorId) === String(t.tutorId))?.visitCount || 0;
         const countLabel = visitCount > 0 ? ` (${visitCount} visita${visitCount !== 1 ? 's' : ''})` : '';
         const tutorType = tutorTypeMap.get(String(t.tutorId));
         const typeLabel = tutorType ? (tutorTypeLabelMap[tutorType] || tutorType) : '';
-        const assignedTag = isAssigned ? ' ★ ASIGNADO' : '';
         return {
           value: String(t.tutorId),
-          label: `${t.firstName} ${t.lastName} [${typeLabel}]${assignedTag}${countLabel}`,
-          isAssigned
+          label: `${t.firstName} ${t.lastName} [${typeLabel}]${isAssigned ? '' : countLabel}`
         };
-      })
-      // Asignados primero, luego alfabético
-      .sort((a, b) => {
-        if (a.isAssigned !== b.isAssigned) return a.isAssigned ? -1 : 1;
-        return a.label.localeCompare(b.label);
       });
     setTutorOptions(options);
-  }, [tutors, practiceTutorVisitCounts, assignedTutors, tutorTypeLabelMap]);
+  }, [tutors, practiceTutorVisitCounts, assignedTutors, tutorTypeLabelMap, showAllTutors]);
+
+  // Toggle: cuando ninguno de los tutores asignados puede ir, se activa modo suplente
+  const handleToggleSuplente = () => {
+    setShowAllTutors(prev => !prev);
+    setValue('tutorId', '', { shouldValidate: true });
+  };
 
   // Callback cuando se guarda un nuevo tutor desde TutorModal
   const handleTutorCreated = async (tutorData: any) => {
@@ -634,6 +635,17 @@ export default function VisitModal({
                         <span className="inline-block w-1 h-1 bg-error-500 rounded-full"></span>
                         {errors.tutorId.message}
                       </p>
+                    )}
+                    {assignedTutors && assignedTutors.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleToggleSuplente}
+                        className="mt-1.5 text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400 underline underline-offset-2"
+                      >
+                        {showAllTutors
+                          ? '← Volver a tutores asignados'
+                          : '¿Ninguno disponible? Seleccionar suplente →'}
+                      </button>
                     )}
                   </div>
                 </div>

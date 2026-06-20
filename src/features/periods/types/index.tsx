@@ -4,6 +4,19 @@
  */
 
 /**
+ * Representa fechas personalizadas por tipo de pasantía dentro de un periodo.
+ */
+export interface PeriodTypeDate {
+    id?: number;
+    periodId: number;
+    internshipTypeId: number;
+    startDate: string | null;
+    endDate: string | null;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+/**
  * Representa un periodo académico en el sistema (Modelo de Dominio).
  */
 export interface Periodo {
@@ -33,6 +46,8 @@ export interface Periodo {
     graceEndDate?: string;
     /** Fecha límite extendida para evaluaciones (calculada) */
     evaluationGraceEndDate?: string;
+    /** Fechas personalizadas por tipo de pasantía */
+    typeDates?: PeriodTypeDate[];
 }
 
 /**

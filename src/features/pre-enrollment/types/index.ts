@@ -25,6 +25,8 @@ export interface PreEnrollment {
   period: string;
   /** Tipo de práctica (ej: ORDINARIA) */
   practiceType: string;
+  /** ID del tipo de pasantía (para resolución de fechas tipo-específicas) */
+  internshipTypeId?: number;
   /** ID de la carrera */
   careerId: string;
   /** Nombre de la carrera */

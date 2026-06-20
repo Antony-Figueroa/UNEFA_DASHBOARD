@@ -137,7 +137,7 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
             fpInstance.current.setDate(val, true, 'd/m/Y');
           }
           
-          // Notificar cambio
+          // Notificar cambio — altInput value es d/m/Y
           onChange?.(val);
         }
         
@@ -178,7 +178,7 @@ const FlatpickrDatePicker = forwardRef<HTMLInputElement, FlatpickrDatePickerProp
                 fpInstance.current.setDate(dateObj, true, 'd/m/Y');
               }
               
-              // Notificar cambio
+              // Notificar cambio — altInput value es d/m/Y
               onChange?.(val);
             }
           }

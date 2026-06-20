@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { dbManager } from '../lib/db-manager.js';
 import { PRACTICES_STATUS } from '../constants/practice-status.constants.js';
 import { getPersonField, getPersonFullName } from '../utils/person-utils.js';
+import { generateWorkbook } from '../services/excel-export.service.js';
 
 interface PeriodInfo {
   PERIOD_ID: number;
@@ -530,7 +531,8 @@ export const getResumenPasantiasReport = async (req: Request, res: Response) => 
           CAREER_NAME
         ),
         t_professional_practices_tutor (
-          TUTOR_TYPE
+          TUTOR_TYPE,
+          t_tutors (TUTOR_ID)
         )
       `)
       .eq('STATUS', 1);
@@ -562,8 +564,8 @@ export const getResumenPasantiasReport = async (req: Request, res: Response) => 
           empresa: institution.INSTITUTION_NAME,
           tipoEmpresa: institution.INSTITUTION_TYPE,
           estudiantes: new Set(),
-          tutoresAcad: 0,
-          tutoresInst: 0,
+          tutoresAcad: new Set<number>(),
+          tutoresInst: new Set<number>(),
           observacion: ''
         });
       }
@@ -571,13 +573,13 @@ export const getResumenPasantiasReport = async (req: Request, res: Response) => 
       const record = summaryMap.get(key)!;
       record.estudiantes.add(student.STUDENTS_ID);
 
-      // Contar tutores (evitar contar dobles si ya estaban, pero aquí es simple, contamos por práctica)
+      // Contar tutores ÚNICOS por su TUTOR_ID (Sets evitan duplicados)
       const tutores = practice.t_professional_practices_tutor || [];
-      const hasAcad = tutores.some((t: any) => t.TUTOR_TYPE === 'ACADEMICO');
-      const hasInst = tutores.some((t: any) => t.TUTOR_TYPE === 'INSTITUCIONAL');
-
-      if (hasAcad) record.tutoresAcad += 1;
-      if (hasInst) record.tutoresInst += 1;
+      tutores.forEach((t: any) => {
+        const tutorId = t.t_tutors?.TUTOR_ID;
+        if (t.TUTOR_TYPE === 'ACADEMICO' && tutorId) record.tutoresAcad.add(tutorId);
+        if (t.TUTOR_TYPE === 'INSTITUCIONAL' && tutorId) record.tutoresInst.add(tutorId);
+      });
     });
 
     const reportData = Array.from(summaryMap.values()).map((item, index) => ({
@@ -586,11 +588,11 @@ export const getResumenPasantiasReport = async (req: Request, res: Response) => 
       nucleo: item.nucleo,
       extension: item.extension,
       carrera: item.carrera,
-      cantidadTutoresAcad: item.tutoresAcad,
+      cantidadTutoresAcad: item.tutoresAcad.size,
       cantidadEstudiantes: item.estudiantes.size,
       empresa: item.empresa,
       tipoEmpresa: item.tipoEmpresa,
-      cantidadTutoresInst: item.tutoresInst,
+      cantidadTutoresInst: item.tutoresInst.size,
       observacion: item.observacion
     }));
 
@@ -890,6 +892,7 @@ export const getDistribucionTutores = async (req: Request, res: Response) => {
         nro: idx + 1,
         carrera: (p.t_career as any)?.CAREER_NAME || '',
         estudiante: estudiante ? `${estudiante.NAME || ''} ${estudiante.SURNAME || ''}`.trim() : '',
+        estudianteCi: estudiante?.STUDENTS_CI || '',
         tutorAcademico: {
           titulo: tutorAcad?.TITULO || '',
           nombre: tutorAcad ? `${tutorAcad.NAME || ''} ${tutorAcad.SURNAME || ''}`.trim() : '',
@@ -964,6 +967,7 @@ export const getDistribucionTutoresV2 = async (req: Request, res: Response) => {
         nro: idx + 1,
         carrera: (p.t_career as any)?.CAREER_NAME || '',
         estudiante: estudiante ? `${estudiante.NAME || ''} ${estudiante.SURNAME || ''}`.trim() : '',
+        estudianteCi: estudiante?.STUDENTS_CI || '',
         tutorAcademico: {
           titulo: tutorAcad?.TITULO || '',
           nombre: tutorAcad ? `${tutorAcad.NAME || ''} ${tutorAcad.SURNAME || ''}`.trim() : '',
@@ -993,6 +997,409 @@ export const getDistribucionTutoresV2 = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Error al obtener distribución de tutores v2' });
   }
 };
+
+export const exportReportExcel = async (req: Request, res: Response) => {
+  try {
+    const { type } = req.params;
+    const { periodId, careerIds: careerIdsQuery, tutorId: tutorIdQuery } = req.query;
+    const careerIds = careerIdsQuery
+      ? String(careerIdsQuery).split(',').map(Number).filter(id => !isNaN(id))
+      : [];
+    const supabase = dbManager.getConnection();
+
+    // generateWorkbook imported from excel-export.service.js
+
+    let workbook;
+
+    switch (type) {
+      case 'tutores-academicos': {
+        // Reutilizar lógica de getTutorsAcademicReport
+        const { data: tutorPractices } = await supabase
+          .from('t_professional_practices_tutor')
+          .select(`
+            TUTOR_ID,
+            TUTOR_TYPE,
+            t_tutors (
+              TUTOR_ID,
+              CONDITION, DEDICATION, CATEGORY, EMAIL,
+              t_persons!inner (
+                ci, first_name, middle_name, last_name, second_last_name, phone, email
+              )
+            ),
+            t_professional_practices (
+              PROFESSIONAL_PRACTICE_ID, PERIOD_ID, PRACTICES_STATUS,
+              INSTITUTION_ID, STUDENTS_ID,
+              t_institution (INSTITUTION_ID, INSTITUTION_NAME, REGION, NUCLEUS, EXTENSION),
+              t_students (STUDENTS_ID),
+              t_career (CAREER_ID, CAREER_NAME, CAREER_ABBREVIATION)
+            )
+          `)
+          .eq('TUTOR_TYPE', 'ACADEMICO');
+
+        if (tutorPractices) {
+          const careerGroups = new Map<string, any[]>();
+          const periodDesc = await getPeriodDescription(supabase, periodId as string);
+
+          (tutorPractices as any[])?.forEach((tp) => {
+            const tutor = tp.t_tutors;
+            const practice = tp.t_professional_practices;
+            if (!tutor || !practice) return;
+            if (periodId && practice.PERIOD_ID !== parseInt(periodId as string)) return;
+            if (careerIds.length > 0 && (!practice.t_career || !careerIds.includes(practice.t_career.CAREER_ID))) return;
+
+            const careerName = practice.t_career?.CAREER_NAME || 'Sin Carrera';
+            const institution = practice.t_institution;
+
+            if (!careerGroups.has(careerName)) careerGroups.set(careerName, []);
+            careerGroups.get(careerName)!.push({
+              region: getRegionName(institution?.REGION) || institution?.REGION || '',
+              nucleo: institution?.NUCLEUS || '',
+              extension: institution?.EXTENSION || '',
+              carrera: careerName,
+              nombreTutor: `${getPersonField(tutor.t_persons, 'first_name') || ''} ${getPersonField(tutor.t_persons, 'middle_name') || ''}`.trim(),
+              apellidoTutor: `${getPersonField(tutor.t_persons, 'last_name') || ''} ${getPersonField(tutor.t_persons, 'second_last_name') || ''}`.trim(),
+              cedula: getPersonField(tutor.t_persons, 'ci') || '',
+              condicion: tutor.CONDITION || '',
+              dedicacion: tutor.DEDICATION || '',
+              categoria: tutor.CATEGORY || '',
+              telefono: getPersonField(tutor.t_persons, 'phone') || '',
+            });
+          });
+
+          const sections = Array.from(careerGroups.entries()).map(([career, rows]) => ({
+            title: 'ANEXO 4 — Relación de Tutores Académicos',
+            periodLabel: periodDesc,
+            columns: [
+              { header: 'N°', key: 'nro', width: 5 },
+              { header: 'Región', key: 'region', width: 14 },
+              { header: 'Núcleo', key: 'nucleo', width: 16 },
+              { header: 'Extensión', key: 'extension', width: 14 },
+              { header: 'Carrera', key: 'carrera', width: 24 },
+              { header: 'Nombre', key: 'nombreTutor', width: 18 },
+              { header: 'Apellido', key: 'apellidoTutor', width: 18 },
+              { header: 'Cédula', key: 'cedula', width: 14 },
+              { header: 'Condición', key: 'condicion', width: 14 },
+              { header: 'Dedicación', key: 'dedicacion', width: 14 },
+              { header: 'Categoría', key: 'categoria', width: 14 },
+              { header: 'Teléfono', key: 'telefono', width: 14 },
+              { header: 'Estudiantes', key: 'estudiantes', width: 12 },
+            ],
+            rows: rows.map((r, i) => ({ nro: i + 1, ...r, estudiantes: 1 })),
+          }));
+
+          workbook = await generateWorkbook(sections);
+        }
+        break;
+      }
+
+      case 'resumen-pasantias': {
+        const { data: practices } = await supabase
+          .from('t_professional_practices')
+          .select(`
+            PROFESSIONAL_PRACTICE_ID, PERIOD_ID, INSTITUTION_ID, STUDENTS_ID,
+            t_institution (INSTITUTION_ID, INSTITUTION_NAME, REGION, NUCLEUS, EXTENSION, INSTITUTION_TYPE),
+            t_students (STUDENTS_ID),
+            t_career (CAREER_ID, CAREER_NAME),
+            t_professional_practices_tutor (TUTOR_TYPE, t_tutors (TUTOR_ID))
+          `)
+          .eq('STATUS', 1);
+
+        if (practices) {
+          const periodDesc = await getPeriodDescription(supabase, periodId as string);
+
+          // Agrupar por (Region, Nucleo, Extension, Carrera, Empresa)
+          const summaryMap = new Map<string, any>();
+
+          (practices as any[]).forEach((practice) => {
+            const institution = practice.t_institution;
+            const student = practice.t_students;
+            const career = practice.t_career;
+            if (!institution || !student || !career) return;
+            if (periodId && practice.PERIOD_ID !== parseInt(periodId as string)) return;
+            if (careerIds.length > 0 && !careerIds.includes(career.CAREER_ID)) return;
+
+            const key = `${institution.REGION}-${institution.NUCLEUS}-${institution.EXTENSION}-${career.CAREER_ID}-${institution.INSTITUTION_ID}`;
+
+            if (!summaryMap.has(key)) {
+              summaryMap.set(key, {
+                region: getRegionName(institution.REGION) || institution.REGION || '',
+                nucleo: institution.NUCLEUS || '',
+                extension: institution.EXTENSION || '',
+                carrera: career.CAREER_NAME || '',
+                empresa: institution.INSTITUTION_NAME || '',
+                tipo: institution.INSTITUTION_TYPE || '',
+                estudiantes: new Set<number>(),
+                tutoresAcad: new Set<number>(),
+                tutoresInst: new Set<number>(),
+                observacion: '',
+              });
+            }
+
+            const record = summaryMap.get(key)!;
+            record.estudiantes.add(student.STUDENTS_ID);
+
+            const tutores = practice.t_professional_practices_tutor || [];
+            tutores.forEach((t: any) => {
+              if (t.TUTOR_TYPE === 'ACADEMICO') record.tutoresAcad.add(t.t_tutors?.TUTOR_ID);
+              if (t.TUTOR_TYPE === 'INSTITUCIONAL') record.tutoresInst.add(t.t_tutors?.TUTOR_ID);
+            });
+          });
+
+          // Agrupar por carrera para las hojas
+          const careerGroupMap = new Map<string, any[]>();
+          summaryMap.forEach((record) => {
+            const careerName = record.carrera || 'Sin Carrera';
+            if (!careerGroupMap.has(careerName)) careerGroupMap.set(careerName, []);
+            careerGroupMap.get(careerName)!.push(record);
+          });
+
+          const sections = Array.from(careerGroupMap.entries()).map(([career, records]) => ({
+            title: 'Resumen General de Prácticas Profesionales',
+            periodLabel: periodDesc,
+            columns: [
+              { header: 'N°', key: 'nro', width: 5 },
+              { header: 'Región', key: 'region', width: 12 },
+              { header: 'Núcleo', key: 'nucleo', width: 14 },
+              { header: 'Extensión', key: 'extension', width: 14 },
+              { header: 'Carrera', key: 'carrera', width: 22 },
+              { header: 'Estudiantes', key: 'cantidadEstudiantes', width: 12 },
+              { header: 'Tutores Acad.', key: 'cantidadTutoresAcad', width: 14 },
+              { header: 'Empresa', key: 'empresa', width: 24 },
+              { header: 'Tipo', key: 'tipo', width: 14 },
+              { header: 'Cant. Tutores Inst.', key: 'cantidadTutoresInst', width: 16 },
+              { header: 'Observación', key: 'observacion', width: 20 },
+            ],
+            rows: records.map((r: any, i: number) => ({
+              nro: i + 1,
+              region: r.region,
+              nucleo: r.nucleo,
+              extension: r.extension,
+              carrera: r.carrera,
+              cantidadEstudiantes: r.estudiantes.size,
+              cantidadTutoresAcad: r.tutoresAcad.size,
+              empresa: r.empresa,
+              tipo: r.tipo,
+              cantidadTutoresInst: r.tutoresInst.size,
+              observacion: r.observacion,
+            })),
+          }));
+
+          workbook = await generateWorkbook(sections);
+        }
+        break;
+      }
+
+      case 'distribucion-tutores': {
+        let query = supabase
+          .from('t_professional_practices')
+          .select(`
+            PROFESSIONAL_PRACTICE_ID,
+            t_career (CAREER_NAME),
+            t_students (STUDENTS_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME),
+            t_professional_practices_tutor (
+              TUTOR_TYPE,
+              t_tutors (TUTOR_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME,
+                TITULO, CONTACT_PHONE, EMAIL, ATTENTION_SCHEDULE)
+            )
+          `)
+          .eq('STATUS', 1);
+
+        if (periodId) query = query.eq('PERIOD_ID', Number(periodId));
+        if (careerIds.length > 0) query = query.in('CAREER_ID', careerIds);
+
+        const { data: practices } = await query;
+        const periodDesc = await getPeriodDescription(supabase, periodId as string);
+
+        // Agrupar por carrera
+        const careerGroups = new Map<string, any[]>();
+        (practices || []).forEach((p: any) => {
+          const careerName = (p.t_career as any)?.CAREER_NAME || 'Sin Carrera';
+          const tutors: any[] = p.t_professional_practices_tutor || [];
+          const getTutor = (type: string) => tutors.find((t: any) => t.TUTOR_TYPE === type)?.t_tutors;
+          const tutorAcad = getTutor('ACADEMICO');
+          const tutorMeto = getTutor('METODOLOGICO');
+          const evaluador = getTutor('INSTITUCIONAL');
+          const estudiante: any = p.t_students;
+
+          if (!careerGroups.has(careerName)) careerGroups.set(careerName, []);
+          careerGroups.get(careerName)!.push({
+            estudiante: estudiante ? `${estudiante.NAME || ''} ${estudiante.SURNAME || ''}`.trim() : '',
+            estudianteCi: estudiante?.STUDENTS_CI || '',
+            tutorAcademicoTitulo: tutorAcad?.TITULO || '',
+            tutorAcademicoNombre: tutorAcad ? `${tutorAcad.NAME || ''} ${tutorAcad.SURNAME || ''}`.trim() : '',
+            tutorAcademicoContacto: tutorAcad?.CONTACT_PHONE || '',
+            tutorAcademicoEmail: tutorAcad?.EMAIL || '',
+            tutorMetodologicoNombre: tutorMeto ? `${tutorMeto.NAME || ''} ${tutorMeto.SURNAME || ''}`.trim() : '',
+            tutorMetodologicoContacto: tutorMeto?.CONTACT_PHONE || '',
+            tutorMetodologicoHorario: tutorMeto?.ATTENTION_SCHEDULE || '',
+            evaluadorNombre: evaluador ? `${evaluador.NAME || ''} ${evaluador.SURNAME || ''}`.trim() : '',
+            evaluadorContacto: evaluador?.CONTACT_PHONE || '',
+          });
+        });
+
+        const sections = Array.from(careerGroups.entries()).map(([career, rows]) => ({
+          title: 'Distribución de Tutores por Estudiante',
+          periodLabel: periodDesc,
+          columns: [
+            { header: 'N°', key: 'nro', width: 5 },
+            { header: 'Carrera', key: 'carrera', width: 22 },
+            { header: 'Estudiante', key: 'estudiante', width: 22 },
+            { header: 'Cédula Estudiante', key: 'estudianteCi', width: 16 },
+            { header: 'Título TA', key: 'tutorAcademicoTitulo', width: 14 },
+            { header: 'Nombre TA', key: 'tutorAcademicoNombre', width: 20 },
+            { header: 'Contacto TA', key: 'tutorAcademicoContacto', width: 14 },
+            { header: 'Correo TA', key: 'tutorAcademicoEmail', width: 22 },
+            { header: 'Nombre TM', key: 'tutorMetodologicoNombre', width: 20 },
+            { header: 'Contacto TM', key: 'tutorMetodologicoContacto', width: 14 },
+            { header: 'Horario TM', key: 'tutorMetodologicoHorario', width: 18 },
+            { header: 'Nombre Eval.', key: 'evaluadorNombre', width: 20 },
+            { header: 'Contacto Eval.', key: 'evaluadorContacto', width: 14 },
+          ],
+          rows: rows.map((r, i) => ({ nro: i + 1, carrera: career, ...r })),
+        }));
+
+        workbook = await generateWorkbook(sections);
+        break;
+      }
+
+      case 'relacion-individual-docente': {
+        const tutorId = parseInt(tutorIdQuery as string) || 0;
+        if (!tutorId) {
+          return res.status(400).json({ message: 'tutorId es requerido para este reporte' });
+        }
+
+        const { data: tutor } = await supabase
+          .from('t_tutors')
+          .select(`TUTOR_ID, TUTOR_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME, TITULO, CONDITION, DEDICATION, CATEGORY, CONTACT_PHONE, EMAIL`)
+          .eq('TUTOR_ID', tutorId)
+          .single();
+
+        if (!tutor) {
+          return res.status(404).json({ message: 'Tutor no encontrado' });
+        }
+
+        const { data: assignments } = await supabase
+          .from('t_professional_practices_tutor')
+          .select(`
+            PROFESSIONAL_PRACTICE_ID,
+            t_professional_practices!inner(
+              START_DATE, END_DATE, REGIME, SEMESTER, SECTION,
+              t_students (STUDENTS_CI, NAME, SECOND_NAME, SURNAME, SECOND_SURNAME,
+                GENDER, STUDENT_TYPE, CONTACT_PHONE),
+              t_career (CAREER_NAME),
+              t_institution (INSTITUTION_NAME, INSTITUTION_TYPE, INSTITUTION_ADDRESS,
+                REGION, NUCLEUS, EXTENSION),
+              t_professional_practices_tutor!inner(
+                t_tutors!inner (TUTOR_CI, NAME, SECOND_NAME, SURNAME,
+                  SECOND_SURNAME, TITULO, CONTACT_PHONE, EMAIL)
+              )
+            )
+          `)
+          .eq('TUTOR_ID', tutorId)
+          .eq('TUTOR_TYPE', 'ACADEMICO');
+
+        const tutorName = `${tutor.TITULO || ''} ${tutor.NAME || ''} ${tutor.SURNAME || ''}`.trim();
+        const periodDesc = await getPeriodDescription(supabase, periodId as string);
+
+        // Agrupar por carrera
+        const careerGroups = new Map<string, any[]>();
+        (assignments || []).forEach((a: any) => {
+          const pp: any = a.t_professional_practices;
+          if (!pp) return;
+          const careerName = pp.t_career?.CAREER_NAME || 'Sin Carrera';
+          const estudiante: any = pp.t_students;
+          const inst: any = pp.t_institution;
+          const tutorInstArr = pp.t_professional_practices_tutor || [];
+          const tutorInst = tutorInstArr.find((t: any) => t.TUTOR_TYPE === 'INSTITUCIONAL')?.t_tutors;
+
+          if (!careerGroups.has(careerName)) careerGroups.set(careerName, []);
+          careerGroups.get(careerName)!.push({
+            region: getRegionName(inst?.REGION) || inst?.REGION || '',
+            nucleo: inst?.NUCLEUS || '',
+            extension: inst?.EXTENSION || '',
+            carrera: careerName,
+            estudianteNombre: `${estudiante?.NAME || ''} ${estudiante?.SECOND_NAME || ''}`.trim(),
+            estudianteApellido: `${estudiante?.SURNAME || ''} ${estudiante?.SECOND_SURNAME || ''}`.trim(),
+            estudianteCi: estudiante?.STUDENTS_CI || '',
+            sexo: estudiante?.GENDER || '',
+            tipo: estudiante?.STUDENT_TYPE || '',
+            telefono: estudiante?.CONTACT_PHONE || '',
+            institucion: inst?.INSTITUTION_NAME || '',
+            tipoInstitucion: inst?.INSTITUTION_TYPE || '',
+            tutorInstNombre: `${tutorInst?.NAME || ''} ${tutorInst?.SECOND_NAME || ''}`.trim(),
+            tutorInstApellido: `${tutorInst?.SURNAME || ''} ${tutorInst?.SECOND_SURNAME || ''}`.trim(),
+            tutorInstCi: tutorInst?.TUTOR_CI || '',
+            tutorInstTelefono: tutorInst?.CONTACT_PHONE || '',
+            tutorInstCorreo: tutorInst?.EMAIL || '',
+            direccion: inst?.INSTITUTION_ADDRESS || '',
+            observaciones: '',
+          });
+        });
+
+        const sections = Array.from(careerGroups.entries()).map(([career, rows]) => ({
+          title: `Relación Individual Docente — ${tutorName}`,
+          periodLabel: periodDesc,
+          columns: [
+            { header: 'N°', key: 'nro', width: 5 },
+            { header: 'Región', key: 'region', width: 12 },
+            { header: 'Núcleo', key: 'nucleo', width: 14 },
+            { header: 'Extensión', key: 'extension', width: 14 },
+            { header: 'Carrera', key: 'carrera', width: 22 },
+            { header: 'Nombre', key: 'estudianteNombre', width: 16 },
+            { header: 'Apellido', key: 'estudianteApellido', width: 16 },
+            { header: 'Cédula', key: 'estudianteCi', width: 14 },
+            { header: 'Sexo', key: 'sexo', width: 8 },
+            { header: 'Tipo', key: 'tipo', width: 12 },
+            { header: 'Teléfono', key: 'telefono', width: 14 },
+            { header: 'Institución', key: 'institucion', width: 22 },
+            { header: 'Tipo Inst.', key: 'tipoInstitucion', width: 14 },
+            { header: 'Tutor Inst.', key: 'tutorInstNombre', width: 18 },
+            { header: 'CI Tutor Inst.', key: 'tutorInstCi', width: 14 },
+            { header: 'Tel. Tutor Inst.', key: 'tutorInstTelefono', width: 14 },
+            { header: 'Correo Tutor Inst.', key: 'tutorInstCorreo', width: 22 },
+            { header: 'Dirección', key: 'direccion', width: 24 },
+            { header: 'Observaciones', key: 'observaciones', width: 20 },
+          ],
+          rows: rows.map((r, i) => ({ nro: i + 1, ...r })),
+        }));
+
+        workbook = await generateWorkbook(sections);
+        break;
+      }
+
+      default:
+        return res.status(400).json({ message: 'Tipo de reporte inválido' });
+    }
+
+    if (!workbook) {
+      return res.status(500).json({ message: 'Error al generar el workbook' });
+    }
+
+    const fileName = `${type}-${periodId || 'todos'}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    res.send(buffer);
+
+  } catch (error) {
+    console.error('[reports] exportReportExcel error:', error);
+    res.status(500).json({ message: 'Error al exportar reporte a Excel', error });
+  }
+};
+
+/**
+ * Obtiene la descripción del período académico.
+ */
+async function getPeriodDescription(supabase: any, periodId?: string): Promise<string> {
+  if (!periodId) return 'Período: Todos';
+  const { data } = await supabase
+    .from('t_internships_period')
+    .select('DESCRIPTION')
+    .eq('PERIOD_ID', parseInt(periodId))
+    .single();
+  return `Período: ${data?.DESCRIPTION || periodId}`;
+}
 
 export const getRelacionIndividualDocente = async (req: Request, res: Response) => {
   try {
@@ -1024,8 +1431,8 @@ export const getRelacionIndividualDocente = async (req: Request, res: Response) 
           t_institution(INSTITUTION_NAME, INSTITUTION_TYPE, INSTITUTION_ADDRESS,
             REGION, NUCLEUS, EXTENSION),
           t_professional_practices_tutor!inner(
-            t_tutors!inner(TUTOR_CI, NAME, SECOND_NAME, SURNAME,
-              SECOND_SURNAME, TITULO)
+                t_tutors!inner(TUTOR_CI, NAME, SECOND_NAME, SURNAME,
+                  SECOND_SURNAME, TITULO, CONTACT_PHONE, EMAIL)
           )
         )
       `)
@@ -1063,6 +1470,8 @@ export const getRelacionIndividualDocente = async (req: Request, res: Response) 
           apellido: `${tutorInst?.SURNAME || ''} ${tutorInst?.SECOND_SURNAME || ''}`.trim(),
           ci: tutorInst?.TUTOR_CI || '',
           cargo: tutorInst?.TITULO || '',
+          telefono: tutorInst?.CONTACT_PHONE || '',
+          correo: tutorInst?.EMAIL || '',
         },
         direccion: inst?.INSTITUTION_ADDRESS || '',
         observaciones: '',

@@ -62,6 +62,15 @@ interface PeriodoApiDTO {
   GRACE_END_DATE?: string;
   evaluationGraceEndDate?: string;
   EVALUATION_GRACE_END_DATE?: string;
+  typeDates?: Array<{
+    id?: number;
+    periodId?: number;
+    internshipTypeId?: number;
+    startDate?: string | null;
+    endDate?: string | null;
+    createdAt?: string;
+    updatedAt?: string;
+  }>;
   [key: string]: unknown;
 }
 
@@ -114,6 +123,7 @@ const fromApi = (dto: PeriodoApiDTO): Periodo => {
   const evaluationGraceDaysRaw = dto.evaluationGraceDays ?? dto.EVALUATION_GRACE_DAYS ?? 0;
   const graceEndDateRaw = dto.graceEndDate ?? dto.GRACE_END_DATE;
   const evaluationGraceEndDateRaw = dto.evaluationGraceEndDate ?? dto.EVALUATION_GRACE_END_DATE;
+  const typeDatesRaw = dto.typeDates;
 
   return {
     periodId: String(periodId),
@@ -129,6 +139,7 @@ const fromApi = (dto: PeriodoApiDTO): Periodo => {
     evaluationGraceDays: Number(evaluationGraceDaysRaw),
     graceEndDate: graceEndDateRaw ? String(graceEndDateRaw) : undefined,
     evaluationGraceEndDate: evaluationGraceEndDateRaw ? String(evaluationGraceEndDateRaw) : undefined,
+    typeDates: typeDatesRaw ? (Array.isArray(typeDatesRaw) ? typeDatesRaw : undefined) : undefined,
   };
 };
 

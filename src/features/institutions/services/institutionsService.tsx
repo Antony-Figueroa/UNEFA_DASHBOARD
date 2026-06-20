@@ -61,7 +61,7 @@ export const toggleInstitutionStatus = institutionService.toggleStatus!;
  * Descarga instituciones en el formato seleccionado.
  * @param format - 'json', 'sql', o 'csv'
  */
-export const exportFullInstitutions = async (format: 'json' | 'sql' | 'csv' = 'json'): Promise<void> => {
+export const exportFullInstitutions = async (format: 'json' | 'sql' | 'csv' | 'xlsx' = 'json'): Promise<void> => {
   try {
     const response = await apiClient.get(`/institutions/export`, {
       params: { format },

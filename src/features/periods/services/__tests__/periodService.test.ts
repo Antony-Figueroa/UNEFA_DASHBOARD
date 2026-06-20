@@ -6,13 +6,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import apiClient from '../../../../api/apiClient';
 
+const mockGet = vi.fn();
 vi.mock('../../../../api/apiClient', () => ({
   default: {
-    get: vi.fn(),
+    get: mockGet,
   },
 }));
-
-const mockApiClient = vi.mocked(apiClient);
 
 describe('periodService — typeDates mapping', () => {
   beforeEach(() => {
@@ -37,7 +36,7 @@ describe('periodService — typeDates mapping', () => {
         },
       ],
     };
-    mockApiClient.get.mockResolvedValue(mockApiResponse);
+    mockGet.mockResolvedValue(mockApiResponse);
 
     const periods = await getPeriods();
     expect(periods).toHaveLength(1);
@@ -62,7 +61,7 @@ describe('periodService — typeDates mapping', () => {
         },
       ],
     };
-    mockApiClient.get.mockResolvedValue(mockApiResponse);
+    mockGet.mockResolvedValue(mockApiResponse);
 
     const periods = await getPeriods();
     expect(periods).toHaveLength(1);
@@ -88,7 +87,7 @@ describe('periodService — typeDates mapping', () => {
         },
       ],
     };
-    mockApiClient.get.mockResolvedValue(mockApiResponse);
+    mockGet.mockResolvedValue(mockApiResponse);
 
     const periods = await getPeriods();
     expect(periods[0].typeDates).toHaveLength(2);
@@ -113,7 +112,7 @@ describe('periodService — typeDates mapping', () => {
         },
       ],
     };
-    mockApiClient.get.mockResolvedValue(mockApiResponse);
+    mockGet.mockResolvedValue(mockApiResponse);
 
     const periods = await getPeriods();
     expect(periods[0].typeDates![0].startDate).toBeNull();

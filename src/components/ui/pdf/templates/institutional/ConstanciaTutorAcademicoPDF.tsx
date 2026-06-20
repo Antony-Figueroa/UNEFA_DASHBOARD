@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
-import { formatNombreCompleto, formatCI, getTutorTitle } from '@/features/reports/utils/reportFormatters';
+import { formatNombreCompleto, formatCI, formatFecha, getTutorTitle } from '@/features/reports/utils/reportFormatters';
 import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
 
 const styles = StyleSheet.create({
@@ -34,6 +34,8 @@ export function ConstanciaTutorAcademicoPDF({ data, textos }: Props) {
     tutorDedicacion: data.tutor.dedicacion,
     totalHours: String(data.totalHours),
     periodo: data.periodo?.description || '',
+    inicioLapso: data.periodo ? formatFecha(data.periodo.startDate) : '',
+    finLapso: data.periodo ? formatFecha(data.periodo.endDate) : '',
   });
 
   return (

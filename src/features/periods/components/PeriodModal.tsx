@@ -103,6 +103,15 @@ export default function PeriodModal({
     const [coverageWarnings, setCoverageWarnings] = useState<string[]>([]);
     const [editingTypeDates, setEditingTypeDates] = useState(false);
 
+    // Flatpickr onChange altInput returns d/m/Y. Convert to Y-m-d for storage so value sync setDate(Y-m-d) works.
+    const toYmd = (str: string): string => {
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+            const [d, m, y] = str.split('/');
+            return `${y}-${m}-${d}`;
+        }
+        return str;
+    };
+
     // Fetch internship types and initialize type dates
     useEffect(() => {
         if (!isOpen) {
@@ -462,6 +471,39 @@ export default function PeriodModal({
             }
 
             if (periodo) {
+                // --- Validate type dates within parent period range ---
+                const typeNameMap = new Map(internshipTypes.map(t => [t.id, t.name]));
+                const typeDatesEntries = Object.entries(typeDatesState);
+                for (const [typeIdStr, dates] of typeDatesEntries) {
+                    const typeName = typeNameMap.get(parseInt(typeIdStr)) || `Tipo #${typeIdStr}`;
+                    
+                    // Parse Y-m-d strings to local-noon dates for consistent comparison
+                    const parseYmd = (str: string): Date => {
+                        const [y, m, d] = str.split('-').map(Number);
+                        return new Date(y, m - 1, d, 12, 0, 0);
+                    };
+
+                    if (dates.startDate) {
+                        const start = parseYmd(dates.startDate);
+                        if (start.getTime() < periodo.startDate.getTime()) {
+                            throw new Error(`${typeName}: la fecha de inicio es anterior al inicio del periodo`);
+                        }
+                    }
+                    if (dates.endDate) {
+                        const end = parseYmd(dates.endDate);
+                        if (end.getTime() > periodo.endDate.getTime()) {
+                            throw new Error(`${typeName}: la fecha de fin es posterior al fin del periodo`);
+                        }
+                    }
+                    if (dates.startDate && dates.endDate) {
+                        const start = parseYmd(dates.startDate);
+                        const end = parseYmd(dates.endDate);
+                        if (start.getTime() > end.getTime()) {
+                            throw new Error(`${typeName}: la fecha de inicio no puede ser posterior a la fecha de fin`);
+                        }
+                    }
+                }
+
                 const updatePayload: UpdatePeriodPayload = {
                     periodId: periodo.periodId,
                     code: newDescription,
@@ -474,7 +516,6 @@ export default function PeriodModal({
                 await onSave(updatePayload);
                 
                 // Save type dates after period update
-                const typeDatesEntries = Object.entries(typeDatesState);
                 if (onSaveTypeDates && typeDatesEntries.length > 0) {
                     await onSaveTypeDates(
                         parseInt(periodo.periodId),
@@ -723,7 +764,7 @@ export default function PeriodModal({
                                                                             ...prev,
                                                                             [type.id]: {
                                                                                 ...prev[type.id],
-                                                                                startDate: dateStr || null,
+                                                                                startDate: toYmd(dateStr) || null,
                                                                                 endDate: prev[type.id]?.endDate ?? null,
                                                                             },
                                                                         }));
@@ -734,11 +775,11 @@ export default function PeriodModal({
                                                                     }}
                                                                     placeholder="dd/mm/aaaa"
                                                                 />
-                                                            </div>
-                                                            <div>
-                                                                <label className="text-[11px] font-medium text-text-tertiary mb-1 block">
-                                                                    Fecha de Fin
-                                                                </label>
+                                                             </div>
+                                                             <div>
+                                                                 <label className="text-[11px] font-medium text-text-tertiary mb-1 block">
+                                                                     Fecha de Fin
+                                                                 </label>
                                                                 <FlatpickrDatePicker
                                                                     value={td?.endDate ?? ''}
                                                                     onChange={(dateStr) => {
@@ -747,16 +788,16 @@ export default function PeriodModal({
                                                                             [type.id]: {
                                                                                 ...prev[type.id],
                                                                                 startDate: prev[type.id]?.startDate ?? null,
-                                                                                endDate: dateStr || null,
+                                                                                endDate: toYmd(dateStr) || null,
                                                                             },
                                                                         }));
                                                                     }}
-                                                                    options={{
+                                                                     options={{
                                                                         minDate: periodo?.startDate ? new Date(periodo.startDate.getTime() - 86400000) : undefined,
                                                                         maxDate: periodo?.endDate ? new Date(periodo.endDate.getTime() + 86400000) : undefined,
                                                                     }}
                                                                     placeholder="dd/mm/aaaa"
-                                                                />
+                                                                 />
                                                             </div>
                                                         </div>
                                                     </div>

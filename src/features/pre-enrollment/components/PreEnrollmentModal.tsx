@@ -12,6 +12,7 @@ import Input from "../../../components/form/input/InputField";
 import { Modal, ModalHeader, ModalBody, ModalFooter } from "../../../components/ui/modal";
 import { cn } from "../../../utils/cn";
 import { PreEnrollment, CreatePreEnrollmentPayload, UpdatePreEnrollmentPayload } from "../types";
+import { InternshipType } from "../../internship-types/types";
 import Button from "../../../components/ui/button/Button";
 import AsyncButton from "../../../components/ui/button/AsyncButton";
 import CustomSelect from "../../../components/form/CustomSelect";
@@ -131,6 +132,7 @@ export default function PreEnrollmentModal({
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingData, setPendingData] = useState<PreEnrollmentFormData | null>(null);
   const [practiceTypeOptions, setPracticeTypeOptions] = useState<{ value: string; label: string }[]>([]);
+  const [internshipTypesWithIds, setInternshipTypesWithIds] = useState<InternshipType[]>([]);
   const { fetchMultipleLists } = useLists();
   const { addToast } = useToast();
 
@@ -521,6 +523,7 @@ if (student) {
       try {
         const types = await getInternshipTypesByCareer(watchedCareerId);
         const sortedTypes = [...types].sort((a, b) => a.priority - b.priority);
+        setInternshipTypesWithIds(sortedTypes);
 
         setPracticeTypeOptions(
           sortedTypes.map(t => ({ value: t.name?.toUpperCase() || "", label: t.name?.toUpperCase() || "" }))
@@ -635,6 +638,11 @@ if (student) {
         })
       ) as PreEnrollmentFormData;
 
+      // Resolver internshipTypeId desde el nombre del tipo de práctica
+      const selectedType = internshipTypesWithIds.find(
+        t => t.name.toUpperCase() === normalized.practiceType
+      );
+
       if (editingEntry) {
         const updatePayload: UpdatePreEnrollmentPayload = {
           ...normalized,
@@ -650,6 +658,7 @@ if (student) {
           identificationPrefix: normalized.identificationPrefix as "V" | "E",
           regime: normalized.regime as "DIURNO" | "NOCTURNO" | "MIXTO",
           careerName: normalized.careerName || "",
+          internshipTypeId: selectedType?.id,
         } as CreatePreEnrollmentPayload;
         await onSave(createPayload);
       }

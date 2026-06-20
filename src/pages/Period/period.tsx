@@ -68,6 +68,7 @@ export default function Period() {
         removePeriod,
         bulkRemovePeriods,
         bulkRestorePeriods,
+        updateTypeDates,
     } = usePeriods();
 
 
@@ -474,6 +475,7 @@ export default function Period() {
                     periodo={editingPeriodo}
                     isLoading={loadingAction}
                     existingPeriods={periodos}
+                    onSaveTypeDates={updateTypeDates}
                 />
                 <PeriodViewModal
                     isOpen={isViewModalOpen}

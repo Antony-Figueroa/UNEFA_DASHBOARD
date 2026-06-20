@@ -4,8 +4,9 @@
  */
 
 import { useState } from "react";
-import { Periodo, CreatePeriodPayload, UpdatePeriodPayload, GraceDefaults } from "../types";
+import { Periodo, CreatePeriodPayload, UpdatePeriodPayload, GraceDefaults, PeriodTypeDate } from "../types";
 import * as periodService from "../services/periodService";
+import * as periodTypeDatesService from "../services/periodTypeDatesService";
 import { useToast } from "../../../context/toast";
 import { ChangeComparison, RecordDetails } from "../../../components/ui/alert/AlertContextualContent";
 import { useCrud } from "../../../hooks/useCrud";
@@ -262,6 +263,36 @@ export const usePeriods = () => {
         }
     };
 
+    /**
+     * Guarda las fechas personalizadas por tipo de pasantía para un periodo.
+     * Realiza un upsert por cada registro.
+     * 
+     * @param periodId - ID del periodo.
+     * @param typeDates - Lista de fechas por tipo a guardar.
+     */
+    const updateTypeDates = async (periodId: number, typeDates: Omit<PeriodTypeDate, 'id' | 'createdAt' | 'updatedAt'>[]): Promise<void> => {
+        try {
+            for (const td of typeDates) {
+                await periodTypeDatesService.upsert({
+                    periodId,
+                    internshipTypeId: td.internshipTypeId,
+                    startDate: td.startDate ?? null,
+                    endDate: td.endDate ?? null,
+                });
+            }
+            addToast({
+                variant: "success",
+                title: "Fechas por Tipo Guardadas",
+                message: "Las fechas personalizadas por tipo de pasantía han sido guardadas exitosamente.",
+            });
+            await refreshPeriods();
+        } catch (error: any) {
+            const message = error.response?.data?.message || "Error al guardar fechas por tipo de pasantía";
+            addToast({ variant: "error", title: "Error", message });
+            throw error;
+        }
+    };
+
     return {
         periodos,
         status,
@@ -278,6 +309,7 @@ export const usePeriods = () => {
         graceDefaults,
         loadGraceDefaults,
         updateGraceDefaults,
+        updateTypeDates,
     };
 };
 

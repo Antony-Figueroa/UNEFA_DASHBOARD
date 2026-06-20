@@ -6,17 +6,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import apiClient from '../../../../api/apiClient';
 
-// Mock apiClient antes de importar el servicio
+const mockGet = vi.fn();
+const mockPost = vi.fn();
+const mockPut = vi.fn();
+const mockDelete = vi.fn();
 vi.mock('../../../../api/apiClient', () => ({
   default: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn(),
+    get: mockGet,
+    post: mockPost,
+    put: mockPut,
+    delete: mockDelete,
   },
 }));
-
-const mockApiClient = vi.mocked(apiClient);
 
 describe('periodTypeDatesService', () => {
   beforeEach(() => {
@@ -31,11 +32,11 @@ describe('periodTypeDatesService', () => {
           { id: 1, periodId: 42, internshipTypeId: 1, startDate: '2026-03-16', endDate: '2026-05-08' },
         ],
       };
-      mockApiClient.get.mockResolvedValue(mockResponse);
+      mockGet.mockResolvedValue(mockResponse);
 
       const result = await getByPeriod(42);
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/period-type-dates?periodId=42');
+      expect(mockGet).toHaveBeenCalledWith('/period-type-dates?periodId=42');
       expect(result).toHaveLength(1);
       expect(result[0].periodId).toBe(42);
       expect(result[0].internshipTypeId).toBe(1);
@@ -43,7 +44,7 @@ describe('periodTypeDatesService', () => {
 
     it('debería retornar array vacío cuando no hay fechas', async () => {
       const { getByPeriod } = await import('../periodTypeDatesService');
-      mockApiClient.get.mockResolvedValue({ data: [] });
+      mockGet.mockResolvedValue({ data: [] });
 
       const result = await getByPeriod(99);
 
@@ -56,22 +57,22 @@ describe('periodTypeDatesService', () => {
       const { upsert } = await import('../periodTypeDatesService');
       const payload = { periodId: 42, internshipTypeId: 1, startDate: '2026-03-16', endDate: '2026-05-08' };
       const mockResponse = { data: { id: 1, ...payload } };
-      mockApiClient.post.mockResolvedValue(mockResponse);
+      mockPost.mockResolvedValue(mockResponse);
 
       const result = await upsert(payload);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/period-type-dates', payload);
+      expect(mockPost).toHaveBeenCalledWith('/period-type-dates', payload);
       expect(result.id).toBe(1);
     });
 
     it('debería permitir fechas nulas', async () => {
       const { upsert } = await import('../periodTypeDatesService');
       const payload = { periodId: 42, internshipTypeId: 2, startDate: null, endDate: null };
-      mockApiClient.post.mockResolvedValue({ data: { id: 2, ...payload } });
+      mockPost.mockResolvedValue({ data: { id: 2, ...payload } });
 
       const result = await upsert(payload);
 
-      expect(mockApiClient.post).toHaveBeenCalledWith('/period-type-dates', payload);
+      expect(mockPost).toHaveBeenCalledWith('/period-type-dates', payload);
       expect(result.startDate).toBeNull();
     });
   });
@@ -79,11 +80,11 @@ describe('periodTypeDatesService', () => {
   describe('remove', () => {
     it('debería eliminar un registro por ID', async () => {
       const { remove } = await import('../periodTypeDatesService');
-      mockApiClient.delete.mockResolvedValue({});
+      mockDelete.mockResolvedValue({});
 
       await remove(5);
 
-      expect(mockApiClient.delete).toHaveBeenCalledWith('/period-type-dates/5');
+      expect(mockDelete).toHaveBeenCalledWith('/period-type-dates/5');
     });
   });
 
@@ -91,17 +92,17 @@ describe('periodTypeDatesService', () => {
     it('debería obtener fechas por periodo y tipo', async () => {
       const { getByPeriodAndType } = await import('../periodTypeDatesService');
       const mockRecord = { id: 1, periodId: 42, internshipTypeId: 1, startDate: '2026-03-16', endDate: '2026-05-08' };
-      mockApiClient.get.mockResolvedValue({ data: mockRecord });
+      mockGet.mockResolvedValue({ data: mockRecord });
 
       const result = await getByPeriodAndType(42, 1);
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/period-type-dates?periodId=42&internshipTypeId=1');
+      expect(mockGet).toHaveBeenCalledWith('/period-type-dates?periodId=42&internshipTypeId=1');
       expect(result?.internshipTypeId).toBe(1);
     });
 
     it('debería retornar null cuando no existe', async () => {
       const { getByPeriodAndType } = await import('../periodTypeDatesService');
-      mockApiClient.get.mockResolvedValue({ data: null });
+      mockGet.mockResolvedValue({ data: null });
 
       const result = await getByPeriodAndType(42, 999);
 

@@ -76,7 +76,7 @@ interface TutorByCiResult {
  * Descarga tutores en el formato seleccionado.
  * @param format - 'json', 'sql', o 'csv'
  */
-export const exportFullTutors = async (format: 'json' | 'sql' | 'csv' = 'json'): Promise<void> => {
+export const exportFullTutors = async (format: 'json' | 'sql' | 'csv' | 'xlsx' = 'json'): Promise<void> => {
   try {
     const response = await apiClient.get(`${API_URL}/export`, {
       params: { format },

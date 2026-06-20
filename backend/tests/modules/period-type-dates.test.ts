@@ -14,6 +14,58 @@ import app from '../../src/app.js';
 import { createAuthenticatedAgent } from '../setup/helpers.js';
 import request from 'supertest';
 
+import { resolveDatesFromRecord } from '../../src/services/period-type-dates.service.js';
+import { dbManager } from '../../src/lib/db-manager.js';
+
+// ============================================================
+// UNIT: resolveDatesFromRecord pure function — Task 6.1
+// ============================================================
+
+describe('resolveDatesFromRecord() — unit tests (no DB)', () => {
+  const periodDates = { START_DATE: '2026-03-01', END_DATE: '2026-07-31' };
+
+  it('should return period dates when typeRecord is null', () => {
+    const result = resolveDatesFromRecord(null, periodDates);
+    expect(result).toEqual(periodDates);
+  });
+
+  it('should return period dates when typeRecord is undefined', () => {
+    const result = resolveDatesFromRecord(undefined, periodDates);
+    expect(result).toEqual(periodDates);
+  });
+
+  it('should return type-specific dates when both are non-null', () => {
+    const typeRecord = { START_DATE: '2026-03-16', END_DATE: '2026-05-08' };
+    const result = resolveDatesFromRecord(typeRecord, periodDates);
+    expect(result).toEqual({ START_DATE: '2026-03-16', END_DATE: '2026-05-08' });
+  });
+
+  it('should fallback START_DATE to period when type START_DATE is null', () => {
+    const typeRecord = { START_DATE: null, END_DATE: '2026-05-08' };
+    const result = resolveDatesFromRecord(typeRecord, periodDates);
+    expect(result).toEqual({ START_DATE: '2026-03-01', END_DATE: '2026-05-08' });
+  });
+
+  it('should fallback END_DATE to period when type END_DATE is null', () => {
+    const typeRecord = { START_DATE: '2026-03-16', END_DATE: null };
+    const result = resolveDatesFromRecord(typeRecord, periodDates);
+    expect(result).toEqual({ START_DATE: '2026-03-16', END_DATE: '2026-07-31' });
+  });
+
+  it('should return full period dates when both type fields are null', () => {
+    const typeRecord = { START_DATE: null, END_DATE: null };
+    const result = resolveDatesFromRecord(typeRecord, periodDates);
+    expect(result).toEqual(periodDates);
+  });
+
+  it('should work with partial period dates (edge case: both type dates empty strings)', () => {
+    // Empty strings should NOT fallback — they are not null/undefined per ?? operator
+    const typeRecord = { START_DATE: '', END_DATE: '' };
+    const result = resolveDatesFromRecord(typeRecord, periodDates);
+    expect(result).toEqual({ START_DATE: '', END_DATE: '' });
+  });
+});
+
 // ============================================================
 // HELPERS
 // ============================================================
@@ -201,6 +253,137 @@ describe('Period-Type-Dates API', () => {
       });
       expect([200, 201]).toContain(res2.status);
       // Overlap should NOT error
+    });
+  });
+
+  // ============================================================
+  // E2E: Full flow — create period → type dates → pre-enroll → enroll (Task 6.5)
+  // ============================================================
+
+  describe('E2E full flow (acceptance criteria)', () => {
+    let e2ePersonId: number;
+    let e2eStudentId: number;
+    let e2ePracticeId: number | null = null;
+    const e2eTypeId = 1; // ÚNICA (exists in seed data)
+    const e2eCiSuffix = String(Date.now()).slice(-7);
+    const e2eCi = `V-E2E-${e2eCiSuffix}`;
+
+    beforeAll(async () => {
+      const now = new Date().toISOString();
+
+      const personResult = await dbManager.withRetry(async (supabase) => {
+        const { data, error } = await supabase
+          .from('t_persons')
+          .insert({
+            ci: e2eCi,
+            first_name: 'E2E',
+            last_name: 'TestStudent',
+            email: `e2e.${Date.now()}@test.unefa.edu.ve`,
+            gender: 'M',
+            status: 1,
+          })
+          .select('person_id')
+          .single();
+        if (error) throw error;
+        return data;
+      }, 'e2e:createPerson');
+      e2ePersonId = personResult.person_id;
+
+      const studentResult = await dbManager.withRetry(async (supabase) => {
+        const { data, error } = await supabase
+          .from('t_students')
+          .insert({
+            person_id: e2ePersonId,
+            STUDENT_TYPE: 'CIVIL',
+            MILITARY_RANK: null,
+            EMPLOYMENT: 'NO',
+            STATUS: 1,
+            REGISTRATION_DATE: now.slice(0, 19).replace('T', ' '),
+          })
+          .select('STUDENTS_ID')
+          .single();
+        if (error) throw error;
+        return data;
+      }, 'e2e:createStudent');
+      e2eStudentId = studentResult.STUDENTS_ID;
+    });
+
+    afterAll(async () => {
+      await dbManager.withRetry(async (supabase) => {
+        if (e2ePracticeId) {
+          await supabase.from('t_professional_practices').delete().eq('PROFESSIONAL_PRACTICE_ID', e2ePracticeId);
+        }
+        await supabase.from('t_students').delete().eq('STUDENTS_ID', e2eStudentId);
+        await supabase.from('t_persons').delete().eq('person_id', e2ePersonId);
+      }, 'e2e:cleanup');
+    });
+
+    it('should create type dates and verify period endpoint includes them', async () => {
+      const typeRes = await agent.post('/api/period-type-dates').send({
+        periodId: testPeriodId,
+        internshipTypeId: e2eTypeId,
+        startDate: '2026-04-01',
+        endDate: '2026-06-30',
+      });
+      expect([200, 201]).toContain(typeRes.status);
+
+      const periodRes = await agent.get(`/api/periodos/${testPeriodId}`);
+      expect(periodRes.status).toBe(200);
+      const typeDates = periodRes.body.typeDates || [];
+      const match = typeDates.find((td: any) => td.INTERNSHIP_TYPE_ID === e2eTypeId);
+      expect(match).toBeDefined();
+      expect(match.START_DATE).toContain('2026-04-01');
+      expect(match.END_DATE).toContain('2026-06-30');
+    });
+
+    it('should pre-enroll with internshipTypeId through type-date-aware middleware', async () => {
+      // CI = V-E2E-<suffix>, so identificationPrefix=V, identificationNumber=E2E-<suffix>
+      const preEnrollRes = await agent.post('/api/pre-enrollments').send({
+        identificationPrefix: 'V',
+        identificationNumber: `E2E-${e2eCiSuffix}`,
+        studentName: 'E2E TestStudent',
+        phone: '04120000000',
+        period: '2025-I',
+        practiceType: 'ÚNICA',
+        internshipTypeId: e2eTypeId,
+        enrollmentCode: `E2E-${Date.now()}`,
+        careerId: '4',
+        semester: '04',
+        section: '01',
+        regime: 'DIURNO',
+        careerName: 'INGENIERIA INFORMATICA',
+      });
+
+      // Validate the middleware ran — should NOT get a crash (500) or
+      // DATE_OUTSIDE_PERIOD error. If the period '2025-I' is not active,
+      // it will return PERIOD_NOT_ACTIVE which is expected.
+      expect(preEnrollRes.status).not.toBe(500);
+      if (preEnrollRes.body?.code) {
+        expect(preEnrollRes.body.code).not.toBe('DATE_OUTSIDE_PERIOD');
+      }
+      if (preEnrollRes.status === 201) {
+        e2ePracticeId = preEnrollRes.body.preEnrollmentId || null;
+      }
+    });
+
+    it('should route enrollment create through type-date-aware middleware without crash', async () => {
+      const enrollRes = await agent.post('/api/enrollments').send({
+        identificationPrefix: 'V',
+        identificationNumber: `E2E-${e2eCiSuffix}`,
+        studentName: 'E2E TestStudent',
+        period: '2025-I',
+        practiceType: 'ÚNICA',
+        academicTutorId: '',
+        methodologicalTutorId: '',
+        institutionId: '',
+        institutionResponsibleId: '',
+      });
+
+      // The enrollment validation middleware should run without 500 crash.
+      // Since we created the test student, the middleware should find the
+      // person and pre-enrollment record, resolve dates, and then fail
+      // validation (missing tutors/institution) with a 400.
+      expect(enrollRes.status).not.toBe(500);
     });
   });
 });

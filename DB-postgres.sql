@@ -270,6 +270,19 @@ CREATE TABLE IF NOT EXISTS "t_internships_period" (
   "T_INTERNSHIPS_CODE" VARCHAR(8) NOT NULL
 );
 
+-- t_period_type_dates (per-type date overrides for academic periods)
+CREATE TABLE IF NOT EXISTS "t_period_type_dates" (
+  "ID" SERIAL NOT NULL,
+  "PERIOD_ID" INTEGER NOT NULL,
+  "INTERNSHIP_TYPE_ID" INTEGER NOT NULL,
+  "START_DATE" DATE,
+  "END_DATE" DATE,
+  "CREATION_DATE" TIMESTAMP DEFAULT NOW(),
+  "MODIF_USER_ID" INTEGER,
+  "MODIF_USER_DATE" TIMESTAMP,
+  UNIQUE ("PERIOD_ID", "INTERNSHIP_TYPE_ID")
+);
+
 -- t_academic_config (global academic defaults — grace periods)
 CREATE TABLE IF NOT EXISTS "t_academic_config" (
   "CONFIG_ID" SMALLINT PRIMARY KEY DEFAULT 1,
@@ -786,6 +799,7 @@ ALTER TABLE "t_institution_manager" ADD PRIMARY KEY ("MANAGER_ID");
 ALTER TABLE "t_institution_manager_institution" ADD PRIMARY KEY ("INSTITUTION_MANAGER_INSTITUTION_ID");
 ALTER TABLE "t_internship_type" ADD PRIMARY KEY ("INTERNSHIP_TYPE_ID");
 ALTER TABLE "t_internships_period" ADD PRIMARY KEY ("PERIOD_ID");
+ALTER TABLE "t_period_type_dates" ADD PRIMARY KEY ("ID");
 ALTER TABLE "t_key_history" ADD PRIMARY KEY ("KEY_HISTORY_ID");
 ALTER TABLE "t_landing_config" ADD PRIMARY KEY ("config_id");
 ALTER TABLE "t_list" ADD PRIMARY KEY ("LIST_ID");
@@ -905,6 +919,10 @@ ALTER TABLE "t_professional_practices" ADD CONSTRAINT "fk_pp_student" FOREIGN KE
 ALTER TABLE "t_professional_practices" ADD CONSTRAINT "fk_pp_manager" FOREIGN KEY ("MANAGER_ID") REFERENCES "t_institution_manager" ("MANAGER_ID");
 ALTER TABLE "t_professional_practices" ADD CONSTRAINT "fk_pp_internship_type" FOREIGN KEY ("INTERNSHIP_TYPE_ID") REFERENCES "t_internship_type" ("INTERNSHIP_TYPE_ID");
 ALTER TABLE "t_professional_practices" ADD CONSTRAINT "fk_pp_career" FOREIGN KEY ("CAREER_ID") REFERENCES "t_career" ("CAREER_ID");
+
+-- t_period_type_dates
+ALTER TABLE "t_period_type_dates" ADD CONSTRAINT "fk_ptd_period" FOREIGN KEY ("PERIOD_ID") REFERENCES "t_internships_period" ("PERIOD_ID");
+ALTER TABLE "t_period_type_dates" ADD CONSTRAINT "fk_ptd_internship_type" FOREIGN KEY ("INTERNSHIP_TYPE_ID") REFERENCES "t_internship_type" ("INTERNSHIP_TYPE_ID");
 
 -- t_professional_practices_tutor
 ALTER TABLE "t_professional_practices_tutor" ADD CONSTRAINT "fk_ppt_tutor" FOREIGN KEY ("TUTOR_ID") REFERENCES "t_tutors" ("TUTOR_ID");

@@ -12,6 +12,7 @@ import { evaluationConfig } from '../config/evaluation.config.js';
 import { getValidationRule, type ModuleType, type OperationType } from '../config/period-validation.config.js';
 import { getPeriodValidationRule } from '../services/period-validation.service.js';
 import { PRACTICES_STATUS, PERIOD_STATUS, PRACTICES_STATUS_LABELS, PERIOD_STATUS_LABELS } from '../constants/practice-status.constants.js';
+import { isFeatureEnabled, resolveDates } from '../services/period-type-dates.service.js';
 
 // ---------------------------------------------------------------------------
 // Interfaces
@@ -90,6 +91,13 @@ export interface PeriodValidationConfig {
   dbModule?: ModuleType;
   /** Operación para búsqueda dinámica de reglas desde DB. */
   dbOperation?: OperationType;
+  /**
+   * Extrae el INTERNSHIP_TYPE_ID desde el request.
+   * Cuando está presente y FEATURE_PERIOD_TYPE_DATES=true,
+   * las fechas se resuelven con fallback a t_period_type_dates
+   * antes de las validaciones de rango.
+   */
+  extractInternshipTypeId?: (req: Request) => number | undefined | null | Promise<number | undefined | null>;
 }
 
 // ---------------------------------------------------------------------------
@@ -146,6 +154,21 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
             message: 'Periodo académico no encontrado.',
             code: 'PERIOD_NOT_FOUND',
           });
+        }
+
+        // ─── Resolución de fechas por tipo de pasantía ───
+        if (config.extractInternshipTypeId && isFeatureEnabled()) {
+          const internshipTypeId = await config.extractInternshipTypeId(req);
+          if (internshipTypeId) {
+            try {
+              const resolved = await resolveDates(periodId, internshipTypeId);
+              period.START_DATE = resolved.START_DATE;
+              period.END_DATE = resolved.END_DATE;
+            } catch {
+              // Si falla la resolución, mantener fechas del periodo padre
+              console.warn('[PeriodValidator] resolveDates falló, usando fechas del periodo padre');
+            }
+          }
         }
 
         // Validar PERIOD_STATUS = '2' (En Curso)
@@ -269,6 +292,20 @@ export const validatePeriodOperation = (config: PeriodValidationConfig) => {
           message: 'Periodo académico no encontrado.',
           code: 'PERIOD_NOT_FOUND',
         });
+      }
+
+      // ─── Resolución de fechas por tipo de pasantía (Route B) ───
+      if (config.extractInternshipTypeId && isFeatureEnabled()) {
+        const internshipTypeId = await config.extractInternshipTypeId(req);
+        if (internshipTypeId) {
+          try {
+            const resolved = await resolveDates(practice.PERIOD_ID, internshipTypeId);
+            period.START_DATE = resolved.START_DATE;
+            period.END_DATE = resolved.END_DATE;
+          } catch {
+            console.warn('[PeriodValidator] resolveDates falló (Route B), usando fechas del periodo padre');
+          }
+        }
       }
 
       // --- Paso 4: Validar que el periodo esté "En Curso" ---
@@ -567,6 +604,96 @@ export const validateUpdateEnrollmentPeriod = validatePeriodOperation({
   ...enrollmentUpdateRule,
   dbModule: 'enrollment',
   dbOperation: 'update',
+});
+
+// ---------------------------------------------------------------------------
+// Extractores con soporte de fechas por tipo de pasantía
+// ---------------------------------------------------------------------------
+
+/**
+ * Middleware para validar CREACIÓN de pre-inscripciones con fechas por tipo.
+ * Extiende validateCreatePreEnrollmentPeriod agregando resolución de
+ * fechas por tipo de pasantía cuando FEATURE_PERIOD_TYPE_DATES está activo.
+ */
+export const validateCreatePreEnrollmentPeriodWithTypeDates = validatePeriodOperation({
+  extractPeriodDirectly: async (req) => {
+    const supabase = dbManager.getConnection();
+    const { period } = req.body;
+    if (!period) return undefined;
+    const { data } = await supabase
+      .from('t_internships_period')
+      .select('PERIOD_ID')
+      .eq('DESCRIPTION', period)
+      .maybeSingle();
+    return data?.PERIOD_ID;
+  },
+  extractInternshipTypeId: (req) => req.body.internshipTypeId,
+  extractDate: () => null,
+  resourceName: 'pre-inscripción',
+  preEnrollmentCreateRule,
+  dbModule: 'pre-enrollment',
+  dbOperation: 'create',
+});
+
+/**
+ * Middleware para validar CREACIÓN de inscripciones con fechas por tipo.
+ * Extiende validateCreateEnrollmentPeriod agregando resolución de fechas
+ * desde el internshipTypeId de la pre-inscripción.
+ */
+export const validateCreateEnrollmentPeriodWithTypeDates = validatePeriodOperation({
+  extractPeriodDirectly: async (req) => {
+    const supabase = dbManager.getConnection();
+    const { identificationPrefix, identificationNumber, period } = req.body;
+
+    if (identificationPrefix && identificationNumber) {
+      const { data: person } = await supabase
+        .from('t_persons')
+        .select('PERSON_ID')
+        .eq('identification_prefix', identificationPrefix)
+        .eq('ci', identificationNumber)
+        .maybeSingle();
+
+      if (person) {
+        const { data: student } = await supabase
+          .from('t_students')
+          .select('STUDENTS_ID')
+          .eq('PERSON_ID', person.PERSON_ID)
+          .maybeSingle();
+
+        if (student) {
+          const { data: practice } = await supabase
+            .from('t_professional_practices')
+            .select('PERIOD_ID, INTERNSHIP_TYPE_ID')
+            .eq('STUDENTS_ID', student.STUDENTS_ID)
+            .eq('PRACTICES_STATUS', PRACTICES_STATUS.PRE_INSCRITO)
+            .eq('STATUS', 1)
+            .maybeSingle();
+
+          if (practice?.PERIOD_ID) {
+            (req as any).__internshipTypeId = practice.INTERNSHIP_TYPE_ID;
+            return practice.PERIOD_ID;
+          }
+        }
+      }
+    }
+
+    if (period) {
+      const { data: p } = await supabase
+        .from('t_internships_period')
+        .select('PERIOD_ID')
+        .eq('DESCRIPTION', period)
+        .maybeSingle();
+      if (p?.PERIOD_ID) return p.PERIOD_ID;
+    }
+
+    return undefined;
+  },
+  extractInternshipTypeId: (req) => (req as any).__internshipTypeId,
+  extractDate: () => new Date().toISOString(),
+  resourceName: 'inscripción',
+  ...enrollmentCreateRule,
+  dbModule: 'enrollment',
+  dbOperation: 'create',
 });
 
 export default validatePeriodOperation;

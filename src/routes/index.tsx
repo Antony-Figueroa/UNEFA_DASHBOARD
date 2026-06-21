@@ -21,10 +21,9 @@ const RolesPermissions = lazy(() => import("../pages/Config/RolesPermissions"));
 const SystemSettings = lazy(() => import("../pages/Config/SystemSettings"));
 const Maintenance = lazy(() => import("../pages/Config/Maintenance"));
 const Backups = lazy(() => import("../pages/Config/Backups"));
-const LandingConfigPage = lazy(() => import("../pages/Config/LandingConfigPage"));
+const LandingConfigPage = lazy(() => import("../features/landing-config/pages/LandingConfigPage"));
 const ReminderConfigPage = lazy(() => import("../pages/Admin/Reminders/ReminderConfigPage"));
-const InstitutionConfig = lazy(() => import("../pages/Config/InstitutionConfig"));
-const NucleiManager = lazy(() => import("../pages/Config/NucleiManager"));
+const OrganizationConfig = lazy(() => import("../pages/Config/OrganizationConfig"));
 
 const DashboardConfigurator = lazy(() => import("../pages/Dashboard/Configurator"));
 const NotificationsPage = lazy(() => import("../pages/Notifications/NotificationsPage"));
@@ -46,6 +45,7 @@ const StudentProfile = lazy(() => import("../pages/Student/StudentProfile"));
 const StudentActivityLogs = lazy(() => import("../pages/Student/StudentActivityLogs"));
 const StudentDocuments = lazy(() => import("../pages/Student/StudentDocuments"));
 const StudentEvaluations = lazy(() => import("../pages/Student/StudentEvaluations"));
+const StudentTracking = lazy(() => import("../pages/Student/StudentTracking"));
 
 const AdminRequests = lazy(() => import("../pages/Admin/AdminRequests"));
 const AcademicConfigPage = lazy(() => import("../features/academic-config/pages/AcademicConfigPage"));
@@ -300,6 +300,14 @@ export const AppRoutes = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/student/tracking"
+              element={
+                <ProtectedRoute allowedRoles={[4]}>
+                  <StudentTracking />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Admin Requests */}
             <Route
@@ -377,18 +385,10 @@ export const AppRoutes = () => {
               }
             />
             <Route
-              path="/configure/institucion"
+              path="/configure/organizacion"
               element={
                 <ProtectedRoute requiredPermissions={['config:view']}>
-                  <InstitutionConfig />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/configure/nucleos"
-              element={
-                <ProtectedRoute requiredPermissions={['config:view']}>
-                  <NucleiManager />
+                  <OrganizationConfig />
                 </ProtectedRoute>
               }
             />

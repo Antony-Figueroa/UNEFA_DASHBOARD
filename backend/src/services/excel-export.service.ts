@@ -95,8 +95,9 @@ export async function generateWorkbook(sections: SheetSection[]): Promise<Workbo
     return workbook;
   }
 
+  const usedSheetNames = new Set<string>();
   for (const section of sections) {
-    const sheetName = sanitizeSheetName(section.title);
+    const sheetName = sanitizeSheetName(section.title, usedSheetNames);
     const ws = workbook.addWorksheet(sheetName);
     addSheetContent(ws, section);
   }
@@ -213,9 +214,22 @@ function addEmptySheet(ws: Worksheet, message: string): void {
  * Limpia el nombre de la hoja para caracteres no válidos en Excel.
  * Excel limita nombres de hoja a 31 caracteres.
  */
-function sanitizeSheetName(name: string): string {
-  const cleaned = name.replace(/[*?/:\\[\]]/g, '').trim();
-  return cleaned.length > 31 ? cleaned.substring(0, 31) : cleaned || 'Sin nombre';
+function sanitizeSheetName(name: string, existingNames?: Set<string>): string {
+  let cleaned = name.replace(/[*?/:\\[\]]/g, '').trim();
+  let result = cleaned.length > 31 ? cleaned.substring(0, 31) : cleaned || 'Sin nombre';
+
+  if (existingNames) {
+    let counter = 1;
+    while (existingNames.has(result)) {
+      const suffix = ` (${counter})`;
+      const maxBase = 31 - suffix.length;
+      result = (result.length > maxBase ? result.substring(0, maxBase) : result) + suffix;
+      counter++;
+    }
+    existingNames.add(result);
+  }
+
+  return result;
 }
 
 /**

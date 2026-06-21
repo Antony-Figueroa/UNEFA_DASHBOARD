@@ -1,11 +1,11 @@
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Text, View, StyleSheet } from '@react-pdf/renderer';
+import PDFLayout from '../../PDFLayout';
 import { formatNombreCompleto, formatCI, formatFecha, getTutorTitle } from '@/features/reports/utils/reportFormatters';
 import { renderDocumentText } from '@/features/reports/utils/documentRenderer';
 
 const styles = StyleSheet.create({
-  page: { padding: 50, fontFamily: 'Helvetica', fontSize: 12, lineHeight: 1.5 },
   title: { textAlign: 'center', fontSize: 16, fontWeight: 'bold', marginBottom: 30, textDecoration: 'underline' },
-  paragraph: { marginBottom: 20, textAlign: 'justify' },
+  paragraph: { marginBottom: 20, textAlign: 'justify', fontSize: 12, lineHeight: 1.5 },
   firmaContainer: { marginTop: 60, alignItems: 'center' },
   firmaLine: { marginBottom: 5 },
   firmaNombre: { fontWeight: 'bold', fontSize: 11 },
@@ -38,17 +38,15 @@ export function ConstanciaTutorInstitucionalPDF({ data, textos }: Props) {
   });
 
   return (
-    <Document>
-      <Page size="A4" style={styles.page}>
-        <Text style={styles.title}>CONSTANCIA DE TUTOR INSTITUCIONAL</Text>
-        <Text style={styles.paragraph}>{cuerpo}</Text>
-        <View style={styles.firmaContainer}>
-          <Text style={styles.firmaLine}>___________________________________</Text>
-          <Text style={styles.firmaNombre}>MSc. Marbelys del Valle Rivero</Text>
-          <Text style={styles.firmaRol}>Decana del Núcleo Portuguesa</Text>
-          <Text style={styles.firmaRol}>Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022</Text>
-        </View>
-      </Page>
-    </Document>
+    <PDFLayout title="CONSTANCIA DE TUTOR INSTITUCIONAL">
+      <Text style={styles.title}>CONSTANCIA DE TUTOR INSTITUCIONAL</Text>
+      <Text style={styles.paragraph}>{cuerpo}</Text>
+      <View style={styles.firmaContainer}>
+        <Text style={styles.firmaLine}>___________________________________</Text>
+        <Text style={styles.firmaNombre}>MSc. Marbelys del Valle Rivero</Text>
+        <Text style={styles.firmaRol}>Decana del Núcleo Portuguesa</Text>
+        <Text style={styles.firmaRol}>Según Orden administrativa N° 0005 de fecha 18 de Marzo 2022</Text>
+      </View>
+    </PDFLayout>
   );
 }

@@ -292,25 +292,15 @@ const ReminderConfigPage = () => {
       <UnifiedDialog
         isOpen={!!confirmDelete}
         onClose={() => setConfirmDelete(null)}
+        onConfirm={() => confirmDelete && handleDelete(confirmDelete)}
         title="Eliminar recordatorio"
+        message="¿Estás seguro de eliminar esta regla? Los recordatorios ya enviados no se eliminan."
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
         variant="error"
         size="sm"
-      >
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          ¿Estás seguro de eliminar esta regla? Los recordatorios ya enviados no se eliminan.
-        </p>
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={() => setConfirmDelete(null)}>
-            Cancelar
-          </Button>
-          <Button
-            variant="error"
-            onClick={() => confirmDelete && handleDelete(confirmDelete)}
-          >
-            Eliminar
-          </Button>
-        </div>
-      </UnifiedDialog>
+        isLoading={saving}
+      />
     </>
   );
 };

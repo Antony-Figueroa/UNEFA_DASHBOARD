@@ -392,34 +392,17 @@ const TemplateManager = () => {
       {/* ════════════════════════════════════════════════════════════════
           Delete Confirm Dialog
        ════════════════════════════════════════════════════════════════ */}
-      <Modal
+      <UnifiedDialog
         isOpen={confirmDelete !== null}
         onClose={() => setConfirmDelete(null)}
-        showCloseButton
+        onConfirm={() => confirmDelete !== null && handleDelete(confirmDelete)}
+        title="Eliminar plantilla"
+        message="¿Estás seguro de eliminar esta plantilla? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        variant="error"
         size="sm"
-      >
-        <ModalHeader>
-          <span className="font-semibold text-text-primary modal-title text-theme-xl dark:text-white/90 lg:text-2xl">
-            Eliminar plantilla
-          </span>
-        </ModalHeader>
-        <ModalBody>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            ¿Estás seguro de eliminar esta plantilla? Esta acción no se puede deshacer.
-          </p>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="outline" onClick={() => setConfirmDelete(null)}>
-            Cancelar
-          </Button>
-          <Button
-            variant="error"
-            onClick={() => confirmDelete !== null && handleDelete(confirmDelete)}
-          >
-            Eliminar
-          </Button>
-        </ModalFooter>
-      </Modal>
+      />
 
       {/* ════════════════════════════════════════════════════════════════
           Close Without Saving Warning

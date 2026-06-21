@@ -97,6 +97,17 @@ export const DOCUMENT_SECTIONS: SectionGroup[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Module-level context for report-specific parameters
+// ---------------------------------------------------------------------------
+
+/** Current tutorId for relacion-individual-docente data loading */
+export let currentTutorId: number | undefined = undefined;
+
+export function setCurrentTutorId(id: number | undefined) {
+  currentTutorId = id;
+}
+
+// ---------------------------------------------------------------------------
 // Report config entries
 // ---------------------------------------------------------------------------
 
@@ -141,7 +152,6 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
       { header: "Dedicación", accessor: "dedicacion" },
       { header: "Categoría", accessor: "categoria" },
       { header: "Teléfono", accessor: "telefono" },
-      { header: "Correo Electrónico", accessor: "correo" },
       { header: "Estudiantes", accessor: (row: TutorAcademicReportRow) => row.cantidadEstudiantes, className: "text-center font-bold" },
     ],
   },
@@ -158,11 +168,14 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
       { header: "N°", accessor: "nro" },
       { header: "Región", accessor: "region" },
       { header: "Núcleo", accessor: "nucleo" },
+      { header: "Extensión", accessor: "extension" },
       { header: "Carrera", accessor: "carrera" },
       { header: "Estudiantes", accessor: "cantidadEstudiantes" },
       { header: "Tutores Acad.", accessor: "cantidadTutoresAcad" },
       { header: "Empresa", accessor: "empresa" },
       { header: "Tipo", accessor: "tipoEmpresa" },
+      { header: "Cant. Tutores Inst.", accessor: "cantidadTutoresInst" },
+      { header: "Observación", accessor: "observacion" },
     ],
   },
   "institutions": {
@@ -247,9 +260,11 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
       { header: "N°", accessor: "nro", className: "w-12 text-center" },
       { header: "Carrera", accessor: "carrera" },
       { header: "Estudiante", accessor: "estudiante" },
+      { header: "Cédula Estudiante", accessor: (r: any) => r.estudianteCi || '' },
       { header: "Título TA", accessor: (r: any) => r.tutorAcademico?.titulo || '' },
       { header: "Nombre TA", accessor: (r: any) => r.tutorAcademico?.nombre || '' },
       { header: "Contacto TA", accessor: (r: any) => r.tutorAcademico?.contacto || '' },
+      { header: "Correo TA", accessor: (r: any) => r.tutorAcademico?.email || '' },
       { header: "Nombre TM", accessor: (r: any) => r.tutorMetodologico?.nombre || '' },
       { header: "Contacto TM", accessor: (r: any) => r.tutorMetodologico?.contacto || '' },
       { header: "Horario TM", accessor: (r: any) => r.tutorMetodologico?.horario || '' },
@@ -296,22 +311,31 @@ export const reportConfig: Record<Exclude<ReportType, "">, ReportConfigEntry> = 
     title: "Relación Individual del Docente",
     subtitle: "Reporte Individual por Docente Tutor",
     type: "excel",
-    loadData: async () => ({ data: [] }),
+    loadData: async (periodId, careerId, page, limit, careerIds) => {
+      if (!currentTutorId) return { data: [] };
+      const response = await reportsService.getRelacionIndividualDocente(currentTutorId);
+      return { data: response?.data || [], meta: response?.meta };
+    },
     columns: [
       { header: "N°", accessor: "nro", className: "w-12 text-center" },
       { header: "Región", accessor: "region" },
       { header: "Núcleo", accessor: "nucleo" },
       { header: "Extensión", accessor: "extension" },
       { header: "Carrera", accessor: "carrera" },
-      { header: "Est. Nombre", accessor: (r: any) => r.estudiante?.nombre || '' },
-      { header: "Est. Apellido", accessor: (r: any) => r.estudiante?.apellido || '' },
+      { header: "Nombre", accessor: (r: any) => r.estudiante?.nombre || '' },
+      { header: "Apellido", accessor: (r: any) => r.estudiante?.apellido || '' },
       { header: "Cédula", accessor: (r: any) => r.estudiante?.ci || '' },
       { header: "Sexo", accessor: (r: any) => r.estudiante?.sexo || '' },
       { header: "Tipo", accessor: (r: any) => r.estudiante?.tipo || '' },
       { header: "Teléfono", accessor: (r: any) => r.estudiante?.telefono || '' },
       { header: "Institución", accessor: (r: any) => r.institucion?.nombre || '' },
+      { header: "Tipo Institución", accessor: (r: any) => r.institucion?.tipo || r.tipoInstitucion || '' },
       { header: "Tutor Inst.", accessor: (r: any) => `${r.tutorInstitucional?.nombre || ''} ${r.tutorInstitucional?.apellido || ''}`.trim() },
+      { header: "CI Tutor Inst.", accessor: (r: any) => r.tutorInstitucional?.ci || r.ciTutorInst || '' },
+      { header: "Teléfono Tutor Inst.", accessor: (r: any) => r.tutorInstitucional?.telefono || r.telefonoTutorInst || '' },
+      { header: "Correo Tutor Inst.", accessor: (r: any) => r.tutorInstitucional?.correo || r.correoTutorInst || '' },
       { header: "Dirección", accessor: "direccion" },
+      { header: "Observaciones", accessor: (r: any) => r.observaciones || '' },
     ],
   },
 };

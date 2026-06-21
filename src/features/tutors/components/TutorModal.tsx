@@ -36,9 +36,7 @@ import { checkAvailability as checkPersonAvailability } from "../../persons/serv
 import { lookupCi } from "../../students/services/studentsService";
 import { NAME_PATTERN, SAFE_EMAIL_PATTERN, isSafeInput } from "../../../utils/inputValidation";
 import AddressList from "../../address/components/AddressList";
-import GeographicAddressFields from "../../address/components/GeographicAddressFields";
 import { addressService } from "../../address/services/addressService";
-import type { GeographicAddressValue } from "../../address/components/GeographicAddressFields";
 import type { GeoOptionsItem } from "../../address/types";
 
 /**
@@ -103,14 +101,7 @@ export default function TutorModal({
     const [existingTutor, setExistingTutor] = useState<any | null>(null);
     const [existingPerson, setExistingPerson] = useState(false);
     const [viewOnlyMode, setViewOnlyMode] = useState(false);
-   
-   // State for API-loaded data flow (SENIAT)
-    const [apiDataLoaded, setApiDataLoaded] = useState(false);
-    const apiLoadedCiRef = useRef("");
-    const [geoOptions, setGeoOptions] = useState<GeoOptionsItem[]>([]);
-    const [inlineAddress, setInlineAddress] = useState<GeographicAddressValue>({
-      parroquiaId: null, streetAddress: '', reference: '', addressTypeId: 3, isPrimary: true,
-    });
+    const [currentPersonId, setCurrentPersonId] = useState<number | undefined>(editingTutor?.personId ? Number(editingTutor.personId) : undefined);
 
     // State for career modal
     const [isCareerModalOpen, setIsCareerModalOpen] = useState(false);
@@ -123,6 +114,7 @@ export default function TutorModal({
     const [existingInternshipTypes, setExistingInternshipTypes] = useState<InternshipType[]>([]);
 
   const { config: academicConfig } = useAcademicConfig();
+  const [geoOptions, setGeoOptions] = useState<GeoOptionsItem[]>([]);
 
   const tutorSchema = useMemo(() => z.object({
     identificationPrefix: z.string().min(1, "Seleccione el tipo"),
@@ -171,7 +163,6 @@ export default function TutorModal({
         }
         return age >= 16;
       }, "El tutor debe tener al menos 16 años"),
-    address: z.string(),
     civilStatus: z.string().min(1, "Seleccione el estado civil"),
     phoneAreaCode: z.string().min(1, "El código de área es obligatorio"),
     phoneNumber: z.string()
@@ -268,7 +259,6 @@ export default function TutorModal({
       secondLastName: "",
       sex: "",
       birthDate: "",
-      address: "",
       civilStatus: "",
       phoneAreaCode: "",
       phoneNumber: "",
@@ -298,39 +288,6 @@ export default function TutorModal({
     setValue("identificationNumber", digitsOnly, { shouldValidate: true, shouldDirty: true });
     clearErrors("identificationNumber");
     
-    // Si se cambia la cédula tras una carga de API externa, limpiar el formulario
-    if (apiDataLoaded) {
-      const prefix = watch("identificationPrefix") || "V";
-      const currentCi = `${prefix}-${digitsOnly}`;
-      if (currentCi !== apiLoadedCiRef.current) {
-        setApiDataLoaded(false);
-        apiLoadedCiRef.current = "";
-        clearErrors("identificationNumber");
-        reset({
-          identificationPrefix: "",
-          identificationNumber: "",
-          firstName: "",
-          middleName: "",
-          lastName: "",
-          secondLastName: "",
-          sex: "",
-          birthDate: "",
-          address: "",
-          civilStatus: "",
-          phoneAreaCode: "",
-          phoneNumber: "",
-          email: "",
-          condition: "",
-          dedication: "",
-          category: "",
-          profession: "",
-          titulo: "",
-          carreras: [],
-        });
-        setDisplayPhoneNumber("");
-      }
-    }
-
     // Si se cambia la cédula y hay un existingTutor o existingPerson, limpiar el formulario
     if (existingTutor || existingPerson) {
       const currentStoredDigits = existingTutor
@@ -352,7 +309,6 @@ export default function TutorModal({
           secondLastName: "",
           sex: "",
           birthDate: "",
-          address: "",
           civilStatus: "",
           phoneAreaCode: "",
           phoneNumber: "",
@@ -404,7 +360,7 @@ export default function TutorModal({
           setValue("titulo", tutorData.titulo || "");
           setValue("carreras", tutorData.carreras || []);
         } else if (result?.person) {
-          // Persona existe (estudiante, usuario, etc.) pero no como tutor → pre-cargar datos
+          // Persona existe (estudiante, usuario, etc.) pero no como tutor -> pre-cargar datos
           setExistingTutor(null);
           setExistingPerson(true);
           setViewOnlyMode(false);
@@ -492,7 +448,7 @@ export default function TutorModal({
               setValue("titulo", tutorData.titulo || "");
               setValue("carreras", tutorData.carreras || []);
             } else if (result?.person) {
-              // Persona existe (estudiante, usuario, etc.) pero no como tutor → pre-cargar datos
+              // Persona existe (estudiante, usuario, etc.) pero no como tutor -> pre-cargar datos
               setExistingTutor(null);
               setExistingPerson(true);
               setViewOnlyMode(false);
@@ -555,8 +511,6 @@ export default function TutorModal({
     try {
       const externalData = await lookupCi(fullCi);
       if (externalData) {
-        setApiDataLoaded(true);
-        apiLoadedCiRef.current = fullCi;
         setValue("firstName", externalData.primerNombre?.toUpperCase() || "");
         setValue("middleName", externalData.segundoNombre?.toUpperCase() || "");
         setValue("lastName", externalData.primerApellido?.toUpperCase() || "");
@@ -592,6 +546,11 @@ export default function TutorModal({
   const handleEmailBlur = useCallback(
     async (e: React.FocusEvent<HTMLInputElement>) => {
       const value = e.target.value;
+      // Si el valor no ha cambiado y estamos en modo edición, no es necesario revalidar
+      if (editingTutor && value === editingTutor.email) {
+        clearErrors("email");
+        return;
+      }
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (value && emailRegex.test(value)) {
         setIsCheckingEmail(true);
@@ -857,6 +816,7 @@ export default function TutorModal({
       setExistingTutor(null);
       setExistingPerson(false);
       setViewOnlyMode(false);
+      setCurrentPersonId(editingTutor?.personId ? Number(editingTutor.personId) : undefined); // Initialize currentPersonId
       
       if (editingTutor) {
         const areaCode = editingTutor.phone.substring(0, 4);
@@ -870,7 +830,6 @@ export default function TutorModal({
           secondLastName: editingTutor.secondLastName || "",
           sex: editingTutor.sex,
           birthDate: editingTutor.birthDate || "",
-          address: editingTutor.address || "",
           civilStatus: editingTutor.civilStatus || "",
           phoneAreaCode: areaCode,
           phoneNumber: number,
@@ -898,7 +857,6 @@ export default function TutorModal({
           secondLastName: "",
           sex: "",
           birthDate: "",
-          address: "",
           civilStatus: "",
           phoneAreaCode: "",
           phoneNumber: "",
@@ -927,7 +885,7 @@ export default function TutorModal({
 
   const onSubmit: SubmitHandler<TutorFormData> = (data) => {
     try {
-      const payload = {
+      const basePayload = {
         identificationPrefix: data.identificationPrefix as "V" | "E",
         identificationNumber: data.identificationNumber,
         firstName: (data.firstName || "").toUpperCase(),
@@ -936,7 +894,6 @@ export default function TutorModal({
         secondLastName: (data.secondLastName || "").toUpperCase(),
         sex: data.sex as "FEMENINO" | "MASCULINO",
         birthDate: data.birthDate || undefined,
-        address: data.address || undefined,
         civilStatus: data.civilStatus || undefined,
         phone: `${data.phoneAreaCode}${data.phoneNumber}`,
         email: (data.email || "").toUpperCase(),
@@ -946,8 +903,12 @@ export default function TutorModal({
         profession: (data.profession || "").toUpperCase(),
         titulo: data.titulo ? data.titulo.toUpperCase() : "",
         carreras: Array.isArray(data.carreras) ? data.carreras.map((c) => String(c).toUpperCase()) : data.carreras,
-      } as CreateTutorPayload;
-      setPendingSave(payload);
+      };
+      // Si se cargó un tutor existente por CI → actualizar, no crear
+      const payload = existingTutor
+        ? { ...basePayload, tutorId: existingTutor.tutorId, status: existingTutor.status }
+        : basePayload;
+      setPendingSave(payload as CreateTutorPayload | UpdateTutorPayload);
       setConfirmSaveOpen(true);
     } catch (error) {
       console.error("[TutorModal] Error al procesar el envío del formulario:", error);
@@ -1010,386 +971,216 @@ export default function TutorModal({
 
           <div className="space-y-6">
               <div hidden={tabsState.activeTab !== 'datos-personales'} role="tabpanel">
-              <PersonFormFields
-                control={control}
-                register={register}
-                errors={errors}
-                setValue={setValue}
-                watch={watch}
-                options={options}
-                displayIdentificationNumber={displayIdentificationNumber}
-                onIdentificationNumberChange={handleIdentificationNumberChange}
-                onBlurCi={handleCiBlur}
-                isCheckingCi={isCheckingCi}
-                onCiLookup={handleCiLookup}
-                isLookingUpCi={isLookingUpCi}
-                onBlurEmail={handleEmailBlur}
-                isCheckingEmail={isCheckingEmail}
-                displayPhoneNumber={displayPhoneNumber}
-                onPhoneNumberChange={handlePhoneNumberChange}
-                createNameHandler={handleNameChange}
-                onAddValue={(listName, field, title) => openAddValueModal(listName, field as any, title)}
-                viewOnlyMode={viewOnlyMode}
-                fieldLockOnApiLoad={apiDataLoaded && (academicConfig?.lockApiLoadedFields ?? true)}
-                editingId={editingTutor?.tutorId ?? existingTutor?.tutorId ?? null}
-                phonePrefixFieldName="phoneAreaCode"
-                age={age}
-                maxDate={maxDate ? maxDate.toISOString().split("T")[0] : undefined}
-              />
-
-              {/* Sección de Dirección */}
-              <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-                <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Dirección de Residencia</h3>
-                <GeographicAddressFields
-                  geoOptions={geoOptions}
-                  value={inlineAddress}
-                  onChange={setInlineAddress}
-                  showReference
+                <PersonFormFields
+                  control={control}
+                  register={register}
+                  errors={errors}
+                  setValue={setValue}
+                  watch={watch}
+                  options={options}
+                  displayIdentificationNumber={displayIdentificationNumber}
+                  onIdentificationNumberChange={handleIdentificationNumberChange}
+                  onBlurCi={handleCiBlur}
+                  onCiLookup={handleCiLookup}
+                  isCheckingCi={isCheckingCi}
+                  isLookingUpCi={isLookingUpCi}
+                  displayPhoneNumber={displayPhoneNumber}
+                  onPhoneNumberChange={handlePhoneNumberChange}
+                  onBlurEmail={handleEmailBlur}
+                  isCheckingEmail={isCheckingEmail}
+                  createNameHandler={handleNameChange}
+                  onAddValue={openAddValueModal}
+                  age={age}
+                  maxDate={maxDate ? maxDate.toISOString().split("T")[0] : undefined}
+                  viewOnlyMode={viewOnlyMode}
+                  fieldLockOnApiLoad={academicConfig?.lockApiLoadedFields ?? true}
+                  editingId={editingTutor?.tutorId ?? existingTutor?.tutorId ?? null}
                 />
-              </div>
-              </div>
-
-              <div hidden={tabsState.activeTab !== 'laboral'} role="tabpanel">
-              {/* Sub-grid: Campos específicos del tutor */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Condición */}
-                <div>
-                  <label className="text-sm font-medium text-text-primary dark:text-white/90">Condición *</label>
-                  <Controller
-                    name="condition"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomSelect
-                        id="condition"
-                        options={CONDITION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                        placeholder="Seleccione Condición"
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        value={String(field.value)}
-                        disabled={viewOnlyMode}
-                        error={!!errors.condition}
-                        onAddNew={() => openAddValueModal("Condición", "condition", "Agregar Condición")}
-                        addNewLabel="Nueva opción"
-                      />
-                    )}
-                  />
-                  {errors.condition && (
-                    <p className="mt-1 text-xs text-red-500">{errors.condition.message}</p>
-                  )}
-                </div>
-
-                {/* Dedicación */}
-                <div>
-                  <label className="text-sm font-medium text-text-primary dark:text-white/90">Dedicación *</label>
-                  <Controller
-                    name="dedication"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomSelect
-                        id="dedication"
-                        options={DEDICATION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                        placeholder="Seleccione Dedicación"
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        value={String(field.value)}
-                        disabled={viewOnlyMode}
-                        error={!!errors.dedication}
-                        onAddNew={() => openAddValueModal("Dedicación", "dedication", "Agregar Dedicación")}
-                        addNewLabel="Nueva opción"
-                      />
-                    )}
-                  />
-                  {errors.dedication && (
-                    <p className="mt-1 text-xs text-red-500">{errors.dedication.message}</p>
-                  )}
-                </div>
-
-                {/* Categoría */}
-                <div>
-                  <label className="text-sm font-medium text-text-primary dark:text-white/90">Categoría *</label>
-                  <Controller
-                    name="category"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomSelect
-                        id="category"
-                        options={CATEGORY_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                        placeholder="Seleccione Categoría"
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        value={String(field.value)}
-                        disabled={viewOnlyMode}
-                        error={!!errors.category}
-                        onAddNew={() => openAddValueModal("Categoría", "category", "Agregar Categoría")}
-                        addNewLabel="Nueva opción"
-                      />
-                    )}
-                  />
-                  {errors.category && (
-                    <p className="mt-1 text-xs text-red-500">{errors.category.message}</p>
-                  )}
-                </div>
-
-                {/* Título */}
-                <div>
-                  <label className="text-sm font-medium text-text-primary dark:text-white/90">Título *</label>
-                  <Controller
-                    name="profession"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomSelect
-                        id="profession"
-                        options={TITULO_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                        placeholder="Seleccione Título"
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        value={String(field.value)}
-                        disabled={viewOnlyMode}
-                        error={!!errors.profession}
-                        onAddNew={() => openAddValueModal("Título", "profession", "Agregar Título")}
-                        addNewLabel="Nueva opción"
-                      />
-                    )}
-                  />
-                  {errors.profession && (
-                    <p className="mt-1 text-xs text-red-500">{errors.profession.message}</p>
-                  )}
-                </div>
-
-                {/* Grado de instrucción */}
-                <div>
-                  <label className="text-sm font-medium text-text-primary dark:text-white/90">Grado de instrucción *</label>
-                  <Controller
-                    name="titulo"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomSelect
-                        id="titulo"
-                        options={GRADO_INSTRUCCION_OPTIONS.map(opt => ({ value: String(opt.value), label: opt.label }))}
-                        placeholder="Seleccione Grado de Instrcción"
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        value={String(field.value)}
-                        disabled={viewOnlyMode}
-                        error={!!errors.titulo}
-                        onAddNew={() => openAddValueModal("GRADO DE INSTRUCCIÓN", "titulo", "Agregar Grado de Instrcción")}
-                        addNewLabel="Nueva opción"
-                      />
-                    )}
-                  />
-                  {errors.titulo && (
-                    <p className="mt-1 text-xs text-red-500">{errors.titulo.message}</p>
-                  )}
-                </div>
-              </div>
-              </div>
-
-              <div hidden={tabsState.activeTab !== 'asignaciones'} role="tabpanel">
-              {/* Carreras que Atiende - full width abajo */}
-              <Controller
-                name="carreras"
-                control={control}
-                render={({ field }) => (
-                  <MultiSelect
-                    {...field}
-                    label="Carreras que Atiende *"
-                    placeholder={careersLoading ? "Cargando carreras..." : (isInUse ? "Carreras asignadas (no editable)" : "Seleccione las carreras...")}
-                    options={careerOptions}
-                    disabled={careersLoading || isInUse || viewOnlyMode}
-                    onAddNew={() => {
-                      setIsCareerModalOpen(true);
-                    }}
-                    addNewLabel="Crear nueva carrera"
-                  />
+                {currentPersonId && (
+                  <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Direcciones</h3>
+                    <AddressList
+                      entityType="person"
+                      entityId={currentPersonId}
+                      readOnly={viewOnlyMode}
+                      geoOptions={geoOptions}
+                    />
+                  </div>
                 )}
+              </div>
+            </div>
+          <div hidden={tabsState.activeTab !== 'laboral'} role="tabpanel">
+            <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Información Laboral</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CustomSelect
+                name="condition"
+                label="Condición"
+                options={CONDITION_OPTIONS}
+                control={control}
+                rules={{ required: "La condición es obligatoria" }}
+                error={errors.condition}
+                disabled={viewOnlyMode || isInUse}
+                onAddValue={() => openAddValueModal("Condición", "condition", "Agregar Condición")}
+              />
+              <CustomSelect
+                name="dedication"
+                label="Dedicación"
+                options={DEDICATION_OPTIONS}
+                control={control}
+                rules={{ required: "La dedicación es obligatoria" }}
+                error={errors.dedication}
+                disabled={viewOnlyMode || isInUse}
+                onAddValue={() => openAddValueModal("Dedicación", "dedication", "Agregar Dedicación")}
+              />
+              <CustomSelect
+                name="category"
+                label="Categoría"
+                options={CATEGORY_OPTIONS}
+                control={control}
+                rules={{ required: "La categoría es obligatoria" }}
+                error={errors.category}
+                disabled={viewOnlyMode || isInUse}
+                onAddValue={() => openAddValueModal("Categoría", "category", "Agregar Categoría")}
+              />
+              <Input
+                name="profession"
+                label="Título Profesional"
+                type="text"
+                placeholder="Ingeniero/a en Sistemas"
+                register={register}
+                error={errors.profession}
+                disabled={viewOnlyMode || isInUse}
+              />
+              <CustomSelect
+                name="titulo"
+                label="Grado de Instrucción"
+                options={TITULO_OPTIONS}
+                control={control}
+                rules={{ required: "El grado de instrucción es obligatorio" }}
+                error={errors.titulo}
+                disabled={viewOnlyMode || isInUse}
+                onAddValue={() => openAddValueModal("Título", "titulo", "Agregar Grado de Instrucción")}
               />
             </div>
-            </div>
-            {/* Direcciones Estructuradas */}
-            <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
-              <AddressList
-                entityType="person"
-                entityId={editingTutor?.personId ? Number(editingTutor.personId) : existingTutor?.personId ? Number(existingTutor.personId) : null}
-                geoOptions={geoOptions}
+          </div>
+          <div hidden={tabsState.activeTab !== 'asignaciones'} role="tabpanel">
+            <h3 className="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Asignaciones</h3>
+            <div className="grid grid-cols-1 gap-6">
+              <MultiSelect
+                name="carreras"
+                label="Carreras que puede Asignar"
+                options={careerOptions}
+                control={control}
+                rules={{ required: "Debe seleccionar al menos una carrera" }}
+                error={errors.carreras}
+                loading={careersLoading}
+                disabled={viewOnlyMode || isInUse}
+                onAddValue={() => setIsCareerModalOpen(true)}
               />
             </div>
-         </form>
+          </div>
+        </form>
       </ModalBody>
 
-      <ModalFooter className="shrink-0 px-6 sm:px-12 py-6 bg-white dark:bg-bg-dark border-t border-border-light dark:border-border-dark">
-        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 w-full max-w-6xl mx-auto">
-          <Button variant="outline" onClick={handleCloseAttempt} disabled={isLoading} className="w-full sm:w-auto min-h-12">
-            Cancelar
-          </Button>
-          {existingTutor ? (
-            <AsyncButton 
-              type="submit" 
-              form="tutor-form" 
-              loading={isLoading} 
-              disabled={!isValid}
-              className="w-full sm:w-auto min-h-12"
-            >
-              Guardar Cambios
-            </AsyncButton>
-          ) : editingTutor ? (
-            <AsyncButton 
-              type="submit" 
-              form="tutor-form" 
-              loading={isLoading} 
-              disabled={!isDirty}
-              className="w-full sm:w-auto min-h-12"
-            >
-              Actualizar Registro
-            </AsyncButton>
-          ) : (
-            <AsyncButton 
-              type="submit" 
-              form="tutor-form" 
-              loading={isLoading} 
-              disabled={!isValid}
-              className="w-full sm:w-auto min-h-12"
-            >
-              Guardar Tutor
-            </AsyncButton>
+        <ModalFooter>
+          {!viewOnlyMode && (
+            <>
+              <Button
+                variant="outline"
+                onClick={handleCloseAttempt}
+                disabled={isLoading || confirmSaving}
+              >
+                Cancelar
+              </Button>
+              <AsyncButton
+                onClick={handleSubmit(onSubmit)}
+                loading={isLoading || confirmSaving}
+                disabled={!isDirty || !isValid || isLoading || confirmSaving}
+              >
+                Guardar
+              </AsyncButton>
+            </>
           )}
-        </div>
-      </ModalFooter>
-    </Modal>
-
-    {confirmSaveOpen && (
+          {viewOnlyMode && (
+            <Button variant="outline" onClick={handleClose}>
+              Cerrar
+            </Button>
+          )}
+        </ModalFooter>
+      </Modal>
       <UnifiedDialog
         isOpen={confirmSaveOpen}
-        onClose={() => !confirmSaving && setConfirmSaveOpen(false)}
+        onClose={() => setConfirmSaveOpen(false)}
         onConfirm={async () => {
-          if (confirmSaving) return; // prevent double-click
-          setConfirmSaving(true);
-          try {
-            if (pendingSave) {
-              await onSave(pendingSave);
+          if (pendingSave) {
+            setConfirmSaving(true);
+            try {
+              if (editingTutor || existingTutor) {
+                await onSave(pendingSave as UpdateTutorPayload);
+              } else {
+                await onSave(pendingSave as CreateTutorPayload);
+              }
+              setConfirmSaveOpen(false);
+            } catch (error) {
+              console.error("Error saving tutor:", error);
+            } finally {
+              setConfirmSaving(false);
             }
-            const personId = editingTutor?.personId ?? existingTutor?.personId ?? null;
-            if (personId && inlineAddress.parroquiaId && inlineAddress.streetAddress) {
-              await addressService.createAddress({
-                entityType: 'person',
-                entityId: Number(personId),
-                addressTypeId: inlineAddress.addressTypeId || 3,
-                parroquiaId: inlineAddress.parroquiaId,
-                streetAddress: inlineAddress.streetAddress,
-                reference: inlineAddress.reference,
-                isPrimary: inlineAddress.isPrimary,
-              });
-            }
-          } finally {
-            setConfirmSaving(false);
-            setConfirmSaveOpen(false);
           }
         }}
-        isLoading={confirmSaving}
-        variant="confirm"
-        {...(editingTutor || existingTutor ? CONFIRM_MESSAGES.update('Tutor') : CONFIRM_MESSAGES.create('Tutor'))}
+        title={editingTutor || existingTutor ? CONFIRM_MESSAGES.edit.title : CONFIRM_MESSAGES.create.title}
+        message={editingTutor || existingTutor ? CONFIRM_MESSAGES.edit.message : CONFIRM_MESSAGES.create.message}
+        type={SYSTEM_DIALOGS.confirmation}
       />
-    )}
-
-    <UnifiedDialog
-      isOpen={showConfirmation}
-      onClose={cancelClose}
-      onConfirm={confirmClose}
-      variant="warning"
-      {...SYSTEM_DIALOGS.closeWithoutSaving}
-    />
-
-    {/* Modal para agregar nueva opción a la lista */}
-    <Modal
-      isOpen={isValueModalOpen}
-      onClose={() => setIsValueModalOpen(false)}
-      size="md"
-      modalId={`${modalId}-value`}
-    >
-      <ModalHeader>{valueModalTitle}</ModalHeader>
-      <ModalBody>
-        <div className="space-y-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Nuevo valor
-          </label>
-          <Input
-            value={newValueInput}
-            onChange={(e) => setNewValueInput(e.target.value)}
-            placeholder="Ingrese el nuevo valor"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && newValueInput.trim() && !savingNewValue) {
-                handleSaveNewValue();
-              }
-            }}
-            autoFocus
-          />
-          <p className="text-xs text-gray-500">
-            Presione Enter o haga clic en Guardar para agregar el valor.
-          </p>
-        </div>
-      </ModalBody>
-      <ModalFooter>
-        <Button
-          variant="outline"
-          onClick={() => setIsValueModalOpen(false)}
-          disabled={savingNewValue}
-        >
-          Cancelar
-        </Button>
-        <AsyncButton
-          onClick={handleSaveNewValue}
-          loading={savingNewValue}
-          disabled={!newValueInput.trim()}
-        >
-          Guardar
-        </AsyncButton>
-      </ModalFooter>
-    </Modal>
-
-    {/* Modal para crear nueva carrera */}
-    <CareerModal
-      isOpen={isCareerModalOpen}
-      onClose={() => {
-        setIsCareerModalOpen(false);
-        setEditingCareer(null);
-      }}
-      onSave={async () => {
-        // Recargar carreras después de crear una nueva
-        const allCareers = await getCareers();
-        setCareers(unwrapData(allCareers).filter(c => c.status));
-        setIsCareerModalOpen(false);
-        setEditingCareer(null);
-      }}
-      editingCareer={editingCareer}
-      internshipOptions={internshipOptions}
-      isLoading={false}
-      hasPendingEvaluations={false}
-      isInUse={false}
-      existingCareers={careers}
-      onAddInternshipType={() => {
-        // Open the internship type modal
-        setIsInternshipTypeModalOpen(true);
-        setEditingInternshipType(null);
-      }}
-    />
-    
-    {/* Modal para crear nuevo tipo de práctica (desde CareerModal) */}
-    <InternshipTypeModal
-      isOpen={isInternshipTypeModalOpen}
-      onClose={() => {
-        setIsInternshipTypeModalOpen(false);
-        setEditingInternshipType(null);
-      }}
-      onSave={async () => {
-        // Recargar tipos de práctica después de crear uno nuevo
-        const types = await getInternshipTypes();
-        setInternshipOptions(mapToOptions(types));
-        setExistingInternshipTypes(types);
-        setIsInternshipTypeModalOpen(false);
-        setEditingInternshipType(null);
-      }}
-      editingItem={editingInternshipType}
-      existingTypes={existingInternshipTypes}
-    />
-  </>
+      <UnifiedDialog
+        isOpen={showConfirmation}
+        onClose={cancelClose}
+        onConfirm={confirmClose}
+        title={CONFIRM_MESSAGES.unsavedChanges.title}
+        message={CONFIRM_MESSAGES.unsavedChanges.message}
+        type={SYSTEM_DIALOGS.confirmation}
+      />
+      <CareerModal
+        isOpen={isCareerModalOpen}
+        onClose={() => {
+          setIsCareerModalOpen(false);
+          setEditingCareer(null);
+        }}
+        onSave={(career) => {
+          setCareers(prev => {
+            const existing = prev.find(c => c.careerId === career.careerId);
+            if (existing) {
+              return prev.map(c => c.careerId === career.careerId ? career : c);
+            }
+            return [...prev, career];
+          });
+          setIsCareerModalOpen(false);
+        }}
+        editingCareer={editingCareer}
+        internshipOptions={internshipOptions}
+        openInternshipTypeModal={(type) => {
+          setEditingInternshipType(type);
+          setIsInternshipTypeModalOpen(true);
+        }}
+        existingInternshipTypes={existingInternshipTypes}
+      />
+      <InternshipTypeModal
+        isOpen={isInternshipTypeModalOpen}
+        onClose={() => {
+          setIsInternshipTypeModalOpen(false);
+          setEditingInternshipType(null);
+        }}
+        onSave={(type) => {
+          setExistingInternshipTypes(prev => {
+            const existing = prev.find(it => it.internshipTypeId === type.internshipTypeId);
+            if (existing) {
+              return prev.map(it => it.internshipTypeId === type.internshipTypeId ? type : it);
+            }
+            return [...prev, type];
+          });
+          setIsInternshipTypeModalOpen(false);
+        }}
+        editingInternshipType={editingInternshipType}
+      />
+    </>
   );
-}

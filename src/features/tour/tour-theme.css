@@ -1,0 +1,99 @@
+/* ───────────────────────────────────────────
+   UNEFA Dashboard — Driver.js Tour Theme
+   Matches the dashboard brand palette
+   ─────────────────────────────────────────── */
+
+.driver-popover.unefa-tour-popover {
+  background: var(--color-bg-primary, #fff);
+  color: var(--color-text-primary, #1f2937);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  max-width: 380px;
+  padding: 20px 22px;
+  border: 1px solid var(--color-border-light, rgba(0,0,0,0.06));
+}
+
+.unefa-tour-popover .driver-popover-title {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin-bottom: 8px;
+  color: var(--color-text-emphasis, #111827);
+}
+
+.unefa-tour-popover .driver-popover-description {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.unefa-tour-popover .driver-popover-description b,
+.unefa-tour-popover .driver-popover-description strong {
+  color: var(--color-text-emphasis, #111827);
+  font-weight: 600;
+}
+
+.unefa-tour-popover .driver-popover-progress-text {
+  color: var(--color-text-tertiary, #9ca3af);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.unefa-tour-popover .driver-popover-footer button {
+  background: var(--color-btn-primary-bg, #465fff);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  transition: all 0.2s;
+  text-shadow: none;
+}
+
+.unefa-tour-popover .driver-popover-footer button:hover {
+  background: var(--color-btn-primary-hover, #3646e0);
+  opacity: 1;
+}
+
+.unefa-tour-popover .driver-popover-footer .driver-popover-prev-btn {
+  background: var(--color-bg-secondary, #f3f4f6);
+  color: var(--color-text-secondary, #4b5563);
+}
+
+.unefa-tour-popover .driver-popover-footer .driver-popover-prev-btn:hover {
+  background: var(--color-bg-tertiary, #e5e7eb);
+}
+
+.unefa-tour-popover .driver-popover-close-btn {
+  color: var(--color-text-tertiary, #9ca3af);
+  font-size: 18px;
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+}
+
+.unefa-tour-popover .driver-popover-close-btn:hover {
+  color: var(--color-text-primary, #1f2937);
+}
+
+/* Arrow coloring — matches popover background */
+.unefa-tour-popover .driver-popover-arrow-side-left.driver-popover-arrow {
+  border-left-color: var(--color-bg-primary, #fff);
+}
+.unefa-tour-popover .driver-popover-arrow-side-right.driver-popover-arrow {
+  border-right-color: var(--color-bg-primary, #fff);
+}
+.unefa-tour-popover .driver-popover-arrow-side-top.driver-popover-arrow {
+  border-top-color: var(--color-bg-primary, #fff);
+}
+.unefa-tour-popover .driver-popover-arrow-side-bottom.driver-popover-arrow {
+  border-bottom-color: var(--color-bg-primary, #fff);
+}
+
+/* Highlighted element glow */
+.driver-active-element {
+  border-radius: 8px;
+}

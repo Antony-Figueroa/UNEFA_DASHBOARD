@@ -3,6 +3,9 @@ import { dbManager } from '../lib/db-manager.js';
 import { cacheManager } from '../lib/cache-manager.js';
 import * as personService from '../services/person.service.js';
 import { sanitizeText } from '../utils/text-utils.js';
+// ponytail: inline mappers, same pattern as students/tutors controllers
+const maritalToDb: Record<string, string> = { 'SOLTERO': 'S', 'CASADO': 'C', 'DIVORCIADO': 'D', 'VIUDO': 'V' };
+const maritalFromDb: Record<string, string> = { 'S': 'SOLTERO', 'C': 'CASADO', 'D': 'DIVORCIADO', 'V': 'VIUDO' };
 
 const TABLE_NAME = 't_institution_manager';
 const PIVOT_TABLE = 't_institution_manager_institution';
@@ -67,6 +70,8 @@ interface DBPersonJoin {
   email: string;
   phone: string | null;
   gender: string | null;
+  birthDate: string | null;
+  maritalStatus: string | null;
 }
 
 interface DBInstitutionalResponsible {
@@ -88,7 +93,7 @@ interface DBInstitutionalResponsible {
 // ============================================================
 
 const MANAGER_COLUMNS = `MANAGER_ID, person_id, CREATION_DATE, STATUS, TITLE`;
-const PERSON_JOIN = `t_persons!inner(person_id, ci, first_name, middle_name, last_name, second_last_name, email, phone, gender)`;
+const PERSON_JOIN = `t_persons!inner(person_id, ci, first_name, middle_name, last_name, second_last_name, email, phone, gender, birthdate, marital_status)`;
 
 const getInstitutionsForManager = async (supabase: any, managerId: number) => {
   const { data: pivotData, error: pivotError } = await supabase
@@ -130,6 +135,8 @@ const mapDBToFrontend = (r: DBInstitutionalResponsible) => {
     secondLastName: p.second_last_name || undefined,
     phone: p.phone,
     email: p.email,
+    birthDate: p.birthDate || undefined,
+    civilStatus: p.marital_status ? (maritalFromDb[p.marital_status.trim()] || p.marital_status) : undefined,
     title: r.TITLE || undefined,
     cargo: r.institutions?.[0]?.cargo || undefined,
     institutions: r.institutions || [],
@@ -147,6 +154,9 @@ function extractPersonData(body: any) {
     secondLastName: sanitizeText(body.secondLastName),
     email: body.email || '',
     phone: body.phone || null,
+    gender: body.sex || null,
+    birthDate: body.birthDate || null,
+    maritalStatus: body.civilStatus ? (maritalToDb[body.civilStatus.toUpperCase()] || null) : null,
   };
 }
 
@@ -252,7 +262,6 @@ export const getInstitutionalResponsibleByCi = async (req: Request, res: Respons
           phone: person.phone || '',
           birthDate: person.birthDate || '',
           gender: person.gender || '',
-          address: person.address || '',
           maritalStatus: person.maritalStatus || '',
         }
       });
@@ -313,9 +322,23 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
       }
     }
 
+    // 1b. Verificar que no exista ya un responsable para esta persona
+    const existingCheck = await dbManager.withRetry(async (supabase) => {
+      const np = await personService.findOrCreatePerson(personData, supabase);
+      const { data: existing } = await supabase
+        .from(TABLE_NAME)
+        .select('MANAGER_ID')
+        .eq('person_id', np.personId)
+        .maybeSingle();
+      return { personId: np.personId, existing };
+    }, 'createResp:checkDuplicate');
+
+    if (existingCheck.existing) {
+      return res.status(409).json({ message: 'Ya existe un responsable institucional registrado con esta cédula' });
+    }
+
     const data = await dbManager.withRetry(async (supabase) => {
-      // 1. Buscar persona existente por CI o crear nueva
-      const newPerson = await personService.findOrCreatePerson(personData, supabase);
+      const newPerson = { personId: existingCheck.personId };
 
       // 2. Insertar manager
       const dbData = {

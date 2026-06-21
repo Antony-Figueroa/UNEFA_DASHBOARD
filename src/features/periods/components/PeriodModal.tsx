@@ -29,8 +29,9 @@ interface PeriodModalProps {
     isOpen: boolean;
     /** Función para cerrar el modal */
     onClose: () => void;
-    /** Función para guardar los cambios (creación o actualización) */
-    onSave: (payload: CreatePeriodPayload | UpdatePeriodPayload) => Promise<void> | void;
+    /** Función para guardar los cambios (creación o actualización).
+     *  Puede retornar el período creado/actualizado para que el modal persista type dates. */
+    onSave: (payload: CreatePeriodPayload | UpdatePeriodPayload) => Promise<{ periodId: string } | undefined | void> | { periodId: string } | undefined | void;
     /** Periodo a editar (null para creación) */
     periodo: Periodo | null;
     /** Indica si hay una operación de guardado en curso */
@@ -536,10 +537,21 @@ export default function PeriodModal({
                     periodStatus: 1, // Pendiente por defecto
                     status: true,
                 };
-                await onSave(createPayload);
-                
-                // Type dates for new periods are handled after creation (periodId known)
-                // The parent should call onSaveTypeDates after the period is created
+                const result = await onSave(createPayload);
+
+                // Save type dates after creation — parent returns the new period with periodId
+                const newPeriodId = result?.periodId;
+                if (newPeriodId && onSaveTypeDates && typeDatesEntries.length > 0) {
+                    await onSaveTypeDates(
+                        parseInt(newPeriodId),
+                        typeDatesEntries.map(([typeId, dates]) => ({
+                            periodId: parseInt(newPeriodId),
+                            internshipTypeId: parseInt(typeId),
+                            startDate: dates.startDate,
+                            endDate: dates.endDate,
+                        }))
+                    );
+                }
             }
         } catch (error) {
             console.error("[PeriodModal] Error al procesar el envío del formulario:", error);

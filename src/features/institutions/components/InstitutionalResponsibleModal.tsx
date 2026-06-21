@@ -197,9 +197,8 @@ export default function InstitutionalResponsibleModal({
       try {
         const result = await getResponsibleByCi(fullCi);
         if (result?.responsible) {
-          // Responsable ya existe → modo solo lectura
+          // Responsable ya existe → precargar datos (form editable)
           setExistingResponsible(result.responsible);
-          setViewOnlyMode(true);
           fillFormWithExistingData(result.responsible);
         } else if (result?.person) {
           // Persona existe (estudiante, tutor, etc.) pero no como responsable → pre-cargar datos
@@ -423,7 +422,6 @@ export default function InstitutionalResponsibleModal({
             const result = await getResponsibleByCi(fullCi);
             if (result?.responsible) {
               setExistingResponsible(result.responsible);
-              setViewOnlyMode(true);
               fillFormWithExistingData(result.responsible);
             } else if (result?.person) {
               setExistingResponsible(null);
@@ -551,6 +549,7 @@ export default function InstitutionalResponsibleModal({
     cancelClose,
   } = useUnsavedChanges(isDirty, onClose);
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
+  const [confirmSaving, setConfirmSaving] = useState(false);
   const [pendingSave, setPendingSave] = useState<CreateInstitutionalResponsiblePayload | UpdateInstitutionalResponsiblePayload | null>(null);
 
   useEffect(() => {
@@ -806,16 +805,16 @@ export default function InstitutionalResponsibleModal({
 
          <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
            <form onSubmit={handleSubmit(onSubmit)} className="max-w-5xl mx-auto py-6">
-             {existingResponsible && viewOnlyMode && (
-               <div className="mb-4 flex items-center space-x-3 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg">
-                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-warning-700 dark:text-warning-400" viewBox="0 0 20 20" fill="currentColor">
-                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.492-1.646-1.742-2.98l5.58-9.92zM11 13a1 1 0 10-2 0v-3a1 1 0 112 0v3zm-1-8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                 </svg>
-                 <span className="text-sm font-medium text-warning-700 dark:text-warning-400">
-                   Registro existente - Click en 'Editar Registro' para modificar
-                 </span>
-               </div>
-             )}
+              {existingResponsible && (
+                <div className="mb-4 flex items-center space-x-3 p-3 bg-info-50 dark:bg-info-500/10 border border-info-200 dark:border-info-500/20 rounded-lg">
+                  <svg className="h-5 w-5 text-info-700 dark:text-info-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                  </svg>
+                  <span className="text-sm font-medium text-info-700 dark:text-info-400">
+                    Persona ya registrada — datos precargados. Podés modificarlos antes de guardar.
+                  </span>
+                </div>
+              )}
 
             <Tabs
               options={[
@@ -850,7 +849,7 @@ export default function InstitutionalResponsibleModal({
                   onAddValue={(listName, field, title) =>
                     openAddValueModal(listName, field as any, title)
                   }
-                  viewOnlyMode={!!existingResponsible}
+                   viewOnlyMode={false}
                   fieldLockOnApiLoad={apiDataLoaded && (academicConfig?.lockApiLoadedFields ?? true)}
                   editingId={editingResp?.responsibleId ?? existingResponsible?.responsibleId ?? null}
                   hiddenFields={["sex", "birthDate", "civilStatus", "address"]}
@@ -955,7 +954,6 @@ onChange={(val) => {
                               if (val) handleAddInstitution(val);
                             }}
                             placeholder="Agregar empresa o institución..."
-                            disabled={!!existingResponsible}
                             
                             onAddNew={() => setIsNewInstitutionModalOpen(true)}
                             addNewLabel="Crear nueva empresa o institución"
@@ -964,22 +962,19 @@ onChange={(val) => {
                           {selectedInstitutions.length > 0 && (
                             <div className="space-y-2 mt-2">
                               {selectedInstitutions.map((inst: any) => (
-                                <div key={inst.institutionId} className={`flex items-center gap-2 p-2 rounded-lg border ${existingResponsible ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600' : 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700'}`}>
-                                  <div className={`flex-1 min-w-0 ${existingResponsible ? 'opacity-60' : ''}`}>
-                                    <p className={`text-sm font-medium truncate ${existingResponsible ? 'text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                <div key={inst.institutionId} className="flex items-center gap-2 p-2 rounded-lg border bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate text-gray-700 dark:text-gray-300">
                                       {inst.institutionName || institutionOptions.find(o => o.value === inst.institutionId)?.label || "Empresa o Institución"}
                                     </p>
                                   </div>
                                   <input
                                     type="text"
                                     placeholder="Cargo"
-                                    className={`w-32 px-2 py-1 text-xs uppercase border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${existingResponsible ? 'border-gray-300 dark:border-gray-600 opacity-60 cursor-not-allowed' : 'border-gray-300 dark:border-gray-600'}`}
+                                    className="w-32 px-2 py-1 text-xs uppercase border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600"
                                     value={inst.cargo || ""}
                                     onChange={(e) => handleCargoChange(inst.institutionId, e.target.value)}
-                                    disabled={!!existingResponsible}
-                                    readOnly={!!existingResponsible}
                                   />
-                                  {!existingResponsible && (
                                     <button
                                       type="button"
                                       onClick={() => handleRemoveInstitution(inst.institutionId)}
@@ -989,7 +984,6 @@ onChange={(val) => {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                       </svg>
                                     </button>
-                                  )}
                                 </div>
                               ))}
                             </div>
@@ -1020,18 +1014,7 @@ onChange={(val) => {
              >
                Cancelar
              </Button>
-            {existingResponsible ? (
-                viewOnlyMode ? (
-                  <AsyncButton 
-                    variant="warning"
-                    type="button"
-                    className="w-full sm:w-auto min-h-12 px-8 rounded-xl font-bold"
-                    onClick={handleEditExisting}
-                  >
-                    Editar Registro
-                  </AsyncButton>
-                ) : null  // Cuando no está en viewOnlyMode (después de hacer click), se maneja en edit mode
-              ) : editingResp ? (
+             {editingResp ? (
                 <AsyncButton 
                   variant="primary" 
                   type="button"
@@ -1070,32 +1053,36 @@ onChange={(val) => {
     {confirmSaveOpen && (
       <UnifiedDialog
         isOpen={confirmSaveOpen}
-        onClose={() => setConfirmSaveOpen(false)}
+        onClose={() => !confirmSaving && setConfirmSaveOpen(false)}
         onConfirm={async () => {
-          if (pendingSave) {
-            try {
+          if (confirmSaving) return;
+          setConfirmSaving(true);
+          try {
+            if (pendingSave) {
               await onSave(pendingSave);
               addToast({
                 variant: "success",
                 title: editingResp ? "Actualizado" : "Guardado",
                 message: editingResp ? "Responsable actualizado exitosamente" : "Responsable guardado exitosamente"
               });
-            } catch (error: any) {
-              console.error("[InstitutionalResponsibleModal] Error guardando:", error);
-              const errorMessage = error?.response?.data?.message || error?.message || "No se pudo guardar el responsable";
-              addToast({
-                variant: "error",
-                title: "Error",
-                message: errorMessage
-              });
-              return;
             }
+          } catch (error: any) {
+            console.error("[InstitutionalResponsibleModal] Error guardando:", error);
+            const errorMessage = error?.response?.data?.message || error?.message || "No se pudo guardar el responsable";
+            addToast({
+              variant: "error",
+              title: "Error",
+              message: errorMessage
+            });
+            return;
+          } finally {
+            setConfirmSaving(false);
             setConfirmSaveOpen(false);
           }
         }}
         variant="confirm"
         {...(editingResp ? CONFIRM_MESSAGES.update('Responsable institucional') : CONFIRM_MESSAGES.create('Responsable institucional'))}
-        isLoading={isLoading}
+        isLoading={confirmSaving}
       />
     )}
 

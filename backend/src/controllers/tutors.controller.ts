@@ -299,12 +299,25 @@ export const createTutor = async (req: AuthRequest, res: Response) => {
     const personData = extractPersonData(t);
     const tutorData = extractTutorData(t);
 
-    const data = await dbManager.withRetry(async (supabase) => {
-      // 1. Buscar persona existente por CI o crear nueva
+    // 2. Verificar que no exista ya un tutor para esta persona (antes de withRetry)
+    const existingCheck = await dbManager.withRetry(async (supabase) => {
       const newPerson = await personService.findOrCreatePerson(personData, supabase);
-      const personId = newPerson.personId;
+      const { data: existing } = await supabase
+        .from(TABLE_NAME)
+        .select('TUTOR_ID')
+        .eq('person_id', newPerson.personId)
+        .maybeSingle();
+      return { personId: newPerson.personId, existing };
+    }, 'createTutor:checkDuplicate');
 
-      // 2. Insertar tutor
+    if (existingCheck.existing) {
+      return res.status(409).json({ message: 'Ya existe un tutor registrado con esta cédula' });
+    }
+
+    const data = await dbManager.withRetry(async (supabase) => {
+      const personId = existingCheck.personId;
+
+      // 3. Insertar tutor
       const dbRecord = {
         person_id: personId,
         PROFESSION: tutorData.PROFESSION,

@@ -313,9 +313,23 @@ export const createInstitutionalResponsible = async (req: Request, res: Response
       }
     }
 
+    // 1b. Verificar que no exista ya un responsable para esta persona
+    const existingCheck = await dbManager.withRetry(async (supabase) => {
+      const np = await personService.findOrCreatePerson(personData, supabase);
+      const { data: existing } = await supabase
+        .from(TABLE_NAME)
+        .select('MANAGER_ID')
+        .eq('person_id', np.personId)
+        .maybeSingle();
+      return { personId: np.personId, existing };
+    }, 'createResp:checkDuplicate');
+
+    if (existingCheck.existing) {
+      return res.status(409).json({ message: 'Ya existe un responsable institucional registrado con esta cédula' });
+    }
+
     const data = await dbManager.withRetry(async (supabase) => {
-      // 1. Buscar persona existente por CI o crear nueva
-      const newPerson = await personService.findOrCreatePerson(personData, supabase);
+      const newPerson = { personId: existingCheck.personId };
 
       // 2. Insertar manager
       const dbData = {

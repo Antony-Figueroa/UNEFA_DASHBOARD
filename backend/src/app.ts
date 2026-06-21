@@ -58,6 +58,7 @@ import addressRoutes from './routes/address.routes.js';
 import systemInstitutionRoutes from './routes/system-institution.routes.js';
 import systemNucleusRoutes from './routes/system-nucleus.routes.js';
 import proyeccionRoutes from './routes/proyeccion.routes.js';
+import bulkImportRoutes from './routes/bulk-import.routes.js';
 import { getSystemConfig } from './controllers/evaluation.controller.js';
 import { subscribeToNotifications } from './services/sse.service.js';
 import { dbManager } from './lib/db-manager.js';
@@ -288,6 +289,7 @@ app.use('/api/address', addressRoutes);
 app.use('/api/system-institution', systemInstitutionRoutes);
 app.use('/api/system-nucleus', systemNucleusRoutes);
 app.use('/api/proyeccion', proyeccionRoutes);
+app.use('/api/bulk-import', bulkImportRoutes);
 
 // Servir archivos estáticos del frontend (Vite build)
 // Intentar encontrar la carpeta dist en lugares comunes
@@ -305,6 +307,12 @@ for (const p of possibleDistPaths) {
     frontendDistPath = p;
     break;
   }
+}
+
+// Serve uploaded files (logos, etc.)
+const uploadsPath = path.resolve(__dirname, '../uploads');
+if (fs.existsSync(uploadsPath)) {
+  app.use('/uploads', express.static(uploadsPath));
 }
 
 if (frontendDistPath) {

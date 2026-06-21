@@ -88,6 +88,7 @@ export default function TutorModal({
   const { addToast } = useToast();
   const [options, setOptions] = useState<Record<string, { value: string; label: string }[]>>({});
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
+  const [confirmSaving, setConfirmSaving] = useState(false);
   const [pendingSave, setPendingSave] = useState<CreateTutorPayload | UpdateTutorPayload | null>(null);
 
    // State for display values with formatting
@@ -378,7 +379,6 @@ export default function TutorModal({
           const tutorData = result.tutor;
           setExistingTutor(tutorData);
           setExistingPerson(false);
-          setViewOnlyMode(true);
 
           const areaCode = tutorData.phone ? tutorData.phone.substring(0, 4) : "";
           const phoneNumber = tutorData.phone ? tutorData.phone.substring(4) : "";
@@ -467,7 +467,6 @@ export default function TutorModal({
               const tutorData = result.tutor;
               setExistingTutor(tutorData);
               setExistingPerson(false);
-              setViewOnlyMode(true);
 
               const areaCode = tutorData.phone ? tutorData.phone.substring(0, 4) : "";
               const phoneNumber = tutorData.phone ? tutorData.phone.substring(4) : "";
@@ -988,13 +987,13 @@ export default function TutorModal({
 
       <ModalBody className="bg-bg-secondary/30 dark:bg-bg-dark/50">
         <form id="tutor-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto py-2">
-          {existingTutor && viewOnlyMode && (
-            <div className="flex items-center space-x-3 p-3 bg-warning-50 dark:bg-warning-500/10 border border-warning-200 dark:border-warning-500/20 rounded-lg mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-warning-700 dark:text-warning-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.492-1.646-1.742-2.98l5.58-9.92zM11 13a1 1 0 10-2 0v-3a1 1 0 112 0v3zm-1-8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+          {existingTutor && (
+            <div className="flex items-center space-x-3 p-3 bg-info-50 dark:bg-info-500/10 border border-info-200 dark:border-info-500/20 rounded-lg mb-4">
+              <svg className="h-5 w-5 text-info-700 dark:text-info-400" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
               </svg>
-              <span className="text-sm font-medium text-warning-700 dark:text-warning-400">
-                Registro existente - Click en 'Editar Registro' para modificar
+              <span className="text-sm font-medium text-info-700 dark:text-info-400">
+                Persona ya registrada — datos precargados. Podés modificarlos antes de guardar.
               </span>
             </div>
           )}
@@ -1223,31 +1222,15 @@ export default function TutorModal({
             Cancelar
           </Button>
           {existingTutor ? (
-            viewOnlyMode ? (
-              <AsyncButton 
-                type="button"
-                className="w-full sm:w-auto min-h-12 bg-warning-500 hover:bg-warning-600 text-white"
-                onClick={() => {
-                  if (onEditExisting) {
-                    onEditExisting(existingTutor);
-                  } else {
-                    setViewOnlyMode(false);
-                  }
-                }}
-              >
-                Editar Registro
-              </AsyncButton>
-            ) : (
-              <AsyncButton 
-                type="submit" 
-                form="tutor-form" 
-                loading={isLoading} 
-                disabled={!isValid}
-                className="w-full sm:w-auto min-h-12"
-              >
-                Guardar Cambios
-              </AsyncButton>
-            )
+            <AsyncButton 
+              type="submit" 
+              form="tutor-form" 
+              loading={isLoading} 
+              disabled={!isValid}
+              className="w-full sm:w-auto min-h-12"
+            >
+              Guardar Cambios
+            </AsyncButton>
           ) : editingTutor ? (
             <AsyncButton 
               type="submit" 
@@ -1276,14 +1259,16 @@ export default function TutorModal({
     {confirmSaveOpen && (
       <UnifiedDialog
         isOpen={confirmSaveOpen}
-        onClose={() => setConfirmSaveOpen(false)}
+        onClose={() => !confirmSaving && setConfirmSaveOpen(false)}
         onConfirm={async () => {
-          if (pendingSave) {
-            await onSave(pendingSave);
-          }
-          const personId = editingTutor?.personId ?? existingTutor?.personId ?? null;
-          if (personId && inlineAddress.parroquiaId && inlineAddress.streetAddress) {
-            try {
+          if (confirmSaving) return; // prevent double-click
+          setConfirmSaving(true);
+          try {
+            if (pendingSave) {
+              await onSave(pendingSave);
+            }
+            const personId = editingTutor?.personId ?? existingTutor?.personId ?? null;
+            if (personId && inlineAddress.parroquiaId && inlineAddress.streetAddress) {
               await addressService.createAddress({
                 entityType: 'person',
                 entityId: Number(personId),
@@ -1293,12 +1278,13 @@ export default function TutorModal({
                 reference: inlineAddress.reference,
                 isPrimary: inlineAddress.isPrimary,
               });
-            } catch (addrErr) {
-              console.error('[TutorModal] Error creating address:', addrErr);
             }
+          } finally {
+            setConfirmSaving(false);
+            setConfirmSaveOpen(false);
           }
-          setConfirmSaveOpen(false);
         }}
+        isLoading={confirmSaving}
         variant="confirm"
         {...(editingTutor || existingTutor ? CONFIRM_MESSAGES.update('Tutor') : CONFIRM_MESSAGES.create('Tutor'))}
       />

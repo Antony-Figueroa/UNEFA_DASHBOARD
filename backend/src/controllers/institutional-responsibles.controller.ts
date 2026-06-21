@@ -71,7 +71,7 @@ interface DBPersonJoin {
   phone: string | null;
   gender: string | null;
   birthDate: string | null;
-  maritalStatus: string | null;
+  marital_status: string | null;
 }
 
 interface DBInstitutionalResponsible {

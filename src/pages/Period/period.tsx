@@ -178,12 +178,14 @@ export default function Period() {
     const handleSave = async (payload: CreatePeriodPayload | UpdatePeriodPayload) => {
         const isEditing = 'periodId' in payload;
         try {
+            let result;
             if (isEditing) {
-                await editPeriod(payload as UpdatePeriodPayload);
+                result = await editPeriod(payload as UpdatePeriodPayload);
             } else {
-                await addPeriod(payload as CreatePeriodPayload);
+                result = await addPeriod(payload as CreatePeriodPayload);
             }
             handleCloseCreateEditModal();
+            return result;
         } catch (e) {
             console.error("[PeriodPage] Error al guardar periodo:", e);
         }

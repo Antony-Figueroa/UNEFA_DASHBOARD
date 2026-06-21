@@ -19,6 +19,7 @@ import {
 import { useSidebar } from "../context/sidebar";
 import PeriodStatusCard from "../components/Sidebar/PeriodStatusCard";
 import PendingTasksCard from "../components/Sidebar/PendingTasksCard";
+import { useSystemInfo } from "../context/SystemInfoContext";
 
 type SubNavItem = {
   name: string;
@@ -183,6 +184,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Dashboard", path: "/student" },
       { name: "Mis Solicitudes", path: "/student/requests" },
+      { name: "Mi Seguimiento", path: "/student/tracking" },
       { name: "Mis Evaluaciones", path: "/student/evaluations" },
       { name: "Mi Perfil", path: "/student/profile" },
     ],
@@ -227,8 +229,7 @@ const navItems: NavItem[] = [
       { name: "SISTEMA", isHeader: true },
       { name: "Parámetros", path: "/configure/settings", permissions: ['config:view'] },
       { name: "Académicos", path: "/configure/academic", permissions: ['academic-config:edit'] },
-      { name: "Institución", path: "/configure/institucion", permissions: ['config:view'] },
-      { name: "Núcleos", path: "/configure/nucleos", permissions: ['config:view'] },
+      { name: "Organización", path: "/configure/organizacion", permissions: ['config:view'] },
       { name: "Listas (Combos)", path: "/configure/lists", permissions: ['lists:view'] },
       { name: "Respaldos", path: "/configure/backups", permissions: ['backups:view'] },
       { name: "Mantenimiento", path: "/configure/maintenance", permissions: ['config:view'] },
@@ -251,7 +252,15 @@ const AppSidebar: React.FC = () => {
   const { user } = useAuth();
   const { hasAnyPermission } = usePermissions();
   const location = useLocation();
-  const { openTab } = useTabs();
+  const { tabs, activeTabId, openTab } = useTabs();
+
+  // Active path from tabs (URL is synced via history.replaceState, not React Router)
+  const activePath = useMemo(() => {
+    if (!activeTabId) return location.pathname;
+    const tab = tabs.find(t => t.id === activeTabId);
+    return tab?.path ?? location.pathname;
+  }, [tabs, activeTabId, location.pathname]);
+  const systemInfo = useSystemInfo();
 
   const [openSubmenus, setOpenSubmenus] = useState<Set<string>>(new Set());
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -297,22 +306,22 @@ const AppSidebar: React.FC = () => {
     }));
   }, [isItemVisible]);
 
-  const isActive = useCallback((path: string) => location.pathname === path, [location.pathname]);
+  const isActive = useCallback((path: string) => activePath === path, [activePath]);
 
   const hasActiveSubItem = (nav: NavItem) => {
     if (!nav.subItems) return false;
-    return nav.subItems.some(subItem => subItem.path === location.pathname);
+    return nav.subItems.some(subItem => subItem.path === activePath);
   };
 
   useEffect(() => {
     const openMenus = new Set<string>();
     filteredNavItems.forEach(nav => {
-      if (nav.subItems && nav.subItems.some(sub => sub.path === location.pathname)) {
+      if (nav.subItems && nav.subItems.some(sub => sub.path === activePath)) {
         openMenus.add(nav.name);
       }
     });
     setOpenSubmenus(openMenus);
-  }, [location.pathname, filteredNavItems]);
+  }, [activePath, filteredNavItems]);
 
   const handleSubmenuToggle = (menuName: string) => {
     setOpenSubmenus(prev => {
@@ -530,12 +539,17 @@ const AppSidebar: React.FC = () => {
             className="flex items-center gap-3 group"
           >
             <div className="relative shrink-0">
-              <img src="/logo-nuevo.png" alt="UNEFA" className="size-9 object-contain transition-transform duration-300 group-hover:scale-105" />
+              <img
+                src={systemInfo.logoUrl}
+                alt={systemInfo.commercialName}
+                className="size-9 object-contain transition-transform duration-300 group-hover:scale-105"
+                onError={(e) => { (e.target as HTMLImageElement).src = '/logo-nuevo.png'; }}
+              />
               <div className="absolute -inset-1 bg-brand-500/10 rounded-full blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
             {!isCollapsed && (
               <div className="flex flex-col min-w-0">
-                <span className="text-base font-bold leading-tight tracking-tight text-unefa-blue dark:text-white truncate">UNEFA</span>
+                <span className="text-base font-bold leading-tight tracking-tight text-unefa-blue dark:text-white truncate">{systemInfo.commercialName}</span>
                 <span className="text-[10px] font-medium uppercase tracking-wider text-text-tertiary">Dashboard</span>
               </div>
             )}

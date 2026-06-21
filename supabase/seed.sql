@@ -1,0 +1,1003 @@
+INSERT INTO "t_academic_config" ("CONFIG_ID", "DEFAULT_ENROLLMENT_GRACE_DAYS", "DEFAULT_EVALUATION_GRACE_DAYS", "UPDATED_AT")
+VALUES (1, 21, 10, NOW())
+ON CONFLICT ("CONFIG_ID") DO NOTHING;
+
+-- t_key_history (user key/password history)
+CREATE TABLE IF NOT EXISTS "t_key_history" (
+  "KEY_HISTORY_ID" SERIAL NOT NULL,
+  "USER_KEY_ID" INTEGER NOT NULL,
+  "USER_ID" INTEGER NOT NULL,
+  "END_DATE" VARCHAR(45) NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- t_landing_config (landing page configuration)
+CREATE TABLE IF NOT EXISTS "t_landing_config" (
+  "config_id" SERIAL NOT NULL,
+  "config_key" VARCHAR(100) NOT NULL,
+  "config_value" JSONB,
+  "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  "updated_by" VARCHAR(50) DEFAULT 'system'
+);
+
+-- t_list (system list definitions)
+CREATE TABLE IF NOT EXISTS "t_list" (
+  "LIST_ID" SERIAL NOT NULL,
+  "NAME" VARCHAR(40) NOT NULL,
+  "CREATION_DATE" TIMESTAMP NOT NULL,
+  "MODIF_USER_ID" INTEGER NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" INTEGER NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" INTEGER NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- t_notifications (user notifications)
+CREATE TABLE IF NOT EXISTS "t_notifications" (
+  "NOTIFICATION_ID" SERIAL NOT NULL,
+  "USER_ID" INTEGER NOT NULL,
+  "TYPE" VARCHAR(50) NOT NULL,
+  "TITLE" VARCHAR(255) NOT NULL,
+  "MESSAGE" TEXT NOT NULL,
+  "READ" BOOLEAN DEFAULT FALSE,
+  "READ_AT" TIMESTAMP,
+  "DATA" JSONB,
+  "CREATED_AT" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- t_operation (system metadata - operations)
+CREATE TABLE IF NOT EXISTS "t_operation" (
+  "OPERATION_ID" SERIAL NOT NULL,
+  "ACTION" VARCHAR(45) NOT NULL,
+  "DESCRIPTION" TEXT,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- t_password_history (password change history)
+CREATE TABLE IF NOT EXISTS "t_password_history" (
+  "HISTORY_ID" SERIAL NOT NULL,
+  "USER_ID" INTEGER NOT NULL,
+  "KEY" TEXT NOT NULL,
+  "CREATION_DATE" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- t_permissions (system permissions)
+CREATE TABLE IF NOT EXISTS "t_permissions" (
+  "PERMISSIONS_ID" SERIAL NOT NULL,
+  "NAME" VARCHAR(30) NOT NULL,
+  "MODULE" VARCHAR(30) NOT NULL,
+  "DESCRIPTION" TEXT,
+  "MODIF_USER_ID" INTEGER NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" INTEGER NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" INTEGER NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+ALTER TABLE "t_permissions" ADD CONSTRAINT "uq_permissions_name" UNIQUE ("NAME");
+
+-- t_persons (centralized personal data — migration 001)
+CREATE TABLE IF NOT EXISTS "t_persons" (
+    "person_id"        SERIAL PRIMARY KEY,
+    "ci"               VARCHAR(10) NOT NULL UNIQUE,
+    "first_name"       VARCHAR(255) NOT NULL,
+    "middle_name"      VARCHAR(255),
+    "last_name"        VARCHAR(255) NOT NULL,
+    "second_last_name" VARCHAR(255),
+    "email"            VARCHAR(255) NOT NULL,
+    "phone"            VARCHAR(15),
+    "gender"           VARCHAR(10),
+    "birthdate"        DATE,
+    "address"          VARCHAR(255),
+    "marital_status"   VARCHAR(45),
+    "status"           SMALLINT DEFAULT 1,
+    "created_at"       TIMESTAMP DEFAULT NOW(),
+    "updated_at"       TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS "idx_persons_ci" ON "t_persons"("ci");
+CREATE INDEX IF NOT EXISTS "idx_persons_names" ON "t_persons"("first_name", "last_name");
+CREATE INDEX IF NOT EXISTS "idx_persons_email" ON "t_persons"("email");
+CREATE INDEX IF NOT EXISTS "idx_persons_status" ON "t_persons"("status");
+
+-- t_practice_visits (supervision visits to internship sites)
+CREATE TABLE IF NOT EXISTS "t_practice_visits" (
+  "VISIT_ID" SERIAL NOT NULL,
+  "PROFESSIONAL_PRACTICE_ID" INTEGER NOT NULL,
+  "TUTOR_ID" INTEGER NOT NULL,
+  "VISIT_DATE" TIMESTAMP NOT NULL DEFAULT NOW(),
+  "VISIT_TYPE" VARCHAR(50) NOT NULL DEFAULT 'PRESENCIAL',
+  "HOURS_WORKED" NUMERIC(5,2) DEFAULT 0,
+  "ACTIVITIES_PERFORMED" TEXT,
+  "OBSERVATIONS" TEXT,
+  "RECOMMENDATIONS" TEXT,
+  "STATUS" SMALLINT NOT NULL DEFAULT 1,
+  "CREATED_AT" TIMESTAMP NOT NULL DEFAULT NOW(),
+  "UPDATED_AT" TIMESTAMP NOT NULL DEFAULT NOW(),
+  "CREATED_BY" INTEGER,
+  "VISIT_CASE" VARCHAR(50) DEFAULT 'SEGUIMIENTO_REGULAR'
+);
+
+-- t_preset_questions (preset security questions)
+CREATE TABLE IF NOT EXISTS "t_preset_questions" (
+  "PRESET_QUESTION_ID" SERIAL NOT NULL,
+  "DESCRIPTION" VARCHAR(255) NOT NULL,
+  "ANSWER" VARCHAR(255) NOT NULL,
+  "MODIF_USER_ID" INTEGER NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" INTEGER NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" INTEGER NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- t_professional_practices (student internship registrations)
+CREATE TABLE IF NOT EXISTS "t_professional_practices" (
+  "PROFESSIONAL_PRACTICE_ID" SERIAL NOT NULL,
+  "START_DATE" DATE NOT NULL,
+  "END_DATE" DATE NOT NULL,
+  "REPORT_TITLE" VARCHAR(255) NOT NULL,
+  "REGISTRATION_DATE" TIMESTAMP NOT NULL,
+  "CREATION_DATE" TIMESTAMP NOT NULL,
+  "GRADE" NUMERIC(5,2) NOT NULL,
+  "TRANSFER" SMALLINT NOT NULL,
+  "TOUR" VARCHAR(255) NOT NULL,
+  "PERIOD_ID" INTEGER NOT NULL,
+  "INSTITUTION_ID" INTEGER,
+  "STUDENTS_ID" INTEGER NOT NULL,
+  "STATUS" SMALLINT NOT NULL,
+  "MANAGER_ID" INTEGER,
+  "OBSERVATION" VARCHAR(255) NOT NULL,
+  "ENROLLMENT" VARCHAR(255) NOT NULL,
+  "INTERNSHIP_STATUS" INTEGER NOT NULL,
+  "INTERNSHIP_TYPE_ID" INTEGER NOT NULL,
+  "PRACTICES_STATUS" INTEGER NOT NULL,
+  "EVALUATION_STATUS" VARCHAR(20) DEFAULT 'pending',
+  "SEMESTER" VARCHAR(255) NOT NULL,
+  "SECTION" VARCHAR(255) NOT NULL,
+  "REGIME" VARCHAR(255) NOT NULL,
+  "CAREER_ID" INTEGER NOT NULL
+);
+
+-- t_professional_practices_tutor (practice-tutor assignment)
+CREATE TABLE IF NOT EXISTS "t_professional_practices_tutor" (
+  "PROFESSIONAL_PRACTICES_TUTOR_ID" SERIAL NOT NULL,
+  "TUTOR_ID" INTEGER NOT NULL,
+  "PROFESSIONAL_PRACTICE_ID" INTEGER NOT NULL,
+  "TUTOR_TYPE" VARCHAR(45) NOT NULL
+);
+
+-- t_recovery_tokens (password recovery tokens)
+CREATE TABLE IF NOT EXISTS "t_recovery_tokens" (
+  "TOKEN_ID" SERIAL NOT NULL,
+  "USER_ID" INTEGER NOT NULL,
+  "TOKEN" VARCHAR(255) NOT NULL,
+  "EXPIRATION_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT DEFAULT 1,
+  "CREATION_DATE" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- t_request_types (types of student requests)
+CREATE TABLE IF NOT EXISTS "t_request_types" (
+  "REQUEST_TYPE_ID" SERIAL NOT NULL,
+  "NAME" VARCHAR(100) NOT NULL,
+  "DESCRIPTION" TEXT,
+  "IS_ACTIVE" SMALLINT NOT NULL DEFAULT 1,
+  "CREATION_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "MODIF_USER_ID" INTEGER NOT NULL DEFAULT 0,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "ELIM_USER_ID" INTEGER NOT NULL DEFAULT 0,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "REST_USER_ID" INTEGER NOT NULL DEFAULT 0,
+  "REST_USER_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "STATUS" SMALLINT NOT NULL DEFAULT 1,
+  "IS_REASSIGNMENT" SMALLINT DEFAULT 0,
+  "CATEGORY" VARCHAR(50) DEFAULT 'GENERAL'
+);
+
+-- t_roles (system roles)
+CREATE TABLE IF NOT EXISTS "t_roles" (
+  "ID_ROLS" SERIAL NOT NULL,
+  "NAME" VARCHAR(30) NOT NULL,
+  "DESCRIPTION" TEXT,
+  "MODIF_USER_ID" INTEGER NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" INTEGER NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" INTEGER NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- t_roles_permissions (role-permission assignment)
+CREATE TABLE IF NOT EXISTS "t_roles_permissions" (
+  "ROLES_ID" SERIAL NOT NULL,
+  "PERMISSIONS_ID" INTEGER NOT NULL
+);
+
+-- t_security_questions (user security question answers)
+CREATE TABLE IF NOT EXISTS "t_security_questions" (
+  "SECURITY_QUESTIONS_ID" SERIAL NOT NULL,
+  "USER_ID" INTEGER NOT NULL,
+  "PRESET_QUESTION_ID" INTEGER NOT NULL,
+  "ANSWER" TEXT,
+  "CUSTOM_QUESTION" TEXT
+);
+
+-- t_session (user login sessions)
+CREATE TABLE IF NOT EXISTS "t_session" (
+  "SESSION_ID" SERIAL NOT NULL,
+  "USER_ID" INTEGER NOT NULL,
+  "LOGIN_TIME" TIMESTAMP NOT NULL,
+  "MODIF_USER_ID" INTEGER NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" INTEGER NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" INTEGER NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- t_session_attempts (failed login attempts)
+CREATE TABLE IF NOT EXISTS "t_session_attempts" (
+  "ATTEMPT_ID" SERIAL NOT NULL,
+  "ATTEMPT_TIME" TIMESTAMP NOT NULL,
+  "USER_ID" INTEGER NOT NULL,
+  "ACTION" SMALLINT NOT NULL,
+  "MODIF_USER_ID" INTEGER NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" INTEGER NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" INTEGER NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- t_session_history (session login/logout history)
+CREATE TABLE IF NOT EXISTS "t_session_history" (
+  "SESSION_HISTORY_ID" SERIAL NOT NULL,
+  "SESSION_ID" INTEGER NOT NULL,
+  "USER_ID" INTEGER NOT NULL,
+  "LOGIN_TIME" TIMESTAMP NOT NULL,
+  "LOGOUT_TIME" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- t_student_documents (student uploaded documents)
+CREATE TABLE IF NOT EXISTS "t_student_documents" (
+  "DOCUMENT_ID" SERIAL NOT NULL,
+  "STUDENT_ID" INTEGER NOT NULL,
+  "DOCUMENT_TYPE" VARCHAR(50) NOT NULL,
+  "TITLE" VARCHAR(255) NOT NULL,
+  "DESCRIPTION" TEXT,
+  "FILE_NAME" VARCHAR(255) NOT NULL,
+  "FILE_PATH" VARCHAR(500) NOT NULL,
+  "FILE_SIZE" INTEGER,
+  "FILE_TYPE" VARCHAR(100),
+  "STATUS" VARCHAR(20) NOT NULL DEFAULT 'pending',
+  "REJECTION_REASON" TEXT,
+  "UPLOADED_AT" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "REVIEWED_AT" TIMESTAMP,
+  "REVIEWED_BY" INTEGER,
+  "CREATION_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "MODIF_USER_ID" INTEGER NOT NULL DEFAULT 0,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "STATUS_TABLE" SMALLINT NOT NULL DEFAULT 1
+);
+
+-- t_student_requests (student requests/complaints)
+CREATE TABLE IF NOT EXISTS "t_student_requests" (
+  "REQUEST_ID" SERIAL NOT NULL,
+  "STUDENT_ID" INTEGER NOT NULL,
+  "REQUEST_TYPE_ID" INTEGER NOT NULL,
+  "SUBJECT" VARCHAR(255) NOT NULL,
+  "DESCRIPTION" TEXT NOT NULL,
+  "STATUS" VARCHAR(20) NOT NULL DEFAULT 'pending',
+  "RESPONSE" TEXT,
+  "PROCESSED_BY" INTEGER,
+  "PROCESSED_AT" TIMESTAMP,
+  "CREATION_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "MODIF_USER_ID" INTEGER NOT NULL DEFAULT 0,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "ELIM_USER_ID" INTEGER NOT NULL DEFAULT 0,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "REST_USER_ID" INTEGER NOT NULL DEFAULT 0,
+  "REST_USER_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "STATUS_TABLE" SMALLINT NOT NULL DEFAULT 1,
+  "REASSIGNMENT_DATA" JSONB,
+  "IS_REASSIGNMENT" SMALLINT DEFAULT 0,
+  "PREVIOUS_TUTOR_ID" INTEGER,
+  "PREVIOUS_INSTITUTION_ID" INTEGER,
+  "PREVIOUS_CAREER_ID" INTEGER
+);
+
+-- t_students (student records)
+CREATE TABLE IF NOT EXISTS "t_students" (
+  "STUDENTS_ID" SERIAL NOT NULL,
+  "person_id" INTEGER,
+  "STUDENTS_CI" VARCHAR(10) NOT NULL,
+  "NAME" VARCHAR(255) NOT NULL,
+  "SECOND_NAME" VARCHAR(255) DEFAULT NULL,
+  "SURNAME" VARCHAR(255) NOT NULL,
+  "SECOND_SURNAME" VARCHAR(255) DEFAULT NULL,
+  "GENDER" CHAR(10) NOT NULL,
+  "BIRTHDATE" DATE NOT NULL,
+  "CONTACT_PHONE" VARCHAR(15) NOT NULL,
+  "EMAIL" VARCHAR(255) NOT NULL,
+  "ADDRESS" VARCHAR(255) NOT NULL,
+  "MARITAL_STATUS" VARCHAR(45) NOT NULL,
+  "STUDENT_TYPE" VARCHAR(45) NOT NULL,
+  "MILITARY_RANK" VARCHAR(45) DEFAULT NULL,
+  "EMPLOYMENT" VARCHAR(2) NOT NULL,
+  "STATUS" SMALLINT NOT NULL,
+  "REGISTRATION_DATE" TIMESTAMP,
+  "USER_ID" INTEGER
+);
+
+-- t_tables (system metadata - tables registry)
+CREATE TABLE IF NOT EXISTS "t_tables" (
+  "TABLE_ID" SERIAL NOT NULL,
+  "NAME" VARCHAR(25) NOT NULL,
+  "DESCRIPTION" TEXT,
+  "PHYSICAL_NAME" VARCHAR(25) NOT NULL,
+  "LOG" SMALLINT NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- t_tutor_career (tutor-career relationship)
+CREATE TABLE IF NOT EXISTS "t_tutor_career" (
+  "TUTOR_CAREER_ID" BIGINT NOT NULL,
+  "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  "TUTOR_ID" INTEGER NOT NULL,
+  "CAREER_ID" INTEGER NOT NULL
+);
+
+-- t_tutors (academic tutors)
+CREATE TABLE IF NOT EXISTS "t_tutors" (
+  "TUTOR_ID" SERIAL NOT NULL,
+  "person_id" INTEGER,
+  "TUTOR_CI" VARCHAR(10) NOT NULL,
+  "NAME" VARCHAR(255) NOT NULL,
+  "SECOND_NAME" VARCHAR(255) DEFAULT NULL,
+  "SURNAME" VARCHAR(255) NOT NULL,
+  "SECOND_SURNAME" VARCHAR(255) DEFAULT NULL,
+  "CONTACT_PHONE" VARCHAR(12) NOT NULL,
+  "GENDER" VARCHAR(45) NOT NULL,
+  "EMAIL" VARCHAR(255) NOT NULL,
+  "PROFESSION" VARCHAR(255) NOT NULL,
+  "CONDITION" VARCHAR(45) NOT NULL,
+  "DEDICATION" VARCHAR(45) NOT NULL,
+  "CATEGORY" VARCHAR(45) NOT NULL,
+  "CREATION_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL,
+  "USER_ID" INTEGER,
+  "TITULO" VARCHAR(50) DEFAULT NULL
+);
+
+-- t_user (system users)
+CREATE TABLE IF NOT EXISTS "t_user" (
+  "USER_ID" SERIAL NOT NULL,
+  "person_id" INTEGER,
+  "USER" VARCHAR(255) NOT NULL,
+  "USER_CI" VARCHAR(10) NOT NULL,
+  "NAME" VARCHAR(255) NOT NULL,
+  "SECOND_NAME" VARCHAR(255) DEFAULT NULL,
+  "SURNAME" VARCHAR(255) NOT NULL,
+  "SECOND_SURNAME" VARCHAR(255) DEFAULT NULL,
+  "EMAIL" VARCHAR(255) NOT NULL,
+  "PHONE_NUMBER" VARCHAR(12) DEFAULT NULL,
+  "CREATION_DATE" TIMESTAMP NOT NULL,
+  "LOGIN" SMALLINT NOT NULL,
+  "TERMS_CONDITIONS" VARCHAR(45) NOT NULL,
+  "STATUS_SESSION" SMALLINT NOT NULL,
+  "STATUS" SMALLINT NOT NULL,
+  "FAILED_ATTEMPTS" INTEGER DEFAULT 0,
+  "LOCK_DATE" TIMESTAMP WITH TIME ZONE,
+  "FORCE_PASSWORD_CHANGE" BOOLEAN DEFAULT FALSE
+);
+
+-- t_user_key (user passwords/keys)
+CREATE TABLE IF NOT EXISTS "t_user_key" (
+  "USER_KEY_ID" SERIAL NOT NULL,
+  "USER_ID" INTEGER NOT NULL,
+  "KEY" VARCHAR(255) NOT NULL,
+  "START_DATE" TIMESTAMP NOT NULL,
+  "END_DATE" TIMESTAMP NOT NULL,
+  "MODIF_USER_ID" INTEGER NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" INTEGER NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" INTEGER NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL,
+  "IS_TEMPORARY" BOOLEAN DEFAULT FALSE
+);
+
+-- t_user_questions (user security questions)
+CREATE TABLE IF NOT EXISTS "t_user_questions" (
+  "USER_QUESTION_ID" SERIAL NOT NULL,
+  "USER_ID" INTEGER NOT NULL,
+  "QUESTION_TYPE" VARCHAR(20) NOT NULL DEFAULT 'PRESET',
+  "PRESET_QUESTION_ID" INTEGER,
+  "CUSTOM_QUESTION" VARCHAR(255),
+  "ANSWER" VARCHAR(255) NOT NULL,
+  "ORDER_NUM" SMALLINT NOT NULL DEFAULT 1,
+  "CREATED_AT" TIMESTAMP NOT NULL DEFAULT NOW(),
+  "UPDATED_AT" TIMESTAMP NOT NULL DEFAULT NOW(),
+  "STATUS" SMALLINT NOT NULL DEFAULT 1
+);
+
+-- t_user_roles (user-role assignment)
+CREATE TABLE IF NOT EXISTS "t_user_roles" (
+  "ID_USER" INTEGER NOT NULL,
+  "ID_ROLES" INTEGER NOT NULL
+);
+
+-- t_user_theme (user theme preferences)
+CREATE TABLE IF NOT EXISTS "t_user_theme" (
+  "USER_THEME_ID" SERIAL NOT NULL,
+  "USER_ID" INTEGER NOT NULL,
+  "BRAND_COLOR" VARCHAR(20) NOT NULL DEFAULT 'blue',
+  "CREATION_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "MODIF_USER_ID" INTEGER NOT NULL DEFAULT 0,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "ELIM_USER_ID" INTEGER NOT NULL DEFAULT 0,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "REST_USER_ID" INTEGER NOT NULL DEFAULT 0,
+  "REST_USER_DATE" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "STATUS" SMALLINT NOT NULL DEFAULT 1
+);
+
+-- t_value_list (system list values)
+CREATE TABLE IF NOT EXISTS "t_value_list" (
+  "VALUE_LIST_ID" SERIAL NOT NULL,
+  "NAME" VARCHAR(45) NOT NULL,
+  "ABBREVIATION" VARCHAR(8) DEFAULT NULL,
+  "LIST_ID" INTEGER NOT NULL,
+  "CREATION_DATE" TIMESTAMP NOT NULL,
+  "MODIF_USER_ID" INTEGER NOT NULL,
+  "MODIF_USER_DATE" TIMESTAMP NOT NULL,
+  "ELIM_USER_ID" INTEGER NOT NULL,
+  "ELIM_USER_DATE" TIMESTAMP NOT NULL,
+  "REST_USER_ID" INTEGER NOT NULL,
+  "REST_USER_DATE" TIMESTAMP NOT NULL,
+  "STATUS" SMALLINT NOT NULL
+);
+
+-- t_visit (legacy visit tracking - superseded by t_practice_visits)
+CREATE TABLE IF NOT EXISTS "t_visit" (
+  "VISIT_ID" SERIAL NOT NULL,
+  "VISIT_DATE" DATE NOT NULL,
+  "NOTE" VARCHAR(255) DEFAULT NULL,
+  "REQUESTED_ACTIVITY" VARCHAR(45) NOT NULL,
+  "CARRIED_ACTIVITY" VARCHAR(45) NOT NULL,
+  "STATUS" SMALLINT NOT NULL,
+  "TUTOR_ID" INTEGER NOT NULL,
+  "PROFESSIONAL_PRACTICE_ID" INTEGER NOT NULL
+);
+
+-- t_practice_culmination (practice culmination and certification)
+CREATE TABLE IF NOT EXISTS "t_practice_culmination" (
+  "PRACTICE_ID" INTEGER NOT NULL,
+  "STATUS" SMALLINT NOT NULL DEFAULT 0,
+  "CERTIFICATE_NUMBER" VARCHAR(50),
+  "CERTIFIED_AT" TIMESTAMP,
+  "APPROVED_AT" TIMESTAMP DEFAULT NOW(),
+  "APPROVED_BY" INTEGER,
+  "CREATED_AT" TIMESTAMP DEFAULT NOW(),
+  "UPDATED_AT" TIMESTAMP DEFAULT NOW()
+);
+
+-- ============================================================
+-- PRIMARY KEYS
+-- ============================================================
+
+ALTER TABLE "t_activity_logs" ADD PRIMARY KEY ("ACTIVITY_LOG_ID");
+ALTER TABLE "t_auth_log" ADD PRIMARY KEY ("ID");
+ALTER TABLE "t_backups" ADD PRIMARY KEY ("id");
+ALTER TABLE "t_career" ADD PRIMARY KEY ("CAREER_ID");
+ALTER TABLE "t_career_internship_type" ADD PRIMARY KEY ("ID_CAREER_INTERNSHIP_TYPE_ID");
+ALTER TABLE "t_change_log" ADD PRIMARY KEY ("CHANGE_LOG_ID");
+ALTER TABLE "t_chat_sessions" ADD PRIMARY KEY ("SESSION_ID");
+ALTER TABLE "t_columns" ADD PRIMARY KEY ("COLUMN_ID");
+ALTER TABLE "t_config" ADD PRIMARY KEY ("CONFIG_ID");
+ALTER TABLE "t_evaluation" ADD PRIMARY KEY ("EVALUATION_ID");
+ALTER TABLE "t_evaluation_criteria" ADD PRIMARY KEY ("CRITERIA_ID");
+ALTER TABLE "t_evaluation_detail" ADD PRIMARY KEY ("DETAIL_ID");
+ALTER TABLE "t_institution" ADD PRIMARY KEY ("INSTITUTION_ID");
+ALTER TABLE "t_institution_career" ADD PRIMARY KEY ("INSTITUTION_CAREER_ID");
+ALTER TABLE "t_institution_internship_type" ADD PRIMARY KEY ("INSTITUTION_INTERNSHIP_TYPE_ID");
+ALTER TABLE "t_institution_manager" ADD PRIMARY KEY ("MANAGER_ID");
+ALTER TABLE "t_institution_manager_institution" ADD PRIMARY KEY ("INSTITUTION_MANAGER_INSTITUTION_ID");
+ALTER TABLE "t_internship_type" ADD PRIMARY KEY ("INTERNSHIP_TYPE_ID");
+ALTER TABLE "t_internships_period" ADD PRIMARY KEY ("PERIOD_ID");
+ALTER TABLE "t_period_type_dates" ADD PRIMARY KEY ("ID");
+ALTER TABLE "t_key_history" ADD PRIMARY KEY ("KEY_HISTORY_ID");
+ALTER TABLE "t_landing_config" ADD PRIMARY KEY ("config_id");
+ALTER TABLE "t_list" ADD PRIMARY KEY ("LIST_ID");
+ALTER TABLE "t_notifications" ADD PRIMARY KEY ("NOTIFICATION_ID");
+ALTER TABLE "t_operation" ADD PRIMARY KEY ("OPERATION_ID");
+ALTER TABLE "t_password_history" ADD PRIMARY KEY ("HISTORY_ID");
+ALTER TABLE "t_permissions" ADD PRIMARY KEY ("PERMISSIONS_ID");
+ALTER TABLE "t_practice_visits" ADD PRIMARY KEY ("VISIT_ID");
+ALTER TABLE "t_preset_questions" ADD PRIMARY KEY ("PRESET_QUESTION_ID");
+ALTER TABLE "t_practice_culmination" ADD PRIMARY KEY ("PRACTICE_ID");
+ALTER TABLE "t_professional_practices" ADD PRIMARY KEY ("PROFESSIONAL_PRACTICE_ID");
+ALTER TABLE "t_professional_practices_tutor" ADD PRIMARY KEY ("PROFESSIONAL_PRACTICES_TUTOR_ID");
+ALTER TABLE "t_recovery_tokens" ADD PRIMARY KEY ("TOKEN_ID");
+ALTER TABLE "t_request_types" ADD PRIMARY KEY ("REQUEST_TYPE_ID");
+ALTER TABLE "t_roles" ADD PRIMARY KEY ("ID_ROLS");
+ALTER TABLE "t_roles_permissions" ADD PRIMARY KEY ("ROLES_ID", "PERMISSIONS_ID");
+ALTER TABLE "t_security_questions" ADD PRIMARY KEY ("SECURITY_QUESTIONS_ID");
+ALTER TABLE "t_session" ADD PRIMARY KEY ("SESSION_ID", "USER_ID");
+ALTER TABLE "t_session_attempts" ADD PRIMARY KEY ("ATTEMPT_ID");
+ALTER TABLE "t_session_history" ADD PRIMARY KEY ("SESSION_HISTORY_ID");
+ALTER TABLE "t_student_documents" ADD PRIMARY KEY ("DOCUMENT_ID");
+ALTER TABLE "t_student_requests" ADD PRIMARY KEY ("REQUEST_ID");
+ALTER TABLE "t_students" ADD PRIMARY KEY ("STUDENTS_ID");
+ALTER TABLE "t_tables" ADD PRIMARY KEY ("TABLE_ID");
+ALTER TABLE "t_tutor_career" ADD PRIMARY KEY ("TUTOR_CAREER_ID");
+ALTER TABLE "t_tutors" ADD PRIMARY KEY ("TUTOR_ID");
+ALTER TABLE "t_user" ADD PRIMARY KEY ("USER_ID");
+ALTER TABLE "t_user_key" ADD PRIMARY KEY ("USER_KEY_ID");
+ALTER TABLE "t_user_questions" ADD PRIMARY KEY ("USER_QUESTION_ID");
+ALTER TABLE "t_user_roles" ADD PRIMARY KEY ("ID_USER", "ID_ROLES");
+ALTER TABLE "t_user_theme" ADD PRIMARY KEY ("USER_THEME_ID");
+ALTER TABLE "t_value_list" ADD PRIMARY KEY ("VALUE_LIST_ID");
+ALTER TABLE "t_visit" ADD PRIMARY KEY ("VISIT_ID");
+
+-- ============================================================
+-- UNIQUE CONSTRAINTS
+-- ============================================================
+
+ALTER TABLE "t_career" ADD UNIQUE ("CAREER_CODE");
+ALTER TABLE "t_institution" ADD UNIQUE ("RIF");
+ALTER TABLE "t_institution_manager" ADD UNIQUE ("MANAGER_CI");
+ALTER TABLE "t_landing_config" ADD UNIQUE ("config_key");
+ALTER TABLE "t_students" ADD UNIQUE ("STUDENTS_CI");
+ALTER TABLE "t_tutors" ADD UNIQUE ("TUTOR_CI");
+ALTER TABLE "t_user" ADD UNIQUE ("USER_CI");
+ALTER TABLE "t_user_theme" ADD UNIQUE ("USER_ID");
+
+-- ============================================================
+-- FOREIGN KEYS
+-- ============================================================
+
+-- t_activity_logs
+ALTER TABLE "t_activity_logs" ADD CONSTRAINT "fk_activity_logs_practice" FOREIGN KEY ("PROFESSIONAL_PRACTICE_ID") REFERENCES "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID") ON DELETE CASCADE;
+ALTER TABLE "t_activity_logs" ADD CONSTRAINT "fk_activity_logs_student" FOREIGN KEY ("STUDENT_ID") REFERENCES "t_students" ("STUDENTS_ID") ON DELETE CASCADE;
+
+-- t_auth_log
+ALTER TABLE "t_auth_log" ADD CONSTRAINT "fk_auth_log_user" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID");
+
+-- t_backups
+ALTER TABLE "t_backups" ADD CONSTRAINT "fk_backups_user" FOREIGN KEY ("created_by") REFERENCES "t_user" ("USER_ID");
+
+-- t_career_internship_type
+ALTER TABLE "t_career_internship_type" ADD CONSTRAINT "fk_cit_career" FOREIGN KEY ("CAREER_ID") REFERENCES "t_career" ("CAREER_ID") ON DELETE NO ACTION;
+ALTER TABLE "t_career_internship_type" ADD CONSTRAINT "fk_cit_internship_type" FOREIGN KEY ("INTERNSHIP_TYPE_ID") REFERENCES "t_internship_type" ("INTERNSHIP_TYPE_ID") ON DELETE NO ACTION;
+
+-- t_change_log
+ALTER TABLE "t_change_log" ADD CONSTRAINT "fk_change_log_columns" FOREIGN KEY ("COLUMN_ID") REFERENCES "t_columns" ("COLUMN_ID");
+ALTER TABLE "t_change_log" ADD CONSTRAINT "fk_change_log_operation" FOREIGN KEY ("OPERATION_ID") REFERENCES "t_operation" ("OPERATION_ID");
+ALTER TABLE "t_change_log" ADD CONSTRAINT "fk_change_log_tables" FOREIGN KEY ("TABLE_ID") REFERENCES "t_tables" ("TABLE_ID");
+ALTER TABLE "t_change_log" ADD CONSTRAINT "fk_change_log_user" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID");
+
+-- t_chat_sessions
+ALTER TABLE "t_chat_sessions" ADD CONSTRAINT "fk_chat_session_user" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID");
+
+-- t_columns
+ALTER TABLE "t_columns" ADD CONSTRAINT "fk_columns_tables" FOREIGN KEY ("TABLE_ID") REFERENCES "t_tables" ("TABLE_ID");
+
+-- t_evaluation
+ALTER TABLE "t_evaluation" ADD CONSTRAINT "fk_evaluation_practice" FOREIGN KEY ("PROFESSIONAL_PRACTICE_ID") REFERENCES "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID");
+ALTER TABLE "t_evaluation" ADD CONSTRAINT "fk_evaluation_registered_by" FOREIGN KEY ("REGISTERED_BY") REFERENCES "t_user" ("USER_ID");
+
+-- t_evaluation_detail
+ALTER TABLE "t_evaluation_detail" ADD CONSTRAINT "fk_evaluation_detail_evaluation" FOREIGN KEY ("EVALUATION_ID") REFERENCES "t_evaluation" ("EVALUATION_ID") ON DELETE CASCADE;
+ALTER TABLE "t_evaluation_detail" ADD CONSTRAINT "fk_evaluation_detail_criteria" FOREIGN KEY ("CRITERIA_ID") REFERENCES "t_evaluation_criteria" ("CRITERIA_ID");
+
+-- t_institution_career
+ALTER TABLE "t_institution_career" ADD CONSTRAINT "fk_inst_career_institution" FOREIGN KEY ("INSTITUTION_ID") REFERENCES "t_institution" ("INSTITUTION_ID");
+ALTER TABLE "t_institution_career" ADD CONSTRAINT "fk_inst_career_career" FOREIGN KEY ("CAREER_ID") REFERENCES "t_career" ("CAREER_ID");
+
+-- t_institution_internship_type
+ALTER TABLE "t_institution_internship_type" ADD CONSTRAINT "fk_inst_inter_type_institution" FOREIGN KEY ("INSTITUTION_ID") REFERENCES "t_institution" ("INSTITUTION_ID");
+ALTER TABLE "t_institution_internship_type" ADD CONSTRAINT "fk_inst_inter_type_type" FOREIGN KEY ("INTERNSHIP_TYPE_ID") REFERENCES "t_internship_type" ("INTERNSHIP_TYPE_ID");
+
+-- t_institution_manager
+ALTER TABLE "t_institution_manager" ADD CONSTRAINT "fk_manager_institution" FOREIGN KEY ("INSTITUTION_ID") REFERENCES "t_institution" ("INSTITUTION_ID") ON DELETE SET NULL;
+
+-- t_institution_manager_institution
+ALTER TABLE "t_institution_manager_institution" ADD CONSTRAINT "fk_manager_inst_manager" FOREIGN KEY ("MANAGER_ID") REFERENCES "t_institution_manager" ("MANAGER_ID");
+ALTER TABLE "t_institution_manager_institution" ADD CONSTRAINT "fk_manager_inst_institution" FOREIGN KEY ("INSTITUTION_ID") REFERENCES "t_institution" ("INSTITUTION_ID");
+
+-- t_key_history
+ALTER TABLE "t_key_history" ADD CONSTRAINT "fk_key_history_user_key" FOREIGN KEY ("USER_KEY_ID", "USER_ID") REFERENCES "t_user_key" ("USER_KEY_ID", "USER_ID");
+
+-- t_notifications
+ALTER TABLE "t_notifications" ADD CONSTRAINT "fk_notification_user" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID") ON DELETE CASCADE;
+
+-- t_password_history
+ALTER TABLE "t_password_history" ADD CONSTRAINT "fk_password_history_user" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID");
+
+-- t_practice_visits
+ALTER TABLE "t_practice_visits" ADD CONSTRAINT "fk_practice_visits_practice" FOREIGN KEY ("PROFESSIONAL_PRACTICE_ID") REFERENCES "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID");
+ALTER TABLE "t_practice_visits" ADD CONSTRAINT "fk_practice_visits_tutor" FOREIGN KEY ("TUTOR_ID") REFERENCES "t_tutors" ("TUTOR_ID");
+
+-- t_professional_practices
+ALTER TABLE "t_professional_practices" ADD CONSTRAINT "fk_pp_period" FOREIGN KEY ("PERIOD_ID") REFERENCES "t_internships_period" ("PERIOD_ID");
+ALTER TABLE "t_professional_practices" ADD CONSTRAINT "fk_pp_institution" FOREIGN KEY ("INSTITUTION_ID") REFERENCES "t_institution" ("INSTITUTION_ID");
+ALTER TABLE "t_professional_practices" ADD CONSTRAINT "fk_pp_student" FOREIGN KEY ("STUDENTS_ID") REFERENCES "t_students" ("STUDENTS_ID");
+ALTER TABLE "t_professional_practices" ADD CONSTRAINT "fk_pp_manager" FOREIGN KEY ("MANAGER_ID") REFERENCES "t_institution_manager" ("MANAGER_ID");
+ALTER TABLE "t_professional_practices" ADD CONSTRAINT "fk_pp_internship_type" FOREIGN KEY ("INTERNSHIP_TYPE_ID") REFERENCES "t_internship_type" ("INTERNSHIP_TYPE_ID");
+ALTER TABLE "t_professional_practices" ADD CONSTRAINT "fk_pp_career" FOREIGN KEY ("CAREER_ID") REFERENCES "t_career" ("CAREER_ID");
+
+-- t_period_type_dates
+ALTER TABLE "t_period_type_dates" ADD CONSTRAINT "fk_ptd_period" FOREIGN KEY ("PERIOD_ID") REFERENCES "t_internships_period" ("PERIOD_ID");
+ALTER TABLE "t_period_type_dates" ADD CONSTRAINT "fk_ptd_internship_type" FOREIGN KEY ("INTERNSHIP_TYPE_ID") REFERENCES "t_internship_type" ("INTERNSHIP_TYPE_ID");
+
+-- t_professional_practices_tutor
+ALTER TABLE "t_professional_practices_tutor" ADD CONSTRAINT "fk_ppt_tutor" FOREIGN KEY ("TUTOR_ID") REFERENCES "t_tutors" ("TUTOR_ID");
+ALTER TABLE "t_professional_practices_tutor" ADD CONSTRAINT "fk_ppt_practice" FOREIGN KEY ("PROFESSIONAL_PRACTICE_ID") REFERENCES "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID");
+
+-- t_recovery_tokens
+ALTER TABLE "t_recovery_tokens" ADD CONSTRAINT "fk_recovery_user" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID");
+
+-- t_roles_permissions
+ALTER TABLE "t_roles_permissions" ADD CONSTRAINT "fk_rp_role" FOREIGN KEY ("ROLES_ID") REFERENCES "t_roles" ("ID_ROLS");
+ALTER TABLE "t_roles_permissions" ADD CONSTRAINT "fk_rp_permission" FOREIGN KEY ("PERMISSIONS_ID") REFERENCES "t_permissions" ("PERMISSIONS_ID");
+
+-- t_security_questions
+ALTER TABLE "t_security_questions" ADD CONSTRAINT "fk_sq_user" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID");
+ALTER TABLE "t_security_questions" ADD CONSTRAINT "fk_sq_preset" FOREIGN KEY ("PRESET_QUESTION_ID") REFERENCES "t_preset_questions" ("PRESET_QUESTION_ID");
+
+-- t_session
+ALTER TABLE "t_session" ADD CONSTRAINT "fk_session_user" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID");
+
+-- t_session_attempts
+ALTER TABLE "t_session_attempts" ADD CONSTRAINT "fk_session_attempts_user" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID");
+
+-- t_session_history
+ALTER TABLE "t_session_history" ADD CONSTRAINT "fk_session_history_session" FOREIGN KEY ("SESSION_ID", "USER_ID") REFERENCES "t_session" ("SESSION_ID", "USER_ID");
+
+-- t_student_documents
+ALTER TABLE "t_student_documents" ADD CONSTRAINT "fk_document_student" FOREIGN KEY ("STUDENT_ID") REFERENCES "t_students" ("STUDENTS_ID") ON DELETE CASCADE;
+ALTER TABLE "t_student_documents" ADD CONSTRAINT "fk_document_reviewer" FOREIGN KEY ("REVIEWED_BY") REFERENCES "t_user" ("USER_ID") ON DELETE SET NULL;
+
+-- t_student_requests
+ALTER TABLE "t_student_requests" ADD CONSTRAINT "fk_request_student" FOREIGN KEY ("STUDENT_ID") REFERENCES "t_students" ("STUDENTS_ID") ON DELETE CASCADE;
+ALTER TABLE "t_student_requests" ADD CONSTRAINT "fk_request_type" FOREIGN KEY ("REQUEST_TYPE_ID") REFERENCES "t_request_types" ("REQUEST_TYPE_ID") ON DELETE RESTRICT;
+
+-- t_tutor_career
+ALTER TABLE "t_tutor_career" ADD CONSTRAINT "fk_tutor_career_tutor" FOREIGN KEY ("TUTOR_ID") REFERENCES "t_tutors" ("TUTOR_ID");
+ALTER TABLE "t_tutor_career" ADD CONSTRAINT "fk_tutor_career_career" FOREIGN KEY ("CAREER_ID") REFERENCES "t_career" ("CAREER_ID");
+
+-- t_user_key
+ALTER TABLE "t_user_key" ADD CONSTRAINT "fk_user_key_user" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID");
+
+-- t_user_questions
+ALTER TABLE "t_user_questions" ADD CONSTRAINT "fk_user_questions_user" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID") ON DELETE CASCADE;
+ALTER TABLE "t_user_questions" ADD CONSTRAINT "fk_user_questions_preset" FOREIGN KEY ("PRESET_QUESTION_ID") REFERENCES "t_preset_questions" ("PRESET_QUESTION_ID") ON DELETE SET NULL;
+
+-- t_user_roles
+ALTER TABLE "t_user_roles" ADD CONSTRAINT "fk_user_roles_user" FOREIGN KEY ("ID_USER") REFERENCES "t_user" ("USER_ID");
+ALTER TABLE "t_user_roles" ADD CONSTRAINT "fk_user_roles_role" FOREIGN KEY ("ID_ROLES") REFERENCES "t_roles" ("ID_ROLS");
+
+-- t_user_theme
+ALTER TABLE "t_user_theme" ADD CONSTRAINT "fk_user_theme_user" FOREIGN KEY ("USER_ID") REFERENCES "t_user" ("USER_ID") ON DELETE CASCADE;
+
+-- t_value_list
+ALTER TABLE "t_value_list" ADD CONSTRAINT "fk_value_list_list" FOREIGN KEY ("LIST_ID") REFERENCES "t_list" ("LIST_ID");
+
+-- t_visit
+ALTER TABLE "t_visit" ADD CONSTRAINT "fk_visit_practice" FOREIGN KEY ("PROFESSIONAL_PRACTICE_ID") REFERENCES "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID");
+ALTER TABLE "t_visit" ADD CONSTRAINT "fk_visit_tutor" FOREIGN KEY ("TUTOR_ID") REFERENCES "t_tutors" ("TUTOR_ID");
+
+-- t_practice_culmination
+ALTER TABLE "t_practice_culmination" ADD CONSTRAINT "fk_culmination_practice" FOREIGN KEY ("PRACTICE_ID") REFERENCES "t_professional_practices" ("PROFESSIONAL_PRACTICE_ID") ON DELETE CASCADE;
+ALTER TABLE "t_practice_culmination" ADD CONSTRAINT "fk_culmination_approved_by" FOREIGN KEY ("APPROVED_BY") REFERENCES "t_user" ("USER_ID") ON DELETE SET NULL;
+
+-- Check constraint para STATUS en t_practice_culmination
+ALTER TABLE "t_practice_culmination" ADD CONSTRAINT "chk_culmination_status" CHECK ("STATUS" IN (0, 1, 2));
+
+-- ============================================================
+-- CHECK CONSTRAINTS
+-- ============================================================
+
+ALTER TABLE "t_notifications" ADD CONSTRAINT "chk_notification_type" CHECK ("TYPE" IN (
+  'pre_enrollment', 'enrollment', 'tracking', 'tracking_visit',
+  'user_management', 'reminder', 'system', 'approval'
+));
+ALTER TABLE "t_evaluation" ADD CONSTRAINT "chk_comite_member_index" CHECK (
+  ("EVALUATOR_TYPE" = 'COMITE' AND "COMITE_MEMBER_INDEX" BETWEEN 1 AND 3)
+  OR
+  ("EVALUATOR_TYPE" != 'COMITE' AND "COMITE_MEMBER_INDEX" IS NULL)
+);
+ALTER TABLE "t_evaluation_detail" ADD CONSTRAINT "chk_score_range" CHECK ("SCORE" >= 1 AND "SCORE" <= 10);
+
+-- ============================================================
+-- INDEXES
+-- ============================================================
+
+-- t_students
+CREATE INDEX IF NOT EXISTS "idx_students_ci" ON "t_students" ("STUDENTS_CI");
+CREATE INDEX IF NOT EXISTS "idx_students_names" ON "t_students" ("NAME", "SURNAME");
+CREATE INDEX IF NOT EXISTS "idx_students_status" ON "t_students" ("STATUS");
+
+-- t_institution
+CREATE INDEX IF NOT EXISTS "idx_institutions_name" ON "t_institution" ("INSTITUTION_NAME");
+CREATE INDEX IF NOT EXISTS "idx_institutions_rif" ON "t_institution" ("RIF");
+CREATE INDEX IF NOT EXISTS "idx_institutions_status" ON "t_institution" ("STATUS");
+CREATE INDEX IF NOT EXISTS "idx_institution_code" ON "t_institution" ("INSTITUTION_CODE");
+
+-- t_career
+CREATE INDEX IF NOT EXISTS "idx_careers_name" ON "t_career" ("CAREER_NAME");
+CREATE INDEX IF NOT EXISTS "idx_careers_status" ON "t_career" ("STATUS");
+
+-- t_professional_practices
+CREATE INDEX IF NOT EXISTS "idx_practices_reg_date" ON "t_professional_practices" ("REGISTRATION_DATE");
+CREATE INDEX IF NOT EXISTS "idx_practices_status" ON "t_professional_practices" ("STATUS");
+CREATE INDEX IF NOT EXISTS "idx_practices_student_id" ON "t_professional_practices" ("STUDENTS_ID");
+CREATE INDEX IF NOT EXISTS "idx_practices_institution_id" ON "t_professional_practices" ("INSTITUTION_ID");
+
+-- Partial unique index: un estudiante solo puede tener UNA práctica activa
+-- (PRE_INSCRITO o INSCRITO) a la vez. Previene race conditions y duplicados
+-- incluso si la validación en app-level falla.
+CREATE UNIQUE INDEX IF NOT EXISTS "uq_active_practice_per_student"
+  ON "t_professional_practices" ("STUDENTS_ID")
+  WHERE "PRACTICES_STATUS" IN (1, 2) AND "STATUS" = 1;
+
+-- t_career_internship_type
+CREATE INDEX IF NOT EXISTS "idx_career_internship_type_career_id" ON "t_career_internship_type" ("CAREER_ID");
+
+-- t_professional_practices_tutor
+CREATE INDEX IF NOT EXISTS "idx_pp_tutor_practice_id" ON "t_professional_practices_tutor" ("PROFESSIONAL_PRACTICE_ID");
+
+-- t_practice_visits
+CREATE INDEX IF NOT EXISTS "idx_visits_practice_id" ON "t_practice_visits" ("PROFESSIONAL_PRACTICE_ID");
+CREATE INDEX IF NOT EXISTS "idx_visits_tutor_id" ON "t_practice_visits" ("TUTOR_ID");
+CREATE INDEX IF NOT EXISTS "idx_visits_date" ON "t_practice_visits" ("VISIT_DATE");
+CREATE INDEX IF NOT EXISTS "idx_visits_status" ON "t_practice_visits" ("STATUS");
+CREATE INDEX IF NOT EXISTS "idx_visits_case" ON "t_practice_visits" ("VISIT_CASE");
+
+-- t_user_questions
+CREATE INDEX IF NOT EXISTS "idx_user_questions_user" ON "t_user_questions" ("USER_ID");
+CREATE INDEX IF NOT EXISTS "idx_user_questions_preset" ON "t_user_questions" ("PRESET_QUESTION_ID");
+
+-- t_institution_career
+CREATE INDEX IF NOT EXISTS "idx_institution_career_institution" ON "t_institution_career" ("INSTITUTION_ID");
+CREATE INDEX IF NOT EXISTS "idx_institution_career_career" ON "t_institution_career" ("CAREER_ID");
+
+-- t_backups
+CREATE INDEX IF NOT EXISTS "idx_backups_created_at" ON "t_backups" ("created_at" DESC);
+
+-- t_evaluation
+CREATE INDEX IF NOT EXISTS "idx_evaluation_practice" ON "t_evaluation" ("PROFESSIONAL_PRACTICE_ID");
+CREATE INDEX IF NOT EXISTS "idx_evaluation_type" ON "t_evaluation" ("EVALUATOR_TYPE");
+
+-- t_evaluation_criteria
+CREATE INDEX IF NOT EXISTS "idx_criteria_type" ON "t_evaluation_criteria" ("EVALUATOR_TYPE");
+
+-- t_evaluation_detail
+CREATE INDEX IF NOT EXISTS "idx_evaluation_detail_eval" ON "t_evaluation_detail" ("EVALUATION_ID");
+
+-- t_notifications
+CREATE INDEX IF NOT EXISTS "idx_notifications_user" ON "t_notifications" ("USER_ID");
+CREATE INDEX IF NOT EXISTS "idx_notifications_read" ON "t_notifications" ("USER_ID", "READ");
+CREATE INDEX IF NOT EXISTS "idx_notifications_created" ON "t_notifications" ("CREATED_AT" DESC);
+
+-- t_student_documents
+CREATE INDEX IF NOT EXISTS "idx_documents_student" ON "t_student_documents" ("STUDENT_ID");
+CREATE INDEX IF NOT EXISTS "idx_documents_type" ON "t_student_documents" ("DOCUMENT_TYPE");
+CREATE INDEX IF NOT EXISTS "idx_documents_status" ON "t_student_documents" ("STATUS");
+
+-- t_student_requests
+CREATE INDEX IF NOT EXISTS "idx_student_requests_student" ON "t_student_requests" ("STUDENT_ID");
+CREATE INDEX IF NOT EXISTS "idx_student_requests_status" ON "t_student_requests" ("STATUS");
+CREATE INDEX IF NOT EXISTS "idx_student_requests_type" ON "t_student_requests" ("REQUEST_TYPE_ID");
+CREATE INDEX IF NOT EXISTS "idx_requests_is_reassignment" ON "t_student_requests" ("IS_REASSIGNMENT");
+
+-- t_request_types
+CREATE INDEX IF NOT EXISTS "idx_request_types_category" ON "t_request_types" ("CATEGORY");
+
+-- t_chat_sessions
+CREATE INDEX IF NOT EXISTS "idx_chat_sessions_user" ON "t_chat_sessions" ("USER_ID", "STATUS");
+CREATE INDEX IF NOT EXISTS "idx_chat_sessions_updated" ON "t_chat_sessions" ("UPDATED_AT" DESC);
+
+-- t_landing_config
+CREATE INDEX IF NOT EXISTS "idx_landing_config_key" ON "t_landing_config" ("config_key");
+
+-- t_practice_culmination
+CREATE INDEX IF NOT EXISTS "idx_culmination_status" ON "t_practice_culmination" ("STATUS");
+CREATE INDEX IF NOT EXISTS "idx_culmination_certificate" ON "t_practice_culmination" ("CERTIFICATE_NUMBER");
+
+-- ============================================================
+-- REFERENCE DATA
+-- ============================================================
+
+-- t_config (system configuration defaults)
+INSERT INTO "t_config" ("CONFIG_ID", "RECOVERY_EMAIL", "BLOCKING_DAYS", "WRONG_KEY_LOCK", "ATTEMPTS_KEY_BLOCK", "KEY_EXPIRATION", "EXPIRATION_DAYS", "USER_UPPERCASE", "USER_LOWERCASE", "USER_NUMBERS", "USER_SPECIAL_CHARACTERS", "USER_NUM_UPPERCASE", "USER_NUM_LOWERCASE", "USER_NUM_NUMBERS", "USER_NUM_SPECIAL_CHARACTERS", "KEY_UPPERCASE", "KEY_LOWERCASE", "KEY_NUMBERS", "KEY_SPECIAL_CHARACTERS", "KEY_NUM_UPPERCASE", "KEY_NUM_LOWERCASE", "KEY_NUM_NUMBERS", "KEY_NUM_SPECIAL_CHARACTERS", "USER_LENGTH", "KEY_LEGTH", "SECURITY_QUESTIONS", "TOTAL_QUESTIONS", "TOTAL_PRESET_QUESTIONS", "TOTAL_USER_QUESTIONS", "TOTAL_ANSWERS")
+VALUES (1, 1, 0, 0, 3, 0, 120, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+-- t_roles
+INSERT INTO "t_roles" ("ID_ROLS", "NAME", "DESCRIPTION", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS")
+VALUES (1, 'ADMIN', 'ADMIN', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 1);
+
+-- t_user (default admin user - password: admin123)
+INSERT INTO "t_user" ("USER_ID", "USER", "USER_CI", "NAME", "SECOND_NAME", "SURNAME", "SECOND_SURNAME", "EMAIL", "PHONE_NUMBER", "CREATION_DATE", "LOGIN", "TERMS_CONDITIONS", "STATUS_SESSION", "STATUS")
+VALUES (3, 'admin', '00000000', 'admin', '', '', '', 'admin@unefa.edu.ve', '04245313443', '2025-05-01 21:14:36', 1, '0', 1, 1);
+
+-- t_user_key (admin password hash)
+INSERT INTO "t_user_key" ("USER_KEY_ID", "USER_ID", "KEY", "START_DATE", "END_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS", "IS_TEMPORARY")
+VALUES (10, 3, '$2y$10$JBXuzrJAzJ0eJgR/Pmq43uhezSoVKOo7KF4MwFmXsybb8riabTtfe', '2025-05-01 21:27:46', '2025-12-01 21:53:13', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 0, '2025-01-01 00:00:00', 1, FALSE);
+
+-- t_user_roles
+INSERT INTO "t_user_roles" ("ID_USER", "ID_ROLES") VALUES (3, 1);
+
+-- t_internship_type (internship type catalog)
+INSERT INTO "t_internship_type" ("INTERNSHIP_TYPE_ID", "NAME", "PRIORITY", "CREATION_DATE", "STATUS") VALUES
+(1, 'ÚNICA', 0, '2025-05-05 01:24:07', 1),
+(2, 'HOSPITALARIA', 1, '2025-05-05 01:25:00', 1),
+(3, 'COMUNITARIA', 2, '2025-05-05 01:25:00', 1);
+
+-- t_career (university careers)
+INSERT INTO "t_career" ("CAREER_ID", "CAREER_NAME", "CAREER_CODE", "MINIMUM_GRADE", "CAREER_ABBREVIATION", "CAREER_TYPE", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES
+(3, 'TECNICO SUPERIOR UNIVERSITARIO EN ENFERMERIA', '3016', 15.00, 'TSU-E', 'CORTA', '2025-05-04 17:58:15', 1, '2025-06-14 22:30:20', 1, '2025-06-08 14:43:29', 1, '2025-06-08 14:43:32', 1),
+(4, 'INGENIERIA INFORMATICA', '2016', 15.00, 'ING-I', 'LARGA', '2025-05-10 15:09:45', 1, '2025-06-14 22:30:32', 3, '2025-05-10 15:09:45', 3, '2025-05-10 15:09:45', 1),
+(5, 'INGENIERIA AGROINDUSTRIAL', '1916', 15.00, '', 'LARGA', '2025-05-19 22:08:26', 1, '2025-06-14 20:31:30', 3, '2025-05-19 22:08:26', 3, '2025-05-19 22:08:26', 1);
+
+-- t_career_internship_type
+INSERT INTO "t_career_internship_type" ("ID_CAREER_INTERNSHIP_TYPE_ID", "CAREER_ID", "INTERNSHIP_TYPE_ID") VALUES
+(55, 5, 1),
+(58, 3, 2),
+(59, 3, 3),
+(60, 4, 1);
+
+-- t_internships_period
+INSERT INTO "t_internships_period" ("PERIOD_ID", "START_DATE", "END_DATE", "CREATION_DATE", "DESCRIPTION", "PERIOD_STATUS", "STATUS", "T_INTERNSHIPS_CODE") VALUES
+(1, '2025-01-01', '2025-06-09', '2025-06-05 19:01:15', '2025-I', '3', 1, ''),
+(3, '2025-06-10', '2025-09-30', '2025-06-10 19:35:25', '2025-II', '3', 1, ''),
+(4, '2026-01-02', '2026-04-24', '2025-06-14 20:27:06', '2026-I', '1', 1, ''),
+(5, '2026-07-09', '2026-10-29', '2025-06-22 22:11:45', '2026-II', '1', 1, '');
+
+-- t_list (system list definitions for dropdowns/selectors)
+INSERT INTO "t_list" ("LIST_ID", "NAME", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES
+(1, 'Sexo', '2025-03-11 17:03:01', 1, '2025-06-22 20:22:55', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(2, 'Registro Civil', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(4, 'Regimen/Turno', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(5, 'Trabajo', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(6, 'Tipo de empresa', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(7, 'Rif', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(8, 'Tipo de Practica', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(9, 'Condicion', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(10, 'Dedicacion', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(11, 'Categoria', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(12, 'Tipo de estudiante', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(14, 'Estatus Pasantia', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(15, 'Estatus Periodo', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(16, 'Region', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(17, 'Nucleo', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(18, 'Extensión', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(19, 'Traslado', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(20, 'Profesión', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1),
+(21, 'Carrera', '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1, '2025-03-11 17:03:01', 1);
+
+-- t_value_list (system list values)
+INSERT INTO "t_value_list" ("VALUE_LIST_ID", "NAME", "ABBREVIATION", "LIST_ID", "CREATION_DATE", "MODIF_USER_ID", "MODIF_USER_DATE", "ELIM_USER_ID", "ELIM_USER_DATE", "REST_USER_ID", "REST_USER_DATE", "STATUS") VALUES
+(1, 'FEMENINO', 'F', 1, '2025-03-22 18:38:48', 1, '2025-03-22 18:38:48', 1, '2025-03-22 18:38:48', 1, '2025-03-22 18:38:48', 1),
+(2, 'MASCULINO', 'M', 1, '2025-03-22 18:41:55', 1, '2025-03-22 18:41:55', 1, '2025-03-22 18:41:55', 1, '2025-03-22 18:41:55', 1),
+(3, 'SOLTERO', 'S', 2, '2025-03-22 18:42:40', 1, '2025-03-22 18:42:40', 1, '2025-03-22 18:42:40', 1, '2025-03-22 18:42:40', 1),
+(4, 'CASADO', 'C', 2, '2025-03-22 18:43:33', 1, '2025-03-22 18:43:33', 1, '2025-03-22 18:43:33', 1, '2025-03-22 18:43:33', 1),
+(5, 'DIVORCIADO', 'D', 2, '2025-03-22 18:44:03', 1, '2025-03-22 18:44:03', 1, '2025-03-22 18:44:03', 1, '2025-03-22 18:44:03', 1),
+(6, 'CONCUBINO', 'CB', 2, '2025-03-22 18:44:27', 1, '2025-03-22 18:44:27', 1, '2025-03-22 18:44:27', 1, '2025-03-22 18:44:27', 1),
+(7, 'VIUDO', 'V', 2, '2025-03-22 18:45:11', 1, '2025-03-22 18:45:11', 1, '2025-03-22 18:45:11', 1, '2025-03-22 18:45:11', 1),
+(10, 'DIURNO', 'D1', 4, '2025-03-22 18:46:52', 1, '2025-03-22 18:46:52', 1, '2025-03-22 18:46:52', 1, '2025-03-22 18:46:52', 1),
+(11, 'NOCTURNO', 'N2', 4, '2025-03-22 18:47:17', 1, '2025-03-22 18:47:17', 1, '2025-03-22 18:47:17', 1, '2025-03-22 18:47:17', 1),
+(12, 'SABATINO', 'S3', 4, '2025-03-22 18:47:41', 1, '2025-03-22 18:47:41', 1, '2025-03-22 18:47:41', 1, '2025-03-22 18:47:41', 1),
+(13, 'SI', 'SI', 5, '2025-03-22 18:48:08', 1, '2025-03-22 18:48:08', 1, '2025-03-22 18:48:08', 1, '2025-03-22 18:48:08', 1),
+(14, 'NO', 'NO', 5, '2025-03-22 18:48:35', 1, '2025-03-22 18:48:35', 1, '2025-03-22 18:48:35', 1, '2025-03-22 18:48:35', 1),
+(15, 'PUBLICA', 'PUB', 6, '2025-03-22 18:48:49', 1, '2025-03-22 18:48:49', 1, '2025-03-22 18:48:49', 1, '2025-03-22 18:48:49', 1),
+(16, 'PRIVADA', 'PRIV', 6, '2025-03-22 18:49:21', 1, '2025-03-22 18:49:21', 1, '2025-03-22 18:49:21', 1, '2025-03-22 18:49:21', 1),
+(17, 'MIXTA', 'MIX', 6, '2025-03-22 18:49:56', 1, '2025-03-22 18:49:56', 1, '2025-03-22 18:49:56', 1, '2025-03-22 18:49:56', 1),
+(18, 'JURIDICO', 'J', 7, '2025-03-22 18:50:20', 1, '2025-03-22 18:50:20', 1, '2025-03-22 18:50:20', 1, '2025-03-22 18:50:20', 1),
+(19, 'GOBIERNO', 'G', 7, '2025-03-22 18:50:43', 1, '2025-03-22 18:50:43', 1, '2025-03-22 18:50:43', 1, '2025-03-22 18:50:43', 1),
+(20, 'COMUNA O CONSEJO COMUNAL', 'C', 7, '2025-03-22 18:51:04', 1, '2025-03-22 18:51:04', 1, '2025-03-22 18:51:04', 1, '2025-03-22 18:51:04', 1),
+(21, 'HOSPITALARIA', 'HOSP', 8, '2025-03-22 18:51:32', 1, '2025-03-22 18:51:32', 1, '2025-03-22 18:51:32', 1, '2025-03-22 18:51:32', 1),
+(22, 'COMUNITARIA', 'COM', 8, '2025-03-22 18:52:00', 1, '2025-03-22 18:52:00', 1, '2025-03-22 18:52:00', 1, '2025-03-22 18:52:00', 1),
+(23, 'ORDINARIA', 'ORD', 8, '2025-03-22 18:52:22', 1, '2025-03-22 18:52:22', 1, '2025-03-22 18:52:22', 1, '2025-03-22 18:52:22', 1),
+(24, 'ORDINARIO', 'ORD', 9, '2025-03-22 18:52:43', 1, '2025-03-22 18:52:43', 1, '2025-03-22 18:52:43', 1, '2025-03-22 18:52:43', 1),
+(25, 'CONTRATADO', 'CONT', 9, '2025-03-22 18:53:10', 1, '2025-03-22 18:53:10', 1, '2025-03-22 18:53:10', 1, '2025-03-22 18:53:10', 1),
+(26, 'DEDICACIÓN EXCLUSIVA', 'DE', 10, '2025-03-22 18:53:42', 1, '2025-03-22 18:53:42', 1, '2025-03-22 18:53:42', 1, '2025-03-22 18:53:42', 1),
+(27, 'TIEMPO COMPLETO', 'TC', 10, '2025-03-22 18:54:04', 1, '2025-03-22 18:54:04', 1, '2025-03-22 18:54:04', 1, '2025-03-22 18:54:04', 1),
+(28, 'TIEMPO CONVENCIONAL', 'TV', 10, '2025-03-22 18:54:28', 1, '2025-03-22 18:54:28', 1, '2025-03-22 18:54:28', 1, '2025-03-22 18:54:28', 1),
+(29, 'MEDIO TIEMPO', 'MV', 10, '2025-03-22 18:54:49', 1, '2025-03-22 18:54:49', 1, '2025-03-22 18:54:49', 1, '2025-03-22 18:54:49', 1),
+(30, 'AUXILIAR DOCENTE', 'AUXILIAR', 11, '2025-03-22 18:55:11', 1, '2025-03-22 18:55:11', 1, '2025-03-22 18:55:11', 1, '2025-03-22 18:55:11', 1),
+(31, 'DOCENTE INSTRUCTOR', 'INSTRUCT', 11, '2025-03-22 18:55:46', 1, '2025-03-22 18:55:46', 1, '2025-03-22 18:55:46', 1, '2025-03-22 18:55:46', 1),
+(32, 'DOCENTE ASISTENTE', 'ASISTENT', 11, '2025-03-22 18:56:58', 1, '2025-03-22 18:56:58', 1, '2025-03-22 18:56:58', 1, '2025-03-22 18:56:58', 1),
+(33, 'DOCENTE AGREGADO', 'AGREGADO', 11, '2025-03-22 18:57:26', 1, '2025-03-22 18:57:26', 1, '2025-03-22 18:57:26', 1, '2025-03-22 18:57:26', 1),
+(34, 'DOCENTE ASOCIADO', 'ASOCIADO', 11, '2025-03-22 18:57:50', 1, '2025-03-22 18:57:50', 1, '2025-03-22 18:57:50', 1, '2025-03-22 18:57:50', 1),
+(35, 'DOCENTE TITULAR', 'TITULAR', 11, '2025-03-22 18:58:14', 1, '2025-03-22 18:58:14', 1, '2025-03-22 18:58:14', 1, '2025-03-22 18:58:14', 1),
+(36, 'CIVIL', 'CIV', 12, '2025-03-22 18:58:31', 1, '2025-03-22 18:58:31', 1, '2025-03-22 18:58:31', 1, '2025-03-22 18:58:31', 1),
+(37, 'MILITAR', 'MIL', 12, '2025-03-22 18:58:59', 1, '2025-03-22 18:58:59', 1, '2025-03-22 18:58:59', 1, '2025-03-22 18:58:59', 1),
+(44, 'APROBADO', 'A', 14, '2025-03-22 19:02:06', 1, '2025-03-22 19:02:06', 1, '2025-03-22 19:02:06', 1, '2025-03-22 19:02:06', 1),
+(45, 'REPROBADO', 'R', 14, '2025-03-22 19:02:24', 1, '2025-03-22 19:02:24', 1, '2025-03-22 19:02:24', 1, '2025-03-22 19:02:24', 1),
+(46, 'PENDIENTE', 'PEN', 15, '2025-03-22 19:02:46', 1, '2025-03-22 19:02:46', 1, '2025-03-22 19:02:46', 1, '2025-03-22 19:02:46', 1),
+(47, 'ABIERTO', 'ABT', 15, '2025-03-22 19:03:08', 1, '2025-03-22 19:03:08', 1, '2025-03-22 19:03:08', 1, '2025-03-22 19:03:08', 1),
+(48, 'CULMINADO', 'CULM', 15, '2025-03-22 19:03:28', 1, '2025-03-22 19:03:28', 1, '2025-03-22 19:03:28', 1, '2025-03-22 19:03:28', 1),
+(49, 'ANULADO', 'NULL', 15, '2025-03-22 19:03:51', 1, '2025-03-22 19:03:51', 1, '2025-03-22 19:03:51', 1, '2025-03-22 19:03:51', 1),
+(50, 'LOS LLANOS', '', 16, '2025-03-22 19:04:11', 1, '2025-03-22 19:04:11', 1, '2025-03-22 19:04:11', 1, '2025-03-22 19:04:11', 1),
+(51, 'PORTUGUESA', 'PORTUGUE', 17, '2025-03-22 19:04:35', 1, '2025-03-22 19:04:35', 1, '2025-03-22 19:04:35', 1, '2025-03-22 19:04:35', 1),
+(52, 'ACARIGUA', 'ACARIGUA', 18, '2025-03-22 19:05:21', 1, '2025-03-22 19:05:21', 1, '2025-03-22 19:05:21', 1, '2025-03-22 19:05:21', 1),
+(53, 'SI', 'SI', 19, '2025-03-22 19:05:45', 1, '2025-03-22 19:05:45', 1, '2025-03-22 19:05:45', 1, '2025-03-22 19:05:45', 1),
+(54, 'NO', 'NO', 19, '2025-03-22 19:06:11', 1, '2025-03-22 19:06:11', 1, '2025-03-22 19:06:11', 1, '2025-03-22 19:06:11', 1),
+(55, 'ENFERMERIA', 'ENF', 20, '2025-03-22 19:06:30', 1, '2025-03-22 19:06:30', 1, '2025-03-22 19:06:30', 1, '2025-03-22 19:06:30', 1),
+(56, 'INGENIERIA', 'ING', 20, '2025-03-22 19:08:26', 1, '2025-03-22 19:08:26', 1, '2025-03-22 19:08:26', 1, '2025-03-22 19:08:26', 1),
+(57, 'TSU EN ENFERMERIA', 'ENF', 21, '2025-03-22 19:06:48', 1, '2025-03-22 19:06:48', 1, '2025-03-22 19:06:48', 1, '2025-03-22 19:06:48', 1),
+(58, 'INGENIERIA', 'ING', 21, '2025-03-22 19:07:16', 1, '2025-03-22 19:07:16', 1, '2025-03-22 19:07:16', 1, '2025-03-22 19:07:16', 1);
+
+-- t_landing_config (landing page default content)
+INSERT INTO "t_landing_config" ("config_key", "config_value", "updated_by") VALUES
+('hero', '{"title":"Impulsa tu carrera con","subtitle":"Conectamos estudiantes talentosos de la UNEFA con las mejores oportunidades en el sector público y privado para transformar su potencial en experiencia real.","primaryButtonText":"Comenzar ahora","primaryButtonLink":"/signin","secondaryButtonText":"Saber más","statsText":"estudiantes han impulsado su carrera con nosotros.","statsCount":3200,"mainImage":"/unefa-img/9360.jpg","successCardTitle":"Éxito laboral","successCardValue":"+95%","successCardSubtitle":"Éxito laboral","companiesCardTitle":"Empresas aliadas","companiesCardValue":"200+","companiesCardSubtitle":"Empresas aliadas"}', 'system'),
+('missionVision', '{"missionTitle":"Misión","missionText":"Formar a través de la docencia, la investigación y la extensión, ciudadanos corresponsables con la seguridad y Defensa Integral de la Nación, comprometidos con la Revolución Bolivariana, con competencias emancipadoras y humanistas necesarias para sustentar los planes de desarrollo del país, promoviendo la producción y el intercambio de saberes, como mecanismo de integración latinoamericana y caribeña.","visionTitle":"Visión","visionText":"Ser la primera universidad socialista, reconocida por su Excelencia Educativa en el territorio nacional e internacional, líder en los saberes humanistas, científicos, tecnológicos y militares, inspirada en el ideario bolivariano."}', 'system'),
+('careers', '[{"id":"1","title":"INGENIERÍA AGRONÓMICA","description":"Formamos profesionales para el desarrollo agrícola sostenible, gestión de recursos naturales y producción vegetal.","category":"Ingeniería","image":"/unefa-img/agronomia.jpg","color":"success","order":1,"active":true},{"id":"2","title":"INGENIERÍA AGROINDUSTRIAL","description":"Carrera enfocada en la transformación de productos agrícolas, tecnología de alimentos y gestión agroindustrial.","category":"Ingeniería","image":"/unefa-img/agroindustrial.jpg","color":"primary","order":2,"active":true},{"id":"3","title":"ENFERMERÍA","description":"Formamos profesionales de la salud con competencias para el cuidado integral, prevención y promoción de la salud.","category":"T.S.U","image":"/unefa-img/enfermeria.jpg","color":"info","order":3,"active":true}]', 'system'),
+('graduateStats', '{"title":"Ficha de Datos: Pasantías y Prácticas Profesionales","subtitle":"Estimado Histórico y Estadísticas de Cumplimiento Académico - Extensión Acarigua (2008 - 2025).","totalRangeMin":3200,"totalRangeMax":5100,"annualRangeMin":180,"annualRangeMax":350,"successRate":98,"processDefinition":"Prácticas Profesionales (Pasantías) - Obligatorio y curricular para todas las carreras de pregrado.","durationText":"Entre 12 y 16 semanas (dependiendo del diseño curricular de la carrera).","notes":"Cifras consolidadas con base en los registros históricos de la Unidad de Gestión Educativa."}', 'system');
+
+-- ============================================================
+-- t_prospect_lists (prospect lists for internship prospecting)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS "t_prospect_lists" (
+  "LIST_ID" SERIAL NOT NULL,
+  "NAME" VARCHAR(255) NOT NULL,
+  "DESCRIPTION" TEXT,
+  "PERIOD_ID" INTEGER NOT NULL,
+  "STATUS" SMALLINT NOT NULL DEFAULT 1,
+  "CREATED_AT" TIMESTAMP NOT NULL DEFAULT NOW(),
+  "UPDATED_AT" TIMESTAMP NOT NULL DEFAULT NOW(),
+  "CREATED_BY" INTEGER,
+  PRIMARY KEY ("LIST_ID")
+);
+
+ALTER TABLE "t_prospect_lists"
+  ADD CONSTRAINT "fk_prospect_lists_period"
+  FOREIGN KEY ("PERIOD_ID") REFERENCES "t_internships_period" ("PERIOD_ID");
+
+ALTER TABLE "t_prospect_lists"
+  ADD CONSTRAINT "fk_prospect_lists_user"
+  FOREIGN KEY ("CREATED_BY") REFERENCES "t_user" ("USER_ID");
+
+-- t_prospect_list_items (students in a prospect list)
+CREATE TABLE IF NOT EXISTS "t_prospect_list_items" (
+  "ITEM_ID" SERIAL NOT NULL,
+  "LIST_ID" INTEGER NOT NULL,
+  "STUDENTS_ID" INTEGER NOT NULL,
+  "ENROLLED" BOOLEAN NOT NULL DEFAULT FALSE,
+  "NOTES" TEXT,
+  "ADDED_AT" TIMESTAMP NOT NULL DEFAULT NOW(),
+  "ADDED_BY" INTEGER,
+  PRIMARY KEY ("ITEM_ID")
+);
+
+ALTER TABLE "t_prospect_list_items"
+  ADD CONSTRAINT "fk_prospect_items_list"
+  FOREIGN KEY ("LIST_ID") REFERENCES "t_prospect_lists" ("LIST_ID") ON DELETE CASCADE;
+
+ALTER TABLE "t_prospect_list_items"
+  ADD CONSTRAINT "fk_prospect_items_student"
+  FOREIGN KEY ("STUDENTS_ID") REFERENCES "t_students" ("STUDENTS_ID");
+
+ALTER TABLE "t_prospect_list_items"
+  ADD CONSTRAINT "fk_prospect_items_user"
+  FOREIGN KEY ("ADDED_BY") REFERENCES "t_user" ("USER_ID");
+
+ALTER TABLE "t_prospect_list_items"
+  ADD CONSTRAINT "uq_prospect_list_student"
+  UNIQUE ("LIST_ID", "STUDENTS_ID");
+
+COMMIT;
+

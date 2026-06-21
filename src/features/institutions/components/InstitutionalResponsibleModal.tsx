@@ -549,6 +549,7 @@ export default function InstitutionalResponsibleModal({
     cancelClose,
   } = useUnsavedChanges(isDirty, onClose);
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
+  const [confirmSaving, setConfirmSaving] = useState(false);
   const [pendingSave, setPendingSave] = useState<CreateInstitutionalResponsiblePayload | UpdateInstitutionalResponsiblePayload | null>(null);
 
   useEffect(() => {
@@ -1052,32 +1053,36 @@ onChange={(val) => {
     {confirmSaveOpen && (
       <UnifiedDialog
         isOpen={confirmSaveOpen}
-        onClose={() => setConfirmSaveOpen(false)}
+        onClose={() => !confirmSaving && setConfirmSaveOpen(false)}
         onConfirm={async () => {
-          if (pendingSave) {
-            try {
+          if (confirmSaving) return;
+          setConfirmSaving(true);
+          try {
+            if (pendingSave) {
               await onSave(pendingSave);
               addToast({
                 variant: "success",
                 title: editingResp ? "Actualizado" : "Guardado",
                 message: editingResp ? "Responsable actualizado exitosamente" : "Responsable guardado exitosamente"
               });
-            } catch (error: any) {
-              console.error("[InstitutionalResponsibleModal] Error guardando:", error);
-              const errorMessage = error?.response?.data?.message || error?.message || "No se pudo guardar el responsable";
-              addToast({
-                variant: "error",
-                title: "Error",
-                message: errorMessage
-              });
-              return;
             }
+          } catch (error: any) {
+            console.error("[InstitutionalResponsibleModal] Error guardando:", error);
+            const errorMessage = error?.response?.data?.message || error?.message || "No se pudo guardar el responsable";
+            addToast({
+              variant: "error",
+              title: "Error",
+              message: errorMessage
+            });
+            return;
+          } finally {
+            setConfirmSaving(false);
             setConfirmSaveOpen(false);
           }
         }}
         variant="confirm"
         {...(editingResp ? CONFIRM_MESSAGES.update('Responsable institucional') : CONFIRM_MESSAGES.create('Responsable institucional'))}
-        isLoading={isLoading}
+        isLoading={confirmSaving}
       />
     )}
 

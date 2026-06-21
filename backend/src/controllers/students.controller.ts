@@ -143,7 +143,7 @@ function extractPersonData(body: any) {
     lastName: sanitizeText(body.lastName) ?? '',
     secondLastName: sanitizeText(body.secondLastName),
     gender: genderToDb[body.sex?.toUpperCase()] || 'O',
-    birthdate: body.birthDate || null,
+    birthDate: body.birthDate || null,
     maritalStatus: maritalToDb[body.civilStatus?.toUpperCase()] || 'S',
     phone: body.phone || null,
     email: body.email,
@@ -364,12 +364,25 @@ export const createStudent = async (req: AuthRequest, res: Response) => {
     const personData = extractPersonData(s);
     const studentData = extractStudentData(s);
 
-    const data = await dbManager.withRetry(async (supabase) => {
-      // 1. Buscar persona existente por CI o crear nueva
+    // 2. Verificar que no exista ya un estudiante para esta persona
+    const existingCheck = await dbManager.withRetry(async (supabase) => {
       const newPerson = await personService.findOrCreatePerson(personData, supabase);
-      const personId = newPerson.personId;
+      const { data: existing } = await supabase
+        .from(TABLE_NAME)
+        .select('STUDENTS_ID')
+        .eq('person_id', newPerson.personId)
+        .maybeSingle();
+      return { personId: newPerson.personId, existing };
+    }, 'createStudent:checkDuplicate');
 
-      // 2. Insertar registro en t_students con person_id
+    if (existingCheck.existing) {
+      return res.status(409).json({ message: 'Ya existe un estudiante registrado con esta cédula' });
+    }
+
+    const data = await dbManager.withRetry(async (supabase) => {
+      const personId = existingCheck.personId;
+
+      // 3. Insertar registro en t_students con person_id
       const dbRecord = {
         person_id: personId,
         STUDENT_TYPE: studentData.STUDENT_TYPE,
@@ -804,10 +817,11 @@ export const changeStudentRegistration = async (req: AuthRequest, res: Response)
     const hasActivePractice = activePractices && activePractices.length > 0;
 
     const pendingEvaluations = await dbManager.withRetry(async (supabase) => {
+      // Buscar evaluaciones activas en prácticas del estudiante
       const { data, error } = await supabase
-        .from('t_evaluations')
-        .select('EVALUATION_ID, STATUS')
-        .eq('STUDENT_ID', parseInt(id))
+        .from('t_evaluation')
+        .select('EVALUATION_ID, STATUS, t_professional_practices!inner(STUDENTS_ID)')
+        .eq('t_professional_practices.STUDENTS_ID', parseInt(id))
         .eq('STATUS', 1);
       if (error) throw error;
       return data;
@@ -846,31 +860,52 @@ export const changeStudentRegistration = async (req: AuthRequest, res: Response)
 
       if (!tutor) return res.status(404).json({ message: 'Tutor no encontrado' });
 
+      // Buscar la práctica activa del estudiante para obtener la asignación actual
+      const activePractice = await dbManager.withRetry(async (supabase) => {
+        const { data, error } = await supabase
+          .from('t_professional_practices')
+          .select('PROFESSIONAL_PRACTICE_ID')
+          .eq('STUDENTS_ID', parseInt(id))
+          .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO)
+          .eq('STATUS', 1)
+          .maybeSingle();
+        if (error) throw error;
+        return data as { PROFESSIONAL_PRACTICE_ID: number } | null;
+      }, 'getActivePracticeForTutorChange');
+
+      if (!activePractice) {
+        return res.status(400).json({ message: 'El estudiante no tiene una práctica activa (INSCRITO).' });
+      }
+
       const currentAssignment = await dbManager.withRetry(async (supabase) => {
         const { data, error } = await supabase
           .from('t_professional_practices_tutor')
-          .select('TUTOR_ID, t_persons!inner(first_name, last_name)')
-          .eq('STUDENT_ID', parseInt(id))
-          .eq('IS_ACTIVE', true)
+          .select(`
+            TUTOR_ID,
+            t_tutors!inner (
+              TUTOR_ID,
+              t_persons!inner (first_name, last_name)
+            )
+          `)
+          .eq('PROFESSIONAL_PRACTICE_ID', activePractice.PROFESSIONAL_PRACTICE_ID)
+          .eq('TUTOR_TYPE', 'ACADEMICO')
           .maybeSingle();
         if (error) throw error;
         return data;
       }, 'getCurrentTutor');
 
-      if (currentAssignment) {
-        const currentTutorPerson = (currentAssignment as any).t_persons;
-        oldValue = currentTutorPerson ? `${currentTutorPerson.first_name || ''} ${currentTutorPerson.last_name || ''}`.trim() : '';
-        newValueFormatted = `${(tutor as any).t_persons.first_name} ${(tutor as any).t_persons.last_name}`.trim();
+      const currentTutorPerson = (currentAssignment as any)?.t_tutors?.t_persons;
+      oldValue = currentTutorPerson ? `${currentTutorPerson.first_name || ''} ${currentTutorPerson.last_name || ''}`.trim() : 'Sin tutor';
+      newValueFormatted = `${(tutor as any).t_persons.first_name} ${(tutor as any).t_persons.last_name}`.trim();
 
-        await dbManager.withRetry(async (supabase) => {
-          const { error } = await supabase
-            .from('t_professional_practices_tutor')
-            .update({ TUTOR_ID: parseInt(newValue), MODIFIED_AT: new Date().toISOString() })
-            .eq('STUDENT_ID', parseInt(id))
-            .eq('IS_ACTIVE', true);
-          if (error) throw error;
-        }, 'updateTutorAssignment');
-      }
+      await dbManager.withRetry(async (supabase) => {
+        const { error } = await supabase
+          .from('t_professional_practices_tutor')
+          .update({ TUTOR_ID: parseInt(newValue) })
+          .eq('PROFESSIONAL_PRACTICE_ID', activePractice.PROFESSIONAL_PRACTICE_ID)
+          .eq('TUTOR_TYPE', 'ACADEMICO');
+        if (error) throw error;
+      }, 'updateTutorAssignment');
     } else if (changeType === 'institution') {
       const institution = await dbManager.withRetry(async (supabase) => {
         const { data, error } = await supabase
@@ -884,12 +919,50 @@ export const changeStudentRegistration = async (req: AuthRequest, res: Response)
 
       if (!institution) return res.status(404).json({ message: 'Institución no encontrada' });
 
-      oldValue = student.INSTITUTION_ID ? String(student.INSTITUTION_ID) : 'Sin institución';
+      // Obtener práctica activa del estudiante
+      const activeInstPractice = await dbManager.withRetry(async (supabase) => {
+        const { data, error } = await supabase
+          .from('t_professional_practices')
+          .select('PROFESSIONAL_PRACTICE_ID, INSTITUTION_ID')
+          .eq('STUDENTS_ID', parseInt(id))
+          .eq('PRACTICES_STATUS', PRACTICES_STATUS.INSCRITO)
+          .eq('STATUS', 1)
+          .maybeSingle();
+        if (error) throw error;
+        return data as { PROFESSIONAL_PRACTICE_ID: number; INSTITUTION_ID: number | null } | null;
+      }, 'getActivePracticeForInstChange');
+
+      if (!activeInstPractice) {
+        return res.status(400).json({ message: 'El estudiante no tiene una práctica activa (INSCRITO).' });
+      }
+
+      oldValue = activeInstPractice.INSTITUTION_ID ? String(activeInstPractice.INSTITUTION_ID) : 'Sin institución';
       newValueFormatted = institution.INSTITUTION_NAME;
-      updateData.INSTITUTION_ID = parseInt(newValue);
+
+      await dbManager.withRetry(async (supabase) => {
+        const { error } = await supabase
+          .from('t_professional_practices')
+          .update({ INSTITUTION_ID: parseInt(newValue) })
+          .eq('PROFESSIONAL_PRACTICE_ID', activeInstPractice.PROFESSIONAL_PRACTICE_ID);
+        if (error) throw error;
+      }, 'updateStudentInstitution');
     }
 
     if (changeType === 'regime') {
+      const { data: oldStudent } = await dbManager.withRetry(async (supabase) => {
+        const { data, error } = await supabase
+          .from(TABLE_NAME)
+          .select('STUDENTS_ID, STUDENT_TYPE, MILITARY_RANK, EMPLOYMENT')
+          .eq('STUDENTS_ID', parseInt(id))
+          .single();
+        if (error) throw error;
+        return data;
+      }, 'getStudentForRegime');
+
+      if (!oldStudent) {
+        return res.status(404).json({ message: 'Estudiante no encontrado' });
+      }
+
       await dbManager.withRetry(async (supabase) => {
         const { error } = await supabase
           .from(TABLE_NAME)

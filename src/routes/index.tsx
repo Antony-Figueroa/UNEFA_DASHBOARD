@@ -21,7 +21,7 @@ const RolesPermissions = lazy(() => import("../pages/Config/RolesPermissions"));
 const SystemSettings = lazy(() => import("../pages/Config/SystemSettings"));
 const Maintenance = lazy(() => import("../pages/Config/Maintenance"));
 const Backups = lazy(() => import("../pages/Config/Backups"));
-const LandingConfigPage = lazy(() => import("../features/landing-config/pages/LandingConfigPage"));
+const LandingConfigPage = lazy(() => import("../pages/Config/LandingConfigPage"));
 const ReminderConfigPage = lazy(() => import("../pages/Admin/Reminders/ReminderConfigPage"));
 const OrganizationConfig = lazy(() => import("../pages/Config/OrganizationConfig"));
 

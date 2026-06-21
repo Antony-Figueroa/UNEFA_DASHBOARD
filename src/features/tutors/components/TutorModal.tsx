@@ -1128,17 +1128,20 @@ export default function TutorModal({
             }
           }
         }}
-        title={editingTutor || existingTutor ? CONFIRM_MESSAGES.edit.title : CONFIRM_MESSAGES.create.title}
-        message={editingTutor || existingTutor ? CONFIRM_MESSAGES.edit.message : CONFIRM_MESSAGES.create.message}
-        type={SYSTEM_DIALOGS.confirmation}
+        title={editingTutor || existingTutor ? CONFIRM_MESSAGES.update("el tutor").title : CONFIRM_MESSAGES.create("el tutor").title}
+        message={editingTutor || existingTutor ? CONFIRM_MESSAGES.update("el tutor").message : CONFIRM_MESSAGES.create("el tutor").message}
+        confirmLabel={editingTutor || existingTutor ? CONFIRM_MESSAGES.update("el tutor").confirmLabel : CONFIRM_MESSAGES.create("el tutor").confirmLabel}
+        variant="confirm"
       />
       <UnifiedDialog
         isOpen={showConfirmation}
         onClose={cancelClose}
         onConfirm={confirmClose}
-        title={CONFIRM_MESSAGES.unsavedChanges.title}
-        message={CONFIRM_MESSAGES.unsavedChanges.message}
-        type={SYSTEM_DIALOGS.confirmation}
+        title={SYSTEM_DIALOGS.closeWithoutSaving.title}
+        message={SYSTEM_DIALOGS.closeWithoutSaving.message}
+        confirmLabel={SYSTEM_DIALOGS.closeWithoutSaving.confirmLabel}
+        cancelLabel={SYSTEM_DIALOGS.closeWithoutSaving.cancelLabel}
+        variant="confirm"
       />
       <CareerModal
         isOpen={isCareerModalOpen}
@@ -1184,3 +1187,4 @@ export default function TutorModal({
       />
     </>
   );
+}
